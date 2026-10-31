@@ -9,7 +9,7 @@
       :aria-label="tooltipText"
       @click="toggleSlider"
     >
-      <i :class="cn('pi', icon, 'text-lg text-foreground')" />
+      <i :class="cn(icon, 'size-4.5 text-foreground')" />
     </Button>
     <div
       v-show="showSlider"
@@ -30,11 +30,11 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Slider from '@comfyorg/design-system/slider/Slider'
 
 const {
-  icon = 'pi-expand',
+  icon = 'icon-[lucide--expand]',
   min = 10,
   max = 150,
   step = 1

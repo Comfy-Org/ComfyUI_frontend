@@ -9,8 +9,8 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
@@ -143,6 +143,36 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     expect(previewUrl.searchParams.get('filename')).toBe('execution-result.png')
     expect(previewUrl.searchParams.get('subfolder')).toBe('daily outputs')
     expect(previewUrl.searchParams.get('type')).toBe('output')
+  })
+
+  it('skips null image entries when building view URLs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([node.id]),
+      createMockOutputs(
+        fromAny([null, { filename: 'kept.png', type: 'output' }, null])
+      )
+    )
+
+    const urls = store.getNodeImageUrls(node) ?? []
+
+    expect(urls).toHaveLength(1)
+    const viewUrl = new URL(urls[0], window.location.origin)
+    expect(viewUrl.searchParams.get('filename')).toBe('kept.png')
+  })
+
+  it('returns no view URLs when every image entry is null', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    const executionId = createNodeExecutionId([node.id])
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs(fromAny([null]))
+    )
+
+    expect(store.getNodeImageUrls(node)).toEqual([])
+    expect(store.getNodeImageUrlsByExecutionId(executionId, node)).toEqual([])
   })
 
   it('carries preview_id on the view URL', () => {

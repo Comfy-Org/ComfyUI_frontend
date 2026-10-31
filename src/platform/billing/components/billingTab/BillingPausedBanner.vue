@@ -9,12 +9,9 @@
       <div class="flex items-center gap-2">
         <i
           :class="
-            cn(
-              'size-4 shrink-0',
-              paused.muted
-                ? 'icon-[lucide--circle-alert] text-muted-foreground'
-                : 'icon-[lucide--triangle-alert] text-warning'
-            )
+            paused.muted
+              ? 'icon-[lucide--circle-alert] text-muted-foreground'
+              : 'icon-[lucide--triangle-alert] text-warning'
           "
         />
         <span class="text-sm text-foreground">{{ $t(paused.titleKey) }}</span>
@@ -37,10 +34,9 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   pausedBannerCopy,
   usePausedBanner

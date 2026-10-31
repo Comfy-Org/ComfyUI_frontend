@@ -1,9 +1,11 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Vector3 } from 'three'
 import { nextTick, reactive } from 'vue'
 
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import { keepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -15,18 +17,17 @@ import type {
   SceneConfig,
   StoredModelConfig
 } from '@comfyorg/viewport3d/load3d/interfaces'
-import type {
-  IBaseWidget,
-  INumericWidget
-} from '@/lib/litegraph/src/types/widgets'
-import type { Dictionary } from '@/lib/litegraph/src/interfaces'
+import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
+import type { Dictionary } from '@comfyorg/graph-model/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { Settings } from '@/platform/settings/types'
 
-vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial({ apiURL: (path: string) => path })
+}))
 vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@comfyorg/viewport3d/load3d/Load3d'), () => ({
@@ -37,6 +38,7 @@ vi.mock(import('@/extensions/core/load3d/reportLoadModelOutcome'))
 
 vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: fromAny({
+    isSameResourceURL: vi.fn((a: string | null, b: string) => a === b),
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn()
   })
@@ -274,6 +276,108 @@ describe('Load3DConfiguration model load reporting', () => {
       expect(load3d.emitModelReady).not.toHaveBeenCalled()
     }
   )
+
+  describe('while keeping the loaded model', () => {
+    const requestedModelUrl = '/view?filename=model.glb'
+
+    function viewerShowing(
+      originalURL: string,
+      currentModel: object | null = {}
+    ) {
+      const load3d = makeLoad3dMock()
+      Object.assign(load3d, { modelManager: { originalURL, currentModel } })
+      return load3d
+    }
+
+    it.for([
+      {
+        name: 'configure',
+        run: (config: Load3DConfiguration) =>
+          config.configure({
+            modelWidget: fromPartial<IBaseWidget>({ value: 'model.glb' }),
+            loadFolder: 'output'
+          })
+      },
+      {
+        name: 'configureForSaveMesh',
+        run: (config: Load3DConfiguration) =>
+          config.configureForSaveMesh('output', 'model.glb')
+      }
+    ])(
+      '$name does not reload the model the viewer already shows',
+      async ({ run }) => {
+        const load3d = viewerShowing(requestedModelUrl)
+
+        keepingLoadedModel(load3d, () => run(new Load3DConfiguration(load3d)))
+        await flush()
+
+        expect(loadModelSpy).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      {
+        name: 'a different model',
+        load3d: () => viewerShowing('/view?filename=other.glb')
+      },
+      {
+        name: 'no model after a failed load of the same file',
+        load3d: () => viewerShowing(requestedModelUrl, null)
+      }
+    ])(
+      'loads the model when the viewer shows $name',
+      async ({ load3d: make }) => {
+        const load3d = make()
+
+        keepingLoadedModel(load3d, () =>
+          new Load3DConfiguration(load3d).configureForSaveMesh(
+            'output',
+            'model.glb'
+          )
+        )
+        await flush()
+
+        expect(loadModelSpy).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('does not restore the initial camera on a later model change', async () => {
+      const load3d = viewerShowing(requestedModelUrl)
+      const widget = reactiveWidget('model.glb')
+      keepingLoadedModel(load3d, () =>
+        new Load3DConfiguration(load3d).configure({
+          modelWidget: widget,
+          loadFolder: 'output',
+          cameraState: {
+            position: new Vector3(1, 2, 3),
+            target: new Vector3(0, 0, 0),
+            zoom: 1,
+            cameraType: 'perspective'
+          }
+        })
+      )
+      await flush()
+
+      widget.value = 'other.glb'
+      await flush()
+
+      expect(loadModelSpy).toHaveBeenCalledOnce()
+      expect(load3d.setCameraState).not.toHaveBeenCalled()
+    })
+
+    it('loads the shown model again once keeping ends', async () => {
+      const load3d = viewerShowing(requestedModelUrl)
+      keepingLoadedModel(load3d, () => {})
+
+      new Load3DConfiguration(load3d).configureForSaveMesh(
+        'output',
+        'model.glb'
+      )
+      await flush()
+
+      expect(loadModelSpy).toHaveBeenCalledOnce()
+    })
+  })
 
   it('emits modelReady AFTER setCameraState so thumbnail capture sees the restored view', async () => {
     const load3d = makeLoad3dMock()

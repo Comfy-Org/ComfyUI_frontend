@@ -1,5 +1,5 @@
 import { respondToFetch } from '@comfyorg/test-utils/fetch'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -20,8 +20,6 @@ const { mockIsDesktop, mockStartDownload } = vi.hoisted(() => ({
   mockIsDesktop: { value: false },
   mockStartDownload: vi.fn()
 }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(
   import('@/platform/distribution/types'),

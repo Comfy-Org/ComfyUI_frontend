@@ -11,15 +11,15 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { CancellationSurveyExit } from '@/platform/billing/subscription/utils/cancellationSurvey'
 import type { RetentionOfferOutcome } from '@/platform/billing/subscription/utils/retentionOffer'
-import { useTelemetry } from '@/platform/telemetry'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import CancellationFlowDialogContent from './CancellationFlowDialogContent.vue'
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 
 const CancellationSurveyStep = defineComponent({
   props: {
@@ -212,9 +212,9 @@ describe('CancellationFlowDialogContent', () => {
     ({ flow, recorded }) => {
       renderFlow({ surveyId: 'survey-1', flow })
 
-      expect(
-        vi.mocked(workspaceApi.recordRetentionFlowEvent).mock.calls
-      ).toEqual(recorded)
+      expect(vi.mocked(billingApi.recordRetentionFlowEvent).mock.calls).toEqual(
+        recorded
+      )
     }
   )
 

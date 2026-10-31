@@ -95,7 +95,8 @@ const CANONICAL_ASKS: Record<AgentAskKind, CanonicalAsk> = {
 const CARD_BACKED_ASK_KINDS = [
   'run_approval',
   'ask_user',
-  'delete_approval'
+  'delete_approval',
+  'paused'
 ] as const satisfies readonly AgentAskKind[]
 
 interface AnswerControl {
@@ -116,7 +117,8 @@ const ANSWER_CONTROLS: Record<RenderedAskKind, readonly AnswerControl[]> = {
   delete_approval: [
     { role: 'button', name: enMessages.agent.deleteApproval.delete },
     { role: 'button', name: enMessages.agent.deleteApproval.keep }
-  ]
+  ],
+  paused: [{ role: 'button', name: enMessages.agent.paused.resume }]
 }
 
 function messageFor(ask: CanonicalAsk): AssistantMessage {
@@ -161,8 +163,9 @@ describe('ask_kinds advertisement matches what the panel renders', () => {
     )
   })
 
-  it('leaves paused unadvertised, because cloud raises it for every client', () => {
-    expect(ADVERTISED_ASK_KINDS).not.toContain('paused')
+  it('advertises paused so the pause card renders, which cloud sends regardless', () => {
+    expect(ADVERTISED_ASK_KINDS).toContain('paused')
+    expect(rendersACardRatherThanTheNotice('paused')).toBe(true)
   })
 
   it.for([...RENDERED_ASK_KINDS])(
@@ -183,15 +186,34 @@ describe('ask_kinds advertisement matches what the panel renders', () => {
     }
   )
 
-  it.for(WIRE_ASK_KINDS.filter((kind) => !ADVERTISED_ASK_KINDS.includes(kind)))(
-    'stands a notice in for the unadvertised %s ask',
-    (kind) => {
-      renderAsk(kind)
+  it('leaves no wire ask kind standing on the notice', () => {
+    expect(
+      WIRE_ASK_KINDS.filter((kind) => !ADVERTISED_ASK_KINDS.includes(kind))
+    ).toEqual([])
+  })
 
-      expect(screen.getByText(ASK_UNAVAILABLE)).toBeInTheDocument()
-      expect(
-        screen.queryByText(CANONICAL_ASKS[kind].prompt)
-      ).not.toBeInTheDocument()
-    }
-  )
+  it('stands a notice in for an ask kind this build does not know', () => {
+    render(AgentMessage, {
+      props: {
+        message: {
+          id: toTurnId('msg-unknown') satisfies TurnId,
+          role: 'assistant',
+          parts: [
+            toAskOrNoticePart({
+              ...CANONICAL_ASKS.ask_user,
+              kind: 'a_kind_from_a_newer_server' as AgentAskKind
+            })
+          ],
+          streaming: false,
+          thinking: false
+        } satisfies AssistantMessage
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText(ASK_UNAVAILABLE)).toBeInTheDocument()
+    expect(
+      screen.queryByText(CANONICAL_ASKS.ask_user.prompt)
+    ).not.toBeInTheDocument()
+  })
 })

@@ -496,8 +496,6 @@ test.describe('Workflows sidebar', () => {
     )
 
     // Wait for nodes to be inserted after drag-drop with retryable assertion
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(nodeCount + defaultWorkflow.nodes.length)
+    await comfyPage.expectNodeCount(nodeCount + defaultWorkflow.nodes.length)
   })
 })

@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { unrefElement } from '@vueuse/core'
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import type {
   FilterOption,
   OwnershipFilterOption,
@@ -15,7 +14,7 @@ import type {
 } from '@/platform/assets/types/filterTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import { DROPDOWN_PANEL_CLASS } from './shared'
 import type { LayoutMode, SortOption } from './types'
 
@@ -49,7 +48,7 @@ const actionButtonStyle = cn(
 
 const actionPopoverClass = cn(
   DROPDOWN_PANEL_CLASS,
-  'pointer-events-auto max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none'
+  'pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none'
 )
 
 const layoutSwitchItemStyle =
@@ -130,7 +129,7 @@ function handleSearchEnter(event: KeyboardEvent) {
       {{ t('widgets.uploadSelect.topResult', { result: candidateLabel }) }}
     </span>
 
-    <Popover v-model:open="isSortPopoverOpen">
+    <PopoverRoot v-model:open="isSortPopoverOpen">
       <PopoverTrigger as-child>
         <Button
           ref="sortTriggerRef"
@@ -149,14 +148,10 @@ function handleSearchEnter(event: KeyboardEvent) {
             v-if="sortSelected !== 'default'"
             class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
           />
-          <i class="icon-[lucide--arrow-up-down] size-4" />
+          <i class="icon-[lucide--arrow-up-down]" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        :collision-padding="8"
-        :class="actionPopoverClass"
-      >
+      <PopoverContent align="start" :class="actionPopoverClass">
         <div
           :class="
             cn(
@@ -175,16 +170,13 @@ function handleSearchEnter(event: KeyboardEvent) {
             @click="handleSortSelected(item)"
           >
             <span>{{ item.name }}</span>
-            <i
-              v-if="sortSelected === item.id"
-              class="icon-[lucide--check] size-4"
-            />
+            <i v-if="sortSelected === item.id" class="icon-[lucide--check]" />
           </Button>
         </div>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
-    <Popover
+    <PopoverRoot
       v-if="showOwnershipFilter && ownershipOptions?.length"
       v-model:open="isOwnershipPopoverOpen"
     >
@@ -206,14 +198,10 @@ function handleSearchEnter(event: KeyboardEvent) {
             v-if="ownershipSelected !== 'all'"
             class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
           />
-          <i class="icon-[lucide--user] size-4" />
+          <i class="icon-[lucide--user]" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        :collision-padding="8"
-        :class="actionPopoverClass"
-      >
+      <PopoverContent align="start" :class="actionPopoverClass">
         <div
           :class="
             cn(
@@ -234,14 +222,14 @@ function handleSearchEnter(event: KeyboardEvent) {
             <span>{{ item.name }}</span>
             <i
               v-if="ownershipSelected === item.value"
-              class="icon-[lucide--check] size-4"
+              class="icon-[lucide--check]"
             />
           </Button>
         </div>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
-    <Popover
+    <PopoverRoot
       v-if="showBaseModelFilter && baseModelOptions?.length"
       v-model:open="isBaseModelPopoverOpen"
     >
@@ -263,14 +251,10 @@ function handleSearchEnter(event: KeyboardEvent) {
             v-if="baseModelSelected.size > 0"
             class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
           />
-          <i class="icon-[comfy--ai-model] size-4" />
+          <i class="icon-[comfy--ai-model]" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        :collision-padding="8"
-        :class="actionPopoverClass"
-      >
+      <PopoverContent align="start" :class="actionPopoverClass">
         <div
           :class="
             cn(
@@ -291,7 +275,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             <span>{{ item.name }}</span>
             <i
               v-if="baseModelSelected.has(item.value)"
-              class="icon-[lucide--check] size-4"
+              class="icon-[lucide--check]"
             />
           </Button>
           <span class="h-0 w-full border-b" />
@@ -305,7 +289,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           </Button>
         </div>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
     <div
       :class="
@@ -328,7 +312,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         "
         @click="layoutMode = 'list'"
       >
-        <i class="icon-[lucide--list] size-4" />
+        <i class="icon-[lucide--list]" />
       </Button>
       <Button
         :aria-label="t('assetBrowser.gridView')"
@@ -343,7 +327,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         "
         @click="layoutMode = 'grid'"
       >
-        <i class="icon-[lucide--layout-grid] size-4" />
+        <i class="icon-[lucide--layout-grid]" />
       </Button>
     </div>
   </div>

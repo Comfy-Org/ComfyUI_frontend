@@ -1,10 +1,11 @@
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
+import type { BillingRail } from '@comfyorg/billing-core'
 
 import { useBillingRouting } from './useBillingRouting'
 
@@ -32,7 +33,9 @@ describe('useBillingRouting', () => {
   beforeEach(() => {
     const refs = storeToRefs(useTeamWorkspaceStore())
     mockActiveWorkspace = refs.activeWorkspace
-    mockActiveWorkspaceBillingRail = refs.activeWorkspaceBillingRail
+    mockActiveWorkspaceBillingRail = storeToRefs(
+      useWorkspaceBillingStateStore()
+    ).activeWorkspaceBillingRail
     mockIsCloud.value = true
     mockActiveWorkspace.value = personal
     mockActiveWorkspaceBillingRail.value = null

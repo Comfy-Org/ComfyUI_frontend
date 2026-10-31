@@ -30,7 +30,7 @@
 import { computed } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Input from '@comfyorg/design-system/input/Input'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 import {

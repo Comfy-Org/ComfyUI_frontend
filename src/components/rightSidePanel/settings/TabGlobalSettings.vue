@@ -2,22 +2,22 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
-import NumberField from '@/components/ui/number-field/NumberField.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import NumberField from '@comfyorg/design-system/number-field/NumberField'
+import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
-import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
+import type { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
+import { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import FieldSwitch from './FieldSwitch.vue'
-import LayoutField from './LayoutField.vue'
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
+import FieldSwitch from '@comfyorg/design-system/field/FieldSwitch'
+import LayoutField from '@comfyorg/design-system/field/LayoutField'
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
@@ -192,7 +192,7 @@ function openFullSettings() {
         @click="openFullSettings"
       >
         {{ t('rightSidePanel.globalSettings.viewAllSettings') }}
-        <i class="icon-[lucide--settings] size-4" />
+        <i class="icon-[lucide--settings]" />
       </Button>
     </div>
   </div>

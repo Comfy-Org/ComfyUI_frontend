@@ -237,16 +237,16 @@ describe('useColorPaletteService theme variables', () => {
       'css'
     )
     const paletteCss = readFileSync(join(cssDir, '_palette.css'), 'utf8')
-    const styleCss = readFileSync(join(cssDir, 'style.css'), 'utf8')
+    const themeCss = readFileSync(join(cssDir, 'theme.css'), 'utf8')
     const palette = Object.fromEntries(
       [...paletteCss.matchAll(/--color-([\w-]+):\s*(#[0-9a-f]{6});/gi)].map(
         ([, name, hex]) => [name, hex.toLowerCase()]
       )
     )
     palette.white = '#ffffff'
-    const rootBlock = styleCss.slice(
-      styleCss.indexOf(':root {'),
-      styleCss.indexOf('}', styleCss.indexOf(':root {'))
+    const rootBlock = themeCss.slice(
+      themeCss.indexOf(':root {'),
+      themeCss.indexOf('}', themeCss.indexOf(':root {'))
     )
     const stylesheetDefaults = Object.fromEntries(
       [...rootBlock.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(

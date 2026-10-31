@@ -3,11 +3,11 @@ import { computed, toValue } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/types/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface

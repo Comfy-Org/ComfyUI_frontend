@@ -83,15 +83,14 @@ export function useAgentChatHistoryRefresh({
     return workflowId ? Math.max(full, coveredAt.get(workflowId) ?? 0) : full
   }
 
-  function record(
-    generation: number,
-    sessions: ChatSession[],
-    workflowId?: string
-  ): void {
+  function record(generation: number, sessions: ChatSession[]): void {
     for (const session of sessions) {
       if (generation > (newestSighting.get(session.id)?.generation ?? 0))
         newestSighting.set(session.id, { generation, session })
     }
+  }
+
+  function cover(generation: number, workflowId?: string): void {
     coveredAt.set(
       workflowId,
       Math.max(coveredAt.get(workflowId) ?? 0, generation)
@@ -131,11 +130,28 @@ export function useAgentChatHistoryRefresh({
   function applyListing(
     generation: number,
     sessions: ChatSession[],
-    workflowId?: string
+    retained: ChatSession[]
   ): void {
-    record(generation, sessions, workflowId)
-    history.replaceAll(visibleSessions([...sessions, ...history.sessions]))
+    record(generation, sessions)
+    history.replaceAll(visibleSessions([...sessions, ...retained]))
     pruneCovered()
+  }
+
+  function applyPartialListing(
+    generation: number,
+    uiTreatment: HistoryFailureTreatment,
+    listing: Extract<ThreadListing, { status: 'incomplete' }>
+  ): HistoryRefreshOutcome {
+    const ownsNotice = ownsFailure(generation, uiTreatment)
+    applyListing(
+      generation,
+      listing.threads.map(toChatSession),
+      history.sessions.filter(({ id }) => newestSighting.has(id))
+    )
+    latestAppliedRefresh = Math.max(latestAppliedRefresh, generation)
+    if (!ownsNotice) return 'superseded'
+    onFailure(listing, uiTreatment)
+    return 'incomplete'
   }
 
   function applyRefreshResult(
@@ -146,14 +162,21 @@ export function useAgentChatHistoryRefresh({
   ): HistoryRefreshOutcome {
     if (controller.signal.aborted || result.status === 'aborted')
       return 'aborted'
-    if (result.status !== 'complete') {
+    if (result.status === 'incomplete')
+      return applyPartialListing(generation, uiTreatment, result)
+    if (result.status === 'failed') {
       if (!ownsFailure(generation, uiTreatment)) return 'superseded'
       onFailure(result, uiTreatment)
       return result.status
     }
     if (generation < (coveredAt.get(undefined) ?? 0)) return 'superseded'
     const superseded = generation < coverage(workflowId)
-    applyListing(generation, result.threads.map(toChatSession), workflowId)
+    cover(generation, workflowId)
+    applyListing(
+      generation,
+      result.threads.map(toChatSession),
+      history.sessions
+    )
     latestAppliedRefresh = Math.max(latestAppliedRefresh, generation)
     return superseded ? 'superseded' : 'complete'
   }

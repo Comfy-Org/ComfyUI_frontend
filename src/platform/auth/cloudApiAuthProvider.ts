@@ -6,7 +6,7 @@ import {
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { AUTH_INIT_TIMEOUT_MS } from '@/scripts/apiTimeouts'
 import { useAuthStore } from '@/stores/authStore'

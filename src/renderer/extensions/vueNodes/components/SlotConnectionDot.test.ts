@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/vue'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
-import { toNodeId } from '@/types/nodeId'
-import { slotId } from '@/types/slotId'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { slotId } from '@comfyorg/graph-model/slotId'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 

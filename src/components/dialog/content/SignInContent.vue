@@ -96,7 +96,7 @@
             variant="secondary"
             @click="signInWithGithub"
           >
-            <i class="pi pi-github mr-2"></i>
+            <i class="mr-2 icon-[lucide--github]"></i>
             {{
               isSignIn
                 ? t('auth.login.loginWithGithub')
@@ -145,7 +145,7 @@
           closable
         >
           <template #icon>
-            <i class="pi pi-info-circle" />
+            <i class="icon-[lucide--info]" />
           </template>
           {{ t('toastMessages.useApiKeyTip') }}
         </Message>
@@ -185,9 +185,9 @@ import { useI18n } from 'vue-i18n'
 import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'

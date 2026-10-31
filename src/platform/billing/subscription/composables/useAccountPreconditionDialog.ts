@@ -1,6 +1,6 @@
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { AccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
@@ -19,21 +19,20 @@ export function useAccountPreconditionDialog() {
   const { showSubscriptionRequiredDialog, showTopUpCreditsDialog } =
     useBillingDialogs()
 
-  function open(
+  async function open(
     precondition: AccountPrecondition,
     context: AccountPreconditionContext = {}
-  ): void {
+  ): Promise<boolean> {
     switch (precondition) {
       case 'sign_in':
         void showApiNodesSignInDialog(
           context.nodeType ? [context.nodeType] : []
         )
-        return
+        return true
       case 'subscription':
-        void showSubscriptionRequiredDialog({
+        return showSubscriptionRequiredDialog({
           reason: context.source ?? 'subscription_required'
         })
-        return
       case 'credits': {
         // The server just declared the balance exhausted; there is no push or
         // polling for billing state, so refresh it here to converge
@@ -46,7 +45,7 @@ export function useAccountPreconditionDialog() {
           isInsufficientCredits: true,
           ...(context.source && { source: context.source })
         })
-        return
+        return true
       }
     }
   }

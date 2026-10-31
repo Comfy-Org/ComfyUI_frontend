@@ -6,7 +6,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
@@ -26,8 +26,6 @@ import type {
 } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 import { createUndeliverableAskReporter } from './undeliverableAskReporter'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const fixtureText = import.meta.glob(
   '../../schemas/__fixtures__/agent/*.jsonl',
@@ -309,6 +307,24 @@ describe('agentEventTransport reply draft replay', () => {
       finals[0].data.delta
     ])
     expect(message.streaming).toBe(false)
+  })
+})
+
+describe('agentEventTransport credit usage', () => {
+  it('keeps the server-reported turn charge on the settled message', () => {
+    const message = drive([
+      {
+        type: 'agent_message_done',
+        data: {
+          message_id: 'm',
+          thread_id: 't',
+          usage: { charge_micro_usd: 6038 }
+        }
+      }
+    ])
+
+    expect(message.streaming).toBe(false)
+    expect(message.creditsUsed).toBeCloseTo(1.274)
   })
 })
 
@@ -661,6 +677,24 @@ describe('agentEventTransport run approval', () => {
         workflowName: 'Portrait workflow'
       },
       { type: 'text', text: 'after the decision', state: 'streaming' }
+    ])
+  })
+
+  it('leaves open transcript parts unchanged for a duplicate approval frame', () => {
+    const message = drive([
+      runApproval(),
+      delta('before the delayed frame'),
+      runApproval()
+    ])
+
+    expect(message.parts).toEqual([
+      {
+        type: 'runApproval',
+        askId: 'turn-1:call-1',
+        workflowId: 'workflow-1',
+        workflowName: 'Portrait workflow'
+      },
+      { type: 'text', text: 'before the delayed frame', state: 'streaming' }
     ])
   })
 

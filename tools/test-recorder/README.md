@@ -22,7 +22,7 @@ See the [Browser Tests README](../../browser_tests/README.md) for full setup ins
 A test plan can prefill every setup answer in one copy-pastable command:
 
 ```bash
-pnpm comfy-test record --distribution cloud --workflow default --tags @canvas,@widget --feature-flags linear_toggle_enabled:true --use-case test-plan-step --description "seed stays fixed across runs" --name fixed-seed
+pnpm comfy-test record --distribution cloud --workflow default --tags @canvas,@widget --feature-flags node_library_essentials_enabled:true --use-case test-plan-step --description "seed stays fixed across runs" --name fixed-seed
 ```
 
 Supplied answers are confirmed and their prompts are skipped. Invalid values

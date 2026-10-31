@@ -15,9 +15,9 @@
 
 <script setup lang="ts">
 import BoundingBoxesEditor from '@/components/boundingBoxes/BoundingBoxesEditor.vue'
-import Button from '@/components/ui/button/Button.vue'
-import type { BoundingBox } from '@/types/boundingBoxes'
-import type { NodeId } from '@/types/nodeId'
+import Button from '@comfyorg/design-system/button/Button'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const { nodeId, widget } = defineProps<{

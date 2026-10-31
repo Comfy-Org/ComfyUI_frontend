@@ -9,15 +9,14 @@ import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { RetentionOfferOutcome } from '@/platform/billing/subscription/utils/retentionOffer'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
 import RetentionOfferStep from './RetentionOfferStep.vue'
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 
 type TerminalOperation = Awaited<
   ReturnType<ReturnType<typeof useBillingOperationStore>['startOperation']>
@@ -127,12 +126,12 @@ describe('RetentionOfferStep', () => {
         'One-time offer. After 3 renewals, Pro returns to $100/mo. Cancel anytime.'
       )
     ).toBeInTheDocument()
-    expect(
-      workspaceApi.recordRetentionFlowEvent
-    ).toHaveBeenCalledExactlyOnceWith({
-      session_id: 'session-1',
-      event: 'offer_shown'
-    })
+    expect(billingApi.recordRetentionFlowEvent).toHaveBeenCalledExactlyOnceWith(
+      {
+        session_id: 'session-1',
+        event: 'offer_shown'
+      }
+    )
   })
 
   it('leaves custom LoRAs out for a plan without them', () => {
@@ -164,7 +163,7 @@ describe('RetentionOfferStep', () => {
       await user.click(screen.getByRole('button', { name: action }))
 
       expect(onDecide).toHaveBeenCalledExactlyOnceWith(outcome)
-      expect(workspaceApi.acceptRetentionOffer).not.toHaveBeenCalled()
+      expect(billingApi.acceptRetentionOffer).not.toHaveBeenCalled()
     }
   )
 
@@ -216,7 +215,7 @@ describe('RetentionOfferStep', () => {
   })
 
   it('lets the owner retry or continue cancelling after the discount is refused', async () => {
-    vi.mocked(workspaceApi.acceptRetentionOffer).mockRejectedValueOnce(
+    vi.mocked(billingApi.acceptRetentionOffer).mockRejectedValueOnce(
       new WorkspaceApiError('busy', 409, 'SUBSCRIPTION_CHANGE_IN_PROGRESS')
     )
     const { onDecide, user } = renderOffer()
@@ -239,12 +238,12 @@ describe('RetentionOfferStep', () => {
     expect(
       await screen.findByRole('heading', { name: "You're staying on Pro" })
     ).toBeInTheDocument()
-    expect(workspaceApi.acceptRetentionOffer).toHaveBeenCalledTimes(2)
+    expect(billingApi.acceptRetentionOffer).toHaveBeenCalledTimes(2)
     expect(onDecide).not.toHaveBeenCalled()
   })
 
   it('continues cancelling after the discount is refused', async () => {
-    vi.mocked(workspaceApi.acceptRetentionOffer).mockRejectedValueOnce(
+    vi.mocked(billingApi.acceptRetentionOffer).mockRejectedValueOnce(
       new WorkspaceApiError('busy', 409, 'SUBSCRIPTION_CHANGE_IN_PROGRESS')
     )
     const { onDecide, user } = renderOffer()
@@ -270,7 +269,7 @@ describe('RetentionOfferStep', () => {
       name: 'the session expired',
       refuse: () =>
         vi
-          .mocked(workspaceApi.acceptRetentionOffer)
+          .mocked(billingApi.acceptRetentionOffer)
           .mockRejectedValue(
             new WorkspaceApiError('stale', 409, 'RETENTION_SESSION_STALE')
           ),
@@ -294,11 +293,11 @@ describe('RetentionOfferStep', () => {
     await user.click(screen.getByRole('button', { name: 'Keep my plan' }))
 
     expect(onDecide.mock.calls).toEqual([['continueToCancel'], ['dismissed']])
-    expect(workspaceApi.acceptRetentionOffer).toHaveBeenCalledOnce()
+    expect(billingApi.acceptRetentionOffer).toHaveBeenCalledOnce()
   })
 
   it('withdraws an offer whose session expired before it was shown', async () => {
-    vi.mocked(workspaceApi.recordRetentionFlowEvent).mockRejectedValue(
+    vi.mocked(billingApi.recordRetentionFlowEvent).mockRejectedValue(
       new WorkspaceApiError('stale', 409, 'RETENTION_SESSION_STALE')
     )
     renderOffer()
@@ -320,7 +319,7 @@ describe('RetentionOfferStep', () => {
       screen.getByRole('button', { name: 'Keep Pro and save 30%' })
     )
 
-    expect(workspaceApi.acceptRetentionOffer).not.toHaveBeenCalled()
+    expect(billingApi.acceptRetentionOffer).not.toHaveBeenCalled()
     expect(useToast().toasts).toContainEqual(
       expect.objectContaining({ kind: 'warning' })
     )

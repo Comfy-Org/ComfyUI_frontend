@@ -25,7 +25,7 @@
       "name": "comfyui-support-entry-points",
       "enablers": ["fallow"],
       "entryPoints": [
-        "**/.storybook/{main,preview}.ts",
+        "**/.storybook/{main.ts,preview.ts,style.css}",
         "packages/ingest-types/openapi-ts.config.ts",
         "scripts/**/*.{js,ts}",
         // Standalone vitest configs, each invoked by name from CI or the
@@ -39,8 +39,9 @@
       "enablers": ["@playwright/test"],
       "entryPoints": [
         "browser_tests/global{Setup,Teardown}.ts",
+        "packages/design-system/tests/{consumer,css-consumer}/{main,runtime,verifyStyles}.ts",
         "playwright.session.config.ts",
-        "src/**/__mocks__/**/*.ts"
+        "{src,packages}/**/__mocks__/**/*.ts"
       ],
       "entryPointRole": "test"
     }
@@ -67,7 +68,13 @@
     "eslint-plugin-playwright",
     "eslint-plugin-storybook",
     "eslint-plugin-testing-library",
-    "postcss-html"
+    "postcss-html",
+    // Optional peer of @vueuse/integrations/useFuse, imported by the design
+    // system's select search. Packed consumers fail to resolve it without it.
+    "fuse.js",
+    // Imported by the bundled tailwind-utils cn(), kept external so published
+    // consumers install it with its license.
+    "tailwind-merge"
   ],
 
   "ignoreUnresolvedImports": [
@@ -126,7 +133,7 @@
     },
     // Generated OpenAPI client types (mirrors knip ignore).
     {
-      "file": "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
+      "file": "src/platform/customNodes/manager/types/generatedManagerTypes.ts",
       "exports": ["*"]
     },
     // Loaded dynamically: cloud onboarding routes, cloud telemetry provider, and

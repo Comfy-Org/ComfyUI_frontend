@@ -15,10 +15,9 @@
 
 <script setup lang="ts">
 import { workspaceAvatarStyle } from '@comfyorg/design-system/workspaceAvatar'
+import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
-
-import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
 
 const {
   workspaceName,

@@ -4,15 +4,7 @@
   "description": "Template discovery, ranking, metadata, education, and thumbnail presentation.",
   "modules": [
     {
-      "path": "src/components/actionbar/PartnerNodesEducationCard.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/actionbar/PartnerNodesEducationCard.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/SidebarTemplatesButton.test.ts",
       "role": "presentation"
     },
     {
@@ -45,7 +37,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["telemetry"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

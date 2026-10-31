@@ -79,7 +79,7 @@
         @click="track"
       >
         {{ $t(view.status.action.label) }}
-        <i :class="cn(view.status.action.icon, 'size-4')" aria-hidden="true" />
+        <i :class="view.status.action.icon" aria-hidden="true" />
       </Button>
     </div>
   </section>
@@ -92,14 +92,14 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCredits, formatUsdFromCents } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
+import Button from '@comfyorg/design-system/button/Button'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 
 type Status = AutoReloadSettings['status']
 type ViewKey = Status | 'turnedOff'
@@ -118,8 +118,8 @@ const OPEN = 'icon-[lucide--arrow-up-right]'
 const EXTERNAL = 'icon-[lucide--external-link]'
 
 const DANGER = {
-  border: 'border-destructive-background',
-  text: 'text-destructive-background'
+  border: 'border-destructive',
+  text: 'text-destructive'
 } as const
 
 const MANAGE = {
@@ -140,7 +140,7 @@ const STATUS = {
   failed: {
     ...DANGER,
     label: 'workspacePanel.billingTab.autoTopUp.status.failed',
-    dot: 'bg-destructive-background',
+    dot: 'bg-destructive',
     action: UPDATE_PAYMENT
   },
   turnedOff: {
@@ -168,7 +168,7 @@ const STATUS = {
   },
   paused_by_budget: {
     ...NEUTRAL,
-    label: 'workspacePanel.billingTab.autoTopUp.status.paused',
+    label: 'workspacePanel.billingTab.autoTopUp.status.limitReached',
     dot: 'bg-warning-background',
     action: MANAGE
   },
@@ -241,18 +241,15 @@ function limitTooltip(resetsAt: string | null) {
 }
 
 function ruleLines({
-  reload_amount_cents: amountCents,
-  reload_credits: reloadCredits,
+  target_credits: targetCredits,
   threshold_credits: thresholdCredits
 }: AutoReloadSettings): Line[] {
-  if (amountCents === null) return []
-  if (reloadCredits === null) return []
+  if (targetCredits === null) return []
   if (thresholdCredits === null) return []
   return [
     {
       text: t('workspacePanel.billingTab.autoTopUp.rule', {
-        amount: usd(amountCents),
-        credits: credits(reloadCredits),
+        target: credits(targetCredits),
         threshold: credits(thresholdCredits)
       })
     }

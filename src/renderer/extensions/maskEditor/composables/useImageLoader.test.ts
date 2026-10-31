@@ -1,7 +1,7 @@
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { useImageLoader } from '@/renderer/extensions/maskEditor/composables/useImageLoader'
 

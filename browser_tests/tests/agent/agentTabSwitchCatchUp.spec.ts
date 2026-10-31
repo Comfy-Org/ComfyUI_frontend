@@ -4,7 +4,7 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 // Five wired nodes, one renamed, whose recorded turn sets widget values on
 // existing nodes. Returning to the tab re-subscribes the follower, which
@@ -273,7 +273,8 @@ test.describe(
         (element) => getComputedStyle(element).backgroundColor
       )
       await page
-        .getByTestId(TestIds.selectionToolbox.colorPickerButton)
+        .getByTestId(TestIds.selectionToolbox.root)
+        .getByRole('button', { name: 'Color', exact: true })
         .dispatchEvent('click')
       await page
         .getByTestId(TestIds.selectionToolbox.colorRed)

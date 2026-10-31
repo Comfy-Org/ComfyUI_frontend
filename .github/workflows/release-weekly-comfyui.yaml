@@ -476,10 +476,10 @@ jobs:
 
             if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
               echo "PR already exists (#${EXISTING_PR}), refreshing title/body"
-              gh pr edit "$EXISTING_PR" \
-                --repo Comfy-Org/ComfyUI \
-                --title "Bump comfyui-frontend-package to ${{ needs.resolve-version.outputs.target_version }}" \
-                --body-file ../pr-body.txt
+              gh api --silent --method PATCH \
+                "repos/Comfy-Org/ComfyUI/pulls/${EXISTING_PR}" \
+                -f title="Bump comfyui-frontend-package to ${{ needs.resolve-version.outputs.target_version }}" \
+                -F body=@../pr-body.txt
             else
               echo "Failed to create PR and no existing PR found"
               exit 1

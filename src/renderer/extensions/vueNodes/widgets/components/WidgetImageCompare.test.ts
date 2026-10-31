@@ -9,7 +9,7 @@ import messages from '@/locales/en/main.json'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import WidgetImageCompare from './WidgetImageCompare.vue'
 

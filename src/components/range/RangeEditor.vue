@@ -183,8 +183,8 @@ import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { histogramToPath } from '@/utils/histogramUtil'
 import { useRangeEditor } from '@/composables/useRangeEditor'
-import type { ColorStop } from '@/lib/litegraph/src/interfaces'
-import type { RangeValue } from '@/lib/litegraph/src/types/widgets'
+import type { ColorStop } from '@comfyorg/graph-model/interfaces'
+import type { RangeValue } from '@comfyorg/graph-model/widgets'
 
 import { normalize } from '@/utils/mathUtil'
 

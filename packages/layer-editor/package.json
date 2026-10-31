@@ -30,6 +30,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@comfyorg/shared-frontend-utils": "workspace:*",
     "es-toolkit": "catalog:"
   },
   "devDependencies": {

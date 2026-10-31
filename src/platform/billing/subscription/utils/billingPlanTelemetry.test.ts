@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   SubscriptionDuration,
   SubscriptionTier
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { toBillingCycle, toCurrentTier } from './billingPlanTelemetry'
 

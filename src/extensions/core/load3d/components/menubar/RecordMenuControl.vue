@@ -17,7 +17,7 @@
     v-else-if="hasRecording"
     class="flex shrink-0 items-center gap-0.5 rounded-lg bg-muted py-0.5 pr-0.5 pl-1 text-sm text-foreground"
   >
-    <Popover v-model:open="menuOpen">
+    <PopoverRoot v-model:open="menuOpen">
       <PopoverTrigger as-child>
         <Button
           variant="textonly"
@@ -28,22 +28,17 @@
           :aria-label="t('load3d.menuBar.videoRecordingTooltip')"
           data-testid="load3d-recording-duration"
         >
-          <i class="icon-[lucide--film] size-4" />
+          <i class="icon-[lucide--film]" />
           {{ formatDuration(recordingDuration ?? 0) }}
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        side="bottom"
-        align="start"
-        :side-offset="8"
-        :class="menuPanelClass"
-      >
+      <PopoverContent align="start" :side-offset="8" :class="menuPanelClass">
         <button
           type="button"
           :class="menuButtonClass"
           @click="downloadRecording"
         >
-          <i class="icon-[lucide--download] size-4" />
+          <i class="icon-[lucide--download]" />
           {{ t('load3d.menuBar.downloadRecording') }}
         </button>
         <button
@@ -51,15 +46,15 @@
           :class="menuButtonClass"
           @click="startNewRecording"
         >
-          <i class="icon-[lucide--video] size-4" />
+          <i class="icon-[lucide--video]" />
           {{ t('load3d.menuBar.startNewRecording') }}
         </button>
         <button type="button" :class="menuButtonClass" @click="deleteRecording">
-          <i class="icon-[lucide--trash-2] size-4" />
+          <i class="icon-[lucide--trash-2]" />
           {{ t('load3d.menuBar.deleteRecording') }}
         </button>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
     <Button
       variant="textonly"
       size="unset"
@@ -83,13 +78,13 @@
     :aria-label="compact ? t('load3d.menuBar.record') : undefined"
     @click="emit('startRecording')"
   >
-    <i class="icon-[lucide--video] size-4" />
+    <i class="icon-[lucide--video]" />
     <span v-if="!compact">{{ t('load3d.menuBar.record') }}</span>
   </Button>
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -97,10 +92,9 @@ import {
   menuPanelClass
 } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import { menuButtonClass } from '@/components/ui/menu/menuStyles'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { menuButtonClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 
 const { compact = false } = defineProps<{
   compact?: boolean

@@ -53,7 +53,7 @@ import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { computed } from 'vue'
 
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 

@@ -12,69 +12,60 @@
         </div>
       </Button>
     </PopoverTrigger>
-    <PopoverPortal :key="Number(isOpen)">
-      <PopoverContent
-        side="bottom"
-        :side-offset="5"
-        :collision-padding="10"
-        class="z-overlay rounded-lg border border-border/50 bg-background p-2 shadow-sm will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
-      >
-        <div v-if="activeLayout" class="flex w-32 items-center px-2 py-1">
-          <Slider
-            :model-value="[gap]"
-            :min="MIN_ARRANGE_GAP"
-            :max="MAX_ARRANGE_GAP"
-            :step="1"
-            :aria-label="t('g.arrangeSpacing')"
-            @update:model-value="onSliderUpdate"
-            @value-commit="onSliderCommit"
-          />
-        </div>
-        <div v-else class="flex gap-1">
-          <Button
-            :tooltip="t('g.arrangeVertically')"
-            variant="muted-textonly"
-            :aria-label="t('g.arrangeVertically')"
-            @click="start('vertical')"
-          >
-            <i class="icon-[lucide--stretch-horizontal]" />
-          </Button>
-          <Button
-            :tooltip="t('g.arrangeHorizontally')"
-            variant="muted-textonly"
-            :aria-label="t('g.arrangeHorizontally')"
-            @click="start('horizontal')"
-          >
-            <i class="icon-[lucide--stretch-vertical]" />
-          </Button>
-          <Button
-            :tooltip="t('g.arrangeAsGrid')"
-            variant="muted-textonly"
-            :aria-label="t('g.arrangeAsGrid')"
-            @click="start('grid')"
-          >
-            <i class="icon-[lucide--grid-3x3]" />
-          </Button>
-        </div>
-        <PopoverArrow class="fill-background stroke-border/50" />
-      </PopoverContent>
-    </PopoverPortal>
+    <PopoverContent
+      :side-offset="5"
+      class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
+    >
+      <div v-if="activeLayout" class="flex w-32 items-center px-2 py-1">
+        <Slider
+          :model-value="[gap]"
+          :min="MIN_ARRANGE_GAP"
+          :max="MAX_ARRANGE_GAP"
+          :step="1"
+          :aria-label="t('g.arrangeSpacing')"
+          @update:model-value="onSliderUpdate"
+          @value-commit="onSliderCommit"
+        />
+      </div>
+      <div v-else class="flex gap-1">
+        <Button
+          :tooltip="t('g.arrangeVertically')"
+          variant="muted-textonly"
+          :aria-label="t('g.arrangeVertically')"
+          @click="start('vertical')"
+        >
+          <i class="icon-[lucide--stretch-horizontal]" />
+        </Button>
+        <Button
+          :tooltip="t('g.arrangeHorizontally')"
+          variant="muted-textonly"
+          :aria-label="t('g.arrangeHorizontally')"
+          @click="start('horizontal')"
+        >
+          <i class="icon-[lucide--stretch-vertical]" />
+        </Button>
+        <Button
+          :tooltip="t('g.arrangeAsGrid')"
+          variant="muted-textonly"
+          :aria-label="t('g.arrangeAsGrid')"
+          @click="start('grid')"
+        >
+          <i class="icon-[lucide--grid-3x3]" />
+        </Button>
+      </div>
+      <PopoverArrow class="fill-background stroke-border/50" />
+    </PopoverContent>
   </PopoverRoot>
 </template>
 
 <script setup lang="ts">
-import {
-  PopoverPortal,
-  PopoverArrow,
-  PopoverContent,
-  PopoverRoot,
-  PopoverTrigger
-} from 'reka-ui'
+import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import {
   MAX_ARRANGE_GAP,
   MIN_ARRANGE_GAP

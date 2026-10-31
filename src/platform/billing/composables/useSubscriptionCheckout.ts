@@ -18,20 +18,20 @@ import { getTeamPlanSlug } from '@/platform/billing/subscription/constants/teamP
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import type {
   Plan,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { openHostedBillingTab } from '@/platform/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
@@ -43,9 +43,9 @@ import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useSubscriptionRail } from '@/platform/billing/composables/useSubscriptionRail'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import {
   bindOperationToCheckoutJourney,
   getActiveCheckoutJourney,
@@ -74,6 +74,7 @@ interface SelectedTeamCheckout {
 
 interface SubscriptionCheckoutOptions {
   tierPlanType?: 'personal' | 'team'
+  rendersPastDueNotice?: () => boolean
 }
 
 /**
@@ -109,7 +110,9 @@ let stopPaymentRecoveryReturnRefresh: (() => void) | null = null
 function armPaymentRecoveryReturnRefresh(): void {
   stopPaymentRecoveryReturnRefresh?.()
   const { fetchStatus } = useBillingContext()
-  stopPaymentRecoveryReturnRefresh = registerRefreshOnReturn(fetchStatus)
+  stopPaymentRecoveryReturnRefresh = registerRefreshOnReturn(() =>
+    Promise.allSettled([fetchStatus(), useBillingCapabilities().refresh()])
+  )
 }
 
 /** Thrown by `assertReactivationAmountUnchanged` when a fresh preview no
@@ -136,7 +139,10 @@ export function useSubscriptionCheckout(
     (e: 'close', subscribed: boolean): void
   },
   paymentIntentSource?: PaymentIntentSource,
-  { tierPlanType = 'personal' }: SubscriptionCheckoutOptions = {}
+  {
+    tierPlanType = 'personal',
+    rendersPastDueNotice = () => false
+  }: SubscriptionCheckoutOptions = {}
 ) {
   const { t } = useI18n()
   const toast = useToast()
@@ -153,16 +159,17 @@ export function useSubscriptionCheckout(
   const { shouldUseWorkspaceBilling } = useBillingRouting()
   const { canSubscribeSelfServe, canChangeSeats, canDowngradeToPersonal } =
     useBillingCapabilities()
-  const { permissions, canReactivatePlan } = useWorkspaceUI()
+  const { permissions, canReactivatePlan } = useBillingUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const subscriptionRail = useSubscriptionRail()
 
   const checkoutStep = ref<CheckoutStep>('pricing')
   const isLoadingPreview = ref(false)
   const loadingTier = ref<CheckoutTierKey | null>(null)
   const isSubscribing = ref(false)
+  const outstandingPaymentRefusals = ref(0)
   const isResubscribing = ref(false)
   const previewData = ref<PreviewSubscribeResponse | null>(null)
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
@@ -517,7 +524,7 @@ export function useSubscriptionCheckout(
       }
       if (outcome.status === 'error') throw outcome.error
     }
-    const { url } = await workspaceApi.getPaymentPortalUrl(returnUrl)
+    const { url } = await billingApi.getPaymentPortalUrl(returnUrl)
     return { url, billingClient: 'legacy' }
   }
 
@@ -534,7 +541,7 @@ export function useSubscriptionCheckout(
       try {
         const status =
           readRail === null
-            ? await workspaceApi.getBillingStatus()
+            ? await billingApi.getBillingStatus()
             : await readOnRail(readRail.readStatus, 'getBillingStatus')
         requiresRecovery =
           status?.billing_status === 'payment_failed' ||
@@ -544,6 +551,14 @@ export function useSubscriptionCheckout(
       }
     }
     if (!requiresRecovery || !isCurrent()) return null
+
+    // The table is hidden on the confirm step, so only the pricing step can
+    // show the notice; elsewhere the toasts stay.
+    const isPricingStepRefusal =
+      checkoutStep.value === 'pricing' &&
+      hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
+    const showsNotice = rendersPastDueNotice() && isPricingStepRefusal
+    if (isPricingStepRefusal) outstandingPaymentRefusals.value++
 
     const portal = createBillingPortalReporter(telemetry, 'payment_recovery')
     let billingClient: BillingClient | undefined
@@ -562,6 +577,7 @@ export function useSubscriptionCheckout(
       }
       if (!openBillingUrl(portalUrl.href)) {
         portal.blocked(billingClient)
+        if (showsNotice) return 'blocked'
         // The open above ran after an await, so it had no user gesture behind
         // it and got blocked. The toast's own button click is a gesture, so
         // retrying from there isn't blocked.
@@ -596,7 +612,9 @@ export function useSubscriptionCheckout(
         surface: 'workspace',
         errorType: 'billing_portal_open_failure'
       })
-      showSubscribeError(hasPaymentRecoveryCode ? error : portalError)
+      if (!showsNotice) {
+        showSubscribeError(hasPaymentRecoveryCode ? error : portalError)
+      }
       return 'failed'
     }
   }
@@ -1658,6 +1676,7 @@ export function useSubscriptionCheckout(
     isLoadingPreview,
     loadingTier,
     isSubscribing,
+    outstandingPaymentRefusals,
     isResubscribing,
     previewData,
     reactivationRequired,

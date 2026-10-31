@@ -9,7 +9,7 @@ import type {
   PreviewSubscribeResponse,
   SubscriptionDuration,
   SubscriptionTier
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 

@@ -8,10 +8,12 @@
         @click.stop="handleBookmarkClick"
       >
         <i
-          :class="[
-            isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
-            'size-3.5'
-          ]"
+          :class="
+            cn(
+              isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
+              'size-3.5'
+            )
+          "
         />
       </Button>
     </template>
@@ -19,10 +21,11 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'

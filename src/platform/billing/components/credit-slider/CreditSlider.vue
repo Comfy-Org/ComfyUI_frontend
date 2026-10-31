@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Slider from '@/components/ui/slider/Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import { getStopDiscountedMonthlyUsd } from '@comfyorg/account-ui/billing/catalog'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
@@ -206,7 +206,7 @@ const { t } = useI18n()
         <i
           :class="
             cn(
-              'icon-[lucide--coins] size-3 shrink-0',
+              'icon-[lucide--coins] size-3',
               i === selectedIndex ? 'bg-credit' : 'bg-muted-foreground'
             )
           "

@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { NodeId } from '@/types/nodeId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
@@ -206,10 +206,15 @@ test.describe(
       const clipNode =
         await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
       const samplerOutput = await samplerNode.getOutput(0)
-      const clipInput = await clipNode.getInput(0)
+      const clipInput = await clipNode.getInputByName('clip')
 
       const outputSlot = slotLocator(comfyPage.page, samplerNode.id, 0, false)
-      const inputSlot = slotLocator(comfyPage.page, clipNode.id, 0, true)
+      const inputSlot = slotLocator(
+        comfyPage.page,
+        clipNode.id,
+        clipInput.index,
+        true
+      )
       await expectVisibleAll(outputSlot, inputSlot)
 
       // oxlint-disable-next-line playwright/no-force-option -- Slot dot's parent wrapper div intercepts actionability check on inner dot
@@ -220,7 +225,9 @@ test.describe(
       await clipInput.expectLinkCount(0)
 
       await expect
-        .poll(() => getInputLinkDetails(comfyPage.page, clipNode.id, 0))
+        .poll(() =>
+          getInputLinkDetails(comfyPage.page, clipNode.id, clipInput.index)
+        )
         .toBeNull()
     })
 
@@ -231,10 +238,15 @@ test.describe(
       expect(samplerNode).toBeTruthy()
 
       const samplerOutput = await samplerNode.getOutput(0)
-      const samplerInput = await samplerNode.getInput(3)
+      const samplerInput = await samplerNode.getInputByName('latent_image')
 
       const outputSlot = slotLocator(comfyPage.page, samplerNode.id, 0, false)
-      const inputSlot = slotLocator(comfyPage.page, samplerNode.id, 3, true)
+      const inputSlot = slotLocator(
+        comfyPage.page,
+        samplerNode.id,
+        samplerInput.index,
+        true
+      )
       await expectVisibleAll(outputSlot, inputSlot)
 
       // oxlint-disable-next-line playwright/no-force-option -- Slot dot's parent wrapper div intercepts actionability check on inner dot
@@ -604,34 +616,43 @@ test.describe(
       const clipNode =
         await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
       const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
-      // Step 1: Connect CLIP's only output (index 0) to KSampler's second input (index 1)
+      const positiveInput = await samplerNode.getInputByName('positive')
+      const negativeInput = await samplerNode.getInputByName('negative')
+
+      // Step 1: Connect CLIP's only output to KSampler's positive input.
       await connectSlots(
         comfyPage.page,
         { nodeId: clipNode.id, index: 0 },
-        { nodeId: samplerNode.id, index: 1 },
+        { nodeId: samplerNode.id, index: positiveInput.index },
         () => comfyPage.nextFrame()
       )
 
-      // Verify initial link exists between CLIP -> KSampler input[1]
+      // Verify the initial CLIP -> KSampler positive link.
       await expect
-        .poll(() => getInputLinkDetails(comfyPage.page, samplerNode.id, 1))
+        .poll(() =>
+          getInputLinkDetails(
+            comfyPage.page,
+            samplerNode.id,
+            positiveInput.index
+          )
+        )
         .toMatchObject({
           originId: clipNode.id,
           targetId: samplerNode.id,
-          targetSlot: 1
+          targetSlot: positiveInput.index
         })
 
-      // Step 2: Drag from KSampler's second input to its third input (index 2)
+      // Step 2: Drag the link from KSampler's positive input to negative.
       const input2Center = await getSlotCenter(
         comfyPage.page,
         samplerNode.id,
-        1,
+        positiveInput.index,
         true
       )
       const input3Center = await getSlotCenter(
         comfyPage.page,
         samplerNode.id,
-        2,
+        negativeInput.index,
         true
       )
 
@@ -639,18 +660,30 @@ test.describe(
       await comfyMouse.drag(input3Center)
       await comfyMouse.drop()
 
-      // Expect old link removed from input[1]
+      // Expect the old positive link to be removed.
       await expect
-        .poll(() => getInputLinkDetails(comfyPage.page, samplerNode.id, 1))
+        .poll(() =>
+          getInputLinkDetails(
+            comfyPage.page,
+            samplerNode.id,
+            positiveInput.index
+          )
+        )
         .toBeNull()
 
-      // Expect new link exists at input[2] from CLIP
+      // Expect a new negative link from CLIP.
       await expect
-        .poll(() => getInputLinkDetails(comfyPage.page, samplerNode.id, 2))
+        .poll(() =>
+          getInputLinkDetails(
+            comfyPage.page,
+            samplerNode.id,
+            negativeInput.index
+          )
+        )
         .toMatchObject({
           originId: clipNode.id,
           targetId: samplerNode.id,
-          targetSlot: 2
+          targetSlot: negativeInput.index
         })
     })
 
@@ -717,6 +750,8 @@ test.describe(
       const clipNode =
         await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
       const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const positiveInput = await samplerNode.getInputByName('positive')
+      const negativeInput = await samplerNode.getInputByName('negative')
       const clipOutputCenter = await getSlotCenter(
         comfyPage.page,
         clipNode.id,
@@ -746,12 +781,12 @@ test.describe(
           const link1 = await getInputLinkDetails(
             comfyPage.page,
             samplerNode.id,
-            1
+            positiveInput.index
           )
           const link2 = await getInputLinkDetails(
             comfyPage.page,
             samplerNode.id,
-            2
+            negativeInput.index
           )
           return link1 ?? link2
         })
@@ -768,6 +803,7 @@ test.describe(
       const clipNode =
         await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
       const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const negativeInput = await samplerNode.getInputByName('negative')
       const clipOutputCenter = await getSlotCenter(
         comfyPage.page,
         clipNode.id,
@@ -777,7 +813,7 @@ test.describe(
       const samplerInput3Center = await getSlotCenter(
         comfyPage.page,
         samplerNode.id,
-        2,
+        negativeInput.index,
         true
       )
 
@@ -793,11 +829,17 @@ test.describe(
       await comfyMouse.drop()
 
       await expect
-        .poll(() => getInputLinkDetails(comfyPage.page, samplerNode.id, 2))
+        .poll(() =>
+          getInputLinkDetails(
+            comfyPage.page,
+            samplerNode.id,
+            negativeInput.index
+          )
+        )
         .toMatchObject({
           originId: clipNode.id,
           targetId: samplerNode.id,
-          targetSlot: 2
+          targetSlot: negativeInput.index
         })
     })
 
@@ -807,16 +849,18 @@ test.describe(
       const clipNode =
         await comfyPage.nodeOps.getNodeRefByType('CLIPTextEncode')
       const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const positiveInput = await samplerNode.getInputByName('positive')
+      const negativeInput = await samplerNode.getInputByName('negative')
       await connectSlots(
         comfyPage.page,
         { nodeId: clipNode.id, index: 0 },
-        { nodeId: samplerNode.id, index: 1 },
+        { nodeId: samplerNode.id, index: positiveInput.index },
         () => comfyPage.nextFrame()
       )
       await connectSlots(
         comfyPage.page,
         { nodeId: clipNode.id, index: 0 },
-        { nodeId: samplerNode.id, index: 2 },
+        { nodeId: samplerNode.id, index: negativeInput.index },
         () => comfyPage.nextFrame()
       )
 
@@ -1056,13 +1100,13 @@ test.describe(
 
       // Get the KSampler node inside the subgraph
       ksamplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler', true)
-      const positiveInput = await ksamplerNode.getInput(1)
-      const negativeInput = await ksamplerNode.getInput(2)
+      const positiveInput = await ksamplerNode.getInputByName('positive')
+      const negativeInput = await ksamplerNode.getInputByName('negative')
 
       const positiveInputPos = await getSlotCenter(
         comfyPage.page,
         ksamplerNode.id,
-        1,
+        positiveInput.index,
         true
       )
 

@@ -8,31 +8,15 @@
       "role": "presentation"
     },
     {
-      "path": "src/extensions/core/load3d/composables/useLightInfo.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/extensions/core/load3d/composables/useLightInfo.ts",
       "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/lightInfo.test.ts",
-      "role": "integration"
     },
     {
       "path": "src/extensions/core/load3d/lightInfo.ts",
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/lib/litegraph/src/widgets/LightInfoWidget.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
       "role": "integration"
     },
     {

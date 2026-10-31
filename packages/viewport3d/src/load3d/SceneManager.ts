@@ -1,3 +1,4 @@
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { SparkRenderer } from '@sparkjsdev/spark'
 import { delay } from 'es-toolkit'
 import * as THREE from 'three'
@@ -315,7 +316,7 @@ export class SceneManager implements SceneManagerInterface {
 
     if (!material.map) return
 
-    const image = backgroundTexture.image as { width: number; height: number }
+    const image = backgroundTexture.image as Size2D
     const imageAspect = image.width / image.height
     const targetAspect = targetWidth / targetHeight
 

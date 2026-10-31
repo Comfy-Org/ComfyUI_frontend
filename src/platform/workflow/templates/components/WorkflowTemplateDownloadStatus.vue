@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTemplateDownloadFailure from '@/platform/workflow/templates/components/WorkflowTemplateDownloadFailure.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import type { TemplateDetailRow } from '@/platform/workflow/templates/types/templateDetail'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 import { formatSize } from '@/utils/formatUtil'
@@ -105,7 +105,7 @@ function namedLabel(key: string): string {
     class="col-start-3 row-start-1 size-8 shrink-0 p-1.5"
     @click="requestDownload()"
   >
-    <i aria-hidden="true" class="icon-[tabler--download] size-4" />
+    <i aria-hidden="true" class="icon-[tabler--download]" />
   </Button>
   <span
     v-else-if="

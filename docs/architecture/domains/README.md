@@ -32,9 +32,14 @@ directories: a file added under a claimed directory joins its domain without a
 record change. Paths may nest. Each file belongs to the most specific path that
 matches it: a file path beats any directory, and a deeper directory beats a
 shallower one. Claim a directory for its main domain and role, then claim the
-exceptions inside it. Two modules may not name the same path, and
-`architecture:check` warns about a path whose nearest enclosing path has the
-same domain and role.
+exceptions inside it. A test that no module names belongs with the file path
+it checks: `foo.ts` claims `foo.test.ts` and `foo.cloud.test.ts`, and the
+longest matching file path wins. A source file with the test's own name, such
+as `foo.cloud.vue`, is always the subject, so a test never inherits a role past
+it. List a test only when its domain or role differs from its subject's. Two
+modules may not name the same path, and
+`architecture:check` warns about a path whose nearest enclosing path, or whose
+subject, has the same domain and role.
 
 `architecture:catalog` also reports classification coverage: each domain's
 `sourceFileCount`, and a top-level `coverage` object with `total`,

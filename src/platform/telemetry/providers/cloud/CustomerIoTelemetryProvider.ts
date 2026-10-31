@@ -4,11 +4,11 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { AuthUserInfo } from '@/types/authTypes'
 
-import { TelemetryEvents } from '@/platform/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import type {
   AuthMetadata,
   ExecutionSuccessMetadata,
@@ -19,7 +19,7 @@ import type {
   TelemetryProvider,
   TemplateLibraryMetadata,
   TemplateMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 export const EVENT_SOURCE = 'web-sdk'
 

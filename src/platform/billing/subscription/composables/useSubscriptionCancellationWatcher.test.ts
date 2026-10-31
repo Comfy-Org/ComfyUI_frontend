@@ -3,8 +3,8 @@ import { computed, effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useSubscriptionCancellationWatcher } from '@/platform/billing/subscription/composables/useSubscriptionCancellationWatcher'
-import type { TelemetryDispatcher } from '@/platform/telemetry/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { TelemetryDispatcher } from '@comfyorg/telemetry/types'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 describe('useSubscriptionCancellationWatcher', () => {
   const trackMonthlySubscriptionCancelled = vi.fn()
@@ -16,6 +16,7 @@ describe('useSubscriptionCancellationWatcher', () => {
   }
 
   const baseStatus: BillingStatusResponse = {
+    ended_at: null,
     is_active: true,
     has_funds: true,
     max_seats: 0,

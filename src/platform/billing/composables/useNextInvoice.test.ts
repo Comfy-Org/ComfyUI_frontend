@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
-import type {
-  Plan,
-  TeamCreditStops
-} from '@/platform/workspace/api/workspaceApi'
+import type { Plan, TeamCreditStops } from '@comfyorg/billing-core'
 
 import type { NextInvoiceInputs } from './useNextInvoice'
 import { deriveNextInvoice } from './useNextInvoice'

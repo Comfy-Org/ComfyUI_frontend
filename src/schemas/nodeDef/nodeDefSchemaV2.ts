@@ -209,6 +209,14 @@ const zVideoEditInputSpec = zBaseInputOptions.extend({
   default: zVideoEditValue.optional()
 })
 
+const zVideoConcatInputSpec = zBaseInputOptions.extend({
+  type: z.literal('VIDEO_CONCAT'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  source: z.string(),
+  default: z.object({ order: z.array(z.string()).optional() }).optional()
+})
+
 const zResolutionPreviewInputSpec = zBaseInputOptions.extend({
   type: z.literal('RESOLUTION_PREVIEW'),
   name: z.string(),
@@ -243,6 +251,7 @@ const zInputSpec = z.union([
   zCurveInputSpec,
   zRangeInputSpec,
   zVideoEditInputSpec,
+  zVideoConcatInputSpec,
   zResolutionPreviewInputSpec,
   zCustomInputSpec
 ])
@@ -293,6 +302,7 @@ export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>
 export type CurveInputSpec = z.infer<typeof zCurveInputSpec>
 export type RangeInputSpec = z.infer<typeof zRangeInputSpec>
 export type VideoEditInputSpec = z.infer<typeof zVideoEditInputSpec>
+type VideoConcatInputSpec = z.infer<typeof zVideoConcatInputSpec>
 export type ResolutionPreviewInputSpec = z.infer<
   typeof zResolutionPreviewInputSpec
 >
@@ -354,6 +364,12 @@ export const isGalleriaInputSpec = (
   inputSpec: InputSpec
 ): inputSpec is GalleriaInputSpec => {
   return inputSpec.type === 'GALLERIA'
+}
+
+export const isVideoConcatInputSpec = (
+  inputSpec: InputSpec
+): inputSpec is VideoConcatInputSpec => {
+  return inputSpec.type === 'VIDEO_CONCAT'
 }
 
 export const isResolutionPreviewInputSpec = (

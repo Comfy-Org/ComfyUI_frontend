@@ -33,7 +33,7 @@ import { t } from '@/i18n'
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesRead,
@@ -43,8 +43,8 @@ import type {
   CreateTopupResponse,
   PreviewSubscribeResponse,
   SavedPaymentMethod
-} from '@/platform/workspace/api/workspaceApi'
-import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+} from '@comfyorg/billing-core'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 import { refreshBilling } from '@/platform/billing/billingRefresh'
 import type {
   ProgressToast,
@@ -57,16 +57,18 @@ import {
 } from '@/platform/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { provideBillingSdkStore } from '@/platform/billing/composables/useBillingReadRail'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { useWorkspaceSession } from '@/platform/workspace/ports/workspaceSession'
 import { getCheckoutJourneyPaymentIntentSource } from '@/platform/billing/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
+import { fetchWithRetry } from '@/utils/fetchWithRetry'
 
+import { projectBillingBalance } from './billingBalanceView'
 import { projectBillingCapabilities } from './billingCapabilitiesView'
 import { projectBillingPlans } from './billingPlansView'
 import { projectBillingStatus } from './billingStatusView'
-import type { BillingSdkOptions } from './createBillingSdk'
-import { createBillingSdk } from './createBillingSdk'
+import type { BillingSdkOptions } from '@comfyorg/billing-core/sdk'
+import { createBillingSdk } from '@comfyorg/billing-core/sdk'
 import type { BillingOperationRecordView } from './operationRecordView'
 import { projectOperationRecord } from './operationRecordView'
 import type {
@@ -109,8 +111,8 @@ function isFrictionEvent(event: BillingOperationTelemetryEvent): boolean {
 }
 
 export const useBillingSdkStore = defineStore('billingSdk', () => {
-  const workspaceAuthStore = useWorkspaceAuthStore()
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceAuthStore = useWorkspaceSession()
+  const workspaceStore = useWorkspaceIdentity()
   const toast = useToast()
   const { flags } = useFeatureFlags()
   const billingCapabilities = useBillingCapabilities()
@@ -143,7 +145,8 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   const sdk = createBillingSdk({
     ...sessionPorts(),
-    resolveUrl: workspaceApiUrl,
+    resolveUrl: ingestApiUrl,
+    fetchImpl: fetchWithRetry,
     pointerStorage: sessionStorage,
     hostedDestination: () => flags.hostedBillingDestination,
     onTelemetry: reportTelemetry
@@ -557,7 +560,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   async function readBalance(): Promise<BillingResult<BillingBalanceResponse>> {
     const result = await sdk.credits.read()
     return result.status === 'ok'
-      ? { status: 'ok', value: result.value.balance }
+      ? { status: 'ok', value: projectBillingBalance(result.value.balance) }
       : result
   }
 

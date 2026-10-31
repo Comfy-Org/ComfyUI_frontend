@@ -69,12 +69,17 @@ const STACK_JOB_DETAIL: JobDetail = {
   }
 }
 
-const EXPECTED_TOTAL_TILES = 4
-
 test.describe(
   'Expanded folder view dedupes duplicate composite output keys',
   { tag: '@cloud' },
   () => {
+    test.use({
+      viewport: { width: 1280, height: 1080 },
+      initialLocalStorage: {
+        'Comfy.Assets.Sidebar.ViewMode': 'grid-small'
+      }
+    })
+
     test.beforeEach(async ({ page }) => {
       const assets = new AssetsHelper(page)
       await assets.mockCloudAssets({
@@ -99,14 +104,22 @@ test.describe(
         .click()
       await expect(tab.backToAssetsButton).toBeVisible()
 
-      await expect(tab.assetCards).toHaveCount(EXPECTED_TOTAL_TILES)
-
-      const labels = await tab.assetCards.evaluateAll((nodes) =>
-        nodes
-          .map((el) => el.getAttribute('aria-label'))
-          .filter((v): v is string => v !== null)
-      )
-      expect(new Set(labels).size).toBe(labels.length)
+      await expect
+        .poll(() =>
+          tab.assetCards
+            .getByRole('button', { name: / - image asset$/ })
+            .evaluateAll((nodes) =>
+              nodes
+                .map((el) => el.getAttribute('aria-label') ?? '')
+                .sort((left, right) => left.localeCompare(right))
+            )
+        )
+        .toEqual([
+          'cover_00001_.png - image asset',
+          'distinct_00003_.png - image asset',
+          'distinct_00004_.png - image asset',
+          'duplicate_00002_.png - image asset'
+        ])
 
       await testInfo.attach('expanded-folder-view.png', {
         body: await comfyPage.page.screenshot({ fullPage: false }),

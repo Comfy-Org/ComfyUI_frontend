@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 
 const nodeSlotSchema = z.object({
   CLIP: z.string(),

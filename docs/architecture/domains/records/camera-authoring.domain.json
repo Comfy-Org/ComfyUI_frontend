@@ -12,24 +12,12 @@
       "role": "presentation"
     },
     {
-      "path": "src/extensions/core/load3d/composables/useCameraAngle.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/extensions/core/load3d/composables/useCameraAngle.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/composables/useCameraInfo.test.ts",
       "role": "application"
     },
     {
       "path": "src/extensions/core/load3d/composables/useCameraInfo.ts",
       "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/cameraAngle.test.ts",
-      "role": "integration"
     },
     {
       "path": "src/extensions/core/load3d/cameraAngle.ts",
@@ -42,10 +30,6 @@
     {
       "path": "src/extensions/core/load3d/cameraInfo.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/cameraInfo/widgetBridge.test.ts",
-      "role": "application"
     },
     {
       "path": "src/extensions/core/load3d/cameraInfo/widgetBridge.ts",
