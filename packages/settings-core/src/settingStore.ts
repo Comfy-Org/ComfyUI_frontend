@@ -263,17 +263,17 @@ export function settingStoreSetup(persistence: SettingPersistence) {
     }
 
     if (!response.ok) {
-      const outcome = {
-        status: PRE_STORAGE_REFUSAL_STATUSES.has(response.status)
-          ? ('refused' as const)
-          : ('indeterminate' as const),
+      const status = PRE_STORAGE_REFUSAL_STATUSES.has(response.status)
+        ? 'refused'
+        : 'indeterminate'
+      if (status === 'refused') {
+        await revertSettingLocally(key, hadValue, applied)
+      }
+      return {
+        status,
         statusCode: response.status,
         statusText: response.statusText
       }
-      if (outcome.status === 'refused') {
-        await revertSettingLocally(key, hadValue, applied)
-      }
-      return outcome
     }
 
     const event = settingChangedEvent(settingsById.value[key], key, applied)
