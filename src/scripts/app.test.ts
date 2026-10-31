@@ -122,7 +122,7 @@ import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import type { importA1111 } from './pnginfo'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>
@@ -4100,6 +4100,79 @@ describe('ComfyApp', () => {
       expect(nodeOutputStore.getNodeOutputByExecutionId(executionId)).toEqual({
         text: ['job-a']
       })
+      expect(
+        nodeOutputStore.getNodePreviewImagesByExecutionId(executionId)
+      ).toEqual(['blob:1'])
+    })
+
+    it('routes unmapped outputs and previews by the frame workflow id alone', () => {
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+      useWorkflowStore().activeWorkflow = workflowA
+
+      vi.spyOn(URL, 'createObjectURL').mockImplementation(
+        (blob) => `blob:${blob instanceof Blob ? blob.size : 0}`
+      )
+      const addEventListener = vi
+        .spyOn(api, 'addEventListener')
+        .mockImplementation(() => {})
+      vi.spyOn(api, 'init').mockResolvedValue()
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      function handlerFor(event: Parameters<typeof api.addEventListener>[0]) {
+        const handler = addEventListener.mock.calls.find(
+          ([name]) => name === event
+        )?.[1]
+        if (typeof handler !== 'function')
+          throw new Error('Expected registered function handler')
+        return handler
+      }
+      function executedEvent(jobId: string, workflowId: string) {
+        return new CustomEvent('executed', {
+          detail: {
+            node: '1',
+            display_node: '1',
+            prompt_id: jobId,
+            workflow_id: workflowId,
+            output: { text: [jobId] }
+          }
+        })
+      }
+      function previewEvent(
+        jobId: string,
+        blobText: string,
+        workflowId: string
+      ) {
+        return new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: new Blob([blobText]),
+            nodeId: '1',
+            parentNodeId: '1',
+            displayNodeId: '1',
+            realNodeId: '1',
+            jobId,
+            workflowId
+          }
+        })
+      }
+
+      handlerFor('executed')(executedEvent('job-own-output', workflowAId))
+      handlerFor('b_preview_with_metadata')(
+        previewEvent('job-own-preview', 'a', workflowAId)
+      )
+      handlerFor('executed')(executedEvent('job-foreign-output', workflowBId))
+      handlerFor('b_preview_with_metadata')(
+        previewEvent('job-foreign-preview', 'bb', workflowBId)
+      )
+
+      const nodeOutputStore = useNodeOutputStore()
+      const executionId = createNodeExecutionId([1])
+      expect(
+        nodeOutputStore.getNodeOutputByExecutionId(executionId),
+        "the later foreign output must not overwrite the visible tab's"
+      ).toEqual({ text: ['job-own-output'] })
       expect(
         nodeOutputStore.getNodePreviewImagesByExecutionId(executionId)
       ).toEqual(['blob:1'])
