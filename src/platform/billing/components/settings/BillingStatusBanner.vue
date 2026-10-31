@@ -168,12 +168,16 @@ const audienceCopy = {
   team: {
     outOfCreditsBody: `${bs}.outOfCredits.body`,
     outOfCreditsBodyNoDate: `${bs}.outOfCredits.bodyNoDate`,
+    outOfCreditsPausedBody: `${bs}.outOfCredits.pausedBody`,
+    outOfCreditsPausedBodyNoDate: `${bs}.outOfCredits.pausedBodyNoDate`,
     endingTitle: `${bs}.ending.title`,
     endingBody: `${bs}.ending.body`
   },
   personal: {
     outOfCreditsBody: `${bs}.outOfCredits.personalBody`,
     outOfCreditsBodyNoDate: `${bs}.outOfCredits.personalBodyNoDate`,
+    outOfCreditsPausedBody: `${bs}.outOfCredits.pausedPersonalBody`,
+    outOfCreditsPausedBodyNoDate: `${bs}.outOfCredits.pausedPersonalBodyNoDate`,
     endingTitle: `${bs}.ending.personalTitle`,
     endingBody: `${bs}.ending.personalBody`
   }
@@ -297,6 +301,18 @@ const outOfCreditsView = (): BannerView | null => {
       body: outOfCreditsBody(
         `${bs}.outOfCredits.memberBody`,
         `${bs}.outOfCredits.memberBodyNoDate`
+      ),
+      action: null,
+      dismissible: true
+    }
+  }
+  if (topUpDenial.value === 'topup_purchases_paused') {
+    return {
+      muted: false,
+      title: t(`${bs}.outOfCredits.title`),
+      body: outOfCreditsBody(
+        copy.value.outOfCreditsPausedBody,
+        copy.value.outOfCreditsPausedBodyNoDate
       ),
       action: null,
       dismissible: true
