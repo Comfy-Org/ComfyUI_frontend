@@ -925,13 +925,17 @@ export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
   save_error_shown: boolean
 }
 export type AgentOnboardingAction = 'next' | 'finish' | 'skip'
+export type AgentOnboardingCard = 'intro' | 'workflow' | 'history'
 /**
  * `step` is 1-based and matches the "Step N of M" indicator on the card.
  * `finish` marks completion, so the gap from `agent_onboarding_shown` is the
- * onboarding time.
+ * onboarding time. `card` is the stable identity to funnel on, since `step`
+ * shifts when cards change. `total` is the tour length at the time of the event.
  */
 export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
   step: number
+  card: AgentOnboardingCard
+  total: number
   action: AgentOnboardingAction
 }
 /**

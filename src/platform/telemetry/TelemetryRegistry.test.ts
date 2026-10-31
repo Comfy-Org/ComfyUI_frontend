@@ -347,6 +347,8 @@ describe('TelemetryRegistry', () => {
     } satisfies AgentConsentResolvedMetadata
     const onboardingStepMetadata = {
       step: 2,
+      card: 'workflow',
+      total: 3,
       action: 'next'
     } satisfies AgentOnboardingStepMetadata
     const nodeTaggedMetadata = {
