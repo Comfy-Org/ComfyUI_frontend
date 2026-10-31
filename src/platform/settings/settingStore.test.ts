@@ -3,13 +3,11 @@ import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 import type { Keybinding } from '@comfyorg/keybindings/types'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { NodeBadgeMode } from '@/types/nodeSource'
-import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import type { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'
 
-import {
-  getSettingInfo,
-  useSettingStore
-} from '@/platform/settings/settingStore'
-import type { SettingParams, Settings } from '@/platform/settings/types'
+import { getSettingInfo } from '@comfyorg/settings-core/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { SettingParams, Settings } from '@comfyorg/settings-core/types'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@comfyorg/telemetry'))
@@ -509,15 +507,15 @@ describe('useSettingStore', () => {
       const changes: unknown[] = []
       store.onSettingChanged(({ value }) => changes.push(value))
       vi.mocked(api.storeSetting).mockResolvedValue(
-        new Response(null, { status: 500, statusText: 'Server Error' })
+        new Response(null, { status: 400, statusText: 'Bad Request' })
       )
 
       expect(
         await store.setWithOutcome(key, ['/extensions/rejected/'])
       ).toEqual({
         status: 'refused',
-        statusCode: 500,
-        statusText: 'Server Error'
+        statusCode: 400,
+        statusText: 'Bad Request'
       })
 
       expect(api.storeSetting).toHaveBeenCalledWith(key, [
@@ -528,6 +526,23 @@ describe('useSettingStore', () => {
         ['/extensions/rejected/'],
         ['/extensions/saved/']
       ])
+    })
+
+    it('retains a revertible setting write after an indeterminate response', async () => {
+      const key = 'Comfy.Extension.DisabledPacks'
+      store.settingValues[key] = ['/extensions/saved/']
+      vi.mocked(api.storeSetting).mockResolvedValue(
+        new Response(null, { status: 500, statusText: 'Server Error' })
+      )
+
+      expect(await store.setWithOutcome(key, ['/extensions/pending/'])).toEqual(
+        {
+          status: 'indeterminate',
+          statusCode: 500,
+          statusText: 'Server Error'
+        }
+      )
+      expect(store.get(key)).toEqual(['/extensions/pending/'])
     })
 
     it('awaits an onChange handler before persisting the value', async () => {

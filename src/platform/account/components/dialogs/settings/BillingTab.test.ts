@@ -92,7 +92,7 @@ interface Scenario {
   capabilitiesReady?: boolean
   capabilitiesResolved?: boolean
   balance?: BalanceInfo | null
-  autoTopUpFlag?: boolean
+  autoTopUpEnabled?: boolean
   canManageAutoTopUp?: boolean
   canTopUp?: boolean
   topUpDenial?: string
@@ -202,6 +202,12 @@ function arrange(scenario: Scenario = {}) {
           scenario.canManageAutoTopUp ?? true
         )
       ),
+      autoTopUpEnabled: computed(() =>
+        receiveServerFact(
+          'auto_top_up_enabled',
+          scenario.autoTopUpEnabled ?? true
+        )
+      ),
       autoTopUpSetup: computed(() => null),
       isReady: computed(() => scenario.capabilitiesReady ?? true),
       hasResolvedCapabilities: computed(
@@ -211,8 +217,6 @@ function arrange(scenario: Scenario = {}) {
       refresh
     })
   )
-  vi.mocked(useFeatureFlags().flags).autoTopUpEnabled =
-    scenario.autoTopUpFlag ?? true
   vi.mocked(useFreeTierQuota).mockReturnValue(
     fromPartial({
       quotaEnabled: computed(() => false),
@@ -1330,7 +1334,7 @@ describe('BillingTab', () => {
             settleDetail.push(resolve)
           })
       )
-      arrange({ autoTopUpFlag: false })
+      arrange({ autoTopUpEnabled: false })
 
       await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
       settleDetail[0](checkout('credits_applying', { session_id: 'cs_1' }))
@@ -1376,7 +1380,7 @@ describe('BillingTab', () => {
             settleDetail.push(resolve)
           })
       )
-      arrange({ autoTopUpFlag: false })
+      arrange({ autoTopUpEnabled: false })
       await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
 
       const visibility = vi.spyOn(document, 'visibilityState', 'get')
@@ -1488,7 +1492,7 @@ describe('BillingTab', () => {
             settleDetail.push(resolve)
           })
       )
-      arrange({ autoTopUpFlag: false })
+      arrange({ autoTopUpEnabled: false })
       await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
 
       vi.mocked(billingApi.listTopupCheckouts).mockClear()
@@ -1674,7 +1678,7 @@ describe('BillingTab', () => {
     it.for<{ case: string; scenario: Scenario; reads: number }>([
       {
         case: 'the flag is off',
-        scenario: { autoTopUpFlag: false },
+        scenario: { autoTopUpEnabled: false },
         reads: 0
       },
       {

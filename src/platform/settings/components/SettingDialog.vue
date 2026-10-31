@@ -141,7 +141,7 @@ import type {
   ISettingGroup,
   SettingDialogProps,
   SettingParams
-} from '@/platform/settings/types'
+} from '@comfyorg/settings-core/types'
 import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { flattenTree } from '@/utils/treeUtil'
 

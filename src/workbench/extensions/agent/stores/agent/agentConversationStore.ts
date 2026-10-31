@@ -1026,6 +1026,7 @@ export const useAgentConversationStore = defineStore(
     ): void {
       if (event.type === 'agent_message_done') {
         const tab = activeSlot.value?.tab ?? UNKNOWN_TAB
+        activeTransport.ingest(event)
         settleActiveTurn(activeTransport)
         announceCompletion(tab)
         return
@@ -1125,6 +1126,7 @@ export const useAgentConversationStore = defineStore(
       }
       if (event.type === 'agent_message_done') {
         if (entry.settled) return
+        entry.transport.ingest(event)
         entry.transport.settle()
         updateBackgroundTurn(entry.messageId, { settled: true })
         announceCompletion(entry.tab)

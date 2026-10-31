@@ -35,10 +35,12 @@ function withOriginLock<T>(task: () => Promise<T>): Promise<T> {
 
 interface SignInFailureNotices {
   onPopupBlocked: () => void
+  onSignInFailed: () => void
 }
 
 function browserEnvironment({
-  onPopupBlocked
+  onPopupBlocked,
+  onSignInFailed
 }: SignInFailureNotices): LocalWebAuthEnvironment {
   return {
     issuer: getComfyCloudBaseUrl(),
@@ -70,6 +72,7 @@ function browserEnvironment({
     reportSignInFailure(failure) {
       reportSignInFailure(failure)
       if (failure.reason === 'popup-blocked') onPopupBlocked()
+      else onSignInFailed()
     }
   }
 }
@@ -95,6 +98,6 @@ export async function startLocalWebSession(
   const outcome = await bridge.completeSignIn()
   const failed = outcome.kind === 'failed' && outcome.reason !== 'denied'
   if (failed) reportSignInFailure(outcome)
-  await startDesktopHostSession(bridge)
+  await startDesktopHostSession(bridge, { reportsSignInFailures: true })
   return failed ? 'sign-in-failed' : 'started'
 }

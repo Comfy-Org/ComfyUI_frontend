@@ -23,7 +23,7 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
-import { defaultGraph } from '@/scripts/defaultGraph'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useDialogService } from '@/services/dialogService'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -275,7 +275,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     })
     workflow.legacyId = getLegacyWorkflowId(workflowData?.id)
 
-    const initialWorkflowData = ensureWorkflowId(workflowData ?? defaultGraph)
+    const initialWorkflowData = ensureWorkflowId(
+      workflowData ?? getDefaultWorkflow()
+    )
     workflow.originalContent = workflow.content =
       JSON.stringify(initialWorkflowData)
 
