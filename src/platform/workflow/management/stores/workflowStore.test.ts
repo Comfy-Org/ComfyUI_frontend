@@ -1,4 +1,12 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, reactive } from 'vue'
 
@@ -17,6 +25,10 @@ import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import {
+  initDefaultWorkflow,
+  resetDefaultWorkflowForTesting
+} from '@/platform/workflow/core/services/defaultWorkflowService'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import '@/scripts/changeTracker'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
@@ -265,6 +277,31 @@ describe('useWorkflowStore', () => {
 
       const workflow2 = store.createTemporary()
       expect(workflow2.path).toBe('workflows/Unsaved Workflow (2).json')
+    })
+
+    it('gives each default-created workflow its own root graph id', async () => {
+      const servedId = '11111111-1111-4111-8111-111111111111'
+      onTestFinished(resetDefaultWorkflowForTesting)
+      resetDefaultWorkflowForTesting()
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ...defaultGraph,
+            id: servedId,
+            last_node_id: 4242
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+      await initDefaultWorkflow()
+
+      const first = JSON.parse(store.createTemporary().content!)
+      const second = JSON.parse(store.createTemporary().content!)
+
+      expect(first.last_node_id).toBe(4242)
+      expect(first.id).toBeTruthy()
+      expect(first.id).not.toBe(servedId)
+      expect(second.id).not.toBe(first.id)
     })
 
     it('assigns each workflow a stable unique session identity', async () => {

@@ -29,6 +29,7 @@ function settlesAs(status: TerminalOperation['status']) {
       type,
       status,
       errorMessage: null,
+      paymentMethodUrl: null,
       startedAt: 0,
       operationStartedAt: 0,
       actionUrl: null,

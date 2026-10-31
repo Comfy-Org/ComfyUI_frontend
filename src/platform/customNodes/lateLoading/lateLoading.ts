@@ -1,8 +1,9 @@
-import { until, useActiveElement, useEventListener } from '@vueuse/core'
+import { until, useEventListener } from '@vueuse/core'
 import { delay } from 'es-toolkit'
-import { computed, effectScope, ref } from 'vue'
+import { effectScope, ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useUserBusy } from '@/platform/customNodes/useUserBusy'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -127,47 +128,17 @@ export function lateLoadingApplies(): boolean {
   )
 }
 
-function isTextField(element: Element | null | undefined): boolean {
-  return (
-    element instanceof HTMLInputElement ||
-    element instanceof HTMLTextAreaElement ||
-    (element instanceof HTMLElement && element.isContentEditable)
-  )
-}
-
 function watchLateWork(signal: AbortSignal, onAbort: () => void) {
   const scope = effectScope(true)
   const state = scope.run(() => {
-    const pointerHeld = ref(false)
     const aborted = ref(signal.aborted)
-    const activeElement = useActiveElement()
-    useEventListener(
-      window,
-      'pointerdown',
-      () => {
-        pointerHeld.value = true
-      },
-      { capture: true }
-    )
-    useEventListener(
-      window,
-      ['pointerup', 'pointercancel'],
-      () => {
-        pointerHeld.value = false
-      },
-      { capture: true }
-    )
+    const artistBusy = useUserBusy()
     if (signal.aborted) onAbort()
     useEventListener(signal, 'abort', () => {
       aborted.value = true
       onAbort()
     })
-    return {
-      aborted,
-      artistBusy: computed(
-        () => pointerHeld.value || isTextField(activeElement.value)
-      )
-    }
+    return { aborted, artistBusy }
   })
   return {
     isAborted: () => state?.aborted.value ?? true,
