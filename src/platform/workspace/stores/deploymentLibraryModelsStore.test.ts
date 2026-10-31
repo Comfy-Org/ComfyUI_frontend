@@ -2,10 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -73,5 +76,50 @@ describe('useDeploymentLibraryModelsStore', () => {
 
     expect(store.namesIn('loras')).toEqual(['a.safetensors'])
     expect(store.statusOf('loras')).toBe('ready')
+  })
+
+  it('moves a model from its old folder to its new one when its type changes', async () => {
+    library.set('loras', ['my_style.safetensors'])
+    const store = useDeploymentLibraryModelsStore()
+    store.watchFolder('loras', () => {})
+    store.watchFolder('checkpoints', () => {})
+    await store.waitForSettled('loras')
+    await store.waitForSettled('checkpoints')
+    expect(store.namesIn('loras')).toEqual(['my_style.safetensors'])
+
+    const asset: AssetItem = {
+      id: '3f0b6c1e-0000-4000-8000-000000000001',
+      name: 'my_style.safetensors',
+      tags: ['models', 'loras'],
+      created_at: '2026-10-29T00:00:00Z',
+      updated_at: '2026-10-29T00:00:00Z'
+    }
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ total_tags: ['models'], removed: ['loras'] }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            total_tags: ['models', 'checkpoints'],
+            added: ['checkpoints']
+          }),
+          { status: 200 }
+        )
+      )
+    library.set('loras', [])
+    library.set('checkpoints', ['my_style.safetensors'])
+    await useAssetsStore().updateAssetTags(asset, ['models', 'checkpoints'])
+    await Promise.all(
+      vi
+        .mocked(assetService.getWorkspaceLibraryModels)
+        .mock.results.map((read) => read.value)
+    )
+
+    expect(store.namesIn('loras')).toEqual([])
+    expect(store.namesIn('checkpoints')).toEqual(['my_style.safetensors'])
   })
 })
