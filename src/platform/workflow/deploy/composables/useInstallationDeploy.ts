@@ -9,7 +9,7 @@ import type { BundleFailureReason } from '@/platform/workflow/deploy/api/install
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 
 type InstallationDeployState =
   | { status: 'idle' }

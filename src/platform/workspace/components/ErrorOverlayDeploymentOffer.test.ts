@@ -16,6 +16,8 @@ import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/s
 import enMessages from '@/locales/en/main.json'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type {
   DeploymentCompatibility,
   WorkspaceDeployment
@@ -24,6 +26,7 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { DeploymentPickState } from '@/platform/workspace/deploymentPickState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
@@ -88,6 +91,7 @@ function deployment(id: string, build: string): WorkspaceDeployment {
     build_name: build,
     release_version: 2,
     status: 'ready',
+    can_start: false,
     created_at: '2026-10-01T00:00:00Z'
   }
 }
@@ -97,11 +101,14 @@ const agencyB = deployment('dep-agency-b', 'Agency B flux')
 const agencyC = deployment('dep-agency-c', 'Agency C wan')
 const plain = deployment('dep-plain', 'Plain')
 
-function readyOn(deployments: WorkspaceDeployment[]): DeploymentPickState {
+function readyOn(
+  deployments: WorkspaceDeployment[],
+  pickedDeploymentId: string | null = plain.deployment_id
+): DeploymentPickState {
   return {
     phase: 'ready',
     deployments,
-    pickedDeploymentId: plain.deployment_id,
+    pickedDeploymentId,
     pickSource: 'browser',
     defaultDeploymentId: null,
     gonePickedDeploymentId: null,
@@ -109,6 +116,16 @@ function readyOn(deployments: WorkspaceDeployment[]): DeploymentPickState {
     buildsVisible: true
   }
 }
+
+function onComfyCloud(deployments: WorkspaceDeployment[]) {
+  const store = useDeploymentPickStore()
+  store.state = readyOn(deployments, null)
+  store.bootDeployment = null
+}
+
+const NO_REPLACEMENT: MissingNodeType[] = [
+  { type: RGTHREE, cnrId: 'rgthree-comfy', isReplaceable: false }
+]
 
 function answer(
   runIt: WorkspaceDeployment[],
@@ -167,6 +184,10 @@ function expectNoticeAsToday() {
       .getAllByRole('button')
       .map((button) => button.textContent.trim())
   ).toEqual(['View details', ''])
+}
+
+function customDeploymentOffer() {
+  return screen.queryByTestId('error-overlay-custom-deployment-offer')
 }
 
 describe('ErrorOverlay deployment offer', () => {
@@ -267,5 +288,157 @@ describe('ErrorOverlay deployment offer', () => {
 
     expect(workspaceApi.checkDeploymentCompatibility).not.toHaveBeenCalled()
     expectNoticeAsToday()
+  })
+
+  it('offers a custom deployment on Comfy Cloud for missing nodes with no replacement, and Set up opens it', async () => {
+    onComfyCloud([])
+    useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)
+    renderNotice()
+
+    const offer = await screen.findByTestId(
+      'error-overlay-custom-deployment-offer'
+    )
+    expect(offer).toHaveTextContent('Run it on a custom deployment')
+
+    await userEvent.click(within(offer).getByRole('button', { name: 'Set up' }))
+
+    await waitFor(() =>
+      expect(
+        useDialogStore().isDialogOpen('global-workflow-needs-deployment')
+      ).toBe(true)
+    )
+    expect(screen.getByTestId('error-overlay')).toBeInTheDocument()
+  })
+
+  it('waits for the check to find no deployment runs the workflow before offering a custom deployment', async () => {
+    onComfyCloud([plain, agencyA])
+    useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)
+    let answerCheck: (compatibility: DeploymentCompatibility) => void = () => {}
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockReturnValue(
+      new Promise((resolve) => {
+        answerCheck = resolve
+      })
+    )
+    renderNotice()
+    await waitFor(() =>
+      expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalled()
+    )
+    expect(customDeploymentOffer()).toBeNull()
+
+    answerCheck(answer([], [plain, agencyA]))
+
+    expect(
+      await screen.findByTestId('error-overlay-custom-deployment-offer')
+    ).toHaveTextContent('Run it on a custom deployment')
+  })
+
+  it('offers no custom deployment to a workspace with deployments when the check fails', async () => {
+    onComfyCloud([plain, agencyA])
+    useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockRejectedValue(
+      new Error('404')
+    )
+    renderNotice()
+    await compatibilityAnswered()
+
+    expect(customDeploymentOffer()).toBeNull()
+  })
+
+  it.for([
+    {
+      finds: 'a deployment it could not check',
+      compatibility: {
+        deployments: [
+          {
+            deployment_id: plain.deployment_id,
+            missing_node_types: [RGTHREE],
+            unknown: false
+          },
+          {
+            deployment_id: agencyA.deployment_id,
+            missing_node_types: [],
+            unknown: true
+          }
+        ],
+        cloud: { missing_node_types: [RGTHREE] }
+      }
+    },
+    {
+      finds: 'an answer that leaves a deployment out',
+      compatibility: answer([], [plain])
+    },
+    {
+      finds: 'that Comfy Cloud runs the workflow',
+      compatibility: {
+        ...answer([], [plain, agencyA]),
+        cloud: { missing_node_types: [] }
+      }
+    }
+  ] satisfies {
+    finds: string
+    compatibility: DeploymentCompatibility
+  }[])(
+    'offers no custom deployment when the check finds $finds',
+    async ({ compatibility }) => {
+      onComfyCloud([plain, agencyA])
+      useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)
+      vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+        compatibility
+      )
+      renderNotice()
+      await compatibilityAnswered()
+
+      expect(customDeploymentOffer()).toBeNull()
+    }
+  )
+
+  it('offers Switch instead of a custom deployment when a deployment runs the workflow', async () => {
+    onComfyCloud([plain, agencyA])
+    useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+      answer([agencyA], [plain])
+    )
+    renderNotice()
+
+    await screen.findByTestId('error-overlay-deployment-offer')
+    expect(customDeploymentOffer()).toBeNull()
+  })
+
+  it.for([
+    {
+      when: 'the editor runs on a deployment',
+      listing: () => {
+        useDeploymentPickStore().state = readyOn([plain])
+        useDeploymentPickStore().bootDeployment = plain
+      },
+      nodes: NO_REPLACEMENT
+    },
+    {
+      when: 'the deployments listing was not served',
+      listing: () => {
+        useDeploymentPickStore().state = { phase: 'hidden' }
+        useDeploymentPickStore().bootDeployment = null
+      },
+      nodes: NO_REPLACEMENT
+    },
+    {
+      when: 'every missing node has a replacement',
+      listing: () => onComfyCloud([]),
+      nodes: [{ type: 'OldSampler', isReplaceable: true }]
+    }
+  ] satisfies {
+    when: string
+    listing: () => void
+    nodes: MissingNodeType[]
+  }[])('offers no custom deployment when $when', async ({ listing, nodes }) => {
+    listing()
+    useMissingNodesErrorStore().setMissingNodeTypes(nodes)
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+      answer([], [plain])
+    )
+    renderNotice()
+    await nextTick()
+
+    expect(customDeploymentOffer()).toBeNull()
   })
 })

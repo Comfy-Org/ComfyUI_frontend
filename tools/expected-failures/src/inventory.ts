@@ -21,7 +21,7 @@ const baselineEntrySchema = z.object({
 const baselineSchema = z.array(baselineEntrySchema)
 type BaselineEntry = z.infer<typeof baselineEntrySchema>
 
-const LIVE_DEFECT_CEILING = 14
+const LIVE_DEFECT_CEILING = 11
 
 const SOURCE_ROOTS = [
   'apps',

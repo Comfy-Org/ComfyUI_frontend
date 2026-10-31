@@ -149,6 +149,10 @@ describe('useAgentConsent', () => {
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })
+    Object.assign(useAuthStore(), { isAuthenticated: true })
+    vi.mocked(useAuthStore().getWorkspaceAuthTokenOrThrow).mockResolvedValue(
+      'workspace-a-token'
+    )
     vi.mocked(api.fetchApi).mockReset()
     fetchWithUnifiedRemint.mockReset()
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
@@ -328,6 +332,37 @@ describe('useAgentConsent', () => {
       [{ decision: 'dismissed', save_error_shown: false }]
     ])
     expect(telemetry.trackAgentConsentOfferExited).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      close: 'the user closes the card',
+      reported: 'a dismissal',
+      exits: [['dismissed']],
+      closeCard: (dialog: { dialogComponentProps: { onClose?: unknown } }) =>
+        (dialog.dialogComponentProps.onClose as () => void)()
+    },
+    {
+      close: 'its workspace changes',
+      reported: 'nothing',
+      exits: [],
+      closeCard: () => {
+        Object.assign(useTeamWorkspaceStore(), {
+          activeWorkspaceId: 'workspace-b'
+        })
+      }
+    }
+  ])('tells the caller $reported when $close', async ({ exits, closeCard }) => {
+    const onExit = vi.fn()
+    const request = useAgentConsent().withConsent('button_click', vi.fn(), {
+      onExit
+    })
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+    closeCard(dialog)
+    await request
+
+    expect(onExit.mock.calls).toEqual(exits)
   })
 
   it('separates giving up after a failed save from walking away', async () => {
@@ -605,12 +640,11 @@ describe('useAgentConsent', () => {
     expect(telemetry.trackAgentConsentOfferExited).toHaveBeenCalledTimes(2)
   })
 
-  it('configures the first-use card as a dismissable viewport dialog', async () => {
+  it('allows dismissing the first-use card outside the dialog', async () => {
     const request = useAgentConsent().withConsent('button_click', vi.fn())
 
     const dialog = await waitForConsentDialog()
 
-    expect(dialog.dialogComponentProps.centerOnViewport).toBe(true)
     expect(dialog.dialogComponentProps.dismissOnPointerDownOutside).toBe(true)
 
     ;(dialog.contentProps.onReject as () => void)()
@@ -639,7 +673,7 @@ describe('useAgentConsent', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            Authorization: 'Bearer account-a-token'
+            Authorization: 'Bearer workspace-a-token'
           }),
           body: JSON.stringify({ key: stored.key, value: true })
         }),
@@ -694,11 +728,39 @@ describe('useAgentConsent', () => {
     expect(reportError).toHaveBeenCalledOnce()
   })
 
+  it('writes no consent when the account has no workspace token', async () => {
+    const onOpen = vi.fn()
+    const request = useAgentConsent().withConsent('button_click', onOpen)
+    const dialog = await waitForConsentDialog()
+    vi.mocked(useAuthStore().getWorkspaceAuthTokenOrThrow).mockRejectedValue(
+      new Error('token exchange failed')
+    )
+    fetchWithUnifiedRemint.mockClear()
+
+    ;(dialog.contentProps.onAccept as () => void)()
+    await vi.waitFor(() => {
+      expect(dialog.contentProps.error).toBe('save')
+    })
+
+    expect(fetchWithUnifiedRemint).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ method: 'POST' }),
+      expect.anything()
+    )
+    expect(useAuthStore().getUserAuthHeader).not.toHaveBeenCalled()
+    expect(onOpen).not.toHaveBeenCalled()
+
+    useDialogStore().closeDialog({ key: 'agent-consent' })
+    await request
+  })
+
   it('keeps a missing-auth save retryable in the same account', async () => {
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
-    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValueOnce(null)
+    vi.mocked(
+      useAuthStore().getWorkspaceAuthTokenOrThrow
+    ).mockRejectedValueOnce(new Error('token exchange failed'))
 
     ;(dialog.contentProps.onAccept as () => void)()
     await vi.waitFor(() => expect(dialog.contentProps.error).toBe('save'))

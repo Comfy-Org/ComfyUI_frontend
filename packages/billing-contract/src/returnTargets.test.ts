@@ -24,6 +24,7 @@ describe('resolveReturnTarget', () => {
     ],
     ['platform_account', 'production', 'https://platform.comfy.org/'],
     ['platform_account', 'staging', 'https://stagingplatform.comfy.org/'],
+    ['platform_account', 'test', 'https://testplatform.comfy.org/'],
     [
       'platform_billing',
       'production',
@@ -33,14 +34,17 @@ describe('resolveReturnTarget', () => {
       'platform_billing',
       'staging',
       'https://stagingplatform.comfy.org/profile/billing'
+    ],
+    [
+      'platform_billing',
+      'test',
+      'https://testplatform.comfy.org/profile/billing'
     ]
   ] as const)('resolves %s in %s', ([target, environment, expected]) => {
     expect(resolveReturnTarget(target, environment)?.href).toBe(expected)
   })
 
   it.for([
-    ['platform_account', 'test'],
-    ['platform_billing', 'test'],
     ['workshop_credits', 'production'],
     ['attacker_site', 'production'],
     ['https://attacker.example', 'production']

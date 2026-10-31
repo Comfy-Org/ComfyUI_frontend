@@ -364,14 +364,6 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
-      name: TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE,
-      track: (sink: HostTelemetrySink) =>
-        sink.trackAgentStarterPromptExposure({
-          '$feature/agent-starter-prompt-set': 'test'
-        }),
-      properties: { '$feature/agent-starter-prompt-set': 'test' }
-    },
-    {
       name: TelemetryEvents.AGENT_FREE_USE_NOTICE,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentFreeUseNotice({
@@ -390,6 +382,18 @@ describe('HostTelemetrySink', () => {
       properties: {
         placement: 'control',
         '$feature/agent-free-use-message-placement': 'control'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentCreditUsageExposure({
+          variant: 'control',
+          '$feature/agent-credit-usage-summary': 'control'
+        }),
+      properties: {
+        variant: 'control',
+        '$feature/agent-credit-usage-summary': 'control'
       }
     },
     {
@@ -546,6 +550,26 @@ describe('HostTelemetrySink', () => {
           step: 2
         }),
       properties: { reason: 'target_missing', step: 2 }
+    },
+    {
+      name: TelemetryEvents.AGENT_SEND_GATED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentSendGated({
+          gate: 'consent',
+          outcome: 'dropped',
+          reason: 'dismissed',
+          client_message_id: 'client-message-1',
+          held_ms: 1200,
+          thread_id: null
+        }),
+      properties: {
+        gate: 'consent',
+        outcome: 'dropped',
+        reason: 'dismissed',
+        client_message_id: 'client-message-1',
+        held_ms: 1200,
+        thread_id: null
+      }
     }
   ])('forwards $name to the host bridge', ({ name, track, properties }) => {
     track(new HostTelemetrySink())

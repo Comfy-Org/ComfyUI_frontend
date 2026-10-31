@@ -264,6 +264,8 @@ const MAX_DEPARTED_TURNS = 32
 interface SubmittedAskAnswer {
   answer: AgentAnswerRequest
   kind: RenderedAskKind | 'unknown'
+  owner: string
+  awaitingResolution?: 'accepted' | 'conflict'
 }
 
 export const useAgentConversationStore = defineStore(
@@ -515,7 +517,8 @@ export const useAgentConversationStore = defineStore(
     function retireAsk(
       askId: string,
       resolution: AskUserResolution,
-      owner?: string
+      owner?: string,
+      permanent = true
     ): void {
       const key = threadKey(owner)
       if (key === threadKey()) {
@@ -530,14 +533,18 @@ export const useAgentConversationStore = defineStore(
       for (const entry of backgroundTurns.values())
         if (entry.threadId === key)
           entry.transport.retireAskPart(askId, resolution)
-      const retired = retiredAsksFor(key)
-      retired.set(askId, settleResolution(retired.get(askId), resolution))
+      if (permanent) {
+        const retired = retiredAsksFor(key)
+        retired.set(askId, settleResolution(retired.get(askId), resolution))
+        provisionalRetiredAsksFor(key).delete(askId)
+      } else provisionalRetiredAsksFor(key).add(askId)
       clearAskResolutionWatchdog(askId)
       submittedAskAnswers.delete(askId)
       setAskAnswering(askId, false)
     }
 
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
+    const provisionalRetiredAsks = new Map<string, Set<string>>()
 
     const threadKey = (owner?: string) => owner ?? threadId.value ?? ''
 
@@ -549,14 +556,60 @@ export const useAgentConversationStore = defineStore(
       return retired
     }
 
+    function provisionalRetiredAsksFor(owner?: string): Set<string> {
+      const key = threadKey(owner)
+      const retired = provisionalRetiredAsks.get(key) ?? new Set<string>()
+      provisionalRetiredAsks.set(key, retired)
+      return retired
+    }
+    function isAskRetired(askId: string, owner?: string): boolean {
+      const key = threadKey(owner)
+      return (
+        retiredAsks.get(key)?.has(askId) === true ||
+        provisionalRetiredAsks.get(key)?.has(askId) === true
+      )
+    }
+
+    function confirmAskPending(askId: string, owner?: string): void {
+      const key = threadKey(owner)
+      const provisional = provisionalRetiredAsks.get(key)
+      if (provisional?.delete(askId) !== true) return
+      if (provisional.size === 0) provisionalRetiredAsks.delete(key)
+      if (retiredAsks.get(key)?.has(askId) === true) return
+      const reopen = (message: AssistantMessage): void => {
+        message.parts = message.parts.map((part) =>
+          (part.type === 'askUser' || part.type === 'deleteApproval') &&
+          askIdOf(part) === askId
+            ? { ...part, resolution: undefined }
+            : part
+        )
+      }
+      if (activeSlot.value?.threadId === key) reopen(activeSlot.value.message)
+      for (const entry of backgroundTurns.values())
+        if (entry.threadId === key) reopen(entry.message)
+      if (key === threadKey()) messages.value.forEach(reopen)
+    }
+
     const submittedAskAnswers = new Map<string, SubmittedAskAnswer>()
 
-    function recordAskAnswer(askId: string, answer: AgentAnswerRequest): void {
+    function recordAskAnswer(
+      askId: string,
+      answer: AgentAnswerRequest,
+      owner?: string
+    ): void {
       const kind =
         messages.value
           .map((message) => askKindOf(message.parts, askId))
           .find((found) => found !== undefined) ?? 'unknown'
-      submittedAskAnswers.set(askId, { answer, kind })
+      submittedAskAnswers.set(askId, {
+        answer,
+        kind,
+        owner: threadKey(owner)
+      })
+    }
+
+    function submittedAskAnswer(askId: string): AgentAnswerRequest | undefined {
+      return submittedAskAnswers.get(askId)?.answer
     }
 
     function takeSubmittedAskAnswer(
@@ -565,6 +618,50 @@ export const useAgentConversationStore = defineStore(
       const answer = submittedAskAnswers.get(askId)
       submittedAskAnswers.delete(askId)
       return answer
+    }
+
+    function markAskAwaitingResolution(
+      askId: string,
+      kind: 'accepted' | 'conflict'
+    ): void {
+      const submitted = submittedAskAnswers.get(askId)
+      if (submitted) submitted.awaitingResolution = kind
+    }
+
+    function asksAwaitingResolution(): Array<{
+      askId: string
+      kind: 'accepted' | 'conflict'
+    }> {
+      return [...submittedAskAnswers]
+        .filter(([, submitted]) => submitted.awaitingResolution !== undefined)
+        .map(([askId, submitted]) => ({
+          askId,
+          kind: submitted.awaitingResolution!
+        }))
+    }
+
+    function clearAskAwaitingResolution(askId: string): void {
+      const submitted = submittedAskAnswers.get(askId)
+      if (submitted) submitted.awaitingResolution = undefined
+    }
+
+    function clearSettledAskState(owner: string): void {
+      provisionalRetiredAsks.delete(owner)
+      for (const [askId, submitted] of submittedAskAnswers)
+        if (submitted.owner === owner) submittedAskAnswers.delete(askId)
+    }
+
+    function discardDetachedAskState(): void {
+      const retainedThreads = new Set(
+        [...backgroundTurns.values()].map((turn) => turn.threadId)
+      )
+      for (const owner of retiredAsks.keys())
+        if (!retainedThreads.has(owner)) retiredAsks.delete(owner)
+      for (const owner of provisionalRetiredAsks.keys())
+        if (!retainedThreads.has(owner)) provisionalRetiredAsks.delete(owner)
+      for (const [askId, submitted] of submittedAskAnswers)
+        if (!retainedThreads.has(submitted.owner))
+          submittedAskAnswers.delete(askId)
     }
 
     const askResolutionWatchdogs = new Map<
@@ -700,6 +797,7 @@ export const useAgentConversationStore = defineStore(
     ): void {
       if (event.type === 'agent_message_done') {
         const tab = activeSlot.value?.tab ?? UNKNOWN_TAB
+        activeTransport.ingest(event)
         settleActiveTurn(activeTransport)
         announceCompletion(tab)
         return
@@ -749,6 +847,7 @@ export const useAgentConversationStore = defineStore(
       }
       if (event.type === 'agent_message_done') {
         if (entry.settled) return
+        entry.transport.ingest(event)
         entry.transport.settle()
         updateBackgroundTurn(entry.messageId, { settled: true })
         announceCompletion(entry.tab)
@@ -1092,6 +1191,7 @@ export const useAgentConversationStore = defineStore(
         turn.threadId === slot.threadId &&
         turn.messageId === slot.turnId
       if (isActive) {
+        clearSettledAskState(turn.threadId)
         finishWithPersistedParts(slot.message, persistedParts)
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
@@ -1102,6 +1202,7 @@ export const useAgentConversationStore = defineStore(
       }
       const entry = backgroundTurns.get(turn.messageId)
       if (!entry || entry.messageId !== turn.messageId || entry.settled) return
+      clearSettledAskState(turn.threadId)
       finishWithPersistedParts(entry.message, persistedParts)
       entry.transport.settle()
       updateBackgroundTurn(entry.messageId, { settled: true })
@@ -1133,6 +1234,84 @@ export const useAgentConversationStore = defineStore(
       rememberDepartedTurn(slot.threadId, slot.turnId, reason)
     }
 
+    /**
+     * The mutable message a live turn is written into, not the snapshot copy
+     * in `messages`: transports emit snapshots, so only this object carries
+     * parts applied since the last emit.
+     */
+    function liveTurnMessage(turn: LiveTurn): AssistantMessage | null {
+      const slot = activeSlot.value
+      if (
+        slot !== null &&
+        turn.threadId === slot.threadId &&
+        turn.messageId === slot.turnId
+      )
+        return slot.message
+      const entry = backgroundTurns.get(turn.messageId)
+      if (
+        !entry ||
+        entry.threadId !== turn.threadId ||
+        entry.messageId !== turn.messageId ||
+        entry.settled
+      )
+        return null
+      return entry.message
+    }
+
+    function reconcileApprovalParts(
+      turn: LiveTurn,
+      pendingAskId?: string,
+      protectedAskIds: ReadonlySet<string> = new Set()
+    ): string[] {
+      const message = liveTurnMessage(turn)
+      if (message === null) return []
+      const stale = message.parts.flatMap((part) => {
+        if (!isOpenAskPart(part)) return []
+        const askId = askIdOf(part)
+        return askId !== undefined &&
+          (pendingAskId === undefined || askId !== pendingAskId) &&
+          !protectedAskIds.has(askId) &&
+          submittedAskAnswer(askId) === undefined &&
+          !answeringAskIds.value.has(askId)
+          ? [askId]
+          : []
+      })
+      for (const askId of stale)
+        retireAsk(askId, { status: 'retired' }, turn.threadId, false)
+      return stale
+    }
+
+    /**
+     * Whether this turn is already showing `askId`. Turn recovery asks before
+     * re-delivering an ask off a persisted row: the card a hydrate drew is on
+     * screen without the session's ask ledger ever having seen a frame for
+     * it, and only this catches that one. Reads the mutable message, so it
+     * answers for the current moment and takes no reactive dependency.
+     */
+    function isApprovalShown(turn: LiveTurn, askId: string): boolean {
+      const message = liveTurnMessage(turn)
+      return (
+        message?.parts.some(
+          (part) => part.type === 'runApproval' && part.askId === askId
+        ) ?? false
+      )
+    }
+
+    function isAskShown(turn: LiveTurn, askId: string): boolean {
+      return (
+        liveTurnMessage(turn)?.parts.some(
+          (part) => isOpenAskPart(part) && askIdOf(part) === askId
+        ) ?? false
+      )
+    }
+
+    function hasApprovalShown(turn: LiveTurn): boolean {
+      return (
+        liveTurnMessage(turn)?.parts.some((part) => isOpenAskPart(part)) ??
+        false
+      )
+    }
+
     function clearActive(): void {
       activeSlot.value = null
     }
@@ -1161,6 +1340,7 @@ export const useAgentConversationStore = defineStore(
 
     function reset(): void {
       disposeActiveAndSettledTransports()
+      discardDetachedAskState()
       messages.value = []
       userTexts.value = new Map()
       userTags.value = new Map()
@@ -1188,17 +1368,15 @@ export const useAgentConversationStore = defineStore(
       transcript: ReturnType<typeof normalizeAgentTranscript>
     ): void {
       const retired = retiredAsksFor()
-      if (retired.size === 0) return
-      const named = new Set(
-        transcript.messages.flatMap((message) =>
-          message.parts.flatMap((part) => askIdOf(part) ?? [])
-        )
-      )
-      for (const askId of retired.keys())
-        if (!named.has(askId)) retired.delete(askId)
+      const provisional = provisionalRetiredAsksFor()
       for (const message of transcript.messages)
         for (const [askId, resolution] of retired)
           message.parts = retireAskParts(message.parts, askId, resolution)
+      for (const message of transcript.messages)
+        for (const askId of provisional)
+          message.parts = retireAskParts(message.parts, askId, {
+            status: 'retired'
+          })
     }
 
     function hydrate(history: AgentMessages): void {
@@ -1206,7 +1384,14 @@ export const useAgentConversationStore = defineStore(
       if (replacedSlot) rememberDepartedActiveTurn('no-live-turn')
       disposeActiveAndSettledTransports()
       clearActive()
-      const transcript = normalizeAgentTranscript(history)
+      const transcript = normalizeAgentTranscript(
+        history,
+        (askId) =>
+          isAskRetired(askId) ||
+          submittedAskAnswer(askId) !== undefined ||
+          answeringAskIds.value.has(askId),
+        (askId) => isAskRetired(askId)
+      )
       reapplyRetiredAsks(transcript)
       messages.value = transcript.messages
       resolvedPaywallIds.value = new Set()
@@ -1355,6 +1540,23 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    function askKind(
+      askId: string
+    ): 'runApproval' | 'askUser' | 'deleteApproval' | undefined {
+      for (const message of messages.value) {
+        const part = message.parts.find(
+          (candidate) =>
+            isPendingAskPart(candidate) && candidate.askId === askId
+        )
+        if (
+          part?.type === 'runApproval' ||
+          part?.type === 'askUser' ||
+          part?.type === 'deleteApproval'
+        )
+          return part.type
+      }
+    }
+
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
 
@@ -1434,9 +1636,17 @@ export const useAgentConversationStore = defineStore(
       answeringAskIds,
       setAskAnswering,
       recordAskAnswer,
+      submittedAskAnswer,
       takeSubmittedAskAnswer,
+      markAskAwaitingResolution,
+      asksAwaitingResolution,
+      clearAskAwaitingResolution,
+      askKind,
       commitAsk,
       retireAsk,
+      isAskRetired,
+      confirmAskPending,
+      reconcileApprovalParts,
       startTurn,
       ingest,
       setCanvasSyncGate,
@@ -1450,6 +1660,9 @@ export const useAgentConversationStore = defineStore(
       turnUsesSkill,
       historySkillNames,
       settleTurn,
+      isApprovalShown,
+      isAskShown,
+      hasApprovalShown,
       reset,
       hydrate
     }

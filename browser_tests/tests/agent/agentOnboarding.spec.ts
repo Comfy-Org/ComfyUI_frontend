@@ -17,20 +17,85 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     await bootAgentApp(page, agentFlagEnabled, {
       onboardingCompleted: false
     })
-    const agentPanel = new AgentPanel(page)
-    await agentPanel.open()
+    await new AgentPanel(page).open()
 
-    const intro = agentPanel.tourCard(enMessages.agent.coachTitle)
-    await expect(intro.root).toBeVisible()
-    await expect(intro.backButton).toHaveCount(0)
-    await intro.nextButton.click()
+    const firstCard = page.getByRole('dialog', {
+      name: enMessages.agent.coachTitle
+    })
+    await expect(firstCard).toBeVisible()
+    await expect(
+      firstCard.getByRole('button', {
+        name: enMessages.onboardingCoachmarks.back
+      })
+    ).toHaveCount(0)
+    await firstCard.getByRole('button', { name: enMessages.g.next }).click()
 
-    const workflow = agentPanel.tourCard(enMessages.agent.coachWorkflowTitle)
-    await expect(workflow.root).toBeVisible()
-    await workflow.backButton.click()
+    const secondCard = page.getByRole('dialog', {
+      name: enMessages.agent.coachWorkflowTitle
+    })
+    await expect(secondCard).toBeVisible()
+    await secondCard
+      .getByRole('button', {
+        name: enMessages.onboardingCoachmarks.back
+      })
+      .click()
 
-    await expect(intro.root).toBeVisible()
-    await expect.poll(() => agentPanel.coachSeenFlag()).toBe('false')
+    await expect(firstCard).toBeVisible()
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem(
+            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+          )
+        )
+      )
+      .toBe('false')
+  })
+
+  test('points the first card at the highlighted panel and answers clicks on it', async ({
+    page,
+    agentFlagEnabled
+  }) => {
+    await bootAgentApp(page, agentFlagEnabled, {
+      onboardingCompleted: false
+    })
+    await new AgentPanel(page).open()
+
+    const firstCard = page.getByRole('dialog', {
+      name: enMessages.agent.coachTitle
+    })
+    await expect(firstCard).toBeVisible()
+    const arrow = page.getByTestId('agent-coach-arrow')
+    const spotlight = page.getByTestId('agent-coach-spotlight')
+    await expect(arrow).toHaveCSS('visibility', 'visible')
+    await expect
+      .poll(async () => {
+        const [arrowBox, spotlightBox] = await Promise.all([
+          arrow.boundingBox(),
+          spotlight.boundingBox()
+        ])
+        if (!arrowBox || !spotlightBox) return null
+        return {
+          leftOfSpotlight: arrowBox.x < spotlightBox.x,
+          centersAligned:
+            Math.abs(
+              arrowBox.y +
+                arrowBox.height / 2 -
+                (spotlightBox.y + spotlightBox.height / 2)
+            ) < 4
+        }
+      })
+      .toEqual({ leftOfSpotlight: true, centersAligned: true })
+
+    const spotlightBox = await spotlight.boundingBox()
+    if (!spotlightBox) throw new Error('spotlight has no box')
+    await page.mouse.click(
+      spotlightBox.x + spotlightBox.width / 2,
+      spotlightBox.y + spotlightBox.height / 2
+    )
+
+    await expect(firstCard).toBeFocused()
+    await expect(firstCard).toBeVisible()
   })
 
   test('replays the tour from the header after it has been completed', async ({
@@ -42,23 +107,36 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     await bootAgentApp(page, agentFlagEnabled, {
       onboardingCompleted: true
     })
-    const agentPanel = new AgentPanel(page)
-    await agentPanel.open()
+    await new AgentPanel(page).open()
 
-    const intro = agentPanel.tourCard(enMessages.agent.coachTitle)
-    await expect(intro.root).toBeHidden()
+    const firstCard = page.getByRole('dialog', {
+      name: enMessages.agent.coachTitle
+    })
+    await expect(firstCard).toBeHidden()
 
     await page
       .getByRole('button', { name: enMessages.agent.takeTour, exact: true })
       .click()
 
     // Replay starts at card one, not wherever the finished tour left off.
-    await expect(intro.root).toBeVisible()
-    await expect(intro.backButton).toHaveCount(0)
+    await expect(firstCard).toBeVisible()
+    await expect(
+      firstCard.getByRole('button', {
+        name: enMessages.onboardingCoachmarks.back
+      })
+    ).toHaveCount(0)
 
     // The persisted flag has to clear too, or a reload re-hides a tour the
     // user just asked to see.
-    await expect.poll(() => agentPanel.coachSeenFlag()).not.toBe('true')
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem(
+            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+          )
+        )
+      )
+      .not.toBe('true')
   })
 
   test('walks every accessible card and persists completion', async ({
@@ -70,74 +148,100 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     })
     const agentPanel = new AgentPanel(page)
     await agentPanel.open()
+    const intro = await agentPanel.expectTourCard(
+      enMessages.agent.coachTitle,
+      enMessages.agent.coachBody,
+      '1 of 3'
+    )
+    await expect(agentPanel.tourSkipButton(intro)).toHaveCount(1)
+    await intro.getByRole('button', { name: enMessages.g.next }).click()
 
-    const intro = agentPanel.tourCard(enMessages.agent.coachTitle)
-    await intro.expectShown(enMessages.agent.coachBody, '1 of 3')
-    await expect(intro.skipButton).toHaveCount(1)
-    await intro.nextButton.click()
+    const workflow = await agentPanel.expectTourCard(
+      enMessages.agent.coachWorkflowTitle,
+      enMessages.agent.coachWorkflowBody,
+      '2 of 3'
+    )
+    await expect(agentPanel.tourSkipButton(workflow)).toHaveCount(1)
+    await workflow.getByRole('button', { name: enMessages.g.next }).click()
 
-    const workflow = agentPanel.tourCard(enMessages.agent.coachWorkflowTitle)
-    await workflow.expectShown(enMessages.agent.coachWorkflowBody, '2 of 3')
-    await expect(workflow.skipButton).toHaveCount(1)
-    await workflow.nextButton.click()
-
-    const history = agentPanel.tourCard(enMessages.agent.coachHistoryTitle)
-    await history.expectShown(enMessages.agent.coachHistoryBody, '3 of 3')
-    await expect(history.skipButton).toHaveCount(0)
-    await history.doneButton.click()
+    const history = await agentPanel.expectTourCard(
+      enMessages.agent.coachHistoryTitle,
+      enMessages.agent.coachHistoryBody,
+      '3 of 3'
+    )
+    await expect(agentPanel.tourSkipButton(history)).toHaveCount(0)
+    await history
+      .getByRole('button', { name: enMessages.onboardingCoachmarks.done })
+      .click()
 
     await expect(page.getByRole('dialog')).toHaveCount(0)
-    await expect.poll(() => agentPanel.coachSeenFlag()).toBe('true')
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem(
+            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+          )
+        )
+      )
+      .toBe('true')
 
     await page.reload()
     await waitForCloudApp(page)
     await expect(page.locator('#agent-panel-root')).toBeVisible()
     await expect(
-      agentPanel.tourCard(enMessages.agent.coachTitle).root
+      page.getByRole('dialog', { name: enMessages.agent.coachTitle })
     ).toHaveCount(0)
   })
 
-  test('Escape leaves the last card, which has no Skip of its own', async ({
+  test('Escape leaves the last card, which has no Skip button', async ({
     page,
     agentFlagEnabled
   }) => {
-    // PM-2396 dropped Skip from the last card because it duplicated Done.
-    // That makes Escape the only way off that card short of completing the
-    // tour, and only the unit tests covered it. If the key handler regresses,
-    // a first-time user is left on a card they cannot dismiss -- and the walk
-    // test above stays green, because it leaves by clicking Done.
     await bootAgentApp(page, agentFlagEnabled, {
       onboardingCompleted: false
     })
     const agentPanel = new AgentPanel(page)
     await agentPanel.open()
+    const intro = await agentPanel.expectTourCard(
+      enMessages.agent.coachTitle,
+      enMessages.agent.coachBody,
+      '1 of 3'
+    )
+    await intro.getByRole('button', { name: enMessages.g.next }).click()
 
-    const intro = agentPanel.tourCard(enMessages.agent.coachTitle)
-    await expect(intro.root).toBeVisible()
-    await intro.nextButton.click()
+    const workflow = await agentPanel.expectTourCard(
+      enMessages.agent.coachWorkflowTitle,
+      enMessages.agent.coachWorkflowBody,
+      '2 of 3'
+    )
+    await workflow.getByRole('button', { name: enMessages.g.next }).click()
 
-    const workflow = agentPanel.tourCard(enMessages.agent.coachWorkflowTitle)
-    await expect(workflow.root).toBeVisible()
-    await workflow.nextButton.click()
-
-    const history = agentPanel.tourCard(enMessages.agent.coachHistoryTitle)
-    await history.expectShown(enMessages.agent.coachHistoryBody, '3 of 3')
-    await expect(history.skipButton).toHaveCount(0)
-    await expect(history.doneButton).toBeVisible()
+    const history = await agentPanel.expectTourCard(
+      enMessages.agent.coachHistoryTitle,
+      enMessages.agent.coachHistoryBody,
+      '3 of 3'
+    )
+    await expect(agentPanel.tourSkipButton(history)).toHaveCount(0)
 
     await page.keyboard.press('Escape')
 
     await expect(page.getByRole('dialog')).toHaveCount(0)
-    await expect(history.spotlight).toHaveCount(0)
-
-    // Leaving by Escape still counts as seen. A dismissal that does not
-    // persist brings the whole tour back on the next load, which is the same
-    // trap from the other side.
-    await expect.poll(() => agentPanel.coachSeenFlag()).toBe('true')
+    await expect(page.getByTestId('agent-coach-spotlight')).toHaveCount(0)
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem(
+            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+          )
+        )
+      )
+      .toBe('true')
 
     await page.reload()
     await waitForCloudApp(page)
     await expect(page.locator('#agent-panel-root')).toBeVisible()
-    await expect(intro.root).toHaveCount(0)
+    await expect(
+      page.getByRole('dialog', { name: enMessages.agent.coachTitle })
+    ).toHaveCount(0)
   })
 })
