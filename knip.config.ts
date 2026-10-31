@@ -8,9 +8,6 @@ const config: KnipConfig = {
       entry: [
         '{build,scripts}/**/*.{js,ts}',
         'vitest.matrix.config.mts',
-        // Deliberately an entry rather than a package.json script, mirroring
-        // the matrix config beside it: neither is part of test:unit, and a
-        // script is the easiest way for a census to get wired into a gate.
         'vitest.census.config.mts',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
