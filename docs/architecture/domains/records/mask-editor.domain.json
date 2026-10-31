@@ -75,7 +75,8 @@
         "src/renderer/extensions/maskEditor/composables/maskEditorToolSession.test.ts",
         "src/renderer/extensions/maskEditor/composables/useMaskEditorExtensionTools.test.ts",
         "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.test.ts",
-        "browser_tests/tests/maskEditor/mask-editor-extension-tools.spec.ts"
+        "browser_tests/tests/maskEditor/mask-editor-extension-tools.spec.ts",
+        "browser_tests/tests/maskEditor/mask-editor-extension-drag.spec.ts"
       ]
     }
   ],

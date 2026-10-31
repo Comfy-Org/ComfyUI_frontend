@@ -58,9 +58,9 @@ export interface MaskEditorToolContext {
 
 export interface MaskEditorToolSession {
   onPointer?(event: MaskEditorPointerEvent): void | Promise<void>
-  mountPanel?(container: HTMLElement): void | (() => void)
-  onDocumentChange?(revision: number): void
-  dispose?(): void
+  mountPanel?(container: HTMLElement): void | (() => void | Promise<void>)
+  onDocumentChange?(revision: number): void | Promise<void>
+  dispose?(): void | Promise<void>
 }
 
 export interface MaskEditorTool {

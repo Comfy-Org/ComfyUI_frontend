@@ -1,3 +1,5 @@
+import { once } from 'es-toolkit'
+
 import type {
   MaskEditorImageSnapshot,
   MaskEditorMask,
@@ -38,14 +40,28 @@ export function createMaskEditorToolSession(
   let session: MaskEditorToolSession = {}
   const panelCleanups = new Set<() => void>()
   const isDisposed = () => controller.signal.aborted
+  const fail = once((error: unknown) => {
+    dispose()
+    reportFailure(error)
+  })
 
   function call<T>(callback: () => T): T | undefined {
     try {
       return callback()
     } catch (error) {
-      dispose()
-      reportFailure(error)
+      fail(error)
       return undefined
+    }
+  }
+
+  async function callAsync(
+    callback: () => void | Promise<void>,
+    signal?: AbortSignal
+  ) {
+    try {
+      await callback()
+    } catch (error) {
+      if (!signal?.aborted) fail(error)
     }
   }
 
@@ -116,7 +132,7 @@ export function createMaskEditorToolSession(
     controller.abort()
     setOverlay([])
     for (const cleanup of panelCleanups) cleanup()
-    call(() => session.dispose?.())
+    void callAsync(() => session.dispose?.())
   }
 
   const created = call(() => {
@@ -130,33 +146,24 @@ export function createMaskEditorToolSession(
   })
   if (created) {
     session = created
-    if (isDisposed()) call(() => session.dispose?.())
+    if (isDisposed()) void callAsync(() => session.dispose?.())
   } else if (!isDisposed()) {
     dispose()
-    reportFailure(
-      new Error('MaskEditor tool must return a synchronous session')
-    )
+    fail(new Error('MaskEditor tool must return a synchronous session'))
   }
 
   return {
     context,
     pointer: async (event: MaskEditorPointerEvent) => {
       if (isDisposed()) return
-      const signal = controller.signal
-      try {
-        await session.onPointer?.(event)
-      } catch (error) {
-        if (signal.aborted) return
-        dispose()
-        reportFailure(error)
-      }
+      await callAsync(() => session.onPointer?.(event), controller.signal)
     },
     mountPanel: (container: HTMLElement): (() => void) | undefined => {
       if (isDisposed()) return undefined
       const unmount = call(() => session.mountPanel?.(container))
       const cleanup = () => {
         if (!panelCleanups.delete(cleanup)) return
-        if (unmount) call(unmount)
+        if (unmount) void callAsync(unmount)
         container.replaceChildren()
       }
       panelCleanups.add(cleanup)
@@ -169,7 +176,10 @@ export function createMaskEditorToolSession(
       controller = new AbortController()
       previous.abort()
       setOverlay([])
-      call(() => session.onDocumentChange?.(document.getRevision()))
+      void callAsync(
+        () => session.onDocumentChange?.(document.getRevision()),
+        controller.signal
+      )
     },
     dispose
   }

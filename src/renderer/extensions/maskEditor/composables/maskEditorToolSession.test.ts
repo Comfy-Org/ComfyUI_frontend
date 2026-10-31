@@ -331,6 +331,115 @@ describe('MaskEditor extension session contract', () => {
     expect(reportFailure).toHaveBeenCalledExactlyOnceWith(failure)
   })
 
+  it('closes the session when an asynchronous document callback fails', async () => {
+    const failure = new Error('Document refresh failed')
+    const reject = vi.fn<(error: unknown) => void>()
+    const pending = new Promise<void>((_, rejectPromise) => {
+      reject.mockImplementation(rejectPromise)
+    })
+    const dispose = vi.fn()
+    const { runtime, document, reportFailure, overlay } = setup(() => ({
+      onDocumentChange: () => pending,
+      dispose
+    }))
+    document.applyMask(result)
+    runtime.documentChanged()
+    runtime.context.setOverlay([
+      { id: 'pending', x: 1, y: 1, radius: 4, color: 'blue' }
+    ])
+    reject(failure)
+    await pending.catch(() => undefined)
+    expect(runtime.context.signal.aborted).toBe(true)
+    expect(overlay()).toEqual([])
+    expect(dispose).toHaveBeenCalledExactlyOnceWith()
+    expect(reportFailure).toHaveBeenCalledExactlyOnceWith(failure)
+  })
+
+  it('ignores a rejected document refresh superseded by a later edit', async () => {
+    const reject = vi.fn<(error: unknown) => void>()
+    const pending = new Promise<void>((_, rejectPromise) => {
+      reject.mockImplementation(rejectPromise)
+    })
+    const onDocumentChange = vi.fn().mockReturnValueOnce(pending)
+    const { runtime, document, reportFailure } = setup(() => ({
+      onDocumentChange
+    }))
+    document.applyMask(result)
+    runtime.documentChanged()
+    const oldSignal = runtime.context.signal
+    document.applyMask(result)
+    runtime.documentChanged()
+    reject(new Error('Obsolete document refresh failed'))
+    await pending.catch(() => undefined)
+    expect(oldSignal.aborted).toBe(true)
+    expect(runtime.context.signal.aborted).toBe(false)
+    expect(reportFailure).not.toHaveBeenCalled()
+    expect(runtime.context.commitMask(result, { expectedRevision: 3 })).toEqual(
+      { ok: true, revision: 4 }
+    )
+  })
+
+  it('reports asynchronous disposal failures without delaying session closure', async () => {
+    const failure = new Error('Asynchronous disposal failed')
+    const reject = vi.fn<(error: unknown) => void>()
+    const pending = new Promise<void>((_, rejectPromise) => {
+      reject.mockImplementation(rejectPromise)
+    })
+    const dispose = vi.fn(() => pending)
+    const { runtime, reportFailure } = setup(() => ({ dispose }))
+    runtime.dispose()
+    runtime.dispose()
+    expect(runtime.context.signal.aborted).toBe(true)
+    expect(runtime.context.readImage()).toBeUndefined()
+    expect(dispose).toHaveBeenCalledExactlyOnceWith()
+    reject(failure)
+    await pending.catch(() => undefined)
+    expect(reportFailure).toHaveBeenCalledExactlyOnceWith(failure)
+  })
+
+  it('removes the panel immediately and contains asynchronous unmount failures', async () => {
+    const failure = new Error('Panel cleanup failed')
+    const reject = vi.fn<(error: unknown) => void>()
+    const pending = new Promise<void>((_, rejectPromise) => {
+      reject.mockImplementation(rejectPromise)
+    })
+    const cleanup = vi.fn(() => pending)
+    const dispose = vi.fn()
+    const { runtime, reportFailure } = setup(() => ({
+      mountPanel(container) {
+        container.textContent = 'Tool controls'
+        return cleanup
+      },
+      dispose
+    }))
+    const container = document.createElement('div')
+    const unmount = runtime.mountPanel(container)
+    runtime.dispose()
+    unmount?.()
+    expect(container.childNodes).toHaveLength(0)
+    expect(cleanup).toHaveBeenCalledExactlyOnceWith()
+    expect(dispose).toHaveBeenCalledExactlyOnceWith()
+    reject(failure)
+    await pending.catch(() => undefined)
+    expect(reportFailure).toHaveBeenCalledExactlyOnceWith(failure)
+  })
+
+  it('reports the original failure once when disposal also fails', async () => {
+    const failure = new Error('Point callback failed')
+    const dispose = vi.fn(() => {
+      throw new Error('Disposal failed too')
+    })
+    const { runtime, reportFailure } = setup(() => ({
+      onPointer: () => {
+        throw failure
+      },
+      dispose
+    }))
+    await runtime.pointer(pointerEvent)
+    expect(dispose).toHaveBeenCalledExactlyOnceWith()
+    expect(reportFailure).toHaveBeenCalledExactlyOnceWith(failure)
+  })
+
   it('keeps the current document session when an obsolete pointer callback rejects', async () => {
     const failure = new Error('Obsolete point processing failed')
     const reject = vi.fn<() => void>()

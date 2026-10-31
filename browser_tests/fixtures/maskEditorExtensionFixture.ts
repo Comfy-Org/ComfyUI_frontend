@@ -9,8 +9,8 @@ import type {
   MaskEditorPointerEvent
 } from '@comfyorg/mask-editor/extensionTypes'
 
-async function registerTestTool(page: Page) {
-  return page.evaluateHandle(() => {
+async function registerTestTool(page: Page, alternateTool: boolean) {
+  return page.evaluateHandle((alternateTool) => {
     const events: MaskEditorPointerEvent[] = []
     const delayedResults: MaskEditorCommitResult[] = []
     let releaseDelayed: (() => void) | undefined
@@ -30,8 +30,8 @@ async function registerTestTool(page: Page) {
             status.textContent = '0 points'
           },
           onPointer(event) {
-            if (event.phase !== 'down' || !event.inBounds) return
             events.push(event)
+            if (event.phase !== 'down' || !event.inBounds) return
             points.push(event)
             context.setOverlay(
               points.map((point, index) => ({
@@ -102,8 +102,16 @@ async function registerTestTool(page: Page) {
         }
       }
     })
+    const alternateRegistration = alternateTool
+      ? window.app!.extensionManager.maskEditor.registerTool({
+          id: 'test.mask-editor-alternate',
+          label: 'Alternate extension test tool',
+          createSession: () => ({})
+        })
+      : undefined
     return {
       registration,
+      alternateRegistration,
       events,
       delayedResults,
       releaseDelayed: () => releaseDelayed?.(),
@@ -114,7 +122,7 @@ async function registerTestTool(page: Page) {
         return unmounted
       }
     }
-  })
+  }, alternateTool)
 }
 
 class MaskEditorExtensionHelper {
@@ -146,8 +154,8 @@ class MaskEditorExtensionHelper {
     this.pointerZone = page.getByTestId('pointer-zone')
   }
 
-  async register() {
-    this.probe = await registerTestTool(this.page)
+  async register({ alternateTool = false } = {}) {
+    this.probe = await registerTestTool(this.page, alternateTool)
     expect(await this.probe.evaluate((probe) => probe.registration.ok)).toBe(
       true
     )
@@ -169,7 +177,43 @@ class MaskEditorExtensionHelper {
   }
 
   async getEvents() {
+    return this.probe!.evaluate((probe) =>
+      probe.events.filter((event) => event.phase === 'down' && event.inBounds)
+    )
+  }
+
+  async getPointerEvents() {
     return this.probe!.evaluate((probe) => probe.events)
+  }
+
+  async startDrag() {
+    const bounds = await this.maskCanvas.boundingBox()
+    if (!bounds) throw new Error('Mask canvas not visible')
+    const x = bounds.x + bounds.width / 2
+    const y = bounds.y + bounds.height / 2
+    await this.page.mouse.move(x, y)
+    await this.page.mouse.down()
+    await this.page.mouse.move(x + 1, y + 1)
+    const down = await this.probe!.evaluate((probe) =>
+      probe.events.findLast((event) => event.phase === 'down')
+    )
+    if (!down) throw new Error('Extension did not receive pointer down')
+    return { x, y, pointerId: down.pointerId }
+  }
+
+  async moveOutside() {
+    const bounds = await this.pointerZone.boundingBox()
+    if (!bounds) throw new Error('Pointer zone not visible')
+    await this.page.mouse.move(
+      bounds.x + bounds.width + 20,
+      bounds.y + bounds.height / 2
+    )
+  }
+
+  async unregister() {
+    await this.probe!.evaluate((probe) => {
+      if (probe.registration.ok) probe.registration.unregister()
+    })
   }
 
   async getMaskAlphaValues() {
@@ -382,6 +426,8 @@ class MaskEditorExtensionHelper {
     if (!this.probe) return
     await this.probe.evaluate((probe) => {
       if (probe.registration.ok) probe.registration.unregister()
+      if (probe.alternateRegistration?.ok)
+        probe.alternateRegistration.unregister()
     })
     await this.probe.dispose()
   }

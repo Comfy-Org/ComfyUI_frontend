@@ -56,6 +56,18 @@ the extension again creates a fresh session.
 If an extension callback fails, the editor closes that session, cleans up its
 panel, and reports the failure to the user. Native tools remain available.
 
+`onPointer`, `onDocumentChange`, `dispose`, and the panel's unmount function
+may return promises. Panel mounting itself remains synchronous. Closing a
+session aborts its signal and removes its panel immediately; asynchronous
+cleanup does not delay tool switching. Callback failures from an obsolete
+document are ignored. Cleanup failures are still reported, without closing a
+new session. A failing session is reported once, even if its cleanup also fails.
+
+Extension drags capture their pointer until release or cancellation, including
+outside the pointer zone. Losing capture sends `cancel` once. Switching tools,
+unregistering, or closing the editor releases outstanding captures and disposes
+the session.
+
 The panel is an extension-owned mount container, like a custom sidebar tab.
 Bundle your own Vue/React dependencies if needed; do not import frontend
 components or stores. Pointer markers are separate from panel contents.

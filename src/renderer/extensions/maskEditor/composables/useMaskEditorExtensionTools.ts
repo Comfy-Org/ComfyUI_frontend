@@ -1,6 +1,7 @@
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-import { inRange, once } from 'es-toolkit'
+import { inRange } from 'es-toolkit'
 
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import { useCoordinateTransform } from '@comfyorg/mask-editor/useCoordinateTransform'
@@ -16,12 +17,14 @@ import type {
 
 import { createMaskEditorToolSession } from './maskEditorToolSession'
 
-const pointerPhases: Record<string, MaskEditorPointerEvent['phase']> = {
-  pointerdown: 'down',
-  pointermove: 'move',
-  pointerup: 'up',
-  pointercancel: 'cancel'
-}
+const pointerPhases: Partial<Record<string, MaskEditorPointerEvent['phase']>> =
+  {
+    pointerdown: 'down',
+    pointermove: 'move',
+    pointerup: 'up',
+    pointercancel: 'cancel',
+    lostpointercapture: 'cancel'
+  }
 
 export function useMaskEditorExtensionTools() {
   const { t } = useI18n()
@@ -29,6 +32,7 @@ export function useMaskEditorExtensionTools() {
   const coordinateTransform = useCoordinateTransform()
   const registry = useMaskEditorExtensionStore()
   const points = shallowRef<readonly MaskEditorOverlayPoint[]>([])
+  const capturedPointers = new Map<number, HTMLElement>()
   const active = shallowRef<{
     tool: MaskEditorTool
     runtime: ReturnType<typeof createMaskEditorToolSession>
@@ -77,9 +81,35 @@ export function useMaskEditorExtensionTools() {
     editor.canvasHistory.saveState(pixels, rgb, image)
   }
 
+  function releasePointer(pointerId: number) {
+    const target = capturedPointers.get(pointerId)
+    capturedPointers.delete(pointerId)
+    if (target?.hasPointerCapture(pointerId))
+      target.releasePointerCapture(pointerId)
+  }
+
+  function updatePointerCapture(
+    event: MaskEditorPointerEvent,
+    target: HTMLElement
+  ) {
+    if (event.phase === 'down') {
+      try {
+        target.setPointerCapture(event.pointerId)
+      } catch {
+        return false
+      }
+      capturedPointers.set(event.pointerId, target)
+    } else if (event.phase === 'up' || event.phase === 'cancel') {
+      if (!capturedPointers.has(event.pointerId)) return false
+      releasePointer(event.pointerId)
+    }
+    return true
+  }
+
   function deactivate() {
     const previous = active.value
     active.value = undefined
+    for (const pointerId of capturedPointers.keys()) releasePointer(pointerId)
     previous?.runtime.dispose()
   }
 
@@ -99,7 +129,7 @@ export function useMaskEditorExtensionTools() {
       (value) => {
         points.value = value
       },
-      once((error: unknown) => {
+      (error: unknown) => {
         reportError(error, {
           errorType: 'failure_running_mask_editor_extension',
           surface: 'workspace'
@@ -110,24 +140,25 @@ export function useMaskEditorExtensionTools() {
           active.value.runtime.context.signal.aborted
         )
           deactivate()
-      })
+      }
     )
     if (runtime.context.signal.aborted) return
     active.value = { tool, runtime }
   }
 
-  async function handlePointer(event: PointerEvent) {
-    const current = active.value
+  function toImagePointer(
+    event: PointerEvent
+  ): MaskEditorPointerEvent | undefined {
     const canvas = editor.maskCanvas
-    if (!current || !canvas || !editor.pointerZone || !editor.canvasContainer)
-      return
+    const phase = pointerPhases[event.type]
+    if (!canvas || !editor.canvasContainer || !phase) return
     const { x, y } = coordinateTransform.screenToCanvas({
       x: event.offsetX,
       y: event.offsetY
     })
     if (!Number.isFinite(x) || !Number.isFinite(y)) return
-    await current.runtime.pointer({
-      phase: pointerPhases[event.type] ?? 'up',
+    return {
+      phase,
       x,
       y,
       inBounds: inRange(x, 0, canvas.width) && inRange(y, 0, canvas.height),
@@ -140,8 +171,23 @@ export function useMaskEditorExtensionTools() {
       ctrlKey: event.ctrlKey,
       metaKey: event.metaKey,
       shiftKey: event.shiftKey
-    })
+    }
   }
+
+  async function handlePointer(event: PointerEvent) {
+    const current = active.value
+    const target = editor.pointerZone
+    if (!current || !target) return
+    const pointer = toImagePointer(event)
+    if (!pointer || !updatePointerCapture(pointer, target)) return
+    await current.runtime.pointer(pointer)
+  }
+
+  useEventListener(
+    () => editor.pointerZone,
+    'lostpointercapture',
+    (event) => void handlePointer(event)
+  )
 
   watch(
     () => editor.canvasHistory.revision,
