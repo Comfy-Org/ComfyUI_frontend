@@ -31,6 +31,8 @@
       </DialogTitle>
     </div>
 
+    <CreditsLockedNotice v-if="creditsLocked" class="text-center" />
+
     <PricingTable
       :reason="paymentIntentSource"
       class="flex-1"
@@ -115,6 +117,8 @@
             />
           </div>
 
+          <CreditsLockedNotice v-if="creditsLocked" />
+
           <p
             v-if="reason === 'out_of_credits'"
             class="m-0 text-sm text-muted-foreground"
@@ -153,6 +157,7 @@
 import { computed, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
+import CreditsLockedNotice from '@/platform/billing/components/CreditsLockedNotice.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/platform/billing/subscription/constants/subscriptionPricesConfig'
@@ -165,12 +170,14 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
-const { onClose, reason, paymentIntentSource, onChooseTeam } = defineProps<{
-  onClose: () => void
-  reason?: PaymentIntentSource
-  paymentIntentSource: PaymentIntentSource | undefined
-  onChooseTeam?: () => void
-}>()
+const { onClose, reason, paymentIntentSource, creditsLocked, onChooseTeam } =
+  defineProps<{
+    onClose: () => void
+    reason?: PaymentIntentSource
+    paymentIntentSource: PaymentIntentSource | undefined
+    creditsLocked?: boolean
+    onChooseTeam?: () => void
+  }>()
 
 const emit = defineEmits<{
   close: [subscribed: boolean]
