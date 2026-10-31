@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
@@ -12,12 +11,11 @@ vi.mock(import('@/scripts/api'))
 
 const fetchApi = vi.mocked(api.fetchApi)
 
-function respond(body: unknown, init: { ok?: boolean; status?: number } = {}) {
+function respond(body: unknown, init: { status?: number } = {}) {
   fetchApi.mockResolvedValue(
-    fromPartial({
-      ok: init.ok ?? true,
+    new Response(JSON.stringify(body), {
       status: init.status ?? 200,
-      json: () => Promise.resolve(body)
+      headers: { 'Content-Type': 'application/json' }
     })
   )
 }
@@ -96,7 +94,7 @@ describe('readStarterPromptProfile', () => {
     { name: 'a missing setting', status: 404 },
     { name: 'a server error', status: 500 }
   ])('reports $name as unavailable', async ({ status }) => {
-    respond(null, { ok: false, status })
+    respond(null, { status })
 
     await expect(readStarterPromptProfile()).resolves.toEqual({
       source: 'unavailable',
@@ -115,10 +113,9 @@ describe('readStarterPromptProfile', () => {
 
   it('reports an unreadable body as unavailable', async () => {
     fetchApi.mockResolvedValue(
-      fromPartial({
-        ok: true,
+      new Response('not json', {
         status: 200,
-        json: () => Promise.reject(new Error('not json'))
+        headers: { 'Content-Type': 'application/json' }
       })
     )
 
