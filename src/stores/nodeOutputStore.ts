@@ -301,7 +301,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function setNodeOutputsByExecutionId(
     executionId: NodeExecutionId,
-    outputs: ExecutedWsMessage['output'] | ResultItem,
+    outputs: ExecutedWsMessage['output'] | ResultItem | null | undefined,
     options: SetOutputOptions = {}
   ) {
     const rootGraph = useApp().rootGraphOrUndefined
@@ -318,9 +318,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function reportUnresolvedExecutionId(
     executionId: NodeExecutionId,
-    outputs: ExecutedWsMessage['output'] | ResultItem
+    outputs: ExecutedWsMessage['output'] | ResultItem | null | undefined
   ) {
-    const incomingImages = 'images' in outputs ? outputs.images : undefined
+    const incomingImages =
+      typeof outputs === 'object' && outputs !== null && 'images' in outputs
+        ? outputs.images
+        : undefined
     const filenames = Array.isArray(incomingImages)
       ? incomingImages
           .filter(isResultItem)

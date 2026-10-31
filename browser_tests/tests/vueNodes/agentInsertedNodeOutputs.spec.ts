@@ -61,8 +61,12 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
       'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:404'
     exec.executionStart(jobId)
     exec.executing(jobId, staleExecutionId)
+    exec.executed(jobId, staleExecutionId, null)
     exec.executed(jobId, staleExecutionId, {
       images: 'not-an-array'
+    })
+    exec.executed(jobId, staleExecutionId, {
+      images: [{ filename: 'unresolved.png', subfolder: '', type: 'input' }]
     })
     exec.executing(jobId, null)
     exec.executionSuccess(jobId)
@@ -74,20 +78,37 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
       saveImageNode.getByRole('img', { name: 'View image 1 of 1' })
     ).toHaveCount(0)
     await expect
-      .poll(() =>
-        hostErrorReports.find(
-          ({ properties }) =>
-            properties.error_type ===
-            'failure_resolving_node_output_execution_id'
-        )
+      .poll(
+        () =>
+          hostErrorReports.filter(
+            ({ properties }) =>
+              properties.error_type ===
+              'failure_resolving_node_output_execution_id'
+          ).length
       )
-      .toMatchObject({
-        message: 'No live node resolves the executed output',
-        properties: {
-          error_type: 'failure_resolving_node_output_execution_id',
-          surface: 'graph'
-        }
-      })
+      .toBe(3)
+    expect(
+      hostErrorReports.find(
+        ({ properties }) =>
+          properties.error_type ===
+            'failure_resolving_node_output_execution_id' &&
+          Array.isArray(properties.filenames)
+      )
+    ).toMatchObject({
+      message: 'No live node resolves the executed output',
+      properties: {
+        error_type: 'failure_resolving_node_output_execution_id',
+        executionId: staleExecutionId,
+        filenames: ['unresolved.png'],
+        surface: 'graph'
+      }
+    })
+    for (const report of hostErrorReports.filter(
+      ({ properties }) =>
+        properties.error_type === 'failure_resolving_node_output_execution_id'
+    )) {
+      expect(report.properties.executionId).toBe(staleExecutionId)
+    }
   })
 
   test('shows the executed image in a Save Image node inside an agent-inserted subgraph', async ({

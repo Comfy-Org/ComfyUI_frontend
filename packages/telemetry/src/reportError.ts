@@ -110,6 +110,7 @@ function dispatchToDesktop(
   errorType: string,
   surface: Surface,
   tags: Record<string, string | number | boolean>,
+  context: Record<string, unknown>,
   level?: ReportErrorOptions['level']
 ): boolean {
   try {
@@ -122,6 +123,15 @@ function dispatchToDesktop(
       },
       {
         ...tags,
+        ...(typeof context.executionId === 'string'
+          ? { executionId: context.executionId }
+          : {}),
+        ...(Array.isArray(context.filenames) &&
+        context.filenames.every(
+          (filename): filename is string => typeof filename === 'string'
+        )
+          ? { filenames: context.filenames }
+          : {}),
         error_type: errorType,
         surface,
         ...(level ? { level } : {})
@@ -242,7 +252,7 @@ function dispatch(
   }
   const desktopDelivered =
     alreadyDelivered.desktop ||
-    dispatchToDesktop(error, errorType, surface, tags, level)
+    dispatchToDesktop(error, errorType, surface, tags, context, level)
   return {
     sentry: sentryDelivered,
     datadog: datadogDelivered,
