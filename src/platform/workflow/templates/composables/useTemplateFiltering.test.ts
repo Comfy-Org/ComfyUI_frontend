@@ -8,8 +8,8 @@ import { until } from '@vueuse/core'
 
 import { useTelemetry } from '@comfyorg/telemetry'
 
-import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import type { TemplateInfo } from '@comfyorg/api-client/templateTypes'
+import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 import { api } from '@/scripts/api'
 

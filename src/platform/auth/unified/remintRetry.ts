@@ -6,7 +6,7 @@ import type {
 import axios, { AxiosHeaders } from 'axios'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { RetrySignalLifecycle } from '@/platform/auth/apiAuthProvider'
+import type { RetrySignalLifecycle } from '@comfyorg/api-client/apiAuthProvider'
 import {
   presentForRefusal,
   presentForResponse
@@ -18,8 +18,8 @@ import type {
   UnifiedAuthRetryFailureReason,
   UnifiedAuthRetryMetadata
 } from '@comfyorg/telemetry/types'
-import { fetchWithRetry } from '@/utils/fetchWithRetry'
-import type { RetryPolicy } from '@/utils/retryPolicy'
+import { fetchWithRetry } from '@comfyorg/api-client/fetchWithRetry'
+import type { RetryPolicy } from '@comfyorg/api-client/retryPolicy'
 
 let cachedUnifiedFlags:
   | { readonly unifiedCloudAuthEnabled: boolean }
