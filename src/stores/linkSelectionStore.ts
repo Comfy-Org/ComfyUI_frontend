@@ -3,12 +3,13 @@ import { shallowRef } from 'vue'
 
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotDirection } from '@comfyorg/graph-model/slotId'
 
 interface LinkSelection {
   readonly links: readonly LLink[]
   readonly marquee: Bounds
   readonly anchorX: number
-  readonly includesHidden?: boolean
+  readonly socketType?: SlotDirection
 }
 
 export const useLinkSelectionStore = defineStore('linkSelection', () => {
