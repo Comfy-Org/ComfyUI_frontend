@@ -111,7 +111,7 @@ function useBillingAutoTopUpCardInternal() {
     if (visibility === 'visible' && requested) refresh()
   })
 
-  return { state, isReady, ensureRead, retry }
+  return { scope, state, isReady, ensureRead, retry }
 }
 
 export const useBillingAutoTopUpCard = createSharedComposable(

@@ -701,6 +701,53 @@ describe('BillingAutoTopUpCard', () => {
       )
     })
 
+    it('reads the saved methods again for a workspace switch and ignores the late answer for the previous workspace', async () => {
+      let settleWorkspaceA: (
+        value: BillingResult<SavedPaymentMethod[]>
+      ) => void = () => {}
+      const workspaceA = new Promise<BillingResult<SavedPaymentMethod[]>>(
+        (resolve) => {
+          settleWorkspaceA = resolve
+        }
+      )
+      serveSavedMethods(workspaceA)
+      renderCard(notConfigured, frozen)
+      await screen.findByRole('link', { name: 'Update payment' })
+
+      vi.mocked(useBillingSdkStore().readPaymentMethods).mockReturnValue(
+        Promise.resolve({ status: 'ok', value: [savedCard] })
+      )
+      activateBillingScope('actor-a', 'workspace-b')
+      await vi.waitFor(() =>
+        expect(useBillingSdkStore().readPaymentMethods).toHaveBeenCalledTimes(2)
+      )
+      settleWorkspaceA({ status: 'ok', value: [] })
+      await workspaceA
+      await nextTick()
+
+      expect(
+        await screen.findByRole('link', { name: 'Update payment' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('link', { name: 'Add payment method' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('shows the add copy for an empty workspace and the update copy after switching to one with a saved card', async () => {
+      serveSavedMethods(Promise.resolve({ status: 'ok', value: [] }))
+      renderCard(notConfigured, frozen)
+      await screen.findByRole('link', { name: 'Add payment method' })
+
+      vi.mocked(useBillingSdkStore().readPaymentMethods).mockReturnValue(
+        Promise.resolve({ status: 'ok', value: [savedCard] })
+      )
+      activateBillingScope('actor-a', 'workspace-b')
+
+      expect(
+        await screen.findByRole('link', { name: 'Update payment' })
+      ).toBeInTheDocument()
+    })
+
     it('reports a no-card click as update_payment', async () => {
       serveSavedMethods(Promise.resolve({ status: 'ok', value: [] }))
       renderCard(notConfigured, frozen)

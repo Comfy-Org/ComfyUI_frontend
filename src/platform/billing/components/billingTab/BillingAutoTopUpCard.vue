@@ -227,7 +227,7 @@ const STATUS = {
 
 const { t, locale } = useI18n()
 const { autoTopUpSetup } = useBillingCapabilities()
-const { state, isReady, ensureRead, retry } = useBillingAutoTopUpCard()
+const { scope, state, isReady, ensureRead, retry } = useBillingAutoTopUpCard()
 ensureRead()
 
 useAutoTopUpCardViewed(() => {
@@ -366,11 +366,19 @@ const needsDefaultPaymentMethod = computed(
     autoTopUpSetup.value.reason === 'default_payment_method_missing'
 )
 
-const savedPaymentMethods = computedAsync(async () => {
+const savedPaymentMethodsRead = computedAsync(async () => {
+  const requestScope = scope.value
   if (!needsDefaultPaymentMethod.value) return null
   const result = await useBillingSdkStore().readPaymentMethods()
-  return result.status === 'ok' ? result.value : null
+  return result.status === 'ok'
+    ? { scope: requestScope, methods: result.value }
+    : null
 }, null)
+
+const savedPaymentMethods = computed(() => {
+  const read = savedPaymentMethodsRead.value
+  return read?.scope === scope.value ? read.methods : null
+})
 
 function offViewKey(): ViewKey {
   if (!needsDefaultPaymentMethod.value) return 'off'
