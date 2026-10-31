@@ -1,5 +1,5 @@
 import type { Point2D as Position2D } from '@comfyorg/shared-frontend-utils/geometry'
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -8,7 +8,7 @@ import type {
   ExecutedWsMessage,
   ExecutionErrorWsMessage,
   StatusWsMessageStatus
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import type {
   WorkflowOpenSource,
   WorkflowQueueIntent

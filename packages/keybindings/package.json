@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./*": {
+      "@comfyorg/keybindings": "./src/*.ts",
       "types": "./dist-types/*.d.ts",
       "default": "./src/*.ts"
     }

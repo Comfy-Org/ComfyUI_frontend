@@ -9,7 +9,7 @@ import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
 
-import { zTemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
+import { zTemplateInput } from '@comfyorg/api-client/templateSchema'
 
 const INPUT_BASE =
   'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/'

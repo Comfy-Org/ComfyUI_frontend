@@ -20,6 +20,7 @@ import {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -51,6 +52,10 @@ vi.mock(import('firebase/auth'), { spy: true })
 beforeEach(() => {
   stubFirebaseAuthHarness()
 })
+
+function isDefaultWorkflow(data: unknown): boolean {
+  return JSON.stringify(data) === JSON.stringify(getDefaultWorkflow())
+}
 
 function createModeTestWorkflow(
   options: {
@@ -2246,7 +2251,7 @@ describe('useWorkflowService', () => {
         path: 'Unsaved Workflow.json'
       })
       vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
-        if (data === defaultGraph)
+        if (isDefaultWorkflow(data))
           useWorkflowStore().activeWorkflow = fallback as LoadedComfyWorkflow
         return true
       })

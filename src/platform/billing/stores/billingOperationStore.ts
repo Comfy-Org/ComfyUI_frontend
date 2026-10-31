@@ -59,6 +59,73 @@ const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 // mid-flow. The operation is terminal-failed only because it never completed —
 // its replacement is proceeding normally, so there is nothing to report.
 const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
+const FAILURE_DETAIL_CODES: [string, string[]][] = [
+  ['billingOperation.insufficientFundsDetail', ['insufficient_funds']],
+  ['billingOperation.expiredCardDetail', ['expired_card']],
+  ['billingOperation.incorrectCvcDetail', ['incorrect_cvc', 'invalid_cvc']],
+  [
+    'billingOperation.incorrectNumberDetail',
+    ['incorrect_number', 'invalid_number']
+  ],
+  ['billingOperation.noPaymentMethodDetail', ['reset_now_no_payment_method']],
+  [
+    'billingOperation.topupMethodIncompatibleDetail',
+    ['topup_currency_incompatible']
+  ],
+  [
+    'billingOperation.authenticationFailedDetail',
+    [
+      'authentication_failed',
+      'authentication_required',
+      'payment_intent_authentication_failure',
+      'payment_not_completed',
+      'payment_method_customer_decline',
+      'payment_intent_payment_attempt_expired'
+    ]
+  ],
+  [
+    'billingOperation.processingErrorDetail',
+    ['processing_error', 'issuer_not_available', 'try_again_later']
+  ],
+  [
+    'billingOperation.paymentDeclinedDetail',
+    [
+      'card_declined',
+      'generic_decline',
+      'fraudulent',
+      'lost_card',
+      'stolen_card',
+      'pickup_card',
+      'invalid_account',
+      'card_velocity_exceeded',
+      'approve_with_id',
+      'call_issuer',
+      'do_not_honor',
+      'do_not_try_again',
+      'not_permitted',
+      'restricted_card',
+      'security_violation',
+      'service_not_allowed',
+      'transaction_not_allowed',
+      'initial_subscription_rejected',
+      'subscribe_invoice_payment_failed',
+      'topup_payment_declined',
+      'topup_invoice_payment_failed',
+      'upgrade_payment_declined',
+      'upgrade_invoice_payment_failed',
+      'team_credit_raise_payment_declined',
+      'reset_now_payment_declined',
+      'reset_now_invoice_payment_failed'
+    ]
+  ]
+]
+
+const FAILURE_DETAIL_KEYS = new Map(
+  FAILURE_DETAIL_CODES.flatMap(([key, codes]) =>
+    codes.map((code) => [code, key] as const)
+  )
+)
+
 // The poller adopts only operations the legacy rail issued; the SDK rail settles its own.
 function trackLegacyBillingEvent(event: BillingTelemetryEvent) {
   useTelemetry()?.trackBillingEvent({ ...event, billing_client: 'legacy' })
@@ -90,6 +157,7 @@ export interface StartOperationMetadata {
    * link it is announced by its first status, never before it.
    */
   resumed?: boolean
+  paymentMethodUrl?: string
   downgradeToPersonal?: {
     memberRemovalCount: number
     memberRemovalFailures: number
@@ -116,6 +184,7 @@ interface BillingOperation {
   operationStartedAt: number
   businessAttemptStartedAt?: number
   actionUrl: string | null
+  paymentMethodUrl: string | null
   authenticationState: BillingAuthenticationState | null
   isAuthenticating: boolean
   canRetryAuthentication: boolean
@@ -161,9 +230,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const waitingWithoutActionSince = new Map<string, number>()
   const progressToasts = new Map<string, ProgressToast>()
   const progressToastsAwaitingFirstRead = new Set<string>()
+  const dismissedProgressToasts = new Set<string>()
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
   const inFlightPolls = new Map<string, Promise<void>>()
+  const generations = new Map<string, symbol>()
 
   useEventListener(document, 'visibilitychange', () => {
     if (document.visibilityState === 'visible') pollPendingOperations()
@@ -230,10 +301,19 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const previous = progressToasts.get(opId)
     if (previous?.kind === kind) return
     if (previous) {
-      toast.dismiss(previous.id)
       progressToasts.delete(opId)
+      if (toast.takeClosedByUser(previous.id)) {
+        dismissedProgressToasts.add(opId)
+      } else {
+        toast.dismiss(previous.id)
+      }
     }
-    if (kind === undefined) return
+    if (
+      kind === undefined ||
+      (kind === 'processing' && dismissedProgressToasts.has(opId))
+    ) {
+      return
+    }
 
     const messageKey =
       type === 'subscription'
@@ -294,19 +374,49 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
   }
 
-  function startOperation(
+  function isAwaitingPaymentMethod(operation: BillingOperation): boolean {
+    return (
+      operation.phase === null || operation.phase === 'awaiting_payment_method'
+    )
+  }
+
+  function showsOnlyPaymentMethodUrl(operation: BillingOperation): boolean {
+    return (
+      operation.actionUrl === null ||
+      operation.actionUrl === operation.paymentMethodUrl
+    )
+  }
+
+  function adoptPaymentMethodUrl(
+    operation: BillingOperation,
+    paymentMethodUrl: string | null
+  ) {
+    if (
+      !paymentMethodUrl ||
+      operation.status !== 'pending' ||
+      !isAwaitingPaymentMethod(operation) ||
+      !showsOnlyPaymentMethodUrl(operation)
+    ) {
+      return
+    }
+    const updated: BillingOperation = {
+      ...operation,
+      actionUrl: paymentMethodUrl,
+      paymentMethodUrl,
+      authenticationRequiredSeen: true
+    }
+    operations.value = new Map(operations.value).set(operation.opId, updated)
+    syncProgressToastAfterRead(operation, updated)
+  }
+
+  function createPendingOperation(
     opId: string,
     type: OperationType,
-    metadata?: StartOperationMetadata,
-    initialActionUrl?: string
-  ): Promise<BillingOperation> {
-    const existing = operations.value.get(opId)
-    if (existing && existing.status !== 'timeout') {
-      return terminalPromises.get(opId) ?? Promise.resolve(existing)
-    }
-    if (existing) clearOperation(opId)
-
-    const actionUrl = validateActionUrl(initialActionUrl)
+    metadata: StartOperationMetadata | undefined,
+    initialActionUrl: string | undefined
+  ): BillingOperation {
+    const paymentMethodUrl = validateActionUrl(metadata?.paymentMethodUrl)
+    const actionUrl = validateActionUrl(initialActionUrl) ?? paymentMethodUrl
     const now = Date.now()
     const operation: BillingOperation = {
       opId,
@@ -317,6 +427,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       operationStartedAt: metadata?.attemptStartedAt ?? now,
       businessAttemptStartedAt: metadata?.attemptStartedAt,
       actionUrl,
+      paymentMethodUrl,
       authenticationState: null,
       isAuthenticating: false,
       canRetryAuthentication: false,
@@ -333,7 +444,33 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       downgradeToPersonal: metadata?.downgradeToPersonal,
       dismissed: false
     }
+    return operation
+  }
 
+  function startOperation(
+    opId: string,
+    type: OperationType,
+    metadata?: StartOperationMetadata,
+    initialActionUrl?: string
+  ): Promise<BillingOperation> {
+    const existing = operations.value.get(opId)
+    if (existing && existing.status !== 'timeout') {
+      adoptPaymentMethodUrl(
+        existing,
+        validateActionUrl(metadata?.paymentMethodUrl)
+      )
+      return terminalPromises.get(opId) ?? Promise.resolve(existing)
+    }
+    if (existing) clearOperation(opId)
+
+    const operation = createPendingOperation(
+      opId,
+      type,
+      metadata,
+      initialActionUrl
+    )
+
+    generations.set(opId, Symbol(opId))
     operations.value = new Map(operations.value).set(opId, operation)
     intervals.set(opId, INITIAL_INTERVAL_MS)
 
@@ -372,6 +509,13 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     await request
   }
 
+  function isStalePoll(opId: string, generation: symbol | undefined) {
+    return (
+      generations.get(opId) !== generation ||
+      operations.value.get(opId)?.status !== 'pending'
+    )
+  }
+
   async function pollOnce(opId: string) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
@@ -385,10 +529,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       return
     }
 
+    const generation = generations.get(opId)
     try {
       const response = await billingApi.getBillingOpStatus(opId)
-      const currentOperation = operations.value.get(opId)
-      if (currentOperation !== operation) return
+      if (isStalePoll(opId, generation)) return
       if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
         if (stopIfTimedOut(opId, operation)) return
         scheduleNextPoll(opId)
@@ -420,7 +564,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       scheduleNextPoll(opId)
     } catch {
       const currentOperation = operations.value.get(opId)
-      if (currentOperation !== operation) return
+      if (!currentOperation || isStalePoll(opId, generation)) return
       if (stopIfTimedOut(opId, currentOperation)) return
       scheduleNextPoll(opId)
     }
@@ -533,9 +677,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   function updateOperation(opId: string, patch: Partial<BillingOperation>) {
     const operation = operations.value.get(opId)
     if (!operation) return
+    const settled = patch.status !== undefined && patch.status !== 'pending'
     operations.value = new Map(operations.value).set(opId, {
       ...operation,
-      ...patch
+      ...patch,
+      ...(settled && { paymentMethodUrl: null })
     })
   }
 
@@ -573,14 +719,26 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     syncProgressToastOnChange(operation, updated)
   }
 
+  function keptPaymentMethodUrl(
+    operation: BillingOperation,
+    polledActionUrl: string | null
+  ): string | null {
+    const keeps =
+      polledActionUrl === null && operation.phase === 'awaiting_payment_method'
+    return keeps ? operation.paymentMethodUrl : null
+  }
+
   function updateOperationActionUrl(opId: string, actionUrl: string | null) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
+    const paymentMethodUrl = keptPaymentMethodUrl(operation, actionUrl)
+    const shownUrl = actionUrl ?? paymentMethodUrl
     const updated: BillingOperation = {
       ...operation,
-      actionUrl,
+      actionUrl: shownUrl,
+      paymentMethodUrl,
       authenticationRequiredSeen:
-        operation.authenticationRequiredSeen || actionUrl !== null
+        operation.authenticationRequiredSeen || shownUrl !== null
     }
     operations.value = new Map(operations.value).set(opId, updated)
     syncProgressToastAfterRead(operation, updated)
@@ -1004,56 +1162,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     errorMessage: string | null,
     recovery?: FailureRecovery
   ) {
-    switch (errorMessage) {
-      case 'insufficient_funds':
-        return t('billingOperation.insufficientFundsDetail')
-      case 'expired_card':
-        return t('billingOperation.expiredCardDetail')
-      case 'incorrect_cvc':
-      case 'invalid_cvc':
-        return t('billingOperation.incorrectCvcDetail')
-      case 'authentication_failed':
-      case 'authentication_required':
-      case 'payment_intent_authentication_failure':
-      case 'payment_not_completed':
-      case 'payment_method_customer_decline':
-      case 'payment_intent_payment_attempt_expired':
-        return t('billingOperation.authenticationFailedDetail')
-      case 'subscribe_method_not_chargeable_off_session':
-        // `recovery` is withheld from operations that never charge a card.
-        if (recovery) {
-          return t('billingOperation.methodNotChargeableOffSessionDetail')
-        }
-        break
-      case 'processing_error':
-      case 'issuer_not_available':
-      case 'try_again_later':
-        return t('billingOperation.processingErrorDetail')
-      case 'card_declined':
-      case 'generic_decline':
-      case 'approve_with_id':
-      case 'call_issuer':
-      case 'do_not_honor':
-      case 'do_not_try_again':
-      case 'not_permitted':
-      case 'restricted_card':
-      case 'security_violation':
-      case 'service_not_allowed':
-      case 'transaction_not_allowed':
-      case 'initial_subscription_rejected':
-      case 'subscribe_invoice_payment_failed':
-      case 'topup_payment_declined':
-      case 'topup_invoice_payment_failed':
-      case 'upgrade_payment_declined':
-      case 'upgrade_invoice_payment_failed':
-      case 'team_credit_raise_payment_declined':
-      case 'reset_now_payment_declined':
-      case 'reset_now_invoice_payment_failed':
-        return t('billingOperation.paymentDeclinedDetail')
+    const detailKey = errorMessage && FAILURE_DETAIL_KEYS.get(errorMessage)
+    if (detailKey) return t(detailKey)
+    if (
+      errorMessage === 'subscribe_method_not_chargeable_off_session' &&
+      recovery
+    ) {
+      return t('billingOperation.methodNotChargeableOffSessionDetail')
     }
-    // Reached only when no coded reason named something more actionable. A
-    // terminal operation is served no action_url, so this copy must promise no
-    // button — and no retry unless the server says another attempt can work.
     if (recovery?.action === 'authenticate_payment') {
       return t(
         recovery.retryable === false
@@ -1099,6 +1215,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       status,
       errorMessage,
       actionUrl: null,
+      paymentMethodUrl: null,
       authenticationState: null,
       canRetryAuthentication: false,
       isAuthenticating: false
@@ -1115,6 +1232,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     intervals.delete(opId)
     waitingWithoutActionSince.delete(opId)
     progressToastsAwaitingFirstRead.delete(opId)
+    dismissedProgressToasts.delete(opId)
 
     const progressToast = progressToasts.get(opId)
     if (progressToast) {
@@ -1125,6 +1243,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function clearOperation(opId: string) {
     cleanup(opId)
+    generations.delete(opId)
     const newMap = new Map(operations.value)
     newMap.delete(opId)
     operations.value = newMap

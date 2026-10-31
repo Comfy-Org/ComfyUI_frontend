@@ -10,6 +10,10 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
@@ -240,6 +244,7 @@ describe('useImageCrop', () => {
     })
     cropNode = createMockLGraphNode({
       id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
       getInputNode: vi.fn(() => sourceNode),
       getInputLink: vi.fn(() => ({ origin_slot: 0 })),
       isSubgraphNode: () => false
@@ -283,14 +288,11 @@ describe('useImageCrop', () => {
     })
   }
 
-  /**
-   * Resolves the image input through the link store, the way
-   * `LGraphNode.getInputLink` does, so link edits drive the preview.
-   */
-  function useLinkedCropNode() {
+  function useLinkedCropNode(inputs = [{ name: 'image', type: 'IMAGE' }]) {
     const linkStore = useLinkStore()
     cropNode = createMockLGraphNode({
       id: CROP_NODE_ID,
+      inputs,
       isSubgraphNode: () => false,
       getInputLink: (slot: number) =>
         linkStore.getInputSlotLink(GRAPH_SCOPE, CROP_NODE_ID, slot) ?? null,
@@ -302,15 +304,15 @@ describe('useImageCrop', () => {
     mockResolveNode.mockReturnValue(cropNode)
   }
 
-  function connectImageInput() {
+  function connectImageInput(targetSlot = 0, type = 'IMAGE') {
     useLinkStore().registerLink(GRAPH_SCOPE, {
       id: toLinkId(1),
       graphId: GRAPH_SCOPE.owningGraphId,
       originNodeId: toNodeId(99),
       originSlot: 0,
       targetNodeId: CROP_NODE_ID,
-      targetSlot: 0,
-      type: 'IMAGE'
+      targetSlot,
+      type
     })
   }
 
@@ -336,6 +338,7 @@ describe('useImageCrop', () => {
   it('returns null image URL when there is no input node', async () => {
     const alone = createMockLGraphNode({
       id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
       getInputNode: vi.fn(() => null),
       getInputLink: vi.fn(),
       isSubgraphNode: () => false
@@ -352,6 +355,7 @@ describe('useImageCrop', () => {
     })
     const sgCrop = createMockLGraphNode({
       id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
       getInputNode: vi.fn(() => subgraphInput),
       getInputLink: vi.fn(() => null),
       isSubgraphNode: () => false
@@ -373,6 +377,7 @@ describe('useImageCrop', () => {
 
     const sgCrop = createMockLGraphNode({
       id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
       getInputNode: vi.fn(() => subgraphInput),
       getInputLink: vi.fn(() => ({ origin_slot: 0 })),
       isSubgraphNode: () => false
@@ -420,6 +425,7 @@ describe('useImageCrop', () => {
     mockResolveNode.mockReturnValue(
       createMockLGraphNode({
         id: 2,
+        inputs: [{ name: 'image', type: 'IMAGE' }],
         getInputNode: vi.fn(() => reloadedSource),
         getInputLink: vi.fn(() => ({ origin_slot: 0 })),
         isSubgraphNode: () => false
@@ -442,6 +448,72 @@ describe('useImageCrop', () => {
 
     connectImageInput()
     await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows the image connected after mount to a first input not typed IMAGE', async () => {
+    useLinkedCropNode([{ name: 'image', type: '*' }])
+    const vm = await mountHarness()
+
+    connectImageInput(0)
+    await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows the upstream image when the image input is not the first input, as after reopening a dynamic-input node', async () => {
+    useLinkedCropNode([
+      { name: 'model', type: 'COMFY_DYNAMICCOMBO_V3' },
+      { name: 'model.images.image_1', type: 'IMAGE' },
+      { name: 'model.images.image_2', type: 'IMAGE' },
+      { name: 'model.region', type: 'BOUNDING_BOX' }
+    ])
+    connectImageInput(1)
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows the image from a union input before a later IMAGE input', async () => {
+    useLinkedCropNode([
+      { name: 'image', type: 'IMAGE,MASK' },
+      { name: 'reference', type: 'IMAGE' }
+    ])
+    connectImageInput(0)
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows an empty preview on a subgraph host with a later image input', async () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'prompt', type: 'STRING' },
+        { name: 'image', type: 'IMAGE' }
+      ],
+      outputs: [{ name: 'out', type: 'IMAGE' }]
+    })
+    const host = createTestSubgraphNode(subgraph, { id: 2 })
+    mockResolveNode.mockReturnValue(host)
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBeNull()
+  })
+
+  it('shows the image connected to a custom input type through the slot-0 fallback', async () => {
+    sourceNode = createMockLGraphNode({
+      id: 99,
+      isSubgraphNode: () => false,
+      outputs: [{ name: 'image', type: 'CUSTOM_IMAGE' }]
+    })
+    useLinkedCropNode([{ name: 'image', type: 'CUSTOM_IMAGE' }])
+    connectImageInput(0, 'CUSTOM_IMAGE')
+
+    const vm = await mountHarness()
 
     expect(vm.imageUrl).toBe('https://example.com/a.png')
   })
@@ -790,6 +862,7 @@ describe('WidgetImageCrop', () => {
     const source = createMockLGraphNode({ id: 99, isSubgraphNode: () => false })
     const crop = createMockLGraphNode({
       id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
       getInputNode: vi.fn(() => source),
       getInputLink: vi.fn(),
       isSubgraphNode: () => false

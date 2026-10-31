@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { resultItemType } from '@/schemas/resultItemTypeSchema'
+import { resultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { executionIdFromState } from '@/utils/graphTraversalUtil'
 
