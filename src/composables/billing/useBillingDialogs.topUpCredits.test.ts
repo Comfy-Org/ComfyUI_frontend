@@ -139,19 +139,8 @@ describe('showTopUpCreditsDialog', () => {
     expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
   })
 
-  it('routes self-serve subscribers to the subscription-required flow', async () => {
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-
-    await useBillingDialogs().showTopUpCreditsDialog()
-
-    expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
-      reason: 'top_up_blocked'
-    })
-    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
-  })
-
-  it('keeps the insufficient-credits copy and still attributes the surface', async () => {
+  it('does not route a denied top-up to subscription even when self-serve subscribe is allowed', async () => {
+    useBillingContext().type = computed(() => 'legacy')
     useBillingCapabilities().canTopUp = computed(() => false)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
@@ -160,24 +149,8 @@ describe('showTopUpCreditsDialog', () => {
       source: 'agent_paywall'
     })
 
-    expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
-      reason: 'out_of_credits',
-      paymentIntentSource: 'agent_paywall'
-    })
-  })
-
-  it('attributes the surface on the blocked path, which has no copy branch', async () => {
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-
-    await useBillingDialogs().showTopUpCreditsDialog({
-      source: 'agent_paywall'
-    })
-
-    expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
-      reason: 'agent_paywall',
-      paymentIntentSource: 'agent_paywall'
-    })
+    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   it('passes the surface to the workspace rail content', async () => {
@@ -271,32 +244,15 @@ describe('showTopUpCreditsDialog', () => {
       expect(mockRumAddAction).toHaveBeenCalledOnce()
     })
 
-    it.for([
-      {
-        name: 'a self-serve subscriber who is sent to the pricing table',
-        canTopUp: false,
-        canSubscribeSelfServe: true
-      },
-      {
-        name: 'a team member who cannot buy credits',
-        canTopUp: false,
-        canSubscribeSelfServe: false
-      }
-    ])(
-      'still reports the click of $name',
-      async ({ canTopUp, canSubscribeSelfServe }) => {
-        useBillingCapabilities().canTopUp = computed(() => canTopUp)
-        useBillingCapabilities().canSubscribeSelfServe = computed(
-          () => canSubscribeSelfServe
-        )
+    it('still reports the click when top-up is denied', async () => {
+      useBillingCapabilities().canTopUp = computed(() => false)
 
-        await useBillingDialogs().showTopUpCreditsDialog({
-          source: 'deep_link'
-        })
+      await useBillingDialogs().showTopUpCreditsDialog({
+        source: 'deep_link'
+      })
 
-        expect(mockRumAddAction).toHaveBeenCalledOnce()
-      }
-    )
+      expect(mockRumAddAction).toHaveBeenCalledOnce()
+    })
   })
 
   describe('non-cloud distribution', () => {
