@@ -1222,7 +1222,7 @@ describe('useWorkspaceBilling', () => {
         )
         expect(Object.fromEntries(link.searchParams)).toEqual({
           product: 'comfyui',
-          return_to: 'comfyui_workspace',
+          return_to: 'comfyui_local',
           correlation_id: expect.stringMatching(/^[\w-]{1,128}$/)
         })
         expect(mockWorkspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()

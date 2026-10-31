@@ -592,5 +592,9 @@
   "topupReturn": {
     "title": "Return to ComfyUI",
     "body": "Your balance updates in the app once the payment is confirmed. If you canceled, nothing was charged."
+  },
+  "comfyuiReturn": {
+    "title": "Return to ComfyUI",
+    "body": "Go back to the ComfyUI app to keep working. It shows the change when you return to it."
   }
 }

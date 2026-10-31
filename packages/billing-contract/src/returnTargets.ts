@@ -9,9 +9,8 @@
  * from a sibling's hostname, because an unresolvable target fails closed while
  * a guessed one sends a customer somewhere nobody serves.
  *
- * Localhost and desktop return targets are out of scope: a developer running a
- * product locally returns to the deployed destination of whichever environment
- * their backend belongs to.
+ * Local and Desktop builds have no URL billing can reach, so `comfyui_local`
+ * sends them to billing-web's own page that asks them to go back to the app.
  */
 import type { BillingEnvironment } from './contract'
 import { parseUrl } from './url'
@@ -19,6 +18,7 @@ import { parseUrl } from './url'
 export const RETURN_TARGETS = [
   'comfyui_workspace',
   'comfyui_credits',
+  'comfyui_local',
   'platform_account',
   'platform_billing'
 ] as const
@@ -43,6 +43,11 @@ const RETURN_TARGET_DESTINATIONS: Readonly<
     production: 'https://cloud.comfy.org/?settings=plan-credits',
     staging: 'https://stagingcloud.comfy.org/?settings=plan-credits',
     test: 'https://testcloud.comfy.org/?settings=plan-credits'
+  },
+  comfyui_local: {
+    production: 'https://billing.comfy.org/return/comfyui',
+    staging: 'https://stagingbilling.comfy.org/return/comfyui',
+    test: 'https://testbilling.comfy.org/return/comfyui'
   },
   // Platform lives in its own repository and names no account route here, so
   // its origin root is the destination until that app names one.

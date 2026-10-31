@@ -109,7 +109,7 @@ describe('the billing-web handoff', () => {
 
     expect(linkParams(tab)).toEqual({
       product: 'comfyui',
-      return_to: 'comfyui_workspace',
+      return_to: 'comfyui_local',
       plan: 'standard-yearly',
       workspace: 'ws-1',
       correlation_id: 'journey-1',
@@ -128,7 +128,7 @@ describe('the billing-web handoff', () => {
 
     expect(linkParams(tab)).toEqual({
       product: 'comfyui',
-      return_to: 'comfyui_workspace',
+      return_to: 'comfyui_local',
       plan: 'team_per_credit_annual',
       team_credit_stop_id: 'stop_700',
       workspace: 'ws-1',
@@ -144,7 +144,7 @@ describe('the billing-web handoff', () => {
     const params = linkParams(tab)
     expect(params).toEqual({
       product: 'comfyui',
-      return_to: 'comfyui_workspace',
+      return_to: 'comfyui_local',
       workspace: 'ws-1',
       correlation_id: expect.stringMatching(/^[\w-]{1,128}$/)
     })

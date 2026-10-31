@@ -35,6 +35,7 @@ import {
   reportEntryRejected
 } from '@/telemetry/webEntryTelemetry'
 import BillingHomeView from '@/views/BillingHomeView.vue'
+import ComfyUIReturnView from '@/views/ComfyUIReturnView.vue'
 import CheckoutRouteView from '@/views/CheckoutRouteView.vue'
 import TopupReturnView from '@/views/TopupReturnView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
@@ -52,6 +53,9 @@ export const SIGN_IN_PATH = '/sign-in'
 
 /** Where hosted top-up checkouts from Desktop and local builds land; shipped builds keep this URL. */
 export const TOPUP_RETURN_PATH = '/return/topup'
+
+/** The `comfyui_local` return target: where billing sends a local or Desktop customer back from. */
+export const COMFYUI_RETURN_PATH = '/return/comfyui'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -85,6 +89,12 @@ const routes: RouteRecordRaw[] = [
     path: TOPUP_RETURN_PATH,
     name: 'topup-return',
     component: TopupReturnView,
+    meta: { public: true }
+  },
+  {
+    path: COMFYUI_RETURN_PATH,
+    name: 'comfyui-return',
+    component: ComfyUIReturnView,
     meta: { public: true }
   },
   ...BILLING_INTENTS.map((intent) => ({
