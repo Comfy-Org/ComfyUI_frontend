@@ -363,16 +363,6 @@ beforeEach(() => {
 })
 
 describe('LiveGraphApplier', () => {
-  /**
-   * PM-2354. `TestPlainWidgets` declares no dynamic combo, and the catalog
-   * names only its first widget — so the host stores `addedAfterCatalog`'s
-   * value under the positional alias `_extra_1`, exactly as it does for a
-   * custom node or a core node whose widgets grew since the pin. These two
-   * cases previously asserted the value was DROPPED and reported as a missing
-   * widget; that was the production defect, not a safeguard. The out-of-range
-   * and malformed cases below still report, which is what keeps the assertion
-   * honest.
-   */
   it('applies a positional alias on a node without a dynamic combo', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [
@@ -422,11 +412,6 @@ describe('LiveGraphApplier', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  /**
-   * The position genuinely absent from the node is still refused loudly, on a
-   * node without a dynamic combo. This is the assertion PM-2354's fix must not
-   * weaken: widening which aliases RESOLVE must not widen which are TOLERATED.
-   */
   it('still reports a positional alias past the end of a plain node', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [
@@ -444,7 +429,7 @@ describe('LiveGraphApplier', () => {
     applyCollected()
     applyEdit(() => {
       const widgets = nodesMap(doc).get('1')?.get('widgets')
-      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      assert(widgets instanceof Y.Map)
       widgets.set('_extra_7', 99)
     })
 
