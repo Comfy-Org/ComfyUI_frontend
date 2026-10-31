@@ -1,5 +1,6 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { tryOnScopeDispose, useMediaControls, whenever } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -13,13 +14,14 @@ interface WaveformBar {
 }
 
 interface UseWaveAudioPlayerOptions {
-  src: Ref<string | undefined>
+  src: Readonly<Ref<string | undefined>>
+  logicalSrc?: Readonly<Ref<string | undefined>>
   barCount?: number
   waveform?: boolean
 }
 
 export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
-  const { src, barCount = 40, waveform = true } = options
+  const { src, logicalSrc = src, barCount = 40, waveform = true } = options
 
   const audioRef = ref<HTMLAudioElement>()
   const waveformRef = ref<HTMLElement>()
@@ -40,6 +42,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
   }
 
   tryOnScopeDispose(invalidatePlayback)
+  watch(logicalSrc, invalidatePlayback)
 
   const playedBarIndex = computed(() => {
     if (duration.value === 0) return -1
@@ -131,14 +134,22 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
 
     const attempt = ++playAttempt
     try {
+      if (audio.error) audio.load()
       await audio.play()
       if (attempt === playAttempt) toast.dismiss(playbackErrorToastId)
     } catch (error) {
       if (attempt !== playAttempt) return
       audio.pause()
       playing.value = false
-      if (error instanceof DOMException && error.name === 'AbortError') return
-      console.warn('Audio playback failed:', error)
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        toast.dismiss(playbackErrorToastId)
+        return
+      }
+      reportError(error, {
+        errorType: 'error_playing_audio',
+        surface: 'assets',
+        level: 'warning'
+      })
       toast.error(t('g.error'), {
         id: playbackErrorToastId,
         description: t('g.audioPlaybackFailed')
@@ -154,7 +165,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
       void startPlayback()
       return
     }
-    playAttempt++
+    invalidatePlayback()
     audio.pause()
   }
 
@@ -191,13 +202,12 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
     )
     currentTime.value = ratio * duration.value
 
-    if (!playing.value) void startPlayback()
+    if (audioRef.value?.paused) void startPlayback()
   }
 
   whenever(
     src,
     (url) => {
-      invalidatePlayback()
       playing.value = false
       currentTime.value = 0
       if (waveform) void decodeAudioSource(url)

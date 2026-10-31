@@ -1,4 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useMediaControls } from '@vueuse/core'
 import { effectScope, nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -28,6 +29,7 @@ afterEach(() => {
 })
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 describe('useWaveAudioPlayer', () => {
   it('initializes with default bar count', () => {
@@ -192,6 +194,8 @@ describe('useWaveAudioPlayer', () => {
     const notSupported = () =>
       new DOMException('The operation is not supported.', 'NotSupportedError')
 
+    type Player = ReturnType<typeof useWaveAudioPlayer>
+
     async function createPlayer() {
       vi.mocked(useMediaControls).mockReset()
 
@@ -210,9 +214,12 @@ describe('useWaveAudioPlayer', () => {
       return nextTick()
     }
 
-    it.for(['togglePlayPause', 'handleWaveformClick'] as const)(
+    it.for([
+      ['the toggle', (p) => p.togglePlayPause()],
+      ['the waveform', (p) => p.handleWaveformClick(new MouseEvent('click'))]
+    ] satisfies [string, (p: Player) => void][])(
       'stays paused and shows a toast when play() rejects from %s',
-      async (trigger) => {
+      async ([, trigger]) => {
         const { audio, player } = await createPlayer()
         vi.spyOn(audio, 'play').mockRejectedValue(notSupported())
         const waveform = document.createElement('div')
@@ -220,8 +227,7 @@ describe('useWaveAudioPlayer', () => {
         player.waveformRef.value = waveform
         await giveDuration(audio)
 
-        if (trigger === 'togglePlayPause') player.togglePlayPause()
-        else player.handleWaveformClick(new MouseEvent('click'))
+        trigger(player)
 
         await vi.waitFor(() =>
           expect(useToast().toasts).toEqual([
@@ -232,6 +238,10 @@ describe('useWaveAudioPlayer', () => {
           ])
         )
         expect(player.isPlaying.value).toBe(false)
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(DOMException),
+          expect.objectContaining({ errorType: 'error_playing_audio' })
+        )
       }
     )
 
@@ -261,6 +271,55 @@ describe('useWaveAudioPlayer', () => {
       expect(useToast().toasts).toEqual([])
     })
 
+    it('keeps the error toast through a same-source retry cycle', async () => {
+      vi.mocked(useMediaControls).mockReset()
+      const src = ref<string | undefined>('http://example.com/a.ogg')
+      const player = useWaveAudioPlayer({
+        src,
+        logicalSrc: ref('http://example.com/a.ogg'),
+        waveform: false
+      })
+      const audio = document.createElement('audio')
+      player.audioRef.value = audio
+      await nextTick()
+      vi.spyOn(audio, 'play').mockRejectedValue(notSupported())
+      player.togglePlayPause()
+      await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+      src.value = undefined
+      await nextTick()
+      src.value = 'http://example.com/a.ogg'
+      await nextTick()
+
+      expect(useToast().toasts).toHaveLength(1)
+    })
+
+    it('dismisses the error toast when the source is cleared', async () => {
+      const { audio, player, src } = await createPlayer()
+      src.value = 'http://example.com/a.ogg'
+      await nextTick()
+      vi.spyOn(audio, 'play').mockRejectedValue(notSupported())
+      player.togglePlayPause()
+      await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+      src.value = ''
+      await nextTick()
+
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it('reloads a failed source before retrying', async () => {
+      const { audio, player } = await createPlayer()
+      Object.defineProperty(audio, 'error', { value: { code: 4 } })
+      const load = vi.spyOn(audio, 'load').mockImplementation(() => {})
+      const play = vi.spyOn(audio, 'play').mockResolvedValue(undefined)
+
+      player.togglePlayPause()
+      await vi.waitFor(() => expect(play).toHaveBeenCalledTimes(1))
+
+      expect(load).toHaveBeenCalledTimes(1)
+    })
+
     it('stays silent when a play attempt is aborted', async () => {
       const { audio, player } = await createPlayer()
       const play = vi
@@ -272,7 +331,7 @@ describe('useWaveAudioPlayer', () => {
       await nextTick()
       await nextTick()
 
-      expect(console.warn).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
       expect(useToast().toasts).toEqual([])
     })
 
@@ -296,7 +355,7 @@ describe('useWaveAudioPlayer', () => {
       await nextTick()
       await nextTick()
 
-      expect(console.warn).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
       expect(useToast().toasts).toEqual([])
     })
 
