@@ -164,18 +164,23 @@ export const useExtensionService = () => {
   const registerExtensionNow = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
 
+    const contributes = extensionStore.contributes(extension.name)
     const addKeybinding = wrapWithErrorHandling(
       keybindingStore.addDefaultKeybinding
     )
     const addSetting = wrapWithErrorHandling(settingStore.addSetting)
 
-    extension.keybindings?.forEach((keybinding) => {
-      addKeybinding(new KeybindingImpl(keybinding))
-    })
-    useCommandStore().loadExtensionCommands(extension)
-    useMenuItemStore().loadExtensionMenuCommands(extension)
+    if (contributes) {
+      extension.keybindings?.forEach((keybinding) => {
+        addKeybinding(new KeybindingImpl(keybinding))
+      })
+      useCommandStore().loadExtensionCommands(extension)
+      useMenuItemStore().loadExtensionMenuCommands(extension)
+    }
     extension.settings?.forEach(addSetting)
-    useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
+    if (contributes) {
+      useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
+    }
     if (extension.getCustomWidgets) {
       void (async () => {
         if (extension.getCustomWidgets) {
@@ -183,6 +188,10 @@ export const useExtensionService = () => {
           useWidgetStore().registerCustomWidgets(widgets)
         }
       })()
+    }
+
+    if (!contributes) {
+      return once(() => extensionStore.unregisterExtension(extension.name))
     }
 
     const authHookHandles: WatchHandle[] = []
