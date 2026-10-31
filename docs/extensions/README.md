@@ -6,6 +6,7 @@ Extensions are the primary way to add functionality to ComfyUI. They can be cust
 
 ## Documentation Structure
 
+- **[MaskEditor Tools](./mask-editor-tools.md)** - Register external selection tools with image snapshots, pointer events, overlays, undoable mask application, and session cleanup
 - **[Development Guide](./development.md)** - How to develop extensions, including:
   - Extension architecture and terminology
   - How extensions load (backend vs frontend)

@@ -1,6 +1,5 @@
 import { ref, computed } from 'vue'
 
-// Define the state interface for better readability
 interface CanvasState {
   mask: ImageData | ImageBitmap
   rgb: ImageData | ImageBitmap
@@ -20,6 +19,7 @@ export function useCanvasHistory(layers: CanvasHistoryLayers, maxStates = 20) {
   const states = ref<CanvasState[]>([])
   const currentStateIndex = ref(-1)
   const initialized = ref(false)
+  const revision = ref(0)
 
   const canUndo = computed(
     () => states.value.length > 1 && currentStateIndex.value > 0
@@ -35,7 +35,6 @@ export function useCanvasHistory(layers: CanvasHistoryLayers, maxStates = 20) {
   const saveInitialState = () => {
     const { maskCtx, rgbCtx, imgCtx, maskCanvas, rgbCanvas, imgCanvas } = layers
 
-    // Ensure all 3 contexts and canvases are ready
     if (
       !maskCtx ||
       !rgbCtx ||
@@ -55,7 +54,6 @@ export function useCanvasHistory(layers: CanvasHistoryLayers, maxStates = 20) {
 
     states.value = []
 
-    // Capture all three layers
     const maskState = maskCtx.getImageData(
       0,
       0,
@@ -78,6 +76,7 @@ export function useCanvasHistory(layers: CanvasHistoryLayers, maxStates = 20) {
     states.value.push({ mask: maskState, rgb: rgbState, img: imgState })
     currentStateIndex.value = 0
     initialized.value = true
+    revision.value++
   }
 
   const saveState = (
@@ -102,7 +101,6 @@ export function useCanvasHistory(layers: CanvasHistoryLayers, maxStates = 20) {
       return
     }
 
-    // Clear redo history
     states.value = states.value.slice(0, currentStateIndex.value + 1)
 
     let maskState: ImageData | ImageBitmap
@@ -127,7 +125,6 @@ export function useCanvasHistory(layers: CanvasHistoryLayers, maxStates = 20) {
     states.value.push({ mask: maskState, rgb: rgbState, img: imgState })
     currentStateIndex.value++
 
-    // Maintain max history size and clean up memory
     if (states.value.length > maxStates) {
       const removed = states.value.shift()
       if (removed) {
@@ -135,18 +132,21 @@ export function useCanvasHistory(layers: CanvasHistoryLayers, maxStates = 20) {
       }
       currentStateIndex.value--
     }
+    revision.value++
   }
 
   const undo = () => {
     if (!canUndo.value) return
     currentStateIndex.value--
     restoreState(states.value[currentStateIndex.value])
+    revision.value++
   }
 
   const redo = () => {
     if (!canRedo.value) return
     currentStateIndex.value++
     restoreState(states.value[currentStateIndex.value])
+    revision.value++
   }
 
   const restoreState = (state: CanvasState) => {
@@ -161,7 +161,6 @@ export function useCanvasHistory(layers: CanvasHistoryLayers, maxStates = 20) {
     )
       return
 
-    // Update canvas dimensions to match state (handles rotation undo/redo)
     const refData = state.mask
     const newWidth = refData.width
     const newHeight = refData.height
@@ -202,11 +201,13 @@ export function useCanvasHistory(layers: CanvasHistoryLayers, maxStates = 20) {
     states.value = []
     currentStateIndex.value = -1
     initialized.value = false
+    revision.value++
   }
 
   return {
     canUndo,
     canRedo,
+    revision,
     currentStateIndex,
     saveInitialState,
     saveState,
