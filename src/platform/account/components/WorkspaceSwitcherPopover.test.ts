@@ -38,7 +38,7 @@ const i18n = createI18n({
           'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.',
         createWorkspace: 'Create a team workspace',
         maxWorkspacesReached:
-          'You can only own 10 workspaces. Delete one to create a new one.',
+          'You can only own {max} workspaces. Delete one to create a new one.',
         managedByOrganization:
           "Your organization manages your workspaces, so you can't create one.",
         cannotCreateWorkspace:
@@ -275,32 +275,33 @@ describe('WorkspaceSwitcherPopover', () => {
     expect(list).not.toContainElement(createWorkspaceButton)
   })
 
-  it('says why creation is off when an organization manages the workspaces', async () => {
-    const store = useTeamWorkspaceStore()
-    store.$patch({
-      serverRefusesCreation: true,
-      workspacesManagedByOrganization: true
-    })
-    const { emitted } = renderComponent()
+  it.for([
+    {
+      reason: 'organization_managed',
+      notice: /Your organization manages your workspaces/
+    },
+    {
+      reason: 'owned_workspace_limit',
+      notice: /You can only own 25 workspaces/
+    },
+    { reason: undefined, notice: /can't create a workspace on this account/ }
+  ] as const)(
+    'renders the served refusal ($reason) in place of creating',
+    async ({ reason, notice }) => {
+      const store = useTeamWorkspaceStore()
+      store.$patch({
+        serverRefusesCreation: true,
+        creationDeniedReason: reason,
+        maxOwnedWorkspaces: 25
+      })
+      const { emitted } = renderComponent()
 
-    await userEvent.click(
-      screen.getByText(/Your organization manages your workspaces/)
-    )
+      await userEvent.click(screen.getByText(notice))
 
-    expect(screen.queryByText('Create a team workspace')).toBeNull()
-    expect(emitted().create).toBeUndefined()
-  })
-
-  it('does not blame an organization when the server gives no reason', () => {
-    const store = useTeamWorkspaceStore()
-    store.$patch({ serverRefusesCreation: true })
-    renderComponent()
-
-    expect(
-      screen.getByText(/can't create a workspace on this account/)
-    ).toBeInTheDocument()
-    expect(screen.queryByText(/Your organization manages/)).toBeNull()
-  })
+      expect(screen.queryByText('Create a team workspace')).toBeNull()
+      expect(emitted().create).toBeUndefined()
+    }
+  )
 
   it('hides the create-workspace footer on non-cloud distributions', () => {
     distributionMocks.isCloud = false
