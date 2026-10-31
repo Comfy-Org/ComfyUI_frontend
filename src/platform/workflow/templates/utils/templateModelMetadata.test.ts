@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { ModelMetadataFetchOutcome } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import { resolveTemplateModelMetadata } from './templateModelMetadata'
 
 const mocks = vi.hoisted(() => ({

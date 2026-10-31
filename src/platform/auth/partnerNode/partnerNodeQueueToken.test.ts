@@ -16,7 +16,7 @@ import {
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
 import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -24,7 +24,7 @@ const distribution = vi.hoisted(() => ({ isCloud: false }))
 
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 vi.mock(import('@/platform/distribution/types'), () => ({

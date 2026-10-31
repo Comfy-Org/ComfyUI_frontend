@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   validateComfyWorkflow,
   zClipboardItems
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'

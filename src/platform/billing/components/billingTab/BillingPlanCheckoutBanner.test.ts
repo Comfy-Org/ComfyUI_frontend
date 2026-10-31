@@ -24,7 +24,7 @@ function renderBanner(banner: PlanCheckoutBanner) {
 }
 
 describe('BillingPlanCheckoutBanner', () => {
-  it('links the bank check when the operation serves an action url', () => {
+  it('links the bank check from a white Complete verification action with no Dismiss', () => {
     renderBanner({
       kind: 'verifyPayment',
       opId: 'op-1',
@@ -35,24 +35,45 @@ describe('BillingPlanCheckoutBanner', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'Your bank requires additional verification to complete this payment.'
     )
+    const action = screen.getByRole('link', { name: 'Complete verification' })
+    expect(action).toHaveAttribute('href', 'https://pay.example/verify')
+    expect(action).toHaveAttribute('data-variant', 'inverted')
     expect(
-      screen.getByRole('link', { name: 'Verify your payment' })
-    ).toHaveAttribute('href', 'https://pay.example/verify')
+      screen.queryByRole('button', { name: 'Dismiss' })
+    ).not.toBeInTheDocument()
   })
 
-  it('uses the 12px banner shell with md buttons', () => {
-    renderBanner({
-      kind: 'verifyPayment',
-      opId: 'op-1',
-      actionUrl: 'https://pay.example/verify'
-    })
+  it.for<{
+    case: string
+    banner: PlanCheckoutBanner
+    role: 'link' | 'button'
+    name: string
+  }>([
+    {
+      case: 'the verify action',
+      banner: {
+        kind: 'verifyPayment',
+        opId: 'op-1',
+        actionUrl: 'https://pay.example/verify'
+      },
+      role: 'link',
+      name: 'Complete verification'
+    },
+    {
+      case: 'Dismiss',
+      banner: { kind: 'paymentReceived', opId: 'op-1' },
+      role: 'button',
+      name: 'Dismiss'
+    }
+  ])(
+    'uses the 12px banner shell with an md $case',
+    ({ banner, role, name }) => {
+      renderBanner(banner)
 
-    expect(screen.getByRole('status')).toHaveClass('rounded-xl', 'p-3')
-    expect(screen.getByRole('button', { name: 'Dismiss' })).toHaveClass('h-8')
-    expect(
-      screen.getByRole('link', { name: 'Verify your payment' })
-    ).toHaveClass('h-8')
-  })
+      expect(screen.getByRole('status')).toHaveClass('rounded-xl', 'p-3')
+      expect(screen.getByRole(role, { name })).toHaveClass('h-8')
+    }
+  )
 
   it('shows verify payment with no link when the operation omits action_url', () => {
     renderBanner({ kind: 'verifyPayment', opId: 'op-1', actionUrl: null })

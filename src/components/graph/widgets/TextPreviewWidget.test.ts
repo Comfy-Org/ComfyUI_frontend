@@ -4,8 +4,8 @@ import { defineComponent, nextTick, ref } from 'vue'
 
 import type * as NodePreviewModule from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import { useExecutionStore } from '@/stores/executionStore'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import TextPreviewWidget from './TextPreviewWidget.vue'
 vi.mock(import('@/scripts/app'))

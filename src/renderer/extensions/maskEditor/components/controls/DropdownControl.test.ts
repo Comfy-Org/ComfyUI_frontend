@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import DropdownControl from './DropdownControl.vue'
+import DropdownControl from '@comfyorg/design-system/select/DropdownControl'
 
 const renderComponent = (
   props: {

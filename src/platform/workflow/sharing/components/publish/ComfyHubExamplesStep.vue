@@ -36,7 +36,7 @@
           @change="handleFileSelect"
         />
         <i
-          class="icon-[lucide--plus] size-4 text-muted-foreground"
+          class="icon-[lucide--plus] text-muted-foreground"
           aria-hidden="true"
         />
         <span class="sr-only">{{

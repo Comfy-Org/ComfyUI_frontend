@@ -9,7 +9,7 @@ import {
 import type {
   BillingBalanceResponse,
   BillingStatusResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
@@ -60,6 +60,7 @@ async function mockCloudBoot(
     has_funds: false,
     max_seats: 0,
     occupied_seats: 0,
+    ended_at: null,
     team_credit_stop: null,
     scheduled_change: null,
     ...subscriptionStatus,

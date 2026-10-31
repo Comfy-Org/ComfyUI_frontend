@@ -20,13 +20,6 @@ function hasProgressPercent(value: ProgressPercent) {
   return normalizeProgressPercent(value) !== undefined
 }
 
-function hasAnyProgressPercent(
-  totalPercent: ProgressPercent,
-  currentPercent: ProgressPercent
-) {
-  return hasProgressPercent(totalPercent) || hasProgressPercent(currentPercent)
-}
-
 function progressPercentStyle(value: ProgressPercent) {
   const normalized = normalizeProgressPercent(value)
 
@@ -41,7 +34,6 @@ export function useProgressBarBackground() {
     progressBarPrimaryClass,
     progressBarSecondaryClass,
     hasProgressPercent,
-    hasAnyProgressPercent,
     progressPercentStyle
   }
 }

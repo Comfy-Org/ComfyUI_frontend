@@ -38,9 +38,7 @@ test.describe(
       await comfyPage.clipboard.copy(comfyPage.canvas)
       await comfyPage.clipboard.paste(comfyPage.canvas)
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(originalGraphNodeCount + 1)
+      await comfyPage.expectNodeCount(originalGraphNodeCount + 1)
       const nodes = await comfyPage.nodeOps.getNodeRefsByType(nodeType)
       const pasted = nodes.find(({ id }) => !originalIds.has(id))
       if (!pasted) throw new Error('Pasted node not found')
@@ -181,9 +179,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Repeated pastes never reuse node instances or IDs', async ({
     comfyPage
   }) => {
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBeGreaterThan(1)
+    await comfyPage.expectNodeCountMinimum(2)
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
     await comfyPage.canvas.click()
@@ -194,9 +190,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     const pasteCount = 5
     for (let i = 0; i < pasteCount; i++) {
       await comfyPage.clipboard.paste()
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount * (i + 2))
+      await comfyPage.expectNodeCount(initialCount * (i + 2))
     }
 
     const uniqueCounts = await comfyPage.page.evaluate(() => {
@@ -256,9 +250,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Can undo paste multiple nodes as single action', async ({
     comfyPage
   }) => {
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBeGreaterThan(1)
+    await comfyPage.expectNodeCountMinimum(2)
     const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
     await comfyPage.canvas.click()
     await comfyPage.keyboard.selectAll()
@@ -266,14 +258,10 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await comfyPage.clipboard.copy()
     await comfyPage.clipboard.paste()
 
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialCount * 2)
+    await comfyPage.expectNodeCount(initialCount * 2)
 
     await comfyPage.keyboard.undo()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialCount)
+    await comfyPage.expectNodeCount(initialCount)
   })
 
   test(
@@ -281,7 +269,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     { tag: ['@node'] },
     async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('nodes/load_image_with_ksampler')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+      await comfyPage.expectNodeCount(2)
 
       // Step 1: Copy a KSampler node with Ctrl+C and paste with Ctrl+V
       const ksamplerNodes =
@@ -292,7 +280,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       })
       await comfyPage.nextFrame()
       await comfyPage.clipboard.paste()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
+      await comfyPage.expectNodeCount(3)
 
       // Step 2: Paste image onto selected LoadImage node
       const loadImageNodes =
@@ -314,7 +302,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
           return fileWidget.getValue()
         })
         .toContain('image32x32')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
+      await comfyPage.expectNodeCount(3)
 
       // Step 3: Click empty canvas area, paste image → creates new LoadImage
       await comfyPage.canvas.click({
@@ -331,7 +319,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       )
       await uploadPromise2
 
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(4)
+      await comfyPage.expectNodeCount(4)
       const allLoadImageNodes =
         await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
       expect(allLoadImageNodes).toHaveLength(2)
@@ -356,7 +344,7 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('nodes/load_image_with_ksampler')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+      await comfyPage.expectNodeCount(2)
       const [ksampler] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       const [loadImage] = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
 
@@ -366,7 +354,7 @@ test.describe(
         await comfyPage.clipboard.writeText('copied in another app')
         await selectNode(comfyPage, loadImage)
         await comfyPage.clipboard.paste()
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+        await comfyPage.expectNodeCount(2)
       })
 
       await test.step('Ctrl+V after a fresh Ctrl+C adds one node', async () => {
@@ -374,7 +362,7 @@ test.describe(
         await comfyPage.clipboard.copy()
         await selectNode(comfyPage, loadImage)
         await comfyPage.clipboard.paste()
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(3)
+        await comfyPage.expectNodeCount(3)
       })
     })
   }

@@ -31,6 +31,23 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const zAnswerRequest = z.object({ selected: z.array(z.string()) })
+const zWireInteger = z.coerce.number().int().safe()
+
+function pendingAskForWire(
+  ask: z.infer<typeof zAgentPendingAsk>
+): AgentPendingAsk {
+  if (ask.kind !== 'run_approval') return ask
+  return {
+    ...ask,
+    context: {
+      ...ask.context,
+      doc_seq:
+        ask.context.doc_seq === undefined
+          ? undefined
+          : zWireInteger.parse(ask.context.doc_seq)
+    }
+  }
+}
 
 const THREAD_ID = 'b9d0a2a1-0f2c-4f1a-9a5e-6b0f4f2c1d77'
 const TURN_ID = '2dd4f367-3399-4cb4-8127-547f531c289a'
@@ -96,11 +113,22 @@ const FOREIGN_TURN_DONE_EVENT: AgentWsEvent = {
 const RUN_APPROVAL_ASK_ID = `${TURN_ID}:call-run-workflow`
 
 /**
+ * The workflow this ask names. Not exported: it is the same workflow the
+ * panel's picker and tab already name, so a spec that matched it as text
+ * would resolve to three elements. `approvalWorkflowLink` below is the
+ * locator a spec should assert on instead.
+ */
+const APPROVAL_WORKFLOW_NAME = 'Unsaved Workflow'
+
+/**
  * The option ids this ask offers. Declared separately because `AgentWsEvent`
  * types `data` loosely, so reading them back off the event would be an
  * `unknown` the route would have to cast.
  */
 const RUN_APPROVAL_OPTION_IDS = ['run', 'cancel'] as const
+
+/** The option id the panel's Run button answers with. */
+export const APPROVAL_RUN_OPTION_ID = RUN_APPROVAL_OPTION_IDS[0]
 
 /**
  * The frame the server sends when a turn parks waiting for the user to approve
@@ -115,8 +143,11 @@ export const RUN_APPROVAL_EVENT: AgentWsEvent = {
     thread_id: THREAD_ID,
     ask_id: RUN_APPROVAL_ASK_ID,
     kind: 'run_approval',
-    prompt: 'Run workflow “Unsaved Workflow”?',
-    context: { workflow_id: WORKFLOW_ID, workflow_name: 'Unsaved Workflow' },
+    prompt: `Run workflow “${APPROVAL_WORKFLOW_NAME}”?`,
+    context: {
+      workflow_id: WORKFLOW_ID,
+      workflow_name: APPROVAL_WORKFLOW_NAME
+    },
     options: [
       {
         id: RUN_APPROVAL_OPTION_IDS[0],
@@ -180,7 +211,7 @@ class TurnLockServer {
   private rejected = 0
   private posts = 0
   private readonly answered: string[][] = []
-  private pendingAsk: AgentPendingAsk | undefined
+  private pendingAsk: z.infer<typeof zAgentPendingAsk> | undefined
   private heldTranscript:
     | {
         threadId?: string
@@ -371,7 +402,10 @@ class TurnLockServer {
       role: 'assistant',
       status: 'streaming',
       workflow_id: WORKFLOW_ID,
-      pending_ask: this.pendingAsk
+      pending_ask:
+        this.pendingAsk === undefined
+          ? undefined
+          : pendingAskForWire(this.pendingAsk)
     })
     return rows
   }
@@ -501,6 +535,8 @@ export class AgentTurnLockHarness {
   public readonly sendButton: Locator
   public readonly stopButton: Locator
   public readonly runApprovalButton: Locator
+  public readonly approvalCard: Locator
+  public readonly approvalWorkflowLink: Locator
   public readonly workSummary: Locator
   public readonly workingRow: Locator
   public readonly liveProgressRow: Locator
@@ -531,6 +567,14 @@ export class AgentTurnLockHarness {
     })
     this.runApprovalButton = this.panel.getByRole('button', {
       name: enMessages.agent.runApproval.run,
+      exact: true
+    })
+    this.approvalCard = this.panel.getByText(
+      enMessages.agent.runApproval.question,
+      { exact: true }
+    )
+    this.approvalWorkflowLink = this.panel.getByRole('button', {
+      name: APPROVAL_WORKFLOW_NAME,
       exact: true
     })
     this.workSummary = this.panel.getByRole('button', {
@@ -654,6 +698,21 @@ export class AgentTurnLockHarness {
   /** Makes an ask available through transcript hydration, independently of WS delivery. */
   primePendingAsk(event: AgentWsEvent): void {
     this.server.recordAsk(event)
+  }
+
+  /**
+   * Parks the live turn on a run-approval ask the way the service does while
+   * it waits for the user: the assistant row stays `streaming` (so posts keep
+   * returning 409) and starts carrying `pending_ask`. No frame is pushed --
+   * that models the `agent_ask` a dropped socket never delivered.
+   */
+  parkOnApproval(): void {
+    this.primePendingAsk(RUN_APPROVAL_EVENT)
+  }
+
+  /** The frame the server pushes once it accepts an answer to the approval. */
+  resolveApproval(ws: WebSocketRoute): void {
+    this.push(ws, RUN_APPROVAL_RESOLVED_EVENT)
   }
 
   /** True only when a test explicitly primed transcript-based recovery. */

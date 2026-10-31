@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 export interface PanZoomEls {
   viewport: HTMLElement
   container: HTMLElement
@@ -11,10 +12,7 @@ export interface PanZoom {
   setArtboardSize: (artW: number, artH: number) => void
   panBy: (dx: number, dy: number) => void
   handleWheel: (e: WheelEvent) => void
-  screenToArtboard: (
-    clientX: number,
-    clientY: number
-  ) => { x: number; y: number }
+  screenToArtboard: (clientX: number, clientY: number) => Point2D
   onChange: (fn: () => void) => () => void
 }
 
@@ -95,10 +93,7 @@ export function createPanZoom(getEls: () => PanZoomEls | null): PanZoom {
     invalidate()
   }
 
-  function screenToArtboard(
-    clientX: number,
-    clientY: number
-  ): { x: number; y: number } {
+  function screenToArtboard(clientX: number, clientY: number): Point2D {
     const els = getEls()
     if (!els) return { x: 0, y: 0 }
     const rect = els.container.getBoundingClientRect()

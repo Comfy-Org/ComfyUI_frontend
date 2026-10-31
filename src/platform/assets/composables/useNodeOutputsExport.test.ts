@@ -11,7 +11,7 @@ import { i18n } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -20,7 +20,6 @@ import { useNodeOutputsExport } from './useNodeOutputsExport'
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/assets/services/assetService'))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn(),
   downloadFileAsBlob: vi.fn()

@@ -12,7 +12,7 @@ import type {
   BillingPlansResponse,
   BillingStatusResponse,
   SavedPaymentMethod
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 /** The reads a rail serves, in the shape the host's billing state holds. */
 export interface BillingReadRail {

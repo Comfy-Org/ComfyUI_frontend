@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import { useWidgetValueHistory } from './useWidgetValueHistory'
 

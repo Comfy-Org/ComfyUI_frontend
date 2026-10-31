@@ -290,9 +290,7 @@ export function unallowlistedGlobalExtensionErrorsForPacks(
   return withoutMatches(rules, errors)
 }
 
-export function customExtensionStartupErrors(
-  errors: readonly string[]
-): string[] {
+export function customNodeStartupErrors(errors: readonly string[]): string[] {
   return errors.filter(
     (error) =>
       /\/extensions\/(?!core\/)/i.test(error) ||

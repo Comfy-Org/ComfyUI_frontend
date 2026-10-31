@@ -17,7 +17,7 @@ type SaveMeshOutput = NodeOutputWith<{
 }>
 import { app } from '@/scripts/app'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {

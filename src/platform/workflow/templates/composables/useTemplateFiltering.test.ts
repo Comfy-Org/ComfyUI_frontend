@@ -6,7 +6,7 @@ import { nextTick, ref } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { until } from '@vueuse/core'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
@@ -19,7 +19,7 @@ let defaultRankingStore: ReturnType<typeof useTemplateRankingStore>
 
 let mockSystemStatsStore: ReturnType<typeof useSystemStatsStore>
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(
   import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),

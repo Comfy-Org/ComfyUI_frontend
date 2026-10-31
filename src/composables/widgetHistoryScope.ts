@@ -1,10 +1,10 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
-import type { NodeId } from '@/types/nodeId'
-import { parseNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 type LocatedWidget = Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'>
 

@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "名前で接続された入力から選択します。入力はダブルクリックして名前を変更できます。",
+    "display_name": "分岐",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Bria を使用して、プレーンテキストで説明したオブジェクトを画像に挿入します。Bria はフレーム全体を約1メガピクセルで再レンダリングするため、結果は入力画像とピクセル単位では一致しません。",
     "display_name": "Bria オブジェクトを追加",
@@ -9289,12 +9310,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB、リニアRec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3、HDR ACEScctを変換します。LogC3はRec.709原色と[0, 1]にクランプされたコード値を使用するEI 800カーブを使用します。ACEScctはAP1原色とD60白色点を使用し、D65へBradford適応を行います。EXR保存用には、LogC3またはACEScctをリニアに変換してください。リニア1.0はsRGBと同じ203ニトの基準白色を使用します。HLGは1000ニトの基準ディスプレイを使用します。リニアおよびACEScct出力では拡張値が保持されます。リニアからHDRへの変換ではトーンマッピングなしでハイライトを保持します。HLGおよびPQ出力では負のチャンネルがクリップされます。SDR出力およびPQからHLGへの変換では、バッチ全体で過剰な輝度をトーンマップし、色域外の色を圧縮します。変換はfloat32で計算され、中間デバイスとdtypeを返します。ストレートアルファには色変換を適用しません。",
+    "description": "sRGB、線形 Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3、線形 ACEScg、および HDR ACEScct を変換します。LogC3 は Rec.709 原色で EI 800 カーブを使用し、コード値は [0, 1] にクランプされます。ACEScg は D60 白色点のシーンリニア AP1 です。ACEScct は ACEScg のログエンコーディングです。どちらも D65 への Bradford 適応を使用します。EXR を保存する前に、LogC3 または ACEScct を線形 ACEScg（AP1 シーンリニア）または線形（Rec.709）に変換してください。線形 1.0 と ACEScg 1.0 は sRGB と同じ 203 ニトの基準白色を使用します。HLG は 1000 ニトの基準ディスプレイを使用します。線形、ACEScg、ACEScct の出力は拡張値を保持します。線形から HDR への変換では、トーンマッピングを行わずにハイライトを保持します。HLG および PQ の出力では負のチャンネルをクリップします。SDR 出力および PQ から HLG への変換では、バッチ全体で過剰な輝度をトーンマッピングし、色域外の色を圧縮します。変換は float32 で計算され、中間結果の device と dtype を返します。ストレートアルファには色変換を適用しません。",
     "display_name": "画像カラースペースを変換",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "出力ピクセルの色空間。この色空間と同じものを保存ノードに設定してください。EXR を保存する前に LogC3 または ACEScct をリニアに変換し、動画を保存する前に sRGB/HDR/HDR PQ に変換してください。"
+        "tooltip": "出力ピクセルの色空間です。保存ノードをこの色空間と同じ設定にしてください。ACEScg EXR には LogC3 または ACEScct を線形 ACEScg に、Rec.709 EXR には線形に変換してください。動画を保存する前に sRGB/HDR/HDR PQ に変換してください。"
       },
       "image": {
         "name": "image"
@@ -16743,6 +16764,170 @@
       },
       "transformer_blocks_9_": {
         "name": "トランスフォーマーブロック.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "最終動画線形."
+      },
+      "final_norm_video_": {
+        "name": "最終動画正規化."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "レイヤー.23."
+      },
+      "layers_24_": {
+        "name": "レイヤー.24."
+      },
+      "layers_25_": {
+        "name": "レイヤー.25."
+      },
+      "layers_26_": {
+        "name": "レイヤー.26."
+      },
+      "layers_27_": {
+        "name": "レイヤー.27."
+      },
+      "layers_28_": {
+        "name": "レイヤー.28."
+      },
+      "layers_29_": {
+        "name": "レイヤー.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "レイヤー.30."
+      },
+      "layers_31_": {
+        "name": "レイヤー.31."
+      },
+      "layers_32_": {
+        "name": "レイヤー.32."
+      },
+      "layers_33_": {
+        "name": "レイヤー.33."
+      },
+      "layers_34_": {
+        "name": "レイヤー.34."
+      },
+      "layers_35_": {
+        "name": "レイヤー.35."
+      },
+      "layers_36_": {
+        "name": "レイヤー.36."
+      },
+      "layers_37_": {
+        "name": "レイヤー.37."
+      },
+      "layers_38_": {
+        "name": "レイヤー.38."
+      },
+      "layers_39_": {
+        "name": "レイヤー.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "レイヤー.40."
+      },
+      "layers_41_": {
+        "name": "レイヤー.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "動画ヘッド変調."
       }
     }
   },
@@ -25262,7 +25447,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "MOSS-Image 編集 LoRA 用に、参照画像を含む編集指示をエンコードします。ネガティブプロンプトにも使用してください。参照画像は入力時のサイズで使用されるため、先に拡大縮小してください。",
+    "description": "MOSS-Image 編集 LoRA 用に、参照画像とともに編集指示をエンコードします。ネガティブプロンプトにも使用してください。参照画像は入力時のサイズで使用されるため、先に拡大・縮小してください。VAE がない場合、画像はテキストエンコーダーにのみ送られます。",
     "display_name": "Text Encode MOSS-Image Edit",
     "inputs": {
       "clip": {
@@ -25272,6 +25457,10 @@
         "name": "edit_format",
         "tooltip": "編集 LoRA が学習したレイアウト: ai-toolkit の MOSS-Image Edit Training（kv_cache オプションのオンまたはオフ）または Moss-Image-Edit。kv_cache がオフの場合、参照画像も生成中の画像にアテンションするため、ステップごとに再計算されます。"
       },
+      "image_strength": {
+        "name": "画像強度",
+        "tooltip": "テキストエンコーダーが見る画像にモデルがどれだけ注意を向けるかをスケーリングします（ai-toolkit 形式、または VAE なしの場合）：0 では無視され、1 では変更されず、1 より大きい値では強調されます。"
+      },
       "images": {
         "name": "画像"
       },
@@ -25279,7 +25468,8 @@
         "name": "プロンプト"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "編集 LoRA 用の参照 latent として画像をエンコードします。"
       }
     },
     "outputs": {

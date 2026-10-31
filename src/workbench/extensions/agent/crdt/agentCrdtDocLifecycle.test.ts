@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
   AgentCrdtDocLifecycle,
@@ -11,7 +11,6 @@ import {
 import { recordDevEvent } from './devPanelLog'
 
 vi.mock(import('./devPanelLog'), () => ({ recordDevEvent: vi.fn() }))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-1'
 const GAVE_UP_REPORT = {

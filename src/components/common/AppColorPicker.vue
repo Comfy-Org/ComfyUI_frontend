@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
-import type { ColorPickerProps } from '@/components/ui/color-picker/types'
+import ColorPicker from '@comfyorg/design-system/color-picker/ColorPicker'
+import type { ColorPickerProps } from '@comfyorg/design-system/lib/color-picker/types'
 
 const {
   class: className,
@@ -10,8 +10,7 @@ const {
   disabled = false,
   accessibleLabel
 } = defineProps<
-  Pick<ColorPickerProps, 'class' | 'alpha' | 'disabled'> &
-    Partial<Pick<ColorPickerProps, 'accessibleLabel'>>
+  Pick<ColorPickerProps, 'class' | 'alpha' | 'disabled' | 'accessibleLabel'>
 >()
 
 const color = defineModel<string>({ default: '#000000' })
@@ -24,7 +23,7 @@ const { t } = useI18n()
     :class="className"
     :alpha
     :disabled
-    :accessible-label="accessibleLabel ?? `${t('g.color')} ${color}`"
+    :accessible-label="accessibleLabel"
     :hex-label="t('color.hex')"
     :rgba-label="t('color.rgba')"
     :hue-label="t('color.hue')"

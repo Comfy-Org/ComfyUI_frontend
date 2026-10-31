@@ -24,7 +24,8 @@ const i18n = createI18n({
     en: {
       g: {
         edit: 'Edit',
-        delete: 'Delete'
+        delete: 'Delete',
+        loading: 'Loading'
       },
       secrets: {
         createdAt: 'Created {date}',
@@ -193,34 +194,31 @@ describe('SecretListItem', () => {
   describe('loading state', () => {
     it('shows spinner when loading', () => {
       const secret = createMockSecret()
-      const { container } = renderComponent({ secret, loading: true })
+      renderComponent({ secret, loading: true })
 
-      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-      expect(container.querySelector('.pi-spinner')).toBeInTheDocument()
+      expect(
+        screen.getByRole('status', { name: 'Loading' })
+      ).toBeInTheDocument()
     })
 
     it('hides action buttons when loading', () => {
       const secret = createMockSecret()
-      const { container } = renderComponent({ secret, loading: true })
+      renderComponent({ secret, loading: true })
 
       expect(
-        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-        container.querySelector('.pi-pen-to-square')
+        screen.queryByRole('button', { name: 'Edit' })
       ).not.toBeInTheDocument()
-      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-      expect(container.querySelector('.pi-trash')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Delete' })
+      ).not.toBeInTheDocument()
     })
 
     it('shows action buttons when not loading', () => {
       const secret = createMockSecret()
-      const { container } = renderComponent({ secret, loading: false })
+      renderComponent({ secret, loading: false })
 
-      expect(
-        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-        container.querySelector('.pi-pen-to-square')
-      ).toBeInTheDocument()
-      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-      expect(container.querySelector('.pi-trash')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
     })
   })
 

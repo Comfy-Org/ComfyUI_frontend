@@ -2,12 +2,12 @@ import { nodesMap, OPAQUE_WIDGETS_KEY } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
-import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNodes'
+import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 describe('LiveGraphApplier on a node waiting for its pack', () => {
   it('keeps a remote edit made to the node while it waits', () => {

@@ -1,7 +1,7 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { reportError } from '@/platform/telemetry/reportError'
+import type { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import { createEmptyIndex } from '@/platform/workflow/persistence/base/draftCacheV2'
@@ -24,7 +24,7 @@ beforeEach(() => {
 vi.mock(import('@/scripts/app'))
 
 const reportErrorMock = vi.hoisted(() => vi.fn<typeof reportError>())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 

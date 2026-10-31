@@ -1,4 +1,7 @@
-import type { Offset, Point } from './types'
+import type {
+  Point2D as Offset,
+  Point2D as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 const ZOOM_MIN = 0.2
 const ZOOM_MAX = 10.0

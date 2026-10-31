@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import { NodeAppearanceEditor } from '@e2e/tests/agent/NodeAppearanceEditor'

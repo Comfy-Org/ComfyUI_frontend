@@ -1,3 +1,4 @@
+import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
 import type { CompositorBBox } from '@/renderer/extensions/compositor/composables/compositorLayerState'
 import type { ImageFileRef } from '@/renderer/extensions/compositor/composables/compositorPaths'
 import { resetCompositorStateWidgets } from '@/renderer/extensions/compositor/composables/compositorWidgets'
@@ -14,7 +15,7 @@ type ImageCompositorOutput = NodeOutputWith<{
   compositor_layers?: Partial<ImageFileRef>[]
   compositor_inputs?: string[]
   compositor_bboxes?: (CompositorBBox | null)[]
-  compositor_canvas?: { w: number; h: number }[]
+  compositor_canvas?: CompactSize[]
   compositor_state_stale?: boolean[]
 }>
 

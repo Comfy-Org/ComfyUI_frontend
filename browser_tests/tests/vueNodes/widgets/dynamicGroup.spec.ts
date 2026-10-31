@@ -469,9 +469,7 @@ test.describe(
           await comfyPage.command.executeCommand(
             'Comfy.Canvas.PasteFromClipboard'
           )
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(4)
+          await comfyPage.expectNodeCount(4)
           await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
           await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
           const hostRefs =
@@ -856,7 +854,7 @@ test.describe(
         previewBounds.y
       )
       await comfyPage.command.executeCommand('Comfy.Canvas.PasteFromClipboard')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(4)
+      await comfyPage.expectNodeCount(4)
       await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
       await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
       await expect(comfyPage.vueNodes.nodes).toHaveCount(4)

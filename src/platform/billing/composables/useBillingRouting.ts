@@ -1,13 +1,14 @@
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { computed } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 import { usesLegacyAccountOperations } from './billingRail'
 import type { BillingType } from './types'
 
 export function useBillingRouting() {
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
 
   const shouldUseUnifiedPricing = computed(() => {
     return isCloud && workspaceStore.activeWorkspace?.type !== undefined
@@ -19,7 +20,9 @@ export function useBillingRouting() {
 
     if (
       workspaceType === 'personal' &&
-      usesLegacyAccountOperations(workspaceStore.activeWorkspaceBillingRail)
+      usesLegacyAccountOperations(
+        useWorkspaceBillingStateStore().activeWorkspaceBillingRail
+      )
     ) {
       return 'legacy'
     }

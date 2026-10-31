@@ -17,7 +17,7 @@ import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/l
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const overlayMock = vi.hoisted(() => ({
   overlayMessage: 'KSampler is missing a required input: model',
@@ -30,12 +30,15 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/distribution/types'), { spy: true })
 
-vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
-  useErrorOverlayState: () => ({
-    overlayMessage: overlayMock.overlayMessage,
-    overlayTitle: overlayMock.overlayTitle
+vi.mock<unknown>(
+  import('@/platform/workflowErrors/overlay/useErrorOverlayState'),
+  () => ({
+    useErrorOverlayState: () => ({
+      overlayMessage: overlayMock.overlayMessage,
+      overlayTitle: overlayMock.overlayTitle
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,

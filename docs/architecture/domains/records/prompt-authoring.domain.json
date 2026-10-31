@@ -12,10 +12,6 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/editAttention.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/editAttention.ts",
       "role": "integration"
     }

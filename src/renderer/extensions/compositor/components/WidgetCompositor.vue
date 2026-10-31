@@ -31,7 +31,7 @@
           data-testid="compositor-download-psd"
           @click="onDownloadPsd"
         >
-          <i class="icon-[lucide--download] size-4" />
+          <i class="icon-[lucide--download]" />
         </Button>
       </div>
     </div>
@@ -53,26 +53,29 @@
       data-testid="compositor-open-button"
       @click="openEditor"
     >
-      <i class="icon-[lucide--layers] size-4" />
+      <i class="icon-[lucide--layers]" />
       {{ t('compositor.open') }}
     </Button>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCompositorEditor } from '@/renderer/extensions/compositor/composables/useCompositorEditor'
 import {
   getCompositorPreviewOverride,
   hasCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import { useCompositorPsdDownload } from '@/renderer/extensions/compositor/composables/useCompositorPsdDownload'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const { nodeId } = defineProps<{
   nodeId: NodeId
@@ -83,13 +86,12 @@ const nodeOutputStore = useNodeOutputStore()
 const { openCompositorEditor } = useCompositorEditor()
 const { exporting, downloadPsd } = useCompositorPsdDownload()
 
-const naturalSize = ref<{ w: number; h: number } | null>(null)
+const naturalSize = ref<CompactSize | null>(null)
 const outputUrl = ref<string | null>(null)
 
-const litegraphNode = computed(() => {
-  if (!nodeId || !app.canvas.graph) return null
-  return app.canvas.graph.getNodeById(nodeId) ?? null
-})
+const litegraphNode = useLiveGraphNode(() =>
+  nodeId ? app.canvas.graph?.getNodeById(nodeId) : null
+)
 
 function updateOutputUrl(): void {
   const node = litegraphNode.value
@@ -103,6 +105,7 @@ watch(() => nodeOutputStore.nodeOutputs, updateOutputUrl, {
   immediate: true
 })
 watch(() => nodeOutputStore.nodePreviewImages, updateOutputUrl, { deep: true })
+watch(litegraphNode, updateOutputUrl)
 
 const previewUrl = computed(() => {
   const node = litegraphNode.value

@@ -56,7 +56,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     // Load a template
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
@@ -68,10 +68,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await firstPopularTemplate.click()
     await expect(comfyPage.templates.content).toBeHidden()
 
-    // Ensure we now have some nodes
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBeGreaterThan(0)
+    await comfyPage.expectNodeCountMinimum(1)
   })
 
   test('dialog should open Popular for first-time users', async ({
@@ -359,7 +356,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     comfyPage
   }) => {
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     await comfyPage.page.route('**/templates/index.json', async (route) => {
       const response: WorkflowTemplates[] = [
@@ -457,7 +454,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(disclosure).toBeVisible()
     await expectOnTop()
     await expect(comfyPage.templates.content).toBeVisible()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
   })
 
   test('Can open associated tutorial', async ({ comfyPage }) => {
@@ -534,9 +531,7 @@ test.describe(
         url: '/?template=image_z_image_turbo'
       })
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBeGreaterThan(0)
+      await comfyPage.expectNodeCountMinimum(1)
 
       expect(await templatesFlash.hasFlashed()).toBe(false)
       await expect(comfyPage.templates.content).toBeHidden()

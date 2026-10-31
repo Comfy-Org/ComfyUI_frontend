@@ -8,10 +8,6 @@
       "role": "integration"
     },
     {
-      "path": "src/utils/litegraphUtil.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/utils/litegraphUtil.ts",
       "role": "integration"
     }

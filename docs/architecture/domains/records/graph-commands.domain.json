@@ -8,10 +8,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/graphIntents.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/lib/litegraph/src/graphIntents.ts",
       "role": "application"
     }

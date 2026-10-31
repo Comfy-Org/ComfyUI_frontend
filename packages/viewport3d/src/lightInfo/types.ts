@@ -1,10 +1,6 @@
+import type { Vector3 as Vec3 } from '@comfyorg/shared-frontend-utils/geometry'
 export type LightInfoType = 'directional' | 'point' | 'spot'
-
-export interface Vec3 {
-  x: number
-  y: number
-  z: number
-}
+export type { Vector3 as Vec3 } from '@comfyorg/shared-frontend-utils/geometry'
 
 export interface LightInfoEntry {
   type: LightInfoType

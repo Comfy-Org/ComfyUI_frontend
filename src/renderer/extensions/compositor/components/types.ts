@@ -1,6 +1,5 @@
-import type { CompositorLayerState } from '@/renderer/extensions/compositor/composables/compositorLayerState'
-
-export type CompositorWidgetValue = Partial<CompositorLayerState>
+import type { CompositorWidgetValue } from '@comfyorg/graph-model/compositor'
+export type { CompositorWidgetValue } from '@comfyorg/graph-model/compositor'
 
 export function emptyCompositorWidgetValue(): CompositorWidgetValue {
   return {}

@@ -1,7 +1,4 @@
-import type {
-  LGraph,
-  LGraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { shallowReactive } from 'vue'
 
 import { assert } from '@/base/assert'
@@ -10,18 +7,18 @@ import {
   transferLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { zeroUuid } from '@/utils/uuid'
 
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 
-import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { NodeState } from '@/types/nodeState'
+import type { TitleMode } from '@comfyorg/graph-model/globalEnums'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 
 /**
  * Wraps a node's `inputs` array with a rehydration view — e.g.

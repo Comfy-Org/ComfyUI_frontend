@@ -6,9 +6,7 @@
     >
       <div class="flex min-w-0 flex-1 flex-col gap-2">
         <div class="flex items-center gap-2">
-          <i
-            class="icon-[lucide--triangle-alert] size-4 shrink-0 text-warning"
-          />
+          <i class="icon-[lucide--triangle-alert] text-warning" />
           <span class="text-sm text-foreground">{{ $t(copy.title) }}</span>
         </div>
         <p class="m-0 pl-6 text-sm text-muted-foreground">

@@ -18,8 +18,8 @@ import { st, t } from '@/i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import type { AuthFlowAction } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AuthFlowAction } from '@comfyorg/telemetry/types'
 import { PaymentPopupBlockedError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {

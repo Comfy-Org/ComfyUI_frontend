@@ -1,9 +1,9 @@
+import type {
+  Size2D as Viewport,
+  Bounds as SpotlightRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { Placement } from '@floating-ui/vue'
-
-export interface Viewport {
-  width: number
-  height: number
-}
+export type { Size2D as Viewport } from '@comfyorg/shared-frontend-utils/geometry'
 
 export interface BoxStyle {
   left: string
@@ -23,13 +23,7 @@ export const CURSOR_GAP = 40
 export const CARD_GLIDE_MS = 300
 // Kept tight so the spotlight glow doesn't spill onto an adjacent clickable control.
 export const SPOTLIGHT_PAD = 4
-
-export interface SpotlightRect {
-  x: number
-  y: number
-  width: number
-  height: number
-}
+export type { Bounds as SpotlightRect } from '@comfyorg/shared-frontend-utils/geometry'
 
 export function unionRect(a: DOMRectReadOnly, b: DOMRectReadOnly): DOMRect {
   const left = Math.min(a.left, b.left)

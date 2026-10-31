@@ -376,7 +376,7 @@ bulkInsertionTest.describe(
 
     bulkInsertionTest.beforeEach(async ({ comfyPage }) => {
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
       await comfyPage.toast.closeToasts()
       const panel = new PropertiesPanelHelper(comfyPage.page)
       await panel.open(comfyPage.actionbar.propertiesButton)

@@ -1,28 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { FALLBACK_LOCALE } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import type { AgentStarterPromptAssignment } from '@/platform/telemetry/types'
-
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 
-const {
-  userName,
-  assignment = 'control',
-  attributeExperiment = false
-} = defineProps<{
+const { userName } = defineProps<{
   userName?: string
-  assignment?: AgentStarterPromptAssignment
-  attributeExperiment?: boolean
 }>()
 const emit = defineEmits<{
   insert: [text: string, prompt: AgentStarterPromptAttribution]
-  rendered: [assignment: AgentStarterPromptAssignment]
 }>()
 
 const { t, te, tm, locale } = useI18n()
@@ -34,33 +25,16 @@ const treatmentPromptKey = 'agent.suggestedPrompts.treatment.cloud'
 const hasTreatmentCopy = computed(
   () => isCloud && te(`${treatmentPromptKey}.0`, locale.value)
 )
-const renderedAssignment: AgentStarterPromptAssignment =
-  assignment === 'test' && hasTreatmentCopy.value ? 'test' : 'control'
 const selectedPromptKey = computed(() =>
-  renderedAssignment === 'test' && hasTreatmentCopy.value
-    ? treatmentPromptKey
-    : promptKey
+  hasTreatmentCopy.value ? treatmentPromptKey : promptKey
 )
 const prompts = computed(() => {
   return tm(selectedPromptKey.value) as string[]
 })
-const effectiveAssignment = computed<AgentStarterPromptAssignment>(() =>
-  selectedPromptKey.value === treatmentPromptKey ? 'test' : 'control'
-)
 const promptLocale = computed(() => {
   return te(`${selectedPromptKey.value}.0`, locale.value)
     ? locale.value
     : FALLBACK_LOCALE
-})
-
-const eligibleAtMount = attributeExperiment && hasTreatmentCopy.value
-const shouldAttributeExperiment = computed(
-  () => eligibleAtMount && hasTreatmentCopy.value
-)
-
-onMounted(() => {
-  if (shouldAttributeExperiment.value)
-    emit('rendered', effectiveAssignment.value)
 })
 
 const promptList = useTemplateRef<HTMLElement>('promptList')
@@ -68,8 +42,8 @@ const promptList = useTemplateRef<HTMLElement>('promptList')
 /**
  * Suggestions the viewer could actually see. A narrow panel hides the overflow
  * with a container query, so the set's length overstates what was on screen.
- * Reported alongside the set size, never instead of it: the set experiment
- * reads the set size, and one field cannot carry both facts.
+ * Reported alongside the set size, never instead of it, because one field
+ * cannot carry both facts.
  */
 function visiblePromptCount(): number {
   const buttons = promptList.value?.querySelectorAll('button')
@@ -92,7 +66,6 @@ function onPromptClick(prompt: string, index: number): void {
       index,
       prompts.value.length,
       promptLocale.value,
-      shouldAttributeExperiment.value ? effectiveAssignment.value : undefined,
       visiblePromptCount()
     )
   )
@@ -141,10 +114,10 @@ const promptIcons = [
           "
           @click="onPromptClick(prompt, index)"
         >
-          <span
+          <i
             :class="
               cn(
-                'size-3 shrink-0 text-muted-foreground',
+                'size-3 text-muted-foreground',
                 promptIcons[index] ?? 'icon-[lucide--sparkles]'
               )
             "

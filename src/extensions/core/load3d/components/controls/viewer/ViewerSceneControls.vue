@@ -22,7 +22,7 @@
 
     <div v-if="!hasBackgroundImage && !disableBackgroundUpload">
       <Button variant="secondary" class="w-full" @click="openImagePicker">
-        <i class="pi pi-image" />
+        <i class="icon-[lucide--image]" />
         {{ $t('load3d.uploadBackgroundImage') }}
       </Button>
       <input
@@ -41,7 +41,7 @@
           class="flex-1"
           @click="setBackgroundRenderMode('tiled')"
         >
-          <i class="pi pi-th-large" />
+          <i class="icon-[lucide--layout-grid]" />
           {{ $t('load3d.tiledMode') }}
         </Button>
         <Button
@@ -51,12 +51,12 @@
           class="flex-1"
           @click="setBackgroundRenderMode('panorama')"
         >
-          <i class="pi pi-globe" />
+          <i class="icon-[lucide--globe]" />
           {{ $t('load3d.panoramaMode') }}
         </Button>
       </div>
       <Button variant="secondary" class="w-full" @click="removeBackgroundImage">
-        <i class="pi pi-times" />
+        <i class="icon-[lucide--x]" />
         {{ $t('load3d.removeBackgroundImage') }}
       </Button>
     </div>
@@ -66,7 +66,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const backgroundColor = defineModel<string>('backgroundColor')
 const showGrid = defineModel<boolean>('showGrid')

@@ -14,8 +14,8 @@ const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
-  workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
+vi.mock(import('@/platform/remote/ingest/ingestApiUrl'), () => ({
+  ingestApiUrl: (route: string) => `https://api.example.com/api${route}`
 }))
 
 const mockEnsureSessionCookie = vi.fn<() => Promise<void>>()

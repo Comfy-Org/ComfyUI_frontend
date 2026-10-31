@@ -12,6 +12,7 @@ import {
   formatCreditsFromUsd,
   formatUsd,
   formatUsdFromCents,
+  microUsdToCredits,
   usdToCents,
   usdToCredits
 } from './creditsUtil'
@@ -48,6 +49,10 @@ describe('comfyCredits helpers', () => {
   test('converts USD to credits and back', () => {
     expect(usdToCredits(1)).toBe(211) // 1 USD = 211 credits
     expect(creditsToUsd(211)).toBe(1) // 211 credits = 1 USD
+  })
+
+  test('converts micro-USD to fractional credits without rounding', () => {
+    expect(microUsdToCredits(6038)).toBeCloseTo(1.274)
   })
 
   test('formats credits and USD values using en-US locale', () => {

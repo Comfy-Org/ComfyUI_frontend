@@ -1,9 +1,11 @@
+import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onScopeDispose, ref } from 'vue'
+import { computed, nextTick, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { AgentWorkflowBindSource } from '@/platform/telemetry/types'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { AgentWorkflowBindSource } from '@comfyorg/telemetry/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -29,6 +31,8 @@ interface WorkflowRestoration {
   ready: boolean
   committedWorkflowId: string | null
 }
+
+const STARTUP_TAB_RESTORE_TIMEOUT_MS = 15_000
 
 const NOT_RESTORED: WorkflowRestoration = {
   ready: true,
@@ -257,17 +261,35 @@ export function useAgentWorkflowSelection({
   ): Promise<RestorationOutcome> {
     const listed = await refreshCloudWorkflowIds()
     if (!isCurrent()) return { outcome: 'superseded' }
-    const target =
-      boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    let target = localOwnerFor(workflowId)
+    if (target === null) {
+      if (!(await startupTabsRestored(isCurrent)))
+        return { outcome: 'superseded' }
+      target = localOwnerFor(workflowId)
+    }
     if (!listed || !cloudListingOmits(workflowId))
       return { outcome: 'open', target }
     if (target === null) return { outcome: 'deleted' }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
-    return restorationOutcomeFor(
-      lifecycle,
-      boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
-    )
+    return restorationOutcomeFor(lifecycle, localOwnerFor(workflowId))
+  }
+
+  function localOwnerFor(workflowId: string): ComfyWorkflow | null {
+    return boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+  }
+
+  async function startupTabsRestored(
+    isCurrent: () => boolean
+  ): Promise<boolean> {
+    if (!workflowStore.tabsRestored) {
+      await until(() => workflowStore.tabsRestored).toBe(true, {
+        timeout: STARTUP_TAB_RESTORE_TIMEOUT_MS,
+        throwOnTimeout: false
+      })
+      await nextTick()
+    }
+    return isCurrent()
   }
 
   async function onWorkflowRestored(
@@ -307,23 +329,38 @@ export function useAgentWorkflowSelection({
       }
       if (target === null) {
         panelStore.setWorkflowTarget(null)
-        warnRestoreFailed()
+        failRestore(
+          workflowId,
+          new Error('No saved workflow resolves to the chat target')
+        )
         return RESTORE_ABANDONED
       }
       const opened = await workflowService.openWorkflow(target, { isCurrent })
       if (!isCurrent()) return RESTORE_ABANDONED
       if (!opened) {
         panelStore.setWorkflowTarget(null)
-        warnRestoreFailed()
+        failRestore(
+          workflowId,
+          new Error('The chat target workflow did not open')
+        )
         return RESTORE_ABANDONED
       }
       commitWorkflowTarget(target, workflowId, 'restored')
       return { ready: true, committedWorkflowId: workflowId }
-    } catch {
+    } catch (error) {
       if (!isCurrent()) return RESTORE_ABANDONED
-      warnRestoreFailed()
+      failRestore(workflowId, error)
       return RESTORE_ABANDONED
     }
+  }
+
+  function failRestore(workflowId: string, cause: unknown): void {
+    reportError(cause, {
+      surface: 'agent',
+      errorType: 'agent_workflow_restore_failed',
+      context: { workflowId }
+    })
+    warnRestoreFailed()
   }
 
   function adoptTarget(workflow: ComfyWorkflow, workflowId: string): void {

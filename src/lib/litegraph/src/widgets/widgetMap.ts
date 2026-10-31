@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
 import type {
   IAssetWidget,
@@ -6,7 +6,7 @@ import type {
   IComboWidget,
   IWidget,
   TWidgetType
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { toClass as instantiateClass } from '@/lib/litegraph/src/utils/type'
 
 import { AssetWidget } from './AssetWidget'

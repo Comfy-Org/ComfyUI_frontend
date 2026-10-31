@@ -4,7 +4,7 @@ import type {
   LGraph,
   LGraphNode,
   Reroute
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -13,35 +13,50 @@ import {
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
-import type { GraphScope } from '@/types/graphScopeId'
+import {
+  graphScopeOf,
+  toOwningGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import { zeroUuid } from '@/utils/uuid'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import {
+  UNASSIGNED_NODE_ID,
+  toNodeId,
+  serializeNodeId
+} from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 import type { EndpointPatch } from '@/stores/linkStore'
-import type { LinkId } from '@/types/linkId'
-import type { LinkTopology } from '@/types/linkTopology'
-import type { RerouteId } from '@/types/rerouteId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { CanvasColour, ISlotType, LinkSegment, Point } from './interfaces'
-import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
-import type { LinkNetwork, ReadonlyLinkNetwork } from './types/linkNetwork'
-import type { Serialisable, SerialisableLLink } from './types/serialisation'
+import type {
+  CanvasColour,
+  ISlotType,
+  LinkSegment
+} from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type {
+  LinkNetwork,
+  ReadonlyLinkNetwork
+} from '@comfyorg/graph-model/linkNetwork'
+import type {
+  Serialisable,
+  SerialisableLLink,
+  SerialisedLLinkArray
+} from '@comfyorg/graph-model/serialisation'
 import { toRaw } from 'vue'
 
-export type { LinkId } from '@/types/linkId'
-export type SerialisedLLinkArray = [
-  id: number,
-  origin_id: SerializedNodeId,
-  origin_slot: number,
-  target_id: SerializedNodeId,
-  target_slot: number,
-  type: ISlotType
-]
+export type { LinkId } from '@comfyorg/graph-model/linkId'
+export type { SerialisedLLinkArray } from '@comfyorg/graph-model/serialisation'
 
 const linkByTopology = new WeakMap<LinkTopology, LLink>()
 
@@ -737,7 +752,7 @@ type RegisteredLLink = LLink
 type RegisteredSerialisedLLinkArray = SerialisedLLinkArray
 type RegisteredResolvedConnection = ResolvedConnection
 
-declare module './types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface LitegraphEntityRegistry {
     SerialisedLLinkArray: RegisteredSerialisedLLinkArray
     ResolvedConnection: RegisteredResolvedConnection

@@ -30,7 +30,8 @@ export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
       planKind: planRow.value.kind,
       billingStatus: billingStatus.value,
       planPoolCredits: planPoolCredits.value,
-      renewalDate: renewalDate.value
+      renewalDate: renewalDate.value,
+      endDate: planRow.value.kind === 'ending' ? planRow.value.endsAt : null
     })
   )
 

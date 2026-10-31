@@ -17,10 +17,10 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
-import { useTelemetry } from '@/platform/telemetry'
-import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { reportError as reportErrorFn } from '@comfyorg/telemetry/reportError'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
@@ -165,10 +165,10 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
 
 vi.mock(import('./devPanelLog'), { spy: true })
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: telemetryState.reportError
 }))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
@@ -2978,6 +2978,46 @@ describe('useAgentCrdtFollower', () => {
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as BatchOutcome).state)
     expect(settledStates).toEqual(['unconfirmed'])
+    unmount()
+  })
+
+  it('holds a widget edit made while the socket is down and resends it on the reconnect ack (PM-2392)', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const edit: GraphOperation = {
+      op: 'set_widget',
+      node_id: '1',
+      widget: 'image',
+      value: 'human-choice.png'
+    }
+    const { enqueue, unmount } = mountFollower('wf-1')
+    clientState.sendOps.mockClear()
+    clientState.sendOps.mockReturnValue(false)
+
+    enqueue([edit])
+    await Promise.resolve()
+    vi.advanceTimersByTime(10_000)
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(6)
+    expect(projectionState.noteLocalWrites).toHaveBeenCalledWith([edit])
+    expect(projectionState.settleLocalWrites).not.toHaveBeenCalled()
+    expect(
+      vi
+        .mocked(recordDevEvent)
+        .mock.calls.filter(([event]) => event === 'human_ops_settled')
+    ).toEqual([])
+
+    clientState.sendOps.mockReturnValue(true)
+    agentSocket.open()
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 0 })
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(7)
+    const [, , refused] = clientState.sendOps.mock.calls[0]
+    const [, , resent] = clientState.sendOps.mock.calls[6]
+    expect(resent).toHaveLength(1)
+    expect(resent[0]).toMatchObject({ op: 'set_widget', node_id: '1' })
+    expect(resent[0].op_id).toBe(refused[0].op_id)
+    expect(resent[0].base_version).toBe(refused[0].base_version)
     unmount()
   })
 

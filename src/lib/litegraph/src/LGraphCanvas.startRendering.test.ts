@@ -1,10 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 describe('LGraphCanvas.startRendering', () => {
   it('finishes constructing and reports when the first frame throws', () => {
