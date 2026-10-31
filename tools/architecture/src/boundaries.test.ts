@@ -17,8 +17,6 @@ function domain(
     description: `${id} fixture`,
     modules,
     publicEntryPoints: [],
-    allowedDependencies: [],
-    allowedConsumers: [],
     characterizationScenarios: [{ name: 'contract', checks: ['x.test.ts'] }],
     adrs: [],
     compatibilityPromises: ['keeps its contract'],
@@ -63,10 +61,7 @@ const editor = (options: Partial<DomainRecord> = {}) =>
     ],
     options
   )
-const approved = [
-  images({ allowedConsumers: ['editor'] }),
-  editor({ allowedDependencies: ['images'] })
-]
+const both = [images(), editor()]
 
 describe('buildBoundaries', () => {
   it.for([
@@ -127,22 +122,22 @@ describe('buildBoundaries', () => {
       allowed: false
     },
     {
-      name: 'a domain needs reciprocal permission to use another domain',
-      records: [images(), editor({ allowedDependencies: ['images'] })],
-      from: 'src/editor/app/a.ts',
-      to: 'src/images/app/index.ts',
-      allowed: false
-    },
-    {
-      name: 'an approved domain may import a public entry point',
-      records: approved,
+      name: 'another domain may import a public entry point',
+      records: both,
       from: 'src/editor/app/a.ts',
       to: 'src/images/app/index.ts',
       allowed: true
     },
     {
-      name: 'an approved domain may not deep-import an enforced domain',
-      records: approved,
+      name: 'another domain may deep-import an inventory domain',
+      records: [images({ deepImports: 'inventory' }), editor()],
+      from: 'src/editor/app/a.ts',
+      to: 'src/images/app/store.ts',
+      allowed: true
+    },
+    {
+      name: 'another domain may not deep-import an enforced domain',
+      records: both,
       from: 'src/editor/app/a.ts',
       to: 'src/images/app/store.ts',
       allowed: false
@@ -192,10 +187,30 @@ describe('buildBoundaries', () => {
       allowed: true
     },
     {
-      name: 'role direction applies across approved domains',
-      records: approved,
+      name: 'role direction applies across domains',
+      records: both,
       from: 'src/editor/model/a.ts',
       to: 'src/images/app/index.ts',
+      allowed: false
+    },
+    {
+      name: 'an enforced domain named inventory stays closed to deep imports',
+      records: [
+        images({ deepImports: 'inventory' }),
+        domain('inventory', [{ path: 'src/stock/**', role: 'application' }])
+      ],
+      from: 'src/legacy/a.ts',
+      to: 'src/stock/store.ts',
+      allowed: false
+    },
+    {
+      name: 'role direction applies across inventory domains',
+      records: [
+        images({ deepImports: 'inventory' }),
+        editor({ deepImports: 'inventory' })
+      ],
+      from: 'src/editor/model/a.ts',
+      to: 'src/images/app/store.ts',
       allowed: false
     }
   ])('$name', ({ records, from, to, allowed }) => {

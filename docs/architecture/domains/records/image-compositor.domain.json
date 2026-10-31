@@ -61,8 +61,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["dialog-host"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Compositor sessions preserve layer state and save behavior",

@@ -93,8 +93,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["extension-manager", "keybindings", "telemetry"],
-  "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
       "name": "Splitter overlay and top menu arrange workbench regions from layout settings",

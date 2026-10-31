@@ -45,8 +45,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["telemetry"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Template ranking and display metadata remain deterministic",

@@ -97,14 +97,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [
-    "account",
-    "authentication",
-    "dialog-host",
-    "keybindings",
-    "telemetry"
-  ],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Setting store loads, validates, migrates, persists, and reports setting values",
