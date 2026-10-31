@@ -88,7 +88,7 @@ const currentTool = computed(() => store.currentTool)
 
 const zoomText = computed(() => `${Math.round(store.displayZoomRatio * 100)}%`)
 const dimensionsText = computed(() => {
-  const img = store.image
+  const img = store.canvasHistory.dimensions ?? store.image
   return img ? `${img.width}x${img.height}` : ' '
 })
 

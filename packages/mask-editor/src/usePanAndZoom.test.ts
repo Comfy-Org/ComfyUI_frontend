@@ -146,6 +146,24 @@ describe('usePanAndZoom', () => {
   })
 
   describe('handlePanStart / handlePanMove', () => {
+    it('keeps a rotated document proportional without resizing its painted layer', async () => {
+      const { pz, canvas } = await initComposable()
+      const rgbCanvas = document.createElement('canvas')
+      rgbCanvas.width = 600
+      rgbCanvas.height = 800
+      mockStore.rgbCanvas = rgbCanvas
+      canvas.width = 600
+      canvas.height = 800
+
+      await pz.invalidatePanZoom()
+
+      const container = mockStore.canvasContainer!
+      expect(
+        parseFloat(container.style.width) / parseFloat(container.style.height)
+      ).toBe(0.75)
+      expect([rgbCanvas.width, rgbCanvas.height]).toEqual([600, 800])
+    })
+
     it('sets isPanning on the store', () => {
       const pz = usePanAndZoom()
       pz.handlePanStart({ clientX: 100, clientY: 200 } as PointerEvent)
