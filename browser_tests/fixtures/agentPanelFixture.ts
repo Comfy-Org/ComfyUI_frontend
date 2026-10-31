@@ -9,7 +9,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import {
   AGENT_CONSENT_SETTING_ID,
   AGENT_ONBOARDED_SCOPES_SETTING_ID
