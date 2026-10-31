@@ -2606,6 +2606,104 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.initState).toBe('error')
     })
 
+    it('initializes again when the host session is announced after a failed start', async () => {
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace]
+      })
+      const store = useTeamWorkspaceStore()
+      await expect(store.initialize()).rejects.toThrow()
+      expect(store.initState).toBe('error')
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+      })
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+
+      await vi.waitFor(() => expect(store.initState).toBe('ready'))
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('initializes again when the host session is announced while a start that then fails is loading', async () => {
+      let resolveList: (value: unknown) => void = () => {}
+      mockWorkspaceApi.list
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveList = resolve
+          })
+        )
+        .mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+        })
+      const store = useTeamWorkspaceStore()
+      const starting = store.initialize().catch((e: unknown) => e)
+      await vi.waitFor(() => expect(mockWorkspaceApi.list).toHaveBeenCalled())
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+      resolveList({ workspaces: [mockPersonalWorkspace] })
+
+      expect(await starting).toBeInstanceOf(Error)
+      await vi.waitFor(() => expect(store.initState).toBe('ready'))
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('keeps the host change for a restarted start when the start it replaced settles first', async () => {
+      const pending = () => {
+        let resolve: (value: unknown) => void = () => {}
+        const promise = new Promise((r) => {
+          resolve = r
+        })
+        return { promise, resolve }
+      }
+      const replaced = pending()
+      const restarted = pending()
+      mockWorkspaceApi.list
+        .mockReturnValueOnce(replaced.promise)
+        .mockReturnValueOnce(restarted.promise)
+        .mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+        })
+      const store = useTeamWorkspaceStore()
+      void store.initialize().catch(() => undefined)
+      await vi.waitFor(() =>
+        expect(mockWorkspaceApi.list).toHaveBeenCalledOnce()
+      )
+      store.resetForIdentityChange()
+      const restarting = store.initialize().catch((e: unknown) => e)
+      await vi.waitFor(() =>
+        expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
+      )
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+      replaced.resolve({ workspaces: [mockPersonalWorkspace] })
+      await Promise.resolve()
+      restarted.resolve({ workspaces: [mockPersonalWorkspace] })
+
+      expect(await restarting).toBeInstanceOf(Error)
+      await vi.waitFor(() => expect(store.initState).toBe('ready'))
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('reports an automatic retry that fails again', async () => {
+      vi.mocked(reportError).mockImplementation(() => undefined)
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace]
+      })
+      const store = useTeamWorkspaceStore()
+      await expect(store.initialize()).rejects.toThrow()
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(NoWorkspaceAccessError),
+          expect.objectContaining({
+            errorType: 'error_reinitializing_workspaces_for_desktop_host'
+          })
+        )
+      )
+      expect(store.initState).toBe('error')
+    })
+
     it('switches through Desktop without a reload or token exchange', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()
