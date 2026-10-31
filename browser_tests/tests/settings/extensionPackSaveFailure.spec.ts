@@ -1,3 +1,4 @@
+import type { GetExtensionsResponse } from '@comfyorg/ingest-types'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -7,7 +8,11 @@ const PACK_SWITCH = 'Extension folder agent-cushions'
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/extensions', (route) =>
-    route.fulfill({ json: ['/extensions/agent-cushions/main.js'] })
+    route.fulfill({
+      json: [
+        '/extensions/agent-cushions/main.js'
+      ] satisfies GetExtensionsResponse
+    })
   )
   await page.route('**/extensions/agent-cushions/main.js*', (route) =>
     route.fulfill({ contentType: 'text/javascript', body: '' })
