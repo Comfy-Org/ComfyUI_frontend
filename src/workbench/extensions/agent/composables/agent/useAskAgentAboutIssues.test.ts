@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 
@@ -43,32 +42,29 @@ describe('useAskAgentAboutIssues', () => {
   it('opens the chat and attaches the context without sending', async () => {
     const panel = useAgentPanelStore()
     panel.enabled = true
-    const composer = useAgentComposerStore()
     const { askAgentAboutIssues } = useAskAgentAboutIssues()
 
     await askAgentAboutIssues(CONTEXT)
 
     expect(panel.isOpen).toBe(true)
     expect(panel.view).toEqual({ screen: 'chat' })
-    expect(composer.errorContext).toMatchObject(CONTEXT)
+    expect(panel.pendingErrorContext).toMatchObject(CONTEXT)
   })
 
   it('does nothing when the agent is unavailable', async () => {
     const panel = useAgentPanelStore()
-    const composer = useAgentComposerStore()
     const { askAgentAboutIssues } = useAskAgentAboutIssues()
 
     await askAgentAboutIssues(CONTEXT)
 
     expect(consent.withConsent).not.toHaveBeenCalled()
     expect(panel.isOpen).toBe(false)
-    expect(composer.errorContext).toBeNull()
+    expect(panel.pendingErrorContext).toBeNull()
   })
 
   it('asks for consent like the Agent button before opening a closed panel', async () => {
     const panel = useAgentPanelStore()
     panel.enabled = true
-    const composer = useAgentComposerStore()
     let accept = () => {}
     consent.withConsent.mockImplementation(async (_trigger, onAccept) => {
       accept = onAccept
@@ -82,44 +78,41 @@ describe('useAskAgentAboutIssues', () => {
       expect.any(Function)
     )
     expect(panel.isOpen).toBe(false)
-    expect(composer.errorContext).toBeNull()
+    expect(panel.pendingErrorContext).toBeNull()
 
     accept()
 
     expect(panel.isOpen).toBe(true)
-    expect(composer.errorContext).toMatchObject(CONTEXT)
+    expect(panel.pendingErrorContext).toMatchObject(CONTEXT)
   })
 
   it('leaves the panel closed and the composer empty when consent is declined', async () => {
     const panel = useAgentPanelStore()
     panel.enabled = true
-    const composer = useAgentComposerStore()
     consent.withConsent.mockResolvedValue(undefined)
     const { askAgentAboutIssues } = useAskAgentAboutIssues()
 
     await askAgentAboutIssues(CONTEXT)
 
     expect(panel.isOpen).toBe(false)
-    expect(composer.errorContext).toBeNull()
+    expect(panel.pendingErrorContext).toBeNull()
   })
 
   it('attaches directly when the panel is already open', async () => {
     const panel = useAgentPanelStore()
     panel.enabled = true
     panel.open('topbar_button')
-    const composer = useAgentComposerStore()
     const { askAgentAboutIssues } = useAskAgentAboutIssues()
 
     await askAgentAboutIssues(CONTEXT)
 
     expect(consent.withConsent).not.toHaveBeenCalled()
-    expect(composer.errorContext).toMatchObject(CONTEXT)
+    expect(panel.pendingErrorContext).toMatchObject(CONTEXT)
   })
 
   it('drops the request if the agent turns off while the card is up', async () => {
     const panel = useAgentPanelStore()
     panel.enabled = true
-    const composer = useAgentComposerStore()
     consent.withConsent.mockImplementation(async (_trigger, onAccept) => {
       panel.enabled = false
       onAccept()
@@ -129,7 +122,7 @@ describe('useAskAgentAboutIssues', () => {
     await askAgentAboutIssues(CONTEXT)
 
     expect(panel.isOpen).toBe(false)
-    expect(composer.errorContext).toBeNull()
+    expect(panel.pendingErrorContext).toBeNull()
   })
 
   it('keeps the workflow that was active at the click if the tab changes during consent', async () => {
@@ -153,25 +146,18 @@ describe('useAskAgentAboutIssues', () => {
     })
     accept()
 
-    expect(useAgentComposerStore().errorContext?.workflowName).toBe(
-      'broken.json'
-    )
+    expect(panel.pendingErrorContext?.workflowName).toBe('broken.json')
   })
 
-  it('offers one card for repeated clicks while consent is pending', async () => {
+  it('never leaves later clicks dead when an earlier consent request stays pending', async () => {
     const panel = useAgentPanelStore()
     panel.enabled = true
-    let settle = () => {}
-    consent.withConsent.mockImplementation(
-      () => new Promise<void>((resolve) => (settle = resolve))
-    )
+    consent.withConsent.mockImplementationOnce(() => new Promise(() => {}))
     const { askAgentAboutIssues } = useAskAgentAboutIssues()
 
-    const first = askAgentAboutIssues(CONTEXT)
+    void askAgentAboutIssues(CONTEXT)
     await askAgentAboutIssues(CONTEXT)
-    settle()
-    await first
 
-    expect(consent.withConsent).toHaveBeenCalledTimes(1)
+    expect(panel.pendingErrorContext).toMatchObject(CONTEXT)
   })
 })

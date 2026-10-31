@@ -284,6 +284,7 @@ describe('Composer', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Elsewhere' }))
 
       await askAgentAboutIssues(issue)
+      useAgentComposerStore().setErrorContext(panel.pendingErrorContext!)
       await nextTick()
 
       const textbox = screen.getByRole('textbox')

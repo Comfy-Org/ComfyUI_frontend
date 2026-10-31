@@ -20,6 +20,31 @@ function errorContext(
 }
 
 describe('agentComposerStore error context', () => {
+  it('keeps references in text order when a new chip replaces the old one', () => {
+    const store = useAgentComposerStore()
+    store.setErrorContext(errorContext({ label: 'First' }))
+    const typed = ' Can you fix this'
+    store.applyEditorPrompt({
+      text: typed,
+      references: [
+        ...store.prompt.references,
+        {
+          kind: 'workflow',
+          id: 'wf-ref',
+          workflowId: 'wf-1',
+          name: 'other',
+          textOffset: typed.length
+        }
+      ]
+    } as Parameters<typeof store.applyEditorPrompt>[0])
+    store.setInsertionPoint({ textOffset: 4, referenceIndex: 1 })
+
+    store.setErrorContext(errorContext({ label: 'Second' }))
+
+    const offsets = store.prompt.references.map((item) => item.textOffset)
+    expect(offsets).toEqual([...offsets].sort((a, b) => a - b))
+  })
+
   it('attaches the context as an inline reference and marks the origin', () => {
     const store = useAgentComposerStore()
 

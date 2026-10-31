@@ -2,28 +2,25 @@ import { computed } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
-import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 
 /**
- * Opens the agent composer, attaches the problems as an editable chip, and
- * leaves the caret after it; never sends. Opening a closed panel asks for
- * consent the same way the Agent button does.
+ * Opens the agent panel and hands it the problems; the panel moves to the
+ * workflow's chat and attaches them as an editable chip. Never sends. Opening a
+ * closed panel asks for consent the same way the Agent button does.
  */
 export function useAskAgentAboutIssues() {
   const panelStore = useAgentPanelStore()
-  const composerStore = useAgentComposerStore()
   const workflowStore = useWorkflowStore()
   const { withConsent } = useAgentConsent()
 
   const canAskAgent = computed(() => panelStore.enabled)
-  let isAwaitingConsent = false
 
   async function askAgentAboutIssues(
     context: AgentErrorContext
   ): Promise<void> {
-    if (!panelStore.enabled || isAwaitingConsent) return
+    if (!panelStore.enabled) return
     const workflowName =
       context.workflowName ?? workflowStore.activeWorkflow?.filename
 
@@ -31,7 +28,7 @@ export function useAskAgentAboutIssues() {
       if (!panelStore.enabled) return
       panelStore.view = { screen: 'chat' }
       panelStore.open('error_context')
-      composerStore.setErrorContext({ ...context, workflowName })
+      panelStore.pendingErrorContext = { ...context, workflowName }
     }
 
     if (panelStore.isVisible) {
@@ -39,13 +36,8 @@ export function useAskAgentAboutIssues() {
       return
     }
 
-    isAwaitingConsent = true
-    try {
-      panelStore.suppressRestoredOpen()
-      await withConsent('button_click', attach)
-    } finally {
-      isAwaitingConsent = false
-    }
+    panelStore.suppressRestoredOpen()
+    await withConsent('button_click', attach)
   }
 
   return { canAskAgent, askAgentAboutIssues }
