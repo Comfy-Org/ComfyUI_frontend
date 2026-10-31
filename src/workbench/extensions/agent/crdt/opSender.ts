@@ -542,7 +542,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   ): { minted: Op[]; exhausted: boolean } {
     const baseVersion = mintBaseVersion(workflowId)
     const actor = deps.actor()
-    const highest = baseVersion + operations.length - 1
+    const highest = baseVersion + (operations.length - 1)
     if (!Number.isSafeInteger(highest))
       return {
         minted: mintWireOps(operations, {

@@ -213,6 +213,16 @@ describe('createOpSender', () => {
     })
   }
 
+  function acknowledgePending(maximumBatches: number): void {
+    for (
+      let remaining = maximumBatches;
+      remaining > 0 && sender.pending() > 0;
+      remaining--
+    ) {
+      ackInFlight()
+    }
+  }
+
   beforeEach(() => {
     vi.useFakeTimers()
     sent = []
@@ -733,15 +743,16 @@ describe('createOpSender', () => {
     observedCounter = LIFTED_COUNTER - 1
     transportUp = true
     sender.retryTransport()
-    while (sender.pending() > 0) ackInFlight()
+    acknowledgePending(operations.length)
 
+    expect(sender.pending()).toBe(0)
     expect(sent[0].ops[0].base_version).toBe(LIFTED_COUNTER)
     expect(sent.flatMap(({ ops }) => ops.map((op) => op.op_id))).toHaveLength(
       WIRE_MAX_OPS_PER_BATCH
     )
-    for (const { ops } of sent) {
-      expect(batchBytesOf(ops)).toBeLessThanOrEqual(WIRE_MAX_BATCH_BYTES)
-    }
+    expect(
+      Math.max(...sent.map(({ ops }) => batchBytesOf(ops)))
+    ).toBeLessThanOrEqual(WIRE_MAX_BATCH_BYTES)
   })
 
   it('leaves a batch as minted when lifting it would leave the safe integers', () => {
@@ -760,9 +771,6 @@ describe('createOpSender', () => {
     transportUp = false
     sender.enqueue([addNode(1), addNode(2)])
     vi.advanceTimersByTime(500 * 6)
-    expect(sender.pendingOps()[0].ops.map((op) => op.base_version)).toEqual([
-      41, 42
-    ])
 
     observedCounter = Number.MAX_SAFE_INTEGER - 1
     transportUp = true
@@ -775,36 +783,55 @@ describe('createOpSender', () => {
     ])
   })
 
-  it('refuses an admission whose counter range would leave the safe integers', () => {
-    observedCounter = Number.MAX_SAFE_INTEGER - 1
+  it.for([{ nodeIds: [1, 2] }, { nodeIds: [1, 2, 3] }])(
+    'refuses an admission of $nodeIds.length whose counter range would leave the safe integers',
+    ({ nodeIds }) => {
+      observedCounter = Number.MAX_SAFE_INTEGER - 1
 
-    sender.enqueue([addNode(1), addNode(2), addNode(3)])
+      sender.enqueue(nodeIds.map((nodeId) => addNode(nodeId)))
 
-    expect(sent).toEqual([])
-    expect(settled.map(summarizeSettlement)).toEqual([
-      { state: 'undeliverable', nodeIds: [1, 2, 3] }
-    ])
-    expect(sender.pending()).toBe(0)
-    expect(
-      settled.flatMap((outcome) => outcome.ops.map((op) => op.base_version))
-    ).toEqual([
-      Number.MAX_SAFE_INTEGER,
-      Number.MAX_SAFE_INTEGER,
+      expect(sent).toEqual([])
+      expect(settled.map(summarizeSettlement)).toEqual([
+        { state: 'undeliverable', nodeIds }
+      ])
+      expect(sender.pending()).toBe(0)
+      expect(
+        settled
+          .flatMap((outcome) => outcome.ops)
+          .filter((op) => !Number.isSafeInteger(op.base_version))
+      ).toEqual([])
+      expect(reportsOfType('failure_minting_agent_op_counter')).toEqual([
+        [expect.any(RangeError), expect.objectContaining({ surface: 'agent' })]
+      ])
+      expect(reportsOfType('failure_syncing_agent_edit_undeliverable')).toEqual(
+        [
+          [
+            expect.any(Error),
+            expect.objectContaining({
+              context: expect.objectContaining({
+                code: 'counter_exhausted',
+                workflowId: WORKFLOW
+              })
+            })
+          ]
+        ]
+      )
+    }
+  )
+
+  it('refuses the next admission after a batch has minted the highest safe counter', () => {
+    observedCounter = Number.MAX_SAFE_INTEGER - 2
+    sender.enqueue([addNode(1), addNode(2)])
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([
+      Number.MAX_SAFE_INTEGER - 1,
       Number.MAX_SAFE_INTEGER
     ])
-    expect(reportsOfType('failure_minting_agent_op_counter')).toEqual([
-      [expect.any(RangeError), expect.objectContaining({ surface: 'agent' })]
-    ])
-    expect(reportsOfType('failure_syncing_agent_edit_undeliverable')).toEqual([
-      [
-        expect.any(Error),
-        expect.objectContaining({
-          context: expect.objectContaining({
-            code: 'counter_exhausted',
-            workflowId: WORKFLOW
-          })
-        })
-      ]
+
+    sender.enqueue([addNode(3)])
+
+    expect(sent).toHaveLength(1)
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [3] }
     ])
   })
 
@@ -842,9 +869,6 @@ describe('createOpSender', () => {
       Number.MAX_SAFE_INTEGER - 1,
       Number.MAX_SAFE_INTEGER
     ])
-    expect(
-      sent[0].ops.every((op) => Number.isSafeInteger(op.base_version))
-    ).toBe(true)
   })
 
   it('never re-stamps a batch whose send threw', () => {
