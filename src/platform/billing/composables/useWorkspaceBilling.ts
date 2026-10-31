@@ -277,6 +277,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const renewalInvoice = computed(
     () => statusData.value?.renewal_invoice ?? null
   )
+  const periodCreditGrant = computed(
+    () => statusData.value?.period_credit_grant ?? null
+  )
 
   const plans = computed(() => billingPlans.plans.value)
   const currentPlanSlug = computed(
@@ -880,6 +883,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     tier,
     renewalDate,
     renewalInvoice,
+    periodCreditGrant,
     readAndAdoptPendingOperation,
 
     // Actions

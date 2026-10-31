@@ -304,6 +304,21 @@ describe('useBillingContext', () => {
     expect(context.renewalInvoice.value).toStrictEqual(invoice)
   })
 
+  it('forwards the period credit grant from workspace billing', async () => {
+    const grant = {
+      state: 'amount' as const,
+      credits: 2000,
+      period: 'MONTHLY' as const
+    }
+    mockBillingRail.value = 'stripe'
+    mockBillingStatus.value.period_credit_grant = grant
+
+    const context = useBillingContext()
+    await context.initialize()
+
+    expect(context.periodCreditGrant.value).toStrictEqual(grant)
+  })
+
   it('provides balance info from legacy billing', () => {
     mockBillingRail.value = 'legacy_stripe'
     const { balance } = useBillingContext()
@@ -328,14 +343,16 @@ describe('useBillingContext', () => {
         id: 'stop-1',
         credits_monthly: 1000,
         stop_usd: 10
-      }
+      },
+      period_credit_grant: { state: 'none' }
     }
 
     const {
       billingStatus,
       subscriptionStatus,
       subscriptionState,
-      currentTeamCreditStop
+      currentTeamCreditStop,
+      periodCreditGrant
     } = useBillingContext()
 
     expect(billingStatus.value).toBe('payment_failed')
@@ -346,6 +363,7 @@ describe('useBillingContext', () => {
       credits_monthly: 1000,
       stop_usd: 10
     })
+    expect(periodCreditGrant.value).toEqual({ state: 'none' })
   })
 
   it('exposes initialize action', async () => {

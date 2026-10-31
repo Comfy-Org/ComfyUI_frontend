@@ -99,6 +99,7 @@ interface Scenario {
   isPaused?: boolean
   billingStatus?: 'paid' | 'paused'
   hasParkedBillingOperation?: boolean
+  renewalDate?: string | null
 }
 
 function correlationIdOf(link: HTMLElement) {
@@ -148,8 +149,9 @@ function arrange(scenario: Scenario = {}) {
         fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' })
       ]),
       balance: computed(() => scenario.balance ?? null),
-      renewalDate: computed(() => null),
+      renewalDate: computed(() => scenario.renewalDate ?? null),
       currentTeamCreditStop: computed(() => null),
+      periodCreditGrant: computed(() => null),
       initialize,
       fetchStatus,
       resubscribe
@@ -1079,6 +1081,36 @@ describe('BillingTab', () => {
     ).toBeInTheDocument()
     expect(screen.queryByTestId('billing-plan-line')).not.toBeInTheDocument()
   })
+
+  it.for([
+    { planKind: 'self_serve', date: 'Refills November 15, 2026' },
+    { planKind: 'sales_managed', date: null },
+    { planKind: 'none', date: null },
+    { planKind: null, date: null }
+  ] as const)(
+    'shows a $planKind paused-plan refill date only when self-serve',
+    ({ planKind, date }) => {
+      arrange({
+        planKind,
+        billingStatus: 'paused',
+        subscription: { ...activeSubscription, tier: 'ENTERPRISE' },
+        renewalDate: '2026-11-15T00:00:00Z',
+        balance: {
+          amountMicros: 1000,
+          currency: 'usd',
+          effectiveBalanceMicros: 1000,
+          effectiveBalanceAuthoritative: true,
+          prepaidBalanceMicros: 0,
+          cloudCreditBalanceMicros: 1000
+        }
+      })
+
+      expect(
+        screen.queryByTestId('billing-credits-plan-date')?.textContent.trim() ??
+          null
+      ).toBe(date)
+    }
+  )
 
   it('shows the served balance under the plan and opens top-up from Add credits', async () => {
     arrange({

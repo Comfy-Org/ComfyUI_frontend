@@ -329,6 +329,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
     renewalInvoice: computed(
       () => legacySubscriptionStatus.value?.renewal_invoice ?? null
     ),
+    periodCreditGrant: computed(
+      () => legacySubscriptionStatus.value?.period_credit_grant ?? null
+    ),
 
     // Actions
     initialize,
