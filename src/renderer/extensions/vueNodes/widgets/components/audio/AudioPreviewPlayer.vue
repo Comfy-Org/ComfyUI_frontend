@@ -125,7 +125,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { whenever } from '@vueuse/core'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createToastId } from '@/types/toastId'
@@ -300,18 +299,7 @@ watch(modelValue, (value) => {
   playAttempt++
   isPlaying.value = false
   toast.dismiss(playbackErrorToastId)
-  // `whenever` below pauses when a new source arrives, but it never runs for a
-  // cleared one, and dropping the src attribute does not stop playback on its own.
-  if (!value) audioRef.value?.pause()
+  audioRef.value?.pause()
+  if (value) audioRef.value?.load()
 })
-
-whenever(
-  modelValue,
-  () => {
-    isPlaying.value = false
-    audioRef.value?.pause()
-    void audioRef.value?.load()
-  },
-  { immediate: true }
-)
 </script>

@@ -68,12 +68,7 @@ describe('AudioPreviewPlayer', () => {
     it('stays paused and shows a toast when Safari rejects playback with NotSupportedError', async () => {
       const play = vi
         .spyOn(HTMLMediaElement.prototype, 'play')
-        .mockRejectedValue(
-          new DOMException(
-            'The operation is not supported.',
-            'NotSupportedError'
-          )
-        )
+        .mockRejectedValue(notSupported())
       const pause = vi
         .spyOn(HTMLMediaElement.prototype, 'pause')
         .mockImplementation(() => {})
