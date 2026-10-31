@@ -93,7 +93,12 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["extension-manager", "keybindings", "telemetry"],
+  "allowedDependencies": [
+    "extension-manager",
+    "keybindings",
+    "mask-editor",
+    "telemetry"
+  ],
   "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {

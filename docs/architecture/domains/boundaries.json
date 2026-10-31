@@ -24,6 +24,10 @@
         "patterns": ["packages/api-client/src/executionTypes.ts"]
       },
       {
+        "name": "error-reporting/application/public",
+        "patterns": ["packages/telemetry/src/reportError.ts"]
+      },
+      {
         "name": "ingest-api/domain/public",
         "patterns": ["src/platform/remote/ingest/ingestApiError.ts"]
       },
@@ -42,6 +46,16 @@
       {
         "name": "keybindings/integration/public",
         "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
+      },
+      {
+        "name": "mask-editor/domain/public",
+        "patterns": ["packages/mask-editor/src/extensionTypes.ts"]
+      },
+      {
+        "name": "mask-editor/application/public",
+        "patterns": [
+          "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.ts"
+        ]
       },
       {
         "name": "node-definition/domain/public",
@@ -2107,13 +2121,16 @@
         ]
       },
       {
+        "name": "mask-editor/domain",
+        "patterns": ["packages/mask-editor/src/extensionTypes.ts"]
+      },
+      {
         "name": "mask-editor/application",
         "patterns": [
           "src/renderer/extensions/maskEditor/composables/**",
           "src/renderer/extensions/maskEditor/stores/**",
           "src/scripts/clipspace.ts",
-          "src/scripts/clipspace.test.ts",
-          "packages/mask-editor/src/**"
+          "src/scripts/clipspace.test.ts"
         ]
       },
       {
@@ -3884,6 +3901,10 @@
         "patterns": ["src/renderer/extensions/linearMode/**"]
       },
       {
+        "name": "mask-editor/application/outer-1",
+        "patterns": ["packages/mask-editor/src/**"]
+      },
+      {
         "name": "media-metadata/infrastructure/outer-1",
         "patterns": ["src/scripts/metadata/**"]
       },
@@ -4175,6 +4196,28 @@
         ]
       },
       {
+        "from": "error-reporting/application/public",
+        "allow": [
+          "error-reporting/application/public",
+          "ingest-api/domain/public",
+          "ingest-api/infrastructure/public",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "runtime-guards/domain",
+          "telemetry/domain",
+          "telemetry/application",
+          "telemetry/infrastructure",
+          "app-host/domain/outer-1",
+          "telemetry/domain/outer-1",
+          "telemetry/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "ingest-api/domain/public",
         "allow": [
           "ingest-api/domain/public",
@@ -4230,6 +4273,37 @@
           "error-handling/application/outer-1",
           "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/domain/public",
+        "allow": [
+          "mask-editor/domain/public",
+          "design-system/domain",
+          "error-reporting/domain",
+          "mask-editor/domain",
+          "design-system/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/application/public",
+        "allow": [
+          "error-reporting/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "mask-editor/domain",
+          "mask-editor/application",
+          "mask-editor/infrastructure",
+          "design-system/domain/outer-1",
+          "mask-editor/application/outer-1",
           "unclassified"
         ]
       },
@@ -4341,6 +4415,7 @@
       {
         "from": "agent/application",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "agent/domain",
           "agent/application",
@@ -4383,6 +4458,7 @@
       {
         "from": "agent/infrastructure",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "agent/domain",
           "agent/application",
@@ -4425,6 +4501,7 @@
       {
         "from": "agent/presentation",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "agent/domain",
           "agent/application",
@@ -4472,6 +4549,7 @@
       {
         "from": "agent/integration",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "keybindings/integration/public",
           "agent/domain",
@@ -4566,6 +4644,7 @@
       {
         "from": "app-host/application",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "app-host/domain",
           "app-host/application",
@@ -4593,6 +4672,7 @@
       {
         "from": "app-host/infrastructure",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "app-host/domain",
           "app-host/application",
@@ -4621,6 +4701,7 @@
         "from": "app-host/presentation",
         "allow": [
           "account/presentation/public",
+          "error-reporting/application/public",
           "keybindings/application/public",
           "app-host/domain",
           "app-host/application",
@@ -4651,6 +4732,7 @@
         "allow": [
           "account/presentation/public",
           "account/integration/public",
+          "error-reporting/application/public",
           "keybindings/application/public",
           "keybindings/integration/public",
           "app-host/domain",
@@ -5449,6 +5531,7 @@
       {
         "from": "dialog-host/application",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "dialog-host/domain",
           "dialog-host/application",
@@ -5465,6 +5548,7 @@
       {
         "from": "dialog-host/integration",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "keybindings/integration/public",
           "dialog-host/domain",
@@ -5516,6 +5600,7 @@
       {
         "from": "error-reporting/application",
         "allow": [
+          "error-reporting/application/public",
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
           "app-host/domain",
@@ -5537,6 +5622,7 @@
       {
         "from": "error-reporting/infrastructure",
         "allow": [
+          "error-reporting/application/public",
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
           "app-host/domain",
@@ -5762,6 +5848,7 @@
       {
         "from": "extension-runtime/domain",
         "allow": [
+          "mask-editor/domain/public",
           "error-reporting/domain",
           "extension-manager/domain",
           "extension-runtime/domain",
@@ -5777,7 +5864,10 @@
       {
         "from": "extension-runtime/application",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "remote-config/infrastructure/public",
           "error-reporting/domain",
           "error-reporting/application",
@@ -5809,7 +5899,10 @@
       {
         "from": "extension-runtime/infrastructure",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "remote-config/infrastructure/public",
           "error-reporting/domain",
           "error-reporting/application",
@@ -5841,7 +5934,10 @@
       {
         "from": "extension-runtime/presentation",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "extension-manager/domain",
@@ -5871,8 +5967,11 @@
       {
         "from": "extension-runtime/integration",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "keybindings/integration/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "remote-config/infrastructure/public",
           "webcam-capture/integration/public",
           "error-reporting/domain",
@@ -6107,6 +6206,7 @@
         "from": "graph-model/application",
         "allow": [
           "comfyui-api/domain/public",
+          "error-reporting/application/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -6126,6 +6226,7 @@
         "from": "graph-model/infrastructure",
         "allow": [
           "comfyui-api/domain/public",
+          "error-reporting/application/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -6145,6 +6246,7 @@
         "from": "graph-model/integration",
         "allow": [
           "comfyui-api/domain/public",
+          "error-reporting/application/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -6637,36 +6739,97 @@
         "allow": ["markdown-rendering/infrastructure", "unclassified"]
       },
       {
+        "from": "mask-editor/domain",
+        "allow": [
+          "mask-editor/domain/public",
+          "design-system/domain",
+          "error-reporting/domain",
+          "mask-editor/domain",
+          "design-system/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "mask-editor/application",
         "allow": [
+          "error-reporting/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
+          "design-system/domain/outer-1",
+          "mask-editor/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "mask-editor/infrastructure",
         "allow": [
+          "error-reporting/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
+          "design-system/domain/outer-1",
+          "mask-editor/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "mask-editor/presentation",
         "allow": [
+          "error-reporting/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/presentation",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
+          "mask-editor/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "mask-editor/integration",
         "allow": [
+          "error-reporting/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "design-system/presentation",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
           "mask-editor/presentation",
           "mask-editor/integration",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
+          "mask-editor/application/outer-1",
           "unclassified"
         ]
       },
@@ -7077,6 +7240,7 @@
       {
         "from": "node-widgets/application",
         "allow": [
+          "error-reporting/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -7089,6 +7253,7 @@
       {
         "from": "node-widgets/infrastructure",
         "allow": [
+          "error-reporting/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -7101,6 +7266,7 @@
       {
         "from": "node-widgets/presentation",
         "allow": [
+          "error-reporting/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "node-widgets/domain",
@@ -7113,6 +7279,7 @@
       {
         "from": "node-widgets/integration",
         "allow": [
+          "error-reporting/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -7942,6 +8109,7 @@
       {
         "from": "workbench-shell/domain",
         "allow": [
+          "mask-editor/domain/public",
           "extension-manager/domain",
           "keybindings/domain",
           "telemetry/domain",
@@ -7956,6 +8124,8 @@
         "from": "workbench-shell/application",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
@@ -7979,6 +8149,8 @@
         "from": "workbench-shell/infrastructure",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
@@ -8002,6 +8174,8 @@
         "from": "workbench-shell/presentation",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
@@ -8028,6 +8202,8 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/integration/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "extension-manager/presentation",
@@ -8195,6 +8371,7 @@
       {
         "from": "workflow-management/application",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "error-reporting/domain",
           "error-reporting/application",
@@ -8217,6 +8394,7 @@
       {
         "from": "workflow-management/infrastructure",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "error-reporting/domain",
           "error-reporting/application",
@@ -8239,6 +8417,7 @@
       {
         "from": "workflow-management/presentation",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "error-reporting/domain",
           "error-reporting/application",
@@ -8261,6 +8440,7 @@
       {
         "from": "workflow-management/integration",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "keybindings/integration/public",
           "error-reporting/domain",
@@ -8455,6 +8635,7 @@
       {
         "from": "agent/integration/outer-1",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "keybindings/integration/public",
           "agent/domain",
@@ -8547,6 +8728,7 @@
         "from": "app-host/presentation/outer-1",
         "allow": [
           "account/presentation/public",
+          "error-reporting/application/public",
           "keybindings/application/public",
           "app-host/domain",
           "app-host/application",
@@ -8962,6 +9144,7 @@
       {
         "from": "dialog-host/presentation/outer-1",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "dialog-host/domain",
           "dialog-host/application",
@@ -9045,7 +9228,10 @@
       {
         "from": "extension-runtime/infrastructure/outer-1",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "remote-config/infrastructure/public",
           "error-reporting/domain",
           "error-reporting/application",
@@ -9077,7 +9263,10 @@
       {
         "from": "extension-runtime/presentation/outer-1",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "extension-manager/domain",
@@ -9179,6 +9368,7 @@
         "from": "graph-model/integration/outer-1",
         "allow": [
           "comfyui-api/domain/public",
+          "error-reporting/application/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
@@ -9290,6 +9480,26 @@
         ]
       },
       {
+        "from": "mask-editor/application/outer-1",
+        "allow": [
+          "error-reporting/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "mask-editor/domain",
+          "mask-editor/application",
+          "mask-editor/infrastructure",
+          "design-system/domain/outer-1",
+          "mask-editor/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "media-metadata/infrastructure/outer-1",
         "allow": [
           "media-metadata/domain",
@@ -9392,6 +9602,7 @@
       {
         "from": "node-widgets/presentation/outer-1",
         "allow": [
+          "error-reporting/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "node-widgets/domain",
@@ -9726,6 +9937,7 @@
       {
         "from": "workflow-management/presentation/outer-1",
         "allow": [
+          "error-reporting/application/public",
           "keybindings/application/public",
           "error-reporting/domain",
           "error-reporting/application",
@@ -9934,6 +10146,8 @@
         "from": "workbench-shell/presentation/outer-2",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
@@ -10005,10 +10219,13 @@
           "account/presentation/public",
           "account/integration/public",
           "comfyui-api/domain/public",
+          "error-reporting/application/public",
           "ingest-api/domain/public",
           "ingest-api/infrastructure/public",
           "keybindings/application/public",
           "keybindings/integration/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "node-definition/domain/public",
           "remote-config/infrastructure/public",
           "server-facts/domain/public",

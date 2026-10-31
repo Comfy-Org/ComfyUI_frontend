@@ -93,6 +93,7 @@
     "error-reporting",
     "extension-manager",
     "keybindings",
+    "mask-editor",
     "remote-config",
     "telemetry",
     "webcam-capture"
