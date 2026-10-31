@@ -1279,13 +1279,16 @@ describe('useMediaAssetActions', () => {
       )
       const actions = useMediaAssetActions()
       const asset = createMockAsset({ id: 'disabled-asset' })
+      // Seeded so the invalidation assertion below can fail: `invalidate`
+      // removes matching ids, so an empty list would pass either way.
+      mockInputAssets.items = [asset]
 
       await expect(actions.deleteAssets(asset)).resolves.toBe(false)
 
       expect(mockShowDialog).not.toHaveBeenCalled()
       expect(mockDeleteAsset).not.toHaveBeenCalled()
       expect(mockSetAssetDeleting).not.toHaveBeenCalled()
-      expect(mockInputAssets.items).toEqual([])
+      expect(mockInputAssets.items).toEqual([asset])
       expect(useToast().add).toHaveBeenCalledWith({
         detail: 'mediaAsset.deletionUnsupported',
         life: 5000,
