@@ -195,6 +195,7 @@ describe('useAgentDockMount', () => {
       await nextTick()
 
       expect(fetchStatus).toHaveBeenCalledOnce()
+      expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
     })
 
     it('refreshes billing for an acceptance recorded before any host mounted', async () => {
