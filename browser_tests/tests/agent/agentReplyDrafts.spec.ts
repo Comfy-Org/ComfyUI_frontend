@@ -37,6 +37,14 @@ function draft(text: string): AgentWsEvent {
   return { type: 'agent_message_draft', data: { text, ...ids } }
 }
 
+function thinkingDraft(text: string): AgentWsEvent {
+  return { type: 'agent_thinking_draft', data: { text, ...ids } }
+}
+
+function thinking(delta: string): AgentWsEvent {
+  return { type: 'agent_thinking', data: { delta, ...ids } }
+}
+
 function toolCall(name: string, status: 'running' | 'success'): AgentWsEvent {
   return {
     type: 'agent_tool_call',
@@ -149,6 +157,58 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
 }
 
 test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
+  test('thinking appears while the model writes it, and is shown once when the round ends', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { panel, send } = await startTurn(page, 'Think about a fox video.')
+
+    await expect(panel.getByText(WORKING_LABEL)).toBeVisible()
+
+    send(thinkingDraft('The user wants'))
+    await expect(
+      panel.getByText('The user wants', { exact: true })
+    ).toBeVisible()
+
+    // Each frame is the whole thinking so far, so it replaces the last.
+    send(thinkingDraft('The user wants a fox video'))
+    await expect(
+      panel.getByText('The user wants a fox video', { exact: true })
+    ).toBeVisible()
+    await expect(
+      panel.getByText('The user wants', { exact: true })
+    ).toHaveCount(0)
+
+    // The round's finished thinking supersedes the draft, in the same row.
+    send(thinking('The user wants a fox video, so I will render one.'))
+    await expect(
+      panel.getByText('The user wants a fox video, so I will render one.', {
+        exact: true
+      })
+    ).toHaveCount(1)
+    await expect(
+      panel.getByText('The user wants a fox video', { exact: true })
+    ).toHaveCount(0)
+  })
+
+  test('a retried round takes back what the failed attempt was thinking', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { panel, send } = await startTurn(page, 'Think about a fox video.')
+
+    send(thinkingDraft('half a thought'))
+    await expect(
+      panel.getByText('half a thought', { exact: true })
+    ).toBeVisible()
+
+    send(thinkingDraft(''))
+    await expect(
+      panel.getByText('half a thought', { exact: true })
+    ).toHaveCount(0)
+    await expect(panel.getByText(WORKING_LABEL)).toBeVisible()
+  })
+
   test('the answer appears while the model writes it, and the final answer replaces it', async ({
     page
   }) => {
@@ -254,7 +314,10 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
         async (route) => {
           const request = route.request()
           const body = zAgentAnswerRequest.parse(request.postDataJSON())
-          answeredRequests.push({ url: request.url(), selected: body.selected })
+          answeredRequests.push({
+            url: request.url(),
+            selected: body.selected
+          })
           await answerCanFinish
           await route.fulfill({
             ...jsonRoute({ status: 'answered' }),

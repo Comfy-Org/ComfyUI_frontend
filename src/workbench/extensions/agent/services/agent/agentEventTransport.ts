@@ -32,6 +32,7 @@ export type AgentChatEvent = Extract<
       | 'agent_tool_call'
       | 'agent_message_delta'
       | 'agent_message_draft'
+      | 'agent_thinking_draft'
       | 'agent_message_done'
       | 'agent_active_tab'
       | 'agent_ask'
@@ -54,6 +55,10 @@ type AgentAskResolvedEvent = Extract<
 type AgentMessageDeltaEvent = Extract<
   AgentChatEvent,
   { type: 'agent_message_delta' }
+>
+type AgentThinkingDraftEvent = Extract<
+  AgentChatEvent,
+  { type: 'agent_thinking_draft' }
 >
 type AgentMessageDraftEvent = Extract<
   AgentChatEvent,
@@ -117,6 +122,9 @@ export function createAgentEventTransport(
   let draft: TextPart | null = null
   let openThinking: ThinkingPart | null = null
   let openThinkingStartedAt = 0
+  /** The row showing the thinking the model is still writing. Provisional
+   * until the round's `agent_thinking` frames take the row over. */
+  let thinkingDraft: ThinkingPart | null = null
   const tools = new Map<string, ToolPart>(
     message.parts
       .filter((part): part is ToolPart => part.type === 'tool')
@@ -331,7 +339,7 @@ export function createAgentEventTransport(
     }
     const part = toAskOrNoticePart(data)
     if (part.type === 'askUnavailable') reportUnrenderedAsk(data)
-    dropDraft()
+    dropDrafts()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
@@ -344,9 +352,49 @@ export function createAgentEventTransport(
    * thinking part, opening one first if none is open. */
   function handleThinkingEvent(data: AgentThinkingEvent['data']): void {
     closeOpenText()
+    adoptThinkingDraft()
     message.thinking = true
     ;(openThinking ?? openNewThinking()).text += data.delta
     message.thinkingText = openThinking?.text
+  }
+
+  /** The round's own thinking replaces the draft in its row: the draft may
+   * already sit above an answer draft, and that order should not flip. */
+  function adoptThinkingDraft(): void {
+    if (!thinkingDraft) return
+    thinkingDraft.text = ''
+    thinkingDraft.state = 'streaming'
+    openThinking = thinkingDraft
+    thinkingDraft = null
+  }
+
+  /** Applies one `agent_thinking_draft` frame: the whole of the round's
+   * thinking so far replaces the last draft, and an empty one withdraws it. */
+  function handleThinkingDraftEvent(
+    data: AgentThinkingDraftEvent['data']
+  ): void {
+    if (!data.text) {
+      if (thinkingDraft) dropThinkingDraft()
+      return
+    }
+    if (!thinkingDraft) {
+      closeOpenText()
+      closeOpenThinking()
+      thinkingDraft = openNewThinking()
+    }
+    thinkingDraft.text = data.text
+    message.thinking = true
+    message.thinkingText = data.text
+  }
+
+  function dropThinkingDraft(): void {
+    if (!thinkingDraft) return
+    const stale = thinkingDraft
+    if (openThinking === stale) openThinking = null
+    message.parts = message.parts.filter((part) => part !== stale)
+    thinkingDraft = null
+    message.thinking = false
+    message.thinkingText = undefined
   }
 
   function handleAskResolvedEvent(
@@ -365,7 +413,7 @@ export function createAgentEventTransport(
   /** Applies one `agent_message_delta` frame: appends its delta to the open
    * text part, opening one first if none is open. */
   function handleMessageDeltaEvent(data: AgentMessageDeltaEvent['data']): void {
-    dropDraft()
+    dropDrafts()
     closeOpenThinking()
     message.thinking = false
     message.thinkingText = undefined
@@ -391,6 +439,13 @@ export function createAgentEventTransport(
     const stale = draft
     message.parts = message.parts.filter((part) => part !== stale)
     draft = null
+  }
+
+  /** A round that moved on without sending its thinking had none to keep, so
+   * its draft goes with the answer draft. */
+  function dropDrafts(): void {
+    dropDraft()
+    dropThinkingDraft()
   }
 
   /** Applies one `agent_message_draft` frame: the whole reply so far replaces
@@ -439,7 +494,7 @@ export function createAgentEventTransport(
         handleThinkingEvent(event.data)
         return true
       case 'agent_tool_call':
-        dropDraft()
+        dropDrafts()
         closeOpenText()
         closeOpenThinking()
         message.thinking = false
@@ -457,6 +512,9 @@ export function createAgentEventTransport(
         return true
       case 'agent_message_draft':
         handleMessageDraftEvent(event.data)
+        return true
+      case 'agent_thinking_draft':
+        handleThinkingDraftEvent(event.data)
         return true
     }
   }
@@ -480,7 +538,7 @@ export function createAgentEventTransport(
   function settle(): void {
     if (settled) return
     settled = true
-    dropDraft()
+    dropDrafts()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
