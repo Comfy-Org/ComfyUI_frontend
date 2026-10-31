@@ -3,6 +3,7 @@ import { markRaw } from 'vue'
 import { assert } from '@/base/assert'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
+import { getValidWorkflowViewState } from '@/platform/workflow/persistence/base/workflowViewState'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
@@ -70,6 +71,7 @@ export interface WorkflowChangeTracker {
 interface WorkflowDraft {
   data: string
   updatedAt: number
+  isModified?: boolean
 }
 
 /**
@@ -200,18 +202,45 @@ export function reportWorkflowStateAnomaly(
  * The saved draft to overlay on a freshly loaded workflow, if there is a usable
  * one. A stale or unparseable draft is removed.
  */
+interface DraftViewStateOverlay {
+  state: ComfyWorkflowJSON | null
+  content: string | null
+}
+
+function applySavedViewStateFallback(
+  initialState: ComfyWorkflowJSON,
+  draftState: ComfyWorkflowJSON | null,
+  draftContent: string | null
+): DraftViewStateOverlay {
+  if (!draftState) return { state: draftState, content: draftContent }
+  const savedViewState = getValidWorkflowViewState(initialState.extra?.ds)
+  const draftViewState = getValidWorkflowViewState(draftState.extra?.ds)
+  if (draftViewState || !savedViewState) {
+    return { state: draftState, content: draftContent }
+  }
+  const state = {
+    ...draftState,
+    extra: { ...draftState.extra, ds: savedViewState }
+  }
+  return { state, content: JSON.stringify(state) }
+}
+
 function readUsableDraft(
   runtime: WorkflowRuntime,
   workflow: ComfyWorkflow
-): { state: ComfyWorkflowJSON; content: string } | null {
+): { state: ComfyWorkflowJSON; content: string; isModified?: boolean } | null {
   const draft = runtime.getDraft(workflow.path)
   if (!draft) return null
-  if (draft.updatedAt < workflow.lastModified) {
+  if (!workflow.isTemporary && draft.updatedAt < workflow.lastModified) {
     runtime.removeDraft(workflow.path)
     return null
   }
   try {
-    return { state: JSON.parse(draft.data), content: draft.data }
+    return {
+      state: JSON.parse(draft.data),
+      content: draft.data,
+      isModified: draft.isModified
+    }
   } catch (err) {
     console.warn('Failed to parse workflow draft, clearing it', err)
     runtime.removeDraft(workflow.path)
@@ -359,13 +388,18 @@ export class ComfyWorkflow extends UserFile {
     await super.load({ force })
 
     const initialState = parseStoredWorkflow(this)
+    const overlay = applySavedViewStateFallback(
+      initialState,
+      draft?.state ?? null,
+      draft?.content ?? null
+    )
     this.changeTracker = markRaw(
       runtime.createChangeTracker(this, initialState)
     )
-    if (draft?.state && draft.content) {
-      this.changeTracker.activeState = draft.state
-      this.content = draft.content
-      this._isModified = true
+    if (overlay.state && overlay.content) {
+      this.changeTracker.activeState = overlay.state
+      this.content = overlay.content
+      this._isModified = draft?.isModified ?? true
       // Saved-workflow draft overlay path; direct persisted-draft restores
       // are touched in workflowDraftStoreV2.loadDraft().
       runtime.markDraftUsed(this.path)
