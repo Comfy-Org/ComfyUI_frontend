@@ -11,8 +11,6 @@ import type {
   AssetResponse
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
-import { verifyAssetSupportedCandidates } from '@/platform/workflowErrors/missingModel/missingModelScan'
-import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
 
@@ -723,8 +721,8 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         await expect(Promise.all([caller, replacement])).resolves.toBeDefined()
       })
 
-      it('reports an installed model as present when an import completes during verification', async () => {
-        useAssetsStore()
+      it('keeps a node type refresh waiting when an import completes during it', async () => {
+        const store = useAssetsStore()
         const pages: PendingPage[] = []
         vi.mocked(assetService.getAssetsPageForNodeType).mockImplementation(
           (_nodeType, options) => abortablePage(pages, options?.signal)
@@ -732,27 +730,21 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
           makePage([])
         )
-        const installedLora = createMockAsset('installed-lora')
-        const candidate = fromPartial<MissingModelCandidate>({
-          name: installedLora.name,
-          nodeType: 'LoraLoader',
-          isAssetSupported: true
+        const settlements: string[][] = []
+
+        const refresh = store.updateModelsForNodeType('LoraLoader').then(() => {
+          settlements.push(store.getAssets('LoraLoader').map((a) => a.id))
         })
-
-        const verification = verifyAssetSupportedCandidates([candidate])
-        await settleMicrotasks()
-        expect(pages).toHaveLength(1)
-
         completeLoraDownload()
         await nextTick()
         await settleMicrotasks()
 
-        expect(candidate.isMissing).toBeUndefined()
+        expect(settlements).toEqual([])
 
-        pages.at(-1)!.resolve(makePage([installedLora]))
-        await verification
+        pages.at(-1)!.resolve(makePage([createMockAsset('installed-lora')]))
+        await refresh
 
-        expect(candidate.isMissing).toBe(false)
+        expect(settlements).toEqual([['installed-lora']])
       })
     })
 
