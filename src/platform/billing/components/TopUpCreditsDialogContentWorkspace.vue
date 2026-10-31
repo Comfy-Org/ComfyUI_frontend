@@ -171,7 +171,7 @@
       <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.minRequired', {
-          credits: formatNumber(usdToCredits(MIN_AMOUNT))
+          credits: formatNumber(minTopup.credits)
         })
       }}
     </p>
@@ -586,8 +586,15 @@ const creditsModel = computed({
   }
 })
 
+const minTopup = computed(() => {
+  const { minTopupCents, minTopupCredits } = balance.value ?? {}
+  return minTopupCents === undefined || minTopupCredits === undefined
+    ? { usd: MIN_AMOUNT, credits: usdToCredits(MIN_AMOUNT) }
+    : { usd: minTopupCents / 100, credits: minTopupCredits }
+})
+
 const isValidAmount = computed(
-  () => payAmount.value >= MIN_AMOUNT && payAmount.value <= MAX_AMOUNT
+  () => payAmount.value >= minTopup.value.usd && payAmount.value <= MAX_AMOUNT
 )
 
 const negativeBalanceCredits = computed(() => {
@@ -598,7 +605,7 @@ const negativeBalanceCredits = computed(() => {
   return centsToCredits(-cents)
 })
 
-const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
+const isBelowMin = computed(() => payAmount.value < minTopup.value.usd)
 const showCeilingWarning = computed(() => payAmount.value >= MAX_AMOUNT)
 
 const displayTotal = computed(() =>

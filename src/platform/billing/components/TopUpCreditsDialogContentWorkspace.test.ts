@@ -748,6 +748,37 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  const SERVED_MINIMUM: Partial<BalanceInfo> = {
+    minTopupCents: 2_500,
+    minTopupCredits: 5_275
+  }
+
+  it('blocks an amount below the served minimum and names it', async () => {
+    renderWithBalance(SERVED_MINIMUM)
+
+    await userEvent.click(screen.getByRole('button', { name: '$10' }))
+
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeDisabled()
+    expect(screen.getByText('5,275 credits minimum')).toBeVisible()
+  })
+
+  it.for<{ name: string; balance: Partial<BalanceInfo>; preset: string }>([
+    { name: 'at the served minimum', balance: SERVED_MINIMUM, preset: '$25' },
+    { name: 'above $5 when no minimum is served', balance: {}, preset: '$10' },
+    {
+      name: 'above $5 when the minimum has no served credits',
+      balance: { minTopupCents: 2_500 },
+      preset: '$10'
+    }
+  ])('allows an amount $name', async ({ balance, preset }) => {
+    renderWithBalance(balance)
+
+    await userEvent.click(screen.getByRole('button', { name: preset }))
+
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+    expect(screen.queryByText(/credits minimum/)).not.toBeInTheDocument()
+  })
+
   describe('without a default payment method', () => {
     const checkoutUrl = 'https://checkout.stripe.com/c/pay/cs_test'
 
