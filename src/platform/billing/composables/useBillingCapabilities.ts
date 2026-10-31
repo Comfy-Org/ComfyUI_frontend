@@ -82,6 +82,8 @@ function readCapabilitiesResponse(
 
 function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
+  const webSession = useCloudWebSessionStore()
+  const { flags } = useFeatureFlags()
   const apiKeyAuthStore = useApiKeyAuthStore()
   const workspaceStore = useWorkspaceIdentity()
   const actorId = computed(
@@ -559,12 +561,12 @@ function useBillingCapabilitiesInternal() {
   )
 
   watch(
-    () => useCloudWebSessionStore().state,
-    (webSession) => {
+    () => webSession.state,
+    (state) => {
       if (
-        webSession.phase === 'signed_in' &&
+        state.phase === 'signed_in' &&
         readState.value.status === 'denied' &&
-        useFeatureFlags().flags.webSessionLapseRecoveryEnabled
+        flags.webSessionLapseRecoveryEnabled
       ) {
         void fetchCapabilities()
       }
