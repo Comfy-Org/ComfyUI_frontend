@@ -69,6 +69,30 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it.for([
+    'Failed to fetch (www.facebook.com)',
+    'Failed to fetch (px.ads.linkedin.com:8443)'
+  ])(
+    'drops a fetch failure Sentry annotated with a noise host: %s',
+    (message) => {
+      expect(rumBeforeSend(createErrorEvent(message), fromPartial({}))).toBe(
+        false
+      )
+    }
+  )
+
+  it.for([
+    'Failed to fetch (cloud.comfy.org)',
+    'Failed to fetch (notfacebook.com)'
+  ])(
+    'keeps a fetch failure Sentry annotated with another host: %s',
+    (message) => {
+      expect(rumBeforeSend(createErrorEvent(message), fromPartial({}))).toBe(
+        true
+      )
+    }
+  )
+
   it('drops the CSP block of a third-party tracking pixel by host', () => {
     const event = createErrorEvent(
       "csp_violation: 'https://www.facebook.com/tr/' blocked by 'form-action' directive"

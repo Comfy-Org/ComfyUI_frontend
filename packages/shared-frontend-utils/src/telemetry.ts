@@ -77,6 +77,9 @@ export function namesRumNoiseHost(text: string | undefined): boolean {
   return hostnamesIn(text).some(isNoiseHostname)
 }
 
+/** Sentry's fetch wrapper rewrites the message to `Failed to fetch (<host>)`, with no scheme. */
+const SENTRY_ANNOTATED_FETCH_HOST = /(?<=Failed to fetch )\(([^()\s]+)\)/
+
 /**
  * Fetch failures only. CSP violations are decided by `isNoiseCspViolation`
  * below: routing them through here too would drop a violation whose message
@@ -84,7 +87,10 @@ export function namesRumNoiseHost(text: string | undefined): boolean {
  * first-party CSP defects involving a third-party resource.
  */
 function isFetchFailureToNoiseHost(message: string): boolean {
-  return message.includes('Failed to fetch') && namesRumNoiseHost(message)
+  if (!message.includes('Failed to fetch')) return false
+  return namesRumNoiseHost(
+    message.replace(SENTRY_ANNOTATED_FETCH_HOST, 'https://$1')
+  )
 }
 
 const CSP_VIOLATION_PREFIX = 'csp_violation:'
