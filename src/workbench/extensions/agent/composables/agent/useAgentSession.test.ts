@@ -6839,7 +6839,7 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h10e) a continuing turn re-flags the tab once the tab holding the remembered workflow has closed', async () => {
-    const draftSnapshot = { content: { nodes: [], links: [] } }
+    const draftSnapshot = { content: { nodes: [{ id: 1 }], links: [] } }
     const { session, postMessage, bindingStore } = unboundTabSession({
       acks: ['wf-other-tab', 'wf-minted'],
       draft: () => draftSnapshot,
@@ -6854,6 +6854,39 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(second).not.toHaveProperty('workflowId')
     expect(second.currentTabUnbound).toBe(true)
     expect(second.draft).toEqual(draftSnapshot)
+  })
+
+  it('(h10e2) a blank tab keeps the thread workflow once the tab holding it has closed', async () => {
+    const { session, postMessage, bindingStore } = unboundTabSession({
+      acks: ['wf-other-tab', 'wf-other-tab'],
+      draft: () => ({ content: { nodes: [], links: [] } }),
+      tabs: () => ({ open_tabs: [] })
+    })
+
+    await session.sendMessage('build a workflow')
+    bindingStore.unbindWorkflow('wf-other-tab')
+    await session.sendMessage('now add a sampler')
+
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('draft')
+  })
+
+  it('(h10e3) a new tab reusing the path of a closed adopted tab mints for itself', async () => {
+    const draftSnapshot = { content: { nodes: [{ id: 1 }], links: [] } }
+    const { session, postMessage, bindingStore } = unboundTabSession({
+      acks: ['wf-minted', 'wf-minted', 'wf-reused'],
+      draft: () => draftSnapshot,
+      adoptIntoStore: true
+    })
+
+    await session.sendMessage('add a text input node')
+    await session.sendMessage('and a load image node')
+    bindingStore.unbindWorkflow('wf-minted')
+    await session.sendMessage('and a sampler')
+
+    const third = postMessage.mock.calls[2][1]
+    expect(third.currentTabUnbound).toBe(true)
+    expect(third.draft).toEqual(draftSnapshot)
   })
 
   it('(h10f) a reply without a workflow id does not mint again on every later turn', async () => {

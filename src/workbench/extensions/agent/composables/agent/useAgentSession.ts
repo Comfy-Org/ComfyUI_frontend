@@ -1201,15 +1201,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId?: string
   ): PostMessageInput {
     const draft = workflow?.draft?.(origin)
+    const tabs = workflow?.tabs?.(origin)
     const unboundTarget = isUnboundTarget(
       wfContext,
       boundWorkflowId.value,
-      draft
+      draft,
+      tabs
     )
     const selectedWorkflowId = selectionWorkflowId?.()
     return {
       content: serializeWorkflowReferences(text, workflowReferences ?? []),
-      tabs: workflow?.tabs?.(origin),
+      tabs,
       workflowReferences: serializeReferencedWorkflows(
         workflowReferences,
         wfContext?.id
@@ -1259,11 +1261,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function isUnboundTarget(
     wfContext: WorkflowTurnContext | undefined,
     boundWorkflowId: string | null,
-    draft: DraftSnapshot | undefined
+    draft: DraftSnapshot | undefined,
+    tabs: OpenTabsSnapshot | undefined
   ): boolean {
     if (wfContext === undefined || wfContext.id !== undefined) return false
     if (mintAlreadyRequested(wfContext.tabPath, boundWorkflowId)) return false
-    return boundWorkflowId === null || draft !== undefined
+    if (boundWorkflowId === null) return true
+    if (draft === undefined) return false
+    return hasNodes(draft) || isOpenInATab(boundWorkflowId, tabs)
+  }
+
+  // A blank canvas would replace the thread's built workflow with nothing.
+  function hasNodes(draft: DraftSnapshot): boolean {
+    const nodes = draft.content.nodes
+    return Array.isArray(nodes) && nodes.length > 0
+  }
+
+  function isOpenInATab(
+    workflowId: string,
+    tabs: OpenTabsSnapshot | undefined
+  ): boolean {
+    return (tabs?.open_tabs ?? []).some((tab) => tab.workflow_id === workflowId)
   }
 
   function mintAlreadyRequested(
@@ -1275,11 +1293,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return minted === undefined || minted === boundWorkflowId
   }
 
-  function rememberMint(tabPath: string, workflowId: string | undefined): void {
-    const holder =
-      workflowId === undefined ? undefined : bindingStore.tabPathFor(workflowId)
-    if (holder === undefined || holder === tabPath)
-      mintedByTab.set(tabPath, workflowId)
+  function rememberMint(
+    input: PostMessageInput,
+    wfContext: WorkflowTurnContext | undefined,
+    workflowId: string | undefined
+  ): void {
+    if (!input.currentTabUnbound || wfContext === undefined) return
+    const adoptedOrHeld =
+      workflowId !== undefined &&
+      bindingStore.tabPathFor(workflowId) !== undefined
+    if (!adoptedOrHeld) mintedByTab.set(wfContext.tabPath, workflowId)
   }
 
   function lacksCanvasForRemint(
@@ -1525,11 +1548,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
-      if (workflowTargetChanged(originContext, wfContext)) {
-        recordUnavailableTarget(text)
-        return false
-      }
-      if (lacksCanvasForRemint(wfContext, origin)) {
+      if (
+        workflowTargetChanged(originContext, wfContext) ||
+        lacksCanvasForRemint(wfContext, origin)
+      ) {
         recordUnavailableTarget(text)
         return false
       }
@@ -1557,8 +1579,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         skillScopeAtSend
       )
-      if (input.currentTabUnbound && wfContext)
-        rememberMint(wfContext.tabPath, ack.workflow_id)
+      rememberMint(input, wfContext, ack.workflow_id)
       return true
     } catch (error) {
       // Before the generation guard: the binding store is page-global and
