@@ -21,7 +21,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["workflow-errors"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

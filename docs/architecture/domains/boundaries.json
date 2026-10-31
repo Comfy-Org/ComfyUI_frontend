@@ -67,6 +67,10 @@
         "patterns": ["src/extensions/core/webcamCapture.ts"]
       },
       {
+        "name": "workflow-errors/presentation/public",
+        "patterns": ["src/platform/workflowErrors/panel/LocateNodeButton.vue"]
+      },
+      {
         "name": "account/presentation",
         "patterns": [
           "src/platform/account/auth/WorkspaceAuthGate.vue",
@@ -4272,6 +4276,29 @@
         ]
       },
       {
+        "from": "workflow-errors/presentation/public",
+        "allow": [
+          "keybindings/application/public",
+          "workflow-errors/presentation/public",
+          "extension-manager/domain",
+          "extension-manager/presentation",
+          "keybindings/domain",
+          "keybindings/application",
+          "keybindings/presentation",
+          "workflow-errors/domain",
+          "workflow-errors/application",
+          "workflow-errors/presentation",
+          "extension-manager/domain/outer-1",
+          "extension-manager/presentation/outer-1",
+          "keybindings/domain/outer-1",
+          "keybindings/application/outer-1",
+          "workflow-errors/application/outer-1",
+          "workflow-errors/presentation/outer-1",
+          "extension-manager/application/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "account/presentation",
         "allow": [
           "account/presentation/public",
@@ -6757,20 +6784,34 @@
       },
       {
         "from": "missing-media/domain",
-        "allow": ["missing-media/domain", "unclassified"]
+        "allow": [
+          "missing-media/domain",
+          "workflow-errors/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "missing-media/presentation",
         "allow": [
+          "workflow-errors/presentation/public",
           "missing-media/domain",
           "missing-media/presentation",
+          "workflow-errors/domain",
+          "workflow-errors/application",
+          "workflow-errors/presentation",
           "missing-media/application/outer-1",
+          "workflow-errors/application/outer-1",
+          "workflow-errors/presentation/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "missing-models/domain",
-        "allow": ["missing-models/domain", "unclassified"]
+        "allow": [
+          "missing-models/domain",
+          "workflow-errors/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "missing-models/application",
@@ -6778,6 +6819,9 @@
           "missing-models/domain",
           "missing-models/application",
           "missing-models/infrastructure",
+          "workflow-errors/domain",
+          "workflow-errors/application",
+          "workflow-errors/application/outer-1",
           "unclassified"
         ]
       },
@@ -6787,15 +6831,24 @@
           "missing-models/domain",
           "missing-models/application",
           "missing-models/infrastructure",
+          "workflow-errors/domain",
+          "workflow-errors/application",
+          "workflow-errors/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "missing-models/presentation",
         "allow": [
+          "workflow-errors/presentation/public",
           "missing-models/domain",
           "missing-models/application",
           "missing-models/presentation",
+          "workflow-errors/domain",
+          "workflow-errors/application",
+          "workflow-errors/presentation",
+          "workflow-errors/application/outer-1",
+          "workflow-errors/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -7038,23 +7091,36 @@
       },
       {
         "from": "node-replacement/domain",
-        "allow": ["node-replacement/domain", "unclassified"]
+        "allow": [
+          "node-replacement/domain",
+          "workflow-errors/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "node-replacement/infrastructure",
         "allow": [
           "node-replacement/domain",
           "node-replacement/infrastructure",
+          "workflow-errors/domain",
+          "workflow-errors/application",
           "node-replacement/application/outer-1",
+          "workflow-errors/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "node-replacement/presentation",
         "allow": [
+          "workflow-errors/presentation/public",
           "node-replacement/domain",
           "node-replacement/presentation",
+          "workflow-errors/domain",
+          "workflow-errors/application",
+          "workflow-errors/presentation",
           "node-replacement/application/outer-1",
+          "workflow-errors/application/outer-1",
+          "workflow-errors/presentation/outer-1",
           "unclassified"
         ]
       },
@@ -8107,6 +8173,7 @@
         "from": "workflow-errors/presentation",
         "allow": [
           "keybindings/application/public",
+          "workflow-errors/presentation/public",
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
@@ -8130,6 +8197,7 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/integration/public",
+          "workflow-errors/presentation/public",
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "extension-manager/presentation",
@@ -9317,7 +9385,10 @@
         "from": "missing-media/application/outer-1",
         "allow": [
           "missing-media/domain",
+          "workflow-errors/domain",
+          "workflow-errors/application",
           "missing-media/application/outer-1",
+          "workflow-errors/application/outer-1",
           "unclassified"
         ]
       },
@@ -9385,7 +9456,10 @@
         "allow": [
           "node-replacement/domain",
           "node-replacement/infrastructure",
+          "workflow-errors/domain",
+          "workflow-errors/application",
           "node-replacement/application/outer-1",
+          "workflow-errors/application/outer-1",
           "unclassified"
         ]
       },
@@ -9705,6 +9779,7 @@
         "from": "workflow-errors/presentation/outer-1",
         "allow": [
           "keybindings/application/public",
+          "workflow-errors/presentation/public",
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
@@ -10013,6 +10088,7 @@
           "remote-config/infrastructure/public",
           "server-facts/domain/public",
           "webcam-capture/integration/public",
+          "workflow-errors/presentation/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",

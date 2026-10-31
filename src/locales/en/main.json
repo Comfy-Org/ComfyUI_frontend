@@ -5220,7 +5220,6 @@
       "gatedModelsHint": "{count} model is gated. To download it, sign in to Hugging Face and accept its license agreement. | {count} models are gated. To download them, sign in to Hugging Face and accept their license agreements.",
       "gatedModelTooltip": "This model is gated. Sign in to Hugging Face and accept its license agreement to access it.",
       "gatedModelDownloadTooltip": "To download this gated model, sign in to Hugging Face and accept its license agreement.",
-      "locateNode": "Locate node on canvas",
       "openHuggingFaceRepo": "Open Hugging Face repository for {model}",
       "openHuggingFaceRepoNewTab": "Open Hugging Face repository for {model} in a new tab",
       "openHuggingFaceRepoDesktop": "Open Hugging Face repository for {model} in the desktop app; may open in a new tab",
