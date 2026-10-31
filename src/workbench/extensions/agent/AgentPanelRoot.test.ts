@@ -8738,7 +8738,8 @@ describe('AgentPanelRoot workflow binding', () => {
           reason: null,
           client_message_id: 'client-message-1',
           held_ms: null,
-          thread_id: null
+          thread_id: null,
+          client_session_id: expect.any(String)
         }
       ],
       [
@@ -8748,7 +8749,8 @@ describe('AgentPanelRoot workflow binding', () => {
           reason: 'accepted',
           client_message_id: 'client-message-1',
           held_ms: expect.any(Number),
-          thread_id: null
+          thread_id: null,
+          client_session_id: expect.any(String)
         }
       ]
     ])
@@ -8779,7 +8781,8 @@ describe('AgentPanelRoot workflow binding', () => {
         reason: exit,
         client_message_id: 'client-message-1',
         held_ms: expect.any(Number),
-        thread_id: null
+        thread_id: null,
+        client_session_id: expect.any(String)
       })
       expect(telemetry.trackAgentSendGated).toHaveBeenCalledTimes(2)
       expect(bodies).toHaveLength(0)
@@ -9121,7 +9124,8 @@ describe('AgentPanelRoot workflow binding', () => {
         reason: null,
         client_message_id: 'client-message-1',
         held_ms: null,
-        thread_id: null
+        thread_id: null,
+        client_session_id: expect.any(String)
       })
 
       await userEvent.click(within(coach).getByRole('button', { name: 'Skip' }))
@@ -9133,7 +9137,8 @@ describe('AgentPanelRoot workflow binding', () => {
         reason: 'skipped',
         client_message_id: 'client-message-1',
         held_ms: expect.any(Number),
-        thread_id: null
+        thread_id: null,
+        client_session_id: expect.any(String)
       })
     })
 
@@ -9178,7 +9183,8 @@ describe('AgentPanelRoot workflow binding', () => {
         reason: 'elsewhere',
         client_message_id: 'client-message-1',
         held_ms: expect.any(Number),
-        thread_id: null
+        thread_id: null,
+        client_session_id: expect.any(String)
       })
       const coachOutcomes = telemetry.trackAgentSendGated.mock.calls
         .map(([metadata]) => metadata)
@@ -9268,6 +9274,20 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
       )
       expect(bodies).toHaveLength(0)
+    })
+
+    it('shows the feedback form which gate holds the send until the panel closes', async () => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      const { unmount } = renderWithSelectedTarget()
+
+      await sendHeldByCoach('build me a workflow')
+      expect(useAgentPanelStore().heldSendGate).toBe('coach')
+
+      useAgentPanelStore().close('close_button')
+      unmount()
+
+      expect(useAgentPanelStore().heldSendGate).toBeNull()
     })
 
     it('puts the draft back instead of sending when the panel closes', async () => {
