@@ -101,8 +101,10 @@ depends on it.
 6. **The server's sequence check is the guard against a stale canvas.** A
    human-authored draft posted from a canvas that missed follower frames (gap,
    disconnect) would revert agent work the user never saw. The server's
-   sequence check is one guard; the client also withholds `draft` while a bound
-   follower is disconnected, in a gap, or not yet caught up.
+   sequence check is one guard; the client also withholds `draft` when the
+   follower marks the canvas stale after a disconnect, gap, or reset. A fresh
+   subscription awaiting its first catch-up does not itself mark the canvas
+   stale: `isCatchingUp` gates operation sends, not the draft.
 
 Alternatives considered and rejected:
 
