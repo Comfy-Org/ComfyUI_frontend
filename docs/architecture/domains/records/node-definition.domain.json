@@ -1,14 +1,14 @@
 {
   "id": "node-definition",
   "capability": "Node definition contracts (shared technical module)",
-  "description": "Shared technical module, not a business domain. The node definition contract read from /object_info: the @comfyorg/object-info-parser V1 schemas, node source classifier, and pack grouping helpers with their re-export, the V2 schema and V1-to-V2 migration, input spec tree diagnostics and flattening, searchable slot type collection, node source classification, upload input augmentation, input ordering for widget values, node help base URLs, and the essentials node list. The node definition store, node library and search UI, and widget constructors that consume these contracts belong to their own records.",
+  "description": "Shared technical module, not a business domain. App-side node definition contracts read from /object_info. @comfyorg/object-info-parser owns the V1 and V2 schemas, V1-to-V2 migration, the node source classifier and pack grouping helpers, and the input spec interpreter, including flattening and searchable slot type collection. This record holds the app's interpreter binding that reports input spec diagnostics, upload input augmentation, input ordering for widget values, node help base URLs, and the essentials node list. The node definition store, node library and search UI, and widget constructors that consume these contracts belong to their own records.",
   "modules": [
     {
       "path": "src/constants/essentialsNodes.ts",
       "role": "domain"
     },
     {
-      "path": "src/schemas/**",
+      "path": "src/core/graph/nodeDef/**",
       "role": "domain"
     },
     {
@@ -28,30 +28,31 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"],
+  "publicEntryPoints": [],
   "allowedDependencies": ["extension-manager"],
   "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
     {
       "name": "V1 node definitions migrate to V2 and input spec trees report diagnostics within bounds",
       "checks": [
-        "src/schemas/nodeDef/migration.test.ts",
-        "src/schemas/nodeDef/inputSpecTree.test.ts",
-        "src/schemas/nodeDef/inputSpecTree.cap.test.ts"
+        "packages/object-info-parser/src/__tests__/migration.test.ts",
+        "src/core/graph/nodeDef/inputSpecInterpreter.test.ts",
+        "src/core/graph/nodeDef/inputSpecInterpreter.cap.test.ts",
+        "packages/object-info-parser/src/__tests__/inputSpecInterpreter.test.ts"
       ]
     },
     {
       "name": "Input specs flatten, searchable slot types are collected, and widget values follow input order",
       "checks": [
-        "src/schemas/nodeDef/inputSpecUtil.test.ts",
-        "src/schemas/nodeDef/searchableSlotTypes.test.ts",
+        "packages/object-info-parser/src/__tests__/flattenInputSpecs.test.ts",
+        "packages/object-info-parser/src/__tests__/searchableSlotTypes.test.ts",
         "src/workbench/utils/nodeDefOrderingUtil.test.ts"
       ]
     }
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior. nodeDefSchemaV2 is the only public entry point and graph-model its only approved consumer; other cross-module imports remain inherited debt."
+    "Inventory preserves existing exports and runtime behavior. The V2 schema is public through @comfyorg/object-info-parser; cross-module imports of the remaining app files are inherited debt."
   ],
   "deepImports": "inventory"
 }

@@ -1,7 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import subgraphAsset from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 import {

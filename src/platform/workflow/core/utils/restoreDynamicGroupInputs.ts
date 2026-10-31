@@ -1,11 +1,11 @@
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import type { ComfyInputsSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyInputsSpec } from '@comfyorg/object-info-parser'
 import {
   zDynamicComboInputSpec,
   zDynamicGroupInputSpec
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 export function restoreDynamicGroupInputs(

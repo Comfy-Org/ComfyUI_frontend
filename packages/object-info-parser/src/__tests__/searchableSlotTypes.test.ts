@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { OutputSpec as OutputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import {
-  collectSearchableInputTypes,
-  collectSearchableOutputTypes
-} from '@/schemas/nodeDef/searchableSlotTypes'
-import type { ComfyInputsSpec, InputSpec } from '@/schemas/nodeDefSchema'
+import { createInputSpecInterpreter } from '#/inputSpecInterpreter'
+import { transformInputSpecV1ToV2 } from '#/migration'
+import type { ComfyInputsSpec, InputSpec } from '#/schemas/nodeDefSchema'
+import type { OutputSpec as OutputSpecV2 } from '#/schemas/nodeDefSchemaV2'
+
+const { collectSearchableInputTypes, collectSearchableOutputTypes } =
+  createInputSpecInterpreter(() => {})
 
 function dynamicCombo(
   options: { key: string; inputs: ComfyInputsSpec }[]
@@ -231,6 +231,32 @@ describe('collectSearchableOutputTypes', () => {
         'group-a'
       ])
     ).toEqual(['LATENT', 'MASK'])
+  })
+
+  it('unions a template group across inputs and ignores plain inputs', () => {
+    const inputs = {
+      image: toV2(['IMAGE', {}], 'image'),
+      first: toV2(matchType('LATENT,MASK', 'group-a'), 'first'),
+      second: toV2(matchType('MASK,AUDIO', 'group-a'), 'second')
+    }
+
+    expect(
+      collectSearchableOutputTypes(outputs('COMFY_MATCHTYPE_V3'), inputs, [
+        'group-a'
+      ])
+    ).toEqual(['LATENT', 'MASK', 'AUDIO'])
+  })
+
+  it('yields nothing for a MatchType output without a template id', () => {
+    const inputs = { value: toV2(matchType('LATENT', 'group-a'), 'value') }
+
+    expect(
+      collectSearchableOutputTypes(
+        outputs('COMFY_MATCHTYPE_V3'),
+        inputs,
+        undefined
+      )
+    ).toEqual([])
   })
 
   it('does not leak the placeholder when the template is unknown', () => {

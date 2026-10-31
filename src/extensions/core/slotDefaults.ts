@@ -3,7 +3,7 @@ import type { SlotTypeDefaultNodeOpts } from '@/lib/litegraph/src/LiteGraphGloba
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { collectRegistrableSlotTypes } from '@/extensions/core/slotDefaultTypes'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { app } from '@/scripts/app'

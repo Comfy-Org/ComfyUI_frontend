@@ -7,14 +7,14 @@ import type {
   InputSpec,
   IntInputSpec,
   NumericInputOptions
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import {
   getComboSpecComboOptions,
   getInputSpecType,
   isComboInputSpec,
   isFloatInputSpec,
   isIntInputSpec
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 
 import { lcm } from './mathUtil'
 

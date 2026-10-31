@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import { AgentNonValueWidgetRig } from '@e2e/fixtures/agentNonValueWidgetRig'
 import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'

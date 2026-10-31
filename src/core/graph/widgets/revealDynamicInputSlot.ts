@@ -1,12 +1,12 @@
 import { isEqual } from 'es-toolkit'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   dynamicComboOptionTypes,
   inputSpecTree
-} from '@/schemas/nodeDef/inputSpecTree'
+} from '@/core/graph/nodeDef/inputSpecInterpreter'
 
 /**
  * Select DynamicCombo options so that `node` exposes a socket of `wantedType`.

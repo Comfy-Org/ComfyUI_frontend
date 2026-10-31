@@ -18,6 +18,10 @@
       "@comfyorg/object-info-parser": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./src/index.ts"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
     }
   },
   "scripts": {

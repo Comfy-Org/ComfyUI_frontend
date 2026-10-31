@@ -228,7 +228,7 @@ import { describe, expect, it } from 'vitest'
 import {
   type ComfyNodeDef,
   validateComfyNodeDef
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 
 // Create a complete mock node definition
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {

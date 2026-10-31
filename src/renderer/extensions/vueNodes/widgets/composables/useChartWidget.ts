@@ -1,7 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IChartWidget } from '@comfyorg/graph-model/widgets'
-import { isChartInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isChartInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useChartWidget = (): ComfyWidgetConstructorV2 => {

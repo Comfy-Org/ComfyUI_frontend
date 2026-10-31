@@ -10,7 +10,7 @@ import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composab
 import { DEBOUNCE_MS } from '@/renderer/glsl/glslPreviewUtils'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 /**

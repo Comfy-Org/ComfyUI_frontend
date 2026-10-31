@@ -28,7 +28,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 import { renameWidget } from '@/utils/widgetUtil'

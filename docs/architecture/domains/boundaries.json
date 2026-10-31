@@ -44,10 +44,6 @@
         "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
       },
       {
-        "name": "node-definition/domain/public",
-        "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
-      },
-      {
         "name": "remote-config/infrastructure/public",
         "patterns": [
           "src/utils/devFeatureFlagOverride.ts",
@@ -2356,6 +2352,7 @@
         "name": "node-definition/domain",
         "patterns": [
           "src/constants/essentialsNodes.ts",
+          "src/core/graph/nodeDef/**",
           "src/types/nodeDefAugmentation.ts",
           "src/types/nodeSource.ts",
           "src/workbench/utils/**",
@@ -3908,10 +3905,6 @@
         "patterns": ["src/platform/navigation/**"]
       },
       {
-        "name": "node-definition/domain/outer-1",
-        "patterns": ["src/schemas/**"]
-      },
-      {
         "name": "node-library/application/outer-1",
         "patterns": ["src/stores/workspace/**"]
       },
@@ -4230,17 +4223,6 @@
           "error-handling/application/outer-1",
           "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "node-definition/domain/public",
-        "allow": [
-          "node-definition/domain/public",
-          "extension-manager/domain",
-          "node-definition/domain",
-          "extension-manager/domain/outer-1",
-          "node-definition/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6092,14 +6074,12 @@
         "from": "graph-model/domain",
         "allow": [
           "comfyui-api/domain/public",
-          "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
           "graph-model/domain",
           "node-definition/domain",
           "comfyui-api/domain/outer-1",
           "graph-model/domain/outer-1",
-          "node-definition/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6107,7 +6087,6 @@
         "from": "graph-model/application",
         "allow": [
           "comfyui-api/domain/public",
-          "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
           "error-reporting/application",
@@ -6118,7 +6097,6 @@
           "node-definition/domain",
           "comfyui-api/domain/outer-1",
           "graph-model/domain/outer-1",
-          "node-definition/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6126,7 +6104,6 @@
         "from": "graph-model/infrastructure",
         "allow": [
           "comfyui-api/domain/public",
-          "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
           "error-reporting/application",
@@ -6137,7 +6114,6 @@
           "node-definition/domain",
           "comfyui-api/domain/outer-1",
           "graph-model/domain/outer-1",
-          "node-definition/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6145,7 +6121,6 @@
         "from": "graph-model/integration",
         "allow": [
           "comfyui-api/domain/public",
-          "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
           "error-reporting/application",
@@ -6158,7 +6133,6 @@
           "comfyui-api/domain/outer-1",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
-          "node-definition/domain/outer-1",
           "unclassified"
         ]
       },
@@ -6908,11 +6882,9 @@
       {
         "from": "node-definition/domain",
         "allow": [
-          "node-definition/domain/public",
           "extension-manager/domain",
           "node-definition/domain",
           "extension-manager/domain/outer-1",
-          "node-definition/domain/outer-1",
           "unclassified"
         ]
       },
@@ -9164,14 +9136,12 @@
         "from": "graph-model/domain/outer-1",
         "allow": [
           "comfyui-api/domain/public",
-          "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
           "graph-model/domain",
           "node-definition/domain",
           "comfyui-api/domain/outer-1",
           "graph-model/domain/outer-1",
-          "node-definition/domain/outer-1",
           "unclassified"
         ]
       },
@@ -9179,7 +9149,6 @@
         "from": "graph-model/integration/outer-1",
         "allow": [
           "comfyui-api/domain/public",
-          "node-definition/domain/public",
           "comfyui-api/domain",
           "error-reporting/domain",
           "error-reporting/application",
@@ -9192,7 +9161,6 @@
           "comfyui-api/domain/outer-1",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
-          "node-definition/domain/outer-1",
           "unclassified"
         ]
       },
@@ -9344,17 +9312,6 @@
       {
         "from": "navigation/domain/outer-1",
         "allow": ["navigation/domain/outer-1", "unclassified"]
-      },
-      {
-        "from": "node-definition/domain/outer-1",
-        "allow": [
-          "node-definition/domain/public",
-          "extension-manager/domain",
-          "node-definition/domain",
-          "extension-manager/domain/outer-1",
-          "node-definition/domain/outer-1",
-          "unclassified"
-        ]
       },
       {
         "from": "node-library/application/outer-1",
@@ -10009,7 +9966,6 @@
           "ingest-api/infrastructure/public",
           "keybindings/application/public",
           "keybindings/integration/public",
-          "node-definition/domain/public",
           "remote-config/infrastructure/public",
           "server-facts/domain/public",
           "webcam-capture/integration/public",
@@ -10353,7 +10309,6 @@
           "model-3d/application/outer-1",
           "model-3d/presentation/outer-1",
           "navigation/domain/outer-1",
-          "node-definition/domain/outer-1",
           "node-library/application/outer-1",
           "node-replacement/application/outer-1",
           "node-widgets/presentation/outer-1",

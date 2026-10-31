@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 

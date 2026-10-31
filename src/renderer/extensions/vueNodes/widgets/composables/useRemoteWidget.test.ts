@@ -18,7 +18,7 @@ import type {
 import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { api } from '@/scripts/api'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
-import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import type { RemoteWidgetConfig } from '@comfyorg/object-info-parser'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useAuthStore } from '@/stores/authStore'

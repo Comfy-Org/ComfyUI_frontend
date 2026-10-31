@@ -1,7 +1,7 @@
 import TextPreviewWidget from '@/components/graph/widgets/TextPreviewWidget.vue'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComponentWidgetStandardProps } from '@/types/domWidget'
 import { useApp } from '@/scripts/appInstance'
