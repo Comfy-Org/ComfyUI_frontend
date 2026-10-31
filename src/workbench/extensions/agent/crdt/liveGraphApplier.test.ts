@@ -387,9 +387,6 @@ describe('LiveGraphApplier', () => {
     expect(
       graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
     ).toEqual([11, 20])
-    // On a fixed-widget-list node (no dynamic combo), supportsOverflow: false
-    // distinguishes this catalog/serialize-slot-count mismatch from the
-    // autogrow positional drift the dynamic-combo tests above cover.
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
         message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
@@ -424,9 +421,6 @@ describe('LiveGraphApplier', () => {
     expect(
       graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
     ).toEqual([11, 20])
-    // On a fixed-widget-list node (no dynamic combo), supportsOverflow: false
-    // distinguishes this catalog/serialize-slot-count mismatch from the
-    // autogrow positional drift the dynamic-combo tests above cover.
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
         message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
@@ -572,9 +566,6 @@ describe('LiveGraphApplier', () => {
       expect(
         graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
       ).toEqual(before)
-      // Distinguishes autogrow positional drift (supportsOverflow: true, an
-      // overflowIndex past widgetCount) from a malformed/unaddressable key
-      // (overflowIndex: null) the next time this family fires in production.
       expect(reportError).toHaveBeenCalledWith(
         expect.objectContaining({
           message: `Node 1 (TestOverflowWidgets) has no widget '${name}'`
