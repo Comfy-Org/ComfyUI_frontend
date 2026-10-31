@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   desktopHostUser,
+  desktopHostReportsSignInFailures,
   isDesktopHostSessionActive,
   requestDesktopHostSignIn,
   stopDesktopHostSession
@@ -66,15 +67,15 @@ function environment(pageUrl: string) {
 
 afterEach(() => stopDesktopHostSession())
 
+const noNotices = { onPopupBlocked: () => {}, onSignInFailed: () => {} }
+
 describe('startLocalWebSession', () => {
   it('changes nothing while local_web_sso is off', async () => {
     const { env, page } = environment(
       'http://127.0.0.1:8188/?code=code-1&state=state-1'
     )
 
-    await expect(
-      startLocalWebSession({ onPopupBlocked: () => {} }, env)
-    ).resolves.toBe('off')
+    await expect(startLocalWebSession(noNotices, env)).resolves.toBe('off')
 
     expect(isDesktopHostSessionActive()).toBe(false)
     expect(page.url).toBe('http://127.0.0.1:8188/?code=code-1&state=state-1')
@@ -91,9 +92,7 @@ describe('startLocalWebSession', () => {
     vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
     const { env } = environment(url)
 
-    await expect(
-      startLocalWebSession({ onPopupBlocked: () => {} }, env)
-    ).resolves.toBe('off')
+    await expect(startLocalWebSession(noNotices, env)).resolves.toBe('off')
 
     expect(isDesktopHostSessionActive()).toBe(false)
   })
@@ -104,9 +103,7 @@ describe('startLocalWebSession', () => {
       'http://localhost:8188/?code=code-1&state=state-1'
     )
 
-    await expect(
-      startLocalWebSession({ onPopupBlocked: () => {} }, env)
-    ).resolves.toBe('started')
+    await expect(startLocalWebSession(noNotices, env)).resolves.toBe('started')
 
     expect(desktopHostUser.value).toEqual({
       id: 'user-1',
@@ -129,9 +126,9 @@ describe('startLocalWebSession', () => {
         })
     )
 
-    await expect(
-      startLocalWebSession({ onPopupBlocked: () => {} }, env)
-    ).resolves.toBe('sign-in-failed')
+    await expect(startLocalWebSession(noNotices, env)).resolves.toBe(
+      'sign-in-failed'
+    )
 
     expect(isDesktopHostSessionActive()).toBe(true)
     expect(desktopHostUser.value).toBeNull()
@@ -148,7 +145,7 @@ describe('startLocalWebSession', () => {
     vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
 
-    await startLocalWebSession({ onPopupBlocked: () => {} })
+    await startLocalWebSession(noNotices)
     await requestDesktopHostSignIn()
 
     expect(open).toHaveBeenCalledExactlyOnceWith(
@@ -158,15 +155,26 @@ describe('startLocalWebSession', () => {
     )
   })
 
+  it('tells the person once that pop-ups are blocked, and owns that notice', async () => {
+    vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
+    vi.spyOn(window, 'open').mockReturnValue(null)
+    const notices = { onPopupBlocked: vi.fn(), onSignInFailed: vi.fn() }
+
+    await startLocalWebSession(notices)
+    await requestDesktopHostSignIn()
+
+    expect(notices.onPopupBlocked).toHaveBeenCalledOnce()
+    expect(notices.onSignInFailed).not.toHaveBeenCalled()
+    expect(desktopHostReportsSignInFailures()).toBe(true)
+  })
+
   it('does not report a consent the person declined', async () => {
     vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
     const { env } = environment(
       'http://127.0.0.1:8188/?error=access_denied&state=state-1'
     )
 
-    await expect(
-      startLocalWebSession({ onPopupBlocked: () => {} }, env)
-    ).resolves.toBe('started')
+    await expect(startLocalWebSession(noNotices, env)).resolves.toBe('started')
 
     expect(reportError).not.toHaveBeenCalled()
   })
