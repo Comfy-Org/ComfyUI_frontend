@@ -26,6 +26,7 @@ type Canvas = Pick<
   | 'selected_nodes'
   | 'selectedItems'
   | 'selectOnly'
+  | 'state'
   | 'subgraph'
 > &
   Pick<RealComfyApp['canvas'], keyof typeof canvasActions>
@@ -38,6 +39,7 @@ const canvasActions = vi.mockObject<
     | 'deleteSelected'
     | 'emitAfterChange'
     | 'emitBeforeChange'
+    | 'cancelGhostPlacement'
     | 'getWidgetAtCursor'
     | 'pasteFromClipboard'
     | 'processMouseDown'
@@ -69,6 +71,7 @@ const canvasActions = vi.mockObject<
     processMouseWheel() {},
     emitBeforeChange() {},
     emitAfterChange() {},
+    cancelGhostPlacement() {},
     getWidgetAtCursor: () => undefined
   },
   { spy: true }
@@ -217,6 +220,16 @@ function createState(): AppState {
       read_only: false,
       selectOnly: false,
       isDragging: false,
+      state: {
+        draggingItems: false,
+        draggingCanvas: false,
+        readOnly: false,
+        selectOnly: false,
+        hoveringOver: 0,
+        shouldSetCursor: true,
+        selectionChanged: false,
+        ghostNodeId: null
+      },
       linkConnector: new LinkConnector(() => {})
     }
   }
