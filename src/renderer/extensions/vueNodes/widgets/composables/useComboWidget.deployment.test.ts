@@ -1,3 +1,4 @@
+import type { WorkspaceDeployment } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -42,10 +43,11 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-const deployment = {
+const deployment: WorkspaceDeployment = {
   deployment_id: 'dep-1',
   release_id: 'release-1',
   status: 'ready',
+  can_start: false,
   created_at: '2026-10-01T00:00:00Z'
 }
 

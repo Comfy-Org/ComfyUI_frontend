@@ -106,6 +106,10 @@ export type WorkspaceDeployment = {
    */
   build_name?: string
   /**
+   * Whether starting the deployment (POST /api/workspaces/{id}/deployments/{deployment_id}/start) brings it back: true while it is stopped or failed, the statuses comfy-deploy's start re-runs; for any other status the start answers it unchanged. Answers "may the switcher offer Start on this row", for any member. It does not say the start will be taken: credit, the concurrency cap and the deployment's own config are the start route's refusals.
+   */
+  can_start: boolean
+  /**
    * When the deployment was created.
    */
   created_at: string
@@ -126,9 +130,18 @@ export type WorkspaceDeployment = {
    */
   release_version?: number
   /**
-   * The deployment's status (ready, provisioning, stopped, ...). Any of them may be picked; a job is taken only while it is ready.
+   * The deployment's lifecycle status as comfy-deploy reports it; a job is taken only while it is ready.
    */
-  status: string
+  status:
+    | 'queued'
+    | 'provisioning'
+    | 'starting'
+    | 'ready'
+    | 'unhealthy'
+    | 'stopping'
+    | 'stop_failed'
+    | 'stopped'
+    | 'failed'
 }
 
 /**
@@ -19902,7 +19915,12 @@ export type ListWorkspaceDeploymentsData = {
      */
     id: string
   }
-  query?: never
+  query?: {
+    /**
+     * The deployments this browser started (POST /api/workspaces/{id}/deployments/{deployment_id}/start answered 202), one parameter each. A cached listing that still offers Start (can_start) on any of them predates its start, so it is listed again; if comfy-deploy cannot be reached for that, the answer is the 503, never the listing from before the start. Send each on every listing until one asked for after its start offers Start on it again or no longer lists it: each ingest server keeps its own cache, so a later listing can reach one that cached the deployment as stopped. An id the listing does not offer Start on costs nothing.
+     */
+    started_deployment_id?: Array<string>
+  }
   url: '/api/workspaces/{id}/deployments'
 }
 
@@ -20578,3 +20596,85 @@ export type GetWebsocketErrors = {
 }
 
 export type GetWebsocketError = GetWebsocketErrors[keyof GetWebsocketErrors]
+
+/**
+ * The deployment a start was asked for, and its status after the ask.
+ */
+export type StartWorkspaceDeploymentResult = {
+  /**
+   * The deployment's id (dep-{uuid}).
+   */
+  deployment_id: string
+  /**
+   * The status comfy-deploy reports after the start: queued when it accepted the start, or the deployment's current status, unchanged, when it was already up. A job is taken only once the listing shows it ready.
+   */
+  status: string
+}
+
+export type StartWorkspaceDeploymentData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+    /**
+     * The deployment to start (dep-{uuid} format)
+     */
+    deployment_id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployments/{deployment_id}/start'
+}
+
+export type StartWorkspaceDeploymentErrors = {
+  /**
+   * comfy-deploy refused the start (`code` `INVALID_REQUEST`, for example a stored GPU class the platform cannot schedule), or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid): the `X-Comfy-Workspace-ID` value is malformed or conflicts with the workspace the credential resolves to.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * comfy-deploy refused the start on billing grounds (`code` `PAYMENT_REQUIRED`): no credit balance or subscription, or a spend block
+   */
+  402: ErrorResponse
+  /**
+   * An API key (starting needs a signed-in session), or the rollout flag is off for this account. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found, the caller is not a member, or the deployment is not one of the workspace's
+   */
+  404: ErrorResponse
+  /**
+   * comfy-deploy refused the start because of the deployment's state, for example a deleted deployment, or one whose Release was deleted
+   */
+  409: ErrorResponse
+  /**
+   * comfy-deploy refused the start because the workspace is at its concurrency cap (`code` `CONCURRENCY_LIMIT`)
+   */
+  429: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * comfy-deploy could not be asked, or deployment picking is not configured in this environment
+   */
+  503: ErrorResponse
+}
+
+export type StartWorkspaceDeploymentError =
+  StartWorkspaceDeploymentErrors[keyof StartWorkspaceDeploymentErrors]
+
+export type StartWorkspaceDeploymentResponses = {
+  /**
+   * Accepted; the deployment is starting, or already up
+   */
+  202: StartWorkspaceDeploymentResult
+}
+
+export type StartWorkspaceDeploymentResponse =
+  StartWorkspaceDeploymentResponses[keyof StartWorkspaceDeploymentResponses]

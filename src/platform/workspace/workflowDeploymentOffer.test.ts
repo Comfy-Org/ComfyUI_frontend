@@ -13,7 +13,8 @@ function deployment(id: string): WorkspaceDeployment {
     deployment_id: id,
     release_id: `rel-${id}`,
     status: id.startsWith('stopped') ? 'stopped' : 'ready',
-    created_at: '2026-10-01T00:00:00Z'
+    created_at: '2026-10-01T00:00:00Z',
+    can_start: false
   }
 }
 
