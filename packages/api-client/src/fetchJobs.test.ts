@@ -153,6 +153,14 @@ describe('fetchJobs', () => {
       expect(result).toEqual([])
     })
 
+    it('propagates errors when requested', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 500 })
+
+      await expect(
+        fetchHistory(mockFetch, 200, 0, { throwOnError: true })
+      ).rejects.toThrow('Failed to fetch jobs: 500')
+    })
+
     it('parses batch containing text-only preview outputs', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,

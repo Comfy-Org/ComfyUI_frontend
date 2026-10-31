@@ -1501,19 +1501,23 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets the prompt execution history
+   * @param options.throwOnError Reject on failure instead of resolving to an
+   * empty list, so callers can tell an outage apart from an empty history.
    * @returns Prompt history including node outputs
    */
   async getHistory(
     max_items: number = 200,
-    options?: { offset?: number }
+    options?: { offset?: number; throwOnError?: boolean }
   ): Promise<JobListItem[]> {
     try {
       return await fetchHistory(
         this.fetchApi.bind(this),
         max_items,
-        options?.offset
+        options?.offset,
+        { throwOnError: options?.throwOnError }
       )
     } catch (error) {
+      if (options?.throwOnError) throw error
       console.error(error)
       return []
     }

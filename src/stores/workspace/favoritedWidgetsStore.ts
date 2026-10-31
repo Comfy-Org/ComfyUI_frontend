@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { st } from '@/i18n'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useApp } from '@/scripts/appInstance'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
@@ -158,7 +159,10 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
         favoritedIds.value = []
       }
     } catch (error) {
-      console.error('Failed to load favorited widgets from workflow:', error)
+      reportError(error, {
+        errorType: 'favorited_widgets_load_failure',
+        surface: 'workspace'
+      })
       favoritedIds.value = []
     }
   }
@@ -183,7 +187,10 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
       // Mark the workflow as modified
       canvasStore.canvas?.setDirty(true, true)
     } catch (error) {
-      console.error('Failed to save favorited widgets to workflow:', error)
+      reportError(error, {
+        errorType: 'favorited_widgets_save_failure',
+        surface: 'workspace'
+      })
     }
   }
 

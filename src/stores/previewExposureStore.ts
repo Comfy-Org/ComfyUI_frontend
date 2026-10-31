@@ -11,6 +11,7 @@ import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetT
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -44,6 +45,9 @@ export function getPreviewExposureHostLocator(
   console.error(
     `Cannot create preview exposure host locator for node ${String(host.id)}`
   )
+  reportAssertFailure('Cannot create preview exposure host locator', {
+    hostNodeId: String(host.id)
+  })
   return null
 }
 
