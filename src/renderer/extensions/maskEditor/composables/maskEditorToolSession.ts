@@ -56,12 +56,11 @@ export function createMaskEditorToolSession(
     readImage: () =>
       isDisposed() ? undefined : call(() => document.readImage()),
     setOverlay: (points) => {
+      if (isDisposed() || !Array.isArray(points)) return false
+      const overlay = Array.from(points, (point) => ({ ...point }))
       if (
-        isDisposed() ||
-        !Array.isArray(points) ||
-        !points.every(
+        !overlay.every(
           (point) =>
-            point &&
             Number.isFinite(point.x) &&
             Number.isFinite(point.y) &&
             Number.isFinite(point.radius) &&
@@ -69,7 +68,7 @@ export function createMaskEditorToolSession(
         )
       )
         return false
-      setOverlay(points.map((point) => ({ ...point })))
+      setOverlay(overlay)
       return true
     },
     commitMask: (
