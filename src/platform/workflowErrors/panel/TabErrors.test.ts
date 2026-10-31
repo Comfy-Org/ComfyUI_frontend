@@ -22,6 +22,8 @@ import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import type { AskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
 import type { WorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 
@@ -40,24 +42,10 @@ const { mockFocusNode } = vi.hoisted(() => ({
   mockFocusNode: vi.fn()
 }))
 
-const askAgentMock = vi.hoisted(() => ({
-  canAskAgent: undefined as unknown as { value: boolean },
-  askAgentAboutIssues: vi.fn()
-}))
-
-vi.mock<unknown>(
-  import('@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'),
-  async () => {
-    const { ref } = await import('vue')
-    askAgentMock.canAskAgent = ref(true)
-    return {
-      useAskAgentAboutIssues: () => ({
-        canAskAgent: askAgentMock.canAskAgent,
-        askAgentAboutIssues: askAgentMock.askAgentAboutIssues
-      })
-    }
-  }
-)
+const askAgentMock = {
+  canAskAgent: ref(true),
+  askAgentAboutIssues: vi.fn<AskAgentPort['askAgentAboutIssues']>()
+}
 
 vi.mock(import('@/scripts/app'))
 
@@ -209,7 +197,10 @@ describe('TabErrors.vue', () => {
     render(Host, {
       global: {
         plugins: [i18n, pinia],
-        provide: { [WorkflowErrorManagerKey]: manager },
+        provide: {
+          [WorkflowErrorManagerKey]: manager,
+          [AskAgentPortKey]: askAgentMock
+        },
         stubs: {
           AsyncSearchInput: {
             template:

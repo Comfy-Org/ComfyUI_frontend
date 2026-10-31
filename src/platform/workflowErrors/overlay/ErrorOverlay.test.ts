@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
@@ -15,26 +15,15 @@ import '@/scripts/changeTracker'
 import type { NodeError } from '@comfyorg/api-client/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import type { AskAgentPort } from '@/platform/workflowErrors/askAgentPort'
+
 import ErrorOverlay from './ErrorOverlay.vue'
 
-const askAgentMock = vi.hoisted(() => ({
-  canAskAgent: undefined as unknown as { value: boolean },
-  askAgentAboutIssues: vi.fn()
-}))
-
-vi.mock<unknown>(
-  import('@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'),
-  async () => {
-    const { ref } = await import('vue')
-    askAgentMock.canAskAgent = ref(true)
-    return {
-      useAskAgentAboutIssues: () => ({
-        canAskAgent: askAgentMock.canAskAgent,
-        askAgentAboutIssues: askAgentMock.askAgentAboutIssues
-      })
-    }
-  }
-)
+const askAgentMock = {
+  canAskAgent: ref(true),
+  askAgentAboutIssues: vi.fn<AskAgentPort['askAgentAboutIssues']>()
+}
 
 const mockErrorGroups = vi.hoisted(() => ({
   allErrorGroups: { value: [] as ErrorGroup[] },
@@ -116,7 +105,8 @@ function renderOverlay(props: { appMode?: boolean } = {}) {
   return render(ErrorOverlay, {
     props,
     global: {
-      plugins: [createTestI18n()]
+      plugins: [createTestI18n()],
+      provide: { [AskAgentPortKey]: askAgentMock }
     }
   })
 }

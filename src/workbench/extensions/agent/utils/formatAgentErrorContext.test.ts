@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { AgentErrorContext } from '../types/agentErrorContext'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { formatAgentErrorContext } from './formatAgentErrorContext'
 
 function context(

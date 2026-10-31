@@ -7,7 +7,7 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AgentInputMethod } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-import type { AgentErrorContext } from '@/workbench/extensions/agent/types/agentErrorContext'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'

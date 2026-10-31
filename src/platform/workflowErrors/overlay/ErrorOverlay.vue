@@ -21,7 +21,7 @@
             data-testid="error-overlay-icon"
             :class="
               cn(
-                'mt-0.5 size-5 shrink-0',
+                'mt-0.5 size-5',
                 hasError
                   ? 'icon-[lucide--circle-x] text-destructive'
                   : 'icon-[lucide--triangle-alert] text-warning'
@@ -101,7 +101,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import ErrorOverlayDeploymentOffer from '@/platform/workspace/components/ErrorOverlayDeploymentOffer.vue'
-import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
+import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
@@ -109,7 +109,7 @@ const emit = defineEmits<{ viewErrors: [groupKeys: readonly string[]] }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
-const { canAskAgent, askAgentAboutIssues } = useAskAgentAboutIssues()
+const { canAskAgent, askAgentAboutIssues } = useAskAgentPort()
 
 const {
   hasError,

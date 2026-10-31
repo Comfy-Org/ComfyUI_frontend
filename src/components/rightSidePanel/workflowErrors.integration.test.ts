@@ -4,9 +4,8 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick, provide } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { defineComponent, provide } from 'vue'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -54,11 +53,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     }
   }
 })
-
-vi.mock<unknown>(
-  import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
-  () => ({ useAgentConsent: () => ({ withConsent: vi.fn() }) })
-)
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(

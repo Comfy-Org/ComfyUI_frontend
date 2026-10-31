@@ -450,7 +450,7 @@ import type { ErrorGroup, ErrorGroupSeverity } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
-import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
+import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 
 interface ExecutionItemListEntry {
   key: string
@@ -514,7 +514,7 @@ const { missingNodePacks } = manager.useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   manager.usePackInstall(() => missingNodePacks.value)
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
-const { canAskAgent, askAgentAboutIssues } = useAskAgentAboutIssues()
+const { canAskAgent, askAgentAboutIssues } = useAskAgentPort()
 
 const searchQuery = ref('')
 const expandDetailsToken = ref(0)

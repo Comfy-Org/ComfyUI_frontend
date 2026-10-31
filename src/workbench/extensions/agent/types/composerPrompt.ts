@@ -1,6 +1,6 @@
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
-import type { AgentErrorContext } from '@/workbench/extensions/agent/types/agentErrorContext'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import type { ComposerAttachment } from './composerAttachment'
 import type { WorkflowReference } from './workflowReference'
 import type { SkillReference } from './skillReference'

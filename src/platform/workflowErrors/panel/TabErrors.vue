@@ -59,7 +59,7 @@ import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
-import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
+import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import ErrorGroupList from './ErrorGroupList.vue'
@@ -82,7 +82,7 @@ const ErrorPanelSurveyCta =
 
 const { t } = useI18n()
 const { openGitHubIssues, contactSupport } = useErrorActions()
-const { canAskAgent } = useAskAgentAboutIssues()
+const { canAskAgent } = useAskAgentPort()
 const errorList = useTemplateRef('errorList')
 const issueCount = ref(0)
 </script>

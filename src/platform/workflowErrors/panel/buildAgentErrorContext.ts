@@ -5,7 +5,7 @@ import type {
   AgentErrorContextScope,
   AgentErrorContextSeverity,
   AgentErrorProblem
-} from '@/workbench/extensions/agent/types/agentErrorContext'
+} from '@/platform/workflowErrors/agentErrorContext'
 
 import type { MissingPackGroup, SwapNodeGroup } from './useErrorGroups'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'

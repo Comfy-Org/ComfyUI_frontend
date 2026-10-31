@@ -5,7 +5,7 @@ import type {
 } from '@/workbench/extensions/agent/types/workflowReference'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
-import type { AgentErrorContext } from '@/workbench/extensions/agent/types/agentErrorContext'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import {
   isInaccessible,
