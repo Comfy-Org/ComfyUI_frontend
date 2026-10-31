@@ -50,7 +50,7 @@ jobs:
 
       - name: Download and Deploy Storybook
         if: steps.pr.outputs.skip != 'true' && github.event.action == 'completed' && github.event.workflow_run.conclusion == 'success'
-        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        uses: dawidd6/action-download-artifact@eab87c9830c39eff17e5a6eadb20bfb4bc880477 # v27
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           run_id: ${{ github.event.workflow_run.id }}
