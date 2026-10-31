@@ -38,7 +38,10 @@ const { steps, storageKey, holdNotice } = defineProps<{
   storageKey?: string
   holdNotice?: string
 }>()
-const emit = defineEmits<{ finished: []; stalled: [] }>()
+const emit = defineEmits<{
+  finished: [action: 'finish' | 'skip' | 'elsewhere']
+  stalled: []
+}>()
 
 const { active, index, step, isLast, next, previous, finish, restart } =
   useOnboarding(() => steps, storageKey)
@@ -124,19 +127,19 @@ function onNext(): void {
   reportStep(isLast.value ? 'finish' : 'next')
   if (finished) finishedHere = true
   next()
-  if (finished) emit('finished')
+  if (finished) emit('finished', 'finish')
 }
 
 function onSkip(): void {
   reportStep('skip')
   finishedHere = true
   finish()
-  emit('finished')
+  emit('finished', 'skip')
 }
 
 const completed = computed(() => !active.value && !!step.value)
 watch(completed, (isCompleted) => {
-  if (isCompleted && !finishedHere) emit('finished')
+  if (isCompleted && !finishedHere) emit('finished', 'elsewhere')
   finishedHere = false
 })
 

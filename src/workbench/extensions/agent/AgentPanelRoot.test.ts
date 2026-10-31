@@ -43,6 +43,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
+import type { ConsentOfferHooks } from './composables/agent/useAgentConsent'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
@@ -115,7 +116,11 @@ const socketSend = vi.hoisted(() => vi.fn())
 let agentSocket: ReturnType<typeof createFakeAgentSocket>
 const currentUserInfo = ref<{ id: string } | null>(null)
 const withConsent = vi.fn<
-  (trigger: AgentConsentTrigger, onAccept: () => void) => Promise<void>
+  (
+    trigger: AgentConsentTrigger,
+    onAccept: () => void,
+    hooks?: ConsentOfferHooks
+  ) => Promise<void>
 >(async (_trigger, onAccept) => onAccept())
 
 vi.mock(import('./composables/agent/useAgentConsent'), { spy: true })
@@ -8702,7 +8707,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(withConsent).toHaveBeenCalledExactlyOnceWith(
       'first_message',
-      expect.any(Function)
+      expect.any(Function),
+      { onExit: expect.any(Function) }
     )
     expect(bodies).toHaveLength(0)
 
@@ -8710,6 +8716,75 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Stop' })
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
+
+  it('reports the consent hold and its release against the attempt that is then sent', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
+      Object.assign(useAgentConsentStore(), { accepted: true })
+      onAccept()
+    })
+    renderWithSelectedTarget()
+
+    await sendFromComposer('build me a workflow')
+    await waitFor(() => expect(bodies).toHaveLength(1))
+
+    expect(telemetry.trackAgentSendGated.mock.calls).toEqual([
+      [
+        {
+          gate: 'consent',
+          outcome: 'held',
+          reason: null,
+          client_message_id: 'client-message-1',
+          held_ms: null,
+          thread_id: null
+        }
+      ],
+      [
+        {
+          gate: 'consent',
+          outcome: 'released',
+          reason: 'accepted',
+          client_message_id: 'client-message-1',
+          held_ms: expect.any(Number),
+          thread_id: null
+        }
+      ]
+    ])
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith(
+      expect.objectContaining({ client_message_id: 'client-message-1' })
+    )
+  })
+
+  it.for(['declined', 'dismissed'] as const)(
+    'reports a send dropped because consent was %s',
+    async (exit) => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      withConsent.mockImplementationOnce(async (_trigger, _onAccept, hooks) =>
+        hooks?.onExit?.(exit)
+      )
+      renderWithSelectedTarget()
+
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('build me a workflow')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+
+      expect(telemetry.trackAgentSendGated).toHaveBeenLastCalledWith({
+        gate: 'consent',
+        outcome: 'dropped',
+        reason: exit,
+        client_message_id: 'client-message-1',
+        held_ms: expect.any(Number),
+        thread_id: null
+      })
+      expect(telemetry.trackAgentSendGated).toHaveBeenCalledTimes(2)
+      expect(bodies).toHaveLength(0)
+    }
+  )
 
   it.for(['workspace', 'legacy'] as const)(
     'leaves the $ post-consent billing refresh to the dock host on first send',
@@ -8758,7 +8833,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
       expect(withConsent).toHaveBeenCalledExactlyOnceWith(
         'first_message',
-        expect.any(Function)
+        expect.any(Function),
+        { onExit: expect.any(Function) }
       )
       expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
       expect(bodies).toHaveLength(0)
@@ -9033,6 +9109,34 @@ describe('AgentPanelRoot workflow binding', () => {
       await waitFor(() => expect(bodies).toHaveLength(1))
     })
 
+    it('reports the coach hold as released when the tour is skipped', async () => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
+      const coach = await sendHeldByCoach('build me a workflow')
+
+      expect(telemetry.trackAgentSendGated).toHaveBeenLastCalledWith({
+        gate: 'coach',
+        outcome: 'held',
+        reason: null,
+        client_message_id: 'client-message-1',
+        held_ms: null,
+        thread_id: null
+      })
+
+      await userEvent.click(within(coach).getByRole('button', { name: 'Skip' }))
+      await waitFor(() => expect(bodies).toHaveLength(1))
+
+      expect(telemetry.trackAgentSendGated).toHaveBeenLastCalledWith({
+        gate: 'coach',
+        outcome: 'released',
+        reason: 'skipped',
+        client_message_id: 'client-message-1',
+        held_ms: expect.any(Number),
+        thread_id: null
+      })
+    })
+
     it('shows no hold notice on a replay with nothing held', async () => {
       withConsent.mockReset()
       Object.assign(useAgentConsentStore(), { accepted: true })
@@ -9068,6 +9172,22 @@ describe('AgentPanelRoot workflow binding', () => {
       )
 
       await waitFor(() => expect(bodies).toHaveLength(1))
+      expect(telemetry.trackAgentSendGated).toHaveBeenCalledWith({
+        gate: 'coach',
+        outcome: 'released',
+        reason: 'elsewhere',
+        client_message_id: 'client-message-1',
+        held_ms: expect.any(Number),
+        thread_id: null
+      })
+      const coachOutcomes = telemetry.trackAgentSendGated.mock.calls
+        .map(([metadata]) => metadata)
+        .filter((metadata) => metadata.gate === 'coach')
+        .map(({ outcome, reason }) => ({ outcome, reason }))
+      expect(coachOutcomes).toEqual([
+        { outcome: 'held', reason: null },
+        { outcome: 'released', reason: 'elsewhere' }
+      ])
     })
 
     it('sends once when a coach step never finds its target', async () => {
@@ -9167,6 +9287,14 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
       )
       expect(bodies).toHaveLength(0)
+      const coachOutcomes = telemetry.trackAgentSendGated.mock.calls
+        .map(([metadata]) => metadata)
+        .filter((metadata) => metadata.gate === 'coach')
+        .map(({ outcome, reason }) => ({ outcome, reason }))
+      expect(coachOutcomes).toEqual([
+        { outcome: 'held', reason: null },
+        { outcome: 'dropped', reason: 'panel_closed' }
+      ])
       renderWithSelectedTarget()
       expect(await screen.findByRole('textbox')).toHaveTextContent(
         'build me a workflow'
