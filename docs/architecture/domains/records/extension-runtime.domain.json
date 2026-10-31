@@ -8,10 +8,6 @@
       "role": "integration"
     },
     {
-      "path": "src/composables/useReconnectingNotification.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useReconnectingNotification.ts",
       "role": "application"
     },
@@ -28,80 +24,8 @@
       "role": "integration"
     },
     {
-      "path": "src/scripts/api.cancel.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.eventListeners.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.featureFlags.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.fetchApi.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.folderPaths.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.getEmbeddings.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.getExtensions.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.getSettings.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.getShareableAssets.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.logs.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.responses.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.sessionOverride.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.socketReset.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.storeUserData.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/scripts/api.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/apiTimeouts.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/app.getNodeDefs.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/scripts/app.graphReadiness.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/scripts/app.test.ts",
-      "role": "integration"
     },
     {
       "path": "src/scripts/app.ts",
@@ -112,24 +36,8 @@
       "role": "application"
     },
     {
-      "path": "src/scripts/appRegistry.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/scripts/appRegistry.ts",
       "role": "application"
-    },
-    {
-      "path": "src/scripts/ui.setStatus.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/scripts/ui.storageResilience.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/scripts/ui.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/scripts/ui.ts",
@@ -148,15 +56,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/customNodes/customNodeScripts.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/customNodes/customNodeScripts.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/extensions/services/extensionLoader.test.ts",
       "role": "infrastructure"
     },
     {
@@ -164,15 +64,7 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/extensions/services/extensionService.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/extensions/services/extensionService.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/extensions/stores/extensionStore.test.ts",
       "role": "application"
     },
     {
@@ -186,6 +78,14 @@
     {
       "path": "src/types/extensionTypes.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/ComfyApi.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/apiTimeouts.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
@@ -193,6 +93,7 @@
     "error-reporting",
     "extension-manager",
     "keybindings",
+    "remote-config",
     "telemetry",
     "webcam-capture"
   ],
@@ -232,7 +133,7 @@
         "src/scripts/api.responses.test.ts",
         "src/scripts/api.featureFlags.test.ts",
         "src/scripts/api.sessionOverride.test.ts",
-        "src/scripts/api.eventListeners.test.ts"
+        "packages/api-client/src/ComfyApi.eventListeners.test.ts"
       ]
     },
     {

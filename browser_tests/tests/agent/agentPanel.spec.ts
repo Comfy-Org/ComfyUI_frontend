@@ -141,7 +141,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.selectWorkflow()
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
-    const firstPrompt = enMessages.agent.suggestedPrompts.cloud[0]
+    const firstPrompt = enMessages.agent.suggestedPrompts.treatment.cloud[0]
     const promptChip = panel.getByRole('button', { name: firstPrompt })
     await expect(promptChip).toBeVisible()
 

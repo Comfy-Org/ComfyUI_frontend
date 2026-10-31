@@ -83,6 +83,7 @@
     "copyMarkdown": "Copiar como markdown",
     "copyUnavailable": "Solo se puede copiar la conversación actual en esta versión",
     "creditTransitionNotice": "Has usado tus créditos gratuitos del agente. Las actividades posteriores del agente usarán los créditos de tu espacio de trabajo, que pueden incluir créditos de pago.",
+    "creditsUsed": "El agente usó {credits} crédito | El agente usó {credits} créditos",
     "currentTab": "Pestaña actual",
     "delete": "Eliminar",
     "deleteApproval": {

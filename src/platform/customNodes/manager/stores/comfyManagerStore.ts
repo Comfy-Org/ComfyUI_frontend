@@ -5,14 +5,14 @@ import { computed, ref, watch } from 'vue'
 
 import { t } from '@/i18n'
 import { useCachedRequest } from '@/composables/useCachedRequest'
-import { useServerLogs } from '@/composables/useServerLogs'
+import { useServerLogs } from '@/platform/customNodes/manager/services/useServerLogs'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 
-import { normalizePackKeys } from '@/utils/packUtils'
+import { normalizePackKeys } from '@/platform/customNodes/manager/utils/packUtils'
 import { useManagerQueue } from '@/platform/customNodes/manager/composables/useManagerQueue'
 import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
 import type {
@@ -20,7 +20,7 @@ import type {
   RegistryPack,
   TaskLog
 } from '@/platform/customNodes/manager/types/comfyManagerTypes'
-import type { components } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import type { components } from '@comfyorg/api-client/generatedManagerTypes'
 import { versionStatusFilters } from '@/platform/customNodes/manager/utils/nodePackVersionUtil'
 
 type InstallPackParams = components['schemas']['InstallPackParams']

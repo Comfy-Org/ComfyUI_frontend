@@ -46,8 +46,16 @@ async function stubPlayback(audio: HTMLAudioElement) {
     value: DURATION_SECONDS,
     configurable: true
   })
-  audio.play = vi.fn(() => Promise.resolve())
-  audio.pause = vi.fn(() => {})
+  let paused = true
+  Object.defineProperty(audio, 'paused', { get: () => paused })
+  audio.play = vi.fn(async () => {
+    paused = false
+    audio.dispatchEvent(new Event('play'))
+  })
+  audio.pause = vi.fn(() => {
+    paused = true
+    audio.dispatchEvent(new Event('pause'))
+  })
   await fireEvent(audio, new Event('durationchange'))
   await settle()
 }
@@ -82,6 +90,18 @@ describe('WaveAudioPlayer', () => {
     const { audio } = renderPlayer()
 
     expect(audio).toHaveAttribute('src', SRC)
+  })
+
+  it('pauses from the pause button', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const { audio } = renderPlayer()
+    await stubPlayback(audio)
+
+    await user.click(screen.getByRole('button', { name: 'g.play' }))
+    await user.click(screen.getByRole('button', { name: 'g.pause' }))
+
+    expect(audio.pause).toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'g.play' })).toBeEnabled()
   })
 
   it('reloads the audio after a load error', async () => {

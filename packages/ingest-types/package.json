@@ -21,10 +21,12 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "@comfyorg/ingest-types": "./src/index.ts",
       "types": "./dist-types/index.d.ts",
       "default": "./src/index.ts"
     },
     "./zod": {
+      "@comfyorg/ingest-types": "./src/zod.gen.ts",
       "types": "./dist-types/zod.gen.d.ts",
       "default": "./src/zod.gen.ts"
     },

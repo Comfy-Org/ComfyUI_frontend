@@ -5,11 +5,11 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import { fromPartial } from '@total-typescript/shoehorn'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from './agentConsentStore'
 
@@ -118,6 +118,38 @@ describe('agentConsentStore', () => {
       { key: 'Comfy.AgentPanel.ConsentAccepted', value: true },
       { Authorization: 'Bearer account-a-token' }
     )
+  })
+
+  it('counts confirmed acceptances but not loads of stored consent', async () => {
+    accountApi.get.mockResolvedValueOnce(stored)
+    const store = useAgentConsentStore()
+
+    await store.load()
+    expect(store.confirmedAcceptances).toBe(0)
+
+    await store.accept()
+    expect(store.confirmedAcceptances).toBe(1)
+  })
+
+  it('does not count a write that resolves after the account changes', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
+    let finishSave = (_value: GlobalSetting): void => {}
+    accountApi.set.mockImplementationOnce(
+      () =>
+        new Promise<GlobalSetting>((resolve) => {
+          finishSave = resolve
+        })
+    )
+    const store = useAgentConsentStore()
+
+    const request = store.accept()
+    await vi.waitFor(() => expect(accountApi.set).toHaveBeenCalledOnce())
+    identity.value = 'account-b'
+    finishSave(stored)
+    await request
+
+    expect(store.confirmedAcceptances).toBe(0)
   })
 
   it('sends on the web session in place of a workspace auth header', async () => {
