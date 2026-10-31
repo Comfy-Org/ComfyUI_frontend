@@ -6,6 +6,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import type {
   Op,
+  Stamp,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
@@ -51,6 +52,36 @@ function agentSetCfg(value: number, counter: number): Op {
   }
 }
 
+function isStamp(value: unknown): value is Stamp {
+  return (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    typeof value[0] === 'number' &&
+    typeof value[1] === 'string'
+  )
+}
+
+function parseWireOps(ops: readonly DocOp[]): Op[] {
+  return ops.map(
+    ({ op, node_id, widget, value, op_id, actor, base_version, stamp }) => {
+      if (
+        op !== 'set_widget' ||
+        typeof node_id !== 'number' ||
+        typeof widget !== 'string' ||
+        typeof base_version !== 'number' ||
+        !Number.isSafeInteger(base_version) ||
+        !isStamp(stamp)
+      )
+        throw new Error(
+          `the sender put an op the host would refuse on the wire: ${JSON.stringify(
+            { op, node_id, widget, base_version, stamp }
+          )}`
+        )
+      return { op, node_id, widget, value, op_id, actor, base_version, stamp }
+    }
+  )
+}
+
 function cfgOf(doc: ReturnType<typeof mint>): unknown {
   const node = readGraph(doc).nodes['1'] as { widgets?: { cfg?: unknown } }
   return node.widgets?.cfg
@@ -72,7 +103,7 @@ describe('a human edit across a reconnect, against the real applier', () => {
     sender = createOpSender({
       sendOps: (_workflow, _tab, ops: readonly DocOp[]) => {
         if (!transportUp) return false
-        const result = applyOps(doc, ops as unknown as Op[], CATALOG)
+        const result = applyOps(doc, parseWireOps(ops), CATALOG)
         queueMicrotask(() =>
           resultListener?.({
             ok: true,
