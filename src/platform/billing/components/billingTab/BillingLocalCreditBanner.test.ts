@@ -15,9 +15,10 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
 import { canManageBillingFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 import { useAutoTopUpBannerKind } from '@/platform/billing/composables/useAutoTopUpBannerKind'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import BillingLocalCreditBanner from './BillingLocalCreditBanner.vue'
 
@@ -30,12 +31,12 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 vi.mock(import('@/platform/billing/composables/useAutoTopUpBannerKind'))
-vi.mock(import('@/platform/workspace/composables/usePlatformHandoff'))
+vi.mock(import('@/platform/billing/composables/usePlatformHandoff'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
 const personalSubscription: SubscriptionInfo = {
   isActive: true,
@@ -62,6 +63,8 @@ function arrange(options: {
   canManageBilling?: boolean
   canManageSubscription?: boolean
   autoTopUp?: 'autoTopUpFailed' | 'autoTopUpOff'
+  workspaceType?: 'personal' | 'team'
+  addCreditsVariant?: 'secondary' | 'inverted'
 }) {
   vi.mocked(usePlatformHandoff).mockReturnValue({
     href: computed(() => 'https://platform.test/profile/billing'),
@@ -89,14 +92,19 @@ function arrange(options: {
   useBillingCapabilities().canManageBilling = canManageBillingFact(
     options.canManageBilling ?? true
   )
-  const workspace = useWorkspaceUI()
+  const workspace = useBillingUI()
   const permissions = workspace.permissions.value
   workspace.permissions = computed(() => ({
     ...permissions,
-    canManageSubscription: options.canManageSubscription ?? true
+    canManageSubscription: receiveServerFact(
+      'can_manage_subscription',
+      options.canManageSubscription ?? true
+    )
   }))
+  workspace.workspaceType = computed(() => options.workspaceType ?? 'personal')
 
   render(BillingLocalCreditBanner, {
+    props: { addCreditsVariant: options.addCreditsVariant },
     global: {
       plugins: [
         createI18n({
@@ -250,6 +258,8 @@ describe('BillingLocalCreditBanner', () => {
       expect(
         screen.getAllByRole('button').map((button) => button.textContent.trim())
       ).toEqual(buttons)
+      expect(screen.getByRole('button', { name: 'Dismiss' })).toHaveClass('h-8')
+      expect(screen.getByRole('status')).toHaveClass('rounded-xl', 'p-3')
       expect(banner).not.toHaveTextContent('credits refill')
     }
   )
@@ -268,6 +278,91 @@ describe('BillingLocalCreditBanner', () => {
       screen.getByRole('button', { name: 'Add credits' })
     ).toBeInTheDocument()
   })
+
+  it.for([
+    {
+      name: 'a team owner on Cloud',
+      isCloud: true,
+      workspaceType: 'team',
+      canManageBilling: true,
+      canTopUp: true,
+      body: 'This workspace has 1,055 credits left. Add credits before you run out.',
+      buttons: ['Dismiss', 'Add credits']
+    },
+    {
+      name: 'a team owner whose top-up the server denies on Cloud',
+      isCloud: true,
+      workspaceType: 'team',
+      canManageBilling: true,
+      canTopUp: false,
+      body: 'This workspace has 1,055 credits left. Add credits before you run out.',
+      buttons: ['Dismiss']
+    },
+    {
+      name: 'a team member on Cloud',
+      isCloud: true,
+      workspaceType: 'team',
+      canManageBilling: false,
+      canTopUp: false,
+      body: 'This workspace has 1,055 credits left. Ask the workspace owner to add credits before you run out.',
+      buttons: ['Dismiss']
+    },
+    {
+      name: 'a personal workspace on Cloud',
+      isCloud: true,
+      workspaceType: 'personal',
+      canManageBilling: true,
+      canTopUp: true,
+      body: 'You have 1,055 credits left. Add credits before you run out.',
+      buttons: ['Dismiss', 'Add credits']
+    },
+    {
+      name: 'a local install',
+      isCloud: false,
+      workspaceType: 'personal',
+      canManageBilling: true,
+      canTopUp: true,
+      body: 'You have 1,055 credits left. Add credits to keep running Partner Nodes.',
+      buttons: ['Dismiss', 'Add credits']
+    }
+  ] as const)(
+    'shows the low-credit copy for $name',
+    ({ isCloud, workspaceType, canManageBilling, canTopUp, body, buttons }) => {
+      arrange({
+        isCloud,
+        workspaceType,
+        canManageBilling,
+        canTopUp,
+        balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
+      })
+
+      const banner = screen.getByTestId('billing-local-credit-banner')
+      expect(banner).toHaveTextContent('Credits are low')
+      expect(banner).toHaveTextContent(body)
+      expect(
+        screen.getAllByRole('button').map((button) => button.textContent.trim())
+      ).toEqual(buttons)
+      expect(
+        screen
+          .queryAllByRole('button', { name: 'Add credits' })
+          .map((button) => button.getAttribute('data-variant'))
+      ).toEqual(canTopUp ? ['secondary'] : [])
+    }
+  )
+
+  it.for(['inverted', 'secondary'] as const)(
+    'renders the out-of-credits Add credits as $0',
+    (addCreditsVariant) => {
+      arrange({
+        addCreditsVariant,
+        subscription: { ...personalSubscription, hasFunds: false }
+      })
+
+      expect(
+        screen.getByRole('button', { name: 'Add credits' })
+      ).toHaveAttribute('data-variant', addCreditsVariant)
+    }
+  )
 
   it('skips low credits when the balance response omits low_balance', () => {
     arrange({

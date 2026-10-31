@@ -2,7 +2,7 @@ import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyApp } from '@/scripts/app'
 
 const mocks = vi.hoisted(() => ({
@@ -28,8 +28,6 @@ vi.mock(import('@/utils/envUtil'), () => ({
   electronAPI: () =>
     fromPartial<ElectronAPI>({ getElectronVersion: mocks.getElectronVersion })
 }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const { registerElectronAdapterExtension } = await import('./electronAdapter')
 const importEffects = {

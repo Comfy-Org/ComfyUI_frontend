@@ -1,37 +1,11 @@
 async function decompressZlib(
   data: Uint8Array<ArrayBuffer>
 ): Promise<Uint8Array<ArrayBuffer>> {
-  const stream = new DecompressionStream('deflate')
-  const writer = stream.writable.getWriter()
-  try {
-    await writer.write(data)
-    await writer.close()
-  } finally {
-    writer.releaseLock()
-  }
-
-  const reader = stream.readable.getReader()
-  const chunks: Uint8Array<ArrayBuffer>[] = []
-  let totalLength = 0
-
-  try {
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) break
-      chunks.push(value)
-      totalLength += value.length
-    }
-  } finally {
-    reader.releaseLock()
-  }
-
-  const result = new Uint8Array(totalLength)
-  let offset = 0
-  for (const chunk of chunks) {
-    result.set(chunk, offset)
-    offset += chunk.length
-  }
-  return result
+  const compressed = new Blob([data]).stream()
+  const decompressed = compressed.pipeThrough(
+    new DecompressionStream('deflate')
+  )
+  return new Uint8Array(await new Response(decompressed).arrayBuffer())
 }
 
 export async function getFromPngBuffer(
@@ -122,8 +96,11 @@ export async function getFromPngFile(
         reject(new Error('Failed to read file as ArrayBuffer'))
         return
       }
-      const result = await getFromPngBuffer(buffer)
-      resolve(result)
+      try {
+        resolve(await getFromPngBuffer(buffer))
+      } catch (error) {
+        reject(error)
+      }
     }
     reader.onerror = () => reject(reader.error)
     reader.onabort = () => reject(new Error('FileReader aborted'))

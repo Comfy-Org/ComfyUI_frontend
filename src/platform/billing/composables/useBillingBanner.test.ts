@@ -7,8 +7,9 @@ import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { runDeniedPaymentPastDueFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import type { BillingStatus } from '@comfyorg/billing-core'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -21,7 +22,7 @@ vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
@@ -75,12 +76,15 @@ describe('useBillingBanner', () => {
 
   beforeEach(() => {
     distribution.isCloud = true
-    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const workspaceUI = vi.mocked(useBillingUI())
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
       ...defaultPermissions,
-      canManageSubscription: true,
-      canManageSubscriptionLifecycle: true
+      canManageSubscription: receiveServerFact('can_manage_subscription', true),
+      canManageSubscriptionLifecycle: receiveServerFact(
+        'can_manage_subscription',
+        true
+      )
     }))
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
     vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true

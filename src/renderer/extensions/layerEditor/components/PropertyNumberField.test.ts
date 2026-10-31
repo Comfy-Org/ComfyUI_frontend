@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import PropertyNumberField from './PropertyNumberField.vue'
+import PropertyNumberField from '@comfyorg/design-system/number-field/PropertyNumberField'
 
 async function commitValue(value: string) {
   const input = screen.getByLabelText<HTMLInputElement>('X')

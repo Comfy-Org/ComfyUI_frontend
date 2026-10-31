@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -10,10 +10,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ColorOption } from '@/lib/litegraph/src/litegraph'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
+import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import LayoutField from './LayoutField.vue'
+import LayoutField from '@comfyorg/design-system/field/LayoutField'
 
 /**
  * Good design limits dependencies and simplifies the interface of the abstraction layer.

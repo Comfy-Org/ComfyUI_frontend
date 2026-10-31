@@ -10,21 +10,21 @@ import {
   persistPendingSubscriptionCheckoutAttempt,
   withPendingCheckoutAttemptId
 } from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import { webSessionResourceHeader } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   BillingFailureError,
   PaymentPopupBlockedError,
   describeBillingFailure
 } from '@/platform/telemetry/utils/billingFailureCategory'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
 import type { BillingCycle } from './subscriptionTierRank'
@@ -132,7 +132,7 @@ export async function performSubscriptionCheckout(
       checkout_type: 'new',
       payment_intent_source: options.paymentIntentSource,
       owner_id: useAuthStore().userId ?? undefined,
-      workspace_id: useTeamWorkspaceStore().activeWorkspaceId
+      workspace_id: useWorkspaceIdentity().activeWorkspaceId
     },
     (pendingAttempt) =>
       initiateSubscriptionCheckout(pendingAttempt, options.paymentIntentSource)

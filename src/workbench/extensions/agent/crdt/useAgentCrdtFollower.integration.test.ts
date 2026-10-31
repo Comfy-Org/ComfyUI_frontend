@@ -1,4 +1,5 @@
 import { mint, readSchemaVersion } from '@comfyorg/comfy-multi-player'
+import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
@@ -7,7 +8,7 @@ import * as Y from 'yjs'
 import { render } from '@testing-library/vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import {
@@ -72,14 +73,16 @@ describe('useAgentCrdtFollower over a live graph', () => {
         v: 1,
         workflow_id: WORKFLOW_ID,
         ok: true,
-        seq: 1
-      })
+        seq: 1,
+        lineage_seq: 1
+      } satisfies DocSubscribedData)
       deliver('doc_update', {
         v: 1,
         workflow_id: WORKFLOW_ID,
         seq: 1,
+        lineage_seq: 1,
         update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-      })
+      } satisfies DocUpdateData)
 
       graph.value = new LGraph()
       await nextTick()
@@ -121,14 +124,16 @@ describe('useAgentCrdtFollower over a live graph', () => {
         v: 1,
         workflow_id: WORKFLOW_ID,
         ok: true,
-        seq: 1
-      })
+        seq: 1,
+        lineage_seq: 1
+      } satisfies DocSubscribedData)
       deliver('doc_update', {
         v: 1,
         workflow_id: WORKFLOW_ID,
         seq: 1,
+        lineage_seq: 1,
         update_b64: DOC_HOST_MINTED_SINK_UPDATE_B64
-      })
+      } satisfies DocUpdateData)
       await nextTick()
 
       expect(graph.value?.getNodeById(toNodeId(99))?.type).toBe('Sink')

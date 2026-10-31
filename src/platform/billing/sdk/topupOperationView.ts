@@ -24,8 +24,8 @@ import type {
   BillingAuthenticationState,
   BillingOperationPhase,
   CreateTopupResponse
-} from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 export interface TopupOperationView {
   readonly opId: string
@@ -104,8 +104,10 @@ function topupFailureError(
     )
   }
   const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
+  const serverMessage =
+    'serverMessage' in failure ? failure.serverMessage : undefined
   return new WorkspaceApiError(
-    t('credits.topUp.unknownError'),
+    serverMessage ?? t('credits.topUp.unknownError'),
     'httpStatus' in failure ? failure.httpStatus : undefined,
     serverCode === undefined ? failure.code : unwrapServerCode(serverCode),
     topupFailureCategory(failure)

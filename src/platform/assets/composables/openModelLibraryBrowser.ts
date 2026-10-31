@@ -2,7 +2,7 @@ import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDr
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 
 export async function openModelLibraryBrowser(): Promise<void> {

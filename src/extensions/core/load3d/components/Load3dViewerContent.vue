@@ -92,7 +92,7 @@
       <div class="p-4">
         <div class="flex gap-2">
           <Button variant="secondary" @click="handleCancel">
-            <i class="pi pi-times" />
+            <i class="icon-[lucide--x]" />
             {{ t('g.cancel') }}
           </Button>
         </div>
@@ -112,7 +112,7 @@ import GizmoControls from '@/extensions/core/load3d/components/controls/viewer/V
 import LightControls from '@/extensions/core/load3d/components/controls/viewer/ViewerLightControls.vue'
 import ModelControls from '@/extensions/core/load3d/components/controls/viewer/ViewerModelControls.vue'
 import SceneControls from '@/extensions/core/load3d/components/controls/viewer/ViewerSceneControls.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useLoad3dDrag } from '@/extensions/core/load3d/composables/useLoad3dDrag'
 import { useLoad3dViewer } from '@/extensions/core/load3d/composables/useLoad3dViewer'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'

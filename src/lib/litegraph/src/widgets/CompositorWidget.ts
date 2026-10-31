@@ -1,4 +1,4 @@
-import type { ICompositorWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ICompositorWidget } from '@comfyorg/graph-model/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

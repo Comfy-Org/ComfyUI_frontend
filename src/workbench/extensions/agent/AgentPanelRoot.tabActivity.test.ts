@@ -21,7 +21,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -80,8 +80,7 @@ vi.mock<unknown>(
   () => ({ useAccountPreconditionDialog: () => ({ open: vi.fn() }) })
 )
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'), {
@@ -215,6 +214,23 @@ function emitRunApproval(): void {
     options: [
       { id: 'run', label: 'Run' },
       { id: 'cancel', label: 'Cancel' }
+    ],
+    min_selections: 1,
+    max_selections: 1,
+    allow_other: false
+  })
+}
+
+function emitAskUser(): void {
+  agentSocket.receive('agent_ask', {
+    thread_id: 'th-1',
+    message_id: 'm-1',
+    ask_id: 'm-1:call-2',
+    kind: 'ask_user',
+    prompt: 'Allow network access to github.com?',
+    options: [
+      { id: 'allow', label: 'Allow' },
+      { id: 'deny', label: 'Deny' }
     ],
     min_selections: 1,
     max_selections: 1,
@@ -677,6 +693,46 @@ describe('AgentPanelRoot tab activity across chats', () => {
     expect([...useWorkflowTabActivityStore().editingPaths]).toEqual([
       runningTab
     ])
+  })
+
+  it('marks a host-permission question as needing an answer page-wide until it is answered', async () => {
+    const { unmount } = renderPanel()
+    await send('install the video nodes')
+
+    emitAskUser()
+    await nextTick()
+    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(true)
+
+    agentSocket.receive('agent_ask_resolved', {
+      thread_id: 'th-1',
+      message_id: 'm-1',
+      ask_id: 'm-1:call-2',
+      status: 'answered',
+      selected: ['allow']
+    })
+    await nextTick()
+    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(false)
+
+    emitRunApproval()
+    await nextTick()
+    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(true)
+
+    unmount()
+    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(false)
+  })
+
+  it('keeps the page-wide approval flag when the asking turn has no open tab', async () => {
+    const tab = workflowStore.activeWorkflow!
+    renderPanel()
+    await send('add an upscaler')
+    await workflowStore.closeWorkflow(tab)
+    await nextTick()
+
+    emitRunApproval()
+    await nextTick()
+
+    expect(useWorkflowTabActivityStore().awaitingApprovalPaths.size).toBe(0)
+    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(true)
   })
 
   it('follows the tab when it is renamed mid-turn', async () => {

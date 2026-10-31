@@ -10,7 +10,7 @@
     :aria-label="compact ? t('load3d.menuBar.showGrid') : undefined"
     @click="toggleGrid"
   >
-    <i class="icon-[lucide--grid-3x3] size-4" />
+    <i class="icon-[lucide--grid-3x3]" />
     <span v-if="!compact">{{ t('load3d.menuBar.showGrid') }}</span>
   </Button>
 
@@ -25,7 +25,7 @@
       :aria-label="compact ? t('load3d.menuBar.bgColor') : undefined"
       @click="colorRef?.click()"
     >
-      <i class="icon-[lucide--palette] size-4" />
+      <i class="icon-[lucide--palette]" />
       <span v-if="!compact">{{ t('load3d.menuBar.bgColor') }}</span>
     </Button>
     <input
@@ -46,7 +46,7 @@
         :aria-label="compact ? t('load3d.menuBar.bgImage') : undefined"
         @click="bgImageRef?.click()"
       >
-        <i class="icon-[lucide--image] size-4" />
+        <i class="icon-[lucide--image]" />
         <span v-if="!compact">{{ t('load3d.menuBar.bgImage') }}</span>
       </Button>
       <input
@@ -72,10 +72,10 @@
       :aria-label="compact ? t('load3d.menuBar.panorama') : undefined"
       @click="togglePanorama"
     >
-      <i class="icon-[lucide--globe] size-4" />
+      <i class="icon-[lucide--globe]" />
       <span v-if="!compact">{{ t('load3d.menuBar.panorama') }}</span>
     </Button>
-    <Popover v-if="isPanorama" v-model:open="fovOpen">
+    <PopoverRoot v-if="isPanorama" v-model:open="fovOpen">
       <PopoverTrigger as-child>
         <Button
           variant="textonly"
@@ -86,12 +86,11 @@
           type="button"
           :aria-label="compact ? t('load3d.menuBar.fov') : undefined"
         >
-          <i class="icon-[lucide--focus] size-4" />
+          <i class="icon-[lucide--focus]" />
           <span v-if="!compact">{{ t('load3d.menuBar.fov') }}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        side="bottom"
         align="start"
         :side-offset="8"
         :class="cn(formPanelClass, 'w-56')"
@@ -107,7 +106,7 @@
           />
         </div>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
     <Button
       variant="textonly"
       size="unset"
@@ -118,14 +117,14 @@
       :aria-label="compact ? t('load3d.menuBar.removeBackground') : undefined"
       @click="removeBackgroundImage"
     >
-      <i class="icon-[lucide--x] size-4" />
+      <i class="icon-[lucide--x]" />
       <span v-if="!compact">{{ t('load3d.menuBar.removeBackground') }}</span>
     </Button>
   </template>
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -136,10 +135,9 @@ import {
   formPanelClass
 } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import type { SceneConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const {

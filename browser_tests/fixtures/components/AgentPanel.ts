@@ -44,6 +44,8 @@ export class AgentPanel {
   public readonly loadRetryButton: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
+  public readonly replyAssetThumbnails: Locator
+  public readonly replyAssetTiles: Locator
   public readonly resizeHandle: Locator
   public readonly root: Locator
   public readonly scrollAssetsRight: Locator
@@ -114,6 +116,10 @@ export class AgentPanel {
       name: enMessages.agent.entryButton,
       exact: true
     })
+    this.replyAssetThumbnails = this.root.getByRole('img', {
+      name: /^mesh-\d+/
+    })
+    this.replyAssetTiles = this.root.getByRole('button', { name: /^mesh-\d+$/ })
     this.resizeHandle = page.getByTestId('agent-panel-resize-handle')
     this.scrollAssetsRight = this.root.getByRole('button', {
       name: enMessages.g.scrollRight

@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { computed, effect, nextTick, stop, watch } from 'vue'
 
 import { LGraph, LGraphNode } from './litegraph'
-import type { IBaseWidget } from './types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('_setConcreteSlots', () => {

@@ -10,7 +10,7 @@ import type { RequestTarget } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createSessionTokenMint } from '@comfyorg/account-core/sessionTokenMint'
 
-import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { anonymousApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -27,7 +27,7 @@ import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSession
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { useDialogService } from '@/services/dialogService'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import type { ComfyExtension } from '@/types/comfy'
 
 type IdentityObserver = (user: User | null) => void
@@ -83,7 +83,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>({
       registerExtension: (extension: ComfyExtension) => {
@@ -100,9 +100,7 @@ vi.mock(import('@/services/dialogService'), () => ({
     })
 }))
 
-vi.mock(import('@/platform/telemetry'))
-
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const { cloudSessionCookieExtension } =
   await import('@/extensions/core/cloudSessionCookie')

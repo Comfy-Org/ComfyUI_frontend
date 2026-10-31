@@ -1,7 +1,7 @@
 import type { BillingResult } from '@comfyorg/account-core/billing'
 
-import type { WorkspaceApiOperation } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import type { BillingApiOperation } from '@comfyorg/billing-core'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 /**
  * A read on the SDK rail, in the shape the legacy path throws in: the HTTP
@@ -15,7 +15,7 @@ import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
  */
 export async function readOnRail<T>(
   read: () => Promise<BillingResult<T>>,
-  operation: WorkspaceApiOperation
+  operation: BillingApiOperation
 ): Promise<T | undefined> {
   const result = await read()
   if (result.status === 'ok') return result.value

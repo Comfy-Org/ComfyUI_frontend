@@ -15,8 +15,8 @@ const repoConfig = path.resolve('.oxlintrc.json')
 const PROBE_DIR = '__comfy_page_setup_probes__'
 const specProbeDir = path.resolve('browser_tests/tests', PROBE_DIR)
 const fixtureProbeDir = path.resolve('browser_tests/fixtures', PROBE_DIR)
-const websiteProbeDir = path.resolve('apps/website/e2e', PROBE_DIR)
-const probeDirs = [specProbeDir, fixtureProbeDir, websiteProbeDir]
+const billingProbeDir = path.resolve('apps/billing-web/e2e', PROBE_DIR)
+const probeDirs = [specProbeDir, fixtureProbeDir, billingProbeDir]
 
 const RULE_CODE = 'comfy(no-comfy-page-setup-call)'
 
@@ -132,7 +132,7 @@ describe('comfyPage rules', () => {
       acceptedSettings
     )
     writeFileSync(path.join(fixtureProbeDir, 'settings.spec.ts'), settingsHooks)
-    writeFileSync(path.join(websiteProbeDir, 'settings.spec.ts'), settingsHooks)
+    writeFileSync(path.join(billingProbeDir, 'settings.spec.ts'), settingsHooks)
 
     const diagnostics = lint(probeDirs)
     findings = diagnostics.filter((diagnostic) => diagnostic.code === RULE_CODE)

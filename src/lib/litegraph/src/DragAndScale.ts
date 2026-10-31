@@ -1,18 +1,13 @@
+import type {
+  PanZoom as DragAndScaleState,
+  PointTuple as Point,
+  ReadOnlyRect,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
 
-import type { Point, ReadOnlyRect, Rect } from './interfaces'
-import { EaseFunction } from './types/globalEnums'
+import { EaseFunction } from '@comfyorg/graph-model/globalEnums'
 import { Rectangle } from './infrastructure/Rectangle'
-
-export interface DragAndScaleState {
-  /**
-   * The offset from the top-left of the current canvas viewport to `[0, 0]` in graph space.
-   * Or said another way, the inverse offset of the viewport.
-   */
-  offset: [number, number]
-  /** The scale of the graph. */
-  scale: number
-}
 
 export type AnimationOptions = {
   /** Duration of the animation in milliseconds. */

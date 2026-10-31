@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscribeToRunPromptPresence } from '@/platform/billing/subscription/composables/useSubscribeCtaPresence'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
@@ -25,6 +25,6 @@ const subscribeToRunPromptVisible = useSubscribeToRunPromptPresence()
 const subscriptionDialog = useSubscriptionDialog()
 
 function handleClick() {
-  subscriptionDialog.showPricingTable({ reason: 'subscribe_now_button' })
+  void subscriptionDialog.showPricingTable({ reason: 'subscribe_now_button' })
 }
 </script>

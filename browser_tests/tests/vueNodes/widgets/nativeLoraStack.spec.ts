@@ -93,7 +93,7 @@ test.describe(
           position: { x: box.width / 2, y: box.height / 2 }
         })
         await expect(preview).toBeHidden()
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        await comfyPage.expectNodeCount(1)
         const [loader] = await comfyPage.nodeOps.getNodeRefsByType('LoraLoader')
         expect(
           await (await loader.getWidgetByName('lora_name')).getValue()
@@ -150,7 +150,7 @@ test.describe(
           targetPosition: { x: box.width / 2, y: box.height / 2 }
         })
         await comfyPage.nextFrame()
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        await comfyPage.expectNodeCount(1)
         const [loader] = await comfyPage.nodeOps.getNodeRefsByType('LoraLoader')
         const filename = await loader.getWidgetByName('lora_name')
         expect(await filename.getValue()).toBe('native-lora-e2e/C.safetensors')
@@ -355,7 +355,7 @@ test.describe(
         await comfyPage.command.executeCommand(
           'Comfy.Canvas.PasteFromClipboard'
         )
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(8)
+        await comfyPage.expectNodeCount(8)
         await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
         await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
         await comfyPage.canvasOps.waitForViewToSettle()
@@ -557,9 +557,7 @@ test.describe(
           await comfyPage.command.executeCommand(
             'Comfy.Canvas.PasteFromClipboard'
           )
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(8)
+          await comfyPage.expectNodeCount(8)
           await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
           await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
           await comfyPage.canvasOps.waitForViewToSettle()

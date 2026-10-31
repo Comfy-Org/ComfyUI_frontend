@@ -10,8 +10,7 @@
       left: `${brushLeft}px`,
       top: `${brushTop}px`,
       borderRadius: borderRadius,
-      pointerEvents: 'none',
-      zIndex: 1000
+      pointerEvents: 'none'
     }"
   >
     <div

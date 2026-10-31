@@ -4,12 +4,13 @@ import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { AuthStoreError } from '@/stores/authStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import { useResubscribe as createResubscribe } from './useResubscribe'
 
@@ -27,9 +28,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const apps: App<Element>[] = []
 
@@ -61,11 +62,14 @@ describe('useResubscribe', () => {
     billingRouting.shouldUseWorkspaceBilling = computed(
       () => state.shouldUseWorkspaceBilling
     )
-    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const workspaceUI = vi.mocked(useBillingUI())
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
       ...defaultPermissions,
-      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+      canManageSubscriptionLifecycle: receiveServerFact(
+        'can_manage_subscription',
+        state.canManageSubscriptionLifecycle
+      )
     }))
     workspaceUI.canReactivatePlan = computed(() => state.canReactivatePlan)
     state.shouldUseWorkspaceBilling = true
@@ -106,9 +110,6 @@ describe('useResubscribe', () => {
   })
 
   it('resubscribes when the policy permits it, whatever the raw capability says', async () => {
-    // The legacy rail resolves can_reactivate false while the workspace may
-    // still reactivate; this composable must follow the derived policy. Which
-    // rail produces which value is covered in useWorkspaceUI.test.ts.
     useBillingCapabilities().canReactivate = computed(() => false)
     state.canReactivatePlan = true
     const { handleResubscribe } = useResubscribe()

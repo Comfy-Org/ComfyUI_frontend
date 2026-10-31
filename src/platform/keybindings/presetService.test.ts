@@ -3,9 +3,9 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import type { KeybindingPreset } from '@/platform/keybindings/types'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import type { KeybindingPreset } from '@comfyorg/keybindings/types'
 
 import { api } from '@/scripts/api'
 
@@ -440,6 +440,25 @@ describe('useKeybindingPresetService', () => {
       expect(
         store.getUserUnsetKeybindingValues().map(({ commandId }) => commandId)
       ).toEqual(['test.selectAll'])
+    })
+
+    it('keeps an unset for a binding that registers after the preset is applied', async () => {
+      const combo = { key: 'd', ctrl: true }
+      const preset: KeybindingPreset = {
+        name: 'vim',
+        newBindings: [],
+        unsetBindings: [{ commandId: 'late.insert', combo }]
+      }
+
+      const service = await getPresetService()
+      service.applyPreset(preset)
+      expect(store.isCurrentPresetModified).toBe(false)
+      store.addDefaultKeybinding(
+        new KeybindingImpl({ commandId: 'late.insert', combo })
+      )
+
+      expect(store.getKeybindingByCommandId('late.insert')).toBeUndefined()
+      expect(store.isCurrentPresetModified).toBe(false)
     })
   })
 

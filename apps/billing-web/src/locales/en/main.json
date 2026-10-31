@@ -230,6 +230,10 @@
           "title": "Payment not completed",
           "body": "Your payment wasn't completed, so you haven't been charged. Pay to try again, or use a different payment method."
         },
+        "not_verified": {
+          "title": "Payment not verified",
+          "body": "The payment wasn't verified. Try again later, or contact support."
+        },
         "promo_expired": {
           "title": "Your promo code expired",
           "body": "The {code} code expired, so the total was updated. Review the new total before paying. You have not been charged."
@@ -529,7 +533,8 @@
       "MISSING_PAYMENT_METHOD_URL": "The billing service asked for a payment step but didn't say where.",
       "OPERATION_ALREADY_PENDING": "A payment you started earlier is still going through. It has to finish before you can choose a different plan.",
       "QUOTE_STALE": "Your quote changed. Review the updated amount and try again.",
-      "QUOTE_REFRESH_FAILED": "Your quote expired and couldn't be refreshed. Choose your plan again."
+      "QUOTE_REFRESH_FAILED": "Your quote expired and couldn't be refreshed. Choose your plan again.",
+      "CARD_REQUIRED": "Credits can only be paid for with a card. Enter a card or choose a saved one."
     },
     "tier": {
       "unknown": "Plan",
@@ -562,14 +567,8 @@
       "resubscribed": "Your subscription is active again."
     },
     "paymentMethods": {
-      "card": "{brand} •••• {last4}",
-      "default": "Default",
-      "empty": "No payment method is saved for this workspace.",
+      "opening": "Opening your payment methods…",
       "manage": "Manage payment methods"
-    },
-    "paymentMethodType": {
-      "unknown": "Saved payment method",
-      "card": "Card"
     },
     "invoices": {
       "body": "Invoices and receipts are kept by our payment provider. Open the billing portal to view and download them.",

@@ -26,9 +26,7 @@
       >
         <i
           :class="
-            copiedId === row.id
-              ? 'icon-[lucide--check] size-4'
-              : 'icon-[lucide--link] size-4'
+            copiedId === row.id ? 'icon-[lucide--check]' : 'icon-[lucide--link]'
           "
         />
       </Button>
@@ -40,7 +38,7 @@
 import { refAutoReset } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { copyTextSilently } from '@/platform/workspace/utils/inviteLinks'
 import { cn } from '@comfyorg/tailwind-utils'
 

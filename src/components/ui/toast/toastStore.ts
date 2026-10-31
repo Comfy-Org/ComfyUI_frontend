@@ -14,20 +14,24 @@ export interface Toast {
   instance: symbol
   kind: ToastKind
   title: string
-  action?: ToastAction
+  actions: ToastAction[]
   description?: string
 }
 
 export const useToast = defineStore('toast', () => {
   const toasts = ref<Toast[]>([])
   const held = ref(false)
+  const closedByUser = new Set<ToastId>()
 
   function add(kind: ToastKind, title: string, options: ToastOptions = {}) {
     const id = options.id ?? createToastId()
     toasts.value = [
       ...toasts.value.filter((toast) => toast.id !== id),
       {
-        action: options.action,
+        actions: [
+          ...(options.action ? [options.action] : []),
+          ...(options.actions ?? [])
+        ],
         closable: options.closable ?? true,
         description: options.description,
         duration: options.duration ?? Number.POSITIVE_INFINITY,
@@ -77,6 +81,15 @@ export const useToast = defineStore('toast', () => {
     return removed
   }
 
+  function close(id: ToastId): boolean {
+    closedByUser.add(id)
+    return dismiss(id)
+  }
+
+  function takeClosedByUser(id: ToastId): boolean {
+    return closedByUser.delete(id)
+  }
+
   function dismissAll() {
     toasts.value = []
   }
@@ -91,6 +104,8 @@ export const useToast = defineStore('toast', () => {
     loading,
     update,
     dismiss,
+    close,
+    takeClosedByUser,
     dismissAll
   }
 })

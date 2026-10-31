@@ -13,11 +13,11 @@ import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { AgentGraphProjectionStage } from '@/platform/telemetry/types'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { AgentGraphProjectionStage } from '@comfyorg/telemetry/types'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -216,6 +216,10 @@ interface AgentCrdtFollowerEvents {
     nodeIds: readonly NodeId[]
   }) => void
   onReset?: (workflowId: string) => void
+  onLineageConfirmed?: (event: {
+    workflowId: string
+    lineageSeq: number
+  }) => void
   /**
    * PM-1604 / BE-11437: the doc-host classified a resync refusal as
    * permanent (one of `PERMANENT_SUBSCRIBE_REFUSAL_CODES`) — the lifecycle
@@ -242,6 +246,17 @@ function notifyAppliedUpdate(
     workflowId: update.workflowId,
     opIds: update.opIds ?? [],
     isLive: !update.catchUp
+  })
+}
+
+function notifyLineageConfirmed(
+  detail: { workflowId?: string; lineageSeq?: number },
+  events: AgentCrdtFollowerEvents
+): void {
+  if (detail.workflowId === undefined || detail.lineageSeq === undefined) return
+  events.onLineageConfirmed?.({
+    workflowId: detail.workflowId,
+    lineageSeq: detail.lineageSeq
   })
 }
 
@@ -280,6 +295,7 @@ export interface AgentCrdtFollowerOptions {
   events?: AgentCrdtFollowerEvents
   applierDeps?: AgentCrdtApplierDeps
   canvasFor?: (workflowId: string) => Record<string, unknown> | null
+  knownLineageFor?: (workflowId: string) => number | null
 }
 
 export function useAgentCrdtFollower(
@@ -291,7 +307,8 @@ export function useAgentCrdtFollower(
     getGraph = () => null,
     events = {},
     applierDeps = {},
-    canvasFor = () => null
+    canvasFor = () => null,
+    knownLineageFor = () => null
   }: AgentCrdtFollowerOptions
 ) {
   const productGate = useAgentPanelStore()
@@ -334,7 +351,8 @@ export function useAgentCrdtFollower(
           getGraph,
           events,
           applierDeps,
-          canvasFor
+          canvasFor,
+          knownLineageFor
         })
       )
     },
@@ -379,7 +397,8 @@ function startAgentCrdtFollower(
     getGraph,
     events,
     applierDeps,
-    canvasFor
+    canvasFor,
+    knownLineageFor
   }: Required<AgentCrdtFollowerOptions>
 ) {
   const connected = ref(false)
@@ -783,12 +802,15 @@ function startAgentCrdtFollower(
       code?: unknown
       message?: unknown
       seq?: number
+      workflowId?: string
+      lineageSeq?: number
     } | null
     const ok = detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      notifyLineageConfirmed(detail, events)
       const workflowId = subscribedWorkflowId.value
       const projectionIsClean =
         workflowId === null || retryFailedProjection(workflowId)
@@ -798,6 +820,7 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       forgetUnsyncedAtLoad(subscribedWorkflowId.value)
       resumeHeldOpsIfSubscribed()
+      sender.retryTransport()
     } else {
       handleRejectedSubscription(detail)
     }
@@ -1072,7 +1095,11 @@ function startAgentCrdtFollower(
   const retarget = (next: string | null): void => {
     sender.flush()
     if (next === null) bridge.unsubscribe()
-    else bridge.subscribe(next)
+    else {
+      const knownLineage = knownLineageFor(next)
+      if (knownLineage === null) bridge.subscribe(next)
+      else bridge.subscribe(next, knownLineage)
+    }
     if (next !== null && next === heldForWorkflowId) {
       resumeHeldOpsIfSubscribed()
       return

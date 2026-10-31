@@ -3,9 +3,9 @@ import { expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { createNodeProgressCanvasSync } from './nodeProgressCanvasSync'
 import type { NodeProgressCanvasSync } from './nodeProgressCanvasSync'

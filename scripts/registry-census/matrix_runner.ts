@@ -11,16 +11,18 @@ import { vi } from 'vitest'
 
 import defaultWorkflow from '../../browser_tests/assets/default.json'
 import type {
+  ISerialisedNode,
   LGraph,
   LGraphCanvas,
-  LGraphNode,
-  Point
+  LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { setRootGraph } from '@/scripts/__tests__/appTestUtils'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type * as WidgetValuesForm from '@/workbench/extensions/agent/crdt/widgetValuesForm'
 
 const S = (v: unknown) => JSON.stringify(v)
 const errMsg = (e: unknown) =>
@@ -47,6 +49,9 @@ let DISPATCHED = true
 
 /** Store rows could not be read at all, as distinct from "read, and clean". */
 const UNMEASURED = 'unmeasured'
+
+/** Per-pack safety cap; the remainder lands in `driveTypesOmitted`. */
+const MAX_DRIVEN_TYPES_PER_PACK = 64
 
 type WidgetValueStore = ReturnType<typeof useWidgetValueStore>
 
@@ -175,6 +180,130 @@ async function installGlobals() {
   return { lg, app: appMod.app }
 }
 
+interface FormRow {
+  t: string
+  v: string
+  o: number
+  k: number
+  w: number
+  a: number | string
+  src: string
+}
+
+type FormProducer = typeof WidgetValuesForm
+
+function positionalShape(positional: unknown): number | string {
+  if (Array.isArray(positional)) return positional.length
+  return positional == null ? 'absent' : 'dict'
+}
+
+function sameOrder(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((name, i) => name === b[i])
+}
+
+function agreementVerdict(a: number | string, serialisable: number): string {
+  if (a === 'dict') return 'emitAgree:dictValues'
+  if (a === 'absent') return 'emitAgree:noPositional'
+  return a === serialisable ? 'emitAgree' : 'emitAgree:positionalSkew'
+}
+
+function declineVerdict(reason: string): string {
+  return `decline:${reason}`
+}
+
+function emittedFormVerdict(
+  order: readonly string[],
+  keyOrder: string[],
+  a: number | string,
+  serialisable: number
+): string {
+  const canonicalOrder = Object.keys(
+    Object.fromEntries(order.map((n) => [n, true]))
+  )
+  if (!sameOrder(keyOrder, canonicalOrder)) return 'emitDisagree:keyOrder'
+  return agreementVerdict(a, serialisable)
+}
+
+function classifyFormNode(
+  node: LGraphNode,
+  sn: ISerialisedNode | undefined,
+  producer: FormProducer,
+  src: string
+): FormRow {
+  const live = node.widgets ?? []
+  const positional: unknown = sn?.widgets_values
+  const a = positionalShape(positional)
+  const at = (v: string, o = 0, k = 0): FormRow => ({
+    t: node.type,
+    v,
+    o,
+    k,
+    w: live.length,
+    a,
+    src
+  })
+
+  if (!sn) return at('noSerialisedNode')
+  const named = sn.widgets_values_named
+  if (named == null || typeof named !== 'object')
+    return at(positional == null ? 'absent' : 'noNamed')
+  if (node.isVirtualNode) return at('decline:virtual_node')
+
+  const values = producer.valueWidgetsOnly(node, named)
+  const keyOrder = Object.keys(values)
+  const verdict = producer.classifyWidgetValuesForm(node, values, sn)
+  if (!verdict.declared)
+    return at(declineVerdict(verdict.reason), 0, keyOrder.length)
+
+  const { order } = verdict.form
+  const serialisable = live.filter((w) => w.serialize !== false).length
+  return at(
+    emittedFormVerdict(order, keyOrder, a, serialisable),
+    order.length,
+    keyOrder.length
+  )
+}
+
+function measureFormAgreement(
+  nodes: LGraphNode[],
+  byId: Map<string, ISerialisedNode>,
+  producer: FormProducer,
+  src: string
+): FormRow[] {
+  return nodes.map((node) =>
+    classifyFormNode(node, byId.get(String(node.id)), producer, src)
+  )
+}
+
+function recordFormAgreement(
+  row: Record<string, unknown>,
+  nodes: LGraphNode[],
+  serialised: { nodes: ISerialisedNode[] },
+  producer: FormProducer,
+  driven: FormRow[],
+  measurementErrors: string[]
+): void {
+  try {
+    const byId = new Map<string, ISerialisedNode>()
+    for (const sn of serialised.nodes) byId.set(String(sn.id), sn)
+    const formNodes = [
+      ...measureFormAgreement(nodes, byId, producer, 'battery'),
+      ...driven
+    ]
+    row.formNodes = formNodes
+    const counts: Record<string, number> = {}
+    for (const r of formNodes) counts[r.v] = (counts[r.v] ?? 0) + 1
+    row.formAgreement = measurementErrors.length
+      ? { ...counts, harnessError: measurementErrors.join(' | ') }
+      : counts
+  } catch (e) {
+    row.formAgreement = {
+      harnessError: [...measurementErrors, errMsg(e)].join(' | ')
+    }
+    row.formNodes = driven
+  }
+}
+
 function signature(graph: LGraph, store: WidgetValueStore | undefined) {
   const nodes = [...graph._nodes]
     .sort((a, b) => Number(a.id) - Number(b.id))
@@ -282,27 +411,31 @@ export async function runPack(
   const { useLitegraphService } = await import('@/services/litegraphService')
   const svc = useLitegraphService()
   const regErrs: string[] = []
-  for (const [name, d] of Object.entries(DEFS)) {
+  const batteryDefs = Object.entries(DEFS).map(([name, d]) => ({
+    name,
+    display_name: name,
+    category: 't',
+    python_module: 'nodes',
+    description: '',
+    output_is_list: [],
+    output_node: name === 'SaveImage',
+    ...d
+  }))
+  for (const nodeDef of batteryDefs) {
     try {
-      await svc.registerNodeDef(name, {
-        name,
-        display_name: name,
-        category: 't',
-        python_module: 'nodes',
-        description: '',
-        output_is_list: [],
-        output_node: name === 'SaveImage',
-        ...d
-      })
+      await svc.registerNodeDef(nodeDef.name, nodeDef)
     } catch (e) {
-      regErrs.push(`${name}:${errMsg(e)}`)
+      regErrs.push(`${nodeDef.name}:${errMsg(e)}`)
     }
   }
+  const { useNodeDefStore } = await import('@/stores/nodeDefStore')
+  useNodeDefStore().updateNodeDefs(batteryDefs)
   row.registerNodeDef = regErrs.join('|') || 'OK'
 
   // ---- registerCustomNodes (frontend-only pack node types) --------------
   try {
-    const { useExtensionService } = await import('@/services/extensionService')
+    const { useExtensionService } =
+      await import('@/platform/extensions/services/extensionService')
     await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     row.registerCustomNodes = 'OK'
   } catch (e) {
@@ -313,7 +446,8 @@ export async function runPack(
     .sort()
   row.newTypes = newTypes
   try {
-    const { useExtensionStore } = await import('@/stores/extensionStore')
+    const { useExtensionStore } =
+      await import('@/platform/extensions/stores/extensionStore')
     const st = useExtensionStore()
     row.extTotal = st.extensions.length
     row.extEnabled = st.enabledExtensions.length
@@ -338,6 +472,9 @@ export async function runPack(
     wvStore = undefined
   }
   row.storeMeasured = !!wvStore
+
+  const formProducer =
+    await import('@/workbench/extensions/agent/crdt/widgetValuesForm')
 
   // LGraphCanvas cannot be constructed under happy-dom ("This browser doesn't
   // support Canvas"), but BaseWidget.setValue only reads graph_mouse off it
@@ -613,12 +750,25 @@ export async function runPack(
 
   // ---- drive the pack's OWN frontend-registered node types --------------
   const driven: Record<string, string> = {}
-  for (const t of newTypes.slice(0, 8)) {
+  const formDriven: FormRow[] = []
+  const formMeasurementErrors: string[] = []
+  const selectedTypes = newTypes.slice(0, MAX_DRIVEN_TYPES_PER_PACK)
+  row.driveTypesOmitted = newTypes.length - selectedTypes.length
+  for (const t of selectedTypes) {
     DEPR = []
     try {
       const n = LiteGraph.createNode(t)
       if (!n) {
         driven[t] = 'createNode null'
+        formDriven.push({
+          t,
+          v: 'noSerialisedNode',
+          o: 0,
+          k: 0,
+          w: 0,
+          a: 'absent',
+          src: 'driven'
+        })
         continue
       }
       n.pos = [1200, 100]
@@ -640,7 +790,21 @@ export async function runPack(
           parts.push(`conn=THREW ${errMsg(e).slice(0, 40)}`)
         }
       }
-      n.serialize()
+      const sn = n.serialize()
+      try {
+        formDriven.push(
+          ...measureFormAgreement(
+            [n],
+            new Map([[String(n.id), sn]]),
+            formProducer,
+            'driven'
+          )
+        )
+      } catch (e) {
+        const message = errMsg(e)
+        parts.push(`form=THREW ${message.slice(0, 40)}`)
+        formMeasurementErrors.push(`${t}: ${message}`)
+      }
       graph.remove(n)
       if (DEPR.length)
         parts.push(`depr=${[...new Set(DEPR)].join(';').slice(0, 60)}`)
@@ -652,7 +816,16 @@ export async function runPack(
   row.driveTypes = driven
 
   await op('serialize', () => {
-    row.serialized = S(graph.serialize())
+    const serialised = graph.serialize()
+    row.serialized = S(serialised)
+    recordFormAgreement(
+      row,
+      graph._nodes,
+      serialised,
+      formProducer,
+      formDriven,
+      formMeasurementErrors
+    )
   })
   await op('reload', () => {
     const g2 = new LGraph()

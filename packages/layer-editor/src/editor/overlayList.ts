@@ -1,4 +1,4 @@
-import type { Vec2 } from '#/node'
+import type { Point2D as Vec2 } from '@comfyorg/shared-frontend-utils/geometry'
 import type { CanvasItem, Overlay } from '#/tool'
 
 export class OverlayList implements Overlay {

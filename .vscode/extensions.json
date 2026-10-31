@@ -1,7 +1,6 @@
 {
   "recommendations": [
     "antfu.vite",
-    "astro-build.astro-vscode",
     "bradlc.vscode-tailwindcss",
     "davidanson.vscode-markdownlint",
     "dbaeumer.vscode-eslint",

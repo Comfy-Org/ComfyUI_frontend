@@ -55,6 +55,7 @@
           {{ error }}
         </p>
       </div>
+      <slot />
     </div>
 
     <div class="flex flex-col gap-6 text-muted-foreground">
@@ -82,8 +83,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 

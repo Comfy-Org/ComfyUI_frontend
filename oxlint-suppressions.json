@@ -4,91 +4,6 @@
       "count": 1
     }
   },
-  "apps/website/e2e/font-metrics.spec.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/scripts/dist-html.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/scripts/generate-model-url-map.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "apps/website/scripts/router-model-shard.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/components/auth/AuthSignIn.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "apps/website/src/components/hero/AngleNode.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "apps/website/src/components/home/LottieScene.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/redirects.supported-models.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-contract.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-creator-request.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-router-content.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-router-identity.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/config/workshop-router-index.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "apps/website/src/config/workshop-router-openapi.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/content/workshop-display.content.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/lib/workshop/cinematic-studio/reshoot-engine/workflow.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "apps/website/src/templates/events/EventsDirectoryRow.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "browser_tests/fixtures/customNode/connectivityExpectations.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -139,6 +54,21 @@
       "count": 1
     }
   },
+  "packages/api-client/src/ComfyApi.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 8
+    }
+  },
+  "packages/settings-core/src/settingStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "packages/telemetry/src/redactTelemetryUrls.ts": {
+    "regexp/no-dupe-characters-character-class": {
+      "count": 13
+    }
+  },
   "packages/viewport3d/src/load3d/HDRIManager.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
@@ -184,11 +114,6 @@
       "count": 1
     }
   },
-  "src/components/rightSidePanel/errors/MissingNodeCard.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/components/sidebar/SideToolbar.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -216,11 +141,6 @@
   },
   "src/components/sidebar/tabs/nodeLibrary/NodeBookmarkTreeExplorer.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/components/ui/toggle-group/index.ts": {
-    "comfy/no-reexports": {
       "count": 2
     }
   },
@@ -255,11 +175,6 @@
     }
   },
   "src/composables/useCoreCommands.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/composables/useImageCrop.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -367,7 +282,7 @@
       "count": 7
     },
     "comfy/no-reexports": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/litegraph/src/LGraphCanvas.ts": {
@@ -386,14 +301,6 @@
     },
     "comfy/no-positional-boolean-params": {
       "count": 22
-    },
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/LLink.ts": {
-    "comfy/no-reexports": {
-      "count": 1
     }
   },
   "src/lib/litegraph/src/LiteGraphGlobal.ts": {
@@ -404,9 +311,6 @@
   "src/lib/litegraph/src/Reroute.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
-    },
-    "comfy/no-reexports": {
-      "count": 2
     }
   },
   "src/lib/litegraph/src/canvas/FloatingRenderLink.ts": {
@@ -449,14 +353,9 @@
       "count": 4
     }
   },
-  "src/lib/litegraph/src/interfaces.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
-      "count": 55
+      "count": 43
     }
   },
   "src/lib/litegraph/src/litegraphInstance.ts": {
@@ -502,11 +401,6 @@
       "count": 1
     }
   },
-  "src/lib/litegraph/src/types/widgets.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
   "src/lib/litegraph/src/utils/arrange.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
@@ -520,6 +414,11 @@
   "src/lib/litegraph/src/widgets/widgetMap.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
+    }
+  },
+  "src/platform/account/auth/WorkspaceAuthGate.vue": {
+    "comfy/no-new-error-throw": {
+      "count": 4
     }
   },
   "src/platform/assets/components/AssetBrowserModal.test.ts": {
@@ -613,11 +512,6 @@
     }
   },
   "src/platform/billing/components/UnifiedPricingTable.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/components/settings/PlanCreditsPanelContent.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -742,9 +636,9 @@
       "count": 2
     }
   },
-  "src/platform/keybindings/keybindingStore.ts": {
+  "src/platform/extensions/stores/extensionStore.ts": {
     "comfy/no-new-error-throw": {
-      "count": 1
+      "count": 2
     }
   },
   "src/platform/keybindings/presetService.test.ts": {
@@ -767,11 +661,6 @@
       "count": 1
     }
   },
-  "src/platform/settings/settingStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/platform/telemetry/TelemetryRegistry.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -780,11 +669,6 @@
   "src/platform/telemetry/providers/host/HostTelemetrySink.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/platform/telemetry/redactTelemetryUrls.ts": {
-    "regexp/no-dupe-characters-character-class": {
-      "count": 13
     }
   },
   "src/platform/telemetry/utils/surveyNormalization.ts": {
@@ -887,34 +771,9 @@
       "count": 1
     }
   },
-  "src/platform/workspace/api/workspaceApi.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/platform/workspace/auth/WorkspaceAuthGate.vue": {
-    "comfy/no-new-error-throw": {
-      "count": 4
-    }
-  },
   "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/platform/workspace/composables/useMembersPanel.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 10
-    }
-  },
-  "src/platform/workspace/composables/useWorkspaceUI.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 4
     }
   },
   "src/platform/workspace/stores/teamWorkspaceStore.test.ts": {
@@ -960,11 +819,6 @@
   "src/renderer/core/layout/slots/syncSlotOffsets.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/renderer/core/layout/types.ts": {
-    "comfy/no-reexports": {
-      "count": 3
     }
   },
   "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.test.ts": {
@@ -1132,11 +986,6 @@
       "count": 10
     }
   },
-  "src/scripts/api.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 8
-    }
-  },
   "src/scripts/app.getNodeDefs.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -1193,11 +1042,6 @@
       "count": 1
     }
   },
-  "src/services/extensionLoader.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/services/jobOutputCache.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -1231,16 +1075,6 @@
   "src/stores/assetsStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/stores/commandStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/stores/extensionStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/stores/nodeBookmarkStore.ts": {
@@ -1280,26 +1114,11 @@
   },
   "src/types/index.ts": {
     "comfy/no-reexports": {
-      "count": 67
-    }
-  },
-  "src/types/nodeState.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/types/simplifiedWidget.ts": {
-    "comfy/no-reexports": {
-      "count": 1
+      "count": 37
     }
   },
   "src/types/slotId.test.ts": {
     "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/types/widgetId.ts": {
-    "comfy/no-new-error-throw": {
       "count": 1
     }
   },

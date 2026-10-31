@@ -23,11 +23,11 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { ExportedSubgraphInstance } from '@comfyorg/graph-model/serialisation'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {

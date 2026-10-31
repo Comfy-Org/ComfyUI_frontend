@@ -9,7 +9,7 @@ import {
   revokedCodeOf
 } from '@/platform/auth/session/sessionRevokedError'
 import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
 

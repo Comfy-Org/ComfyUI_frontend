@@ -9,18 +9,24 @@ import {
   getEffectiveHardness
 } from '@comfyorg/mask-editor/brushUtils'
 import { StrokeProcessor } from '@comfyorg/mask-editor/StrokeProcessor'
+import { locateWidgetNode } from '@/composables/widgetHistoryScope'
+import type { LocatedWidget } from '@/composables/widgetHistoryScope'
+import {
+  isWidgetInputConnected,
+  resolveWidgetInputSource
+} from '@/composables/widgetInputSource'
 import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
-import { hexToRgb } from '@/utils/colorUtil'
-import type { Point } from '@comfyorg/mask-editor/types'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { hexToRgb } from '@comfyorg/shared-frontend-utils/colorUtil'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
-import { getErrorMessage } from '@/utils/errorUtil'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 type PainterTool = 'brush' | 'eraser'
 
@@ -30,23 +36,41 @@ export const PAINTER_TOOLS: Record<string, PainterTool> = {
 } as const
 
 interface UsePainterOptions {
+  widget: LocatedWidget
   canvasEl: Ref<HTMLCanvasElement | null>
   cursorEl: Ref<HTMLElement | null>
   modelValue: Ref<string>
 }
 
+function capturePointerIfActive(e: PointerEvent): boolean {
+  try {
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function releasePointerIfCaptured(e: PointerEvent): boolean {
+  try {
+    ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
-  const { canvasEl, cursorEl, modelValue } = options
+  const { widget, canvasEl, cursorEl, modelValue } = options
   const { t } = useI18n()
   const nodeOutputStore = useNodeOutputStore()
   const toast = useToast()
 
   const isDirty = ref(false)
+  let canvasMask = ''
+  let pendingMaskImage: HTMLImageElement | null = null
 
   const cursorVisible = ref(false)
-
-  const inputImageUrl = ref<string | null>(null)
-  const isImageInputConnected = ref(false)
 
   let isDrawing = false
   let strokeProcessor: StrokeProcessor | null = null
@@ -79,9 +103,9 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     b: number
   } | null = null
 
-  const litegraphNode = computed(() => {
-    if (!nodeId || !app.canvas.graph) return null
-    return app.canvas.graph.getNodeById(nodeId)
+  const litegraphNode = useLiveGraphNode(() => {
+    const location = locateWidgetNode(widget, nodeId)
+    return location?.graph.getNodeById(location.nodeId)
   })
 
   const widgetValueStore = useWidgetValueStore()
@@ -155,25 +179,24 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     node.properties.painterBrushHardness = brushHardness.value
   }
 
-  function updateInputImageUrl() {
+  const imageInputSlot = computed(
+    () => litegraphNode.value?.findInputSlot('image') ?? -1
+  )
+
+  const isImageInputConnected = computed(() => {
     const node = litegraphNode.value
-    if (!node) {
-      inputImageUrl.value = null
-      isImageInputConnected.value = false
-      return
-    }
+    if (!node || imageInputSlot.value < 0) return false
+    return isWidgetInputConnected(node, imageInputSlot.value, nodeId)
+  })
 
-    isImageInputConnected.value = node.isInputConnected(0)
-
-    const inputNode = node.getInputNode(0)
-    if (!inputNode) {
-      inputImageUrl.value = null
-      return
-    }
-
-    const urls = nodeOutputStore.getNodeImageUrls(inputNode)
-    inputImageUrl.value = urls?.length ? urls[0] : null
-  }
+  const inputImageUrl = computed<string | null>(() => {
+    const node = litegraphNode.value
+    if (!node || imageInputSlot.value < 0) return null
+    const source = resolveWidgetInputSource(node, imageInputSlot.value, nodeId)
+    return source
+      ? (nodeOutputStore.getNodeImageUrls(source)?.[0] ?? null)
+      : null
+  })
 
   function activeHardness(): number {
     return tool.value === PAINTER_TOOLS.ERASER ? 1 : brushHardness.value
@@ -412,6 +435,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
     isDrawing = true
     isDirty.value = true
+    pendingMaskImage = null
     snapshotBrush()
     strokeProcessor = new StrokeProcessor(Math.max(1, strokeBrush!.radius / 2))
     strokeProcessor.addPoint(point)
@@ -511,7 +535,18 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     if (!el || !ctx) return
     ctx.clearRect(0, 0, el.width, el.height)
     isDirty.value = true
+    pendingMaskImage = null
+    canvasMask = ''
     modelValue.value = ''
+  }
+
+  function clearToEmptyMask() {
+    const el = canvasEl.value
+    const ctx = getCtx()
+    if (!el || !ctx) return
+    ctx.clearRect(0, 0, el.width, el.height)
+    pendingMaskImage = null
+    canvasMask = ''
   }
 
   function updateCursorPos(e: PointerEvent) {
@@ -526,11 +561,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     cacheCanvasRect()
     updateCursorPos(e)
     startStroke(e)
-    try {
-      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-    } catch {
-      // setPointerCapture may throw for synthetic events (e.g. in tests)
-    }
+    capturePointerIfActive(e)
   }
 
   let pendingMoveEvent: PointerEvent | null = null
@@ -560,11 +591,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       cancelAnimationFrame(rafId)
       flushPendingStroke()
     }
-    try {
-      ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
-    } catch {
-      // releasePointerCapture may throw for synthetic events (e.g. in tests)
-    }
+    releasePointerIfCaptured(e)
     endStroke()
   }
 
@@ -668,6 +695,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     }
 
     const result = `${data.name} [input]`
+    canvasMask = result
     modelValue.value = result
     isDirty.value = false
     return result
@@ -685,7 +713,8 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   }
 
   function restoreCanvas() {
-    const parsed = parseMaskFilename(modelValue.value)
+    const requestedMask = modelValue.value
+    const parsed = parseMaskFilename(requestedMask)
     if (!parsed) return
 
     const params = new URLSearchParams()
@@ -695,25 +724,40 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
     const url = api.apiURL('/view?' + params.toString())
     const img = new Image()
+    pendingMaskImage = img
+    const isStillWanted = () =>
+      pendingMaskImage === img && modelValue.value === requestedMask
     img.crossOrigin = 'anonymous'
     img.onload = () => {
       const el = canvasEl.value
-      if (!el) return
+      if (!el || !isStillWanted()) return
+      pendingMaskImage = null
       canvasWidth.value = img.naturalWidth
       canvasHeight.value = img.naturalHeight
+      el.width = img.naturalWidth
+      el.height = img.naturalHeight
       mainCtx = null
       getCtx()?.drawImage(img, 0, 0)
+      canvasMask = requestedMask
       isDirty.value = false
     }
     img.onerror = () => {
+      if (!isStillWanted()) return
+      pendingMaskImage = null
       modelValue.value = ''
     }
     img.src = url
   }
 
-  watch(() => nodeOutputStore.nodeOutputs, updateInputImageUrl, { deep: true })
-  watch(() => nodeOutputStore.nodePreviewImages, updateInputImageUrl, {
-    deep: true
+  watch(modelValue, (mask) => {
+    if (mask === canvasMask) return
+    if (mask) restoreCanvas()
+    else clearToEmptyMask()
+  })
+
+  watch(litegraphNode, () => {
+    registerWidgetSerialization()
+    restoreSettingsFromProperties()
   })
   watch([canvasWidth, canvasHeight], resizeCanvas)
 
@@ -726,7 +770,6 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     resizeCanvas()
     registerWidgetSerialization()
     restoreSettingsFromProperties()
-    updateInputImageUrl()
     restoreCanvas()
   }
 

@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { canUndo, canRedo } = defineProps<{
   canUndo: boolean

@@ -307,19 +307,22 @@ function keepTurnFrames(
   return { kept, dropped }
 }
 
-function activeWorkflowId(kept: KeptFrame[], seededId: string | null): string {
+function recordedWorkflowId(
+  kept: KeptFrame[],
+  seededId: string | null
+): string {
+  if (seededId === null) refuse('recording has no seeded workflow id')
   const tabs = new Set(
     kept.flatMap(({ event }) =>
       event.type === 'agent_active_tab' ? [event.data.workflow_id] : []
     )
   )
-  if (tabs.size === 0) refuse('no agent_active_tab frame in this turn')
   if (tabs.size > 1)
     refuse(`agent_active_tab frames disagree on workflow_id: ${list(tabs)}`)
   const [tab] = [...tabs]
-  if (tab !== seededId)
+  if (tabs.size > 0 && tab !== seededId)
     refuse(`active_tab workflow ${tab} is not the seeded workflow ${seededId}`)
-  return tab
+  return seededId
 }
 
 // Every op the assembler will read out of this result, shape-checked once.
@@ -396,6 +399,13 @@ const isTerminalToolCall = (
 ): event is Extract<AgentWsEvent, { type: 'agent_tool_call' }> =>
   event.type === 'agent_tool_call' && event.data.status !== 'running'
 
+function replayEventData(event: AgentWsEvent): Record<string, unknown> {
+  const data: Record<string, unknown> = { ...event.data }
+  for (const key of Object.keys(mintedIds)) delete data[key]
+  if (event.type === 'agent_tool_call') delete data.op_ids
+  return data
+}
+
 // The replay's view of one turn: its frames, and the ops it applied, in order.
 // Frames belong to the turn (keepTurnFrames) and every row tool call has a
 // terminal frame here (checkTurnAgreement), so neither is re-checked.
@@ -413,8 +423,7 @@ function buildResponse(
       firstAt === undefined || receivedAt === undefined
         ? undefined
         : receivedAt - firstAt
-    const data: Record<string, unknown> = { ...event.data }
-    for (const key of Object.keys(mintedIds)) delete data[key]
+    const data = replayEventData(event)
 
     if (isTerminalToolCall(event)) {
       const ops = opsByToolCall.get(event.data.tool_call_id)
@@ -578,7 +587,7 @@ function buildConversation(options: {
     options.seedMessageId === null
       ? 'no seed turn, workflow id given at import'
       : `seeded by throwaway turn ${options.seedMessageId}`
-  const note = `${origin}; NOT a production capture. cloud commit ${provenance.cloudSha}; model ${provenance.model}; thread ${threadId}; messages ${turns.map((turn) => turn.message_id).join(', ')}; workflow ${workflowId} (${seeded}; turn 1 opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame); agent_tool_calls parent rows ${list(rows.flatMap((set) => set.parents.map((row) => row.id)))}; rows ${rows.map((set) => basename(set.path)).join(', ')}; raw capture sha256 ${input.rawSha256}`
+  const note = `${origin}; NOT a production capture. cloud commit ${provenance.cloudSha}; model ${provenance.model}; thread ${threadId}; messages ${turns.map((turn) => turn.message_id).join(', ')}; workflow ${workflowId} (${seeded}; recorded turns target the seeded workflow explicitly with workflow_id and the live draft); agent_tool_calls parent rows ${list(rows.flatMap((set) => set.parents.map((row) => row.id)))}; rows ${rows.map((set) => basename(set.path)).join(', ')}; raw capture sha256 ${input.rawSha256}`
 
   return parseOrRefuse(
     zAgentConversation,
@@ -733,8 +742,7 @@ export function assembleConversation(input: AssembleInput) {
     )
 
   const { kept, dropped } = keepTurnFrames(raw.frames, ids, seedTurn)
-  // The replay subscribes once, so only the opening turn must switch tabs.
-  const workflowId = activeWorkflowId(kept[0], raw.seed_workflow_id)
+  const workflowId = recordedWorkflowId(kept[0], raw.seed_workflow_id)
   const turns = raw.turns.map((turn, index) =>
     assembleTurn(
       turn,

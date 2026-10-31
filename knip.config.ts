@@ -35,8 +35,22 @@ const config: KnipConfig = {
     'packages/billing-contract': {
       project: ['src/**/*.ts']
     },
+    'packages/api-client': {
+      project: ['src/**/*.ts']
+    },
+    'packages/graph-model': {
+      project: ['src/**/*.ts']
+    },
+    'packages/keybindings': {
+      project: ['src/**/*.ts']
+    },
+    'packages/settings-core': {
+      project: ['src/**/*.ts']
+    },
     'packages/design-system': {
-      project: ['src/**/*.{css,js,ts}']
+      entry: ['tests/consumer/vite.config.ts'],
+      project: ['src/**/*.{css,js,ts,vue}'],
+      ignoreDependencies: ['tailwind-merge']
     },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
@@ -52,12 +66,6 @@ const config: KnipConfig = {
     },
     'packages/ingest-types': {
       project: ['src/**/*.{js,ts}']
-    },
-    'apps/website': {
-      // Models pages are registered by the release-gate integration.
-      entry: ['src/scripts/**/*.ts', 'src/routes/models/*.{astro,ts}'],
-      // Executed by models-snippets.test.ts inside the generated Node examples.
-      ignoreDependencies: ['mime-types']
     },
     'tools/architecture': {
       project: ['src/**/*.ts']
@@ -76,25 +84,12 @@ const config: KnipConfig = {
     }
   },
   ignoreBinaries: [
-    'ffmpeg',
     // Optional host tool the recorder probes for and degrades without
     'xcode-select'
   ],
   ignore: [
     // Auto generated API types
-    'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
-    // Config for a CLI invoked by file path, not import; generated output
-    // includes operation types unused until this fronts a real API client
-    'apps/website/openapi-ts.rate-card.config.ts',
-    'apps/website/src/types/rate-card/index.ts',
-    'apps/website/src/types/rate-card/types.gen.ts',
-    'apps/website/src/types/rate-card/zod.gen.ts',
-    // Marketing media tooling — adopted by pages in a follow-up PR
-    'apps/website/src/components/common/SiteVideo.vue',
-    // Animated pill button — retained for reuse after the learning directory
-    // switched to ButtonPill; no current consumer
-    'apps/website/src/components/ui/button-mask/**',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically

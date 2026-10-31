@@ -81,9 +81,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {

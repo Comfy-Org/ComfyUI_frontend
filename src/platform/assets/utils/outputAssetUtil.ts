@@ -1,15 +1,43 @@
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
-import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobOutputAsset } from '@comfyorg/api-client/jobTypes'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import {
   getJobAssets,
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
+
+const storedOutputIdentityKey = Symbol('storedOutputIdentity')
+
+type StoredOutputIdentity = {
+  type: ResultItemType
+  hash?: string
+}
+
+type WithStoredOutputIdentity = {
+  [storedOutputIdentityKey]?: StoredOutputIdentity
+}
+
+function withStoredOutputIdentity(
+  item: AssetItem,
+  { type, hash }: AugmentedResultItem
+): AssetItem {
+  if (!type) return item
+  const identity: StoredOutputIdentity = { type, hash }
+  return Object.assign(item, { [storedOutputIdentityKey]: identity })
+}
+
+/** Root and stored hash of the grouped output an expanded stack item was built from. */
+export function getStoredOutputIdentity(
+  asset: AssetItem & WithStoredOutputIdentity
+): StoredOutputIdentity | undefined {
+  return asset[storedOutputIdentityKey]
+}
 
 type OutputAssetMapOptions = {
   jobId: string
@@ -70,7 +98,7 @@ function mapOutputsToAssetItems({
     }
     seenOutputKeys.add(outputKey)
 
-    items.push({
+    const item: AssetItem = {
       id: output.assetId || `${jobId}-${outputKey}`,
       name: output.filename,
       display_name: output.display_name,
@@ -87,7 +115,8 @@ function mapOutputsToAssetItems({
         executionTimeInSeconds,
         workflow
       }
-    })
+    }
+    items.push(withStoredOutputIdentity(item, output))
 
     return items
   }, [])
