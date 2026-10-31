@@ -1,6 +1,7 @@
 # Bump the ecosystem matrix's corpus pins.
 #
-# Manual only, and that is the design. scripts/registry-census/corpus.pins.json
+# Monthly and reviewed, never continuous, and that is the design.
+# scripts/registry-census/corpus.pins.json
 # names the exact commit of every registry pack the matrix measures, so the
 # gate is a constant: a pack author pushing a bug cannot red an unrelated PR.
 # The cost of that is that pack breakage is invisible until someone bumps the
@@ -12,10 +13,16 @@
 name: 'Update corpus pins'
 
 on:
+  schedule:
+    - cron: '0 9 1 * *'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: update-corpus-pins
+  cancel-in-progress: false
 
 jobs:
   update-pins:
@@ -24,6 +31,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -70,11 +78,18 @@ jobs:
               print('\n</details>')
           PY
 
+      - name: Read the release sheriff
+        id: sheriff
+        run: |
+          login="$(jq -er '.sheriff | select(test("^[A-Za-z0-9-]+$"))' .github/release-sheriff.json)"
+          echo "login=$login" >> "$GITHUB_OUTPUT"
+
       - name: Open the bump PR
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
           branch: chore/corpus-pins
+          assignees: ${{ steps.sheriff.outputs.login }}
           commit-message: 'chore: bump ecosystem matrix corpus pins'
           title: 'chore: bump ecosystem matrix corpus pins'
           body: |
@@ -91,3 +106,14 @@ jobs:
             See the step summary on the triggering run for the moved/added/dropped
             breakdown.
           add-paths: scripts/registry-census/corpus.pins.json
+
+      - name: Report a failed scheduled bump
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue create \
+            --title 'Monthly corpus pin bump failed' \
+            --assignee "$(jq -r .sheriff .github/release-sheriff.json)" \
+            --body "The scheduled bump failed, so the ecosystem matrix pins stay stale until it runs: $RUN_URL"
