@@ -4818,6 +4818,7 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(g6) a row still streaming on the first check is polled with backoff until it goes terminal', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const getMessages = vi
       .fn<() => Promise<AgentMessages>>()
       .mockResolvedValueOnce([
@@ -5191,6 +5192,7 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(g18) a history fetch that never answers stops at its deadline', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const getMessages = vi.fn(hangingGetMessages)
     const rest = fakeRest({ getMessages })
     const { source, emit, status } = fakeEvents()
