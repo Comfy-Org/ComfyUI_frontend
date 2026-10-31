@@ -1130,6 +1130,44 @@ describe('useWidgetSelectItems', () => {
       }
     )
 
+    it.for([
+      {
+        source: 'the job thumbnail',
+        asset: {
+          thumbnail_url: '/api/assets/thumb-1/content',
+          preview_url: '/api/view?filename=sky_00001.exr&type=output'
+        },
+        previewUrl: '/api/assets/thumb-1/content'
+      },
+      {
+        source: 'no thumbnail when only the raw file is known',
+        asset: { preview_url: '/api/view?filename=sky_00001.exr&type=output' },
+        previewUrl: ''
+      }
+    ])(
+      'shows $source for an HDR output without a stored preview id',
+      async ({ asset, previewUrl }) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'asset-hdr-1',
+            name: 'sky_00001.exr',
+            tags: ['output'],
+            ...asset
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(undefined) })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        expect(dropdownItems.value).toMatchObject([
+          { name: 'sky_00001.exr [output]', preview_url: previewUrl }
+        ])
+      }
+    )
+
     it('does not list HDR outputs for video widgets', async () => {
       mockMediaAssets.items.value = [
         fromPartial({
