@@ -20,6 +20,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: update-corpus-pins
+  cancel-in-progress: false
+
 jobs:
   update-pins:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
@@ -27,6 +31,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -75,7 +80,9 @@ jobs:
 
       - name: Read the release sheriff
         id: sheriff
-        run: echo "login=$(jq -r .sheriff .github/release-sheriff.json)" >> "$GITHUB_OUTPUT"
+        run: |
+          login="$(jq -er '.sheriff | select(test("^[A-Za-z0-9-]+$"))' .github/release-sheriff.json)"
+          echo "login=$login" >> "$GITHUB_OUTPUT"
 
       - name: Open the bump PR
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
@@ -99,3 +106,14 @@ jobs:
             See the step summary on the triggering run for the moved/added/dropped
             breakdown.
           add-paths: scripts/registry-census/corpus.pins.json
+
+      - name: Report a failed scheduled bump
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue create \
+            --title 'Monthly corpus pin bump failed' \
+            --assignee "$(jq -r .sheriff .github/release-sheriff.json)" \
+            --body "The scheduled bump failed, so the ecosystem matrix pins stay stale until it runs: $RUN_URL"
