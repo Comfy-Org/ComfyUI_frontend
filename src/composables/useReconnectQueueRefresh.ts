@@ -1,6 +1,7 @@
-import { Semaphore, delay, withTimeout } from 'es-toolkit'
+import { Semaphore, delay, partition, withTimeout } from 'es-toolkit'
 
 import { t } from '@/i18n'
+import { zJobExecutionMetaEntry } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type {
   ExecutionError,
   JobDetail
@@ -9,6 +10,8 @@ import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 
 type JobId = JobDetail['id']
 type TaskOutput = TaskItemImpl['outputs']
@@ -22,6 +25,7 @@ type JobOutcome =
       state: 'ended'
       status: EndedStatus
       outputs?: TaskOutput
+      displayNodes?: Map<string, string>
       executionError?: ExecutionError
       timestamp: number
     }
@@ -42,6 +46,13 @@ function unknownExecutionError(): ExecutionError {
     exception_type: '',
     traceback: []
   }
+}
+
+function ownDisplayNode(node: string, metaEntry: unknown) {
+  const entry = zJobExecutionMetaEntry.safeParse(metaEntry)
+  if (!entry.success || !entry.data.display_node) return null
+  const { node_id: metaNode = node, display_node: displayNode } = entry.data
+  return metaNode === node ? tryNormalizeNodeExecutionId(displayNode) : null
 }
 
 /**
@@ -86,6 +97,19 @@ export function useReconnectQueueRefresh() {
     return historyTask.outputs
   }
 
+  function displayNodesOf(detail: JobDetail | undefined) {
+    const meta = detail?.execution_meta
+    if (meta == null || typeof meta !== 'object' || Array.isArray(meta)) {
+      return undefined
+    }
+    const displayNodes = new Map<string, string>()
+    for (const [node, entry] of Object.entries(meta)) {
+      const displayNode = ownDisplayNode(node, entry)
+      if (displayNode) displayNodes.set(node, displayNode)
+    }
+    return displayNodes
+  }
+
   function completedOutcome(
     detail: JobDetail | undefined,
     historyTask: TaskItemImpl | undefined
@@ -96,6 +120,7 @@ export function useReconnectQueueRefresh() {
       state: 'ended',
       status: 'completed',
       outputs,
+      displayNodes: displayNodesOf(detail),
       timestamp: outcomeTimestamp(detail, historyTask)
     }
   }
@@ -140,11 +165,24 @@ export function useReconnectQueueRefresh() {
     return readOutcome(jobId, historyTask)
   }
 
-  function replayOutputs(jobId: JobId, outputs: TaskOutput) {
-    for (const [node, output] of Object.entries(outputs)) {
+  function replayOutputs(
+    jobId: JobId,
+    outputs: TaskOutput,
+    displayNodes: Map<string, string> | undefined
+  ) {
+    const frames = Object.entries(outputs).map(([node, output]) => ({
+      node,
+      output,
+      displayNode: displayNodes?.get(node) ?? node
+    }))
+    const [own, expanded] = partition(
+      frames,
+      ({ node, displayNode }) => node === displayNode
+    )
+    for (const { node, output, displayNode } of [...own, ...expanded]) {
       api.dispatchCustomEvent('executed', {
         node,
-        display_node: node,
+        display_node: displayNode,
         output,
         prompt_id: jobId
       })
@@ -218,7 +256,9 @@ export function useReconnectQueueRefresh() {
 
   function replayOutcome(jobId: JobId, outcome: JobOutcome) {
     if (outcome.state !== 'ended' || !isFollowed(jobId)) return
-    if (outcome.outputs) replayOutputs(jobId, outcome.outputs)
+    if (outcome.outputs) {
+      replayOutputs(jobId, outcome.outputs, outcome.displayNodes)
+    }
     dispatchTerminal(jobId, outcome)
   }
 
