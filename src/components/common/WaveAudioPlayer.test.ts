@@ -46,7 +46,9 @@ async function stubPlayback(audio: HTMLAudioElement) {
     value: DURATION_SECONDS,
     configurable: true
   })
-  audio.play = vi.fn(() => Promise.resolve())
+  audio.play = vi.fn(async () => {
+    audio.dispatchEvent(new Event('play'))
+  })
   audio.pause = vi.fn(() => {})
   await fireEvent(audio, new Event('durationchange'))
   await settle()

@@ -1,9 +1,11 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { useMediaControls } from '@vueuse/core'
-import { nextTick, ref } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useWaveAudioPlayer } from './useWaveAudioPlayer'
+import { useToast } from '@/components/ui/toast/toastStore'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { api } from '@/scripts/api'
 
 vi.mock(import('@vueuse/core'), { spy: true })
@@ -184,5 +186,155 @@ describe('useWaveAudioPlayer', () => {
 
     expect(api.fetchApi).not.toHaveBeenCalled()
     expect(loading.value).toBe(false)
+  })
+
+  describe('playback', () => {
+    const notSupported = () =>
+      new DOMException('The operation is not supported.', 'NotSupportedError')
+
+    async function createPlayer() {
+      vi.mocked(useMediaControls).mockReset()
+
+      const src = ref('')
+      const player = useWaveAudioPlayer({ src, waveform: false })
+      const audio = document.createElement('audio')
+      audio.src = 'http://example.com/audio.ogg'
+      player.audioRef.value = audio
+      await nextTick()
+      return { audio, player, src }
+    }
+
+    function giveDuration(audio: HTMLAudioElement) {
+      Object.defineProperty(audio, 'duration', { value: 10 })
+      audio.dispatchEvent(new Event('durationchange'))
+      return nextTick()
+    }
+
+    it.for(['togglePlayPause', 'handleWaveformClick'] as const)(
+      'stays paused and shows a toast when play() rejects from %s',
+      async (trigger) => {
+        const { audio, player } = await createPlayer()
+        vi.spyOn(audio, 'play').mockRejectedValue(notSupported())
+        const waveform = document.createElement('div')
+        waveform.getBoundingClientRect = () => new DOMRect(0, 0, 100, 10)
+        player.waveformRef.value = waveform
+        await giveDuration(audio)
+
+        if (trigger === 'togglePlayPause') player.togglePlayPause()
+        else player.handleWaveformClick(new MouseEvent('click'))
+
+        await vi.waitFor(() =>
+          expect(useToast().toasts).toEqual([
+            expect.objectContaining({
+              kind: 'error',
+              description: enMessages.g.audioPlaybackFailed
+            })
+          ])
+        )
+        expect(player.isPlaying.value).toBe(false)
+      }
+    )
+
+    it('dismisses the error toast after a successful retry', async () => {
+      const { audio, player } = await createPlayer()
+      vi.spyOn(audio, 'play')
+        .mockRejectedValueOnce(notSupported())
+        .mockResolvedValueOnce(undefined)
+
+      player.togglePlayPause()
+      await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+      player.togglePlayPause()
+      await vi.waitFor(() => expect(useToast().toasts).toEqual([]))
+    })
+
+    it('dismisses the error toast when the source changes', async () => {
+      const { audio, player, src } = await createPlayer()
+      vi.spyOn(audio, 'play').mockRejectedValue(notSupported())
+
+      player.togglePlayPause()
+      await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+      src.value = 'http://example.com/other.mp3'
+      await nextTick()
+
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it('stays silent when a play attempt is aborted', async () => {
+      const { audio, player } = await createPlayer()
+      const play = vi
+        .spyOn(audio, 'play')
+        .mockRejectedValue(new DOMException('Aborted', 'AbortError'))
+
+      player.togglePlayPause()
+      await vi.waitFor(() => expect(play).toHaveBeenCalledTimes(1))
+      await nextTick()
+      await nextTick()
+
+      expect(console.warn).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it('ignores a rejection from an attempt the user already paused', async () => {
+      const { audio, player } = await createPlayer()
+      let rejectPlay: (reason: unknown) => void = () => {}
+      vi.spyOn(audio, 'play').mockImplementation(
+        () =>
+          new Promise<void>((_resolve, reject) => {
+            rejectPlay = reject
+          })
+      )
+
+      player.togglePlayPause()
+      Object.defineProperty(audio, 'paused', {
+        value: false,
+        configurable: true
+      })
+      player.togglePlayPause()
+      rejectPlay(notSupported())
+      await nextTick()
+      await nextTick()
+
+      expect(console.warn).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it('pauses the element when a pending source fails to load', async () => {
+      const { audio, player } = await createPlayer()
+      vi.spyOn(audio, 'play').mockRejectedValue(notSupported())
+      const pause = vi.spyOn(audio, 'pause').mockImplementation(() => {})
+
+      player.togglePlayPause()
+
+      await vi.waitFor(() => expect(pause).toHaveBeenCalled())
+    })
+
+    it('dismisses the error toast when its scope is disposed', async () => {
+      vi.mocked(useMediaControls).mockReset()
+      const scope = effectScope()
+      const player = scope.run(() => useWaveAudioPlayer({ src: ref('') }))!
+      const audio = document.createElement('audio')
+      player.audioRef.value = audio
+      await nextTick()
+      vi.spyOn(audio, 'play').mockRejectedValue(notSupported())
+
+      player.togglePlayPause()
+      await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+      scope.stop()
+
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it('pauses an element that is already playing', async () => {
+      const { audio, player } = await createPlayer()
+      Object.defineProperty(audio, 'paused', { value: false })
+      const pause = vi.spyOn(audio, 'pause').mockImplementation(() => {})
+
+      player.togglePlayPause()
+
+      expect(pause).toHaveBeenCalledTimes(1)
+    })
   })
 })
