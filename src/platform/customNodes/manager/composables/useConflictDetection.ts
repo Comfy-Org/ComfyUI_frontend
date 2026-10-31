@@ -1,10 +1,13 @@
 import { until } from '@vueuse/core'
+import { chunk } from 'es-toolkit'
 import { find } from 'es-toolkit/compat'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { computed, getCurrentInstance, onUnmounted, readonly, ref } from 'vue'
 
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
+import { isAbortError } from '@/utils/typeGuardUtil'
 import { useInstalledPacks } from '@/platform/customNodes/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
@@ -30,6 +33,149 @@ import {
 } from '@/platform/customNodes/manager/utils/conflictUtils'
 import { normalizeOSList } from '@/platform/customNodes/manager/utils/systemCompatibility'
 import { getFrontendVersion } from '@/platform/customNodes/manager/utils/versionUtil'
+
+const BULK_NODE_VERSIONS_CHUNK_SIZE = 100
+
+const BULK_NODE_VERSIONS_MAX_PARALLEL_REQUESTS = 4
+
+type BulkNodeVersionsResponse =
+  components['schemas']['BulkNodeVersionsResponse']
+
+interface BulkNodeVersionsResult {
+  versionDataMap: Map<string, components['schemas']['NodeVersion']>
+  unverifiedNodeIds: Set<string>
+}
+
+function collectNodeVersions(
+  response: BulkNodeVersionsResponse,
+  versionDataMap: Map<string, components['schemas']['NodeVersion']>,
+  unverifiedNodeIds: Set<string>
+): void {
+  response.node_versions.forEach((result) => {
+    if (result.status === 'success' && result.node_version) {
+      versionDataMap.set(result.identifier.node_id, result.node_version)
+    } else if (result.status === 'error') {
+      console.warn(
+        `[ConflictDetection] Failed to fetch version data for ${result.identifier.node_id}@${result.identifier.version}:`,
+        result.error_message
+      )
+      unverifiedNodeIds.add(result.identifier.node_id)
+    }
+  })
+}
+
+type BulkNodeVersionsChunkOutcome =
+  | { ok: true; response: BulkNodeVersionsResponse }
+  | { ok: false; cause: unknown }
+
+async function retryBulkNodeVersionsChunk(
+  registryService: ReturnType<typeof useComfyRegistryService>,
+  nodeVersions: components['schemas']['NodeVersionIdentifier'][],
+  signal?: AbortSignal
+): Promise<BulkNodeVersionsChunkOutcome> {
+  try {
+    const response = await registryService.getBulkNodeVersions(
+      nodeVersions,
+      signal
+    )
+    return response
+      ? { ok: true, response }
+      : { ok: false, cause: new Error('Empty bulk node versions response') }
+  } catch (cause) {
+    if (!isAbortError(cause)) {
+      console.warn(
+        '[ConflictDetection] Retry of bulk version data failed:',
+        cause
+      )
+    }
+    return { ok: false, cause }
+  }
+}
+
+async function resolveBulkNodeVersionsChunk(
+  registryService: ReturnType<typeof useComfyRegistryService>,
+  bulkResponse: PromiseSettledResult<BulkNodeVersionsResponse | null>,
+  nodeVersions: components['schemas']['NodeVersionIdentifier'][],
+  signal?: AbortSignal
+): Promise<BulkNodeVersionsChunkOutcome> {
+  if (bulkResponse.status === 'fulfilled' && bulkResponse.value) {
+    return { ok: true, response: bulkResponse.value }
+  }
+  if (bulkResponse.status === 'rejected') {
+    console.warn(
+      '[ConflictDetection] Failed to fetch bulk version data:',
+      bulkResponse.reason
+    )
+  }
+  return retryBulkNodeVersionsChunk(registryService, nodeVersions, signal)
+}
+
+async function fetchBulkNodeVersions(
+  registryService: ReturnType<typeof useComfyRegistryService>,
+  nodeVersions: components['schemas']['NodeVersionIdentifier'][],
+  signal?: AbortSignal
+): Promise<BulkNodeVersionsResult> {
+  const versionDataMap = new Map<string, components['schemas']['NodeVersion']>()
+  const unverifiedNodeIds = new Set<string>()
+  const result = { versionDataMap, unverifiedNodeIds }
+  const failedChunkCauses: unknown[] = []
+
+  const requestChunks = chunk(nodeVersions, BULK_NODE_VERSIONS_CHUNK_SIZE)
+
+  for (const parallelChunks of chunk(
+    requestChunks,
+    BULK_NODE_VERSIONS_MAX_PARALLEL_REQUESTS
+  )) {
+    if (signal?.aborted) return result
+
+    const bulkResponses = await Promise.allSettled(
+      parallelChunks.map((nodeVersionsChunk) =>
+        registryService.getBulkNodeVersions(nodeVersionsChunk, signal)
+      )
+    )
+
+    for (const [index, bulkResponse] of bulkResponses.entries()) {
+      if (signal?.aborted) return result
+
+      const nodeVersionsChunk = parallelChunks[index]
+      const outcome = await resolveBulkNodeVersionsChunk(
+        registryService,
+        bulkResponse,
+        nodeVersionsChunk,
+        signal
+      )
+      if (signal?.aborted) return result
+
+      if (!outcome.ok) {
+        console.warn(
+          '[ConflictDetection] Failed to fetch bulk version data for one batch of installed packs'
+        )
+        nodeVersionsChunk.forEach(({ node_id }) =>
+          unverifiedNodeIds.add(node_id)
+        )
+        failedChunkCauses.push(outcome.cause)
+        continue
+      }
+
+      collectNodeVersions(outcome.response, versionDataMap, unverifiedNodeIds)
+    }
+  }
+
+  if (failedChunkCauses.length > 0) {
+    reportError(failedChunkCauses[0], {
+      errorType: 'failure_fetching_bulk_node_versions',
+      surface: 'platform',
+      level: 'warning',
+      tags: { outcome: 'degraded' },
+      context: {
+        failedChunkCount: failedChunkCauses.length,
+        totalChunkCount: requestChunks.length
+      }
+    })
+  }
+
+  return result
+}
 
 /**
  * Composable for conflict detection system.
@@ -124,10 +270,13 @@ export function useConflictDetection() {
    *
    * @returns Promise that resolves to array of node pack requirements
    */
-  async function buildNodeRequirements(): Promise<NodeRequirements[]> {
+  async function buildNodeRequirements(
+    signal: AbortSignal
+  ): Promise<NodeRequirements[]> {
     try {
       // Step 1: Use installed packs composable instead of direct API calls
       await startFetchInstalled() // Ensure data is loaded
+      if (signal.aborted) return []
 
       if (!installedPacksReady.value || installedPacks.value.length === 0) {
         console.warn(
@@ -139,53 +288,20 @@ export function useConflictDetection() {
       // Step 2: Get Registry service for bulk API calls
       const registryService = useComfyRegistryService()
 
-      // Step 3: Setup abort controller for request cancellation
-      abortController.value = new AbortController()
-
-      // Step 4: Use bulk API to fetch all version data in a single request
-      const versionDataMap = new Map<
-        string,
-        components['schemas']['NodeVersion']
-      >()
-
+      // Step 3: Use bulk API to fetch all version data in chunked requests
       // Prepare bulk request with actual installed versions from Manager API
       const nodeVersions = installedPacksWithVersions.value.map((pack) => ({
         node_id: pack.id,
         version: pack.version
       }))
 
-      if (nodeVersions.length > 0) {
-        try {
-          const bulkResponse = await registryService.getBulkNodeVersions(
-            nodeVersions,
-            abortController.value.signal
-          )
+      const { versionDataMap, unverifiedNodeIds } = await fetchBulkNodeVersions(
+        registryService,
+        nodeVersions,
+        signal
+      )
 
-          if (bulkResponse && bulkResponse.node_versions.length > 0) {
-            // Process bulk response
-            bulkResponse.node_versions.forEach((result) => {
-              if (result.status === 'success' && result.node_version) {
-                versionDataMap.set(
-                  result.identifier.node_id,
-                  result.node_version
-                )
-              } else if (result.status === 'error') {
-                console.warn(
-                  `[ConflictDetection] Failed to fetch version data for ${result.identifier.node_id}@${result.identifier.version}:`,
-                  result.error_message
-                )
-              }
-            })
-          }
-        } catch (error) {
-          console.warn(
-            '[ConflictDetection] Failed to fetch bulk version data:',
-            error
-          )
-        }
-      }
-
-      // Step 5: Combine local installation data with Registry version data
+      // Step 4: Combine local installation data with Registry version data
       const requirements: NodeRequirements[] = []
 
       // IMPORTANT: Use installedPacksWithVersions to check ALL installed packages
@@ -236,7 +352,10 @@ export function useConflictDetection() {
             installed_version: installedPackVersion.version,
             is_enabled: isEnabled,
             is_banned: false,
-            is_pending: false
+            is_pending: false,
+            registry_status_unknown: unverifiedNodeIds.has(
+              installedPackVersion.id
+            )
           }
 
           requirements.push(fallbackRequirement)
@@ -286,7 +405,8 @@ export function useConflictDetection() {
       package_name: packageReq.name ?? '',
       has_conflict: hasConflict,
       conflicts,
-      is_compatible: !hasConflict
+      is_compatible: !hasConflict,
+      registry_status_unknown: packageReq.registry_status_unknown
     }
   }
 
@@ -295,8 +415,12 @@ export function useConflictDetection() {
    * Gets installed packages and checks each one for import failures using bulk API.
    * @returns Promise that resolves to import failure data
    */
-  async function fetchImportFailInfo(): Promise<ImportFailureMap> {
+  async function fetchImportFailInfo(
+    signal: AbortSignal
+  ): Promise<ImportFailureMap> {
     try {
+      if (signal.aborted) return {}
+
       const comfyManagerService = useComfyManagerService()
 
       // Use installedPacksWithVersions to match what versions bulk API uses
@@ -313,7 +437,7 @@ export function useConflictDetection() {
       // Use bulk API to get import failure info for all packages at once
       const bulkResult = await comfyManagerService.getImportFailInfoBulk(
         { cnr_ids: packageIds },
-        abortController.value?.signal
+        signal
       )
 
       if (bulkResult) {
@@ -382,6 +506,28 @@ export function useConflictDetection() {
     return results
   }
 
+  function carryOverUnverifiedConflicts(
+    unknownPackIds: Set<string>
+  ): ConflictDetectionResult[] {
+    return [...unknownPackIds].flatMap((packId) => {
+      const storedResult = conflictStore.getConflictsForPackageByID(packId)
+      const conflicts = storedResult?.conflicts.filter(
+        (conflict) => conflict.type !== 'import_failed'
+      )
+      return storedResult && conflicts?.length
+        ? [
+            {
+              ...storedResult,
+              conflicts,
+              has_conflict: true,
+              is_compatible: false,
+              registry_status_unknown: true
+            }
+          ]
+        : []
+    })
+  }
+
   /**
    * Performs complete conflict detection.
    * @returns Promise that resolves to conflict detection response
@@ -398,12 +544,26 @@ export function useConflictDetection() {
     isDetecting.value = true
     detectionError.value = null
 
+    abortController.value = new AbortController()
+    const { signal } = abortController.value
+
     try {
       // 1. Collect system environment information
       const systemEnvInfo = await collectSystemEnvironment()
 
       // 2. Collect installed node requirement information
-      const installedNodeRequirements = await buildNodeRequirements()
+      const installedNodeRequirements = await buildNodeRequirements(signal)
+
+      const registryUnknownPackIds = new Set(
+        installedNodeRequirements.flatMap((requirement) =>
+          requirement.registry_status_unknown && requirement.id
+            ? [requirement.id]
+            : []
+        )
+      )
+      const carriedOverConflicts = carryOverUnverifiedConflicts(
+        registryUnknownPackIds
+      )
 
       // 3. Detect conflicts for each package (parallel processing)
       const conflictDetectionTasks = installedNodeRequirements.map(
@@ -427,11 +587,19 @@ export function useConflictDetection() {
         .filter((result): result is ConflictDetectionResult => result !== null)
 
       // 4. Detect Python import failures
-      const importFailInfo = await fetchImportFailInfo()
+      const importFailInfo = await fetchImportFailInfo(signal)
       const importFailResults = detectImportFailConflicts(importFailInfo)
 
       // 5. Combine all results
       const allResults = [...packageResults, ...importFailResults]
+
+      if (signal.aborted) {
+        return {
+          success: false,
+          error_message: 'Conflict detection cancelled',
+          results: detectionResults.value
+        }
+      }
 
       // 6. Update state
       detectionResults.value = allResults
@@ -439,37 +607,35 @@ export function useConflictDetection() {
 
       // Store conflict results for later UI display
       // Dialog will be shown based on specific events, not on app mount
-      if (allResults.some((result) => result.has_conflict)) {
-        const conflictedResults = allResults.filter(
-          (result) => result.has_conflict
-        )
+      const conflictedResults = [
+        ...allResults.filter((result) => result.has_conflict),
+        ...carriedOverConflicts
+      ]
 
-        // Merge conflicts for packages with the same name
-        const mergedConflicts = consolidateConflictsByPackage(conflictedResults)
+      // Merge conflicts for packages with the same name
+      const mergedConflicts =
+        conflictedResults.length > 0
+          ? consolidateConflictsByPackage(conflictedResults)
+          : null
 
+      if (mergedConflicts) {
         // Store merged conflicts in Pinia store for UI usage
         conflictStore.setConflictedPackages(mergedConflicts)
 
         // Also update local state for backward compatibility
         detectionResults.value = [...mergedConflicts]
         storedMergedConflicts.value = [...mergedConflicts]
-
-        // Use merged conflicts in response as well
-        const response: ConflictDetectionResponse = {
-          success: true,
-          results: mergedConflicts,
-          detected_system_environment: systemEnvInfo
-        }
-        return response
       } else {
         // No conflicts detected, clear the results
         conflictStore.clearConflicts()
         detectionResults.value = []
       }
 
+      conflictStore.setRegistryUnknownPackIds(registryUnknownPackIds)
+
       const response: ConflictDetectionResponse = {
         success: true,
-        results: allResults,
+        results: mergedConflicts ?? allResults,
         detected_system_environment: systemEnvInfo
       }
 
@@ -490,9 +656,7 @@ export function useConflictDetection() {
     } finally {
       isDetecting.value = false
       // Clear abort controller to prevent memory leaks
-      if (abortController.value) {
-        abortController.value = null
-      }
+      abortController.value = null
     }
   }
 
