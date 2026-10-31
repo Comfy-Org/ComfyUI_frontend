@@ -1783,6 +1783,30 @@ export const zModelFile = z.object({
 })
 
 /**
+ * The `data` of a model_download WebSocket event: the latest state of one model file a Cloud job on a deployment downloads before ComfyUI starts it. Sent by the deployment's worker (services/comfy-deploy/containerruntime worker.py, _ModelNews) only when the job asked for live progress, for each file the job fetches and never for a file the release ships, all before the job's execution_start. A failed file ends the job: no other source is tried and the job is not retried, so its execution_error (or execution_interrupted, when a cancel was in flight) follows. New fields may be added; a client ignores the ones it does not read.
+ */
+export const zModelDownloadData = z.object({
+  bytes_downloaded: z.int(),
+  bytes_total: z.int().nullable(),
+  count: z.int(),
+  dir: z.string(),
+  index: z.int(),
+  name: z.string(),
+  progress: z.number().nullable(),
+  prompt_id: z.string(),
+  status: z.string(),
+  workflow_id: z.string().optional()
+})
+
+/**
+ * Server-to-client model_download frame on /ws. A Cloud job's model file download moved.
+ */
+export const zModelDownloadFrame = z.object({
+  data: zModelDownloadData,
+  type: z.enum(['model_download'])
+})
+
+/**
  * Workspace member with profile and role information.
  */
 export const zMember = z.object({
@@ -4077,6 +4101,25 @@ export const zAssetMetadataResponse = z.object({
 })
 
 /**
+ * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
+ */
+export const zModelUploadStarted = z.object({
+  upload_id: z.uuid(),
+  upload_url: z.string(),
+  method: z.enum(['PUT']),
+  headers: z.record(z.string(), z.string()),
+  expires_at: z.iso.datetime(),
+  max_size_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+/**
  * Acknowledgement of an async asset download task; clients poll GET /api/tasks/{task_id} for status.
  */
 export const zAssetDownloadResponse = z.object({
@@ -5008,6 +5051,7 @@ export const zListAssetsQuery = z.object({
     .default('created_at'),
   order: z.enum(['asc', 'desc']).optional().default('desc'),
   include_public: z.boolean().optional().default(true),
+  workspace_library: z.boolean().optional().default(false),
   hash: z.string().optional(),
   after: z.string().optional()
 })
@@ -5126,6 +5170,38 @@ export const zCreateAssetDownloadResponse = z.union([
   zAssetCreated,
   zAssetDownloadResponse
 ])
+
+export const zStartModelUploadBody = z.object({
+  filename: z.string(),
+  size_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  tags: z.array(z.string())
+})
+
+/**
+ * Signed upload URL for one staged object
+ */
+export const zStartModelUploadResponse = zModelUploadStarted
+
+export const zCompleteModelUploadBody = z.object({
+  filename: z.string(),
+  tags: z.array(z.string())
+})
+
+export const zCompleteModelUploadPath = z.object({
+  upload_id: z.string()
+})
+
+/**
+ * Accepted; a task stores the file as an asset
+ */
+export const zCompleteModelUploadResponse = zAssetDownloadResponse
 
 export const zCreateAssetExportBody = z.object({
   asset_ids: z.array(z.string()).optional(),
@@ -5636,6 +5712,7 @@ export const zGetFeaturesResponse = z.object({
     })
     .optional(),
   max_upload_size: z.int().optional(),
+  model_upload_folders: z.array(z.string()).optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),

@@ -104,6 +104,7 @@ import { PromptExecutionError, api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -3755,6 +3756,31 @@ describe('ComfyApp', () => {
       await app.loadApiJson({}, 'repeat')
 
       expect(useWorkflowStore().activeWorkflow).toBe(activeWorkflow)
+    })
+  })
+
+  describe('socket handlers', () => {
+    it('keeps a model download that arrives as the socket starts', async () => {
+      vi.spyOn(api, 'init').mockImplementation(async () => {
+        api.dispatchCustomEvent('model_download', {
+          status: 'downloading',
+          name: 'my_style_v2.safetensors',
+          dir: 'loras',
+          index: 1,
+          count: 1,
+          bytes_downloaded: 1,
+          bytes_total: 2,
+          progress: 0.5,
+          prompt_id: 'job-1'
+        })
+      })
+
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+
+      expect(api.init).toHaveBeenCalledOnce()
+      expect(useJobModelDownloadStore().downloadFor('job-1')?.progress).toBe(
+        0.5
+      )
     })
   })
 
