@@ -297,7 +297,7 @@ defineExpose({
           <span class="flex min-w-0 flex-1 items-center gap-2">
             <i
               v-if="nodeHasError"
-              class="icon-[lucide--octagon-alert] text-destructive"
+              class="icon-[comfy--circle-alert-filled] text-destructive"
             />
             <span :class="cn('truncate', nodeHasError && 'text-destructive')">
               <slot name="label">

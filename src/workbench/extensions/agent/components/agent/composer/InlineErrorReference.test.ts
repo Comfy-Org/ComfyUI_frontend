@@ -39,6 +39,7 @@ describe('InlineErrorReference', () => {
     const icon = screen.getByTestId('error-reference-icon')
     expect(icon).toHaveClass('icon-[lucide--circle-alert]', 'size-3')
     expect(icon).not.toHaveClass('text-destructive-background')
+    expect(icon).not.toHaveClass('text-destructive')
     expect(screen.getByTestId('error-reference-chip')).toHaveClass(
       ...inlineReferenceChipClass.split(' ')
     )
@@ -53,6 +54,7 @@ describe('InlineErrorReference', () => {
     const icon = screen.getByTestId('error-reference-icon')
     expect(icon).toHaveClass('icon-[lucide--triangle-alert]', 'size-3')
     expect(icon).not.toHaveClass('text-warning-foreground')
+    expect(icon).not.toHaveClass('text-warning')
     expect(screen.getByTestId('error-reference-chip')).toHaveClass(
       ...inlineReferenceChipClass.split(' ')
     )

@@ -23,8 +23,8 @@
               cn(
                 'mt-0.5 size-5',
                 hasError
-                  ? 'icon-[lucide--circle-x] text-destructive'
-                  : 'icon-[lucide--triangle-alert] text-warning'
+                  ? 'icon-[comfy--circle-alert-filled] text-destructive'
+                  : 'icon-[comfy--triangle-alert-filled] text-warning'
               )
             "
           />
