@@ -67,6 +67,9 @@ const config: KnipConfig = {
     'packages/ingest-types': {
       project: ['src/**/*.{js,ts}']
     },
+    'packages/comfyui-api-types': {
+      project: ['src/**/*.ts']
+    },
     'tools/architecture': {
       project: ['src/**/*.ts']
     },
@@ -90,6 +93,10 @@ const config: KnipConfig = {
   ignore: [
     // Auto generated API types
     'packages/ingest-types/src/zod.gen.ts',
+    // Auto generated from core's pinned OpenAPI spec. The operation filter
+    // admits one endpoint, and openapi-ts still emits the request/response
+    // wrappers and a barrel for it; src/index.ts re-exports what is consumed.
+    'packages/comfyui-api-types/src/generated/**',
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically

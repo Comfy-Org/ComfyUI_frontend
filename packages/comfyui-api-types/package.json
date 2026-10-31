@@ -1,0 +1,27 @@
+{
+  "name": "@comfyorg/comfyui-api-types",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ComfyUI server API TypeScript types, generated from a pinned core OpenAPI spec",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@comfyorg/comfyui-api-types": "./src/index.ts",
+      "types": "./dist-types/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.declarations.json",
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit",
+    "generate": "openapi-ts",
+    "check:generated": "node scripts/check-pin.mjs && pnpm run generate && oxfmt --write src/generated && git diff --exit-code HEAD -- src/generated",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.97.3",
+    "typescript": "catalog:"
+  }
+}
