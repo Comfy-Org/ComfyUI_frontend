@@ -192,6 +192,24 @@ describe('AppToaster', () => {
     expect(screen.queryByRole('button', { name: 'Open' })).toBeNull()
   })
 
+  it('keeps notifications usable when an untyped caller supplies a malformed singular action', async () => {
+    renderToaster()
+    const toast = useToast()
+
+    const malformedAction: unknown = { label: 'Retry' }
+    Reflect.apply(toast.info, toast, [
+      'Extension added',
+      { action: malformedAction }
+    ])
+    await nextTick()
+
+    expect(
+      screen.getByRole('status', { name: 'Notification' })
+    ).toHaveTextContent('Extension added')
+    expect(screen.getAllByTestId('toast')).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+  })
+
   it('uses translated labels for notification regions and close buttons', async () => {
     renderToaster({
       g: { close: 'Fermer' },
