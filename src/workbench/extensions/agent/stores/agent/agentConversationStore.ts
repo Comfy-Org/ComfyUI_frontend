@@ -22,8 +22,7 @@ import type {
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import type {
   AskUserResolution,
-  AssistantMessage,
-  ThinkingPart
+  AssistantMessage
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   askIdOf,
@@ -237,51 +236,6 @@ function interleaveLocalParts(
   return mergedParts
 }
 
-const FINAL_ROUND = Symbol('final round')
-type RoundKey = string | typeof FINAL_ROUND
-const MIN_ROUND_OVERLAP = 16
-
-interface IndexedThinking {
-  index: number
-  part: ThinkingPart
-}
-
-function thinkingByRound(
-  parts: AssistantMessage['parts'],
-  keyOf: (callId: string) => string = (callId) => callId
-): Map<RoundKey, IndexedThinking[]> {
-  const rounds = new Map<RoundKey, IndexedThinking[]>()
-  let pending: IndexedThinking[] = []
-  for (const [index, part] of parts.entries()) {
-    if (part.type === 'thinking') pending.push({ index, part })
-    if (part.type !== 'tool' || pending.length === 0) continue
-    const round = keyOf(part.callId)
-    rounds.set(round, [...(rounds.get(round) ?? []), ...pending])
-    pending = []
-  }
-  if (pending.length > 0) rounds.set(FINAL_ROUND, pending)
-  return rounds
-}
-
-function roundOverlap(stored: string, live: string): number {
-  const probe = live.slice(0, MIN_ROUND_OVERLAP)
-  for (
-    let at = stored.indexOf(probe, Math.max(0, stored.length - live.length));
-    at >= 0;
-    at = stored.indexOf(probe, at + 1)
-  )
-    if (live.startsWith(stored.slice(at))) return stored.length - at
-  return 0
-}
-
-function joinRound(stored: string, live: string): string[] {
-  if (live.startsWith(stored)) return [live]
-  if (stored.includes(live)) return [stored]
-  const overlap =
-    live.length >= MIN_ROUND_OVERLAP ? roundOverlap(stored, live) : 0
-  return overlap > 0 ? [stored + live.slice(overlap)] : [stored, live]
-}
-
 function toolCallIdsOf(parts: AssistantMessage['parts']): string[] {
   return parts.flatMap((part) => (part.type === 'tool' ? [part.callId] : []))
 }
@@ -322,82 +276,6 @@ function storedCallIdOf(
   }
 }
 
-interface RoundMergePlan {
-  replaced: Map<number, ThinkingPart[]>
-  insertBefore: Map<string, ThinkingPart[]>
-  finalLive: ThinkingPart[]
-  unplaced: Set<ThinkingPart>
-}
-
-function joinStoredRound(
-  plan: RoundMergePlan,
-  storedRound: IndexedThinking[],
-  liveText: string
-): void {
-  const storedText = storedRound.map(({ part }) => part.text).join('')
-  const joined = joinRound(storedText, liveText)
-  if (joined.length === 1 && joined[0] === storedText) return
-  const [first, ...rest] = storedRound
-  plan.replaced.set(
-    first.index,
-    joined.map((text) => ({ ...first.part, text }))
-  )
-  for (const { index } of rest) plan.replaced.set(index, [])
-}
-
-function planRoundMerge(
-  stored: Map<RoundKey, IndexedThinking[]>,
-  live: Map<RoundKey, IndexedThinking[]>,
-  persistedCallIds: Set<string>
-): RoundMergePlan {
-  const plan: RoundMergePlan = {
-    replaced: new Map(),
-    insertBefore: new Map(),
-    finalLive: [],
-    unplaced: new Set()
-  }
-  for (const [round, liveRound] of live) {
-    const storedRound = stored.get(round)
-    const parts = liveRound.map(({ part }) => part)
-    if (storedRound !== undefined)
-      joinStoredRound(
-        plan,
-        storedRound,
-        parts.map((part) => part.text).join('')
-      )
-    else if (round === FINAL_ROUND) plan.finalLive = parts
-    else if (persistedCallIds.has(round)) plan.insertBefore.set(round, parts)
-    else for (const part of parts) plan.unplaced.add(part)
-  }
-  return plan
-}
-
-function mergeSnapshotThinking(
-  liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts'],
-  offset: number,
-  storedCallId: (callId: string) => string
-): AssistantMessage['parts'] {
-  const plan = planRoundMerge(
-    thinkingByRound(persistedParts),
-    thinkingByRound(liveParts, storedCallId),
-    new Set(toolCallIdsOf(persistedParts))
-  )
-  const merged = persistedParts.flatMap((part, index) => [
-    ...(part.type === 'tool' ? (plan.insertBefore.get(part.callId) ?? []) : []),
-    ...(plan.replaced.get(index) ?? [part])
-  ])
-  const lastTool = merged.findLastIndex((part) => part.type === 'tool')
-  merged.splice(lastTool + 1, 0, ...plan.finalLive)
-  if (plan.unplaced.size === 0) return merged
-  return interleaveLocalParts(
-    merged,
-    anchorLocalParts(liveParts)
-      .filter(({ part }) => part.type === 'thinking' && plan.unplaced.has(part))
-      .map((anchor) => ({ ...anchor, toolCount: anchor.toolCount + offset }))
-  )
-}
-
 function preserveCanvasConfirmation(
   liveParts: AssistantMessage['parts'],
   persistedParts: AssistantMessage['parts'],
@@ -419,28 +297,18 @@ function preserveCanvasConfirmation(
   )
 }
 
-function finishActiveSlotMessage(
-  slot: { origin: ActiveTurnSlot['origin']; message: AssistantMessage },
-  persistedParts: AssistantMessage['parts'] | undefined
-): void {
-  if (slot.origin === 'snapshot' && persistedParts !== undefined)
-    finishSnapshotTurn(slot.message, persistedParts)
-  else finishWithPersistedParts(slot.message, persistedParts)
-}
-
 function finishSnapshotTurn(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts']
 ): void {
   const liveParts = message.parts
   const offset = liveToolOffset(liveParts, persistedParts)
-  const storedCallId = storedCallIdOf(liveParts, persistedParts, offset)
   finishWithPersistedParts(
     message,
     preserveCanvasConfirmation(
       liveParts,
-      mergeSnapshotThinking(liveParts, persistedParts, offset, storedCallId),
-      storedCallId
+      persistedParts,
+      storedCallIdOf(liveParts, persistedParts, offset)
     ),
     offset
   )
@@ -1471,7 +1339,7 @@ export const useAgentConversationStore = defineStore(
         turn.messageId === slot.turnId
       if (isActive) {
         clearSettledAskState(turn.threadId)
-        finishActiveSlotMessage(slot, persistedParts)
+        finishWithPersistedParts(slot.message, persistedParts)
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
         slot.transport.dispose()

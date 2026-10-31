@@ -2202,18 +2202,77 @@ describe('useAgentConversationStore', () => {
       ).toEqual(storedParts())
     })
 
-    it('keeps live thinking omitted from the bounded stored trace', () => {
-      const { store } = restoredAndSettled()
-      const persisted = storedParts().filter(
-        (part) => part.type !== 'thinking' || part.text !== 'after the reload'
-      )
+    it.for([
+      {
+        reason: 'is longer than the stored copy',
+        live: 'after the reload continues'
+      },
+      { reason: 'is a suffix of the stored copy', live: ' reload' },
+      {
+        reason: 'is missing from the stored row',
+        live: 'a round the row dropped'
+      },
+      { reason: 'repeats an earlier stored round', live: 'before the reload' }
+    ])(
+      'renders the stored thinking when the live round $reason',
+      ({ live }) => {
+        const store = useAgentConversationStore()
+        store.setThreadId('th')
+        store.hydrate(liveSnapshot())
+        store.ingest(thinking(SNAPSHOT_ROW_ID, live))
+        store.ingest(done(SNAPSHOT_ROW_ID))
+
+        store.reconcileSettledTurn(
+          { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+          storedParts()
+        )
+
+        expect(reconciledParts(store)).toEqual(storedParts())
+      }
+    )
+
+    it('renders the stored thinking when the row keys the live call differently', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload, partial'))
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'save', 'success'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      const persisted: AssistantMessage['parts'] = [
+        { type: 'thinking', text: 'before the reload', state: 'done' },
+        storedTool(),
+        { type: 'thinking', text: 'after the reload', state: 'done' },
+        {
+          type: 'tool',
+          callId: 'row-fallback-id',
+          name: 'save',
+          state: 'done',
+          ok: true
+        },
+        { type: 'text', text: 'Saved it.', state: 'done' }
+      ]
 
       store.reconcileSettledTurn(
         { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
         persisted
       )
 
-      expect(reconciledParts(store)).toEqual(storedParts())
+      expect(reconciledParts(store)).toEqual(persisted)
+    })
+
+    it('keeps live thinking when the stored row holds no thinking at all', () => {
+      const { store } = restoredAndSettled()
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        [storedTool(), { type: 'text', text: 'Added it.', state: 'done' }]
+      )
+
+      expect(reconciledParts(store)).toEqual([
+        storedTool(),
+        { type: 'thinking', text: 'after the reload', state: 'done' },
+        { type: 'text', text: 'Added it.', state: 'done' }
+      ])
     })
 
     it('places a post-reload tab link after the stored pre-reload tool', () => {
@@ -2236,263 +2295,6 @@ describe('useAgentConversationStore', () => {
         'tabLink',
         'text'
       ])
-    })
-
-    it('keeps a live round whose text repeats a stored round before the tool', () => {
-      const store = useAgentConversationStore()
-      store.setThreadId('th')
-      store.hydrate(liveSnapshot())
-      store.ingest(thinking(SNAPSHOT_ROW_ID, 'checking the graph'))
-      store.ingest(done(SNAPSHOT_ROW_ID))
-
-      store.reconcileSettledTurn(
-        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
-        [
-          { type: 'thinking', text: 'checking the graph', state: 'done' },
-          storedTool(),
-          { type: 'text', text: 'Added it.', state: 'done' }
-        ]
-      )
-
-      expect(reconciledParts(store)).toEqual([
-        { type: 'thinking', text: 'checking the graph', state: 'done' },
-        storedTool(),
-        { type: 'thinking', text: 'checking the graph', state: 'done' },
-        { type: 'text', text: 'Added it.', state: 'done' }
-      ])
-    })
-
-    it('folds a round the reload cut in half into its stored copy', () => {
-      const store = useAgentConversationStore()
-      store.setThreadId('th')
-      store.hydrate(liveSnapshot())
-      store.ingest(thinking(SNAPSHOT_ROW_ID, ' and then the sampler'))
-      store.ingest(done(SNAPSHOT_ROW_ID))
-      const persisted = storedParts().map((part) =>
-        part.type === 'thinking' && part.text === 'after the reload'
-          ? { ...part, text: 'after the reload and then the sampler' }
-          : part
-      )
-
-      store.reconcileSettledTurn(
-        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
-        persisted
-      )
-
-      expect(reconciledParts(store)).toEqual(persisted)
-    })
-
-    it.for([
-      {
-        stored: 'after the reload',
-        live: 'after the reload',
-        expected: 'after the reload'
-      },
-      {
-        stored: 'after the reload, partial and more',
-        live: 'after the reload, partial',
-        expected: 'after the reload, partial and more'
-      }
-    ])(
-      'pairs a live round with the stored round its differently keyed call holds ($live)',
-      ({ stored, live, expected }) => {
-        const store = useAgentConversationStore()
-        store.setThreadId('th')
-        store.hydrate(liveSnapshot())
-        store.ingest(thinking(SNAPSHOT_ROW_ID, live))
-        store.ingest(toolCall(SNAPSHOT_ROW_ID, 'save', 'success'))
-        store.ingest(done(SNAPSHOT_ROW_ID))
-        const storedSave: AssistantMessage['parts'][number] = {
-          type: 'tool',
-          callId: 'row-fallback-id',
-          name: 'save',
-          state: 'done',
-          ok: true
-        }
-
-        store.reconcileSettledTurn(
-          { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
-          [
-            { type: 'thinking', text: 'before the reload', state: 'done' },
-            storedTool(),
-            { type: 'thinking', text: stored, state: 'done' },
-            storedSave,
-            { type: 'text', text: 'Saved it.', state: 'done' }
-          ]
-        )
-
-        expect(reconciledParts(store)).toEqual([
-          { type: 'thinking', text: 'before the reload', state: 'done' },
-          storedTool(),
-          { type: 'thinking', text: expected, state: 'done' },
-          storedSave,
-          { type: 'text', text: 'Saved it.', state: 'done' }
-        ])
-      }
-    )
-
-    it('places a differently keyed live round by the calls the two rows share', () => {
-      const store = useAgentConversationStore()
-      store.setThreadId('th')
-      store.hydrate(liveSnapshot())
-      store.ingest(thinking(SNAPSHOT_ROW_ID, 'first'))
-      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success'))
-      store.ingest(thinking(SNAPSHOT_ROW_ID, 'second'))
-      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'save', 'success'))
-      store.ingest(done(SNAPSHOT_ROW_ID))
-      const tool = (callId: string): AssistantMessage['parts'][number] => ({
-        type: 'tool',
-        callId,
-        name: callId,
-        state: 'done',
-        ok: true
-      })
-
-      store.reconcileSettledTurn(
-        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
-        [
-          { type: 'thinking', text: 'first', state: 'done' },
-          storedTool(),
-          tool('row-fallback-id'),
-          tool('call-extra'),
-          { type: 'text', text: 'Done.', state: 'done' }
-        ]
-      )
-
-      expect(reconciledParts(store)).toEqual([
-        { type: 'thinking', text: 'first', state: 'done' },
-        storedTool(),
-        { type: 'thinking', text: 'second', state: 'done' },
-        tool('row-fallback-id'),
-        tool('call-extra'),
-        { type: 'text', text: 'Done.', state: 'done' }
-      ])
-    })
-
-    it('keeps a live round whose tool call the stored row keys differently', () => {
-      const store = useAgentConversationStore()
-      store.setThreadId('th')
-      store.hydrate(liveSnapshot())
-      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload'))
-      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'save', 'success'))
-      store.ingest(done(SNAPSHOT_ROW_ID))
-      const storedSave: AssistantMessage['parts'][number] = {
-        type: 'tool',
-        callId: 'row-fallback-id',
-        name: 'save',
-        state: 'done',
-        ok: true
-      }
-
-      store.reconcileSettledTurn(
-        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
-        [
-          { type: 'thinking', text: 'before the reload', state: 'done' },
-          storedTool(),
-          storedSave,
-          { type: 'text', text: 'Saved it.', state: 'done' }
-        ]
-      )
-
-      expect(reconciledParts(store)).toEqual([
-        { type: 'thinking', text: 'before the reload', state: 'done' },
-        storedTool(),
-        { type: 'thinking', text: 'after the reload', state: 'done' },
-        storedSave,
-        { type: 'text', text: 'Saved it.', state: 'done' }
-      ])
-    })
-
-    it.for([
-      {
-        reloadedAt: 'inside the stored head',
-        live: 'audio output node and then connect the sampler',
-        expected: ['Wiring the audio output node and then connect the sampler']
-      },
-      {
-        reloadedAt: 'past the stored head',
-        live: 'then connect the sampler',
-        expected: ['Wiring the audio output node', 'then connect the sampler']
-      }
-    ])(
-      'joins a capped stored round with the live rest of it when reloaded $reloadedAt',
-      ({ live, expected }) => {
-        const store = useAgentConversationStore()
-        store.setThreadId('th')
-        store.hydrate(liveSnapshot())
-        store.ingest(thinking(SNAPSHOT_ROW_ID, live))
-        store.ingest(toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success'))
-        store.ingest(done(SNAPSHOT_ROW_ID))
-
-        store.reconcileSettledTurn(
-          { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
-          [
-            {
-              type: 'thinking',
-              text: 'Wiring the audio output node',
-              state: 'done'
-            },
-            storedTool(),
-            { type: 'text', text: 'Added it.', state: 'done' }
-          ]
-        )
-
-        expect(reconciledParts(store)).toEqual([
-          ...expected.map((text) => ({
-            type: 'thinking',
-            text,
-            state: 'done'
-          })),
-          storedTool(),
-          { type: 'text', text: 'Added it.', state: 'done' }
-        ])
-      }
-    )
-
-    it('keeps the longer live thinking when stored thinking is truncated', () => {
-      const store = useAgentConversationStore()
-      store.setThreadId('th')
-      store.hydrate(liveSnapshot())
-      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload continues'))
-      store.ingest(done(SNAPSHOT_ROW_ID))
-
-      store.reconcileSettledTurn(
-        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
-        storedParts()
-      )
-
-      expect(reconciledParts(store)).toEqual([
-        { type: 'thinking', text: 'before the reload', state: 'done' },
-        storedTool(),
-        {
-          type: 'thinking',
-          text: 'after the reload continues',
-          state: 'done'
-        },
-        { type: 'text', text: 'Added it.', state: 'done' }
-      ])
-    })
-
-    it('keeps a stored round split across two parts when the live copy matches it', () => {
-      const store = useAgentConversationStore()
-      store.setThreadId('th')
-      store.hydrate(liveSnapshot())
-      store.ingest(thinking(SNAPSHOT_ROW_ID, 'Wiring it. Then saving.'))
-      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success'))
-      store.ingest(done(SNAPSHOT_ROW_ID))
-      const persisted: AssistantMessage['parts'] = [
-        { type: 'thinking', text: 'Wiring it.', state: 'done' },
-        { type: 'thinking', text: ' Then saving.', state: 'done' },
-        storedTool(),
-        { type: 'text', text: 'Added it.', state: 'done' }
-      ]
-
-      store.reconcileSettledTurn(
-        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
-        persisted
-      )
-
-      expect(reconciledParts(store)).toEqual(persisted)
     })
 
     it('keeps a live canvas confirmation for a call the stored row keys by row id', () => {
@@ -2530,17 +2332,15 @@ describe('useAgentConversationStore', () => {
       ).toMatchObject({ callId: 'row-fallback-id', canvasConfirmed: true })
     })
 
-    it('merges live thinking the same way when the recovery read settles the turn', () => {
+    it('lets stored thinking win when the recovery read settles the turn', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
       store.hydrate(liveSnapshot())
-      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload'))
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'a round the row dropped'))
 
       store.settleTurn(
         { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
-        storedParts().filter(
-          (part) => part.type !== 'thinking' || part.text !== 'after the reload'
-        )
+        storedParts()
       )
 
       expect(reconciledParts(store)).toEqual(storedParts())
