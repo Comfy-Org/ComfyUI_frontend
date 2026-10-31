@@ -1000,19 +1000,8 @@ describe('AgentPanelRoot onboarding', () => {
     expect(useTelemetry()!.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
   })
 
-  it('walks through the four cards and leaves the composer usable after Done', async () => {
-    render(
-      defineComponent({
-        setup: () => () =>
-          h('div', [
-            h('section', { class: 'graph-canvas-panel' }, [
-              h('div', { role: 'toolbar' })
-            ]),
-            h(AgentPanelRoot)
-          ])
-      }),
-      { global: { plugins: [i18n] } }
-    )
+  it('walks through the three cards and leaves the composer usable after Done', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     for (const [index, { title, description }] of [
       {
@@ -1021,14 +1010,9 @@ describe('AgentPanelRoot onboarding', () => {
           'Describe your ideas, ask it to build and run workflows. It sees your canvas and files.'
       },
       {
-        title: "Your agent edits the workflow you're viewing",
+        title: 'Each chat works on one workflow',
         description:
-          'It switches with your tabs until you send a message, choose a workflow, or add a node reference.'
-      },
-      {
-        title: 'Let the agent run while you edit',
-        description:
-          'You can still edit the graph or switch tabs while the agent is working.'
+          "The workflow it's editing is named above the message box. Switching tabs brings up that workflow's latest chat, if it has one."
       },
       {
         title: 'Pick up where you left off',
@@ -1039,11 +1023,11 @@ describe('AgentPanelRoot onboarding', () => {
       const dialog = await screen.findByRole('dialog', { name: title })
       expect(dialog).toHaveAccessibleDescription(description)
       await waitFor(() =>
-        expect(within(dialog).getByText(`${index + 1} of 4`)).toBeVisible()
+        expect(within(dialog).getByText(`${index + 1} of 3`)).toBeVisible()
       )
       await userEvent.click(
         within(dialog).getByRole('button', {
-          name: index === 3 ? 'Done' : 'Next'
+          name: index === 2 ? 'Done' : 'Next'
         })
       )
     }
@@ -8990,6 +8974,9 @@ describe('AgentPanelRoot workflow binding', () => {
       renderWithSelectedTarget()
 
       await sendHeldByCoach('build me a workflow')
+      screen
+        .getByRole('button', { name: 'Show chat history', hidden: true })
+        .removeAttribute('id')
       await user.click(
         within(
           await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
@@ -8998,10 +8985,13 @@ describe('AgentPanelRoot workflow binding', () => {
       await user.click(
         within(
           await screen.findByRole('dialog', {
-            name: "Your agent edits the workflow you're viewing"
+            name: 'Each chat works on one workflow'
           })
         ).getByRole('button', { name: 'Next' })
       )
+      expect(
+        screen.queryByRole('dialog', { name: 'Pick up where you left off' })
+      ).not.toBeInTheDocument()
       expect(bodies).toHaveLength(0)
 
       await vi.advanceTimersByTimeAsync(8_000)
