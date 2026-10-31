@@ -111,9 +111,53 @@ describe('LGraph Serialisation', () => {
           mismatchKind: 'live_without_stored_state',
           nodeId: adapterOnly.id,
           nodeGraphId: graph.id,
-          stateGraphId: adapterOnly._state.graphId,
+          stateGraphId: graph.id,
           registrationRootGraphId: graph.rootGraph.id,
           registrationGraphId: graph.id
+        }
+      }
+    )
+  })
+
+  // The production alert this payload serves is a live node whose own state and
+  // registration scope name a different graph than the one being serialised. The
+  // test above cannot tell those three sources apart, because a single graph makes
+  // every id field the same string.
+  test('reports the owning, node-state, and registration graph ids separately', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const otherGraph = new LGraph()
+    const registered = new LGraphNode('Registered')
+    graph.add(registered)
+    const staleScope = new LGraphNode('Stale scope')
+    staleScope.id = toNodeId(99)
+    staleScope.graph = graph
+    staleScope._state.graphId = otherGraph.id
+    staleScope._graphScope = graphScopeOf(otherGraph)
+    graph._nodes.push(staleScope)
+
+    expect(graph.id).not.toBe(otherGraph.id)
+
+    graph.serialize()
+
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        surface: 'graph',
+        errorType: 'graph_serialization_state_mismatch',
+        context: {
+          graphId: graph.id,
+          rootGraphId: graph.rootGraph.id,
+          mismatch: `live node ${staleScope.id} has no stored state`,
+          mismatchKind: 'live_without_stored_state',
+          nodeId: staleScope.id,
+          nodeGraphId: graph.id,
+          stateGraphId: otherGraph.id,
+          registrationRootGraphId: otherGraph.rootGraph.id,
+          registrationGraphId: otherGraph.id
         }
       }
     )
