@@ -115,6 +115,28 @@ describe('agentConsentStore', () => {
     expect(store).toMatchObject({ isChecking: true })
   })
 
+  it('does not record a scope failure against the next account', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    const initialize = deferred<undefined>()
+    vi.mocked(useTeamWorkspaceStore().initialize).mockReturnValueOnce(
+      initialize.promise
+    )
+    const store = useAgentConsentStore()
+
+    const probe = store.ensureScope()
+    await vi.waitFor(() =>
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
+    )
+    identity.value = 'account-b'
+    initialize.reject(new Error('offline'))
+
+    await expect(probe).rejects.toThrow('offline')
+    expect(store.checkFailed).toBe(false)
+    expect(store).toMatchObject({ isChecking: true })
+  })
+
   it('does not let a stale response settle the next workspace initial check', async () => {
     const response = deferred<GlobalSetting>()
     accountApi.get.mockReturnValueOnce(response.promise)

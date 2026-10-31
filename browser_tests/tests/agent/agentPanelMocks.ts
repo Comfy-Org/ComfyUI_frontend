@@ -668,7 +668,6 @@ type AgentFixtures = {
   acceptedTurns: AgentTurnAccepted[]
   agentBilling: AgentBillingFixture
   agentConsentAccepted: boolean
-  /** A >=400 value fails every consent read, as an offline or 5xx account API does. */
   agentConsentLoadStatus: number
   agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
