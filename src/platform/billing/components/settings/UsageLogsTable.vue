@@ -101,7 +101,11 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
-import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
+import {
+  formatCredits,
+  isSubCreditCharge,
+  microUsdToCredits
+} from '@/base/credits/comfyCredits'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -141,11 +145,14 @@ function eventAmount(event: AuditLog) {
 }
 
 function formatChargeCredits(microUsd: number) {
-  const amount = formatCreditsFromUsd({
-    usd: microUsd / 1_000_000,
-    locale: locale.value,
-    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
-  })
+  const credits = microUsdToCredits(microUsd)
+  const amount = isSubCreditCharge(credits)
+    ? t('credits.lessThanOne')
+    : formatCredits({
+        value: credits,
+        locale: locale.value,
+        numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+      })
   return `${amount} ${t('credits.credits')}`
 }
 
