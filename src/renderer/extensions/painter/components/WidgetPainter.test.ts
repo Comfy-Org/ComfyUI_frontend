@@ -8,6 +8,7 @@ const sizeHolder = vi.hoisted(() => ({ width: 0, height: 0 }))
 
 vi.mock<unknown>(import('@vueuse/core'), () => ({
   reactiveOmit: (value: object) => value,
+  createSharedComposable: <T>(composable: T) => composable,
   useElementSize: () => ({
     width: ref(sizeHolder.width),
     height: ref(sizeHolder.height)
@@ -38,7 +39,11 @@ function createDefaultPainterState() {
     handlePointerEnter: vi.fn(),
     handlePointerLeave: vi.fn(),
     handleInputImageLoad: vi.fn(),
-    handleClear: vi.fn()
+    handleClear: vi.fn(),
+    canUndo: ref(true),
+    canRedo: ref(false),
+    undo: vi.fn(),
+    redo: vi.fn()
   }
 }
 
@@ -72,7 +77,8 @@ const i18n = createI18n({
         height: 'Height',
         background: 'Background',
         clear: 'Clear'
-      }
+      },
+      widgetHistory: { undo: 'Undo', redo: 'Redo' }
     }
   }
 })
@@ -81,11 +87,14 @@ function primePainterState(overrides: Record<string, unknown> = {}) {
   painterHolder.state = { ...createDefaultPainterState(), ...overrides }
 }
 
-function renderWidget(initialModel = '') {
+function renderWidget(
+  initialModel = '',
+  widget: { name: string; type: string } = { name: 'mask', type: 'painter' }
+) {
   const value = ref(initialModel)
   const Harness = defineComponent({
     components: { WidgetPainter },
-    setup: () => ({ value, widget: { name: 'mask', type: 'painter' } }),
+    setup: () => ({ value, widget }),
     template: '<WidgetPainter v-model="value" node-id="42" :widget />'
   })
   return render(Harness, {
@@ -230,6 +239,23 @@ describe('WidgetPainter', () => {
       await fireEvent.load(img)
       expect(painterHolder.state!.handleInputImageLoad).toHaveBeenCalled()
     })
+  })
+
+  describe('Node history', () => {
+    it.for([
+      { label: 'Undo', action: 'undo' },
+      { label: 'Redo', action: 'redo' }
+    ] as const)(
+      'calls $action from the $label button',
+      async ({ label, action }) => {
+        primePainterState({ canRedo: ref(true) })
+        renderWidget()
+
+        await userEvent.click(screen.getByRole('button', { name: label }))
+
+        expect(painterHolder.state?.[action]).toHaveBeenCalledOnce()
+      }
+    )
   })
 
   describe('Control bindings', () => {
