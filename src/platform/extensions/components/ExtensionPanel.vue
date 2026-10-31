@@ -226,6 +226,7 @@ async function handleExtensionPathEnabled(path: string, enabled: boolean) {
       })
       break
     case 'unconfirmed':
+    case 'indeterminate':
       toast.warning(t('g.warning'), {
         description: t('g.extensionPathSaveUnconfirmed'),
         duration: 5000
