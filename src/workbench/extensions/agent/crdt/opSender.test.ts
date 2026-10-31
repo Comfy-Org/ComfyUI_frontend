@@ -15,6 +15,7 @@ import { api } from '@/scripts/api'
 
 import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
+import { WIRE_MAX_BATCH_BYTES, WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
@@ -112,6 +113,40 @@ function addNode(id: number): AddNodeOperation {
     pos: [0, 0],
     node: { id, type: 'TestNode' }
   }
+}
+
+const MINTED_COUNTER = 1000
+const LIFTED_COUNTER = 9_007_199_254_739_001
+const LIFT_GROWTH_PER_OP =
+  2 * (String(LIFTED_COUNTER).length - String(MINTED_COUNTER).length)
+const CAP_FILLING_OP_BYTES =
+  WIRE_MAX_BATCH_BYTES / WIRE_MAX_OPS_PER_BATCH - LIFT_GROWTH_PER_OP / 2
+
+function wireBytesOf(operation: GraphOperation, baseVersion: number): number {
+  return new TextEncoder().encode(
+    JSON.stringify({
+      ...operation,
+      op_id: 'f'.repeat(32),
+      actor: ACTOR,
+      base_version: baseVersion,
+      stamp: [baseVersion, ACTOR]
+    })
+  ).length
+}
+
+function paddedAddNode(id: number, bytes: number): AddNodeOperation {
+  const operation = addNode(id)
+  const padded = { ...operation.node, pad: '' }
+  operation.node = padded
+  padded.pad = 'x'.repeat(bytes - wireBytesOf(operation, MINTED_COUNTER))
+  return operation
+}
+
+function batchBytesOf(ops: readonly DocOp[]): number {
+  return ops.reduce(
+    (total, op) => total + new TextEncoder().encode(JSON.stringify(op)).length,
+    0
+  )
 }
 
 function circularAddNode(id: number): AddNodeOperation {
@@ -683,6 +718,30 @@ describe('createOpSender', () => {
     sender.enqueue([addNode(4)])
     ackInFlight()
     expect(sent[2].ops[0].base_version).toBe(94)
+  })
+
+  it('keeps a cap-filling held batch inside the wire byte cap once lifted', () => {
+    observedSequence = MINTED_COUNTER
+    const operations = Array.from(
+      { length: WIRE_MAX_OPS_PER_BATCH },
+      (_, index) => paddedAddNode(index + 1, CAP_FILLING_OP_BYTES)
+    )
+    transportUp = false
+    sender.enqueue(operations)
+    vi.advanceTimersByTime(500 * 6)
+
+    observedCounter = LIFTED_COUNTER - 1
+    transportUp = true
+    sender.retryTransport()
+    while (sender.pending() > 0) ackInFlight()
+
+    expect(sent[0].ops[0].base_version).toBe(LIFTED_COUNTER)
+    expect(sent.flatMap(({ ops }) => ops.map((op) => op.op_id))).toHaveLength(
+      WIRE_MAX_OPS_PER_BATCH
+    )
+    for (const { ops } of sent) {
+      expect(batchBytesOf(ops)).toBeLessThanOrEqual(WIRE_MAX_BATCH_BYTES)
+    }
   })
 
   it('leaves a batch as minted when lifting it would leave the safe integers', () => {
