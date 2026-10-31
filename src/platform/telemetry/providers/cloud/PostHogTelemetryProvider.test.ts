@@ -1185,7 +1185,8 @@ describe('PostHogTelemetryProvider', () => {
             reason: 'dismissed',
             client_message_id: 'client-message-1',
             held_ms: 1200,
-            thread_id: null
+            thread_id: null,
+            client_session_id: 'client-session-1'
           }),
         properties: {
           gate: 'consent',
@@ -1193,7 +1194,8 @@ describe('PostHogTelemetryProvider', () => {
           reason: 'dismissed',
           client_message_id: 'client-message-1',
           held_ms: 1200,
-          thread_id: null
+          thread_id: null,
+          client_session_id: 'client-session-1'
         }
       }
     ])(
