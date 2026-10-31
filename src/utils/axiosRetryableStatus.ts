@@ -204,7 +204,10 @@ async function sendWriteAfterRefusal(
     if (delay === undefined) throw error
     tracker.scheduled(503)
     await pause(delay, config, (signal) => tracker.settle(abortEnd(signal), 1))
-    if (!fitsBudget(0, remainingMs())) throw error
+    if (!fitsBudget(0, remainingMs())) {
+      tracker.settle('timeout', 1)
+      throw error
+    }
   }
   try {
     const response = await runAttempt(adapter, config, remainingMs())

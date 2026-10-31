@@ -247,7 +247,7 @@ describe('attachRetryableStatusRetry', () => {
       return { client, adapter }
     }
 
-    it('rejects with the first 503 and sends nothing more when the wait spends the timeout', async () => {
+    it('rejects with the first 503 and records one send when the wait spends the timeout', async () => {
       const { client, adapter } = makeClientWhoseWaitTakes(7_000)
 
       await expect(
@@ -256,7 +256,15 @@ describe('attachRetryableStatusRetry', () => {
         response: { status: 503, data: { message: AUTH_UNAVAILABLE } }
       })
       expect(adapter).toHaveBeenCalledOnce()
-      expect(tracked()).not.toHaveBeenCalled()
+      expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          transport: 'axios',
+          method: 'POST',
+          attempts: 1,
+          final_status: 503,
+          outcome: 'timeout_budget'
+        })
+      )
     })
 
     it('records one send and the first 503 when its timeout signal fires during the wait', async () => {
