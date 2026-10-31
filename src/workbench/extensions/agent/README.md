@@ -189,7 +189,9 @@ settles.
 
 ## Ask cards
 
-An `ask_user` question stays on screen, read-only, after it resolves, until
-the thread is loaded again. The server's transcript keeps only a pending ask
-(`pending_ask`), so a reload, or opening another chat and coming back, drops a
-card whose ask has resolved.
+An `ask_user` or `delete_approval` card stays on screen, read-only, after it
+resolves. A server that lists finished asks on the row (`resolved_asks`, the
+local agent) keeps those cards across a reload, or opening another chat and
+coming back. One that keeps only a pending ask (`pending_ask`, the cloud agent)
+drops a resolved card when the thread is loaded again. A `run_approval` card
+leaves no trace once answered, live or after a reload.
