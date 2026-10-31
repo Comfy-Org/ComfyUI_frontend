@@ -1330,6 +1330,18 @@ describe('agentEventTransport reply drafts', () => {
     expect(textParts(message)).toEqual([])
   })
 
+  it('keeps a draft that streamed after the remember call started', () => {
+    const message = drive([
+      toolCall('remember', 'running'),
+      draft('Here is the full answer'),
+      runApproval('turn-1:call-remember', 'ask_user')
+    ])
+
+    expect(textParts(message).map((p) => p.text)).toEqual([
+      'Here is the full answer'
+    ])
+  })
+
   it('drops narration at a run card once the remember call has finished', () => {
     const message = drive([
       draft('Saved, generating now.'),

@@ -102,14 +102,10 @@ export interface AgentEventTransport {
   dispose: () => void
 }
 
-/**
- * Bookkeeping tools the backend holds a round's text for instead of narrating
- * it (cloud `answerToolNames`, ADR-033). Their call does not end the answer, so
- * the draft stays on screen, including while the still-running call waits on
- * its approval card. If the round turns out to be narration, the next real tool call or the
- * turn's end still drops it.
- */
-const ANSWER_TOOL_NAMES: ReadonlySet<string> = new Set(['remember', 'forget'])
+const TOOLS_THAT_KEEP_ANSWER_DRAFT: ReadonlySet<string> = new Set([
+  'remember',
+  'forget'
+])
 
 function updateSkill(part: ToolPart, skill: string | null | undefined): void {
   if (skill) part.skill = skill
@@ -315,6 +311,20 @@ export function createAgentEventTransport(
     }
   }
 
+  function handleToolCallFrame(data: AgentToolCallEvent['data']): void {
+    if (TOOLS_THAT_KEEP_ANSWER_DRAFT.has(data.tool_name)) {
+      answerToolRunning = data.status === 'running'
+      dropThinkingDraft()
+    } else {
+      dropDrafts()
+    }
+    closeOpenText()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    handleToolCallEvent(data)
+  }
+
   function handleActiveTabEvent(data: AgentActiveTabEvent['data']): boolean {
     const targetKey = `${data.workflow_id}\u0000${data.node_locator_id ?? ''}`
     if (lastTabTargetKey === targetKey) return false
@@ -507,17 +517,7 @@ export function createAgentEventTransport(
         handleThinkingEvent(event.data)
         return true
       case 'agent_tool_call':
-        if (ANSWER_TOOL_NAMES.has(event.data.tool_name)) {
-          answerToolRunning = event.data.status === 'running'
-          dropThinkingDraft()
-        } else {
-          dropDrafts()
-        }
-        closeOpenText()
-        closeOpenThinking()
-        message.thinking = false
-        message.thinkingText = undefined
-        handleToolCallEvent(event.data)
+        handleToolCallFrame(event.data)
         return true
       case 'agent_active_tab':
         return handleActiveTabEvent(event.data)
