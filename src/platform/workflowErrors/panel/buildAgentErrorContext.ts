@@ -57,7 +57,7 @@ function missingModelProblems(
         category: 'missing_model' as const,
         message: `${message} (widget ${reference.widgetName})`,
         nodeId: String(reference.nodeId),
-        nodeType: model.representative.nodeType
+        nodeType: reference.nodeType ?? model.representative.nodeType
       }))
     })
   )

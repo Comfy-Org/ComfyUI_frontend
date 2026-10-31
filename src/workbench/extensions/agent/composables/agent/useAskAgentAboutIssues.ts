@@ -1,5 +1,7 @@
 import { computed } from 'vue'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -37,7 +39,14 @@ export function useAskAgentAboutIssues() {
     }
 
     panelStore.suppressRestoredOpen()
-    await withConsent('button_click', attach)
+    try {
+      await withConsent('button_click', attach)
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_consent_setting_load_failure'
+      })
+    }
   }
 
   return { canAskAgent, askAgentAboutIssues }
