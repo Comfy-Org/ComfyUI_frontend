@@ -1,10 +1,10 @@
-import { reportError } from '@comfyorg/telemetry/reportError'
 import { tryOnScopeDispose, useMediaControls, whenever } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { createToastId } from '@/types/toastId'
 import { formatTime } from '@/utils/formatUtil'
