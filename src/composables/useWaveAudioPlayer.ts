@@ -1,8 +1,12 @@
-import { useMediaControls, whenever } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { tryOnScopeDispose, useMediaControls, whenever } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 import { api } from '@/scripts/api'
+import { createToastId } from '@/types/toastId'
 import { formatTime } from '@/utils/formatUtil'
 
 interface WaveformBar {
@@ -10,13 +14,14 @@ interface WaveformBar {
 }
 
 interface UseWaveAudioPlayerOptions {
-  src: Ref<string | undefined>
+  src: Readonly<Ref<string | undefined>>
+  logicalSrc?: Readonly<Ref<string | undefined>>
   barCount?: number
   waveform?: boolean
 }
 
 export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
-  const { src, barCount = 40, waveform = true } = options
+  const { src, logicalSrc = src, barCount = 40, waveform = true } = options
 
   const audioRef = ref<HTMLAudioElement>()
   const waveformRef = ref<HTMLElement>()
@@ -24,8 +29,20 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
   let decodeRequestId = 0
   const bars = ref<WaveformBar[]>(generatePlaceholderBars())
 
+  const toast = useToast()
+  const playbackErrorToastId = createToastId()
+  let playAttempt = 0
+
   const { playing, currentTime, duration, volume, muted } =
     useMediaControls(audioRef)
+
+  function invalidatePlayback() {
+    playAttempt++
+    toast.dismiss(playbackErrorToastId)
+  }
+
+  tryOnScopeDispose(invalidatePlayback)
+  watch(logicalSrc, invalidatePlayback)
 
   const playedBarIndex = computed(() => {
     if (duration.value === 0) return -1
@@ -111,8 +128,45 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
     return (currentTime.value / duration.value) * 100
   })
 
+  async function startPlayback() {
+    const audio = audioRef.value
+    if (!audio) return
+
+    const attempt = ++playAttempt
+    try {
+      if (audio.error) audio.load()
+      await audio.play()
+      if (attempt === playAttempt) toast.dismiss(playbackErrorToastId)
+    } catch (error) {
+      if (attempt !== playAttempt) return
+      audio.pause()
+      playing.value = false
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        toast.dismiss(playbackErrorToastId)
+        return
+      }
+      reportError(error, {
+        errorType: 'error_playing_audio',
+        surface: 'assets',
+        level: 'warning'
+      })
+      toast.error(t('g.error'), {
+        id: playbackErrorToastId,
+        description: t('g.audioPlaybackFailed')
+      })
+    }
+  }
+
   function togglePlayPause() {
-    playing.value = !playing.value
+    const audio = audioRef.value
+    if (!audio) return
+
+    if (audio.paused) {
+      void startPlayback()
+      return
+    }
+    invalidatePlayback()
+    audio.pause()
   }
 
   function seekToStart() {
@@ -148,9 +202,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
     )
     currentTime.value = ratio * duration.value
 
-    if (!playing.value) {
-      playing.value = true
-    }
+    if (audioRef.value?.paused) void startPlayback()
   }
 
   whenever(
