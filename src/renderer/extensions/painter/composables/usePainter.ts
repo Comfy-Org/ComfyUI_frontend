@@ -841,6 +841,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       cancelAnimationFrame(rafId)
       rafId = null
     }
+    history.discard()
   })
 
   return {

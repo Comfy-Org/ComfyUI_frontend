@@ -20,6 +20,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -153,8 +154,8 @@ function mountPainter(
     }
   })
 
-  render(Wrapper, { global: { plugins: [i18n] } })
-  return { painter, canvasEl, cursorEl, modelValue }
+  const { unmount } = render(Wrapper, { global: { plugins: [i18n] } })
+  return { painter, canvasEl, cursorEl, modelValue, unmount }
 }
 
 describe('usePainter', () => {
@@ -707,7 +708,7 @@ describe('usePainter', () => {
       widgetId: widgetId('root', toNodeId('test-node'), 'mask')
     }
 
-    function mountWithHistory() {
+    function mountWithHistory(mask = '') {
       makePaintNode([
         { name: 'mask', type: 'string', value: '' },
         { name: 'width', type: 'number', value: 2 },
@@ -727,7 +728,7 @@ describe('usePainter', () => {
       })
       const mounted = mountPainter(
         toNodeId('test-node'),
-        '',
+        mask,
         { name: 'mask' },
         () => historyScope
       )
@@ -842,6 +843,41 @@ describe('usePainter', () => {
       await nextTick()
 
       expect(painter.canUndo.value).toBe(false)
+    })
+
+    it.for([
+      { case: 'the same mask', mask: 'painter/a.png [input]' },
+      { case: 'a replacement mask', mask: 'painter/b.png [input]' }
+    ])('has nothing to undo after remounting with $case', async ({ mask }) => {
+      const first = mountWithHistory('painter/a.png [input]')
+      first.painter.handleClear()
+      first.unmount()
+
+      const second = mountWithHistory(mask)
+      await second.painter.undo()
+
+      expect(second.painter.canUndo.value).toBe(false)
+      expect(second.painted).toEqual([])
+    })
+
+    it('frees the history of an unmounted painter', () => {
+      const { painter, unmount } = mountWithHistory()
+      painter.handleClear()
+
+      unmount()
+
+      expect(useWidgetHistoryStore().canUndo(historyScope)).toBe(false)
+    })
+
+    it('leaves the history of a painter mounted alongside it', async () => {
+      const first = mountWithHistory()
+      first.painter.handleClear()
+
+      const second = mountWithHistory()
+      await second.painter.undo()
+
+      expect(second.painted).toEqual([])
+      expect(first.painter.canUndo.value).toBe(true)
     })
 
     it('drops the history when the canvas size changes', async () => {

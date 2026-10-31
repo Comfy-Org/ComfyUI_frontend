@@ -178,6 +178,45 @@ describe(usePainterHistory, () => {
     expect(history.canUndo.value).toBe(false)
   })
 
+  describe('on a widget with a second canvas', () => {
+    it('leaves the first canvas history unusable from the second', async () => {
+      const first = setup()
+      const second = setup()
+      first.stroke(0, 0, 100)
+
+      await second.history.undo()
+
+      expect(second.history.canUndo.value).toBe(false)
+      expect(second.pixel(0, 0)).toBe(0)
+      expect(first.history.canUndo.value).toBe(true)
+    })
+
+    it('keeps the first canvas history when the second is discarded', async () => {
+      const first = setup()
+      const second = setup()
+      first.stroke(0, 0, 100)
+
+      second.history.discard()
+      await first.history.undo()
+
+      expect(first.pixel(0, 0)).toBe(0)
+    })
+
+    it('hands the widget history to the canvas that records next', async () => {
+      const first = setup()
+      const second = setup()
+      first.stroke(0, 0, 100)
+
+      second.stroke(1, 0, 150)
+      await first.history.undo()
+
+      expect(first.history.canUndo.value).toBe(false)
+      expect(first.pixel(0, 0)).toBe(100)
+      await second.history.undo()
+      expect(second.pixel(1, 0)).toBe(0)
+    })
+  })
+
   it('records nothing without a scope', async () => {
     const { history, pixel, stroke, onRestore } = setup(null)
     stroke(0, 0, 100)

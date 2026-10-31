@@ -163,6 +163,7 @@ export function usePainterHistory({
   const store = useWidgetHistoryStore()
   let pending = Promise.resolve()
   let pendingCount = 0
+  const ownRegions = new WeakSet<CanvasRegion>()
 
   function storedRegions() {
     return store
@@ -206,7 +207,31 @@ export function usePainterHistory({
     })
   }
 
+  function dropRegions(
+    regions: { scope: WidgetHistoryScope; region: CanvasRegion }[]
+  ) {
+    for (const { scope, region } of regions) {
+      store.dropStep(scope, region)
+      releaseRegion(region)
+    }
+  }
+
+  function dropOtherCanvasRegions({
+    widgetId,
+    rootGraphId
+  }: WidgetHistoryScope) {
+    dropRegions(
+      storedRegions().filter(
+        ({ scope, region }) =>
+          scope.rootGraphId === rootGraphId &&
+          scope.widgetId === widgetId &&
+          !ownRegions.has(region)
+      )
+    )
+  }
+
   function keep(region: CanvasRegion) {
+    ownRegions.add(region)
     compressLater(region)
     enforceBudget()
   }
@@ -215,6 +240,7 @@ export function usePainterHistory({
     const target = scope()
     const before = target && captureBefore()
     if (!target || !before) return
+    dropOtherCanvasRegions(target)
     store.record(target, before)
     keep(before)
   }
@@ -240,7 +266,7 @@ export function usePainterHistory({
 
   function nextStep(target: WidgetHistoryScope, direction: 'undo' | 'redo') {
     const next = store.peek(target, direction)?.value
-    return isCanvasRegion(next) ? next : undefined
+    return isCanvasRegion(next) && ownRegions.has(next) ? next : undefined
   }
 
   async function travel(direction: 'undo' | 'redo'): Promise<void> {
@@ -268,17 +294,16 @@ export function usePainterHistory({
   }
 
   function discard() {
-    const target = scope()
-    if (target) store.forget(target)
+    dropRegions(storedRegions().filter(({ region }) => ownRegions.has(region)))
   }
 
   const canUndo = computed(() => {
     const target = scope()
-    return !!target && store.canUndo(target)
+    return !!target && !!nextStep(target, 'undo')
   })
   const canRedo = computed(() => {
     const target = scope()
-    return !!target && store.canRedo(target)
+    return !!target && !!nextStep(target, 'redo')
   })
 
   return {

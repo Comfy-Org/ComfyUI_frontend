@@ -268,12 +268,7 @@
           <i class="icon-[lucide--eraser]" />
           {{ $t('painter.clear') }}
         </Button>
-        <WidgetHistoryButtons
-          :can-undo
-          :can-redo
-          @undo="undo"
-          @redo="redo"
-        />
+        <WidgetHistoryButtons :can-undo :can-redo @undo="undo" @redo="redo" />
       </div>
     </div>
   </div>
