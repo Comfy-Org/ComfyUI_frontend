@@ -22,11 +22,6 @@ jobs:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # contents: read only. PR_GH_TOKEN below pushes the branch and opens the
-    # PR, so GITHUB_TOKEN needs no write scope - and the fetch step resolves
-    # ~5,100 third-party remotes, which must not run with a write-scoped
-    # credential sitting in .git/config. fetch_corpus.py reads its token from
-    # the environment, never from git config, so dropping both is inert.
     permissions:
       contents: read
     steps:
@@ -78,8 +73,6 @@ jobs:
       - name: Open the bump PR
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
-          # This repo does not let GitHub Actions create pull requests, so the
-          # default token pushes the branch and then fails at PR creation.
           token: ${{ secrets.PR_GH_TOKEN }}
           branch: chore/corpus-pins
           commit-message: 'chore: bump ecosystem matrix corpus pins'
