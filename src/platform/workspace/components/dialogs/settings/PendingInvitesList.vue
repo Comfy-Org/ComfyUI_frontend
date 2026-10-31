@@ -5,7 +5,7 @@
       :key="invite.id"
       :class="
         cn(
-          'grid w-full items-center border-b border-interface-stroke/30 p-2 last:border-0',
+          'grid w-full items-center border-b border-border/30 p-2 last:border-0',
           gridCols
         )
       "
@@ -16,17 +16,17 @@
         "
       >
         <div
-          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary"
         >
           <span class="text-sm text-muted-foreground">
             {{ getInviteInitial(invite.email) }}
           </span>
         </div>
-        <div class="flex min-w-0 flex-1 flex-col gap-1">
-          <span class="text-sm text-base-foreground">
+        <div class="flex min-w-0 flex-1 flex-col gap-1 text-sm">
+          <span class="text-foreground">
             {{ getInviteDisplayName(invite.email) }}
           </span>
-          <span class="text-sm text-muted-foreground">
+          <span class="text-muted-foreground">
             {{ invite.email }}
           </span>
         </div>
@@ -38,9 +38,7 @@
         :class="
           cn(
             'text-sm',
-            isExpired(invite)
-              ? 'text-warning-background'
-              : 'text-muted-foreground'
+            isExpired(invite) ? 'text-warning' : 'text-muted-foreground'
           )
         "
       >
@@ -83,9 +81,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {

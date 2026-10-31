@@ -1,0 +1,6 @@
+{
+  "extends": ["./tsconfig.json", "../../tsconfig.declarations.json"],
+  "references": [
+    { "path": "../shared-frontend-utils/tsconfig.declarations.json" }
+  ]
+}

@@ -1,9 +1,9 @@
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // The node preview constructs its observer at import time; jsdom omits this API.
 vi.hoisted(() => {
@@ -23,10 +23,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 import { i18n } from '@/i18n'
-import type { ComposerAttachment } from '../../types/composerAttachment'
-import { toTurnId } from '../../schemas/agentApiSchema'
-import type { WorkflowReference } from '../../types/workflowReference'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 
 import AgentPanel from './AgentPanel.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
@@ -99,6 +99,23 @@ function mount(isMaximized = false) {
   })
 }
 
+function mountTargetlessPanel() {
+  const pinia = getActivePinia()
+  assert.exists(pinia)
+  return render(AgentPanel, {
+    props: {
+      entries: [],
+      historyGroups: createHistoryGroups(),
+      workflowDetached: true
+    },
+    global: {
+      plugins: [pinia, i18n],
+      directives: { tooltip: {} },
+      stubs: { WorkflowSelectorChip: true }
+    }
+  })
+}
+
 const chatHistoryStub = defineComponent({
   emits: ['back', 'select', 'delete', 'copyMarkdown', 'rename'],
   template: `
@@ -141,6 +158,7 @@ const suggestedPromptAttribution: AgentStarterPromptAttribution = {
   promptId: 'slot_1',
   promptIndex: 0,
   promptCount: 5,
+  visiblePromptCount: 5,
   promptTextHash: 'a62d17a3',
   locale: 'en'
 }
@@ -272,14 +290,53 @@ describe('AgentPanel', () => {
     draftCalls.replaceDraft.length = 0
   })
 
-  it('renders and forwards the treatment starter prompt exposure', () => {
-    distribution.isCloud = true
-    const { emitted } = render(AgentPanel, {
+  it('locks immediately but only shows the conversation veil for a slow opening', async () => {
+    vi.useFakeTimers()
+    const { rerender } = render(AgentPanel, {
       props: {
         entries: [],
         historyGroups: createHistoryGroups(),
-        starterPromptAssignment: 'test',
-        attributeStarterPromptExperiment: true
+        openingWorkflowName: 'portrait'
+      },
+      global: { plugins: [i18n], stubs: { Composer: true, EmptyState: true } }
+    })
+
+    expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+    expect(screen.queryByRole('status')).toBeNull()
+    await vi.advanceTimersByTimeAsync(100)
+    await rerender({ openingWorkflowName: undefined })
+    await vi.advanceTimersByTimeAsync(20)
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+      'inert'
+    )
+
+    await rerender({ openingWorkflowName: 'portrait' })
+    await vi.advanceTimersByTimeAsync(119)
+    expect(screen.queryByRole('status')).toBeNull()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(
+      screen.getByRole('status', {
+        name: i18n.global.t('agent.openingWorkflowChat', {
+          workflowName: 'portrait'
+        })
+      })
+    ).toBeVisible()
+
+    await rerender({ openingWorkflowName: undefined })
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+      'inert'
+    )
+  })
+
+  it('renders the winning static Cloud starter prompts', () => {
+    distribution.isCloud = true
+    render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups()
       },
       global: {
         plugins: [i18n],
@@ -292,7 +349,32 @@ describe('AgentPanel', () => {
         name: i18n.global.t('agent.suggestedPrompts.treatment.cloud.0')
       })
     ).toBeVisible()
-    expect(emitted('starterPromptRendered')).toEqual([['test']])
+  })
+
+  it('shows a recoverable workflow sync failure and emits retry', async () => {
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        syncRetryAvailable: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+      }
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      i18n.global.t('agent.workflowSyncFailedTitle')
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('g.retry')
+      })
+    )
+
+    expect(emitted('retrySync')).toHaveLength(1)
   })
 
   it('keeps a failed opening in history and lets the user retry that row', async () => {
@@ -312,6 +394,30 @@ describe('AgentPanel', () => {
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
     )
+    expect(
+      screen.getByRole('button', { name: 'Show chat history' })
+    ).toBeVisible()
+  })
+
+  it('leaves history on Back even when reopening the previous chat keeps failing', async () => {
+    const select = vi.fn().mockResolvedValue(false)
+    mountHistory(select)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show chat history' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'First chat' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      i18n.global.t('agent.historyOpenFailed')
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+    )
+    expect(select.mock.calls.map(([id]) => id)).toEqual(['first', 'previous'])
     expect(
       screen.getByRole('button', { name: 'Show chat history' })
     ).toBeVisible()
@@ -480,6 +586,74 @@ describe('AgentPanel', () => {
     expect(
       screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
+  })
+
+  it('shows the targetless run notice 500ms after the first composer focus, and a refocus does not restart that deadline', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mountTargetlessPanel()
+
+    expect(screen.queryByRole('note')).toBeNull()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(screen.queryByRole('note')).toBeNull()
+
+    await user.click(screen.getByRole('textbox'))
+    await vi.advanceTimersByTimeAsync(300)
+    await user.click(document.body)
+    await user.click(screen.getByRole('textbox'))
+    await vi.advanceTimersByTimeAsync(199)
+    expect(screen.queryByRole('note')).toBeNull()
+
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.runNotice')
+    )
+  })
+
+  it('keeps the first-focus deadline through a chat-history round trip', async () => {
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mountTargetlessPanel()
+
+    await user.click(screen.getByRole('textbox'))
+    await vi.advanceTimersByTimeAsync(300)
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await vi.advanceTimersByTimeAsync(200)
+    await user.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.runNotice')
+    )
+  })
+
+  it('prioritizes an empty-canvas correction over target availability', () => {
+    render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
+        canvasEmptyAfterTurn: true,
+        targetUnavailable: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+      }
+    })
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.canvasIsEmptyAfterTurn')
+    )
+    expect(screen.getByRole('note')).not.toHaveTextContent(
+      i18n.global.t('agent.targetWorkflowUnavailable')
+    )
   })
 
   it('groups chat options with the title and separates history navigation', () => {

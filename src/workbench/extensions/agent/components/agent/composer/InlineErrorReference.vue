@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { AgentErrorContext } from '../../../types/agentErrorContext'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 
 import {
   inlineReferenceChipClass,
@@ -24,17 +24,13 @@ const isError = computed(() => context.severity === 'error')
 </script>
 
 <template>
-  <span
-    data-testid="error-reference-chip"
-    tabindex="0"
-    :class="inlineReferenceChipClass"
-  >
+  <span data-testid="error-reference-chip" :class="inlineReferenceChipClass">
     <i
       aria-hidden="true"
       data-testid="error-reference-icon"
       :class="
         cn(
-          'size-3 shrink-0',
+          'size-3',
           isError
             ? 'icon-[lucide--circle-alert]'
             : 'icon-[lucide--triangle-alert]'
@@ -61,7 +57,7 @@ const isError = computed(() => context.severity === 'error')
         @click.stop="emit('remove')"
       >
         <span :class="inlineReferenceRemoveBadgeClass">
-          <span aria-hidden="true" class="icon-[lucide--x] size-2" />
+          <i aria-hidden="true" class="icon-[lucide--x] size-2" />
         </span>
       </Button>
     </span>

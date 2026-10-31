@@ -2,8 +2,12 @@ import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import {
+  expectElementScreenshot,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 import {
   BYTEDANCE_REFERENCE_NODE_TYPE,
@@ -11,10 +15,66 @@ import {
 } from '@e2e/fixtures/data/byteDanceReferenceNodeDef'
 import { referenceGraphOps } from '@e2e/fixtures/data/minimaxAutogrowReload'
 import { wireAndReopen } from '@e2e/fixtures/utils/minimaxAutogrowReload'
+import {
+  nodesWithoutGeometry,
+  overlappingNodePairs
+} from '@e2e/fixtures/utils/nodeLayoutGeometry'
 
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
 const WIDGET_CASE = 'agent-rec-set-widget-existing'
+const LOAD_IMAGE_LAYOUT_CASE = 'repro/agent-load-image-layout'
+const LOAD_IMAGE_SETTLE_TIMEOUT = 10_000
+
+test.describe(
+  'Agent populated LoadImage layout',
+  { tag: ['@cloud', '@vue-nodes', '@node'] },
+  () => {
+    test.describe.configure({ timeout: 90_000 })
+    test.use({ conversationCase: LOAD_IMAGE_LAYOUT_CASE })
+
+    test('keeps Vue node previews from overlapping', async ({
+      agentConversation,
+      page
+    }) => {
+      await page.route('**/api/view?**', (route) =>
+        route.fulfill({ path: assetPath('image32x32.webp') })
+      )
+      await agentConversation.runTurns()
+
+      const loaders = agentConversation.vueNodes.nodes.filter({
+        has: page.getByTestId('node-title').filter({ hasText: 'Load Image' })
+      })
+      await expect(loaders).toHaveCount(5)
+      const previews = page.locator('.image-preview img')
+      await expect(previews).toHaveCount(5)
+      await expect
+        .poll(
+          () =>
+            previews.evaluateAll((images) =>
+              images.every(
+                (image) =>
+                  image instanceof HTMLImageElement &&
+                  image.complete &&
+                  image.naturalWidth > 0
+              )
+            ),
+          { timeout: LOAD_IMAGE_SETTLE_TIMEOUT }
+        )
+        .toBe(true)
+      await expect
+        .poll(() => nodesWithoutGeometry(loaders), {
+          timeout: LOAD_IMAGE_SETTLE_TIMEOUT
+        })
+        .toEqual([])
+      await expect
+        .poll(() => overlappingNodePairs(loaders), {
+          timeout: LOAD_IMAGE_SETTLE_TIMEOUT
+        })
+        .toEqual([])
+    })
+  }
+)
 
 // Synthesized (not a cloud capture, see the fixture's `source.note`), so it
 // lives under conversations/repro/ rather than conversations/ and is
@@ -28,9 +88,6 @@ test.describe(
     test.describe('wire evidence', () => {
       test.use({ conversationCase: WIRING_CASE })
 
-      // The second turn's only edit is a connect, so what the canvas shows after
-      // it is the wire itself: the app's own render loop paints it, and the
-      // expectation is the picture, not a reconstruction of the renderer.
       test('paints the wire the second turn connects @screenshot', async ({
         agentConversation,
         page
@@ -39,10 +96,13 @@ test.describe(
         await agentConversation.runTurns()
         await page.evaluate(() => window.app!.canvas.deselectAll())
 
-        await expect(page.locator('#graph-canvas')).toHaveScreenshot(
-          'two-turn-dependent-edit-wired.png',
-          { mask: [agentConversation.panel] }
+        const region = await screenshotRegion(
+          page,
+          await agentConversation.vueNodes.nodes.all()
         )
+        await region.expectScreenshot('two-turn-dependent-edit-wired.png', {
+          mask: [agentConversation.panel]
+        })
       })
     })
 
@@ -72,15 +132,10 @@ test.describe(
           })
           await expect(images).toHaveCount(2)
 
-          await expect(agentConversation.panel).toHaveScreenshot(
+          await expectElementScreenshot(
+            agentConversation.panel,
             'asset-grid-fragmentation.png',
-            {
-              // The CRDT diagnostics chip is mounted asynchronously and may
-              // appear after the reply is complete. Keep this visual check
-              // strict enough to catch content drift while ignoring that
-              // 388-pixel connection-status difference.
-              maxDiffPixels: 400
-            }
+            { maxDiffPixels: 400 }
           )
         }
       )
@@ -208,11 +263,20 @@ test.describe(
           test.setTimeout(90_000)
           await agentConversation.runTurns()
 
-          await expect(
-            agentConversation.panel.getByRole('button', {
-              name: `Open ${agentConversation.conversation.workflow.name}`
-            })
-          ).toBeVisible()
+          const switchesWorkflow = agentConversation.conversation.turns.some(
+            (turn) =>
+              turn.response.some(
+                (entry) =>
+                  entry.kind === 'event' &&
+                  entry.event.type === 'agent_active_tab'
+              )
+          )
+          if (switchesWorkflow)
+            await expect(
+              agentConversation.panel.getByRole('button', {
+                name: `Open ${agentConversation.conversation.workflow.name}`
+              })
+            ).toBeVisible()
         })
       })
     }

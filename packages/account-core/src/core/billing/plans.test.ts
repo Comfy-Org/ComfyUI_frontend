@@ -2,18 +2,18 @@
  * What only the plans read does. The scope fence, the shared request, and the
  * publish rules it inherits are proved once in `scopedReader.test.ts`.
  */
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
-import type { SessionSnapshot } from '../session.js'
-import { sessionBillingScopeSource } from './billingScope.js'
-import { createPlansReader } from './plans.js'
+import type { SessionSnapshot } from '#/core/session'
+import { sessionBillingScopeSource } from './billingScope'
+import { createPlansReader } from './plans'
 import {
   authenticated,
   credential,
   fakeTransport,
   httpOk
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
+import type { SessionFake } from './__fixtures__/billingTestFixtures'
 
 function fakeSession(snapshot: SessionSnapshot = authenticated(credential())) {
   const fake: SessionFake = {
@@ -24,6 +24,7 @@ function fakeSession(snapshot: SessionSnapshot = authenticated(credential())) {
 }
 
 const PLAN = {
+  action: 'subscribe',
   availability: { available: true },
   credits_cents: 2000,
   duration: 'MONTHLY',
@@ -54,8 +55,7 @@ describe('createPlansReader', () => {
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
     expect(calls[0].route).toBe('/billing/plans')
-    expect(result.status).toBe('ok')
-    if (result.status !== 'ok') return
+    assert(result.status === 'ok')
     expect(result.value.data.current_plan_slug).toBe('free')
     expect(result.value.data.plans[0].slug).toBe('creator_monthly')
     expect(result.value.data.plans[0].price_cents).toBe(2000n)
@@ -76,5 +76,44 @@ describe('createPlansReader', () => {
     })
 
     expect(calls[0].timeoutMs).toBe(5_000)
+  })
+
+  it('drops unknown display features without rejecting the catalog', async () => {
+    const { scopeSource } = fakeSession()
+    const { transport } = fakeTransport([
+      httpOk({
+        ...CATALOG,
+        plans: [
+          {
+            ...PLAN,
+            features: ['Fallback copy'],
+            feature_items: [
+              {
+                key: 'shortRuntime',
+                status: 'available',
+                text: 'Short runtime'
+              },
+              {
+                key: 'futureFeature',
+                status: 'available',
+                text: 'Future feature'
+              }
+            ]
+          }
+        ]
+      })
+    ])
+
+    const result = await createPlansReader({ transport, scopeSource }).read()
+
+    assert(result.status === 'ok')
+    expect(result.value.data.plans[0].features).toEqual(['Fallback copy'])
+    expect(result.value.data.plans[0].feature_items).toEqual([
+      {
+        key: 'shortRuntime',
+        status: 'available',
+        text: 'Short runtime'
+      }
+    ])
   })
 })

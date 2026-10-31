@@ -1,19 +1,21 @@
-import type { ComposerAttachment } from '../../types/composerAttachment'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import { storeToRefs } from 'pinia'
 import { computed, getCurrentScope, onScopeDispose } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
-import { composerPromptForSubmission } from '../../utils/composerPrompt'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 
 export interface UseComposerOptions {
   onSend: (text: string, attachments: ComposerAttachment[]) => void
   isRunning: () => boolean
   onStop: () => void
 }
+
+type ComposerSubmitIntent = 'keyboard' | 'explicit'
 
 export function useComposer(options: UseComposerOptions) {
   const store = useAgentComposerStore()
@@ -35,12 +37,13 @@ export function useComposer(options: UseComposerOptions) {
       !attachments.value.some((item) => item.uploading || item.validationError)
   )
 
-  function submit(): void {
+  function submit(intent: ComposerSubmitIntent = 'explicit'): void {
     if (options.isRunning()) {
       options.onStop()
       return
     }
     if (!canSend.value) return
+    if (intent === 'keyboard' && store.rejectedDraftUnchanged) return
     options.onSend(
       composerPromptForSubmission(prompt.value).text.trim(),
       attachments.value
@@ -70,24 +73,17 @@ export function useComposer(options: UseComposerOptions) {
     const clickId = uuidv4()
     store.markSuggestedPrompt({
       id: starterPrompt.promptId,
-      clickId,
-      ...(starterPrompt.assignment
-        ? { assignment: starterPrompt.assignment }
-        : {})
+      clickId
     })
     useTelemetry()?.trackAgentStarterPromptClicked({
       prompt_id: starterPrompt.promptId,
       prompt_index: starterPrompt.promptIndex,
       prompt_count: starterPrompt.promptCount,
+      visible_prompt_count: starterPrompt.visiblePromptCount,
       prompt_text_hash: starterPrompt.promptTextHash,
       locale: starterPrompt.locale,
       click_id: clickId,
-      draft_was_empty: draftWasEmpty,
-      ...(starterPrompt.assignment
-        ? {
-            '$feature/agent-starter-prompt-set': starterPrompt.assignment
-          }
-        : {})
+      draft_was_empty: draftWasEmpty
     })
   }
 

@@ -1,6 +1,6 @@
 import { describe, expectTypeOf, it } from 'vitest'
 
-import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
+import type { BillingTelemetryEvent } from './billingTelemetryEvent'
 
 type LateSuccessEvent = Extract<
   BillingTelemetryEvent,

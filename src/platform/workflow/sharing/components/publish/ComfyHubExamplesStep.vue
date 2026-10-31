@@ -19,7 +19,7 @@
         tabindex="0"
         role="button"
         :aria-label="$t('comfyHubPublish.uploadExampleImage')"
-        class="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-default text-center transition-colors hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-default"
+        class="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-center transition-colors hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         @dragenter.stop
         @dragleave.stop
         @dragover.prevent.stop
@@ -36,7 +36,7 @@
           @change="handleFileSelect"
         />
         <i
-          class="icon-[lucide--plus] size-4 text-muted-foreground"
+          class="icon-[lucide--plus] text-muted-foreground"
           aria-hidden="true"
         />
         <span class="sr-only">{{

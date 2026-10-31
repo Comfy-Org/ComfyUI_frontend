@@ -13,11 +13,11 @@ import type {
   CanvasPointerEvent,
   NodeInputSlot
 } from '@/lib/litegraph/src/litegraph'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockNodeInputSlot } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
 

@@ -1,5 +1,9 @@
 # Cloud workflows in Models / Workshop
 
+The website implementation now lives in
+[Comfy-Org/comfy-website](https://github.com/Comfy-Org/comfy-website).
+The `apps/website` paths below are relative to that repository.
+
 FE-2736 uses curated catalog data and existing Cloud endpoints. The accepted
 architecture is [WORKSHOP-CATALOG-0037](../adr/WORKSHOP-CATALOG-0037-shared-pages-and-authored-execution-catalogs.md).
 The frontend review stack contains [catalog and pages #18615](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18615)

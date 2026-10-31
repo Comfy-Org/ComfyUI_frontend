@@ -3,7 +3,7 @@ import type {
   AgentErrorContext,
   AgentErrorContextScope,
   AgentErrorProblem
-} from '../types/agentErrorContext'
+} from '@/platform/workflowErrors/agentErrorContext'
 
 const CATEGORY_LABELS: Record<AgentErrorCategory, string> = {
   missing_input: 'Missing input',

@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
 
-import type { AgentErrorContext } from '../../../types/agentErrorContext'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import { inlineReferenceChipClass } from './inlineReferenceChipStyles'
 import InlineErrorReference from './InlineErrorReference.vue'
 
 function context(
@@ -38,9 +39,9 @@ describe('InlineErrorReference', () => {
     const icon = screen.getByTestId('error-reference-icon')
     expect(icon).toHaveClass('icon-[lucide--circle-alert]', 'size-3')
     expect(icon).not.toHaveClass('text-destructive-background')
-    expect(icon).not.toHaveClass('text-destructive-background-hover')
-    expect(screen.getByTestId('error-reference-chip').className).toContain(
-      'text-modal-card-tag-foreground'
+    expect(icon).not.toHaveClass('text-destructive')
+    expect(screen.getByTestId('error-reference-chip')).toHaveClass(
+      ...inlineReferenceChipClass.split(' ')
     )
     expect(screen.getByText('Execution failed')).toBeVisible()
   })
@@ -53,9 +54,9 @@ describe('InlineErrorReference', () => {
     const icon = screen.getByTestId('error-reference-icon')
     expect(icon).toHaveClass('icon-[lucide--triangle-alert]', 'size-3')
     expect(icon).not.toHaveClass('text-warning-foreground')
-    expect(icon).not.toHaveClass('text-warning-background')
-    expect(screen.getByTestId('error-reference-chip').className).toContain(
-      'text-modal-card-tag-foreground'
+    expect(icon).not.toHaveClass('text-warning')
+    expect(screen.getByTestId('error-reference-chip')).toHaveClass(
+      ...inlineReferenceChipClass.split(' ')
     )
     expect(screen.getByTestId('error-reference-count')).toHaveTextContent('3')
   })

@@ -294,25 +294,18 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'Ctrl+Shift+e' converts selection to subgraph", async ({
       comfyPage
     }) => {
-      await expect
-        .poll(
-          () => comfyPage.nodeOps.getGraphNodesCount(),
-          'Default workflow should have multiple nodes'
-        )
-        .toBeGreaterThan(1)
+      await comfyPage.expectNodeCountMinimum(
+        2,
+        'Default workflow should have multiple nodes'
+      )
 
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-      // Select all nodes
       await comfyPage.keyboard.press('Control+a')
 
       await comfyPage.keyboard.press('Control+Shift+KeyE')
 
-      // After conversion, node count should decrease
-      // (multiple nodes replaced by single subgraph node)
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBeLessThan(initialCount)
+      await comfyPage.expectNodeCountMaximum(initialCount - 1)
     })
 
     test('Select-all still reaches the canvas after the settings dialog closes', async ({

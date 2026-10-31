@@ -1,0 +1,1758 @@
+import { getActivePinia } from 'pinia'
+import type { Pinia } from 'pinia'
+import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
+import { fromAny } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import { createI18n } from 'vue-i18n'
+
+import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import type { useComfyRegistryService } from '@/services/comfyRegistryService'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import type { AskAgentPort } from '@/platform/workflowErrors/askAgentPort'
+import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
+import type { WorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
+
+import TabErrors from './TabErrors.vue'
+import { app } from '@/scripts/app'
+vi.mock(import('@/services/comfyRegistryService'), () => ({
+  useComfyRegistryService: () =>
+    fromAny<ReturnType<typeof useComfyRegistryService>, unknown>({
+      inferPackFromNodeName: vi.fn(async () => null),
+      listAllPacks: vi.fn(async () => ({ nodes: [] })),
+      getPackById: vi.fn()
+    })
+}))
+
+const { mockFocusNode } = vi.hoisted(() => ({
+  mockFocusNode: vi.fn()
+}))
+
+const askAgentMock = {
+  canAskAgent: ref(true),
+  askAgentAboutIssues: vi.fn<AskAgentPort['askAgentAboutIssues']>()
+}
+
+vi.mock(import('@/scripts/app'))
+
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+  collectAllNodes: vi.fn(() => []),
+  getNodeByExecutionId: vi.fn(),
+  getActiveGraphNodeIds: vi.fn(() => new Set<string>()),
+  getRootParentNode: vi.fn(() => null),
+  forEachNode: vi.fn(),
+  mapAllNodes: vi.fn(() => [])
+}))
+
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
+  useCopyToClipboard: vi.fn(() => ({
+    copyToClipboard: vi.fn()
+  }))
+}))
+
+vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
+  useFocusNode: vi.fn(() => ({
+    focusNode: mockFocusNode
+  }))
+}))
+
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/missingModelDownload'),
+  () => ({
+    downloadModel: vi.fn(),
+    fetchModelMetadata: vi.fn(async () => ({
+      fileSize: null,
+      gatedRepoUrl: null
+    })),
+    isModelDownloadable: vi.fn(() => true),
+    toBrowsableUrl: vi.fn((url: string) => url)
+  })
+)
+
+describe('TabErrors.vue', () => {
+  let i18n: ReturnType<typeof createI18n>
+  const selectedItems = ref<Positionable[]>([])
+
+  beforeEach(() => {
+    askAgentMock.canAskAgent.value = true
+    askAgentMock.askAgentAboutIssues.mockClear()
+    selectedItems.value = []
+    i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: {
+        en: {
+          g: {
+            workflow: 'Workflow',
+            copy: 'Copy',
+            details: 'Details',
+            findOnGithub: 'Find on GitHub',
+            getHelpAction: 'Get Help'
+          },
+          rightSidePanel: {
+            noErrors: 'No issues',
+            noneSearchDesc: 'No results found',
+            errorsDetected: 'Error detected | Errors detected',
+            resolveBeforeRun: 'Resolve before running the workflow',
+            issuesDetected: 'Issue detected | Issues detected',
+            resolveErrorsBeforeRun:
+              'Resolve errors before running the workflow',
+            setupRequired: 'Setup required',
+            finishSetupBeforeRun: 'Finish setup before running the workflow',
+            severityCountsStatus: '{errors} blocking, {setup} setup required',
+            errorsFilter: '{count} Error | {count} Errors',
+            errorsFilterActive:
+              '{count} Error detected | {count} Errors detected',
+            setupFilter: '{count} Setup required',
+            setupSummary: '{count} item | {count} items',
+            setupNodeSummary:
+              '{nodes} node — {count} item | {nodes} node — {count} items',
+            setupNodesSummary:
+              '{nodes} nodes — {count} item | {nodes} nodes — {count} items',
+            nodesAffected: '{count} node affected | {count} nodes affected',
+            errorsSummary: '{count} error | {count} errors',
+            blockedLastRun: 'Blocked last run',
+            severityErrorLabel: 'Blocking errors',
+            severitySetupLabel: 'Setup required',
+            expand: 'Expand',
+            collapse: 'Collapse',
+            errorHelp: 'Error help',
+            askAgent: 'Ask agent',
+            askAgentAbout: 'Ask the agent about {title}',
+            askAgentAboutAll:
+              'Ask agent about {count} issue | Ask agent about all {count} issues',
+            errorLog: 'Error log',
+            findOnGithubTooltip: 'Search GitHub issues',
+            getHelpTooltip: 'Get help',
+            info: 'Info',
+            infoFor: 'Info for {item}',
+            locateNode: 'Locate node',
+            locateNodeFor: 'Locate {item}',
+            missingModels: {
+              missingModelsTitle: 'Missing Models',
+              downloadAll: 'Download all',
+              refresh: 'Refresh',
+              refreshing: 'Refreshing missing models.'
+            },
+            missingMedia: {
+              missingMediaTitle: 'Missing Inputs'
+            }
+          },
+          agent: {
+            errorContext: {
+              allLabel: 'All issues'
+            }
+          }
+        }
+      }
+    })
+  })
+
+  function renderComponent(seed?: (pinia: Pinia) => void) {
+    const user = userEvent.setup()
+    const pinia = getActivePinia()!
+    seed?.(pinia)
+    const manager: WorkflowErrorManager = {
+      useMissingNodes: () => ({
+        missingNodePacks: ref([]),
+        missingCoreNodes: ref({}),
+        isLoading: ref(false)
+      }),
+      useManagerState: () => ({
+        shouldShowManagerButtons: ref(false),
+        shouldShowInstallButton: ref(false)
+      }),
+      usePackInstall: () => ({
+        isInstalling: ref(false),
+        installAllPacks: vi.fn()
+      }),
+      useApplyChanges: () => ({
+        isRestarting: ref(false),
+        applyChanges: vi.fn()
+      }),
+      isPackInstalled: () => false,
+      openManager: vi.fn()
+    }
+    const Host = defineComponent(
+      () => () =>
+        h(TabErrors, {
+          selectedItems: selectedItems.value,
+          onLocateNode: mockFocusNode
+        })
+    )
+    render(Host, {
+      global: {
+        plugins: [i18n, pinia],
+        provide: {
+          [WorkflowErrorManagerKey]: manager,
+          [AskAgentPortKey]: askAgentMock
+        },
+        stubs: {
+          AsyncSearchInput: {
+            template:
+              '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
+          }
+        }
+      }
+    })
+    return { user }
+  }
+
+  function renderRightSidePanel(seed: (pinia: Pinia) => void) {
+    const pinia = getActivePinia()!
+    useSettingStore(pinia).settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+      true
+    seed(pinia)
+    render(RightSidePanel, {
+      global: {
+        plugins: [i18n, pinia],
+        stubs: {
+          EditableText: true,
+          TabErrors: true,
+          TabGlobalParameters: true,
+          TabNodes: true,
+          TabGlobalSettings: true,
+          TabSettings: true,
+          TabInfo: true,
+          TabNormalInputs: true,
+          TabSubgraphInputs: true,
+          SubgraphEditor: true
+        }
+      }
+    })
+  }
+
+  it('renders "no issues" state when store is empty', () => {
+    renderComponent()
+    expect(screen.getByText('No issues')).toBeInTheDocument()
+  })
+
+  it('renders prompt-level errors with resolved display message', async () => {
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordPromptError({
+        type: 'prompt_no_outputs',
+        message: 'Server Error: No outputs',
+        details: 'Error details'
+      })
+    })
+
+    expect(screen.getAllByText('Prompt has no outputs').length).toBeGreaterThan(
+      0
+    )
+    expect(
+      screen.getByText(
+        'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Error details')).not.toBeInTheDocument()
+  })
+
+  it('passes raw details through to the card for agent prompt errors only', () => {
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordPromptError({
+        type: 'agent_api_failed',
+        message: 'Comfy Agent hit a server error.',
+        details: 'HTTP 500 from /api/agent/threads'
+      })
+    })
+
+    expect(
+      screen.getByText('HTTP 500 from /api/agent/threads')
+    ).toBeInTheDocument()
+  })
+
+  it('renders node validation errors grouped by catalog copy', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
+      const titles: Record<string, string> = {
+        '1': 'KSampler',
+        '2': 'CLIP Text Encode'
+      }
+      return fromAny<
+        NonNullable<ReturnType<typeof getNodeByExecutionId>>,
+        unknown
+      >({
+        title: titles[nodeId] ?? ''
+      })
+    })
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '2': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'clip',
+              {},
+              'Required input is missing',
+              'Input: clip'
+            )
+          ],
+          'CLIPTextEncode'
+        ),
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'positive',
+              {},
+              'Required input is missing',
+              'Input: positive'
+            ),
+            validationError(
+              'required_input_missing',
+              'model',
+              {},
+              'Required input is missing',
+              'Input: model'
+            )
+          ],
+          'KSampler'
+        )
+      })
+    })
+
+    expect(screen.getByText('Missing connection')).toBeInTheDocument()
+    const sectionBadge = within(
+      screen.getByTestId('error-group-execution')
+    ).getByTestId('error-section-count-badge')
+    expect(sectionBadge).toHaveTextContent('3')
+    expect(sectionBadge).toHaveAttribute('data-severity', 'error')
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText('3')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('errors-summary-filters')
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Errors detected')).toBeInTheDocument()
+    expect(
+      screen.getByText('Resolve errors before running the workflow')
+    ).toBeInTheDocument()
+    expect(
+      screen.getAllByText(
+        'Required input slots have no connection feeding them.'
+      )
+    ).toHaveLength(1)
+    expect(screen.queryByText('#1')).not.toBeInTheDocument()
+    expect(screen.queryByText('#2')).not.toBeInTheDocument()
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+    expect(screen.queryByText('CLIP Text Encode')).not.toBeInTheDocument()
+
+    const itemRows = screen.getAllByRole('listitem')
+    expect(itemRows).toHaveLength(3)
+    expect(itemRows[0]).toHaveTextContent('KSampler - model')
+    expect(itemRows[1]).toHaveTextContent('KSampler - positive')
+    expect(itemRows[2]).toHaveTextContent('CLIP Text Encode - clip')
+
+    const infoButton = within(itemRows[1]).getByRole('button', {
+      name: 'Info for KSampler - positive'
+    })
+
+    await user.click(infoButton)
+
+    const itemDetail = screen.getByText(
+      'KSampler is missing a required input: positive'
+    )
+    expect(infoButton).toHaveAttribute(
+      'aria-controls',
+      itemDetail.getAttribute('id')
+    )
+
+    const labelLocateButton = within(itemRows[1]).getByRole('button', {
+      name: 'KSampler - positive'
+    })
+
+    await user.click(labelLocateButton)
+    expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('1')
+
+    const iconLocateButton = within(itemRows[2]).getByRole('button', {
+      name: 'Locate CLIP Text Encode - clip'
+    })
+
+    await user.click(iconLocateButton)
+    expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('2')
+
+    expect(
+      screen.queryByText('Required input is missing')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Input: model')).not.toBeInTheDocument()
+    expect(screen.queryByText('Input: positive')).not.toBeInTheDocument()
+    expect(screen.queryByText('Input: clip')).not.toBeInTheDocument()
+  })
+
+  it('inserts a card chip and an all-issues chip from the panel buttons', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        id: '10',
+        title: 'KSampler'
+      })
+    )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1', 'Line 2'],
+        timestamp: Date.now()
+      })
+    })
+
+    const card = screen.getByTestId('error-card-ask-agent')
+    expect(card).toHaveTextContent('Ask agent')
+    await user.click(card)
+
+    const footer = screen.getByTestId('errors-footer-ask-agent')
+    expect(footer).toHaveTextContent('Ask agent about 1 issue')
+    await user.click(footer)
+
+    expect(askAgentMock.askAgentAboutIssues).toHaveBeenCalledTimes(2)
+    expect(askAgentMock.askAgentAboutIssues.mock.calls[0][0]).toMatchObject({
+      scope: 'card',
+      severity: 'error',
+      count: 1,
+      label: 'Execution failed'
+    })
+    expect(askAgentMock.askAgentAboutIssues.mock.calls[1][0]).toMatchObject({
+      scope: 'all',
+      label: 'All issues',
+      count: 1
+    })
+  })
+
+  it('keeps the footer on every issue while search narrows the list', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        id: nodeId,
+        title: nodeId === '1' ? 'KSampler' : 'CLIPTextEncode'
+      })
+    )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [validationError('unknown', undefined, {}, 'Out of memory', '')],
+          'KSampler'
+        ),
+        '2': nodeError(
+          [validationError('unknown', undefined, {}, 'Missing text input', '')],
+          'CLIPTextEncode'
+        )
+      })
+    })
+
+    await nextTick()
+    expect(screen.getByTestId('errors-footer-ask-agent')).toHaveTextContent(
+      'Ask agent about all 2 issues'
+    )
+
+    await user.type(screen.getByRole('textbox'), 'Missing text input')
+
+    expect(screen.getByTestId('errors-footer-ask-agent')).toHaveTextContent(
+      'Ask agent about all 2 issues'
+    )
+    await user.click(screen.getByTestId('errors-footer-ask-agent'))
+    expect(askAgentMock.askAgentAboutIssues).toHaveBeenCalledTimes(1)
+    expect(askAgentMock.askAgentAboutIssues.mock.calls[0][0]).toMatchObject({
+      scope: 'all',
+      count: 2,
+      label: 'All issues'
+    })
+  })
+
+  it('omits the agent actions when the agent is unavailable', () => {
+    askAgentMock.canAskAgent.value = false
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1'],
+        timestamp: Date.now()
+      })
+    })
+
+    expect(screen.queryByTestId('error-card-ask-agent')).toBeNull()
+    expect(screen.queryByTestId('errors-footer-ask-agent')).toBeNull()
+  })
+
+  it('renders runtime execution errors from WebSocket', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'KSampler'
+      })
+    )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1', 'Line 2'],
+        timestamp: Date.now()
+      })
+    })
+
+    expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Execution failed')).toBeInTheDocument()
+    expect(
+      screen.getByText('Node threw an error during execution.')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Error log')).toBeInTheDocument()
+    expect(screen.getByText(/Line 1/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Details' }))
+
+    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
+  })
+
+  it('opens a closed runtime error log when view details is requested', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'KSampler'
+      })
+    )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1', 'Line 2'],
+        timestamp: Date.now()
+      })
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Details' }))
+    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
+
+    const groupKey = screen
+      .getByTestId('error-group-execution')
+      .getAttribute('data-group-key')
+    if (!groupKey) throw new Error('missing group key')
+    useRightSidePanelStore().requestErrorDetails(['execution:unrelated'])
+    await nextTick()
+    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
+
+    useRightSidePanelStore().requestErrorDetails([groupKey])
+    await nextTick()
+
+    expect(screen.getByText(/Line 1/)).toBeInTheDocument()
+    expect(useRightSidePanelStore().errorDetailsRequest).toBe(0)
+  })
+
+  it('opens closed issue details when view details is requested', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: nodeId === '1' ? 'KSampler' : 'CLIP Text Encode'
+      })
+    )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'positive',
+              {},
+              'Required input is missing',
+              'Input: positive'
+            )
+          ],
+          'KSampler'
+        )
+      })
+    })
+
+    expect(
+      screen.queryByText('KSampler is missing a required input: positive')
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Collapse' }))
+    expect(screen.queryByText('KSampler - positive')).not.toBeInTheDocument()
+
+    const groupKey = screen
+      .getByTestId('error-group-execution')
+      .getAttribute('data-group-key')
+    if (!groupKey) throw new Error('missing group key')
+    useRightSidePanelStore().requestErrorDetails([groupKey])
+    await nextTick()
+
+    expect(screen.getByText('KSampler - positive')).toBeInTheDocument()
+    expect(
+      screen.getByText('KSampler is missing a required input: positive')
+    ).toBeInTheDocument()
+  })
+
+  it('filters errors based on search query', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(null)
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [validationError('unknown', undefined, {}, 'Missing text input', '')],
+          'CLIPTextEncode'
+        ),
+        '2': nodeError(
+          [validationError('unknown', undefined, {}, 'Out of memory', '')],
+          'KSampler'
+        )
+      })
+    })
+
+    expect(screen.getAllByText('CLIPTextEncode').length).toBeGreaterThanOrEqual(
+      1
+    )
+    expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
+
+    await user.type(screen.getByRole('textbox'), 'Missing text input')
+
+    expect(screen.getAllByText('CLIPTextEncode').length).toBeGreaterThanOrEqual(
+      1
+    )
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText('1')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+  })
+
+  it('calls copyToClipboard when a runtime error copy button is clicked', async () => {
+    const { useCopyToClipboard } =
+      await import('@/composables/useCopyToClipboard')
+    const mockCopy = vi.fn()
+    vi.mocked(useCopyToClipboard).mockReturnValue({ copyToClipboard: mockCopy })
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '1',
+        node_type: 'TestNode',
+        executed: [],
+        exception_message: 'Test message',
+        exception_type: 'RuntimeError',
+        traceback: ['Test details'],
+        timestamp: Date.now()
+      })
+    })
+
+    await user.click(screen.getByTestId('error-card-copy'))
+
+    expect(mockCopy).toHaveBeenCalledWith(
+      'Node threw an error during execution.\n\nTest details'
+    )
+  })
+
+  it('renders a single runtime error in the normal execution group', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'KSampler'
+      })
+    )
+
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1', 'Line 2'],
+        timestamp: Date.now()
+      })
+    })
+
+    expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Execution failed')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('error-group-execution')).getByTestId(
+        'runtime-error-panel'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getAllByText('Execution failed')).toHaveLength(1)
+  })
+
+  it('shows missing model Refresh in the section header when no model is downloadable', async () => {
+    const missingModel = {
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'local-only.safetensors',
+      directory: 'checkpoints',
+      isMissing: true,
+      isAssetSupported: true
+    } satisfies MissingModelCandidate
+
+    const { user } = renderComponent((pinia) => {
+      useMissingModelStore(pinia).setMissingModels([missingModel])
+    })
+
+    expect(screen.getByText('Missing Models')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('missing-model-actions')
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByTestId('missing-model-header-refresh'))
+
+    expect(app.refreshMissingModels).toHaveBeenCalledWith({ silent: true })
+  })
+
+  it('counts missing models per file when several share one directory', () => {
+    renderComponent((pinia) => {
+      useMissingModelStore(pinia).setMissingModels([
+        {
+          nodeId: '1',
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'model-a.safetensors',
+          directory: 'checkpoints',
+          isMissing: true,
+          isAssetSupported: true
+        },
+        {
+          nodeId: '2',
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'model-b.safetensors',
+          directory: 'checkpoints',
+          isMissing: true,
+          isAssetSupported: true
+        }
+      ])
+    })
+
+    const sectionBadge = within(
+      screen.getByTestId('error-group-missing-model')
+    ).getByTestId('error-section-count-badge')
+    expect(sectionBadge).toHaveTextContent('2')
+    expect(sectionBadge).toHaveAttribute('data-severity', 'missing')
+    const hero = screen.getByTestId('errors-summary-hero')
+    expect(within(hero).getByText('2')).toBeInTheDocument()
+    expect(within(hero).getByText('Setup required')).toBeInTheDocument()
+    expect(
+      within(hero).getByText('Finish setup before running the workflow')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('errors-summary-filters')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('selection-context-strip')).toHaveTextContent(
+      '2 nodes — 2 items'
+    )
+  })
+
+  it('omits the node count from setup context with no known node ids', () => {
+    renderComponent((pinia) => {
+      useMissingNodesErrorStore(pinia).setMissingNodeTypes([
+        'MissingNodeA',
+        'MissingNodeB'
+      ])
+      useMissingModelStore(pinia).setMissingModels([
+        {
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'workflow-model.safetensors',
+          isMissing: true,
+          isAssetSupported: false
+        }
+      ])
+    })
+
+    const contextStrip = screen.getByTestId('selection-context-strip')
+    expect(contextStrip).toHaveTextContent('2 items')
+    expect(contextStrip).not.toHaveTextContent('0 nodes')
+  })
+
+  it('uses an error count for mixed context with no known node ids', () => {
+    renderComponent((pinia) => {
+      useMissingModelStore(pinia).setMissingModels([
+        {
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'workflow-model.safetensors',
+          isMissing: true,
+          isAssetSupported: false
+        }
+      ])
+      useExecutionErrorStore(pinia).recordPromptError({
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      })
+    })
+
+    expect(screen.getByTestId('selection-context-strip')).toHaveTextContent(
+      '1 error'
+    )
+  })
+
+  it('renders missing model display message below the section title', () => {
+    const missingModel = {
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'local-only.safetensors',
+      directory: 'checkpoints',
+      isMissing: true,
+      isAssetSupported: true
+    } satisfies MissingModelCandidate
+
+    renderComponent((pinia) => {
+      useMissingModelStore(pinia).setMissingModels([missingModel])
+    })
+
+    expect(screen.getByText('Missing Models')).toBeInTheDocument()
+    expect(
+      screen.getByText('Download a model, or open the node to replace it.')
+    ).toBeInTheDocument()
+  })
+
+  it('keeps an absorbed missing model card amber and labels the failed run', () => {
+    const missingModel = {
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'local-only.safetensors',
+      directory: 'checkpoints',
+      isMissing: true,
+      isAssetSupported: true
+    } satisfies MissingModelCandidate
+
+    renderComponent((pinia) => {
+      useMissingModelStore(pinia).setMissingModels([missingModel])
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError('value_not_in_list', 'ckpt_name', {
+              received_value: 'local-only.safetensors'
+            })
+          ],
+          'CheckpointLoaderSimple'
+        )
+      })
+    })
+
+    const missingSection = screen.getByTestId('error-group-missing-model')
+    const marker = within(missingSection).getByTestId(
+      'blocked-last-run-indicator'
+    )
+    expect(marker).toHaveTextContent('Blocked last run')
+    expect(
+      within(missingSection).getByTestId('error-section-count-badge')
+    ).toHaveAttribute('data-severity', 'missing')
+    expect(
+      screen.queryByTestId('error-group-execution')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps absorbed missing-node markers visible when sections collapse', async () => {
+    const { user } = renderComponent((pinia) => {
+      useMissingNodesErrorStore(pinia).setMissingNodeTypes([
+        {
+          type: 'OldNode',
+          nodeId: '1',
+          isReplaceable: true,
+          replacement: {
+            old_node_id: 'OldNode',
+            new_node_id: 'NewNode',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        },
+        {
+          type: 'MissingNode',
+          nodeId: '2',
+          cnrId: 'missing-pack',
+          isReplaceable: false
+        }
+      ])
+      useExecutionErrorStore(pinia).recordPromptError({
+        type: 'missing_node_type',
+        message: 'Node types are unavailable',
+        details: ''
+      })
+    })
+
+    const hero = screen.getByTestId('errors-summary-hero')
+    expect(within(hero).getByText('2')).toBeInTheDocument()
+    expect(within(hero).getByText('Setup required')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('errors-summary-filters')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Missing node type')).not.toBeInTheDocument()
+
+    for (const section of [
+      screen.getByTestId('error-group-swap-nodes'),
+      screen.getByTestId('error-group-missing-node')
+    ]) {
+      const marker = within(section).getByTestId('blocked-last-run-indicator')
+      expect(marker).toHaveTextContent('Blocked last run')
+      await user.click(
+        within(section).getByRole('button', { name: 'Collapse' })
+      )
+      expect(
+        within(section).getByRole('button', { name: 'Expand' })
+      ).toHaveAttribute('aria-expanded', 'false')
+      expect(
+        within(section).getByTestId('blocked-last-run-indicator')
+      ).toHaveTextContent('Blocked last run')
+    }
+  })
+
+  it('renders missing media display message below the section title', () => {
+    const missingMedia = {
+      nodeId: '3',
+      nodeType: 'LoadImage',
+      widgetName: 'image',
+      mediaType: 'image',
+      name: 'portrait.png',
+      isMissing: true
+    } satisfies MissingMediaCandidate
+
+    renderComponent((pinia) => {
+      useMissingMediaStore(pinia).setMissingMedia([missingMedia])
+    })
+
+    expect(screen.getByText('Missing Inputs')).toBeInTheDocument()
+    expect(
+      screen.getByText('A required media input has no file selected.')
+    ).toBeInTheDocument()
+  })
+
+  it('renders one missing media item per referencing node and locates the selected node', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
+      const titles: Record<string, string> = {
+        '3': 'First Loader',
+        '4': 'Second Loader'
+      }
+      return fromAny<
+        NonNullable<ReturnType<typeof getNodeByExecutionId>>,
+        unknown
+      >({
+        title: titles[nodeId] ?? ''
+      })
+    })
+
+    const { user } = renderComponent((pinia) => {
+      useMissingMediaStore(pinia).setMissingMedia([
+        {
+          nodeId: '3',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'shared.png',
+          isMissing: true
+        },
+        {
+          nodeId: '4',
+          nodeType: 'PreviewImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'shared.png',
+          isMissing: true
+        }
+      ])
+    })
+
+    expect(screen.getAllByTestId('missing-media-row')).toHaveLength(2)
+    expect(
+      within(screen.getByTestId('error-group-missing-media')).getByText('2')
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText('2')
+    ).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Second Loader - image' })
+    )
+
+    expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('4')
+  })
+
+  it('totals mixed severities in the hero and splits them into filter chips', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'Node'
+      })
+    )
+
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'model',
+              {},
+              'Required input is missing',
+              'Input: model'
+            ),
+            validationError(
+              'required_input_missing',
+              'positive',
+              {},
+              'Required input is missing',
+              'Input: positive'
+            )
+          ],
+          'KSampler'
+        ),
+        '2': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'clip',
+              {},
+              'Required input is missing',
+              'Input: clip'
+            )
+          ],
+          'CLIPTextEncode'
+        )
+      })
+      useMissingMediaStore(pinia).setMissingMedia([
+        {
+          nodeId: '3',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'a.png',
+          isMissing: true
+        },
+        {
+          nodeId: '4',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'b.png',
+          isMissing: true
+        }
+      ])
+    })
+
+    const hero = screen.getByTestId('errors-summary-hero')
+    expect(within(hero).getByText('5')).toBeInTheDocument()
+    expect(within(hero).getByText('Issues detected')).toBeInTheDocument()
+    expect(screen.getByTestId('errors-summary-filter-error')).toHaveTextContent(
+      '3 Errors'
+    )
+    expect(
+      screen.getByTestId('errors-summary-filter-missing')
+    ).toHaveTextContent('2 Setup required')
+    expect(
+      within(hero).getByText('3 blocking, 2 setup required')
+    ).toBeInTheDocument()
+
+    const contextStrip = screen.getByTestId('selection-context-strip')
+    expect(contextStrip).toHaveTextContent('4 nodes affected')
+    expect(contextStrip).not.toHaveTextContent(/errors/i)
+  })
+
+  it('releases the filter when a hidden issue is replaced by another', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'Node'
+      })
+    )
+
+    let executionErrorStore!: ReturnType<typeof useExecutionErrorStore>
+    renderComponent((pinia) => {
+      executionErrorStore = useExecutionErrorStore(pinia)
+      executionErrorStore.recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'model',
+              {},
+              'Required input is missing',
+              'Input: model'
+            )
+          ],
+          'KSampler'
+        )
+      })
+      useMissingMediaStore(pinia).setMissingMedia([
+        {
+          nodeId: '3',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'a.png',
+          isMissing: true
+        }
+      ])
+    })
+
+    const user = userEvent.setup()
+    const missingChip = screen.getByTestId('errors-summary-filter-missing')
+    await user.click(missingChip)
+    expect(missingChip).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.queryByTestId('error-group-execution')
+    ).not.toBeInTheDocument()
+
+    // Hidden issue replaced in one update: the error total stays 1, but the
+    // new issue must not stay silently filtered out.
+    executionErrorStore.recordNodeErrors({
+      '5': nodeError(
+        [
+          validationError(
+            'required_input_missing',
+            'clip',
+            {},
+            'Required input is missing',
+            'Input: clip'
+          )
+        ],
+        'CLIPTextEncode'
+      )
+    })
+    await nextTick()
+
+    expect(screen.getByTestId('errors-summary-filter-missing')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    )
+    expect(screen.getByTestId('error-group-execution')).toBeInTheDocument()
+  })
+
+  it('releases the filter when a hidden file gains another referencing node', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'Node'
+      })
+    )
+
+    let mediaStore!: ReturnType<typeof useMissingMediaStore>
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'model',
+              {},
+              'Required input is missing',
+              'Input: model'
+            )
+          ],
+          'KSampler'
+        )
+      })
+      mediaStore = useMissingMediaStore(pinia)
+      mediaStore.setMissingMedia([
+        {
+          nodeId: '3',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'a.png',
+          isMissing: true
+        }
+      ])
+    })
+
+    const user = userEvent.setup()
+    const errorChip = screen.getByTestId('errors-summary-filter-error')
+    await user.click(errorChip)
+    expect(
+      screen.queryByTestId('error-group-missing-media')
+    ).not.toBeInTheDocument()
+
+    // Same file, new referencing node: the name-level identity is unchanged
+    // but a new hidden row appeared, so the filter must release.
+    mediaStore.setMissingMedia([
+      {
+        nodeId: '3',
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'a.png',
+        isMissing: true
+      },
+      {
+        nodeId: '4',
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'a.png',
+        isMissing: true
+      }
+    ])
+    await nextTick()
+
+    expect(errorChip).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('error-group-missing-media')).toBeInTheDocument()
+  })
+
+  it('shows only the chosen severity while its filter chip is pressed', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'Node'
+      })
+    )
+
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'model',
+              {},
+              'Required input is missing',
+              'Input: model'
+            )
+          ],
+          'KSampler'
+        )
+      })
+      useMissingMediaStore(pinia).setMissingMedia([
+        {
+          nodeId: '3',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'a.png',
+          isMissing: true
+        }
+      ])
+    })
+
+    expect(screen.getByTestId('error-group-execution')).toBeInTheDocument()
+    expect(screen.getByTestId('error-group-missing-media')).toBeInTheDocument()
+
+    const user = userEvent.setup()
+    const errorChip = screen.getByTestId('errors-summary-filter-error')
+    await user.click(errorChip)
+
+    expect(errorChip).toHaveAttribute('aria-pressed', 'true')
+    expect(errorChip).toHaveTextContent('1 Error detected')
+    expect(screen.getByTestId('error-group-execution')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('error-group-missing-media')
+    ).not.toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText('2')
+    ).toBeInTheDocument()
+
+    await user.click(errorChip)
+
+    expect(errorChip).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('error-group-missing-media')).toBeInTheDocument()
+  })
+
+  it('releases the filter when the hidden severity gains a new entry', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'Node'
+      })
+    )
+
+    let mediaStore!: ReturnType<typeof useMissingMediaStore>
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'model',
+              {},
+              'Required input is missing',
+              'Input: model'
+            )
+          ],
+          'KSampler'
+        )
+      })
+      mediaStore = useMissingMediaStore(pinia)
+      mediaStore.setMissingMedia([
+        {
+          nodeId: '3',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'a.png',
+          isMissing: true
+        }
+      ])
+    })
+
+    const user = userEvent.setup()
+    const errorChip = screen.getByTestId('errors-summary-filter-error')
+    await user.click(errorChip)
+    expect(
+      screen.queryByTestId('error-group-missing-media')
+    ).not.toBeInTheDocument()
+
+    mediaStore.setMissingMedia([
+      {
+        nodeId: '3',
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'a.png',
+        isMissing: true
+      },
+      {
+        nodeId: '4',
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'b.png',
+        isMissing: true
+      }
+    ])
+    await nextTick()
+
+    expect(errorChip).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('error-group-missing-media')).toBeInTheDocument()
+  })
+
+  it('releases the filter when the selection carries the hidden severity', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, executionId) =>
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        id: executionId,
+        title: 'Node'
+      })
+    )
+
+    let executionErrorStore!: ReturnType<typeof useExecutionErrorStore>
+    renderComponent((pinia) => {
+      executionErrorStore = useExecutionErrorStore(pinia)
+      executionErrorStore.recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'model',
+              {},
+              'Required input is missing',
+              'Input: model'
+            )
+          ],
+          'KSampler'
+        )
+      })
+      useMissingMediaStore(pinia).setMissingMedia([
+        {
+          nodeId: '3',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'a.png',
+          isMissing: true
+        },
+        {
+          nodeId: '4',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'b.png',
+          isMissing: true
+        }
+      ])
+    })
+
+    const user = userEvent.setup()
+    const errorChip = screen.getByTestId('errors-summary-filter-error')
+    await user.click(errorChip)
+    expect(
+      screen.queryByTestId('error-group-missing-media')
+    ).not.toBeInTheDocument()
+
+    const missingMediaNode = new LGraphNode('LoadImage')
+    missingMediaNode.id = toNodeId(3)
+    selectedItems.value = [missingMediaNode]
+    await nextTick()
+
+    expect(errorChip).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('error-group-missing-media')).toBeInTheDocument()
+  })
+
+  it('holds an engaged filter until the selection membership changes', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, executionId) =>
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        id: executionId,
+        title: 'Node'
+      })
+    )
+
+    let executionErrorStore!: ReturnType<typeof useExecutionErrorStore>
+    renderComponent((pinia) => {
+      executionErrorStore = useExecutionErrorStore(pinia)
+      executionErrorStore.recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'model',
+              {},
+              'Required input is missing',
+              'Input: model'
+            )
+          ],
+          'KSampler'
+        )
+      })
+      useMissingMediaStore(pinia).setMissingMedia([
+        {
+          nodeId: '3',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'a.png',
+          isMissing: true
+        }
+      ])
+    })
+
+    const missingMediaNode = new LGraphNode('LoadImage')
+    missingMediaNode.id = toNodeId(3)
+    selectedItems.value = [missingMediaNode]
+    await nextTick()
+
+    const user = userEvent.setup()
+    const errorChip = screen.getByTestId('errors-summary-filter-error')
+    await user.click(errorChip)
+    expect(errorChip).toHaveAttribute('aria-pressed', 'true')
+
+    // Unrelated store churn recomputes the selection-scoped Set with
+    // identical membership; the engaged filter must survive it.
+    executionErrorStore.recordNodeErrors({
+      '1': nodeError(
+        [
+          validationError(
+            'required_input_missing',
+            'model',
+            {},
+            'Required input is missing',
+            'Input: model'
+          )
+        ],
+        'KSampler'
+      ),
+      '5': nodeError(
+        [
+          validationError(
+            'required_input_missing',
+            'clip',
+            {},
+            'Required input is missing',
+            'Input: clip'
+          )
+        ],
+        'CLIPTextEncode'
+      )
+    })
+    await nextTick()
+
+    expect(errorChip).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.queryByTestId('error-group-missing-media')
+    ).not.toBeInTheDocument()
+  })
+
+  it('releases the filter when its own severity empties', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'Node'
+      })
+    )
+
+    let executionErrorStore!: ReturnType<typeof useExecutionErrorStore>
+    renderComponent((pinia) => {
+      executionErrorStore = useExecutionErrorStore(pinia)
+      executionErrorStore.recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'model',
+              {},
+              'Required input is missing',
+              'Input: model'
+            )
+          ],
+          'KSampler'
+        )
+      })
+      useMissingMediaStore(pinia).setMissingMedia([
+        {
+          nodeId: '3',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'a.png',
+          isMissing: true
+        }
+      ])
+    })
+
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('errors-summary-filter-error'))
+
+    executionErrorStore.recordNodeErrors(null)
+    await nextTick()
+
+    // The filtered severity emptied, so the filter let go instead of lying
+    // in wait; a later error must not silently hide the missing group again.
+    expect(screen.getByTestId('error-group-missing-media')).toBeInTheDocument()
+    executionErrorStore.recordNodeErrors({
+      '1': nodeError(
+        [
+          validationError(
+            'required_input_missing',
+            'model',
+            {},
+            'Required input is missing',
+            'Input: model'
+          )
+        ],
+        'KSampler'
+      )
+    })
+    await nextTick()
+
+    expect(screen.getByTestId('error-group-missing-media')).toBeInTheDocument()
+    expect(screen.getByTestId('errors-summary-filter-error')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    )
+  })
+
+  it('keeps the engaged filter through a search that empties it', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(
+      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
+        title: 'Node'
+      })
+    )
+
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'model',
+              {},
+              'Required input is missing',
+              'Input: model'
+            )
+          ],
+          'KSampler'
+        )
+      })
+      useMissingMediaStore(pinia).setMissingMedia([
+        {
+          nodeId: '3',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'a.png',
+          isMissing: true
+        }
+      ])
+    })
+
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('errors-summary-filter-error'))
+
+    // A query matching nothing in the filtered severity must show the
+    // no-results state, not fall back to the severity the user excluded —
+    // and the pressed chip must stay mounted as the release control.
+    await user.type(screen.getByRole('textbox'), 'zzz')
+    expect(screen.getByText('No results found')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('error-group-missing-media')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('errors-summary-filter-error')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+
+    await user.clear(screen.getByRole('textbox'))
+    expect(screen.getByTestId('error-group-execution')).toBeInTheDocument()
+    expect(screen.getByTestId('errors-summary-filter-error')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    expect(
+      screen.queryByTestId('error-group-missing-media')
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders swap node rows below the section display message', () => {
+    const swapNode = {
+      type: 'OldSampler',
+      nodeId: '1',
+      isReplaceable: true,
+      replacement: {
+        old_node_id: 'OldSampler',
+        new_node_id: 'KSampler',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      }
+    } satisfies MissingNodeType
+
+    renderComponent((pinia) => {
+      useMissingNodesErrorStore(pinia).setMissingNodeTypes([swapNode])
+    })
+
+    expect(screen.getByText('Swap Nodes')).toBeInTheDocument()
+    expect(
+      screen.getByText('Some nodes can be replaced with alternatives')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'OldSampler' })
+    ).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Replace Node/ })
+    ).toBeInTheDocument()
+  })
+
+  it('renders missing model Refresh in the header and Download all in the card when models are downloadable', () => {
+    const missingModel = {
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'downloadable.safetensors',
+      url: 'https://huggingface.co/comfy/test/resolve/main/downloadable.safetensors',
+      directory: 'checkpoints',
+      isMissing: true,
+      isAssetSupported: true
+    } satisfies MissingModelCandidate
+
+    renderComponent((pinia) => {
+      useMissingModelStore(pinia).setMissingModels([missingModel])
+    })
+
+    expect(screen.getByTestId('missing-model-header-refresh')).toBeVisible()
+    expect(screen.getByTestId('missing-model-actions')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
+  })
+
+  it('uses the setup glyph and accessible name for missing resources', () => {
+    renderRightSidePanel((pinia) => {
+      useMissingModelStore(pinia).setMissingModels([
+        {
+          nodeId: '1',
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'missing.safetensors',
+          isMissing: true,
+          isAssetSupported: false
+        }
+      ])
+    })
+
+    const icon = screen.getByTestId('panel-tab-icon')
+    expect(icon).toHaveAccessibleName('Setup required')
+    expect(icon.className).toContain('icon-[comfy--triangle-alert-filled]')
+    expect(icon.className).toContain('bg-warning-background')
+  })
+
+  it('uses error severity for an unabsorbed node validation error', () => {
+    renderRightSidePanel((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [validationError('value_not_in_list', 'ckpt_name')],
+          'CheckpointLoaderSimple'
+        )
+      })
+    })
+
+    const icon = screen.getByTestId('panel-tab-icon')
+    expect(icon).toHaveAccessibleName('Blocking errors')
+    expect(icon.className).toContain('icon-[comfy--circle-alert-filled]')
+  })
+
+  it('uses error severity for a runtime error with an unnormalisable node id', () => {
+    renderRightSidePanel((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: 'not::a-node',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Execution failed',
+        exception_type: 'RuntimeError',
+        traceback: [],
+        timestamp: Date.now()
+      })
+    })
+
+    const icon = screen.getByTestId('panel-tab-icon')
+    expect(icon).toHaveAccessibleName('Blocking errors')
+  })
+
+  it('uses setup severity when the same node error is absorbed', () => {
+    renderRightSidePanel((pinia) => {
+      useMissingModelStore(pinia).setMissingModels([
+        {
+          nodeId: '1',
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'missing.safetensors',
+          isMissing: true,
+          isAssetSupported: false
+        }
+      ])
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [validationError('value_not_in_list', 'ckpt_name')],
+          'CheckpointLoaderSimple'
+        )
+      })
+    })
+
+    const icon = screen.getByTestId('panel-tab-icon')
+    expect(icon).toHaveAccessibleName('Setup required')
+  })
+})

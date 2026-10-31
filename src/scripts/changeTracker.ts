@@ -9,23 +9,30 @@ import type {
   ComfyWorkflow,
   WorkflowChangeTracker
 } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
   collectSubgraphDefinitions,
   parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { serializeNodeId } from '@/types/nodeId'
+import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
+import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
+import {
+  collectNodeHistoryWidgets,
+  nodeHistoryValuesChanged,
+  withNodeHistoryValuesFrom
+} from './nodeHistoryWidgetValues'
 import { useApp } from '@/scripts/appInstance'
 import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
 import { clipspace } from '@/scripts/clipspace'
@@ -70,6 +77,38 @@ function matchesRestoredTarget(
       withNormalizedNodeSizes(previous)
     )
   )
+}
+
+type NodeHistoryWidgets = ReturnType<typeof collectNodeHistoryWidgets>
+
+function differsOnlyInNodeHistoryWidgets(
+  previous: ComfyWorkflowJSON,
+  current: ComfyWorkflowJSON,
+  widgets: NodeHistoryWidgets
+): boolean {
+  const { rootGraph } = useApp()
+  return (
+    widgets.size > 0 &&
+    nodeHistoryValuesChanged(previous, current, widgets, rootGraph.id) &&
+    ChangeTracker.graphEqual(
+      withNodeHistoryValuesFrom(previous, current, widgets, rootGraph.id),
+      current
+    )
+  )
+}
+
+function keepingLiveNodeHistoryValues(
+  target: ComfyWorkflowJSON
+): ComfyWorkflowJSON {
+  const { rootGraph } = useApp()
+  const widgets = collectNodeHistoryWidgets(rootGraph)
+  if (!widgets.size) return target
+  const live = clone(rootGraph.serialize()) as ComfyWorkflowJSON
+  return withNodeHistoryValuesFrom(target, live, widgets, rootGraph.id)
+}
+
+function forgetRemovedNodeHistories(widgets: NodeHistoryWidgets): void {
+  useWidgetHistoryStore().retainLive(useApp().rootGraph.id, widgets)
 }
 
 function isActiveTracker(tracker: ChangeTracker): boolean {
@@ -423,10 +462,21 @@ export class ChangeTracker implements WorkflowChangeTracker {
     // `this.workflow` is not reactive.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
     if (workflow) {
-      workflow.isModified = !ChangeTracker.graphEqual(
-        this.initialState,
-        this.activeState
-      )
+      // Declared non-null, but a tracker can still lack it at runtime.
+      const initialState = this.initialState as ComfyWorkflowJSON | null
+      if (initialState) {
+        workflow.isModified = !ChangeTracker.graphEqual(
+          initialState,
+          this.activeState
+        )
+      } else {
+        reportWorkflowStateAnomaly(
+          'ChangeTracker has no initial state',
+          'ChangeTracker.updateModified',
+          workflow,
+          { isActive: isActiveTracker(this) }
+        )
+      }
     }
 
     const autoQueueGraphChanged =
@@ -469,14 +519,24 @@ export class ChangeTracker implements WorkflowChangeTracker {
     ) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
       const previousState = this.activeState
-      this.undoQueue.push(previousState)
-      if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
-        this.undoQueue.shift()
+      const nodeHistoryWidgets = collectNodeHistoryWidgets(useApp().rootGraph)
+      if (
+        !differsOnlyInNodeHistoryWidgets(
+          previousState,
+          currentState,
+          nodeHistoryWidgets
+        )
+      ) {
+        this.undoQueue.push(previousState)
+        if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
+          this.undoQueue.shift()
+        }
+        this.redoQueue.length = 0
       }
 
       this.activeState = currentState
-      this.redoQueue.length = 0
       this.updateModified(previousState)
+      forgetRemovedNodeHistories(nodeHistoryWidgets)
       void this.squashState()
     }
   }
@@ -520,15 +580,16 @@ export class ChangeTracker implements WorkflowChangeTracker {
       const prevState = source.pop()
       if (prevState) {
         const previousState = this.activeState
+        const targetState = keepingLiveNodeHistoryValues(prevState)
         const restoresSavedState = ChangeTracker.graphEqual(
-          prevState,
+          targetState,
           this.initialState
         )
         let restored = false
         this._restoringState = true
         try {
           const result = await useApp().loadGraphData(
-            prevState,
+            targetState,
             false,
             false,
             this.workflow,
@@ -542,14 +603,19 @@ export class ChangeTracker implements WorkflowChangeTracker {
           this._restoringState = false
           restored ||=
             !ChangeTracker.graphEqual(this.activeState, previousState) &&
-            matchesRestoredTarget(this.activeState, prevState, previousState)
+            matchesRestoredTarget(this.activeState, targetState, previousState)
           if (restored) {
             target.push(previousState)
             if (restoresSavedState) this.initialState = clone(this.activeState)
           } else {
             source.push(prevState)
           }
-          if (restored) this.updateModified(previousState)
+          if (restored) {
+            this.updateModified(previousState)
+            forgetRemovedNodeHistories(
+              collectNodeHistoryWidgets(useApp().rootGraph)
+            )
+          }
         }
       }
     }
@@ -759,7 +825,19 @@ export class ChangeTracker implements WorkflowChangeTracker {
     return false
   }
 
-  static graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
+  static graphEqual(
+    a: ComfyWorkflowJSON | null | undefined,
+    b: ComfyWorkflowJSON | null | undefined
+  ) {
+    if (!a || !b) {
+      reportWorkflowStateAnomaly(
+        'ChangeTracker.graphEqual() called with a missing state',
+        'ChangeTracker.graphEqual',
+        undefined,
+        { hasFirst: !!a, hasSecond: !!b }
+      )
+      return false
+    }
     if (a === b) return true
 
     // Compare nodes ignoring array position and execution order

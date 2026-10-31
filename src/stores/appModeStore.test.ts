@@ -2,12 +2,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { nextTick } from 'vue'
+import { nextTick, reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   LGraphNode as LGraphNodeClass,
   SubgraphNode
@@ -17,8 +17,8 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { widgetId } from '@/types/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type {
   InputWidgetConfig,
   LinearInput,
@@ -33,7 +33,7 @@ import {
   createNodeState
 } from '@/utils/__tests__/litegraphTestUtils'
 import { resolveNode } from '@/utils/litegraphUtil'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -665,6 +665,56 @@ describe('appModeStore', () => {
       expect(app.rootGraph.extra.linearData).toEqual({
         inputs: [],
         outputs: [toNodeId(1)]
+      })
+    })
+
+    it('writes structured-cloneable linearData, not reactive proxies', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      await nextTick()
+
+      store.selectedInputs.push([entitySeed, 'seed', { height: 120 }])
+      store.selectedOutputs.push(toNodeId(1))
+      await nextTick()
+
+      const linearData = app.rootGraph.extra.linearData
+      expect(linearData).toEqual({
+        inputs: [[entitySeed, 'seed', { height: 120 }]],
+        outputs: [toNodeId(1)]
+      })
+      expect(() => structuredClone(linearData)).not.toThrow()
+    })
+
+    it('writes structured-cloneable linearData when a config nests a proxy', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      await nextTick()
+
+      const config: InputWidgetConfig & { layout: { order: number[] } } = {
+        height: 120,
+        layout: reactive({ order: [1, 2] })
+      }
+      store.selectedInputs.push([entitySeed, 'seed', config])
+      await nextTick()
+
+      const linearData = app.rootGraph.extra.linearData
+      expect(linearData).toEqual({
+        inputs: [
+          [entitySeed, 'seed', { height: 120, layout: { order: [1, 2] } }]
+        ],
+        outputs: []
+      })
+      expect(() => structuredClone(linearData)).not.toThrow()
+    })
+
+    it('omits an undefined input config instead of writing null', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      await nextTick()
+
+      store.selectedInputs.push([entitySeed, 'seed', undefined])
+      await nextTick()
+
+      expect(app.rootGraph.extra.linearData).toStrictEqual({
+        inputs: [[entitySeed, 'seed']],
+        outputs: []
       })
     })
 

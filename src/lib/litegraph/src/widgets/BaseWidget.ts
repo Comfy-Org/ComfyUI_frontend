@@ -1,26 +1,29 @@
+import type {
+  LGraphCanvas,
+  LGraphNode
+} from '@comfyorg/graph-model/entityRegistry'
 import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/types/nodeId'
 import type {
-  CanvasPointer,
-  LGraphCanvas,
-  LGraphNode,
-  Size
-} from '@/lib/litegraph/src/litegraph'
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type {
-  IBaseWidget,
-  NodeBindable
-} from '@/lib/litegraph/src/types/widgets'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { NodeBindable } from '@/lib/litegraph/src/utils/type'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/types/widgetId'
-import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
-import type { WidgetState } from '@/types/widgetState'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  ensureUniqueWidgetNames,
+  widgetId
+} from '@comfyorg/graph-model/widgetId'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import {
   applyLegacyAdvancedWrite,
   applyLegacyCanvasOnlyWrite,
@@ -92,6 +95,8 @@ export interface WidgetEventOptions {
 export function extensionValue<T>(value: T): T | null | undefined {
   return value
 }
+
+export interface BaseWidget extends IBaseWidget {}
 
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   implements IBaseWidget, NodeBindable

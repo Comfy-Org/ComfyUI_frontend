@@ -4,12 +4,9 @@
  * `BillingResult` — the builder never throws, and a code carries no server or
  * caller text a host could render by accident.
  */
-import type { BillingIntent, BillingProduct } from './contract.js'
-import { billingIntentPath, isBillingSource } from './contract.js'
-import type {
-  InvalidIdentifierCode,
-  OptionalEntryValues
-} from './entryFields.js'
+import type { BillingIntent, BillingProduct } from './contract'
+import { billingIntentPath, isBillingSource } from './contract'
+import type { InvalidIdentifierCode, OptionalEntryValues } from './entryFields'
 import {
   ENTRY_PARAM_AMOUNT,
   ENTRY_PARAM_PRODUCT,
@@ -17,10 +14,10 @@ import {
   ENTRY_PARAM_SOURCE,
   OPTIONAL_ENTRY_FIELDS,
   isEntryAmountCents
-} from './entryFields.js'
-import { isContractIdentifier } from './identifiers.js'
-import { isReturnTarget } from './returnTargets.js'
-import { parseUrl } from './url.js'
+} from './entryFields'
+import { isContractIdentifier } from './identifiers'
+import { isReturnTarget } from './returnTargets'
+import { parseUrl } from './url'
 
 export interface BillingEntryInput extends OptionalEntryValues {
   /** Only the origin is used; any path or query on it is discarded. */

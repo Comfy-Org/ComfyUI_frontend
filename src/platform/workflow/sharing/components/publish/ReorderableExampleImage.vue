@@ -3,9 +3,9 @@
     ref="tileRef"
     :class="
       cn(
-        'group relative aspect-square overflow-hidden rounded-sm outline-offset-2 focus-visible:outline-2 focus-visible:outline-border-default',
+        'group relative aspect-square overflow-hidden rounded-sm outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring',
         state === 'dragging' && 'opacity-40',
-        state === 'over' && 'ring-2 ring-primary-background'
+        state === 'over' && 'ring-2 ring-primary'
       )
     "
     tabindex="0"
@@ -35,10 +35,10 @@
       size="icon"
       :aria-label="$t('comfyHubPublish.removeExampleImage')"
       tabindex="-1"
-      class="absolute top-1 right-1 flex size-6 items-center justify-center bg-black/60 text-white opacity-0 transition-opacity not-group-has-focus-visible/grid:group-hover:opacity-100 group-focus-visible:opacity-100 hover:bg-black/80"
+      class="absolute top-1 right-1 flex size-6 bg-black/60 text-white opacity-0 transition-opacity not-group-has-focus-visible/grid:group-hover:opacity-100 group-focus-visible:opacity-100 hover:bg-black/80"
       @click="$emit('remove', image.id)"
     >
-      <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+      <i class="icon-[lucide--x]" aria-hidden="true" />
     </Button>
   </div>
 </template>
@@ -47,7 +47,7 @@
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview'
 import { nextTick, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable

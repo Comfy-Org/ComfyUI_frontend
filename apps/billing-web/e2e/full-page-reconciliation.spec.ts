@@ -202,6 +202,7 @@ for (const { name, pending, lands } of [
       body: {
         token: 'e2e-workspace-jwt-2',
         expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+        user_id: 'uid-1',
         permissions: ['workspace:read', 'billing:write'],
         role: 'owner',
         workspace: {

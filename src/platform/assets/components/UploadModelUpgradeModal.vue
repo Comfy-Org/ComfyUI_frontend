@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex w-auto max-w-[min(500px,90vw)] flex-col justify-between gap-10 border-t border-border-default p-4"
+    class="flex max-w-[min(500px,90vw)] flex-col justify-between gap-10 border-t p-4"
   >
     <UploadModelUpgradeModalBody />
 
@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import UploadModelUpgradeModalBody from '@/platform/assets/components/UploadModelUpgradeModalBody.vue'
 import UploadModelUpgradeModalFooter from '@/platform/assets/components/UploadModelUpgradeModalFooter.vue'
 import { useDialogStore } from '@/stores/dialogStore'

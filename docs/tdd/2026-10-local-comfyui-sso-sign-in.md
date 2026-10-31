@@ -60,34 +60,40 @@ match it. Prefixes: **D** decision, **B** cloud backend, **C** ComfyUI core,
 ```mermaid
 flowchart LR
   subgraph Decisions
-    D1["D1 approve partner-node design"]
-    D2["D2 Local SSO scope"]
-    D3["D3 refresh-token storage"]
+    D1["D1 partner-node design: approved 10-13"]
+    D2["D2 Local SSO scope: open"]
+    D3["D3 refresh-token storage: open"]
   end
   subgraph Backend
-    B1["B1 cloudjwt partner-node token"]
-    B2["B2 comfy-api route group + renew relay"]
-    B3["B3 ingest mint, renew, revoke"]
-    B4["B4 mint accepts OAuth access token"]
-    B5["B5 comfy-local-web client + CORS"]
-    C1["C1 core renew in comfy_api_nodes"]
+    B1["B1 cloudjwt partner-node token #12827"]
+    B2["B2 comfy-api route group + renew relay #12884"]
+    B3a["B3a ingest mint + sessions #12885"]
+    K1["K1 prod mint kill switch on #13131"]
+    B3b["B3b ingest renew + revoke #12886"]
+    B4["B4 mint accepts OAuth access token #12887"]
+    B5["B5 comfy-local-web client + CORS #12828"]
+    C1["C1 core renew in comfy_api_nodes ComfyUI#16943"]
   end
   subgraph Frontend
-    F1["F1 partner-node token at queue time"]
-    F2["F2 PKCE module"]
-    F3["F3 browser auth bridge + callback"]
-    F4["F4 token storage + refresh"]
-    F5["F5 local SSO mints from OAuth"]
+    F1["F1 partner-node token at queue time #20720"]
+    F2["F2 PKCE module #20721"]
+    F3["F3 browser auth bridge + callback #20722"]
+    F4["F4 token storage + refresh #20722"]
+    F5["F5 local SSO mints from OAuth #20725"]
     F6["F6 QA + long-queue E2E"]
   end
   D1 --> B1
   B1 --> B2
-  B1 --> B3
+  B1 --> B3a
+  B3a --> K1
+  B3a --> B3b
   B2 --> C1
-  B3 --> B4
+  B3b --> C1
+  B3b --> B4
   D2 --> B5
   B5 --> B4
-  B3 --> F1
+  B3a --> F1
+  B3b --> F1
   F2 --> F3
   B5 --> F3
   F3 --> F4
@@ -97,18 +103,26 @@ flowchart LR
   B4 --> F5
   C1 --> F6
   F5 --> F6
+  K1 -. "switch off after F6" .-> F6
+  classDef done fill:#dff3e4,stroke:#2d6a3e
+  classDef open fill:#fbf0dc,stroke:#9a5b00
+  class D1,B1,B2,B3a,B5,F1,F2,F3,F4,F5 done
+  class D2,D3,K1,B3b,B4,C1,F6 open
 ```
 
 Two tracks meet at F5: the execution token (D1 → B1–B3 → C1, F1) and local
-sign-in (D2 → B5 → F2–F4). F2 has no dependency and can start now.
+sign-in (D2 → B5 → F2–F4). Green is merged or decided, amber is open (as of
+Oct 13). B3 was split into B3a (mint) and B3b (renew, revoke); K1 keeps the
+mint off in prod until F6 passes.
 
 ### Decisions
 
-| #   | Decision                                                                                  | Who decides                  |
-| --- | ----------------------------------------------------------------------------------------- | ---------------------------- |
-| D1  | Approve the partner-node token design and its five decisions; the fate of core #16242     | Christian, security reviewer |
-| D2  | When is local SSO in scope, and for which customers                                       | Anupreet                     |
-| D3  | May a refresh token live in browser storage, or is sign-in per browser session acceptable | Christian, security          |
+| #   | Decision                                                                                  | Who decides                  | Outcome                                                                                                                                                                                                                 |
+| --- | ----------------------------------------------------------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Approve the partner-node token design and its five decisions; the fate of core #16242     | Christian, security reviewer | **Approved Oct 13** (Christian on #proj-sso: "True, no objections"). Core #16242 closed as superseded by C1. Cloud GPU job token expiry, and Christian's single-use token idea, moved to FE-3424 as separate follow-up. |
+| D2  | When is local SSO in scope, and for which customers                                       | Anupreet                     | Open                                                                                                                                                                                                                    |
+| D3  | May a refresh token live in browser storage, or is sign-in per browser session acceptable | Christian, security          | **Proposed: B (`localStorage`)**, matching Firebase sign-in on Local, with refresh under a cross-tab Web Lock (#21168, awaiting Christian's review). Until it merges, F4 keeps tokens in memory only.                   |
+| K1  | Ship B3a with the mint off in prod                                                        | Jaewon, Simon (on-call)      | **Decided Oct 13**: `IngestConfig.PartnerNodeTokenMintDisabled: true` (cloud#13131), merged only after the release carrying B3a is on prod, since ingest rejects unknown config keys. Turned off after F6.              |
 
 ### Backend
 
@@ -116,21 +130,74 @@ sign-in (D2 → B5 → F2–F4). F2 has no dependency and can start now.
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ---------- |
 | B1  | Partner-node token in `common/cloudjwt`: `sid`, single audience `comfy-partner-node`, own lifetime                                                                              | cloud   | D1         |
 | B2  | comfy-api: accept the audience on the partner route group only, 403 elsewhere; renew relay that tolerates expiry; denied-route counter                                          | cloud   | B1         |
-| B3  | Ingest: `resource: partner-node` on `/api/auth/token`; sessions table; renew and revoke; auth-method bit on billing status and secrets resolve; CORS for revoke                 | cloud   | B1         |
-| B4  | Ingest: `/api/auth/token` accepts the OAuth access token from local web, for the workspace token and the partner-node token                                                     | cloud   | B3, B5     |
+| B3a | Ingest: `resource: partner-node` on `/api/auth/token`; sessions table; mint kill switch (cloud#12885, merged)                                                                   | cloud   | B1         |
+| B3b | Ingest: renew and revoke; renew kill switch; auth-method bit on billing status and secrets resolve; CORS for revoke (cloud#12886)                                               | cloud   | B3a        |
+| B4  | Ingest: `/api/auth/token` accepts the OAuth access token from local web, for the partner-node token only (cloud#12887)                                                          | cloud   | B3b, B5    |
 | B5  | Native public client `comfy-local-web` with redirects `http://127.0.0.1/`, `http://[::1]/`, `http://localhost/` (path `/` needs no core route); loopback CORS on `/oauth/token` | cloud   | D2         |
-| C1  | Core `comfy_api_nodes/util`: read `exp`, renew before a request or after a 401, resend once. No change to `server.py` or the prompt format                                      | ComfyUI | B2         |
+| C1  | Core `comfy_api_nodes/util`: read `exp`, renew before a request or after a 401, resend once; register the two flags as bool (ComfyUI#16943)                                     | ComfyUI | B2, B3b    |
 
 ### Frontend
 
 | #   | Action                                                                                                                                                                             | Ticket           | Depends on |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ---------- |
-| F1  | Request the partner-node token at queue time behind a flag; fall back to the workspace token; revoke on logout and account switch                                                  | FE-2170          | B3         |
+| F1  | Request the partner-node token at queue time behind a flag; fall back to the workspace token; revoke on logout and account switch                                                  | FE-2170          | B3a, B3b   |
 | F2  | PKCE module in `packages/account-core`: verifier, S256 challenge, `state`, authorize URL, code exchange and refresh, with unit tests                                               | FE-3099          | none       |
 | F3  | Browser auth bridge with the `DesktopHostAuthBridge` shape, started from `src/main.ts` behind flag `local_web_sso`; read and check `code`/`state` on boot, exchange, clean the URL | FE-3099          | F2, B5     |
 | F4  | Token storage and refresh: access token in memory, refresh token per D3; clear both on sign-out                                                                                    | FE-3099          | F3, D3     |
 | F5  | The local SSO session mints the workspace and partner-node tokens from the OAuth credential                                                                                        | FE-3099, FE-2170 | F1, F4, B4 |
 | F6  | QA: port Desktop cases D1–D11 to web local; fake-clock long-queue E2E; E2E for flag off, on and token-endpoint failure                                                             | FE-3099          | F5, C1     |
+
+## Sign-in return path (revised Oct 28)
+
+QA (Denys, L4 on the local SSO test plan, `#proj-sso` Oct 28) found that the
+redirect B5 relies on never reaches the frontend: Cloud redirects the page to
+`http://127.0.0.1:8188/?code=…&state=…` and ComfyUI core answers 403.
+`create_origin_only_middleware` refuses every request with
+`Sec-Fetch-Site: cross-site` (ComfyUI #13261, comfyanonymous, April 2026), and a
+redirect from the Cloud sign-in site is a cross-site navigation. Core was
+assumed to need no change because `/` already serves the app; the guard was
+missed.
+
+**Rejected: exempt the main-page navigation in core.** Comfy-Org/ComfyUI#17410
+let `GET /` with `Sec-Fetch-Mode: navigate` and `Sec-Fetch-Dest: document`
+through the guard. Cross-site fetches, embeds, other paths and POSTs stayed
+403, it passed CI, and it was verified end to end on stagingcloud. Alexander
+deferred to comfyanonymous, who owns the guard. comfyanonymous rejected it
+(`#dev-core-engine`, Oct 28): any exemption becomes a security problem as soon as
+someone adds the wrong route, so core should not open the guard at all. The PR
+was closed. A dedicated core callback route, or an exemption behind
+`--feature-flag local_web_sso`, has the same problem and was not pursued.
+
+**Adopted: popup with a Cloud-hosted callback.** No request ever crosses into
+core.
+
+1. `requestSignIn` opens `/oauth/authorize` in a popup instead of navigating
+   the page. The redirect URI is `/oauth/local-callback.html` on the Cloud
+   origin the build signs in to, and `state` is the PKCE state plus `~` plus
+   the page's loopback origin.
+2. Sign-in and consent finish in the popup, and Cloud redirects it to the
+   callback page, a same-site navigation on the Cloud origin.
+3. The callback page (`public/oauth/local-callback.html`, a static file with
+   no app boot) reads the origin from `state`. Only for an `http:` origin on
+   `127.0.0.1` or `localhost`, it posts the callback query to `window.opener`
+   with that exact target origin, then closes.
+4. The page accepts the message only from the Cloud origin and from the popup
+   it opened, then exchanges the code with its PKCE verifier and the callback
+   redirect URI. The token endpoint's loopback CORS is unchanged.
+
+Why this is safe: the code reaches only a loopback opener; a page on another
+origin that opens the popup never receives it. Even a leaked code cannot be
+exchanged without the verifier that stays in the opener's session storage.
+Cloud pages send no `Cross-Origin-Opener-Policy`, so `window.opener` survives
+the sign-in redirects; adding COOP to Cloud would break this and must exempt
+the callback page.
+
+Changes: Comfy-Org/cloud registers the three Cloud callback URLs on
+`comfy-local-web` next to the loopback ones; the frontend adds the callback page
+and the popup flow. A blocked popup shows "Allow pop-ups for this page to
+sign in."; a closed popup leaves the page signed out without an error. The
+loopback redirect and the boot-time completion stay for builds that still
+redirect the page.
 
 ## Related documents
 

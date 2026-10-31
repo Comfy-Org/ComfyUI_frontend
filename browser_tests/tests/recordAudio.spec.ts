@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({
   initialSettings: {
@@ -13,17 +14,14 @@ test.describe('Record Audio Node', { tag: '@screenshot' }, () => {
   test('should add a record audio node and take a screenshot', async ({
     comfyPage
   }) => {
-    // Open the search box by double clicking on the canvas
     await comfyPage.canvasOps.doubleClick()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
 
-    // Search for and add the RecordAudio node
     await comfyPage.searchBox.fillAndSelectFirstNode('Record Audio', {
       exact: true
     })
     await comfyPage.nextFrame()
 
-    // Verify the RecordAudio node was added
     await expect
       .poll(
         async () =>
@@ -31,7 +29,12 @@ test.describe('Record Audio Node', { tag: '@screenshot' }, () => {
       )
       .toBe(1)
 
-    // Take a screenshot of the canvas with the RecordAudio node
-    await expect(comfyPage.canvas).toHaveScreenshot('record_audio_node.png')
+    const [recordAudioNode] =
+      await comfyPage.nodeOps.getNodeRefsByType('RecordAudio')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      [recordAudioNode],
+      'record_audio_node.png'
+    )
   })
 })

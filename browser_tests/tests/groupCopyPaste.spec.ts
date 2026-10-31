@@ -4,10 +4,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 
 test.describe('Group Copy Paste', { tag: ['@canvas'] }, () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   test('Pasted group is offset from original position', async ({
     comfyPage
   }) => {

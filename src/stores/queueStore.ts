@@ -1,26 +1,27 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
 import type {
   APITaskType,
   JobListItem,
   TaskType
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+} from '@comfyorg/api-client/jobTypes'
 import type {
   StatusWsMessageStatus,
   TaskOutput
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/types/comfy'
-import { useExtensionServiceAccess } from '@/services/extensionServiceAccess'
+import { useExtensionServiceAccess } from '@/platform/extensions/services/extensionServiceAccess'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 enum TaskItemDisplayStatus {
@@ -315,12 +316,26 @@ export const useQueueStore = defineStore('queue', () => {
     () => pendingTasks.value.length + runningTasks.value.length
   )
 
+  let currentUpdate: Promise<void> = Promise.resolve()
+
   const update = async () => {
     if (updateState.inFlight) {
       updateState.dirty = true
       return
     }
+    currentUpdate = fetchQueueAndHistory()
+    await currentUpdate
+  }
 
+  /** Like `update()`, but a coalesced call also waits for the trailing re-fetch. */
+  async function updateFresh() {
+    if (!updateState.inFlight) return update()
+    updateState.dirty = true
+    await currentUpdate
+    await currentUpdate
+  }
+
+  async function fetchQueueAndHistory() {
     updateState.inFlight = true
     updateState.dirty = false
     isLoading.value = true
@@ -351,6 +366,7 @@ export const useQueueStore = defineStore('queue', () => {
           ...queue.Pending.map((j) => j.id)
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
+        useJobModelDownloadStore().reconcileActiveJobs(activeJobIds)
       } else {
         console.error('Failed to fetch queue:', queueResult.reason)
       }
@@ -436,6 +452,7 @@ export const useQueueStore = defineStore('queue', () => {
     activeJobsCount,
 
     update,
+    updateFresh,
     clear,
     delete: deleteTask
   }

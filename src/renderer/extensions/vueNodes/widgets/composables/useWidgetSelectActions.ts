@@ -6,18 +6,18 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { isExtensionlessVideo } from '@/utils/mediaUploadUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
@@ -83,13 +83,12 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       const asset = await resolveWidgetValueAsset(widgetValue)
       if (!asset?.preview_id || modelValue.value !== widgetValue) return
 
-      const { filepath, rootFolder } = parseAnnotatedPath(widgetValue)
-      const separatorIndex = filepath.lastIndexOf('/')
+      const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
       setPreviewImage({
-        filename: filepath.slice(separatorIndex + 1),
+        filename,
         preview_id: asset.preview_id,
-        subfolder: filepath.slice(0, Math.max(separatorIndex, 0)),
-        type: isResultItemType(rootFolder) ? rootFolder : undefined
+        subfolder,
+        type: isResultItemType(type) ? type : undefined
       })
     }
   )

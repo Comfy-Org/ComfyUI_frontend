@@ -5,17 +5,33 @@ import { createI18n } from 'vue-i18n'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
+import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { mockDeploymentListing } from '@/platform/workspace/__fixtures__/deploymentListing'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
+import { api as apiMock } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 beforeEach(() => {
+  vi.mocked(apiMock.getHistory).mockResolvedValue([])
+  vi.mocked(apiMock.getSystemStats).mockResolvedValue({
+    system: {
+      os: 'Linux',
+      python_version: '3.11',
+      embedded_python: false,
+      comfyui_version: '1.0.0',
+      pytorch_version: '2.3.0',
+      argv: [],
+      ram_total: 16000000000,
+      ram_free: 8000000000
+    },
+    devices: []
+  })
   vi.mocked(useVersionCompatibilityStore().initialize).mockResolvedValue(
     undefined
   )
@@ -30,14 +46,6 @@ beforeEach(() => {
   )
 })
 
-const apiMock = vi.hoisted(() =>
-  Object.assign(new EventTarget(), {
-    getServerFeature: vi.fn((_name: string, fallback?: unknown) => fallback),
-    getSystemStats: vi.fn(async () => ({ system: {}, devices: [] })),
-    getQueue: vi.fn(async () => ({ Running: [], Pending: [] })),
-    getHistory: vi.fn(async () => [])
-  })
-)
 const distribution = vi.hoisted(
   (): {
     isCloud: typeof DistributionTypes.isCloud
@@ -67,7 +75,7 @@ const templateInputMock = vi.hoisted(() => ({
   updateProgress: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
+vi.mock(import('@/scripts/api'))
 vi.mock(import('firebase/auth'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -88,6 +96,16 @@ vi.mock(import('@/composables/sidebarTabs/registerCoreSidebarTabs'), () => ({
 vi.mock(
   import('@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'),
   () => ({ registerCoreBottomPanelTabs: vi.fn(async () => {}) })
+)
+
+vi.mock(
+  import('@/platform/customNodes/useReconnectNodeDefinitionRefresh'),
+  () => {
+    const refreshNodeDefinitionsOnReconnect = vi.fn(async () => {})
+    return {
+      useReconnectNodeDefinitionRefresh: () => refreshNodeDefinitionsOnReconnect
+    }
+  }
 )
 
 vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
@@ -119,14 +137,17 @@ vi.mock(import('@/composables/useProgressFavicon'), () => ({
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock<unknown>(
-  import('@/platform/missingMedia/missingMediaPipeline'),
+  import('@/platform/workflowErrors/missingMedia/missingMediaPipeline'),
   () => ({
     runMissingMediaPipeline: templateInputMock.runMissingMediaPipeline
   })
 )
-vi.mock<unknown>(import('@/platform/missingMedia/missingMediaScan'), () => ({
-  scanAllMediaCandidates: templateInputMock.scanCandidates
-}))
+vi.mock<unknown>(
+  import('@/platform/workflowErrors/missingMedia/missingMediaScan'),
+  () => ({
+    scanAllMediaCandidates: templateInputMock.scanCandidates
+  })
+)
 vi.mock<unknown>(
   import('@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'),
   () => ({
@@ -134,7 +155,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(
   import('@/platform/updates/common/useFrontendVersionMismatchWarning'),
   () => ({
@@ -190,13 +211,12 @@ vi.mock<unknown>(
   () => stubModule
 )
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/components/ManagerProgressToast.vue'),
+  import('@/platform/customNodes/manager/components/ManagerProgressToast.vue'),
 
   () => stubModule
 )
-vi.mock<unknown>(
-  import('@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'),
-  () => stubModule
+vi.mock(
+  import('@/platform/cloud/notification/composables/useDesktopCloudNotification')
 )
 vi.mock<unknown>(
   import('@/platform/assets/components/ModelImportProgressDialog.vue'),
@@ -242,16 +262,14 @@ describe('GraphView - reconnect wiring', () => {
     delete window.__comfyDesktop2
   })
 
-  it('wires the reconnected event to the toast and queue refresh', () => {
+  it('wires the reconnected event to the toast, queue refresh and node definition refresh', () => {
     render(GraphView, { global: { plugins: [i18n] } })
 
-    apiMock.dispatchEvent(new Event('reconnected'))
+    apiMock.dispatchCustomEvent('reconnected')
 
-    // `handleReconnected` calls both before its first `await`, so dispatching
-    // the event is enough — there is nothing to wait for, and waiting for it
-    // only hid how long the import above was taking.
     expect(useReconnectingNotification().onReconnected).toHaveBeenCalledTimes(1)
     expect(useReconnectQueueRefresh()).toHaveBeenCalledTimes(1)
+    expect(useReconnectNodeDefinitionRefresh()).toHaveBeenCalledTimes(1)
   })
 
   it('reconciles a completed template input without a page refresh', async () => {
@@ -324,7 +342,8 @@ describe('GraphView - output assets refresh', () => {
     useSidebarTabStore().activeSidebarTabId = null
     const loadNew = vi.spyOn(useAssetsStore().outputAssets, 'loadNew')
 
-    apiMock.dispatchEvent(new Event('execution_success'))
+    const apiEvents: EventTarget = apiMock
+    apiEvents.dispatchEvent(new Event('execution_success'))
 
     await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
   })

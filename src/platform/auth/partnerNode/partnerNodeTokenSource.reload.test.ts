@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createPartnerNodeTokenSource } from '@/platform/auth/partnerNode/partnerNodeTokenSource'
 import type { PartnerNodeTokenTarget } from '@/platform/auth/partnerNode/partnerNodeTokenSource'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
@@ -16,6 +16,7 @@ function mintResponse(token: string) {
   return Response.json({
     token,
     expires_at: new Date(NOW + 90 * 60 * 1000).toISOString(),
+    user_id: 'uid-1',
     workspace: { id: 'ws-a', name: 'Team', type: 'team' },
     role: 'owner',
     permissions: []

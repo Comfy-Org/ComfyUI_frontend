@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
-import Popover from '@/components/common/ImperativePopover.vue'
-import { computed, ref } from 'vue'
+import { unrefElement, whenever } from '@vueuse/core'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
+import ToastPanel from '@comfyorg/design-system/toast/ToastPanel'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import {
   isDownloadCancelled,
@@ -25,11 +27,16 @@ const visible = computed(() => assetDownloadStore.hasDownloads)
 
 const isExpanded = ref(false)
 const activeFilter = ref<'all' | 'completed' | 'failed'>('all')
-const filterPopoverRef = ref<InstanceType<typeof Popover> | null>(null)
+const isFilterOpen = ref(false)
+const filterAnchor = useTemplateRef<InstanceType<typeof Button>>('filterAnchor')
+
+usePopoverViewportDismiss(isFilterOpen, () => unrefElement(filterAnchor))
 
 whenever(
   () => !isExpanded.value,
-  () => filterPopoverRef.value?.hide()
+  () => {
+    isFilterOpen.value = false
+  }
 )
 
 const filterOptions = [
@@ -38,13 +45,9 @@ const filterOptions = [
   { value: 'failed', label: 'failed' }
 ] as const
 
-function onFilterClick(event: Event) {
-  filterPopoverRef.value?.toggle(event)
-}
-
 function setFilter(filter: typeof activeFilter.value) {
   activeFilter.value = filter
-  filterPopoverRef.value?.hide()
+  isFilterOpen.value = false
 }
 
 const downloadJobs = computed(() => assetDownloadStore.downloadList)
@@ -72,6 +75,15 @@ const outcomeLabel = computed(() => {
       count: failedJobs.value.length
     })
   if (cancelledJobs.value.length > 0) return t('electronFileDownload.cancelled')
+  if (downloadJobs.value.every((job) => job.source === 'upload'))
+    return t(
+      'progressToast.uploadsInLibrary',
+      {
+        name: downloadJobs.value[0]?.assetName,
+        count: downloadJobs.value.length
+      },
+      downloadJobs.value.length
+    )
   return t('progressToast.allDownloadsCompleted')
 })
 
@@ -126,49 +138,49 @@ async function cancelDownload(taskId: TaskId) {
 <template>
   <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
-      <div
-        class="flex h-12 items-center justify-between border-b border-border-default px-4"
-      >
-        <h3 class="text-sm font-bold text-base-foreground">
+      <div class="flex h-12 items-center justify-between border-b px-4">
+        <h3 class="text-sm font-bold">
           {{ t('progressToast.importingModels') }}
         </h3>
         <div class="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="md"
-            class="gap-1.5 px-2"
-            @click="onFilterClick"
-          >
-            <i class="icon-[lucide--list-filter] size-4" />
-            <span>{{ activeFilterLabel }}</span>
-            <i class="icon-[lucide--chevron-down] size-3" />
-          </Button>
-          <Popover
-            ref="filterPopoverRef"
-            align="end"
-            content-class="border-none bg-transparent p-0 pt-2"
-          >
-            <div
-              class="flex min-w-30 flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
-            >
+          <PopoverRoot v-model:open="isFilterOpen">
+            <PopoverTrigger as-child>
               <Button
-                v-for="option in filterOptions"
-                :key="option.value"
-                variant="textonly"
-                size="sm"
-                :class="
-                  cn(
-                    'w-full justify-start bg-transparent',
-                    activeFilter === option.value &&
-                      'bg-secondary-background-selected'
-                  )
-                "
-                @click="setFilter(option.value)"
+                ref="filterAnchor"
+                variant="secondary"
+                size="md"
+                class="gap-1.5 px-2"
               >
-                {{ t(`progressToast.filter.${option.label}`) }}
+                <i class="icon-[lucide--list-filter]" />
+                <span>{{ activeFilterLabel }}</span>
+                <i class="icon-[lucide--chevron-down] size-3" />
               </Button>
-            </div>
-          </Popover>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              class="w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+            >
+              <div
+                class="flex min-w-30 flex-col rounded-lg border bg-background px-2 py-3"
+              >
+                <Button
+                  v-for="option in filterOptions"
+                  :key="option.value"
+                  variant="textonly"
+                  size="sm"
+                  :class="
+                    cn(
+                      'w-full justify-start bg-transparent',
+                      activeFilter === option.value && 'bg-muted'
+                    )
+                  "
+                  @click="setFilter(option.value)"
+                >
+                  {{ t(`progressToast.filter.${option.label}`) }}
+                </Button>
+              </div>
+            </PopoverContent>
+          </PopoverRoot>
         </div>
       </div>
 
@@ -206,39 +218,29 @@ async function cancelDownload(taskId: TaskId) {
     </template>
 
     <template #footer="{ toggle }">
-      <div
-        class="flex h-12 items-center justify-between gap-2 border-t border-border-default px-4"
-      >
+      <div class="flex h-12 items-center justify-between gap-2 border-t px-4">
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <template v-if="isInProgress">
             <Loader size="sm" class="shrink-0 text-muted-foreground" />
-            <span
-              class="min-w-0 flex-1 truncate font-bold text-base-foreground"
-            >
+            <span class="min-w-0 flex-1 truncate font-bold">
               {{ currentJobName }}
             </span>
           </template>
           <template v-else-if="failedJobs.length > 0">
-            <i
-              class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
-            />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
+            <i class="icon-[lucide--circle-alert] text-destructive" />
+            <span class="min-w-0 truncate font-bold">
               {{ outcomeLabel }}
             </span>
           </template>
           <template v-else-if="cancelledJobs.length > 0">
-            <i
-              class="icon-[lucide--circle-x] size-4 shrink-0 text-muted-foreground"
-            />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
+            <i class="icon-[lucide--circle-x] text-muted-foreground" />
+            <span class="min-w-0 truncate font-bold">
               {{ outcomeLabel }}
             </span>
           </template>
           <template v-else>
-            <i
-              class="icon-[lucide--check-circle] size-4 shrink-0 text-jade-600"
-            />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
+            <i class="icon-[lucide--check-circle] text-success" />
+            <span class="min-w-0 truncate font-bold">
               {{ outcomeLabel }}
             </span>
           </template>
@@ -268,12 +270,9 @@ async function cancelDownload(taskId: TaskId) {
             >
               <i
                 :class="
-                  cn(
-                    'size-4',
-                    isExpanded
-                      ? 'icon-[lucide--chevron-down]'
-                      : 'icon-[lucide--chevron-up]'
-                  )
+                  isExpanded
+                    ? 'icon-[lucide--chevron-down]'
+                    : 'icon-[lucide--chevron-up]'
                 "
               />
             </Button>
@@ -285,7 +284,7 @@ async function cancelDownload(taskId: TaskId) {
               :aria-label="t('g.close')"
               @click.stop="closeDialog"
             >
-              <i class="icon-[lucide--x] size-4" />
+              <i class="icon-[lucide--x]" />
             </Button>
           </div>
         </div>

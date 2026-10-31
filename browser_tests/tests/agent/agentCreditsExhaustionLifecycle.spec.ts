@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { test } from '@e2e/tests/agent/agentCreditsExhaustionLifecycleMocks'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe(
   'Agent standing credits-exhaustion lifecycle',
@@ -60,7 +61,7 @@ test.describe(
         agentBilling.failSubsequentRefreshes()
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
-        ).toHaveText(['Make the lighting warmer'])
+        ).toHaveText(['Build a red fox workflow', 'Make the lighting warmer'])
         await agentPanel.close()
         heldRefresh.release()
         await heldRefresh.completed
@@ -78,7 +79,11 @@ test.describe(
         await expect(paywall).toBeVisible()
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
-        ).toHaveText(['Add shallow depth of field'])
+        ).toHaveText([
+          'Build a red fox workflow',
+          'Make the lighting warmer',
+          'Add shallow depth of field'
+        ])
       })
 
       await test.step('recover again and preserve the conversation', async () => {
@@ -89,7 +94,12 @@ test.describe(
         await expect(paywall).toHaveCount(0)
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
-        ).toHaveText(['Add shallow depth of field', 'Finish the workflow'])
+        ).toHaveText([
+          'Build a red fox workflow',
+          'Make the lighting warmer',
+          'Add shallow depth of field',
+          'Finish the workflow'
+        ])
       })
 
       await test.step('warn once the Agent grant alone runs out', async () => {
@@ -100,10 +110,12 @@ test.describe(
           enMessages.agent.creditTransitionNotice
         )
         await expect(paywall).toHaveCount(0)
-        await expect(notice).toHaveScreenshot(
+        await expectElementScreenshot(
+          notice,
           'agent-credit-transition-notice.png'
         )
-        await expect(agentPanel.composerStack).toHaveScreenshot(
+        await expectElementScreenshot(
+          agentPanel.composerStack,
           'agent-credit-transition-composer-stack.png'
         )
         await expect.poll(noticeEvents).toEqual([

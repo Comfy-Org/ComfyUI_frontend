@@ -1,3 +1,4 @@
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Position } from '@e2e/fixtures/constants/types'
 
 /**
@@ -47,9 +48,9 @@ export const DefaultGraphPositions = {
   loadCheckpointNodeClipOutputSlot: Position
   emptySpace: Position
   emptyLatentWidgetClick: Position
-  ksampler: { pos: Position; size: { width: number; height: number } }
-  loadCheckpoint: { pos: Position; size: { width: number; height: number } }
-  emptyLatent: { pos: Position; size: { width: number; height: number } }
+  ksampler: { pos: Position; size: Size2D }
+  loadCheckpoint: { pos: Position; size: Size2D }
+  emptyLatent: { pos: Position; size: Size2D }
 }
 
 /**

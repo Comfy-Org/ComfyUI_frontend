@@ -2,7 +2,7 @@
   <div class="relative" @pointerdown.stop>
     <div
       v-if="!hideWhenEmpty || modelValue"
-      class="relative box-border flex h-16 w-full items-center justify-start gap-4 rounded-lg bg-component-node-widget-background px-4 py-0"
+      class="relative flex h-16 w-full items-center gap-4 rounded-lg bg-input px-4 py-0"
     >
       <!-- Hidden audio element -->
       <audio
@@ -14,7 +14,7 @@
       />
 
       <!-- Left Actions -->
-      <div class="relative flex shrink-0 items-center justify-start gap-2">
+      <div class="relative flex shrink-0 items-center gap-2">
         <!-- Play/Pause Button -->
         <Button
           variant="textonly"
@@ -25,21 +25,21 @@
         >
           <i
             v-if="!isPlaying"
-            class="icon-[lucide--play] size-4 text-muted-foreground"
+            class="icon-[lucide--play] text-muted-foreground"
           />
-          <i v-else class="icon-[lucide--pause] size-4 text-muted-foreground" />
+          <i v-else class="icon-[lucide--pause] text-muted-foreground" />
         </Button>
 
         <!-- Time Display -->
-        <div class="text-sm font-normal text-nowrap text-base-foreground">
+        <div class="text-sm font-normal text-nowrap text-foreground">
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </div>
       </div>
 
       <!-- Progress Bar -->
-      <div class="relative h-0.5 flex-1 rounded-full bg-interface-stroke">
+      <div class="relative h-0.5 flex-1 rounded-full bg-border">
         <div
-          class="absolute top-0 left-0 h-full rounded-full bg-button-icon transition-all"
+          class="absolute top-0 left-0 h-full rounded-full bg-muted-foreground transition-all"
           :style="{ width: `${progressPercentage}%` }"
         />
         <input
@@ -55,7 +55,7 @@
       </div>
 
       <!-- Right Actions -->
-      <div class="relative flex shrink-0 items-center justify-start gap-2">
+      <div class="relative flex shrink-0 items-center gap-2">
         <!-- Volume Button -->
         <Button
           variant="textonly"
@@ -66,16 +66,13 @@
         >
           <i
             v-if="showVolumeTwo"
-            class="icon-[lucide--volume-2] size-4 text-muted-foreground"
+            class="icon-[lucide--volume-2] text-muted-foreground"
           />
           <i
             v-else-if="showVolumeOne"
-            class="icon-[lucide--volume-1] size-4 text-muted-foreground"
+            class="icon-[lucide--volume-1] text-muted-foreground"
           />
-          <i
-            v-else
-            class="icon-[lucide--volume-x] size-4 text-muted-foreground"
-          />
+          <i v-else class="icon-[lucide--volume-x] text-muted-foreground" />
         </Button>
 
         <!-- Download Button -->
@@ -85,10 +82,10 @@
           variant="textonly"
           :aria-label="$t('g.downloadAudio')"
           :title="$t('g.downloadAudio')"
-          class="size-6 hover:bg-interface-menu-component-surface-hovered"
+          class="size-6"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] size-4 text-muted-foreground" />
+          <i class="icon-[lucide--download] text-muted-foreground" />
         </Button>
 
         <!-- Options Button -->
@@ -100,14 +97,12 @@
               :aria-label="$t('g.moreOptions')"
               class="size-6 rounded-sm"
             >
-              <i
-                class="icon-[lucide--more-vertical] size-4 text-muted-foreground"
-              />
+              <i class="icon-[lucide--more-vertical] text-muted-foreground" />
             </Button>
           </template>
           <template #item="{ item, hasSubmenu }">
             <div v-if="item.key === 'volume'" class="w-48">
-              <label class="mb-2 block text-xs text-base-foreground">{{
+              <label class="mb-2 block text-xs text-foreground">{{
                 item.label
               }}</label>
               <Slider
@@ -115,7 +110,6 @@
                 :min="0"
                 :max="10"
                 :step="1"
-                class="w-full"
                 @update:model-value="handleVolumeChange"
               />
             </div>
@@ -135,10 +129,10 @@ import { whenever } from '@vueuse/core'
 import { useToast } from '@/components/ui/toast/toastStore'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import MenuItemContent from '@/components/ui/menu/MenuItemContent.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuItemContent from '@comfyorg/design-system/menu/MenuItemContent'
+import Slider from '@comfyorg/design-system/slider/Slider'
 
 import { formatTime } from '@/utils/formatUtil'
 

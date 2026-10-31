@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import type { Rect } from './interfaces'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraph, LGraphNode, LiteGraph } from './litegraph'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 describe('layout geometry projection', () => {
   beforeEach(() => {

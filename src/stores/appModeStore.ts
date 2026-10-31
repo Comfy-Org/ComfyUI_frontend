@@ -18,17 +18,17 @@ import type { ComfyApp } from '@/types/comfy'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   getWidgetIdForNode,
   resolveNode,
   resolveNodeWidget
 } from '@/utils/litegraphUtil'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
-import { isWidgetId, parseWidgetId } from '@/types/widgetId'
-import type { ViewMode } from '@/utils/appMode'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { isWidgetId, parseWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { ViewMode } from '@comfyorg/graph-model/appMode'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,
@@ -245,7 +245,16 @@ export const useAppModeStore = defineStore('appMode', () => {
       const graph = useApp().rootGraph
       const extra = graph.extra
       extra.linearData = {
-        inputs: [...data.inputs],
+        inputs: data.inputs.map(
+          ([id, name, config]): LinearInput =>
+            config
+              ? [
+                  id,
+                  name,
+                  JSON.parse(JSON.stringify(config)) as InputWidgetConfig
+                ]
+              : [id, name]
+        ),
         outputs: [...data.outputs]
       }
       workflowStore.activeWorkflow?.changeTracker.captureCanvasState()

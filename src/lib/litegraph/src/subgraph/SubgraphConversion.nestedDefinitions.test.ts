@@ -16,15 +16,13 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
   createTestRootGraph,
   enableSubgraphNodeCreation,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 beforeEach(() => {
   resetSubgraphFixtureState()

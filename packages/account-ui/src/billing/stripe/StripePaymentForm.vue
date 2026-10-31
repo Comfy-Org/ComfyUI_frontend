@@ -2,10 +2,7 @@
   <form class="flex min-h-0 flex-col gap-6 xl:flex-1" @submit.prevent="submit">
     <div v-if="!pageLayout" class="flex items-start justify-between gap-4">
       <div>
-        <h3
-          :id="headingId"
-          class="m-0 text-base font-semibold text-base-foreground"
-        >
+        <h3 :id="headingId" class="m-0 text-base font-semibold text-foreground">
           {{ copy.paymentMethod }}
         </h3>
         <p class="m-0 mt-1 max-w-md text-sm text-muted-foreground">
@@ -15,7 +12,7 @@
     </div>
     <div
       v-if="configurationError"
-      class="rounded-lg border border-destructive-background bg-destructive-background/10 px-3 py-2 text-sm text-destructive-background"
+      class="rounded-lg border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
       {{ configurationError }}
     </div>
@@ -33,7 +30,7 @@
         <h4
           :class="
             cn(
-              'm-0 text-base-foreground',
+              'm-0 text-foreground',
               pageLayout ? 'text-base font-normal' : 'text-sm font-medium'
             )
           "
@@ -44,10 +41,10 @@
       </div>
       <div
         v-if="selectedMethodType === 'alipay'"
-        class="flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-xs text-muted-foreground"
+        class="flex items-start gap-3 rounded-xl bg-background/60 px-4 py-3 text-xs text-muted-foreground"
       >
         <i
-          class="mt-0.5 icon-[lucide--shield-check] size-4 shrink-0 text-(--success-foreground)"
+          class="mt-0.5 icon-[lucide--shield-check] text-(--success-foreground)"
         />
         <p class="m-0">
           {{ copy.alipayRenewalNote }}
@@ -102,14 +99,15 @@ const {
   canSubmit = true,
   locked = false,
   themeKey = '',
-  pageLayout = false
+  pageLayout = false,
+  payOnce = false
 } = defineProps<{
   publishableKey: string
   amountCents: number
   currency: string
   copy: StripePaymentCopy
-  /** Stripe payment method configuration governing which methods Elements
-   *  offers (served per-environment by the preview). */
+  /** Stripe payment method configuration governing which methods a subscription
+   *  offers (served per-environment by the preview); paying once is card only. */
   paymentMethodConfigurationId?: string
   isLoading?: boolean
   /** A 3DS verification is pending: the host's own verification action is
@@ -125,6 +123,8 @@ const {
   /** The full-page checkout titles the column itself, so the form drops its
    *  heading and subtitle and sets the address label in the body style. */
   pageLayout?: boolean
+  /** A one-time payment the card is never saved for, instead of a renewing subscription. */
+  payOnce?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -197,6 +197,7 @@ function mountPaymentElement(
     // inputs, and a customer who filled the two differently would send the
     // issuer an address that contradicts the one we collected for AVS.
     fields: { billingDetails: { address: 'never' } },
+    ...(payOnce ? { wallets: { link: 'never' as const } } : {}),
     // The host's terms note carries the recurring-charge authorization;
     // Stripe's card mandate text would say it twice.
     terms: { card: 'never' }
@@ -245,15 +246,21 @@ function mountAddressElement(
   })
 }
 
+function intentOptions() {
+  return payOnce
+    ? { mode: 'payment' as const, paymentMethodTypes: ['card'] }
+    : {
+        mode: 'subscription' as const,
+        setupFutureUsage: 'off_session' as const,
+        paymentMethodConfiguration: paymentMethodConfigurationId
+      }
+}
+
 onMounted(async () => {
   if (!publishableKey || !paymentMethodConfigurationId) {
     failElementInit()
     return
   }
-  // A non-positive amount means the caller mounted this before its quote
-  // resolved. Stay silent rather than latching an error the caller cannot
-  // clear: callers gate on a ready quote, and a wrong error here reads to the
-  // customer as "payment is broken" when the amount is merely still loading.
   if (amountCents <= 0) return
 
   try {
@@ -267,15 +274,9 @@ onMounted(async () => {
     return
   }
   stripeElements.value = stripe.elements({
-    mode: 'subscription',
+    ...intentOptions(),
     amount: amountCents,
     currency: currency.toLowerCase(),
-    // Intent-wide by policy: every method offered here must be chargeable
-    // off-session at renewal, so Stripe's dynamic filtering is the gate —
-    // a configuration-enabled method without off-session support (or without
-    // this account's permission for it) simply never renders.
-    setupFutureUsage: 'off_session',
-    paymentMethodConfiguration: paymentMethodConfigurationId,
     appearance: resolveAppearance(paymentElementTarget.value)
   })
   mountPaymentElement(stripeElements.value, paymentElementTarget.value)
@@ -391,37 +392,37 @@ function resolveAppearance(themeRoot: HTMLElement): Appearance {
     variables: {
       // Selection (radio, selected label, accordion highlight) uses the
       // theme-aware foreground rather than brand blue.
-      colorPrimary: resolveThemeColor('--base-foreground'),
-      colorBackground: resolveThemeColor('--base-background'),
-      colorText: resolveThemeColor('--base-foreground'),
+      colorPrimary: resolveThemeColor('--foreground'),
+      colorBackground: resolveThemeColor('--background'),
+      colorText: resolveThemeColor('--foreground'),
       colorTextSecondary: resolveThemeColor('--muted-foreground'),
-      colorDanger: resolveThemeColor('--destructive-background'),
+      colorDanger: resolveThemeColor('--destructive'),
       // Same token as the pricing table's "Save 20%" pill, so all
       // deal/discount badges share one accent.
-      colorSuccess: resolveThemeColor('--primary-background'),
+      colorSuccess: resolveThemeColor('--primary'),
       fontFamily: getComputedStyle(themeRoot).fontFamily,
       borderRadius: '10px',
       spacingUnit: '5px'
     },
     rules: {
       '.AccordionItem': {
-        backgroundColor: resolveThemeColor('--base-background'),
+        backgroundColor: resolveThemeColor('--background'),
         // Transparent (not none) so rows keep their size when the
         // selected item paints its outline.
         border: '1px solid transparent',
         boxShadow: 'none'
       },
       '.AccordionItem--selected': {
-        borderColor: resolveThemeColor('--base-foreground')
+        borderColor: resolveThemeColor('--foreground')
       },
       '.Input': {
-        backgroundColor: resolveThemeColor('--input-surface'),
-        borderColor: resolveThemeColor('--border-default'),
+        backgroundColor: resolveThemeColor('--input'),
+        borderColor: resolveThemeColor('--border'),
         boxShadow: 'none'
       },
       '.Input:focus': {
-        borderColor: resolveThemeColor('--primary-background'),
-        boxShadow: `0 0 0 1px ${resolveThemeColor('--primary-background')}`
+        borderColor: resolveThemeColor('--primary'),
+        boxShadow: `0 0 0 1px ${resolveThemeColor('--primary')}`
       },
       '.Label': {
         fontWeight: '500'

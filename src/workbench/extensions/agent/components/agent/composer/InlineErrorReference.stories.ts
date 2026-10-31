@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { fn } from 'storybook/test'
 
-import '../../../agentPanel.css'
+import '@/workbench/extensions/agent/agentPanel.css'
 
-import type { AgentErrorContext } from '../../../types/agentErrorContext'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import InlineErrorReference from './InlineErrorReference.vue'
 
 const meta: Meta<typeof InlineErrorReference> = {
@@ -17,7 +18,8 @@ const meta: Meta<typeof InlineErrorReference> = {
   ],
   args: {
     removeLabel: 'Remove attached issue',
-    countLabel: '3 problems'
+    countLabel: '3 problems',
+    onRemove: fn()
   }
 }
 

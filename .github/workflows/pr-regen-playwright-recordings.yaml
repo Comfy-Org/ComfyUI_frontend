@@ -1,0 +1,45 @@
+name: 'PR: Regenerate Playwright Recordings'
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+
+jobs:
+  regen:
+    if: >-
+      github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) &&
+      startsWith(github.event.comment.body, '/playwright-regen-recordings')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.issue.number }}
+    steps:
+      - name: Drop cached recordings and rerun CI Playwright Videos
+        run: |
+          read -r HEAD_REPO HEAD_REF HEAD_SHA < <(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" \
+            --jq '[.head.repo.full_name, .head.ref, .head.sha] | @tsv')
+          test "$HEAD_REPO" = "$GH_REPO" || { echo "::error::Videos are recorded only for branches in $GH_REPO"; exit 1; }
+          RUNS_URL="repos/$GH_REPO/actions/workflows/ci-playwright-videos.yaml/runs"
+          SAME_REPO=".workflow_runs[] | select(.head_repository.full_name == \"$GH_REPO\") | .id"
+          RUN_ID=$(gh api -X GET "$RUNS_URL" -f event=pull_request -F per_page=100 -f head_sha="$HEAD_SHA" --jq "$SAME_REPO" | head -1)
+          test -n "$RUN_ID" || { echo "::error::No CI: Playwright Videos run for $HEAD_SHA"; exit 1; }
+          RUN_STATUS=$(gh api "repos/$GH_REPO/actions/runs/$RUN_ID" --jq .status)
+          test "$RUN_STATUS" = completed || { echo "::error::Run $RUN_ID is $RUN_STATUS; comment again once it finishes"; exit 1; }
+          RUNS=$(gh api -X GET "$RUNS_URL" -f event=pull_request -F per_page=100 -f branch="$HEAD_REF" --jq "$SAME_REPO")
+          for RUN in $RUNS; do
+            ARTIFACTS=$(gh api "repos/$GH_REPO/actions/runs/$RUN/artifacts?name=video-cache-index" --jq '.artifacts[] | select(.expired | not) | .id')
+            for ARTIFACT in $ARTIFACTS; do
+              gh api -X DELETE "repos/$GH_REPO/actions/artifacts/$ARTIFACT"
+            done
+          done
+          gh run rerun "$RUN_ID"
+          echo "Rerunning https://github.com/$GH_REPO/actions/runs/$RUN_ID without cached recordings"

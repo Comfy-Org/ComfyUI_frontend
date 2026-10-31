@@ -2,6 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
@@ -52,6 +53,14 @@ describe('useBrowserTabTitle', () => {
     const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     expect(document.title).toBe('ComfyUI')
+    scope.stop()
+  })
+
+  it('falls back to the document title present when the composable starts', () => {
+    document.title = 'Comfy Cloud'
+    const scope = effectScope()
+    scope.run(() => useBrowserTabTitle())
+    expect(document.title).toBe('Comfy Cloud')
     scope.stop()
   })
 
@@ -202,5 +211,47 @@ describe('useBrowserTabTitle', () => {
     await nextTick()
     expect(document.title).toBe('[40%][2 nodes running]')
     scope.stop()
+  })
+
+  describe('when the agent waits for an approval', () => {
+    it('prefixes the title while any agent turn awaits an answer', async () => {
+      workflowStore.activeWorkflow = fromPartial<
+        NonNullable<typeof workflowStore.activeWorkflow>
+      >({ filename: 'myFlow', isModified: false, isPersisted: true })
+      const tabActivity = useWorkflowTabActivityStore()
+      const scope = effectScope()
+      scope.run(() => useBrowserTabTitle())
+
+      tabActivity.setAgentAwaitingApproval(true)
+      await nextTick()
+      expect(document.title).toBe('[Input needed] myFlow - ComfyUI')
+
+      tabActivity.clearAgentActivity()
+      await nextTick()
+      expect(document.title).toBe('myFlow - ComfyUI')
+      scope.stop()
+    })
+
+    it('puts the prefix before execution progress', async () => {
+      Object.assign(executionStore, { isIdle: false, executionProgress: 0.4 })
+      executionStore.nodeProgressStates = {
+        '1': {
+          state: 'running',
+          value: 5,
+          max: 10,
+          node_id: '1',
+          prompt_id: 'test'
+        }
+      }
+      Object.assign(executionStore, {
+        executingNode: { type: 'Foo', title: 'Foo' }
+      })
+      useWorkflowTabActivityStore().setAgentAwaitingApproval(true)
+      const scope = effectScope()
+      scope.run(() => useBrowserTabTitle())
+      await nextTick()
+      expect(document.title).toBe('[Input needed] [40%][50%] Foo')
+      scope.stop()
+    })
   })
 })

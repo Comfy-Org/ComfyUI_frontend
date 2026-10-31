@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import type {
   AskUnavailablePart,
   NoticePart
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 const { part } = defineProps<{ part: NoticePart | AskUnavailablePart }>()
 
@@ -26,12 +26,12 @@ const notice = computed<NoticePart>(() =>
       cn(
         'flex items-start gap-2 rounded-xl border px-3 py-2 text-sm',
         notice.level === 'error'
-          ? 'border-destructive-background/40 text-destructive-background'
-          : 'border-component-node-border text-muted-foreground'
+          ? 'border-destructive/40 text-destructive'
+          : 'border-border text-muted-foreground'
       )
     "
   >
-    <span class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
+    <i aria-hidden="true" class="mt-0.5 icon-[lucide--triangle-alert]" />
     <span class="flex flex-col gap-0.5">
       <span>{{ notice.text }}</span>
       <span

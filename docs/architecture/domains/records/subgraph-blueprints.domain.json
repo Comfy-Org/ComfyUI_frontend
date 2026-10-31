@@ -6,10 +6,6 @@
     {
       "path": "src/stores/subgraphStore.ts",
       "role": "application"
-    },
-    {
-      "path": "src/stores/subgraphStore.test.ts",
-      "role": "application"
     }
   ],
   "publicEntryPoints": [],

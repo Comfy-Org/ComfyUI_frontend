@@ -11,7 +11,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -19,7 +19,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 const mockApp = vi.hoisted(() => ({
@@ -30,13 +30,30 @@ const mockApp = vi.hoisted(() => ({
   }
 }))
 
+vi.mock<unknown>(
+  import('@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'),
+  () => ({
+    useAskAgentAboutIssues: () => ({
+      canAskAgent: { value: false },
+      askAgentAboutIssues: vi.fn()
+    })
+  })
+)
+
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
 
 vi.mock(import('@/composables/graph/useGraphHierarchy'), () => ({
   useGraphHierarchy: () => ({ findParentGroup: vi.fn(() => null) })
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/canvas/useFocusNode'), () => ({
+  useFocusNode: () => ({
+    focusNode: vi.fn(),
+    focusNodeInstance: vi.fn()
+  })
+}))
+
+vi.mock(import('@comfyorg/telemetry'))
 
 function createPanelI18n() {
   return createI18n({

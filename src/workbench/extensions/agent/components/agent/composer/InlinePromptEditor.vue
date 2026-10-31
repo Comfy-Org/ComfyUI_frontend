@@ -20,21 +20,21 @@ import { useI18n } from 'vue-i18n'
 
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
-import { useAgentComposerStore } from '../../../stores/agent/agentComposerStore'
-import type { ComposerPrompt } from '../../../types/composerPrompt'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
 import {
   composerReferenceKey,
   composerReferenceName
-} from '../../../types/composerPrompt'
-import { sameComposerReferenceOrder } from '../../../utils/composerPrompt'
+} from '@/workbench/extensions/agent/types/composerPrompt'
+import { sameComposerReferenceOrder } from '@/workbench/extensions/agent/utils/composerPrompt'
 import {
   assetReferenceText,
   nodeReferenceText
-} from '../../../utils/agentMessageText'
-import { selectedNodeKey } from '../../../composables/agent/useCanvasSelection'
-import type { PromptEditor } from '../../../types/promptEditor'
-import type { WorkflowReferenceMetadata } from '../../../types/workflowReference'
-import type { SkillReferenceMetadata } from '../../../types/skillReference'
+} from '@/workbench/extensions/agent/utils/agentMessageText'
+import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import type { PromptEditor } from '@/workbench/extensions/agent/types/promptEditor'
+import type { WorkflowReferenceMetadata } from '@/workbench/extensions/agent/types/workflowReference'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import InlineAssetReference from './InlineAssetReference.vue'
 import InlineErrorReference from './InlineErrorReference.vue'
 import {
@@ -59,6 +59,7 @@ defineOptions({ inheritAttrs: false })
 const {
   label,
   expanded = false,
+  referenceMenuId,
   activeDescendant,
   historyEpoch = 0,
   editableWorkflowId,
@@ -67,6 +68,7 @@ const {
 } = defineProps<{
   label: string
   expanded?: boolean
+  referenceMenuId?: string
   activeDescendant?: string
   historyEpoch?: number
   editableWorkflowId?: string
@@ -291,7 +293,7 @@ function assetReferenceView(
   if (reference?.kind !== 'asset') return { dom }
   dom.contentEditable = 'false'
   dom.className =
-    'inline-flex rounded-sm align-middle ring-offset-base-background [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground [&.ProseMirror-selectednode]:ring-offset-1'
+    'inline-flex rounded-sm align-middle ring-offset-background [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-foreground [&.ProseMirror-selectednode]:ring-offset-1'
   const vnode = h(InlineAssetReference, {
     name: reference.attachment.name,
     previewUrl: reference.attachment.previewUrl,
@@ -369,8 +371,8 @@ function nodeReferenceView(
   dom.dataset.testid = `${reference.kind}-reference-chip`
   dom.className = inlineReferenceChipClass
   dom.tabIndex = 0
-  const icon = document.createElement('span')
-  icon.className = 'icon-[comfy--node] size-3 shrink-0'
+  const icon = document.createElement('i')
+  icon.className = 'icon-[comfy--node] size-3'
   icon.setAttribute('aria-hidden', 'true')
   const label = document.createElement('span')
   label.className = 'min-w-0 max-w-56 truncate'
@@ -390,7 +392,7 @@ function nodeReferenceView(
   remove.className = inlineReferenceRemoveButtonClass
   const badge = document.createElement('span')
   badge.className = inlineReferenceRemoveBadgeClass
-  const cross = document.createElement('span')
+  const cross = document.createElement('i')
   cross.className = 'icon-[lucide--x] size-2'
   cross.setAttribute('aria-hidden', 'true')
   badge.append(cross)
@@ -435,13 +437,15 @@ onMounted(() => {
       role: 'textbox',
       'aria-label': label,
       'aria-multiline': 'true',
-      'aria-expanded': String(expanded),
-      'aria-controls': 'agent-reference-menu',
+      ...(referenceMenuId ? { 'aria-haspopup': 'menu' } : {}),
+      ...(expanded && referenceMenuId
+        ? { 'aria-controls': referenceMenuId }
+        : {}),
       ...(activeDescendant
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
       class:
-        'text-base-foreground w-full flex-1 cursor-text p-3 font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
+        'text-foreground w-full flex-1 cursor-text p-3 font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
     decorations(state) {
       if (state.selection.empty) {
@@ -580,7 +584,7 @@ onMounted(() => {
         if (reference?.kind !== 'skill') return { dom }
         dom.contentEditable = 'false'
         dom.className =
-          'rounded-sm [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground'
+          'rounded-sm [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-foreground'
         const vnode = h(ComposerSkillReference, { skill: reference })
         vnode.appContext = appContext ?? null
         render(vnode, dom)
@@ -623,8 +627,9 @@ onMounted(() => {
         }
         open.className =
           'flex min-w-0 cursor-pointer items-center border-none bg-transparent p-0 text-inherit outline-none aria-disabled:cursor-not-allowed'
-        const icon = document.createElement('span')
-        icon.className = 'icon-[comfy--workflow] mr-1 size-3 shrink-0'
+        const icon = document.createElement('i')
+        icon.className = 'icon-[comfy--workflow] mr-1 size-3'
+        icon.setAttribute('aria-hidden', 'true')
         const title = document.createElement('span')
         title.className = 'min-w-0 max-w-56 truncate'
         title.textContent = name
@@ -643,8 +648,9 @@ onMounted(() => {
         remove.className = inlineReferenceRemoveButtonClass
         const badge = document.createElement('span')
         badge.className = inlineReferenceRemoveBadgeClass
-        const cross = document.createElement('span')
+        const cross = document.createElement('i')
         cross.className = 'icon-[lucide--x] size-2'
+        cross.setAttribute('aria-hidden', 'true')
         badge.append(cross)
         remove.append(badge)
         remove.onclick = () => {
@@ -703,7 +709,7 @@ watch(
 )
 
 watch(
-  () => [label, expanded, activeDescendant, searchHint],
+  () => [label, expanded, referenceMenuId, activeDescendant, searchHint],
   () => view?.setProps({})
 )
 watch(
@@ -722,6 +728,11 @@ function selection() {
     start: promptTextOffset(view.state.doc, view.state.selection.from),
     end: promptTextOffset(view.state.doc, view.state.selection.to)
   }
+}
+
+function insertText(text: string): void {
+  if (!view) return
+  view.dispatch(view.state.tr.insertText(text))
 }
 
 function replaceText(from: number, to: number, text: string): void {
@@ -816,6 +827,7 @@ defineExpose({
       : { textOffset: 0, referenceIndex: 0 },
   focus: () => view?.focus(),
   selection,
+  insertText,
   replaceText,
   selectSkill,
   captureInsertion

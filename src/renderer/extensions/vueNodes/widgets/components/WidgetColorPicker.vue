@@ -1,6 +1,6 @@
 <template>
   <WidgetLayoutField :widget="widget">
-    <ColorPicker
+    <AppColorPicker
       v-model="localValue"
       :alpha="format !== 'int'"
       @update:model-value="onUpdate"
@@ -17,11 +17,11 @@ import {
   intToHex,
   isColorFormat,
   toHexFromFormat
-} from '@/utils/colorUtil'
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 
-import type { IColorWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { IColorWidgetOptions } from '@comfyorg/graph-model/widgets'
 
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

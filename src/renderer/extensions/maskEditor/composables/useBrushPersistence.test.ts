@@ -1,0 +1,79 @@
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('@/scripts/utils'), () => ({
+  getStorageValue: vi.fn((key: string) => localStorage.getItem(key)),
+  setStorageValue: vi.fn((key: string, value: string) => {
+    localStorage.setItem(key, value)
+  })
+}))
+
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { useBrushPersistence } from './useBrushPersistence'
+
+const STORAGE_KEY = 'maskeditor_brush_settings'
+
+describe('loadAndApply', () => {
+  it('does not mutate the store when localStorage is empty', () => {
+    const store = useMaskEditorStore()
+    const sizeBefore = store.brushSettings.size
+    const { loadAndApply } = useBrushPersistence()
+    loadAndApply()
+    expect(store.brushSettings.size).toBe(sizeBefore)
+  })
+
+  it('restores all brush properties from a previous save', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        size: 42,
+        opacity: 0.7,
+        hardness: 0.3,
+        type: 'arc',
+        stepSize: 10
+      })
+    )
+    const store = useMaskEditorStore()
+    const { loadAndApply } = useBrushPersistence()
+    loadAndApply()
+    expect(store.brushSettings.size).toBe(42)
+    expect(store.brushSettings.opacity).toBe(0.7)
+    expect(store.brushSettings.hardness).toBe(0.3)
+    expect(store.brushSettings.stepSize).toBe(10)
+  })
+
+  it('falls back to stepSize=5 when the field is missing from stored data', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ size: 20, opacity: 0.8, hardness: 0.5, type: 'arc' })
+    )
+    const store = useMaskEditorStore()
+    const { loadAndApply } = useBrushPersistence()
+    loadAndApply()
+    expect(store.brushSettings.stepSize).toBe(5)
+  })
+
+  it('does not throw on corrupted localStorage data', () => {
+    localStorage.setItem(STORAGE_KEY, 'not-valid-json')
+    const { loadAndApply } = useBrushPersistence()
+    expect(() => loadAndApply()).not.toThrow()
+  })
+})
+
+describe('save', () => {
+  it('delays writing settings captured at call time', () => {
+    const store = useMaskEditorStore()
+    store.setBrushSize(300)
+    const { save } = useBrushPersistence()
+    save()
+    store.setBrushSize(10)
+
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    expect(vi.getTimerCount()).toBe(1)
+
+    vi.runOnlyPendingTimers()
+
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(saved.size).toBe(250)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+})

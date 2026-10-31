@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 
 function serialisedNode(
   widgets: readonly { name: string; value: TWidgetValue }[]
@@ -17,9 +17,64 @@ function serialisedNode(
   return node.serialize()
 }
 
+function nodeInGraph(): LGraphNode {
+  const graph = new LGraph()
+  const node = new LGraphNode('test')
+  node.serialize_widgets = true
+  graph.add(node)
+  return node
+}
+
+function addIntWidget(node: LGraphNode): IBaseWidget {
+  return node.addCustomWidget({
+    name: 'target_resolution',
+    type: 'number',
+    value: 1024,
+    y: 0,
+    options: { min: 1024, max: 2048, step2: 128, precision: 0 }
+  })
+}
+
 describe('serialised widget registers', () => {
   afterEach(() => {
     LiteGraph.namedValuesRestore = false
+  })
+
+  describe('a numeric string saved for an INT widget', () => {
+    it('restores from the positional register as a number', () => {
+      const node = nodeInGraph()
+      const widget = addIntWidget(node)
+
+      node.configure({ ...node.serialize(), widgets_values: ['1536'] })
+
+      expect(widget.value).toBe(1536)
+      expect(node.serialize().widgets_values).toEqual([1536])
+    })
+
+    it('restores from the named register as a number', () => {
+      LiteGraph.namedValuesRestore = true
+      const node = nodeInGraph()
+      const widget = addIntWidget(node)
+
+      node.configure({
+        ...node.serialize(),
+        widgets_values: [2048],
+        widgets_values_named: { target_resolution: '1536' }
+      })
+
+      expect(widget.value).toBe(1536)
+    })
+
+    it('restores into a widget added while configuring as a number', () => {
+      const node = nodeInGraph()
+      node.onConfigure = () => {
+        addIntWidget(node)
+      }
+
+      node.configure({ ...node.serialize(), widgets_values: ['1536'] })
+
+      expect(node.widgets?.[0].value).toBe(1536)
+    })
   })
 
   describe('a widget named __proto__', () => {

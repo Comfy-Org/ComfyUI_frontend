@@ -3,7 +3,7 @@ import { computed, defineAsyncComponent, useAttrs } from 'vue'
 
 import { useTextFileContent } from '@/composables/useTextFileContent'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
-import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
+import VideoPreview from '@comfyorg/design-system/media/VideoPreview'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
@@ -64,7 +64,7 @@ const src = computed(() => resultItemUrl(output))
       v-else-if="mediaType === 'text'"
       :class="
         cn(
-          'm-auto my-12 size-full max-w-2xl scroll-shadows-secondary-background overflow-y-auto rounded-lg bg-secondary-background p-4 whitespace-pre-wrap',
+          'm-auto my-12 size-full max-w-2xl scroll-shadows-secondary overflow-y-auto rounded-lg bg-secondary p-4 whitespace-pre-wrap',
           attrs.class as string
         )
       "

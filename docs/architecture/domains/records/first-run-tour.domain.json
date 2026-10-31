@@ -4,6 +4,14 @@
   "description": "The first-run getting-started screen with template and tutorial cards, the tour nudge, and the canvas tour that resolves graph node roles from heuristics and pinned roles, sequences tour steps, frames the camera, and projects node layout positions as coachmark targets. Consumes the onboarding-tours engine (tour store, coachmark registry, coachmark layout) without owning it.",
   "modules": [
     {
+      "path": "src/renderer/extensions/firstRunTour/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.ts",
+      "role": "application"
+    },
+    {
       "path": "src/renderer/extensions/firstRunTour/gettingStarted/tutorialCards.ts",
       "role": "domain"
     },
@@ -12,64 +20,8 @@
       "role": "domain"
     },
     {
-      "path": "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.test.ts",
+      "path": "src/renderer/extensions/firstRunTour/tour/**",
       "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/tour/cameraFraming.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/tour/cameraFraming.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/tour/firstRunTourDefinition.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/tour/firstRunTourDefinition.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/tour/useFirstRunTourController.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/tour/useFirstRunTourController.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/FirstRunTour.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedCard.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedScreen.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedScreen.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedTemplateCard.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/nudge/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/firstRunTour/tour/canvasCoachTarget.test.ts",
-      "role": "integration"
     },
     {
       "path": "src/renderer/extensions/firstRunTour/tour/canvasCoachTarget.ts",
@@ -78,14 +30,10 @@
     {
       "path": "src/services/useNewUserService.ts",
       "role": "application"
-    },
-    {
-      "path": "src/services/useNewUserService.test.ts",
-      "role": "application"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["keybindings"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

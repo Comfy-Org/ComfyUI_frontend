@@ -4,8 +4,8 @@ import type { Page, Route } from '@playwright/test'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+} from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
   createBalance,
@@ -65,7 +65,6 @@ export function withFreeTierEnabled(): SubscriptionOperator {
     ...config,
     features: {
       ...config.features,
-      free_tier_job_allowance_enabled: true,
       free_tier_balance: {
         allowance: 100,
         used: 0,
@@ -256,7 +255,7 @@ export class SubscriptionHelper {
    */
   async dismissSubscriptionDialogIfOpen(): Promise<void> {
     const dialog = this.page.locator(
-      '[aria-labelledby="subscription-required"]'
+      '[data-dialog-key="subscription-required"]'
     )
     // `expect().toBeVisible()` throws a Playwright AssertionError (not
     // errors.TimeoutError) when the element is absent — both cases mean

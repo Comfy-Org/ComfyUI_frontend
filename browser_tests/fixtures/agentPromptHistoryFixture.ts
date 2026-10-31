@@ -41,20 +41,20 @@ export const promptHistoryTest = base.extend<{
     historyReads: () => number
     historyRequestThreadIds: string[]
     completeLatestTurn: (content: MockAgentMessageContent) => void
+    finishLatestTurn: (reply: string, chargeMicroUsd: number) => Promise<void>
   }
 }>({
   agentPanel: async ({ page }, use) => {
     await use(new AgentPanel(page))
   },
-  promptHistory: async ({ page, workflowSelection, getWebSocket }, use) => {
-    // Workflow selection boots the app before these agent-specific routes.
+  promptHistory: async ({ page, workflowSelection, getAgentSocket }, use) => {
     void workflowSelection
     const requests: AgentPostMessageRequest[] = []
     const messages: MockAgentMessage[] = []
     const historyRequestThreadIds: string[] = []
     let threadId = ''
     let historyReads = 0
-    await page.route('**/api/agent/threads', (route) => {
+    await page.route('**/api/agent/threads?*', (route) => {
       const threads: AgentThreadListResponse = {
         threads: threadId
           ? [
@@ -137,7 +137,7 @@ export const promptHistoryTest = base.extend<{
           type: 'agent_message_done',
           data: { message_id: messageId, thread_id: threadId }
         }
-        const socket = await getWebSocket()
+        const socket = await getAgentSocket()
         socket.send(JSON.stringify(done))
       }
     )
@@ -150,6 +150,41 @@ export const promptHistoryTest = base.extend<{
         if (!turn) throw new Error('No turn has been sent yet')
         turn.status = 'complete'
         turn.content = content
+      },
+      finishLatestTurn: async (reply, chargeMicroUsd) => {
+        const turn = messages.findLast(({ role }) => role === 'assistant')
+        if (!turn) throw new Error('No turn has been sent yet')
+        turn.status = 'complete'
+        turn.content = { text: reply }
+        const usage = {
+          input_tokens: 10,
+          output_tokens: 5,
+          total_tokens: 15,
+          cache_creation_input_tokens: 0,
+          cache_read_input_tokens: 0,
+          charge_micro_usd: chargeMicroUsd
+        }
+        const socket = await getAgentSocket()
+        socket.send(
+          JSON.stringify({
+            type: 'agent_message_delta',
+            data: {
+              message_id: turn.id,
+              thread_id: threadId,
+              delta: reply
+            }
+          } satisfies AgentWsEvent)
+        )
+        socket.send(
+          JSON.stringify({
+            type: 'agent_message_done',
+            data: {
+              message_id: turn.id,
+              thread_id: threadId,
+              usage
+            }
+          } satisfies AgentWsEvent)
+        )
       }
     })
   }

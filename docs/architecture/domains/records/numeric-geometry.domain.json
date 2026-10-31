@@ -6,10 +6,6 @@
     {
       "path": "src/utils/mathUtil.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/utils/mathUtil.test.ts",
-      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

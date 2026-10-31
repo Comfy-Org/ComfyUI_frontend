@@ -8,15 +8,14 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { i18n } from '@/i18n'
 import { listSkillPacks } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import { useAgentComposerStore } from '../../../stores/agent/agentComposerStore'
-import type { ReplyAsset } from '../../../utils/replyAssets'
-import Composer from '../Composer.vue'
-import { setupInlinePromptEditorDom } from '../composer/inlinePromptEditorTestSetup'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+import Composer from '@/workbench/extensions/agent/components/agent/Composer.vue'
+import { setupInlinePromptEditorDom } from '@/workbench/extensions/agent/components/agent/composer/inlinePromptEditorTestSetup'
 import UserMessage from './UserMessage.vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./ReplyAssetGroup.vue'), () => ({
   default: defineComponent<{ assets: ReplyAsset[] }>({
     setup: () => () => null

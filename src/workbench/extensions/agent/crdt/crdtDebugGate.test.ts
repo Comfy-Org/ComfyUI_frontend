@@ -1,18 +1,24 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-async function loadGate(search: string) {
+const stopGates: Array<() => void> = []
+
+async function importGate(search: string) {
   vi.resetModules()
   window.history.replaceState({}, '', `/${search}`)
   return import('./crdtDebugGate')
 }
 
-/**
- * happy-dom's `window.location` is same-origin-only (replaceState refuses a
- * cross-origin URL), so a production-hostname load is faked by stubbing the
- * `location` global instead of navigating to it — same technique the
- * `initDatadogRum` hostname tests use for the same reason. A plain object
- * (not a spread `Location` instance) so nothing depends on the prototype.
- */
+function started<Gate extends { startCrdtDebugGate(): () => void }>(
+  gate: Gate
+): Gate {
+  stopGates.push(gate.startCrdtDebugGate())
+  return gate
+}
+
+async function loadGate(search: string) {
+  return started(await importGate(search))
+}
+
 async function loadGateOnHostname(search: string, hostname: string) {
   vi.resetModules()
   vi.stubGlobal('location', {
@@ -20,7 +26,11 @@ async function loadGateOnHostname(search: string, hostname: string) {
     search,
     href: `https://${hostname}/${search}`
   })
-  return import('./crdtDebugGate')
+  return started(await import('./crdtDebugGate'))
+}
+
+function storageListenerCalls(spy: { mock: { calls: unknown[][] } }) {
+  return spy.mock.calls.filter(([type]) => type === 'storage')
 }
 
 describe('crdtDebugGate', () => {
@@ -28,11 +38,131 @@ describe('crdtDebugGate', () => {
     localStorage.clear()
   })
 
+  afterEach(() => {
+    for (const stop of stopGates.splice(0)) stop()
+  })
+
+  it('leaves storage, history and listeners alone until started', async () => {
+    window.history.replaceState({}, '', '/?crdtDebug=trace')
+    const setItem = vi.spyOn(localStorage, 'setItem')
+    const replaceState = vi.spyOn(window.history, 'replaceState')
+    const addEventListener = vi.spyOn(window, 'addEventListener')
+    vi.resetModules()
+
+    await import('./crdtDebugGate')
+    expect(storageListenerCalls(addEventListener)).toEqual([])
+
+    await import('./crdtLog')
+    expect(setItem).not.toHaveBeenCalled()
+    expect(replaceState).not.toHaveBeenCalled()
+    expect(window.location.search).toBe('?crdtDebug=trace')
+  })
+
+  it('installs one storage listener on start and removes it on dispose', async () => {
+    const gate = await importGate('')
+    const addEventListener = vi.spyOn(window, 'addEventListener')
+    const removeEventListener = vi.spyOn(window, 'removeEventListener')
+
+    const stop = gate.startCrdtDebugGate()
+    const added = storageListenerCalls(addEventListener)
+    expect(added).toHaveLength(1)
+
+    stop()
+    expect(storageListenerCalls(removeEventListener)).toEqual(added)
+  })
+
+  it('stops following other tabs once disposed', async () => {
+    vi.stubEnv('DEV', false)
+    const gate = await importGate('')
+    const stop = gate.startCrdtDebugGate()
+    expect(gate.isCrdtDebugEnabled()).toBe(false)
+    stop()
+
+    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: 'Comfy.Agent.CrdtDebug.enabled' })
+    )
+
+    expect(gate.isCrdtDebugEnabled()).toBe(false)
+  })
+
+  it('rereads preferences changed while no gate was running', async () => {
+    vi.stubEnv('DEV', false)
+    const gate = await importGate('')
+    gate.startCrdtDebugGate()()
+    expect(gate.isCrdtDebugEnabled()).toBe(false)
+
+    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+    started(gate)
+
+    expect(gate.isCrdtDebugEnabled()).toBe(true)
+  })
+
+  it('keeps following other tabs while another start is still running', async () => {
+    vi.stubEnv('DEV', false)
+    const gate = await importGate('')
+    const stopFirst = gate.startCrdtDebugGate()
+    started(gate)
+    expect(gate.isCrdtDebugEnabled()).toBe(false)
+    stopFirst()
+
+    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: 'Comfy.Agent.CrdtDebug.enabled' })
+    )
+
+    expect(gate.isCrdtDebugEnabled()).toBe(true)
+  })
+
+  it('observes a verbosity change written by another tab', async () => {
+    const gate = await loadGate('?crdtDebug=1')
+    expect(gate.crdtLogLevel()).toBe('info')
+
+    localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'trace')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'Comfy.Agent.CrdtDebug.level',
+        newValue: 'trace'
+      })
+    )
+
+    expect(gate.crdtLogLevel()).toBe('trace')
+  })
+
   it('stays disabled when neither a link nor a saved choice enables it', async () => {
     vi.stubEnv('DEV', false)
     const gate = await loadGate('')
 
     expect(gate.isCrdtDebugEnabled()).toBe(false)
+  })
+
+  it('reads an absent enabled preference only once', async () => {
+    vi.stubEnv('DEV', false)
+    const getItem = vi.spyOn(localStorage, 'getItem')
+    const gate = await loadGate('')
+
+    expect(gate.isCrdtDebugOptedOut()).toBe(false)
+    expect(gate.isCrdtDebugOptedOut()).toBe(false)
+
+    expect(getItem).toHaveBeenCalledTimes(1)
+    expect(getItem).toHaveBeenCalledWith('Comfy.Agent.CrdtDebug.enabled')
+  })
+
+  it('observes an opt-out written by another tab', async () => {
+    vi.stubEnv('DEV', false)
+    const gate = await loadGate('')
+
+    expect(gate.isCrdtDebugOptedOut()).toBe(false)
+
+    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'false')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'Comfy.Agent.CrdtDebug.enabled',
+        newValue: 'false'
+      })
+    )
+
+    expect(gate.isCrdtDebugOptedOut()).toBe(true)
   })
 
   it('lets a tester enable the instrument from a link, and remembers it', async () => {

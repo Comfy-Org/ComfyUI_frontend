@@ -1,6 +1,6 @@
-import type { MissingNodeType } from '@/platform/nodeReplacement/types'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
-import type { MissingNodePack } from '../types'
+import type { MissingNodePack } from '@comfyorg/telemetry/types'
 
 const UNKNOWN_PACK_ID = 'unknown'
 
