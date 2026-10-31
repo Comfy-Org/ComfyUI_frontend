@@ -3528,6 +3528,9 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     expect(applyMinted(declaredDoc, [addNode(snapshot)], catalog)).toEqual([
       'applied'
     ])
+    expect(project(declaredDoc, catalog).nodes).toEqual([
+      expect.objectContaining({ widgets_values: { prompt: 'kept' } })
+    ])
     expect(
       applyOutcomes(undeclaredDoc, [addNode(undeclared)], catalog)
     ).toEqual([
@@ -3540,7 +3543,6 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
   })
 
   it('sends a subgraph host positionally, without reaching the form proof', () => {
-    LiteGraph.registerNodeType('TestPrompt', TestPrompt)
     const graph = new LGraph()
     const subgraph = createTestSubgraph({
       rootGraph: graph,
@@ -3548,6 +3550,7 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     })
     graph.subgraphs.set(subgraph.id, subgraph)
     const host = createTestSubgraphNode(subgraph)
+    host.serialize_widgets = true
     graph.add(host)
     const interior = LiteGraph.createNode('TestPrompt')
     assert.exists(interior)
@@ -3556,8 +3559,29 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
 
     const snapshot = wireNodeSnapshot(host)
 
-    expect(host.serialize().widgets_values_named).toBeUndefined()
+    expect(host.serialize().widgets_values_named).toEqual({
+      text: 'an interior default'
+    })
     expect(snapshot?.widgets_values).toEqual(['an interior default'])
     expect(snapshot).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('omits the form when a class rewrites the named keys after core', () => {
+    class RewritesAfterCore extends LGraphNode {
+      override serializeFromStoreState(
+        ...args: Parameters<LGraphNode['serializeFromStoreState']>
+      ): ISerialisedNode {
+        const serialized = super.serializeFromStoreState(...args)
+        serialized.widgets_values_named = { prompt: 'a' }
+        return serialized
+      }
+    }
+    const node = new RewritesAfterCore('LastWriter', 'LastWriter')
+    node.serialize_widgets = true
+    node.addWidget('text', 'prompt', 'a', () => {})
+    node.addWidget('text', 'extra', 'b', () => {})
+    new LGraph().add(node)
+
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
   })
 })
