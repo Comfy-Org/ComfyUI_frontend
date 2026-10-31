@@ -501,7 +501,8 @@ describe('agentEventTransport text and tool parts', () => {
         skill: undefined,
         state: 'done',
         ok: true,
-        durationMs: undefined
+        durationMs: undefined,
+        startedAtMs: expect.any(Number)
       }
     ])
   })
@@ -625,6 +626,32 @@ describe('agentEventTransport text and tool parts', () => {
       })
     }
   )
+
+  it('stamps a tool part with the client clock of its first frame only', () => {
+    vi.useFakeTimers()
+    try {
+      const message = createAssistantMessage(T)
+      const transport = createAgentEventTransport(message, vi.fn())
+
+      vi.setSystemTime(1_000)
+      transport.ingest(toolCall('run', 'running', 'call-1'))
+      vi.setSystemTime(5_000)
+      transport.ingest(toolCall('run', 'success', 'call-1'))
+
+      expect(toolParts(message)[0]).toMatchObject({
+        state: 'done',
+        startedAtMs: 1_000
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('leaves the start time unset when the first frame seen is terminal', () => {
+    const message = drive([toolCall('run', 'success', 'call-1')])
+
+    expect(toolParts(message)[0].startedAtMs).toBeUndefined()
+  })
 
   it('preserves a parsed running frame skill through an unnamed completion', () => {
     const running = zAgentWsEvent.parse({
