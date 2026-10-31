@@ -62,10 +62,7 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
     exec.executionStart(jobId)
     exec.executing(jobId, staleExecutionId)
     exec.executed(jobId, staleExecutionId, {
-      images: [
-        null,
-        { filename: 'unresolved.png', subfolder: '', type: 'input' }
-      ]
+      images: 'not-an-array'
     })
     exec.executing(jobId, null)
     exec.executionSuccess(jobId)

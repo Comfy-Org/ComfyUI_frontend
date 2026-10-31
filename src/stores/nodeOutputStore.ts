@@ -27,7 +27,10 @@ import type {
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { parseFilePath } from '@/utils/formatUtil'
-import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import {
+  executionIdToNodeLocatorId,
+  getNodeByLocatorId
+} from '@/utils/graphTraversalUtil'
 import {
   isAnimatedOutput,
   isVideoNode,
@@ -301,11 +304,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output'] | ResultItem,
     options: SetOutputOptions = {}
   ) {
-    const nodeLocatorId = executionIdToNodeLocatorId(
-      useApp().rootGraph,
-      executionId
-    )
-    if (!nodeLocatorId) {
+    const rootGraph = useApp().rootGraph
+    const nodeLocatorId = executionIdToNodeLocatorId(rootGraph, executionId)
+    if (!nodeLocatorId || !getNodeByLocatorId(rootGraph, nodeLocatorId)) {
       reportUnresolvedExecutionId(executionId, outputs)
       return
     }
@@ -317,10 +318,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output'] | ResultItem
   ) {
     const incomingImages = 'images' in outputs ? outputs.images : undefined
-    const filenames = incomingImages
-      ?.filter(isResultItem)
-      .map((image) => image.filename)
-      .filter((filename): filename is string => !!filename)
+    const filenames = Array.isArray(incomingImages)
+      ? incomingImages
+          .filter(isResultItem)
+          .map((image) => image.filename)
+          .filter((filename): filename is string => !!filename)
+      : undefined
     reportError(new Error('No live node resolves the executed output'), {
       surface: 'graph',
       errorType: 'failure_resolving_node_output_execution_id',

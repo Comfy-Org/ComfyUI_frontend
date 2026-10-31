@@ -39,7 +39,8 @@ const createMockOutputs = (
 ): ExecutedWsMessage['output'] => ({ images })
 
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
+  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id),
+  getNodeByLocatorId: vi.fn(() => ({}))
 }))
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
@@ -346,6 +347,25 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
         context: { executionId, filenames: undefined }
       })
     )
+  })
+
+  it('reports a top-level execution id whose node was deleted', () => {
+    vi.mocked(graphTraversalUtil.getNodeByLocatorId).mockReturnValueOnce(null)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'deleted-node.png' }])
+    )
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: { executionId, filenames: ['deleted-node.png'] }
+      })
+    )
+    expect(store.nodeOutputs[executionId]).toBeUndefined()
   })
 
   it('does not report when the execution id resolves to a node', () => {
