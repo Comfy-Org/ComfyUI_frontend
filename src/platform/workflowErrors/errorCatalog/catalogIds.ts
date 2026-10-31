@@ -13,6 +13,8 @@ export const INVALID_CLIP_INPUT_CATALOG_ID = 'invalid_clip_input'
 export const INVALID_PROMPT_CATALOG_ID = 'invalid_prompt'
 export const INVALID_WORKFLOW_REQUEST_CATALOG_ID = 'invalid_workflow_request'
 export const INSUFFICIENT_CREDITS_CATALOG_ID = 'insufficient_credits'
+export const PERSONAL_WALLET_INSUFFICIENT_CREDITS_CATALOG_ID =
+  'personal_wallet_insufficient_credits'
 export const WORKSPACE_INSUFFICIENT_CREDITS_CATALOG_ID =
   'workspace_insufficient_credits'
 export const SUBSCRIPTION_REQUIRED_CATALOG_ID = 'subscription_required'
