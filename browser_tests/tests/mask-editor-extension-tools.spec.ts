@@ -39,14 +39,21 @@ test.describe(
         expect(await maskEditor.pollMaskPixelCount()).toBe(0)
       })
 
-      await test.step('Apply an extension mask as one native Undo and Redo step', async () => {
+      await test.step('Caller buffer mutations preserve the canvas and one native Undo and Redo step', async () => {
+        const originalImage = await maskEditor.getCanvasSnapshot(0)
         await extensionTool.apply.click()
         await expect(extensionTool.status).toHaveText('Mask applied')
         await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(1024)
+        expect(await extensionTool.getMaskAlphaValues()).toEqual([0, 255])
+        expect(await maskEditor.getCanvasSnapshot(0)).toBe(originalImage)
+        const appliedMask = await maskEditor.getCanvasSnapshot(2)
         await dialog.getByTitle('Undo', { exact: true }).click()
         await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(0)
+        expect(await maskEditor.getCanvasSnapshot(0)).toBe(originalImage)
         await dialog.getByTitle('Redo', { exact: true }).click()
         await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(1024)
+        expect(await maskEditor.getCanvasSnapshot(2)).toBe(appliedMask)
+        expect(await maskEditor.getCanvasSnapshot(0)).toBe(originalImage)
       })
 
       await test.step('Save the mask without persisting overlay markers or changing RGB', async () => {

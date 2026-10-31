@@ -56,18 +56,16 @@ const result: MaskEditorMask = {
 }
 
 describe('MaskEditor extension session contract', () => {
-  it('reads the current image and applies an independent single-channel mask', () => {
+  it('reads the current image and commits a single-channel mask with a new revision', () => {
     const { runtime, mask } = setup()
     const snapshot = runtime.context.readImage()
-    const supplied = { ...result, data: result.data.slice() }
     expect(snapshot?.image.width).toBe(3)
-    expect(
-      runtime.context.commitMask(supplied, { expectedRevision: 1 })
-    ).toEqual({
-      ok: true,
-      revision: 2
-    })
-    supplied.data.fill(42)
+    expect(runtime.context.commitMask(result, { expectedRevision: 1 })).toEqual(
+      {
+        ok: true,
+        revision: 2
+      }
+    )
     expect(mask().data).toEqual(new Uint8Array([0, 255, 128, 255, 0, 0]))
     expect(snapshot?.image.data).toEqual(new Uint8ClampedArray(24).fill(255))
   })

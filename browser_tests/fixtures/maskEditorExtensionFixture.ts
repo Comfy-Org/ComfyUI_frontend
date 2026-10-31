@@ -61,6 +61,8 @@ async function registerTestTool(page: Page) {
                 { width, height, data },
                 { expectedRevision: snapshot.revision }
               )
+              data.fill(42)
+              snapshot.image.data.fill(17)
               status.textContent = result.ok ? 'Mask applied' : result.reason
             }
             const delayedButton = document.createElement('button')
@@ -168,6 +170,18 @@ class MaskEditorExtensionHelper {
 
   async getEvents() {
     return this.probe!.evaluate((probe) => probe.events)
+  }
+
+  async getMaskAlphaValues() {
+    return this.maskCanvas.evaluate((canvas) => {
+      if (!(canvas instanceof HTMLCanvasElement))
+        throw new Error('Not a canvas')
+      const context = canvas.getContext('2d')!
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
+      return [...new Set(data.filter((_, index) => index % 4 === 3))].sort(
+        (left, right) => left - right
+      )
+    })
   }
 
   async uploadAsymmetricImage(input: Locator) {

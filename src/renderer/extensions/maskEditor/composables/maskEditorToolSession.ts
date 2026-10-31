@@ -74,7 +74,7 @@ export function createMaskEditorToolSession(
         return { ok: false, reason: 'invalid-mask' }
       committing = true
       const applied = call(() => {
-        document.applyMask({ ...mask, data: mask.data.slice() })
+        document.applyMask(mask)
         return true
       })
       committing = false
