@@ -190,6 +190,7 @@ import {
   resolveDebugPanelEnabled,
   startCrdtDebugGate
 } from './crdt/crdtDebugGate'
+import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
@@ -1232,6 +1233,8 @@ const docOpMinter = attachDocOpMinter({
   docHasSubgraphDefinition,
   onWidgetWriteRefused: notifyWidgetWriteRefused
 })
+const isChangeTrackerRestoring = () =>
+  workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
@@ -1241,8 +1244,11 @@ const restoreOpMinter = attachRestoreOpMinter({
     const parsed = parseNodeId(nodeId)
     return parsed === null ? null : docInputNames(parsed)
   },
-  isRestoringState: () =>
-    workflowStore.activeWorkflow?.changeTracker?._restoringState === true
+  isRestoringState: isChangeTrackerRestoring
+})
+const agentWriteOverwriteWatch = attachAgentWriteOverwriteWatch({
+  isEnabled: () => agentPanelStore.enabled,
+  isRestoringState: isChangeTrackerRestoring
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
@@ -1712,6 +1718,9 @@ onBeforeUnmount(() => {
     },
     detachRestoreOpMinter: () => {
       restoreOpMinter.detach()
+    },
+    detachAgentWriteOverwriteWatch: () => {
+      agentWriteOverwriteWatch.detach()
     },
     exitNodeSelectionMode: canvasStore.stopNodePicking,
     stopSession: () => {
