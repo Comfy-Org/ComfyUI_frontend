@@ -698,7 +698,12 @@ const coachDeferredBy = computed(() =>
         ? 'dialog_open'
         : null
 )
-const sendGates = useAgentSendGates(() => threadId.value)
+const sendGates = useAgentSendGates(
+  () => threadId.value,
+  (gate) => {
+    agentPanelStore.heldSendGate = gate
+  }
+)
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
 let coachReleaseRevoked = false
 function releaseCoachCompletionWaiters(
