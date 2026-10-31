@@ -12,17 +12,17 @@ import {
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { emitGraphRestored } from '@/scripts/graphRestore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 
+import { attachDocOpMinter } from './docOpMinter'
+import type { DocOpMinter } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 import { mintWireOps } from './opEnvelope'
-import {
-  attachRestoreOpMinter,
-  notifyRestoreMintersAfterGraphConfigure,
-  notifyRestoreMintersBeforeGraphLoad
-} from './restoreOpMinter'
-import type { RestoreOpMinter } from './restoreOpMinter'
 
 const LOAD_VIDEO = 'VHS_LoadVideo'
 
@@ -84,10 +84,22 @@ function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
   }
 }
 
+async function workflowJson(graph: LGraph): Promise<ComfyWorkflowJSON> {
+  const state = await validateComfyWorkflow(graph.serialize(), (error) => {
+    throw new Error(error)
+  })
+  if (!state) throw new Error('graph did not serialize to a valid workflow')
+  return JSON.parse(JSON.stringify(state)) as ComfyWorkflowJSON
+}
+
+function afterFlush(): Promise<void> {
+  return new Promise((resolve) => queueMicrotask(resolve))
+}
+
 describe('PM-2165: undo restores a deleted node that has a display-only DOM widget', () => {
   let graph: LGraph
   let minted: GraphOperation[]
-  let minter: RestoreOpMinter
+  let minter: DocOpMinter
 
   beforeEach(() => {
     LiteGraph.registerNodeType(LOAD_VIDEO, LoadVideoWithPreview)
@@ -95,19 +107,24 @@ describe('PM-2165: undo restores a deleted node that has a display-only DOM widg
     useNodeDefStore().addNodeDef(LOAD_VIDEO_DEF)
     graph = new LGraph()
     minted = []
-    minter = attachRestoreOpMinter({
+    minter = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => graph,
+      boundRootGraphId: () => toRootGraphId(graph.id),
       docInputNames: () => null,
-      isRestoringState: () => true
+      docPromotedWidgets: () => null,
+      docWidgetValue: () => undefined,
+      mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => false,
+      onWidgetWriteRefused: () => {}
     })
   })
 
   afterEach(() => minter.detach())
 
-  it('mints a restore batch the doc host applies whole', () => {
+  it('mints a restore batch the doc host applies whole', async () => {
     const sink = new PreviewSink()
     graph.add(sink)
     const loader = new LoadVideoWithPreview()
@@ -120,6 +137,8 @@ describe('PM-2165: undo restores a deleted node that has a display-only DOM widg
     onTestFinished(() => doc.destroy())
 
     graph.remove(loader)
+    await afterFlush()
+    minted.length = 0
     const deleted = applyOps(
       doc,
       mintWireOps(
@@ -138,9 +157,10 @@ describe('PM-2165: undo restores a deleted node that has a display-only DOM widg
       'applied'
     ])
 
-    notifyRestoreMintersBeforeGraphLoad()
+    const previous = await workflowJson(graph)
     graph.configure(beforeDelete)
-    notifyRestoreMintersAfterGraphConfigure()
+    emitGraphRestored({ previous, next: await workflowJson(graph) })
+    await afterFlush()
 
     expect(minted.map((operation) => operation.op)).toEqual([
       'add_node',

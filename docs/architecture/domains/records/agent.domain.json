@@ -288,10 +288,6 @@
       "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/restoreOpMinter.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/workbench/extensions/agent/crdt/schemaGuard.ts",
       "role": "domain"
     },
@@ -536,8 +532,7 @@
         "src/workbench/extensions/agent/crdt/agentCrdtProjection.integration.test.ts",
         "src/workbench/extensions/agent/crdt/liveGraphApplier.test.ts",
         "src/workbench/extensions/agent/crdt/docOpMinter.test.ts",
-        "src/workbench/extensions/agent/crdt/agentInsertWorkflow.subgraphs.test.ts",
-        "src/workbench/extensions/agent/crdt/restoreOpMinter.test.ts"
+        "src/workbench/extensions/agent/crdt/agentInsertWorkflow.subgraphs.test.ts"
       ]
     }
   ],

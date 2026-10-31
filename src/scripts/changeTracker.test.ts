@@ -50,6 +50,8 @@ vi.mock(import('@/scripts/api'))
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { onGraphRestored } from '@/scripts/graphRestore'
+import type { GraphRestore } from '@/scripts/graphRestore'
 
 let nodeIdCounter = 0
 let workflowPathCounter = 0
@@ -1351,6 +1353,51 @@ describe('ChangeTracker', () => {
   })
 
   describe('undo and redo', () => {
+    function recordRestores(): GraphRestore[] {
+      const restores: GraphRestore[] = []
+      onTestFinished(onGraphRestored((restore) => restores.push(restore)))
+      return restores
+    }
+
+    it.for(['undo', 'redo'] as const)(
+      'announces the %s with the graph before and after it',
+      async (direction) => {
+        const restored = createState(1)
+        const changed = createState(2)
+        const tracker = createTracker(changed)
+        const history = { undo: tracker.undoQueue, redo: tracker.redoQueue }
+        history[direction].push(restored)
+        const restores = recordRestores()
+
+        await tracker[direction]()
+
+        expect(restores).toEqual([{ previous: changed, next: restored }])
+      }
+    )
+
+    it.for([
+      {
+        outcome: 'the load restores nothing',
+        load: async () => false
+      },
+      {
+        outcome: 'another workflow became active during the load',
+        load: async () => {
+          createTracker(createState(3))
+          return true
+        }
+      }
+    ])('announces no restore when $outcome', async ({ load }) => {
+      const tracker = createTracker(createState(2))
+      tracker.undoQueue.push(createState(1))
+      vi.mocked(app.loadGraphData).mockImplementationOnce(load)
+      const restores = recordRestores()
+
+      await tracker.undo()
+
+      expect(restores).toEqual([])
+    })
+
     it('keeps Redo after Undo normalizes an interior node size', async () => {
       const initial = await createSubgraphState()
       const changed = structuredClone(initial)

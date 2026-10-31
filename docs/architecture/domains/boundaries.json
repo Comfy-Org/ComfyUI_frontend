@@ -326,8 +326,6 @@
           "src/workbench/extensions/agent/crdt/loadImageLivePreview.test.ts",
           "src/workbench/extensions/agent/crdt/mediaUiDiagnostics.ts",
           "src/workbench/extensions/agent/crdt/mediaUiDiagnostics.test.ts",
-          "src/workbench/extensions/agent/crdt/restoreOpMinter.ts",
-          "src/workbench/extensions/agent/crdt/restoreOpMinter.test.ts",
           "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts",
           "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.humanAddTabSwitch.test.ts",
           "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.integration.test.ts",

@@ -192,7 +192,6 @@ import {
   startCrdtDebugGate
 } from './crdt/crdtDebugGate'
 import { attachDocOpMinter } from './crdt/docOpMinter'
-import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 
@@ -1240,18 +1239,6 @@ const docOpMinter = attachDocOpMinter({
   docHasSubgraphDefinition,
   onWidgetWriteRefused: notifyWidgetWriteRefused
 })
-const restoreOpMinter = attachRestoreOpMinter({
-  isEnabled: () => agentPanelStore.enabled,
-  isDocBound: followerCanDeliver,
-  enqueue: enqueueHumanOperations,
-  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
-  docInputNames: (nodeId) => {
-    const parsed = parseNodeId(nodeId)
-    return parsed === null ? null : docInputNames(parsed)
-  },
-  isRestoringState: () =>
-    workflowStore.activeWorkflow?.changeTracker?._restoringState === true
-})
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
   isCrdtDebugEnabled()
@@ -1720,9 +1707,6 @@ onBeforeUnmount(() => {
     },
     detachDocOpMinter: () => {
       docOpMinter.detach()
-    },
-    detachRestoreOpMinter: () => {
-      restoreOpMinter.detach()
     },
     exitNodeSelectionMode: canvasStore.stopNodePicking,
     stopSession: () => {
