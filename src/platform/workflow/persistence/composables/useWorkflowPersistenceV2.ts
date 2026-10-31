@@ -7,7 +7,7 @@
  * - Adds 512ms debounce on graph change persistence
  */
 
-import { debounce } from 'es-toolkit'
+import { debounce, isEqual } from 'es-toolkit'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { tryOnScopeDispose, until, whenever } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
@@ -130,8 +130,15 @@ export function useWorkflowPersistenceV2() {
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson
 
-    // Clean up draft if workflow is saved and unmodified
-    if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
+    const viewportMatchesSaved = isEqual(
+      graphData.extra?.ds,
+      activeWorkflow.initialState.extra?.ds
+    )
+    if (
+      !activeWorkflow.isTemporary &&
+      !activeWorkflow.isModified &&
+      viewportMatchesSaved
+    ) {
       draftStore.removeDraft(workflowPath)
     }
   }
@@ -146,7 +153,12 @@ export function useWorkflowPersistenceV2() {
   const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(
     flushPendingPersistence
   )
-  window.addEventListener('pagehide', flushPendingPersistence)
+  function persistBeforePageHide() {
+    debouncedPersist.cancel()
+    persistCurrentWorkflow()
+  }
+
+  window.addEventListener('pagehide', persistBeforePageHide)
 
   const isWorkspaceInitConcluded = () =>
     (teamWorkspaceStore.initState === 'ready' &&
@@ -373,7 +385,7 @@ export function useWorkflowPersistenceV2() {
   // Clean up event listener when component unmounts
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
-    window.removeEventListener('pagehide', flushPendingPersistence)
+    window.removeEventListener('pagehide', persistBeforePageHide)
     unregisterPersistenceFlush()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()

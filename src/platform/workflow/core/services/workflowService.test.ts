@@ -445,6 +445,24 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it('saves the outgoing tab viewport into its draft', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) =>
+          key === 'Comfy.Workflow.Persist' ||
+          key === 'Comfy.EnableWorkflowViewRestore'
+      )
+      const activeWorkflow = createModeTestWorkflow()
+      const viewport = { scale: 0.15, offset: [12, 34] as [number, number] }
+      activeWorkflow.changeTracker.ds = viewport
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      const [, draftJson] = vi.mocked(useWorkflowDraftStoreV2().saveDraft).mock
+        .calls[0]
+      expect(JSON.parse(draftJson).extra.ds).toEqual(viewport)
+    })
+
     it('persists the displayed state when Undo fails before graph configuration', async () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation(
         (key: string) => key === 'Comfy.Workflow.Persist'

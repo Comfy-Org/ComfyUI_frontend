@@ -246,10 +246,16 @@ export const useWorkflowService = () => {
     const activeState = activeWorkflow.activeState
     if (!activeState) return
 
+    const viewport = activeWorkflow.changeTracker?.ds
+    const draftState =
+      viewport && settingStore.get('Comfy.EnableWorkflowViewRestore')
+        ? { ...activeState, extra: { ...activeState.extra, ds: viewport } }
+        : activeState
+
     try {
       const saved = workflowDraftStore.saveDraft(
         activeWorkflow.path,
-        JSON.stringify(activeState),
+        JSON.stringify(draftState),
         {
           name: activeWorkflow.key,
           isTemporary: activeWorkflow.isTemporary
