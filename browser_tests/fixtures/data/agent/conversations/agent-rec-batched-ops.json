@@ -5,15 +5,15 @@
     "suite": "agent",
     "case_id": "agent-rec-batched-ops",
     "response_side": "recorded",
-    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8086 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread a6fd73be-e957-45b7-a5e0-5edd091670fb; message 9f88da92-5074-4091-850b-7cbc65005cd1; workflow e539bb63-bc5d-4f97-b918-d85862c0f591 (seeded by throwaway turn 365de61d-2131-4966-af0b-fe7ccda288bf; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame, see plan Q4); agent_tool_calls parent rows ['ae918468-c270-4d05-b0ef-31198a63cf0e', '069a03fa-3094-4fa4-821d-797672439db7', '044e431e-059e-45b1-b82d-45e25a92f2bf']; rows agent-rec-batched-ops.t-a1.rows.json; raw capture sha256 92757967c82950945ea1a183dbcfcb8d111ae768b3ea16a72348bb0e216b709e",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8089 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 0c48ae8322a51457bf31e1a8c3690c539613ddf3; model claude-opus-5-5; thread 73166db9-0bea-4b14-8e4e-1008d4bba6a6; messages 92955291-5843-4901-9aa2-cf384e311a49; workflow cc8d4ec5-045b-447e-be0c-712a6e736f0a (seeded by throwaway turn 240dd526-7a25-4f55-9fe9-384bfab3e213; recorded turns target the seeded workflow explicitly with workflow_id and the live draft); agent_tool_calls parent rows b51f38cf-7cbe-438e-bda6-8004d780bb28; rows agent-rec-batched-ops.2026-10-30T08-24-35-339Z.rows.1.json; raw capture sha256 2086b16ec08d7574900b54a5ad8f3b240f93a94829c0f3d50f09f658c839b337",
     "capture": {
       "backend": "Comfy-Org/cloud",
-      "thread_id": "a6fd73be-e957-45b7-a5e0-5edd091670fb",
-      "exported_at": "2026-09-03T12:40:55Z"
+      "thread_id": "73166db9-0bea-4b14-8e4e-1008d4bba6a6",
+      "exported_at": "2026-10-30T08:24:50.955Z"
     }
   },
   "workflow": {
-    "id": "e539bb63-bc5d-4f97-b918-d85862c0f591",
+    "id": "cc8d4ec5-045b-447e-be0c-712a6e736f0a",
     "name": "Text to image",
     "catalog": {
       "types": {
@@ -195,7 +195,7 @@
   },
   "turns": [
     {
-      "message_id": "9f88da92-5074-4091-850b-7cbc65005cd1",
+      "message_id": "92955291-5843-4901-9aa2-cf384e311a49",
       "request": {
         "content": "Switch to the tab 'Text to image', then in ONE apply_ops call add two CLIPTextEncode nodes and wire both of their CLIP inputs from the checkpoint loader. Use a single batched tool call for all four operations."
       },
@@ -203,10 +203,9 @@
         {
           "kind": "event",
           "event": {
-            "type": "agent_active_tab",
+            "type": "agent_thinking",
             "data": {
-              "name": "Text to image",
-              "workflow_id": "e539bb63-bc5d-4f97-b918-d85862c0f591"
+              "delta": "Since I'm already on the \"Text to image\" tab, no switching is needed. I'll apply four operations: adding two nodes and connecting both to the CLIP output of the checkpoint loader, since CheckpointLoaderSimple outputs MODEL, CLIP, and VAE, and CLIPTextEncode expects a clip input.\n\n"
             }
           },
           "at_ms": 0
@@ -216,38 +215,24 @@
           "event": {
             "type": "agent_tool_call",
             "data": {
-              "duration_ms": 7,
-              "status": "success",
-              "tool_call_id": "toolu_01UJ5hWx9Rxkvwon9F7nMGaK",
-              "tool_name": "switch_tab"
+              "status": "running",
+              "tool_call_id": "toolu_01N4xc9UEYPCGdNS48rFUgdF",
+              "tool_name": "apply_ops"
             }
           },
-          "at_ms": 2
-        },
-        {
-          "kind": "event",
-          "event": {
-            "type": "agent_tool_call",
-            "data": {
-              "duration_ms": 368,
-              "status": "success",
-              "tool_call_id": "toolu_011QfP8raZRXJbK5WZYpKTkv",
-              "tool_name": "print_workflow"
-            }
-          },
-          "at_ms": 2139
+          "at_ms": 0
         },
         {
           "kind": "graph_ops",
           "ops": [
             {
               "op": "add_node",
-              "pos": [715, 280],
+              "pos": [715, 302],
               "node": {
-                "id": 2559261621971657,
-                "pos": [715, 280],
+                "id": 2103823744920160,
+                "pos": [715, 302],
                 "mode": 0,
-                "size": [240, 86],
+                "size": [400, 236],
                 "type": "CLIPTextEncode",
                 "flags": {},
                 "order": 0,
@@ -268,17 +253,17 @@
                 "properties": {},
                 "widgets_values": [null]
               },
-              "node_id": 2559261621971657,
+              "node_id": 2103823744920160,
               "class_type": "CLIPTextEncode"
             },
             {
               "op": "add_node",
-              "pos": [715, 406],
+              "pos": [715, 608],
               "node": {
-                "id": 2214070360209981,
-                "pos": [715, 406],
+                "id": 2869331123916993,
+                "pos": [715, 608],
                 "mode": 0,
-                "size": [240, 86],
+                "size": [400, 236],
                 "type": "CLIPTextEncode",
                 "flags": {},
                 "order": 0,
@@ -299,13 +284,13 @@
                 "properties": {},
                 "widgets_values": [null]
               },
-              "node_id": 2214070360209981,
+              "node_id": 2869331123916993,
               "class_type": "CLIPTextEncode"
             },
             {
               "op": "connect",
-              "link_id": 879068618000012,
-              "to_node": 2559261621971657,
+              "link_id": 3132592127369732,
+              "to_node": 2103823744920160,
               "to_slot": 0,
               "from_node": 4,
               "from_slot": 1,
@@ -313,38 +298,61 @@
             },
             {
               "op": "connect",
-              "link_id": 3832075311322831,
-              "to_node": 2214070360209981,
+              "link_id": 390760452144824,
+              "to_node": 2869331123916993,
               "to_slot": 0,
               "from_node": 4,
               "from_slot": 1,
               "link_type": "CLIP"
             }
           ],
-          "at_ms": 5208
+          "at_ms": 364
         },
         {
           "kind": "event",
           "event": {
             "type": "agent_tool_call",
             "data": {
-              "duration_ms": 199,
+              "doc_lineage_seq": 2,
+              "doc_seq": 3,
+              "duration_ms": 363,
               "status": "success",
-              "tool_call_id": "toolu_01PhJ8AyewzRU6PHk7aFGfbC",
-              "tool_name": "apply_ops"
+              "tool_call_id": "toolu_01N4xc9UEYPCGdNS48rFUgdF",
+              "tool_name": "apply_ops",
+              "workflow_id": "cc8d4ec5-045b-447e-be0c-712a6e736f0a"
             }
           },
-          "at_ms": 5208
+          "at_ms": 364
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_draft",
+            "data": {
+              "text": "I"
+            }
+          },
+          "at_ms": 4989
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I should double check the wiring is correct, maybe add a quick print statement to confirm before moving on.\n\n"
+            }
+          },
+          "at_ms": 4993
         },
         {
           "kind": "event",
           "event": {
             "type": "agent_message_delta",
             "data": {
-              "delta": "Done — I'm now on your \"Text to image\" tab, and both new text prompt nodes are on the canvas with their CLIP inputs wired from the checkpoint loader. They're not connected to anything downstream yet, so tell me if you'd like one hooked up as a negative prompt."
+              "delta": "I didn't need to switch tabs: you're already working in \"Text to image.\" In one batched call I added two new CLIP Text Encode (Prompt) nodes (#2103823744920160 and #2869331123916993) and connected the CLIP output of Load Checkpoint (#4) to both of their CLIP inputs.\n\nTheir prompt text is empty, and their outputs aren't connected to anything yet."
             }
           },
-          "at_ms": 7784
+          "at_ms": 4994
         },
         {
           "kind": "event",
@@ -352,15 +360,15 @@
             "type": "agent_message_done",
             "data": {
               "usage": {
-                "cache_creation_input_tokens": 1437,
-                "cache_read_input_tokens": 153211,
-                "input_tokens": 8,
-                "output_tokens": 574,
-                "total_tokens": 582
+                "input_tokens": 6,
+                "output_tokens": 488,
+                "total_tokens": 494,
+                "cache_read_input_tokens": 110879,
+                "cache_creation_input_tokens": 1467
               }
             }
           },
-          "at_ms": 7786
+          "at_ms": 4996
         }
       ]
     }
