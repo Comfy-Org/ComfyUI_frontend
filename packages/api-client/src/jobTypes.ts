@@ -78,13 +78,6 @@ const zRawJobListItem = z
   })
   .passthrough()
 
-/** One node's `execution_meta` entry, keyed by executed node id. */
-export const zExecutionMetaEntry = z
-  .object({
-    display_node: z.union([z.string(), z.number()]).nullable().optional()
-  })
-  .passthrough()
-
 /**
  * Job detail - returned by GET /api/jobs/{job_id} (detail endpoint)
  * Includes full workflow and outputs for re-execution and downloads

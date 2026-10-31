@@ -1,7 +1,7 @@
-import { Semaphore, delay, withTimeout } from 'es-toolkit'
+import { zJobExecutionMetaEntry } from '@comfyorg/ingest-types/zod'
+import { Semaphore, delay, partition, withTimeout } from 'es-toolkit'
 
 import { t } from '@/i18n'
-import { zExecutionMetaEntry } from '@comfyorg/api-client/jobTypes'
 import type { ExecutionError, JobDetail } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -87,13 +87,14 @@ export function useReconnectQueueRefresh() {
 
   function displayNodesOf(detail: JobDetail | undefined) {
     const meta = detail?.execution_meta
-    if (meta == null || typeof meta !== 'object') return undefined
+    if (meta == null || typeof meta !== 'object' || Array.isArray(meta)) {
+      return undefined
+    }
     const displayNodes = new Map<string, string>()
     for (const [node, entry] of Object.entries(meta)) {
-      const parsed = zExecutionMetaEntry.safeParse(entry)
-      const displayNode = parsed.success ? parsed.data.display_node : null
-      if (displayNode != null && displayNode !== '') {
-        displayNodes.set(node, String(displayNode))
+      const parsed = zJobExecutionMetaEntry.safeParse(entry)
+      if (parsed.success && parsed.data.display_node) {
+        displayNodes.set(node, parsed.data.display_node)
       }
     }
     return displayNodes
@@ -159,10 +160,21 @@ export function useReconnectQueueRefresh() {
     outputs: TaskOutput,
     displayNodes: Map<string, string> | undefined
   ) {
-    for (const [node, output] of Object.entries(outputs)) {
+    const frames = Object.entries(outputs).map(([node, output]) => ({
+      node,
+      output,
+      displayNode: displayNodes?.get(node) ?? node
+    }))
+    // Replayed frames replace each other on a shared display node. A node's
+    // own output finishes after the nodes it expanded into, so it goes last.
+    const [expanded, own] = partition(
+      frames,
+      ({ node, displayNode }) => node !== displayNode
+    )
+    for (const { node, output, displayNode } of [...expanded, ...own]) {
       api.dispatchCustomEvent('executed', {
         node,
-        display_node: displayNodes?.get(node) ?? node,
+        display_node: displayNode,
         output,
         prompt_id: jobId
       })

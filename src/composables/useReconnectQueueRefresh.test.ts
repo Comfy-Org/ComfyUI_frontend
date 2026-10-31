@@ -167,11 +167,11 @@ describe('useReconnectQueueRefresh', () => {
       await useReconnectQueueRefresh()()
 
       expect(replayedExecutedFrames()).toEqual([
-        ['executed', expect.objectContaining({ node: '9', display_node: '9' })],
         [
           'executed',
           expect.objectContaining({ node: '15.0.0.3', display_node: '15' })
-        ]
+        ],
+        ['executed', expect.objectContaining({ node: '9', display_node: '9' })]
       ])
     })
 
@@ -202,6 +202,56 @@ describe('useReconnectQueueRefresh', () => {
         ])
       }
     )
+
+    it('replays an expanded output before the display node own output', async () => {
+      const own = { images: [{ ...image, filename: 'own.png' }] }
+      const child = { images: [{ ...image, filename: 'child.png' }] }
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...makeJob('job-1', 'completed'),
+        outputs: { '15': own, '15.0.0.3': child },
+        execution_meta: {
+          '15': { display_node: '15' },
+          '15.0.0.3': { display_node: '15', parent_node: '15' }
+        }
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([
+        [
+          'executed',
+          expect.objectContaining({
+            node: '15.0.0.3',
+            display_node: '15',
+            output: child
+          })
+        ],
+        [
+          'executed',
+          expect.objectContaining({
+            node: '15',
+            display_node: '15',
+            output: own
+          })
+        ]
+      ])
+    })
+
+    it('ignores execution_meta that comes back as a list', async () => {
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...makeJob('job-1', 'completed'),
+        outputs: { '0': { images: [image] } },
+        execution_meta: [{ display_node: '9' }]
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ node: '0', display_node: '0' })]
+      ])
+    })
 
     it('lets the terminal event clear the run after its output event', async () => {
       followRun('job-1')
