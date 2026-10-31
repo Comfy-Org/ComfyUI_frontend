@@ -699,8 +699,6 @@ const coachDeferredBy = computed(() =>
 )
 const sendGates = useAgentSendGates(() => threadId.value)
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
-// A release in the update that closes the panel resolves its waiter before the
-// awaiting send can resume, so the close has to revoke it after the fact.
 let coachReleaseRevoked = false
 function releaseCoachCompletionWaiters(
   holdEnd: CoachHoldEnd,
