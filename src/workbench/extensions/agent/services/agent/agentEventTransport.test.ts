@@ -88,6 +88,19 @@ function thinking(delta: string): AgentChatEvent {
   }
 }
 
+function thinkingDraft(text: string): AgentChatEvent {
+  return {
+    type: 'agent_thinking_draft',
+    data: { text, message_id: 'm', thread_id: 't' }
+  }
+}
+
+function thinkingTexts(message: AssistantMessage): string[] {
+  return message.parts.flatMap((part) =>
+    part.type === 'thinking' ? [part.text] : []
+  )
+}
+
 function toolCall(
   tool_name: string,
   status: 'running' | 'success' | 'error',
@@ -1004,6 +1017,164 @@ describe('agentEventTransport settle lifecycle', () => {
         part.type === 'tabLink' ? [part.workflowId] : []
       )
     ).toEqual(['wf-1', 'wf-2', 'wf-1'])
+  })
+})
+
+describe('agentEventTransport thinking drafts', () => {
+  it('shows the thinking while the model is still writing it', () => {
+    const message = drive([
+      thinkingDraft('The user wants'),
+      thinkingDraft('The user wants a looping video')
+    ])
+
+    expect(thinkingTexts(message)).toEqual(['The user wants a looping video'])
+    expect(message.thinking).toBe(true)
+    expect(message.thinkingText).toBe('The user wants a looping video')
+    expect(message.parts[0]).toMatchObject({ state: 'streaming' })
+  })
+
+  it("replaces the draft with the round's thinking instead of adding to it", () => {
+    const message = drive([
+      thinkingDraft('The user wants a looping'),
+      thinking('The user wants a looping video.')
+    ])
+
+    expect(thinkingTexts(message)).toEqual(['The user wants a looping video.'])
+  })
+
+  it('appends every block and the narration of the round after the draft', () => {
+    const message = drive([
+      thinkingDraft('First thought'),
+      thinking('First thought.'),
+      thinking(' Second thought.'),
+      thinkingDraft('')
+    ])
+
+    expect(thinkingTexts(message)).toEqual(['First thought. Second thought.'])
+  })
+
+  it('keeps thinking above the answer draft that followed it', () => {
+    const message = drive([
+      thinkingDraft('Thinking it over'),
+      draft('Here is your'),
+      thinking('Thinking it over fully.')
+    ])
+
+    expect(message.parts.map((part) => part.type)).toEqual(['thinking', 'text'])
+    expect(thinkingTexts(message)).toEqual(['Thinking it over fully.'])
+  })
+
+  it('starts a new row for the next round, keeping the last round', () => {
+    const message = drive([
+      thinkingDraft('Round one'),
+      thinking('Round one.'),
+      toolCall('search', 'running'),
+      toolCall('search', 'success'),
+      thinkingDraft('Round two')
+    ])
+
+    expect(thinkingTexts(message)).toEqual(['Round one.', 'Round two'])
+  })
+
+  it('takes the draft back on an empty one, as a retried round sends', () => {
+    const message = drive([
+      thinkingDraft('half a thought'),
+      thinkingDraft(''),
+      thinkingDraft('a whole')
+    ])
+
+    expect(thinkingTexts(message)).toEqual(['a whole'])
+  })
+
+  it('stops showing thinking when a failed round withdraws its draft', () => {
+    const message = drive([thinkingDraft('half a thought'), thinkingDraft('')])
+
+    expect(message.parts).toEqual([])
+    expect(message.thinking).toBe(false)
+    expect(message.thinkingText).toBeUndefined()
+  })
+
+  it('ignores a withdrawal when nothing is drafted', () => {
+    const message = drive([thinking('Settled.'), thinkingDraft('')])
+
+    expect(thinkingTexts(message)).toEqual(['Settled.'])
+    expect(message.thinking).toBe(true)
+  })
+
+  it('does not merge a draft into thinking already on screen', () => {
+    const message = drive([thinking('Earlier.'), thinkingDraft('Later')])
+
+    expect(thinkingTexts(message)).toEqual(['Earlier.', 'Later'])
+  })
+
+  it.for([
+    { name: 'a tool call', next: toolCall('search', 'running') },
+    { name: 'the answer', next: delta('The answer') },
+    {
+      name: 'an active tab change',
+      next: {
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-1', message_id: 'm', thread_id: 't' }
+      } satisfies AgentChatEvent
+    }
+  ])('drops an unconfirmed draft at $name', ({ next }) => {
+    expect(thinkingTexts(drive([thinkingDraft('unsigned'), next]))).toEqual([])
+  })
+
+  it('drops an unconfirmed draft when the turn settles', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+    transport.ingest(thinkingDraft('stopped mid-thought'))
+    transport.settle()
+
+    expect(thinkingTexts(emit.mock.calls.at(-1)?.[0] ?? message)).toEqual([])
+  })
+
+  it('keeps the row live when thinking resumes after an answer draft', () => {
+    const message = drive([
+      thinkingDraft('Thinking'),
+      draft('Here is your'),
+      draft(''),
+      thinkingDraft('Thinking further')
+    ])
+
+    expect(message.parts[0]).toMatchObject({
+      type: 'thinking',
+      text: 'Thinking further',
+      state: 'streaming'
+    })
+    expect(message.thinking).toBe(true)
+  })
+
+  it('opens the row above an answer draft already on screen', () => {
+    const message = drive([
+      draft('Here is your'),
+      thinkingDraft('Reconsidering')
+    ])
+
+    expect(message.parts.map((part) => part.type)).toEqual(['thinking', 'text'])
+  })
+
+  it('keeps the rounds in arrival order under an answer draft that never settled', () => {
+    const message = drive([
+      draft('Here is your'),
+      thinking('First thought.'),
+      thinkingDraft('Second thought')
+    ])
+
+    expect(thinkingTexts(message)).toEqual(['First thought.', 'Second thought'])
+    expect(message.parts.map((part) => part.type)).toEqual([
+      'thinking',
+      'thinking',
+      'text'
+    ])
+  })
+
+  it('does not let an answer withdrawal take the thinking draft', () => {
+    const message = drive([thinkingDraft('Still thinking'), draft('')])
+
+    expect(thinkingTexts(message)).toEqual(['Still thinking'])
   })
 })
 
