@@ -3,7 +3,11 @@ import type { ErrorEvent, EventHint } from '@sentry/vue'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import { tagSentryEvaluatedCommandCaller } from './sentryEvaluatedCommandCaller'
-import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
+import {
+  sentryThirdPartyErrorFilter,
+  tagSentryNonFirstPartyOrigin
+} from './thirdPartyErrorNoise'
+import { tagSentryStaleChunkCause } from './sentryStaleChunkCause'
 import { addVueDirectiveDiagnostics } from './vueDirectiveErrorDiagnostics'
 
 /**
@@ -43,7 +47,11 @@ export function sentryBeforeSend(
   return (
     kept &&
     groupWorkspaceApiError(
-      tagSentryEvaluatedCommandCaller(addVueDirectiveDiagnostics(kept, hint)),
+      tagSentryEvaluatedCommandCaller(
+        tagSentryNonFirstPartyOrigin(
+          tagSentryStaleChunkCause(addVueDirectiveDiagnostics(kept, hint))
+        )
+      ),
       hint
     )
   )

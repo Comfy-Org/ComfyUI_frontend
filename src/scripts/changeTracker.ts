@@ -11,6 +11,7 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { isChangeCaptureSuppressed } from '@/services/changeCaptureSuppression'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
   collectSubgraphDefinitions,
@@ -342,6 +343,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    * serialize the wrong graph into the old workflow's activeState, corrupting it.
    */
   static isLoadingGraph = false
+
   /**
    * The active state of the workflow.
    */
@@ -505,7 +507,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
       !useApp().isGraphReady ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
-      ChangeTracker.isLoadingGraph
+      ChangeTracker.isLoadingGraph ||
+      isChangeCaptureSuppressed()
     )
       return
 
@@ -543,7 +546,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
   squashState = useDebounceFn(() => {
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
-      ChangeTracker.isLoadingGraph
+      ChangeTracker.isLoadingGraph ||
+      isChangeCaptureSuppressed()
     )
       return
 

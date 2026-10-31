@@ -139,39 +139,94 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       .not.toBe('true')
   })
 
-  test('walks all four accessible cards and persists completion', async ({
+  test('walks every accessible card and persists completion', async ({
     page,
     agentFlagEnabled
   }) => {
     await bootAgentApp(page, agentFlagEnabled, {
       onboardingCompleted: false
     })
-    await new AgentPanel(page).open()
-    const steps = [
-      [enMessages.agent.coachTitle, enMessages.agent.coachBody],
-      [enMessages.agent.coachWorkflowTitle, enMessages.agent.coachWorkflowBody],
-      [enMessages.agent.coachGraphTitle, enMessages.agent.coachGraphBody],
-      [enMessages.agent.coachHistoryTitle, enMessages.agent.coachHistoryBody]
-    ] as const
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.open()
+    const intro = await agentPanel.expectTourCard(
+      enMessages.agent.coachTitle,
+      enMessages.agent.coachBody,
+      '1 of 3'
+    )
+    await expect(agentPanel.tourSkipButton(intro)).toHaveCount(1)
+    await intro.getByRole('button', { name: enMessages.g.next }).click()
 
-    for (const [index, [title, description]] of steps.entries()) {
-      const dialog = page.getByRole('dialog', { name: title })
-      await expect(dialog).toBeVisible()
-      await expect(dialog).toHaveAccessibleDescription(description)
-      await expect(dialog).toContainText(`${index + 1} of ${steps.length}`)
-      await expect(page.getByTestId('agent-coach-spotlight')).toBeVisible()
-      await expect(dialog).toBeInViewport({ ratio: 1 })
-      await dialog
-        .getByRole('button', {
-          name:
-            index === steps.length - 1
-              ? enMessages.onboardingCoachmarks.done
-              : enMessages.g.next
-        })
-        .click()
-    }
+    const workflow = await agentPanel.expectTourCard(
+      enMessages.agent.coachWorkflowTitle,
+      enMessages.agent.coachWorkflowBody,
+      '2 of 3'
+    )
+    await expect(agentPanel.tourSkipButton(workflow)).toHaveCount(1)
+    await workflow.getByRole('button', { name: enMessages.g.next }).click()
+
+    const history = await agentPanel.expectTourCard(
+      enMessages.agent.coachHistoryTitle,
+      enMessages.agent.coachHistoryBody,
+      '3 of 3'
+    )
+    await expect(agentPanel.tourSkipButton(history)).toHaveCount(0)
+    await history
+      .getByRole('button', { name: enMessages.onboardingCoachmarks.done })
+      .click()
 
     await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem(
+            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+          )
+        )
+      )
+      .toBe('true')
+
+    await page.reload()
+    await waitForCloudApp(page)
+    await expect(page.locator('#agent-panel-root')).toBeVisible()
+    await expect(
+      page.getByRole('dialog', { name: enMessages.agent.coachTitle })
+    ).toHaveCount(0)
+  })
+
+  test('Escape leaves the last card, which has no Skip button', async ({
+    page,
+    agentFlagEnabled
+  }) => {
+    await bootAgentApp(page, agentFlagEnabled, {
+      onboardingCompleted: false
+    })
+    const agentPanel = new AgentPanel(page)
+    await agentPanel.open()
+    const intro = await agentPanel.expectTourCard(
+      enMessages.agent.coachTitle,
+      enMessages.agent.coachBody,
+      '1 of 3'
+    )
+    await intro.getByRole('button', { name: enMessages.g.next }).click()
+
+    const workflow = await agentPanel.expectTourCard(
+      enMessages.agent.coachWorkflowTitle,
+      enMessages.agent.coachWorkflowBody,
+      '2 of 3'
+    )
+    await workflow.getByRole('button', { name: enMessages.g.next }).click()
+
+    const history = await agentPanel.expectTourCard(
+      enMessages.agent.coachHistoryTitle,
+      enMessages.agent.coachHistoryBody,
+      '3 of 3'
+    )
+    await expect(agentPanel.tourSkipButton(history)).toHaveCount(0)
+
+    await page.keyboard.press('Escape')
+
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByTestId('agent-coach-spotlight')).toHaveCount(0)
     await expect
       .poll(() =>
         page.evaluate(() =>
