@@ -32,9 +32,6 @@ export const DEPLOYMENT_LISTING_NO_HINT_WAIT_MS = 5_000
 /** How long Comfy Cloud's Extensions button waits for the listing before it opens the custom-node survey. */
 export const DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS = 5_000
 
-/** How long opening a workflow with missing nodes waits for the listing before it shows the error overlay. */
-export const DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS = 5_000
-
 /** Minimum gap between focus-triggered listing retries. */
 export const DEPLOYMENT_LISTING_FOCUS_RETRY_MS = 60_000
 
