@@ -42,10 +42,15 @@ function failingPackLine(pack: MissingBuildPack): string {
     : packLine(pack)
 }
 
+function downloadLink(url: string | undefined): string | undefined {
+  if (!url || !isModelUrlAllowlisted(url) || !URL.canParse(url)) return
+  return new URL(url).href
+}
+
 function modelLine({ name, directory, url }: MissingBuildModel): string {
   const folder = directory ? ` in \`models/${inline(directory)}\`` : ''
-  const source =
-    url && isModelUrlAllowlisted(url) ? `, from ${inline(url)}` : ''
+  const link = downloadLink(url)
+  const source = link ? `, from ${link}` : ''
   return `- \`${inline(name)}\`${folder}${source}`
 }
 
