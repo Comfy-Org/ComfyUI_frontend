@@ -82,6 +82,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getFilenameDetails } from '@/utils/formatUtil'
+import { isDropEventHandled } from '@/utils/eventUtils'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
@@ -2673,11 +2674,11 @@ describe('AgentPanelRoot session notices', () => {
 // marker the panel tests for, so the payload is hand-built.
 // Returns whether the panel claimed the event, which is what the graph loader
 // checks before opening a dropped workflow.
-function dispatchDrag(
+function dispatchDragEvent(
   target: Element,
   type: 'dragenter' | 'dragleave' | 'dragover' | 'drop',
   data: { files?: File[]; types?: string[]; getData?: (t: string) => string }
-): boolean {
+): DragEvent {
   const event = new Event(type, { bubbles: true, cancelable: true })
   Object.defineProperty(event, 'dataTransfer', {
     value: {
@@ -2687,7 +2688,15 @@ function dispatchDrag(
     }
   })
   target.dispatchEvent(event)
-  return event.defaultPrevented
+  return event as DragEvent
+}
+
+function dispatchDrag(
+  target: Element,
+  type: 'dragenter' | 'dragleave' | 'dragover' | 'drop',
+  data: { files?: File[]; types?: string[]; getData?: (t: string) => string }
+): boolean {
+  return dispatchDragEvent(target, type, data).defaultPrevented
 }
 
 const mp4Header = '\0\0\0\x18ftyp'
@@ -4229,7 +4238,9 @@ describe('AgentPanelRoot attach flow', () => {
           })
       }
 
-      expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
+      const firstDrop = dispatchDragEvent(target, 'drop', dragData)
+      expect(firstDrop.defaultPrevented).toBe(true)
+      expect(isDropEventHandled(firstDrop)).toBe(true)
       expect(dispatchDrag(target, 'drop', dragData)).toBe(true)
       expect(
         within(await screen.findByTestId('composer-asset-section')).getByRole(
@@ -4661,7 +4672,9 @@ describe('AgentPanelRoot attach flow', () => {
     const workflow = new File(['{}'], 'flow.json', {
       type: 'application/json'
     })
-    expect(dispatchDrag(target, 'drop', { files: [workflow] })).toBe(true)
+    const workflowDrop = dispatchDragEvent(target, 'drop', { files: [workflow] })
+    expect(workflowDrop.defaultPrevented).toBe(true)
+    expect(isDropEventHandled(workflowDrop)).toBe(true)
     expect(
       within(await screen.findByTestId('composer-asset-section')).getByRole(
         'group',
