@@ -1064,7 +1064,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'timeout',
         displayTitle: 'Generation timed out',
         displayMessage:
-          'This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.'
+          "This workflow reached your plan's maximum run time (10 min on Free, 30 min on Standard and Creator, 1 hr on Pro). Try reducing image resolution, batch size, or workflow length and run again."
       }
     },
     {
@@ -1453,9 +1453,9 @@ describe('errorMessageResolver', () => {
     ).toMatchObject({
       catalogId: 'timeout',
       displayMessage:
-        'This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.',
+        "This workflow reached your plan's maximum run time (10 min on Free, 30 min on Standard and Creator, 1 hr on Pro). Try reducing image resolution, batch size, or workflow length and run again.",
       toastMessage:
-        'This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.'
+        "This workflow reached your plan's maximum run time (10 min on Free, 30 min on Standard and Creator, 1 hr on Pro). Try reducing image resolution, batch size, or workflow length and run again."
     })
   })
 
