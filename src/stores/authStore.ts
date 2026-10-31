@@ -400,7 +400,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (await awaitUnifiedMint()) return null
     const token = useWorkspaceAuthStore().getUnifiedToken()
     if (token) return { Authorization: `Bearer ${token}` }
-    return await getFirebaseAuthHeader()
+    return await getUserAuthHeader()
   }
 
   /**
