@@ -35,7 +35,10 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
-import type { LiveGraphApplierDeps } from './liveGraphApplier'
+import type {
+  LiveGraphApplierDeps,
+  RemoteApplyContext
+} from './liveGraphApplier'
 import { changesForRejectedOps } from './rejectedOpChanges'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -1871,6 +1874,32 @@ describe('LiveGraphApplier', () => {
     expect(positionOf(1)).toEqual([0, 0])
     expect(positionOf(2)).toEqual([290, 0])
     expect(positionOf(3)).toEqual([690, 0])
+  })
+
+  it('moves a created batch off the nodes it lands on only for a live agent turn', () => {
+    const { graph, doc, collector, applier, applyCollected } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applyCollected()
+    const addOnTopOfNode1 = (id: number, context: RemoteApplyContext) => {
+      doc.transact(() =>
+        nodesMap(doc).set(
+          String(id),
+          new Y.Map<unknown>(Object.entries(sinkNode(id, [50, 20])))
+        )
+      )
+      applier.applyChanges(doc, collector.take(), context)
+    }
+    const positionOf = (id: number) => [
+      ...(graph.getNodeById(toNodeId(id))?.pos ?? [])
+    ]
+
+    addOnTopOfNode1(2, CONTEXT)
+    addOnTopOfNode1(3, { ...CONTEXT, liveAgentTurn: true })
+
+    expect(positionOf(2)).toEqual([50, 20])
+    expect(positionOf(3)).toEqual([330, 0])
   })
 
   it('scopes every write to the remote actor', () => {
