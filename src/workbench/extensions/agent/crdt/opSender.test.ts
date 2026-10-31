@@ -808,6 +808,21 @@ describe('createOpSender', () => {
     ])
   })
 
+  it('reports an exhausted admission with no bound doc as unbound', () => {
+    boundWorkflow = null
+    observedCounter = Number.MAX_SAFE_INTEGER - 1
+
+    sender.enqueue([addNode(1), addNode(2), addNode(3)])
+
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1, 2, 3] }
+    ])
+    expect(reportsOfType('failure_minting_agent_op_counter')).toEqual([])
+    expect(
+      reportsOfType('failure_syncing_agent_edit_undeliverable')[0][1]
+    ).toMatchObject({ context: { code: 'unbound' } })
+  })
+
   it('still mints safe counters after refusing an exhausted admission', () => {
     observedCounter = Number.MAX_SAFE_INTEGER - 1
     sender.enqueue([addNode(1), addNode(2), addNode(3)])

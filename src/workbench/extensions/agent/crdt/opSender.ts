@@ -619,6 +619,14 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       )
       return
     }
+    const notifyFailure = guardedSettlementNotifier(
+      'failure_settling_agent_op_sender',
+      workflowId === null ? 'unbound' : 'serialization_failed'
+    )
+    if (workflowId === null) {
+      settleUndeliverableInBoundedGroups(minted, notifyFailure, workflowId)
+      return
+    }
     if (exhausted) {
       if (mayReportCounterExhaustion()) {
         reportDegraded(
@@ -636,14 +644,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         ),
         workflowId
       )
-      return
-    }
-    const notifyFailure = guardedSettlementNotifier(
-      'failure_settling_agent_op_sender',
-      workflowId === null ? 'unbound' : 'serialization_failed'
-    )
-    if (workflowId === null) {
-      settleUndeliverableInBoundedGroups(minted, notifyFailure, workflowId)
       return
     }
     appendToOpenGroup(workflowId, admitted)
