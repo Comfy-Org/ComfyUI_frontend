@@ -44,7 +44,7 @@
         data-testid="mask-editor-tool-overlay"
         aria-hidden="true"
         class="pointer-events-none absolute inset-0 z-50 size-full"
-        :viewBox="`0 0 ${store.image?.width ?? 0} ${store.image?.height ?? 0}`"
+        :viewBox="`0 0 ${store.canvasHistory.dimensions?.width ?? 0} ${store.canvasHistory.dimensions?.height ?? 0}`"
       >
         <circle
           v-for="point in extensionPoints"

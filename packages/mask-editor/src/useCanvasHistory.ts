@@ -20,6 +20,12 @@ export function useCanvasHistory(layers: CanvasHistoryLayers, maxStates = 20) {
   const currentStateIndex = ref(-1)
   const initialized = ref(false)
   const revision = ref(0)
+  const dimensions = computed(() => {
+    const current = states.value.at(currentStateIndex.value)?.mask
+    return current
+      ? { width: current.width, height: current.height }
+      : undefined
+  })
 
   const canUndo = computed(
     () => states.value.length > 1 && currentStateIndex.value > 0
@@ -208,6 +214,7 @@ export function useCanvasHistory(layers: CanvasHistoryLayers, maxStates = 20) {
     canUndo,
     canRedo,
     revision,
+    dimensions,
     currentStateIndex,
     saveInitialState,
     saveState,
