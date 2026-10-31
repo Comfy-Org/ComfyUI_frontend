@@ -333,8 +333,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     reportError(new Error('No live node resolves the executed output'), {
       surface: 'graph',
       errorType: 'failure_resolving_node_output_execution_id',
+      level: 'warning',
+      tags: { executionId },
       context: {
-        executionId,
         filenames: filenames?.length ? filenames : undefined
       }
     })

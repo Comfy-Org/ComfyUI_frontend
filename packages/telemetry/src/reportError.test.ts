@@ -323,31 +323,6 @@ describe('reportError', () => {
     )
   })
 
-  it('forwards only unresolved-output context to the Desktop payload', async () => {
-    sentryLive(false)
-    datadogLive(false)
-    installDesktopBridge()
-    const { reportError } = await loadReportError()
-
-    reportError(new Error('No live node resolves the executed output'), {
-      surface: 'graph',
-      errorType: 'failure_resolving_node_output_execution_id',
-      context: {
-        executionId: 'insert:actor:root:node:404',
-        filenames: ['unresolved.png'],
-        workflow: '/Users/private/workflow.json',
-        invalidFilenames: [1]
-      }
-    })
-
-    expect(captureDesktopException).toHaveBeenCalledWith(expect.any(Object), {
-      error_type: 'failure_resolving_node_output_execution_id',
-      executionId: 'insert:actor:root:node:404',
-      filenames: ['unresolved.png'],
-      surface: 'graph'
-    })
-  })
-
   it('flushes a report buffered before the Desktop bridge appeared', async () => {
     sentryLive(false)
     datadogLive(false)

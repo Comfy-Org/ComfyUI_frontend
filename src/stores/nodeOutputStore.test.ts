@@ -307,10 +307,9 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
       expect.objectContaining({
         surface: 'graph',
         errorType: 'failure_resolving_node_output_execution_id',
-        context: {
-          executionId,
-          filenames: ['contact_sheet_00001_.png']
-        }
+        level: 'warning',
+        tags: { executionId },
+        context: { filenames: ['contact_sheet_00001_.png'] }
       })
     )
   })
@@ -327,7 +326,8 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
-        context: { executionId, filenames: undefined }
+        tags: { executionId },
+        context: { filenames: undefined }
       })
     )
   })
@@ -344,7 +344,8 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
-        context: { executionId, filenames: undefined }
+        tags: { executionId },
+        context: { filenames: undefined }
       })
     )
   })
@@ -362,7 +363,8 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
-        context: { executionId, filenames: ['deleted-node.png'] }
+        tags: { executionId },
+        context: { filenames: ['deleted-node.png'] }
       })
     )
     expect(store.nodeOutputs[executionId]).toBeUndefined()
