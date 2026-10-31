@@ -5010,6 +5010,27 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('falls back to the prompt when workflow metadata has an invalid structure', async () => {
+      const prompt = { '1': { class_type: 'KSampler', inputs: {} } }
+      const loadApiJson = vi
+        .spyOn(app, 'loadApiJson')
+        .mockResolvedValue(undefined)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        workflow: '[]',
+        prompt,
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+
+      await app.handleFile(createTestFile('both.png', 'image/png'))
+
+      expect(loadApiJson).toHaveBeenCalledWith(
+        prompt,
+        'both',
+        expect.any(Object)
+      )
+      expect(mockImportA1111).not.toHaveBeenCalled()
+    })
+
     it.for([
       {
         description: undefined,

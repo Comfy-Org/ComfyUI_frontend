@@ -2185,7 +2185,6 @@ export class ComfyApp implements IComfyApp {
         }
       } catch (err) {
         console.error('Failed to parse workflow:', err)
-        // Fall through to check parameters as fallback
       }
 
       if (graphData) {
