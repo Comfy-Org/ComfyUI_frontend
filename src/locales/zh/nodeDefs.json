@@ -6750,11 +6750,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "使用 FLUX 超分辨率将视频放大 1.5 至 3 倍，可精确保留源视频，或创造性地增强其细节。",
-    "display_name": "Flux 视频放大",
+    "display_name": "Flux 视频放大（旧版）",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "自动将面积大于 3840x2160 像素的源视频缩小，以适应输入限制。保持宽高比不变；较小的视频不受影响。"
+        "tooltip": "自动缩小面积大于 2560x1440 像素的源素材，以符合输入限制。会保留宽高比；较小的视频不受影响。"
       },
       "control_after_generate": {
         "name": "生成后控制"
@@ -6782,6 +6782,48 @@
       "video": {
         "name": "视频",
         "tooltip": "时长为 1 至 20 秒、宽高比介于 1:4 和 4:1 之间的源视频片段。输出以 24 fps 渲染，每帧上限约为 1440 万像素。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "使用 FLUX 超分辨率将视频放大至 1080p、2K 或 4K，或放大 1.5 至 3 倍；既可精确保留源视频，也可创造性地增强其细节。",
+    "display_name": "Flux 视频放大",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自动缩小",
+        "tooltip": "将过大的源素材缩小，而不是拒绝处理：面积超过 2560x1440 像素，或超过目标分辨率的三分之二时（最小缩放系数为 1.5 倍）。会保留宽高比。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "“creative”会还原并创造精细细节，最适合生成的视频、纹理和风景。“precise”会在不改变源素材的情况下锐化，适用于人脸、产品和真实拍摄的视频。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "可选的视频片段描述，用于引导增强的细节。留空可进行中性放大。"
+      },
+      "safety_tolerance": {
+        "name": "安全容差",
+        "tooltip": "内容审核容差，0 最严格。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于确定节点是否应重新运行的种子；FLUX 会自行选择种子，因此无论此值为何，实际结果均不具有确定性。"
+      },
+      "target_resolution": {
+        "name": "目标分辨率",
+        "tooltip": "2K、4K 和 1080p 会将输出适配至 2560x1440、3840x2160 或 1920x1080 以内（竖屏片段会旋转尺寸）。若源视频即使以最大 3 倍放大也过小、无法填满目标尺寸，则会以 3 倍放大并输出较小的尺寸。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "时长为 1 至 20 秒、宽高比介于 1:4 至 4:1 的源视频片段。输出以 24 fps 渲染，每帧上限约为 1440 万像素。"
       }
     },
     "outputs": {
@@ -9039,7 +9081,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "使用 Ideogram 4.5 精确编辑根据文本提示词编辑图像：仅更改提示词所要求的内容，未触及的像素保持完全相同，输出将保留图像 1 的尺寸（超过约 4 MP 的图像会先缩小）。最多接受 4 张参考图像。",
+    "description": "使用 Ideogram 4.5 精确编辑，根据文本提示词编辑图像：仅更改提示词要求更改的内容，未触及的像素保持完全一致，输出保留图像 1 的尺寸（超过约 400 万像素的图像会先缩小）。也可编辑由 mask 或边界框指定的单个区域，并以完整尺寸返回图像。最多接受 4 张参考图像（使用 context_window_mask 时为 3 张）。",
     "display_name": "Ideogram 4.5 精确编辑",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9090,9 @@
       "model": {
         "name": "模型",
         "tooltip": "要使用的模型。"
+      },
+      "model_context_window": {
+        "name": "上下文窗口"
       },
       "model_prompt": {
         "name": "提示词"
@@ -10250,6 +10295,128 @@
       },
       "steps": {
         "name": "步数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4EditVideoNode": {
+    "description": "使用文本提示词以及可选的参考图像和视频编辑视频。结果与输入视频时长相同。",
+    "display_name": "Kling 4.0 视频编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageToVideoNode": {
+    "description": "通过最多 10 个关键帧生成带音频的视频。中间帧均匀间隔；视频采用第一个关键帧的宽高比。",
+    "display_name": "Kling 4.0 图生视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ReferenceToVideoNode": {
+    "description": "根据参考图像和视频生成带音频的视频，也可选择以指定帧开始或结束。",
+    "display_name": "Kling 4.0 参考生视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "随机种"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4TextToVideoNode": {
+    "description": "根据文本提示词生成带音频的视频。",
+    "display_name": "Kling 4.0 文本转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "随机种"
       }
     },
     "outputs": {
@@ -14940,6 +15107,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "为 MiniMax H3 设置上下文窗口。窗口从模型的 17 帧块开始，以保持视频和音频同步。",
+    "display_name": "MiniMax H3 上下文窗口",
+    "inputs": {
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "上下文窗口的实际帧长度。必须为 17*n + 5。"
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "上下文窗口的实际帧重叠长度。必须为 17*n + 5。"
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "是否应用 FreeNoise 噪声重排，以改善窗口融合效果。"
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "用于融合上下文窗口的方法。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "采样期间要应用上下文窗口的模型。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "是否根据区域索引将多个条件（由 ConditionCombine 创建）拆分到各个窗口中。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "采样期间已应用上下文窗口的模型。"
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "将 MiniMax H3 Fun ControlNet 作为模型补丁应用于文生视频模型。",
     "display_name": "应用 MiniMax H3 Fun ControlNet",
@@ -15015,6 +15217,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "使用潜空间放大模型调整 MiniMax H3 潜空间视频的大小；音频保持不变。",
+    "display_name": "MiniMax H3 潜空间使用模型放大",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "samples": {
+        "name": "样本"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18820,6 +19045,288 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialExtractNode": {
+    "description": "根据提示词，从输入图像的一个区域提取可无缝平铺的 PBR 材质（纹理图像 + PBR 贴图）。",
+    "display_name": "Patina 材质提取",
+    "inputs": {
+      "basecolor": {
+        "name": "基础色",
+        "tooltip": "生成基础色（反照率）贴图。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "生成高度/置换贴图。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "要从中提取纹理的图像。"
+      },
+      "image_size": {
+        "name": "图像尺寸",
+        "tooltip": "输出纹理尺寸。选择“自定义”可设置 512 到 2048 之间的宽度/高度（通过将贴图放大 4 倍可获得 8K 结果）。"
+      },
+      "metalness": {
+        "name": "金属度",
+        "tooltip": "生成金属度贴图。"
+      },
+      "normal": {
+        "name": "法线",
+        "tooltip": "生成法线贴图。"
+      },
+      "num_inference_steps": {
+        "name": "推理步数",
+        "tooltip": "纹理生成的去噪步数。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述要从图像中提取的纹理（例如“墙面”）。"
+      },
+      "prompt_expansion": {
+        "name": "提示词扩展",
+        "tooltip": "使用 LLM 扩展提示词，以获得更丰富的纹理细节。默认关闭：扩展会将提示词重新表述为照片，并且往往会冲淡金属度贴图。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "生成粗糙度贴图。"
+      },
+      "safety_checker": {
+        "name": "安全检查器"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于可复现生成的种子。"
+      },
+      "strength": {
+        "name": "强度",
+        "tooltip": "对输入图像进行变换的程度。"
+      },
+      "tile_size": {
+        "name": "分块大小",
+        "tooltip": "latent 空间中的分块大小（64 = 512px，128 = 1024px）。"
+      },
+      "tile_stride": {
+        "name": "分块步长",
+        "tooltip": "latent 空间中的分块步长。"
+      },
+      "tiling_mode": {
+        "name": "平铺模式",
+        "tooltip": "平铺方向：全向、水平或垂直。"
+      },
+      "upscale_factor": {
+        "name": "放大倍数",
+        "tooltip": "对 PBR 贴图进行无缝 SeedVR 放大（基础纹理不会被放大）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "纹理",
+        "tooltip": null
+      },
+      "1": {
+        "name": "基础色",
+        "tooltip": null
+      },
+      "2": {
+        "name": "法线",
+        "tooltip": null
+      },
+      "3": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "金属度",
+        "tooltip": null
+      },
+      "5": {
+        "name": "高度",
+        "tooltip": null
+      },
+      "6": {
+        "name": "扩展后的提示词",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "根据文本提示词生成完整的无缝平铺 PBR 材质（纹理图像 + PBR 贴图），最高支持 8K。还可选用输入图像驱动生成（img2img），或使用图像 + mask 进行局部重绘（inpaint）。",
+    "display_name": "Patina 材质",
+    "inputs": {
+      "basecolor": {
+        "name": "基础颜色",
+        "tooltip": "生成基础颜色（反照率）贴图。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "生成高度/位移贴图。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "可选的源图像。仅提供图像 = img2img；与 mask 一起提供 = inpaint。"
+      },
+      "image_size": {
+        "name": "图像尺寸",
+        "tooltip": "输出纹理尺寸。选择“自定义”可设置介于 512 和 2048 之间的宽度/高度（8K 结果来自对贴图进行 4 倍放大）。"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "可选的局部重绘 mask（需要图像）。白色 = 重新生成，黑色 = 保留。"
+      },
+      "metalness": {
+        "name": "金属度",
+        "tooltip": "生成金属度贴图。"
+      },
+      "normal": {
+        "name": "法线",
+        "tooltip": "生成法线贴图。"
+      },
+      "num_inference_steps": {
+        "name": "推理步数",
+        "tooltip": "纹理生成的去噪步数。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述要生成的材质/纹理。"
+      },
+      "prompt_expansion": {
+        "name": "提示词扩展",
+        "tooltip": "使用 LLM 扩展提示词以获得更丰富的纹理细节。默认关闭：扩展会将提示词重构为照片，并且往往会削弱金属度贴图。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "生成粗糙度贴图。"
+      },
+      "safety_checker": {
+        "name": "安全检查器"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于可复现生成的种子。"
+      },
+      "strength": {
+        "name": "强度",
+        "tooltip": "对输入图像的变换程度。仅在提供图像时使用。"
+      },
+      "tile_size": {
+        "name": "分块大小",
+        "tooltip": "latent 空间中的分块大小（64 = 512px，128 = 1024px）。"
+      },
+      "tile_stride": {
+        "name": "分块步长",
+        "tooltip": "latent 空间中的分块步长。"
+      },
+      "tiling_mode": {
+        "name": "平铺模式",
+        "tooltip": "平铺方向：全向、水平或垂直。"
+      },
+      "upscale_factor": {
+        "name": "放大倍率",
+        "tooltip": "对 PBR 贴图进行无缝 SeedVR 放大（基础纹理不会被放大）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "纹理",
+        "tooltip": null
+      },
+      "1": {
+        "name": "基础颜色",
+        "tooltip": null
+      },
+      "2": {
+        "name": "法线",
+        "tooltip": null
+      },
+      "3": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "金属度",
+        "tooltip": null
+      },
+      "5": {
+        "name": "高度",
+        "tooltip": null
+      },
+      "6": {
+        "name": "扩展提示词",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "从纹理图像生成 PBR 材质贴图（基础色、法线、粗糙度、金属度、高度）。",
+    "display_name": "Patina PBR 材质贴图",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自动缩小",
+        "tooltip": "当输入图像的最长边超过 2048px（模型的输入限制）时，自动在保持宽高比的前提下缩小；较小的图像将保持不变。禁用后，超大图像将改为引发错误。"
+      },
+      "basecolor": {
+        "name": "基础色",
+        "tooltip": "生成基础色（反照率）贴图。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "生成高度/置换贴图。"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "用于生成 PBR 贴图的输入照片或渲染图。"
+      },
+      "metalness": {
+        "name": "金属度",
+        "tooltip": "生成金属度贴图。"
+      },
+      "normal": {
+        "name": "法线",
+        "tooltip": "生成法线贴图。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "生成粗糙度贴图。"
+      },
+      "safety_checker": {
+        "name": "安全检查器"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于可复现去噪的种子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "基础色",
+        "tooltip": null
+      },
+      "1": {
+        "name": "法线",
+        "tooltip": null
+      },
+      "2": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "3": {
+        "name": "金属度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "高度",
         "tooltip": null
       }
     }
@@ -28429,6 +28936,33 @@
       "video": {
         "name": "视频",
         "tooltip": "带有语音音轨且时长短于 30 分钟的视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "使用 VEED 将视频中的语音翻译成另一种语言。每位说话者的声音都会被克隆，其嘴唇动作会与译文同步。",
+    "display_name": "VEED 配音",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "standard：价格较低，单声道音频；西班牙语为拉丁美洲西班牙语，葡萄牙语为巴西葡萄牙语。pro：支持地区口音和立体声音频。"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_source_language": {
+        "name": "源语言"
+      },
+      "model_target_language": {
+        "name": "目标语言"
       }
     },
     "outputs": {

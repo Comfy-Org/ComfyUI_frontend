@@ -65,17 +65,21 @@
     "coachWorkflowTitle": "يعدّل وكيلك مخطط سير العمل الذي تعرضه",
     "consent": {
       "accept": "ابدأ استخدام Comfy Agent",
-      "agreeAndContinue": "الموافقة والمتابعة",
+      "agreeAndContinue": "وافق وتابع لتسجيل الدخول",
       "body1": "يساعدك Comfy Agent على تخطيط سير العمل وبنائه وتشغيله وتكراره. صِف ما تريد إنشاءه، وسيعمل Comfy Agent كزميل قوي لك.",
       "body2": "لبناء سير العمل الخاص بك، يعالج Comfy Agent بعض بياناتك. كن مطمئنًا، إذ لا تُستخدم بياناتك مطلقًا لتدريب نماذج الذكاء الاصطناعي. بالنقر على «بدء»، فإنك توافق على هذا الاستخدام.",
       "body2BeforeSignIn": "لبناء مسارات العمل الخاصة بك، يعالج Comfy Agent بعض بياناتك. يُرجى الاطمئنان، فلا تُستخدم بياناتك مطلقًا لتدريب نماذج الذكاء الاصطناعي. بالنقر على «الموافقة والمتابعة»، فإنك توافق على استخدامها.",
+      "contactForm": "نموذج الاتصال",
+      "errorContact": "يرجى التحقق من اتصالك والمحاولة مرة أخرى. إذا استمرت المشاكل، فيرجى استخدام {contactForm}.",
+      "errorTitle": "تعذر بدء وكيل Comfy",
       "loadError": "تعذر تحميل تفضيلات Agent الخاصة بك. حاول مرة أخرى.",
+      "loadErrorTitle": "تعذر تحميل إعدادات الوكيل",
       "readDocs": "قراءة الوثائق",
       "reject": "تخطي الآن",
       "saveError": "تعذر حفظ تفضيلاتك. حاول مرة أخرى.",
-      "signInError": "تعذر فتح تسجيل الدخول. يُرجى المحاولة مرة أخرى.",
-      "signInNext": "ستسجّل الدخول في الخطوة التالية.",
+      "signInErrorTitle": "تعذر فتح تسجيل الدخول",
       "title": "تعرّف على Comfy Agent",
+      "tryAgain": "حاول مرة أخرى",
       "videoPlaceholder": "الفيديو غير متاح"
     },
     "copied": "تم النسخ!",
@@ -83,7 +87,7 @@
     "copyMarkdown": "نسخ بصيغة markdown",
     "copyUnavailable": "لا يمكن نسخ سوى المحادثة الحالية في هذا الإصدار",
     "creditTransitionNotice": "لقد استخدمت أرصدة الوكيل المجانية. تستخدم أنشطة الوكيل اللاحقة أرصدة مساحة العمل الخاصة بك، والتي قد تتضمن أرصدة مدفوعة.",
-    "creditsUsed": "استخدم الوكيل {credits} رصيد | استخدم الوكيل {credits} من الأرصدة",
+    "creditsUsed": "استخدم الوكيل {credits} رصيدًا | استخدم الوكيل {credits} أرصدة",
     "currentTab": "علامة التبويب الحالية",
     "delete": "حذف",
     "deleteApproval": {
@@ -145,6 +149,7 @@
     "historyCurrent": "الحالية",
     "historyEarlier": "سابقًا",
     "historyEmpty": "لا توجد محادثات بعد",
+    "historyIncomplete": "تعذر تحميل بعض المحادثات. نعرض المحادثات المتاحة لدينا.",
     "historyOpenFailed": "تعذّر الفتح. حدّد هذه الدردشة لإعادة المحاولة.",
     "historyToday": "اليوم",
     "historyYesterday": "أمس",
@@ -170,10 +175,17 @@
     "nodes": "العُقد",
     "nodesAdded": "أضاف الوكيل عقدة واحدة إلى الرسم البياني | أضاف الوكيل {count} عُقد إلى الرسم البياني",
     "notHelpful": "غير مفيد",
+    "openVideo": "فتح الفيديو: {name}",
     "openWorkflowTab": "فتح {name}",
     "openingChat": "جارٍ فتح الدردشة…",
     "openingWorkflowChat": "جارٍ فتح الدردشة لـ {workflowName}…",
     "otherOpenWorkflows": "مهام سير العمل المفتوحة الأخرى",
+    "paused": {
+      "recheck": "سيحاول مرة أخرى تلقائيًا خلال نحو {seconds} ثانية. | سيحاول مرة أخرى تلقائيًا خلال نحو {seconds} ثوانٍ.",
+      "resume": "استئناف",
+      "title": "الوكيل متوقف مؤقتًا",
+      "titleNoFunds": "توقف الوكيل مؤقتًا — نفدت الأرصدة"
+    },
     "paywall": {
       "addCredits": "إضافة أرصدة",
       "body": {
@@ -200,6 +212,7 @@
     "retryAfterSeconds": "يمكنك المحاولة مرة أخرى خلال {seconds}ث.",
     "retryFollowedChat": "أعِد محاولة فتح الدردشة لـ {workflowName}",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "وصلت إجابتك إلى الوكيل، لكن تعذر علينا تأكيد ما إذا كانت هي الإجابة التي تم تطبيقها. أعد تحميل الصفحة لمعرفة الوضع الحالي.",
       "answerFailed": "تعذر إرسال إجابتك. أعد تحميل الصفحة وحاول مرة أخرى.",
       "answerSuperseded": "تمت الإجابة عن هذا بالفعل في مكان آخر، لذا استُخدمت تلك الإجابة بدلًا من إجابتك.",
       "answerUncertain": "تعذر تأكيد وصول إجابتك إلى الوكيل. ربما كانت قد طُبقت بالفعل — أعد تحميل الصفحة لمعرفة الوضع الحالي.",
@@ -315,7 +328,7 @@
     "workflowReferenceUnavailableReason": "سير العمل المشار إليه هذا لم يعد متاحًا أو ليس لديك صلاحية الوصول إليه.",
     "workflowSyncFailedDetail": "أُنشئ مخطط سير العمل هذا بإصدار مستند غير متوافق. لم يتم تغيير لوحتك.",
     "workflowSyncFailedDetailCatalogMismatch": "تغيّرت عقدة في سير العمل هذا منذ أن رآها الوكيل آخر مرة. لم يتم تغيير لوحة العمل الخاصة بك. سترسل رسالتك التالية لوحة العمل الخاصة بك كي يتمكن الوكيل من إعادة بناء نسخته من سير العمل.",
-    "workflowSyncFailedDetailStaleClient": "هذه الصفحة غير محدّثة، لذا لا يمكن عرض تغييرات الوكيل. أعد تحميل الصفحة لرؤيتها.",
+    "workflowSyncFailedDetailStaleClient": "لا يمكن لهذه الصفحة عرض الإصدار الحالي من هذا المستند، لذلك لا يمكن إظهار تغييرات الوكيل هنا. لقد تم الاحتفاظ بها. قد تؤدي إعادة التحميل إلى إصلاح ذلك؛ وإن لم يحدث، فلم يصل التحديث إلى تطبيقك بعد.",
     "workflowSyncFailedDetailStaleHost": "هذه الصفحة أحدث من خدمة الوكيل، لذا لا يمكن عرض تغييرات الوكيل هنا بعد. أعد تحميل الصفحة بعد انتهاء الخدمة من التحديث لرؤيتها.",
     "workflowSyncFailedTitle": "لا يمكن مزامنة مخطط سير العمل هذا",
     "workflows": "سير العمل",
@@ -411,6 +424,23 @@
     "fileFormats": "تنسيقات الملفات",
     "fileName": "اسم الملف",
     "fileSize": "حجم الملف",
+    "fileUpload": {
+      "cancelled": "أُلغي الرفع.",
+      "choose": "اختر ملفًا",
+      "drop": "أو أفلت ملف .safetensors هنا",
+      "failed": "فشل الرفع. حاول مرة أخرى.",
+      "notSafetensors": "لا يمكن رفع سوى ملفات .safetensors.",
+      "notStopped": "تعذر تأكيد توقف الرفع السابق، لذا لم يُرسل الملف مجددًا.",
+      "planUnavailable": "تعذر التحقق من خطتك. حاول مرة أخرى.",
+      "privateModelsDisabled": "لا تتضمن خطتك نماذج خاصة.",
+      "progress": "{sent} من {total}",
+      "saving": "جارٍ الحفظ في مكتبتك...",
+      "stopping": "جارٍ إيقاف الرفع السابق...",
+      "tryAgain": "حاول مرة أخرى",
+      "unsupportedType": "لا تستطيع السحابة تخزين هذا النوع من النماذج بعد. اختر نوعًا آخر.",
+      "upload": "رفع",
+      "uploading": "جارٍ رفع {name}"
+    },
     "filterBy": "تصفية حسب",
     "findInLibrary": "ابحث عنه في قسم {type} من مكتبة النماذج.",
     "finish": "إنهاء",
@@ -530,6 +560,9 @@
     "apiKey": {
       "cleared": "تم مسح مفتاح API",
       "clearedDetail": "تم مسح مفتاح API الخاص بك بنجاح",
+      "clearedForSession": "تم مسح مفتاح API لهذه الجلسة فقط",
+      "clearedForSessionBlockedDetail": "يحظر متصفحك تخزين بيانات الموقع. قد يُستخدم مفتاح محفوظ سابقًا مجددًا إذا أعدت تفعيل التخزين.",
+      "clearedForSessionDetail": "تعذّر على متصفحك إزالة المفتاح المحفوظ، لذا سيُستخدم مجددًا بعد إعادة التحميل.",
       "description": "استخدم مفتاح API الخاص بـ Comfy لتمكين عقد API",
       "error": "مفتاح API غير صالح",
       "generateKey": "احصل عليه من هنا",
@@ -542,6 +575,10 @@
       "storageFailedDetail": "يرجى المحاولة مرة أخرى.",
       "stored": "تم تخزين مفتاح API",
       "storedDetail": "تم تخزين مفتاح API الخاص بك بنجاح",
+      "storedForSession": "تم حفظ مفتاح API لهذه الجلسة فقط",
+      "storedForSessionBlockedDetail": "يحظر متصفحك تخزين بيانات الموقع، لذا لن يُحتفَظ بهذا المفتاح بعد إعادة التحميل. قد يُستخدم مفتاح محفوظ سابقًا مجددًا إذا أعدت تفعيل التخزين.",
+      "storedForSessionDetail": "تعذّر على متصفحك حفظه، لذا سيُمسح المفتاح عند إعادة التحميل.",
+      "storedForSessionPreviousKeptDetail": "تعذّر على متصفحك حفظه. بعد إعادة التحميل، سيُستخدم مفتاحك المحفوظ سابقًا مجددًا.",
       "title": "مفتاح API",
       "whitelistInfo": "حول المواقع غير المدرجة في القائمة البيضاء"
     },
@@ -550,6 +587,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "أكمل تسجيل الدخول في متصفحك",
+      "popupBlocked": "اسمح بالنوافذ المنبثقة لهذه الصفحة لتسجيل الدخول.",
       "signInFailed": "لم يكتمل تسجيل الدخول. حاول مرة أخرى.",
       "signOutFailed": "لا يزال Comfy Desktop مسجّل الدخول. أكمل أو ألغِ أي تثبيت قيد التشغيل، ثم سجّل الخروج مرة أخرى."
     },
@@ -678,6 +716,7 @@
         "orgMismatch": "لقد سجلت الدخول إلى مؤسسة مختلفة عن المؤسسة المرتبطة بهذا البريد الإلكتروني. حاول مجددًا باستخدام حساب العمل الخاص بك.",
         "orgNotAttached": "لم يتم إعداد مساحة عمل Comfy الخاصة بمؤسستك بعد. تواصل مع المسؤول.",
         "rateLimited": "عدد محاولات تسجيل الدخول كبير جدًا. انتظر بضع دقائق ثم حاول مجددًا.",
+        "seatLimitReached": "استخدمت مؤسستك جميع مقاعد Comfy المتاحة لها. اطلب من المسؤول تحرير مقعد أو إضافة المزيد.",
         "suspended": "أزالت مؤسستك صلاحية وصولك. تواصل مع المسؤول لديك.",
         "unavailable": "تسجيل الدخول الموحّد غير متاح الآن. حاول مرة أخرى بعد قليل."
       },
@@ -1446,47 +1485,91 @@
   },
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
+    "compatibleEnvironments": "بيئات متوافقة",
     "createCustomDeployment": "إنشاء بيئة نشر مخصصة",
-    "createCustomDeploymentTooltip": "شغّل المحرر باستخدام عُقدك ونماذجك المخصصة. أعدّها على منصة المطورين.",
     "currentTooltip": "يعمل على {deployment}",
+    "customDeployment": {
+      "body": "تضيف عملية النشر المخصصة العقد والنماذج المخصصة غير المتوفرة في Comfy Cloud. يمكنك إعدادها على Platform، وستظهر ضمن «التشغيل على» لمساحة عملك.",
+      "createOnPlatform": "إنشاء على Platform",
+      "pointApi": "استدعِها من منتجك كواجهة API ذات تحجيم تلقائي",
+      "pointGpu": "اعمل في ComfyUI على وحدة GPU التي تختارها",
+      "pointNodes": "استخدم العقد والنماذج المخصصة غير المتوفرة على Comfy Cloud",
+      "title": "إنشاء عملية نشر مخصصة"
+    },
     "defaultDeleted": "محذوف",
     "defaultGone": "تم حذف الإعداد الافتراضي لمساحة العمل، لذا يبدأ الأعضاء على Comfy Cloud.",
     "defaultGoneOwner": "تم حذف الإعداد الافتراضي لمساحة العمل، لذا يبدأ الأعضاء على Comfy Cloud. اختر إعدادًا جديدًا ضمن الإعداد الافتراضي لمساحة العمل.",
+    "deployCustomNodes": {
+      "body": "أنشئ عملية نشر مخصصة تشغّل عقدك ونماذجك المخصصة على Comfy Cloud، وتظهر ضمن «التشغيل على» لمساحة عملك.",
+      "pointNodes": "انشر حزم العقد المخصصة أو الخاصة التي تحتاجها مهام سير العمل الخاصة بك",
+      "title": "نشر العقد المخصصة على Comfy Cloud"
+    },
     "deployment": "{build} v{version}",
     "deploymentChanged": "يعمل هذا المتصفح الآن على {deployment}. أعد التحميل للحصول على عُقده.",
+    "failedStartTooltip": "يتم التشغيل على {deployment}. لقد فشل، لذا لن تعمل المهام. افتح هذه القائمة لإعادة تشغيله.",
     "failedToSetDefault": "تعذر تغيير الإعداد الافتراضي لمساحة العمل",
     "failedToSwitch": "تعذر التبديل",
     "fullLabel": "{build} · {deployment}",
+    "incompatibleEnvironments": "بيئات غير متوافقة",
+    "labelWithDetail": "{label} · {detail}",
     "landed": "يعمل على {deployment}",
     "linkRefused": "تعذر فتح بيئة النشر هذه",
     "linkTimedOut": "استغرقت بيئة النشر هذه وقتًا طويلًا جدًا للفتح. جرّب الرابط مرة أخرى.",
     "linkWorkspaceRefused": "تعذر التبديل إلى مساحة العمل تلك. ما زلت في {workspaceName}.",
     "lookupUnavailable": "تعذر التحقق من بيئة النشر التي يعمل عليها هذا المحرر.",
     "lookupUnavailableDetail": "النماذج المعروضة هي نماذج Comfy Cloud. أعد التحميل للمحاولة مرة أخرى.",
+    "manageDeployments": "إدارة عمليات النشر",
+    "manageDeploymentsTooltip": "أدِر إصداراتك وعمليات نشرها على منصة المطورين.",
     "membersStartOn": "يبدأ الأعضاء الذين ليس لديهم اختيار خاص بهم على",
-    "missingNodes": "العقدة {count} مفقودة | العقد {count} مفقودة",
-    "nameWithVersion": "{name} · v{version}",
+    "missingNodesAfterReason": "لا يمكنه تشغيل سير العمل هذا. العقد التالية مفقودة: {nodes}.",
+    "missingNodesNamed": "لا يمكن لـ {deployment} تشغيل مهمة سير العمل هذه. إنه يفتقد إلى {nodes}.",
     "namedDeployment": "{name}",
     "noDeployments": "لا تحتوي مساحة العمل هذه على أي بيئات نشر بعد.",
-    "notChecked": "لم يتم التحقق",
+    "notCheckedAfterReason": "تعذر التحقق مما إذا كان يمكنه تشغيل سير العمل هذا.",
+    "notCheckedNamed": "تعذر التحقق مما إذا كان {deployment} يستطيع تشغيل مهمة سير العمل هذه.",
     "notReadyTooltip": "يعمل على {deployment}. إنه غير جاهز، لذا لن تعمل المهام حتى يصبح جاهزًا.",
+    "pickFailed": "فشل {deployment}، لذا لن تعمل المهام. أعد تشغيله أو اختر نشرًا جاهزًا.",
     "pickGone": "بيئة النشر التي اخترتها لم تعد موجودة.",
     "pickGoneDetail": "يعمل هذا المتصفح الآن على Comfy Cloud. اختر بيئة نشر مرة أخرى لاستخدام واحدة.",
+    "pickStopped": "{deployment} متوقف، لذا لن تعمل المهام. شغّله أو اختر نشرًا جاهزًا.",
+    "reason": {
+      "failed": "فشل {deployment}. أعد تشغيله لتشغيل المهام عليه.",
+      "notReady": "{deployment} غير جاهز. اختره عندما يصبح جاهزًا.",
+      "startElsewhere": "{deployment} لا يعمل. شغّله على منصة المطورين، ثم اختره.",
+      "starting": "{deployment} قيد البدء. اختره عندما يصبح جاهزًا.",
+      "stopped": "{deployment} متوقف. شغّله لتشغيل المهام عليه."
+    },
     "releaseChanged": "تشغّل بيئة النشر هذه الآن إصدارًا مختلفًا. أعد التحميل للحصول على عُقده.",
     "reload": "إعادة التحميل",
+    "retry": "إعادة المحاولة",
+    "retryLabel": "إعادة محاولة تشغيل {deployment}",
     "runOn": "تشغيل على",
-    "runsThisWorkflow": "يشغّل سير العمل هذا",
+    "runningOn": "يعمل على",
+    "start": "تشغيل",
+    "startFailed": "لم يبدأ {deployment}.",
+    "startFix": {
+      "failed": "أعد المحاولة، أو تحقّق منه على منصة المطورين.",
+      "noCredits": "أضف أرصدة، ثم أعد المحاولة.",
+      "tooManyRunning": "أوقف نشرًا آخر، ثم أعد المحاولة.",
+      "unavailable": "شغّله على منصة المطورين في الوقت الحالي."
+    },
+    "startLabel": "تشغيل {deployment}",
+    "startOnPlatformLabel": "تشغيل {deployment} على منصة المطورين",
     "status": {
+      "failed": "فشل",
       "notReady": "غير جاهز",
       "provisioning": "جارٍ البدء",
       "starting": "جارٍ البدء",
-      "stopped": "متوقف"
+      "stopped": "متوقف",
+      "stopping": "جارٍ الإيقاف"
     },
+    "stoppedStartTooltip": "يتم التشغيل على {deployment}. إنه متوقف، لذا لن تعمل المهام. افتح هذه القائمة لتشغيله.",
     "stoppedTooltip": "يعمل على {deployment}. إنه متوقف، لذا لن تعمل المهام حتى يتم تشغيله على منصة المطورين.",
     "switching": "جارٍ التبديل",
     "switchingNote": "يؤدي التبديل إلى إعادة تحميل المحرر. ستبقى علامات التبويب مفتوحة.",
     "switchingNoteWithoutDrafts": "يؤدي التبديل إلى إعادة تحميل المحرر.",
     "triggerLabel": "يعمل على {deployment}. اختر مكان تشغيل هذا المحرر",
+    "triggerLabelNew": "جديد. {label}",
     "triggerLabelNotReady": "{status} اختر مكان تشغيل هذا المحرر",
     "unnamedDeployment": "النشر {id}",
     "unsaved": {
@@ -1496,6 +1579,7 @@
       "tabsReturn": "ستعود علامات التبويب المفتوحة بعد إعادة التحميل في كلتا الحالتين.",
       "title": "هل تريد حفظ مهام سير العمل قبل التبديل؟"
     },
+    "version": "v{version}",
     "workspaceDefault": "الإعداد الافتراضي لمساحة العمل"
   },
   "desktopLogin": {
@@ -1566,7 +1650,7 @@
       },
       "missing_model": {
         "displayMessageCloud": "استورد نموذجًا أو افتح العقدة لاستبداله.",
-        "displayMessageDeployment": "هذه النماذج غير موجودة في {deployment}. افتح العُقدة لاختيار نموذج تحتوي عليه.",
+        "displayMessageDeployment": "هذه النماذج غير موجودة في {deployment}. أضِفها إلى إصدارها، أو افتح العقدة لاختيار نموذج متوفر فيها.",
         "displayMessageOss": "قم بتنزيل نموذج أو افتح العقدة لاستبداله.",
         "toastMessageManyCloud": "بعض النماذج غير مدعومة. يرجى اختيار نماذج أخرى.",
         "toastMessageManyDeployment": "اختر نماذج مختلفة، أو اختر عملية نشر تتوفر فيها.",
@@ -1583,7 +1667,7 @@
       },
       "missing_node": {
         "displayMessageCloud": "العُقد المخصصة المطلوبة غير مدعومة على السحابة. استبدلها بعُقد مدعومة.",
-        "displayMessageDeployment": "هذه العُقد غير موجودة في {deployment}. استبدلها، أو اختر بيئة نشر تحتوي عليها.",
+        "displayMessageDeployment": "هذه العقد غير موجودة على {deployment}. أضف حزمها إلى إصداره، أو استبدلها.",
         "displayMessageOss": "قم بتثبيت الحزم المفقودة لاستخدام سير العمل هذا.",
         "toastMessageManyCloud": "يستخدم سير العمل هذا عُقدًا غير مدعومة على السحابة.",
         "toastMessageManyDeployment": "استبدل هذه العُقد، أو اختر بيئة نشر تحتوي عليها.",
@@ -2057,8 +2141,12 @@
     "addNewKeybinding": "إضافة اختصار مفتاح جديد",
     "addNode": "إضافة عقدة...",
     "addNodeFilterCondition": "إضافة شرط لتصفية العقد",
+    "agentCreated": "من إنشاء الوكيل",
+    "agentExtensionAdded": "أضاف وكيلك {name}",
+    "agentExtensionDisableFailed": "تعذّر تعطيل الامتداد. حاول مرة أخرى.",
+    "agentInputNeededShort": "الإدخال مطلوب",
     "agentModified": "حدّث الوكيل سير العمل هذا",
-    "agentNeedsApproval": "يحتاج الوكيل إلى موافقتك",
+    "agentNeedsApproval": "الوكيل بانتظار إجابتك",
     "agentWorking": "يعمل الوكيل على سير العمل هذا",
     "all": "الكل",
     "allKeybindingsReset": "تمت إعادة تعيين جميع اختصارات المفاتيح إلى الوضع الافتراضي",
@@ -2123,6 +2211,7 @@
     "copyToClipboard": "نسخ إلى الحافظة",
     "copyURL": "نسخ الرابط",
     "core": "النواة",
+    "createdByAgent": "أنشأه الوكيل",
     "currentUser": "المستخدم الحالي",
     "custom": "مخصص",
     "customBackground": "خلفية مخصصة",
@@ -2138,7 +2227,9 @@
     "details": "تفاصيل",
     "devOnly": "للمطورين فقط",
     "devices": "الأجهزة",
+    "disableAgentCreated": "تعطيل كل ما أنشأه الوكيل",
     "disableAll": "تعطيل الكل",
+    "disableExtension": "تعطيل الامتداد",
     "disableSelected": "تعطيل المحدد",
     "disableThirdParty": "تعطيل الطرف الثالث",
     "disabling": "جارٍ تعطيل {id}",
@@ -2178,6 +2269,11 @@
     "experimental": "تجريبي",
     "export": "تصدير",
     "extensionName": "اسم الامتداد",
+    "extensionPath": "مجلد الامتداد",
+    "extensionPathSaveRefused": "لم يُحفظ تغيير الامتداد. يُرجى المحاولة مرة أخرى.",
+    "extensionPathSaveUnconfirmed": "تعذّر تأكيد تغيير الامتداد. أعد تحميل الصفحة قبل المحاولة مرة أخرى.",
+    "extensionPathToggle": "مجلد الامتداد {name}",
+    "extensionPaths": "الامتدادات حسب المجلد",
     "extensions": "الملحقات",
     "failed": "فشل",
     "failedToCopyJobId": "فشل نسخ معرف المهمة",
@@ -2366,7 +2462,7 @@
     "removeFilter": "إزالة عامل تصفية {label}",
     "removeImage": "إزالة الصورة",
     "removeKeybinding": "إزالة اختصار المفتاح",
-    "removeTag": "إزالة الوسم",
+    "removeTagNamed": "إزالة {tag}",
     "removeVideo": "إزالة الفيديو",
     "rename": "إعادة تسمية",
     "reportIssue": "إرسال تقرير",
@@ -3472,6 +3568,7 @@
     "Node Library": "مكتبة العقد",
     "Node Links": "روابط العقد",
     "Open": "فتح",
+    "Open 3D Viewer (Beta) for Selected Node": "فتح عارض ثلاثي الأبعاد (تجريبي) للعقدة المحددة",
     "Open Color Picker in MaskEditor": "فتح منتقي الألوان في محرر القناع",
     "Open Custom Nodes Folder": "فتح مجلد العقد المخصصة",
     "Open DevTools": "فتح أدوات المطور",
@@ -3664,6 +3761,7 @@
     "debug": "تصحيح",
     "detection": "الكشف",
     "experimental": "تجريبي",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "مرشحات",
     "flux": "تدفق",
@@ -4043,10 +4141,14 @@
     "noImportsInQueue": "لا يوجد {filter} في قائمة الانتظار",
     "pending": "قيد الانتظار",
     "progressCount": "{completed} من {total}",
-    "taskUnavailable": "لم تعد مهمة التنزيل متاحة."
+    "taskUnavailable": "لم تعد مهمة التنزيل متاحة.",
+    "uploadsInLibrary": "{name} موجود في مكتبتك | {count} نماذج موجودة في مكتبتك"
   },
   "queue": {
     "completedIn": "انتهى في {duration}",
+    "downloadedOfTotal": "{downloaded} من {total}",
+    "downloadingModel": "جارٍ تنزيل {name}",
+    "downloadingModelOf": "جارٍ تنزيل {name} ({index} من {count})",
     "inQueue": "في قائمة الانتظار...",
     "initializingAlmostReady": "جاري التهيئة - قريباً جاهز",
     "jobAddedToQueue": "تمت إضافة المهمة إلى قائمة الانتظار",
@@ -4106,11 +4208,13 @@
   },
   "rightSidePanel": {
     "addFavorite": "إضافة إلى المفضلة",
+    "addToDeploymentBuild": "أضف هذه إلى إصدار {deployment} على المنصة، ثم انشر إصدارًا جديدًا.",
     "advancedInputs": "مدخلات متقدمة",
     "blockedLastRun": "تم حظر التشغيل الأخير",
     "bypass": "تجاوز",
     "collapse": "طي",
     "color": "لون العقدة",
+    "editBuildOnPlatform": "تحرير الإصدار على المنصة",
     "editSubgraph": "تعديل الرسم البياني الفرعي",
     "editTitle": "تعديل العنوان",
     "errorHelp": "للمزيد من المساعدة، {github} أو {support}",
@@ -4206,6 +4310,8 @@
       "runsOn": "يعمل على:",
       "title": "حزم العقد المفقودة",
       "unknownPack": "حزمة غير معروفة",
+      "unsupportedOnBuild": "غير مدعوم في هذا الإصدار: {cause}",
+      "unsupportedOnBuildNoCause": "غير مدعوم في هذا الإصدار",
       "unsupportedTitle": "حزم العقد غير المدعومة",
       "viewInManager": "عرض في المدير"
     },
@@ -4218,6 +4324,7 @@
     "nodesNoneDesc": "لا توجد عقد",
     "noneSearchDesc": "لا توجد عناصر مطابقة لبحثك",
     "normal": "عادي",
+    "openBuildsOnPlatform": "فتح الإصدارات على المنصة",
     "parameters": "المعلمات",
     "pinned": "مثبت",
     "properties": "الخصائص",
@@ -5024,6 +5131,8 @@
     "partnerNodesCredits": "رصيد العقد الشريكة",
     "partnerNodesDescription": "لتشغيل النماذج التجارية/المملوكة",
     "partnerNodesPricingTable": "جدول أسعار Partner Nodes",
+    "pastDueNoticeMember": "توجد دفعة مستحقة على مساحة العمل هذه — اطلب من مالك مساحة العمل تحديث طريقة الدفع.",
+    "pastDueNoticeOwner": "لديك دفعة مستحقة — حدّث طريقة الدفع لتغيير الخطط.",
     "paymentRecovery": {
       "memberCta": "حسنًا، فهمت",
       "memberDescription": "اطلب من مالك مساحة العمل استعادة اشتراك مساحة العمل.",
@@ -5170,6 +5279,7 @@
     "pricingBlurbSeeDetails": "اعرض التفاصيل",
     "reactivatePlan": "استئناف الاشتراك",
     "reactivateToUseCredits": "أعد تفعيل خطتك لاستخدام هذه الأرصدة",
+    "refillsAfterPayment": "تُعاد تعبئتها عند إتمام الدفع",
     "refillsDate": "إعادة التعبئة {date}",
     "refillsNextCycle": "إعادة التعبئة في الدورة التالية",
     "refreshCredits": "تحديث الرصيد",
@@ -5610,6 +5720,15 @@
     "title": "تحذير توافق الإصدار",
     "updateFrontend": "تحديث الواجهة الأمامية"
   },
+  "videoConcat": {
+    "clipLabel": "المقطع {position}",
+    "clips": "المقاطع",
+    "mixedDimensions": "أحجام مختلطة",
+    "noClips": "صِل مقاطع الفيديو لمعاينتها وترتيبها",
+    "previewClips": "المقاطع",
+    "previewResult": "آخر تشغيل",
+    "reorderHint": "اسحب المقاطع أو اضغط Alt + مفاتيح الأسهم لإعادة ترتيبها، وانقر للانتقال"
+  },
   "videoEdit": {
     "adjustCrop": "تعديل منطقة الاقتصاص",
     "adjustEndFrame": "تعديل إطار النهاية",
@@ -5788,7 +5907,10 @@
         "title": "تنتهي خطة فريقك في {date}"
       },
       "lowCredits": {
-        "localBody": "لديك {credits} من الأرصدة المتبقية. أضف أرصدة لمواصلة تشغيل عُقد الشركاء.",
+        "localBody": "لديك رصيد واحد متبقٍ. أضف أرصدة لمواصلة تشغيل عقد الشركاء. | لديك {credits} أرصدة متبقية. أضف أرصدة لمواصلة تشغيل عقد الشركاء.",
+        "memberBody": "لدى مساحة العمل هذه رصيد واحد متبقٍ. اطلب من مالك مساحة العمل إضافة أرصدة قبل نفادها. | لدى مساحة العمل هذه {credits} أرصدة متبقية. اطلب من مالك مساحة العمل إضافة أرصدة قبل نفادها.",
+        "ownerBody": "لدى مساحة العمل هذه رصيد واحد متبقٍ. أضف أرصدة قبل نفادها. | لدى مساحة العمل هذه {credits} أرصدة متبقية. أضف أرصدة قبل نفادها.",
+        "personalBody": "لديك رصيد واحد متبقٍ. أضف أرصدة قبل نفادها. | لديك {credits} أرصدة متبقية. أضف أرصدة قبل نفادها.",
         "title": "الأرصدة منخفضة"
       },
       "outOfCredits": {
@@ -5824,7 +5946,7 @@
           "title": "تم استلام الدفع"
         },
         "verifyPayment": {
-          "action": "تحقّق من دفعتك",
+          "action": "إكمال التحقق",
           "body": "يتطلب مصرفك تحققًا إضافيًا لإتمام هذه الدفعة.",
           "title": "تحقّق من دفعتك"
         }
@@ -5859,8 +5981,10 @@
         "onHold": "لا توجد طريقة دفع افتراضية. عيّن واحدة لاستئناف الشحن التلقائي.",
         "paused": "تم بلوغ الحد الشهري. يُستأنف في {date}.",
         "pausedNoDate": "تم بلوغ الحد الشهري.",
+        "rule": "تُضاف أرصدة حتى {target} عند انخفاضها عن {threshold} رصيدًا.",
         "status": {
           "failed": "فشل",
+          "limitReached": "تم بلوغ الحد",
           "off": "متوقف",
           "on": "مفعّل",
           "onHold": "معلّق",
@@ -5873,17 +5997,23 @@
       "credits": {
         "addCredits": "إضافة أرصدة",
         "available": "المتاح",
+        "availableUntil": "متاح حتى {date}",
         "inUse": "قيد الاستخدام الآن",
         "overdrawn": "استخدمت عمليات التشغيل لديك رصيدًا واحدًا أكثر مما لديك. | استخدمت عمليات التشغيل لديك {count} أرصدة أكثر مما لديك.",
         "plan": "الخطة",
         "planOfPool": "{remaining} من {total}",
         "planTooltip": "الأرصدة المضمّنة في خطتك. تُعاد تعبئتها كل فترة فوترة.",
+        "planUsed": "تم استخدام {percent}%",
         "rateInfo": "حول الأرصدة",
         "rateTooltip": "تُستخدم الأرصدة للدفع مقابل عمليات التشغيل. {credits} أرصدة = $1.",
         "title": "الأرصدة",
         "topUp": "شحن الرصيد",
         "topUpTooltip": "الأرصدة التي أضفتها. تُستخدم عند نفاد أرصدة الخطة.",
         "unavailable": "تعذّر تحميل رصيدك."
+      },
+      "footer": {
+        "messageSupport": "مراسلة الدعم",
+        "partnerNodesPricing": "أسعار عقد الشركاء"
       },
       "handoff": {
         "member": {
@@ -5892,7 +6022,9 @@
         },
         "owner": {
           "action": "فتح الفوترة",
-          "label": "طرق الدفع والفواتير والاستخدام"
+          "label": "طرق الدفع والفواتير والاستخدام",
+          "line": "أدِر كل ما يتعلق بالفوترة على {platform}",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "تعذّر تحميل خطتك.",
@@ -5920,12 +6052,19 @@
           "line": "اشترك لتشغيل مهام سير العمل على السحابة.",
           "title": "لا توجد خطة نشطة لمساحة العمل هذه"
         },
+        "paused": "موقوف مؤقتًا. لم تتم عملية دفع التجديد.",
         "resumeConfirm": {
           "body": "ستتجدد خطتك في {date}. يمكنك الإلغاء مجددًا في أي وقت.",
           "title": "استئناف خطة {plan} الخاصة بك؟"
         },
+        "salesManaged": {
+          "line": "تتم الفوترة بموجب عقد.",
+          "renews": "تتم الفوترة بموجب عقد. يتجدد في {date}.",
+          "title": "المؤسسات"
+        },
         "scheduledChange": "تتغير إلى {plan} في {date}.",
         "stayConfirm": {
+          "bodyNoAmount": "ستبقى على {current}. يمكنك جدولة تغيير مرة أخرى في أي وقت.",
           "title": "إلغاء تغييرك إلى {plan}؟"
         },
         "unknown": {
@@ -6192,6 +6331,7 @@
     }
   },
   "workspaceSwitcher": {
+    "cannotCreateWorkspace": "لا يمكنك إنشاء مساحة عمل على هذا الحساب حاليًا.",
     "createWorkspace": "إنشاء مساحة عمل جديدة",
     "failedToSwitch": "فشل في تبديل مساحة العمل",
     "managedByOrganization": "تدير مؤسستك مساحات العمل الخاصة بك، لذا لا يمكنك إنشاء واحدة.",

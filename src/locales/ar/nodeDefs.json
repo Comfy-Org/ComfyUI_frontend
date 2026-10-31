@@ -6750,11 +6750,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "يكبّر الفيديو بمقدار 1.5 إلى 3 مرات باستخدام الدقة الفائقة لـ FLUX، إما مع الحفاظ الدقيق على المصدر أو بتحسين تفاصيله إبداعيًا.",
-    "display_name": "Flux تكبير الفيديو",
+    "display_name": "ترقية دقة فيديو Flux (قديم)",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "تصغير المصادر التي تزيد مساحتها عن 3840x2160 بكسل تلقائيًا لتلائم حد الإدخال. تُحفظ نسبة الأبعاد؛ ولا تتأثر مقاطع الفيديو الأصغر."
+        "tooltip": "خفّض دقة المصادر التي تزيد مساحتها عن 2560x1440 بكسل تلقائيًا لتلائم حد الإدخال. تُحفَظ نسبة العرض إلى الارتفاع؛ ولا تتأثر مقاطع الفيديو الأصغر."
       },
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -6782,6 +6782,48 @@
       "video": {
         "name": "video",
         "tooltip": "مقطع مصدر مدته من 1 إلى 20 ثانية بنسبة عرض إلى ارتفاع بين 1:4 و4:1. يُصدَّر الناتج بمعدل 24 fps ويُحدَّد بحوالي 14.4 ميغابكسل لكل إطار."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "يرفع دقة فيديو إلى 1080p أو 2K أو 4K، أو بمقدار 1.5 إلى 3 مرات، باستخدام الدقة الفائقة FLUX، مع الحفاظ الدقيق على المصدر أو تحسين تفاصيله بصورة إبداعية.",
+    "display_name": "ترقية دقة فيديو Flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "خفض_الدقة_تلقائيًا",
+        "tooltip": "خفّض دقة المصادر الكبيرة جدًا بدلًا من رفضها: التي تزيد مساحتها عن 2560x1440 بكسل، أو التي تزيد عن ثلثي الدقة المستهدفة (المعامل الأدنى هو 1.5x). تُحفَظ نسبة العرض إلى الارتفاع."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "mode": {
+        "name": "الوضع",
+        "tooltip": "يستعيد 'الإبداعي' التفاصيل الدقيقة ويبتكرها، وهو الأفضل للقطات المُولَّدة والخامات والمناظر الطبيعية. يعمل 'الدقيق' على زيادة حدة المصدر من دون تغييره، وهو مناسب للوجوه والمنتجات واللقطات الحقيقية."
+      },
+      "prompt": {
+        "name": "الموجّه",
+        "tooltip": "وصف اختياري للمقطع يوجّه التفاصيل المُحسّنة. اتركه فارغًا لترقية دقة محايدة."
+      },
+      "safety_tolerance": {
+        "name": "تسامح_السلامة",
+        "tooltip": "تسامح الإشراف؛ القيمة 0 هي الأكثر صرامة."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتحديد ما إذا كانت العقدة ستُعاد تشغيلها؛ يختار FLUX بذرته الخاصة، لذا تكون النتائج الفعلية غير حتمية بغض النظر عن هذه القيمة."
+      },
+      "target_resolution": {
+        "name": "الدقة_المستهدفة",
+        "tooltip": "تُلائم 2K و4K و1080p الناتج ضمن 2560x1440 أو 3840x2160 أو 1920x1080 (مع تدويرها للمقاطع العمودية). يُرفع مصدر صغير جدًا بحيث لا يملأها عند الحد الأقصى البالغ 3x بمقدار 3x ويخرج بحجم أصغر."
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "مقطع مصدر مدته من ثانية إلى 20 ثانية، بنسبة عرض إلى ارتفاع بين 1:4 و4:1. يُصدَّر الناتج بمعدل 24 إطارًا في الثانية، ويُحدَّد بحوالي 14.4 ميغابكسل لكل إطار."
       }
     },
     "outputs": {
@@ -9039,7 +9081,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "يحرر صورةً بتوجيه من موجّه نصي باستخدام التحرير الدقيق في Ideogram 4.5: لا يتغير إلا ما يطلبه الموجّه، وتبقى وحدات البكسل غير المعدلة مطابقة، ويحافظ الناتج على حجم الصورة 1 (تُصغّر الصور التي تتجاوز ~4 MP أولًا). يقبل ما يصل إلى 4 صور مرجعية.",
+    "description": "يحرر صورةً بتوجيه من موجّه نصي باستخدام التحرير الدقيق في Ideogram 4.5: لا يتغير إلا ما يطلبه الموجّه، وتبقى البكسلات غير المعدّلة مطابقة، ويحافظ الناتج على حجم الصورة 1 (تُخفَّض دقة الصور الأكبر من نحو 4 MP أولًا). يمكنه أيضًا تحرير منطقة واحدة، تُحدَّد بواسطة mask أو مربعات الإحاطة، وإرجاع الصورة بحجمها الكامل. يقبل ما يصل إلى 4 صور مرجعية (3 عند استخدام context_window_mask).",
     "display_name": "Ideogram 4.5 تحرير دقيق",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9090,9 @@
       "model": {
         "name": "النموذج",
         "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_context_window": {
+        "name": "نافذة_السياق"
       },
       "model_prompt": {
         "name": "الموجّه"
@@ -10250,6 +10295,128 @@
       },
       "steps": {
         "name": "خطوات"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4EditVideoNode": {
+    "description": "حرّر فيديو باستخدام موجّه نصي وصور ومقاطع فيديو مرجعية اختيارية. تكون النتيجة بنفس مدة فيديو الإدخال.",
+    "display_name": "تحرير فيديو Kling 4.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة_العرض_إلى_الارتفاع"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageToVideoNode": {
+    "description": "أنشئ فيديو مع صوت باستخدام ما يصل إلى 10 إطارات رئيسية. تتباعد الإطارات الوسطى بالتساوي؛ ويأخذ الفيديو نسبة العرض إلى الارتفاع من الإطار الرئيسي الأول.",
+    "display_name": "تحويل صورة إلى فيديو Kling 4.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ReferenceToVideoNode": {
+    "description": "أنشئ فيديو مع صوت من صور ومقاطع فيديو مرجعية، مع إمكانية البدء أو الانتهاء عند إطارات محددة.",
+    "display_name": "تحويل مرجع إلى فيديو Kling 4.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4TextToVideoNode": {
+    "description": "أنشئ فيديو بصوت من موجّه نصي.",
+    "display_name": "Kling 4.0 من نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
       }
     },
     "outputs": {
@@ -14940,6 +15107,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "عيّن نوافذ السياق لـ MiniMax H3. تبدأ النوافذ عند مقاطع النموذج المكوّنة من 17 إطارًا للحفاظ على تزامن الفيديو والصوت.",
+    "display_name": "نوافذ السياق لـ MiniMax H3",
+    "inputs": {
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "طول نافذة السياق بالإطارات الفعلية. يجب أن يكون 17*n + 5."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "تداخل نافذة السياق بالإطارات الفعلية. يجب أن يكون 17*n + 5."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "ما إذا كان سيتم تطبيق خلط ضوضاء FreeNoise، مما يحسّن مزج النوافذ."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "الطريقة المستخدمة لدمج نوافذ السياق."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج الذي تُطبَّق عليه نوافذ السياق أثناء أخذ العينات."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "ما إذا كان سيتم تقسيم التكييفات المتعددة (التي أنشأها ConditionCombine) إلى كل نافذة استنادًا إلى فهرس المنطقة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "النموذج مع تطبيق نوافذ السياق أثناء أخذ العينات."
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "تطبيق MiniMax H3 Fun ControlNet على نموذج تحويل النص إلى فيديو كرقعة للنموذج.",
     "display_name": "تطبيق MiniMax H3 Fun ControlNet",
@@ -15015,6 +15217,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "يغيّر حجم فيديو MiniMax H3 latent باستخدام نموذج ترقية latent؛ ويمرّ الصوت دون تغيير.",
+    "display_name": "ترقية MiniMax H3 latent باستخدام نموذج",
+    "inputs": {
+      "height": {
+        "name": "الارتفاع"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "samples": {
+        "name": "العينات"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18820,6 +19045,288 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialExtractNode": {
+    "description": "استخرج مادة PBR قابلة للتبليط بسلاسة (صورة نسيج + خرائط PBR) من منطقة في صورة إدخال، بتوجيه من موجّه.",
+    "display_name": "استخراج مادة Patina",
+    "inputs": {
+      "basecolor": {
+        "name": "اللون الأساسي",
+        "tooltip": "أنشئ خريطة اللون الأساسي (الألبيدو)."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "height": {
+        "name": "الارتفاع",
+        "tooltip": "أنشئ خريطة الارتفاع/الإزاحة."
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "الصورة المراد استخراج نسيج منها."
+      },
+      "image_size": {
+        "name": "حجم الصورة",
+        "tooltip": "حجم نسيج الإخراج. اختر 'custom' لعرض/ارتفاع بين 512 و2048 (تنتج نتيجة 8K من تكبير الخرائط بمقدار 4x)."
+      },
+      "metalness": {
+        "name": "المعدنية",
+        "tooltip": "أنشئ خريطة المعدنية."
+      },
+      "normal": {
+        "name": "المتجه العمودي",
+        "tooltip": "أنشئ خريطة المتجهات العمودية."
+      },
+      "num_inference_steps": {
+        "name": "عدد خطوات الاستدلال",
+        "tooltip": "خطوات إزالة الضوضاء لتوليد النسيج."
+      },
+      "prompt": {
+        "name": "الموجّه",
+        "tooltip": "صِف النسيج المراد استخراجه من الصورة (مثلًا: «الجدار»)."
+      },
+      "prompt_expansion": {
+        "name": "توسيع الموجّه",
+        "tooltip": "وسّع الموجّه باستخدام LLM للحصول على تفاصيل نسيج أغنى. يكون معطّلًا افتراضيًا: إذ تعيد التوسعة صياغة الموجّه على هيئة صورة فوتوغرافية وتميل إلى جعل خريطة المعدنية باهتة."
+      },
+      "roughness": {
+        "name": "الخشونة",
+        "tooltip": "أنشئ خريطة الخشونة."
+      },
+      "safety_checker": {
+        "name": "مدقق السلامة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة لتوليد قابل لإعادة الإنتاج."
+      },
+      "strength": {
+        "name": "الشدة",
+        "tooltip": "مقدار تحويل صورة الإدخال."
+      },
+      "tile_size": {
+        "name": "حجم البلاطة",
+        "tooltip": "حجم البلاطة في الفضاء الكامن (64 = 512px، 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "خطوة البلاطة",
+        "tooltip": "خطوة البلاطة في الفضاء الكامن."
+      },
+      "tiling_mode": {
+        "name": "وضع التبليط",
+        "tooltip": "اتجاه التبليط: في جميع الاتجاهات، أو أفقي، أو عمودي."
+      },
+      "upscale_factor": {
+        "name": "معامل التكبير",
+        "tooltip": "تكبير سلس لخرائط PBR باستخدام SeedVR (لا يتم تكبير النسيج الأساسي)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النسيج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "اللون الأساسي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "المتجه العمودي",
+        "tooltip": null
+      },
+      "3": {
+        "name": "الخشونة",
+        "tooltip": null
+      },
+      "4": {
+        "name": "المعدنية",
+        "tooltip": null
+      },
+      "5": {
+        "name": "الارتفاع",
+        "tooltip": null
+      },
+      "6": {
+        "name": "الموجّه الموسّع",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "أنشئ مادة PBR كاملة قابلة للتبليط بسلاسة (صورة نسيج + خرائط PBR) من موجّه نصي، حتى دقة 8K. يمكن اختياريًا توجيهها بصورة إدخال (img2img) أو بصورة + قناع (inpaint).",
+    "display_name": "مادة الباتينا",
+    "inputs": {
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "أنشئ خريطة اللون الأساسي (albedo)."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "أنشئ خريطة الارتفاع/الإزاحة."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "صورة مصدر اختيارية. عند توفيرها وحدها = img2img؛ ومع قناع = inpaint."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "حجم النسيج الناتج. اختر 'custom' لعرض/ارتفاع بين 512 و2048 (تأتي نتيجة 8K من تكبير الخرائط بمقدار 4x)."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "قناع inpaint اختياري (يتطلب image). الأبيض = إعادة التوليد، الأسود = الإبقاء."
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "أنشئ خريطة المعدنية."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "أنشئ خريطة الاتجاهات (normal)."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "خطوات إزالة التشويش لإنشاء النسيج."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "صِف المادة/النسيج المراد إنشاؤه."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "وسّع الموجّه باستخدام LLM للحصول على تفاصيل نسيج أغنى. يكون معطّلًا افتراضيًا: إذ تعيد التوسعة صياغة الموجّه كصورة فوتوغرافية وتميل إلى إضعاف خريطة المعدنية."
+      },
+      "roughness": {
+        "name": "roughness",
+        "tooltip": "أنشئ خريطة الخشونة."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "بذرة لتوليد قابل لإعادة الإنتاج."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "مقدار تحويل صورة الإدخال. يُستخدم فقط عند توفير صورة."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "حجم البلاطة في الفضاء الكامن (64 = 512px، 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "خطوة البلاطة في الفضاء الكامن."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "اتجاه التبليط: متعدد الاتجاهات أو أفقي أو عمودي."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "تكبير سلس باستخدام SeedVR لخرائط PBR (لا يُكبَّر النسيج الأساسي)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texture",
+        "tooltip": null
+      },
+      "1": {
+        "name": "basecolor",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "الخشونة",
+        "tooltip": null
+      },
+      "4": {
+        "name": "المعدنية",
+        "tooltip": null
+      },
+      "5": {
+        "name": "الارتفاع",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "أنشئ خرائط مواد PBR (اللون الأساسي، المتجهات العمودية، الخشونة، المعدنية، الارتفاع) من صورة نسيج.",
+    "display_name": "خرائط مواد PBR من Patina",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "قلّص تلقائيًا حجم صورة إدخال يتجاوز طول ضلعها الأطول 2048px (حد إدخال النموذج)، مع الحفاظ على نسبة الأبعاد؛ وتُترك الصور الأصغر كما هي. عطّل هذا الخيار لإظهار خطأ للصور كبيرة الحجم بدلًا من ذلك."
+      },
+      "basecolor": {
+        "name": "اللون الأساسي",
+        "tooltip": "أنشئ خريطة اللون الأساسي (الألبيدو)."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "height": {
+        "name": "الارتفاع",
+        "tooltip": "أنشئ خريطة الارتفاع/الإزاحة."
+      },
+      "image": {
+        "name": "صورة",
+        "tooltip": "صورة فوتوغرافية أو تصيير إدخال لاشتقاق خرائط PBR منها."
+      },
+      "metalness": {
+        "name": "المعدنية",
+        "tooltip": "أنشئ خريطة المعدنية."
+      },
+      "normal": {
+        "name": "المتجهات العمودية",
+        "tooltip": "أنشئ خريطة المتجهات العمودية."
+      },
+      "roughness": {
+        "name": "الخشونة",
+        "tooltip": "أنشئ خريطة الخشونة."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "بذرة",
+        "tooltip": "بذرة لإزالة ضوضاء قابلة لإعادة الإنتاج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "اللون الأساسي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "المتجهات العمودية",
+        "tooltip": null
+      },
+      "2": {
+        "name": "الخشونة",
+        "tooltip": null
+      },
+      "3": {
+        "name": "المعدنية",
+        "tooltip": null
+      },
+      "4": {
+        "name": "الارتفاع",
         "tooltip": null
       }
     }
@@ -28429,6 +28936,33 @@
       "video": {
         "name": "الفيديو",
         "tooltip": "فيديو بمسار صوتي للكلام، أقصر من 30 دقيقة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "ترجم الكلام في فيديو إلى لغة أخرى باستخدام VEED. يُستنسخ صوت كل متحدث وتُزامَن شفاهه مع الترجمة.",
+    "display_name": "الدبلجة باستخدام VEED",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "standard: سعر أقل، صوت أحادي؛ الإسبانية من أمريكا اللاتينية والبرتغالية برازيلية. pro: لهجات إقليمية وصوت ستيريو."
+      },
+      "model_seed": {
+        "name": "بذرة"
+      },
+      "model_source_language": {
+        "name": "source_language"
+      },
+      "model_target_language": {
+        "name": "target_language"
       }
     },
     "outputs": {

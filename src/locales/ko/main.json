@@ -65,17 +65,21 @@
     "coachWorkflowTitle": "에이전트가 현재 보고 있는 워크플로를 편집합니다",
     "consent": {
       "accept": "Comfy Agent 사용 시작",
-      "agreeAndContinue": "동의하고 계속하기",
+      "agreeAndContinue": "동의하고 로그인 계속하기",
       "body1": "Comfy Agent는 워크플로를 계획하고, 구축하고, 실행하고, 반복 개선할 수 있도록 도와줍니다. 만들고 싶은 것을 설명하면 Comfy Agent가 강력한 팀원으로 함께합니다.",
       "body2": "워크플로를 구축하기 위해 Comfy Agent는 일부 데이터를 처리합니다. 안심하세요. 데이터는 AI 모델 학습에 사용되지 않습니다. 시작을 클릭하면 데이터 사용에 동의하게 됩니다.",
       "body2BeforeSignIn": "워크플로를 구축하기 위해 Comfy Agent는 데이터 일부를 처리합니다. 안심하세요. 데이터는 AI 모델 학습에 절대 사용되지 않습니다. 동의하고 계속하기를 클릭하면 해당 사용에 동의하게 됩니다.",
+      "contactForm": "문의 양식",
+      "errorContact": "연결 상태를 확인한 후 다시 시도하세요. 문제가 계속되면 {contactForm}을 사용해 주세요.",
+      "errorTitle": "Comfy Agent을 시작할 수 없습니다",
       "loadError": "Agent 기본 설정을 불러올 수 없습니다. 다시 시도하세요.",
+      "loadErrorTitle": "Agent 설정을 불러올 수 없습니다",
       "readDocs": "문서 읽기",
       "reject": "지금은 건너뛰기",
       "saveError": "기본 설정을 저장할 수 없습니다. 다시 시도하세요.",
-      "signInError": "로그인 창을 열 수 없습니다. 다시 시도하세요.",
-      "signInNext": "다음 단계에서 로그인합니다.",
+      "signInErrorTitle": "로그인 창을 열 수 없습니다",
       "title": "Comfy Agent 소개",
+      "tryAgain": "다시 시도",
       "videoPlaceholder": "동영상을 사용할 수 없음"
     },
     "copied": "복사됨!",
@@ -83,7 +87,7 @@
     "copyMarkdown": "markdown으로 복사",
     "copyUnavailable": "이 버전에서는 현재 대화만 복사할 수 있습니다",
     "creditTransitionNotice": "무료 에이전트 크레딧을 모두 사용했습니다. 이후 에이전트 활동에는 유료 크레딧을 포함할 수 있는 워크스페이스 크레딧이 사용됩니다.",
-    "creditsUsed": "에이전트가 {credits} 크레딧을 사용했습니다 | 에이전트가 {credits} 크레딧을 사용했습니다",
+    "creditsUsed": "에이전트가 {credits}크레딧을 사용했습니다 | 에이전트가 {credits}크레딧을 사용했습니다",
     "currentTab": "현재 탭",
     "delete": "삭제",
     "deleteApproval": {
@@ -145,6 +149,7 @@
     "historyCurrent": "현재",
     "historyEarlier": "이전",
     "historyEmpty": "아직 대화가 없습니다",
+    "historyIncomplete": "일부 채팅을 불러올 수 없습니다. 불러온 채팅만 표시합니다.",
     "historyOpenFailed": "열 수 없습니다. 다시 시도하려면 이 채팅을 선택하세요.",
     "historyToday": "오늘",
     "historyYesterday": "어제",
@@ -170,10 +175,17 @@
     "nodes": "노드",
     "nodesAdded": "에이전트가 그래프에 노드 1개를 추가했습니다 | 에이전트가 그래프에 노드 {count}개를 추가했습니다",
     "notHelpful": "도움되지 않음",
+    "openVideo": "동영상 열기: {name}",
     "openWorkflowTab": "{name} 열기",
     "openingChat": "채팅을 여는 중…",
     "openingWorkflowChat": "{workflowName}의 채팅을 여는 중…",
     "otherOpenWorkflows": "기타 열려 있는 워크플로",
+    "paused": {
+      "recheck": "약 {seconds}초 후 자동으로 다시 시도합니다. | 약 {seconds}초 후 자동으로 다시 시도합니다.",
+      "resume": "재개",
+      "title": "에이전트가 일시 중지되었습니다",
+      "titleNoFunds": "에이전트가 일시 중지됨 — 크레딧 부족"
+    },
     "paywall": {
       "addCredits": "크레딧 추가",
       "body": {
@@ -200,6 +212,7 @@
     "retryAfterSeconds": "{seconds}초 후에 다시 시도할 수 있습니다.",
     "retryFollowedChat": "{workflowName}의 채팅 열기 재시도",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "답변이 에이전트에 전달되었지만, 해당 답변이 적용되었는지는 확인할 수 없었습니다. 현재 상태를 확인하려면 페이지를 새로고침하세요.",
       "answerFailed": "답변을 전송할 수 없습니다. 페이지를 새로고침한 후 다시 시도하세요.",
       "answerSuperseded": "다른 곳에서 이미 답변되어 해당 답변이 귀하의 답변 대신 사용되었습니다.",
       "answerUncertain": "답변이 에이전트에 도달했는지 확인할 수 없습니다. 그래도 적용되었을 수 있으니, 현재 상태를 확인하려면 페이지를 새로고침하세요.",
@@ -315,7 +328,7 @@
     "workflowReferenceUnavailableReason": "참조된 이 워크플로는 더 이상 사용할 수 없거나 액세스 권한이 없습니다.",
     "workflowSyncFailedDetail": "이 워크플로는 호환되지 않는 문서 버전으로 생성되었습니다. 캔버스는 변경되지 않았습니다.",
     "workflowSyncFailedDetailCatalogMismatch": "이 워크플로의 노드가 에이전트가 마지막으로 확인한 이후 변경되었습니다. 캔버스는 변경되지 않은 상태로 유지되었습니다. 다음 메시지를 보내면 캔버스가 에이전트에 전송되어 워크플로 사본을 다시 구성할 수 있습니다.",
-    "workflowSyncFailedDetailStaleClient": "이 페이지는 최신 상태가 아니므로 에이전트의 변경 사항을 표시할 수 없습니다. 변경 사항을 보려면 페이지를 새로고침하세요.",
+    "workflowSyncFailedDetailStaleClient": "이 페이지에서는 이 문서의 현재 버전을 표시할 수 없으므로 에이전트의 변경 사항을 여기에서 보여줄 수 없습니다. 변경 사항은 유지됩니다. 새로고침하면 해결될 수 있으며, 해결되지 않으면 업데이트가 아직 앱에 도달하지 않은 것입니다.",
     "workflowSyncFailedDetailStaleHost": "이 페이지는 에이전트 서비스보다 앞서 있어 에이전트의 변경 사항을 아직 여기에서 표시할 수 없습니다. 서비스 업데이트가 완료되면 페이지를 새로고침하여 변경 사항을 확인하세요.",
     "workflowSyncFailedTitle": "이 워크플로는 동기화할 수 없습니다",
     "workflows": "워크플로",
@@ -411,6 +424,23 @@
     "fileFormats": "파일 형식",
     "fileName": "파일 이름",
     "fileSize": "파일 크기",
+    "fileUpload": {
+      "cancelled": "업로드가 취소되었습니다.",
+      "choose": "파일 선택",
+      "drop": "또는 .safetensors 파일을 여기에 놓으세요",
+      "failed": "업로드에 실패했습니다. 다시 시도하세요.",
+      "notSafetensors": ".safetensors 파일만 업로드할 수 있습니다.",
+      "notStopped": "이전 업로드가 중지되었는지 확인할 수 없어 파일을 다시 전송하지 않았습니다.",
+      "planUnavailable": "요금제를 확인할 수 없습니다. 다시 시도하세요.",
+      "privateModelsDisabled": "현재 요금제에는 비공개 모델이 포함되어 있지 않습니다.",
+      "progress": "{total} 중 {sent}",
+      "saving": "라이브러리에 저장하는 중...",
+      "stopping": "이전 업로드를 중지하는 중...",
+      "tryAgain": "다시 시도",
+      "unsupportedType": "Cloud는 아직 이 모델 유형을 저장할 수 없습니다. 다른 유형을 선택하세요.",
+      "upload": "업로드",
+      "uploading": "{name} 업로드 중"
+    },
     "filterBy": "필터 기준",
     "findInLibrary": "모델 라이브러리의 {type} 섹션에서 찾을 수 있습니다.",
     "finish": "완료",
@@ -530,6 +560,9 @@
     "apiKey": {
       "cleared": "API 키 삭제됨",
       "clearedDetail": "API 키가 성공적으로 삭제되었습니다",
+      "clearedForSession": "이 세션에 대해서만 API 키가 삭제됨",
+      "clearedForSessionBlockedDetail": "브라우저에서 사이트 저장소를 차단하고 있습니다. 저장소를 다시 활성화하면 이전에 저장한 키가 다시 사용될 수 있습니다.",
+      "clearedForSessionDetail": "브라우저에서 저장된 키를 제거할 수 없어, 새로고침 후 다시 사용됩니다.",
       "description": "Comfy API 키를 사용하여 API 노드를 활성화하세요",
       "error": "유효하지 않은 API 키",
       "generateKey": "여기에서 받기",
@@ -542,6 +575,10 @@
       "storageFailedDetail": "다시 시도해 주세요.",
       "stored": "API 키 저장됨",
       "storedDetail": "API 키가 성공적으로 저장되었습니다",
+      "storedForSession": "이 세션에만 API 키가 저장됨",
+      "storedForSessionBlockedDetail": "브라우저에서 사이트 저장소를 차단하고 있어, 새로고침 후에는 이 키가 유지되지 않습니다. 저장소를 다시 활성화하면 이전에 저장한 키가 다시 사용될 수 있습니다.",
+      "storedForSessionDetail": "브라우저에서 저장할 수 없어, 새로고침하면 키가 삭제됩니다.",
+      "storedForSessionPreviousKeptDetail": "브라우저에서 저장할 수 없습니다. 새로고침하면 이전에 저장한 키가 다시 사용됩니다.",
       "title": "API 키",
       "whitelistInfo": "비허용 사이트에 대하여"
     },
@@ -550,6 +587,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "브라우저에서 로그인을 완료하세요",
+      "popupBlocked": "로그인하려면 이 페이지의 팝업을 허용하세요.",
       "signInFailed": "로그인이 완료되지 않았습니다. 다시 시도하세요.",
       "signOutFailed": "Comfy Desktop이 아직 로그인된 상태입니다. 진행 중인 설치를 완료하거나 취소한 후 다시 로그아웃하세요."
     },
@@ -678,6 +716,7 @@
         "orgMismatch": "이 이메일에 연결된 조직이 아닌 다른 조직에 로그인했습니다. 업무용 계정으로 다시 시도하세요.",
         "orgNotAttached": "조직의 Comfy 워크스페이스가 아직 설정되지 않았습니다. 관리자에게 문의하세요.",
         "rateLimited": "로그인 시도가 너무 많습니다. 몇 분 후 다시 시도하세요.",
+        "seatLimitReached": "조직에서 모든 Comfy 좌석을 사용했습니다. 관리자에게 좌석을 비우거나 더 추가해 달라고 요청하세요.",
         "suspended": "조직에서 회원님의 액세스 권한을 제거했습니다. 관리자에게 문의하세요.",
         "unavailable": "현재 싱글 사인온을 사용할 수 없습니다. 잠시 후 다시 시도하세요."
       },
@@ -1446,47 +1485,91 @@
   },
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
+    "compatibleEnvironments": "호환되는 환경",
     "createCustomDeployment": "사용자 지정 배포 만들기",
-    "createCustomDeploymentTooltip": "자체 사용자 지정 노드와 모델로 편집기를 실행하세요. Developer Platform에서 설정할 수 있습니다.",
     "currentTooltip": "{deployment}에서 실행 중",
+    "customDeployment": {
+      "body": "사용자 지정 배포를 사용하면 Comfy Cloud에 없는 사용자 지정 노드와 모델을 추가할 수 있습니다. Platform에서 설정하면 워크스페이스의 실행 환경 아래에 표시됩니다.",
+      "createOnPlatform": "Platform에서 만들기",
+      "pointApi": "제품에서 자동 확장 API로 호출",
+      "pointGpu": "선택한 GPU에서 ComfyUI 작업",
+      "pointNodes": "Comfy Cloud에 없는 사용자 지정 노드와 모델 사용",
+      "title": "사용자 지정 배포 만들기"
+    },
     "defaultDeleted": "삭제됨",
     "defaultGone": "워크스페이스 기본값이 삭제되어 멤버는 Comfy Cloud에서 시작합니다.",
     "defaultGoneOwner": "워크스페이스 기본값이 삭제되어 멤버는 Comfy Cloud에서 시작합니다. Workspace default에서 새 기본값을 선택하세요.",
+    "deployCustomNodes": {
+      "body": "사용자 지정 노드와 모델을 Comfy Cloud에서 실행하는 사용자 지정 배포를 만들면 워크스페이스의 실행 환경 아래에 표시됩니다.",
+      "pointNodes": "워크플로에 필요한 사용자 지정 또는 비공개 노드 팩 배포",
+      "title": "Comfy Cloud에 사용자 지정 노드 배포"
+    },
     "deployment": "{build} v{version}",
     "deploymentChanged": "이 브라우저는 이제 {deployment}에서 실행됩니다. 노드를 가져오려면 다시 로드하세요.",
+    "failedStartTooltip": "{deployment}에서 실행 중입니다. 오류가 발생하여 작업이 실행되지 않습니다. 다시 시작하려면 이 메뉴를 여세요.",
     "failedToSetDefault": "워크스페이스 기본값을 변경할 수 없음",
     "failedToSwitch": "전환할 수 없음",
     "fullLabel": "{build} · {deployment}",
+    "incompatibleEnvironments": "호환되지 않는 환경",
+    "labelWithDetail": "{label} · {detail}",
     "landed": "{deployment}에서 실행 중",
     "linkRefused": "이 배포를 열 수 없음",
     "linkTimedOut": "이 배포를 여는 데 너무 오래 걸렸습니다. 링크를 다시 시도하세요.",
     "linkWorkspaceRefused": "해당 워크스페이스로 전환할 수 없습니다. 현재도 {workspaceName}에 있습니다.",
     "lookupUnavailable": "이 편집기가 실행 중인 배포를 확인할 수 없습니다.",
     "lookupUnavailableDetail": "표시된 모델은 Comfy Cloud의 모델입니다. 다시 로드하여 재시도하세요.",
+    "manageDeployments": "배포 관리",
+    "manageDeploymentsTooltip": "Developer Platform에서 빌드 및 해당 배포를 관리하세요.",
     "membersStartOn": "자체 선택 항목이 없는 멤버의 시작 위치",
-    "missingNodes": "누락된 노드 {count}개 | 누락된 노드 {count}개",
-    "nameWithVersion": "{name} · v{version}",
+    "missingNodesAfterReason": "이 워크플로를 실행할 수 없습니다. {nodes}이(가) 없습니다.",
+    "missingNodesNamed": "{deployment}에서는 이 워크플로를 실행할 수 없습니다. {nodes}이(가) 없습니다.",
     "namedDeployment": "{name}",
     "noDeployments": "이 워크스페이스에는 아직 배포가 없습니다.",
-    "notChecked": "확인하지 않음",
+    "notCheckedAfterReason": "이 워크플로를 실행할 수 있는지 확인할 수 없습니다.",
+    "notCheckedNamed": "{deployment}에서 이 워크플로를 실행할 수 있는지 확인할 수 없습니다.",
     "notReadyTooltip": "{deployment}에서 실행 중입니다. 준비되지 않았으므로 준비될 때까지 작업이 실행되지 않습니다.",
+    "pickFailed": "{deployment}에 오류가 발생하여 작업이 실행되지 않습니다. 다시 시작하거나 준비된 deployment를 선택하세요.",
     "pickGone": "선택한 배포는 더 이상 존재하지 않습니다.",
     "pickGoneDetail": "이 브라우저는 이제 Comfy Cloud에서 실행됩니다. 배포를 사용하려면 다시 선택하세요.",
+    "pickStopped": "{deployment}이(가) 중지되어 작업이 실행되지 않습니다. 시작하거나 준비된 deployment를 선택하세요.",
+    "reason": {
+      "failed": "{deployment}에 오류가 발생했습니다. 여기서 작업을 실행하려면 다시 시작하세요.",
+      "notReady": "{deployment}은(는) 아직 준비되지 않았습니다. 준비되면 선택하세요.",
+      "startElsewhere": "{deployment}이(가) 실행되고 있지 않습니다. Developer Platform에서 시작한 후 선택하세요.",
+      "starting": "{deployment}이(가) 시작 중입니다. 준비되면 선택하세요.",
+      "stopped": "{deployment}이(가) 중지되었습니다. 여기서 작업을 실행하려면 시작하세요."
+    },
     "releaseChanged": "이 배포는 이제 다른 릴리스를 실행합니다. 노드를 가져오려면 다시 로드하세요.",
     "reload": "다시 로드",
+    "retry": "재시도",
+    "retryLabel": "{deployment} 시작 재시도",
     "runOn": "실행 위치",
-    "runsThisWorkflow": "이 워크플로를 실행합니다",
+    "runningOn": "실행 환경",
+    "start": "시작",
+    "startFailed": "{deployment}이(가) 시작되지 않았습니다.",
+    "startFix": {
+      "failed": "다시 시도하거나 Developer Platform에서 확인하세요.",
+      "noCredits": "크레딧을 추가한 후 다시 시도하세요.",
+      "tooManyRunning": "다른 deployment를 중지한 후 다시 시도하세요.",
+      "unavailable": "지금은 Developer Platform에서 시작하세요."
+    },
+    "startLabel": "{deployment} 시작",
+    "startOnPlatformLabel": "Developer Platform에서 {deployment} 시작",
     "status": {
+      "failed": "실패",
       "notReady": "준비되지 않음",
       "provisioning": "시작 중",
       "starting": "시작 중",
-      "stopped": "중지됨"
+      "stopped": "중지됨",
+      "stopping": "중지 중"
     },
+    "stoppedStartTooltip": "{deployment}에서 실행 중입니다. 중지되어 있어 작업이 실행되지 않습니다. 시작하려면 이 메뉴를 여세요.",
     "stoppedTooltip": "{deployment}에서 실행 중입니다. 중지되어 있으므로 Developer Platform에서 시작하기 전까지 작업이 실행되지 않습니다.",
     "switching": "전환 중",
     "switchingNote": "전환하면 편집기가 다시 로드됩니다. 탭은 열린 상태로 유지됩니다.",
     "switchingNoteWithoutDrafts": "전환하면 편집기가 다시 로드됩니다.",
     "triggerLabel": "{deployment}에서 실행 중입니다. 이 에디터를 실행할 위치를 선택하세요",
+    "triggerLabelNew": "새로 만들기. {label}",
     "triggerLabelNotReady": "{status} 이 에디터를 실행할 위치를 선택하세요",
     "unnamedDeployment": "배포 {id}",
     "unsaved": {
@@ -1496,6 +1579,7 @@
       "tabsReturn": "어느 쪽이든 다시 로드한 후 열려 있던 탭이 돌아옵니다.",
       "title": "전환하기 전에 워크플로를 저장하시겠습니까?"
     },
+    "version": "v{version}",
     "workspaceDefault": "워크스페이스 기본값"
   },
   "desktopLogin": {
@@ -1566,7 +1650,7 @@
       },
       "missing_model": {
         "displayMessageCloud": "모델을 가져오거나, 노드를 열어 교체하세요.",
-        "displayMessageDeployment": "이 모델들은 {deployment}에 없습니다. 노드를 열어 해당 배포에 있는 모델을 선택하세요.",
+        "displayMessageDeployment": "이 모델들은 {deployment}에 없습니다. 해당 빌드에 추가하거나 노드를 열어 보유한 모델을 선택하세요.",
         "displayMessageOss": "모델을 다운로드하거나, 노드를 열어 교체하세요.",
         "toastMessageManyCloud": "일부 모델이 지원되지 않습니다. 다른 모델을 선택하세요.",
         "toastMessageManyDeployment": "다른 모델을 선택하거나 해당 모델들이 있는 배포 환경을 선택하세요.",
@@ -1583,7 +1667,7 @@
       },
       "missing_node": {
         "displayMessageCloud": "필수 커스텀 노드는 클라우드에서 지원되지 않습니다. 지원되는 노드로 교체하세요.",
-        "displayMessageDeployment": "이 노드는 {deployment}에 없습니다. 교체하거나 해당 노드가 있는 배포를 선택하세요.",
+        "displayMessageDeployment": "이 노드는 {deployment}에 없습니다. 해당 팩을 빌드에 추가하거나 교체하세요.",
         "displayMessageOss": "이 워크플로우를 사용하려면 누락된 팩을 설치하세요.",
         "toastMessageManyCloud": "이 워크플로우는 클라우드에서 지원되지 않는 노드를 사용합니다.",
         "toastMessageManyDeployment": "이 노드들을 교체하거나 해당 노드가 있는 배포를 선택하세요.",
@@ -2057,8 +2141,12 @@
     "addNewKeybinding": "새 키 바인딩 추가",
     "addNode": "노드 추가...",
     "addNodeFilterCondition": "노드 필터 조건 추가",
+    "agentCreated": "에이전트 생성",
+    "agentExtensionAdded": "에이전트가 {name}을(를) 추가했습니다",
+    "agentExtensionDisableFailed": "확장 기능을 비활성화할 수 없습니다. 다시 시도하세요.",
+    "agentInputNeededShort": "입력 필요",
     "agentModified": "에이전트가 이 워크플로를 업데이트했습니다",
-    "agentNeedsApproval": "에이전트가 승인을 기다리고 있습니다",
+    "agentNeedsApproval": "에이전트가 답변을 기다리고 있습니다",
     "agentWorking": "에이전트가 이 워크플로를 작업 중입니다",
     "all": "모두",
     "allKeybindingsReset": "모든 키 바인딩이 기본값으로 재설정되었습니다",
@@ -2123,6 +2211,7 @@
     "copyToClipboard": "클립보드에 복사",
     "copyURL": "URL 복사",
     "core": "코어",
+    "createdByAgent": "에이전트가 생성함",
     "currentUser": "현재 사용자",
     "custom": "커스텀",
     "customBackground": "맞춤 배경",
@@ -2138,7 +2227,9 @@
     "details": "세부 정보",
     "devOnly": "개발 전용",
     "devices": "장치",
+    "disableAgentCreated": "에이전트가 생성한 항목 모두 비활성화",
     "disableAll": "모두 비활성화",
+    "disableExtension": "확장 기능 비활성화",
     "disableSelected": "선택 항목 비활성화",
     "disableThirdParty": "서드파티 비활성화",
     "disabling": "{id} 비활성화 중",
@@ -2178,6 +2269,11 @@
     "experimental": "베타",
     "export": "내보내기",
     "extensionName": "확장 이름",
+    "extensionPath": "확장 기능 폴더",
+    "extensionPathSaveRefused": "확장 기능 변경 사항이 저장되지 않았습니다. 다시 시도해 주세요.",
+    "extensionPathSaveUnconfirmed": "확장 기능 변경 사항을 확인할 수 없습니다. 다시 시도하기 전에 페이지를 새로고침하세요.",
+    "extensionPathToggle": "확장 기능 폴더 {name}",
+    "extensionPaths": "폴더별 확장 기능",
     "extensions": "확장 프로그램",
     "failed": "실패",
     "failedToCopyJobId": "작업 ID 복사 실패",
@@ -2366,7 +2462,7 @@
     "removeFilter": "{label} 필터 제거",
     "removeImage": "이미지 제거",
     "removeKeybinding": "키 바인딩 제거",
-    "removeTag": "태그 제거",
+    "removeTagNamed": "{tag} 제거",
     "removeVideo": "비디오 제거",
     "rename": "이름 바꾸기",
     "reportIssue": "보고서 보내기",
@@ -3472,6 +3568,7 @@
     "Node Library": "노드 라이브러리",
     "Node Links": "노드 링크",
     "Open": "열기",
+    "Open 3D Viewer (Beta) for Selected Node": "선택한 노드용 3D 뷰어 열기 (베타)",
     "Open Color Picker in MaskEditor": "MaskEditor에서 색상 선택기 열기",
     "Open Custom Nodes Folder": "커스텀 노드 폴더 열기",
     "Open DevTools": "개발자 도구 열기",
@@ -3664,6 +3761,7 @@
     "debug": "디버그",
     "detection": "감지",
     "experimental": "실험적",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "필터",
     "flux": "flux",
@@ -4043,10 +4141,14 @@
     "noImportsInQueue": "대기 중인 {filter} 없음",
     "pending": "대기 중",
     "progressCount": "{completed} / {total}",
-    "taskUnavailable": "다운로드 작업을 더 이상 사용할 수 없습니다."
+    "taskUnavailable": "다운로드 작업을 더 이상 사용할 수 없습니다.",
+    "uploadsInLibrary": "{name}이(가) 라이브러리에 있습니다 | {count}개의 모델이 라이브러리에 있습니다"
   },
   "queue": {
     "completedIn": "{duration} 내에 완료됨",
+    "downloadedOfTotal": "{total}개 중 {downloaded}개",
+    "downloadingModel": "{name} 다운로드 중",
+    "downloadingModelOf": "{name} 다운로드 중 ({index}/{count})",
     "inQueue": "대기열에 있음...",
     "initializingAlmostReady": "초기화 중 - 거의 준비됨",
     "jobAddedToQueue": "작업이 대기열에 추가됨",
@@ -4106,11 +4208,13 @@
   },
   "rightSidePanel": {
     "addFavorite": "즐겨찾기",
+    "addToDeploymentBuild": "Platform에서 {deployment}의 빌드에 이를 추가한 다음 새 릴리스를 배포하세요.",
     "advancedInputs": "고급 입력",
     "blockedLastRun": "마지막 실행에서 차단됨",
     "bypass": "우회",
     "collapse": "접기",
     "color": "노드 색상",
+    "editBuildOnPlatform": "Platform에서 빌드 편집",
     "editSubgraph": "서브그래프 편집",
     "editTitle": "제목 편집",
     "errorHelp": "더 많은 도움이 필요하시면 {github} 또는 {support}를 이용하세요.",
@@ -4206,6 +4310,8 @@
       "runsOn": "실행 환경:",
       "title": "누락된 노드 팩",
       "unknownPack": "알 수 없는 팩",
+      "unsupportedOnBuild": "이 빌드에서 지원되지 않음: {cause}",
+      "unsupportedOnBuildNoCause": "이 빌드에서 지원되지 않음",
       "unsupportedTitle": "지원되지 않는 노드 팩",
       "viewInManager": "매니저에서 보기"
     },
@@ -4218,6 +4324,7 @@
     "nodesNoneDesc": "노드 없음",
     "noneSearchDesc": "검색 결과가 없습니다",
     "normal": "일반",
+    "openBuildsOnPlatform": "Platform에서 빌드 열기",
     "parameters": "파라미터",
     "pinned": "고정됨",
     "properties": "속성",
@@ -5024,6 +5131,8 @@
     "partnerNodesCredits": "파트너 노드 크레딧",
     "partnerNodesDescription": "상용/독점 모델 실행용",
     "partnerNodesPricingTable": "파트너 노드 요금표",
+    "pastDueNoticeMember": "이 워크스페이스에 미결제 금액이 있습니다 — 워크스페이스 소유자에게 결제 수단을 업데이트해 달라고 요청하세요.",
+    "pastDueNoticeOwner": "미결제 금액이 있습니다 — 요금제를 변경하려면 결제 수단을 업데이트하세요.",
     "paymentRecovery": {
       "memberCta": "확인",
       "memberDescription": "워크스페이스 소유자에게 구독 복구를 요청하세요.",
@@ -5170,6 +5279,7 @@
     "pricingBlurbSeeDetails": "자세히 보기",
     "reactivatePlan": "구독 재개",
     "reactivateToUseCredits": "이 크레딧을 사용하려면 플랜을 다시 활성화하세요",
+    "refillsAfterPayment": "결제가 처리되면 충전됩니다",
     "refillsDate": "{date}에 리필",
     "refillsNextCycle": "다음 주기에 리필",
     "refreshCredits": "크레딧 새로고침",
@@ -5610,6 +5720,15 @@
     "title": "버전 호환성 경고",
     "updateFrontend": "프론트엔드 업데이트"
   },
+  "videoConcat": {
+    "clipLabel": "클립 {position}",
+    "clips": "클립",
+    "mixedDimensions": "혼합된 크기",
+    "noClips": "미리보기 및 순서 지정을 위해 비디오를 연결하세요",
+    "previewClips": "클립",
+    "previewResult": "마지막 실행",
+    "reorderHint": "클립을 드래그하거나 Alt + 화살표 키를 눌러 순서를 변경하고, 클릭하여 이동하세요"
+  },
   "videoEdit": {
     "adjustCrop": "크롭 영역 조정",
     "adjustEndFrame": "종료 프레임 조정",
@@ -5788,7 +5907,10 @@
         "title": "Team 요금제가 {date}에 종료됩니다"
       },
       "lowCredits": {
-        "localBody": "크레딧이 {credits}개 남았습니다. Partner Nodes를 계속 실행하려면 크레딧을 추가하세요.",
+        "localBody": "크레딧이 {credits}개 남았습니다. Partner Nodes를 계속 실행하려면 크레딧을 추가하세요. | 크레딧이 {credits}개 남았습니다. Partner Nodes를 계속 실행하려면 크레딧을 추가하세요.",
+        "memberBody": "이 워크스페이스에 크레딧이 {credits}개 남았습니다. 모두 소진되기 전에 워크스페이스 소유자에게 크레딧을 추가해 달라고 요청하세요. | 이 워크스페이스에 크레딧이 {credits}개 남았습니다. 모두 소진되기 전에 워크스페이스 소유자에게 크레딧을 추가해 달라고 요청하세요.",
+        "ownerBody": "이 워크스페이스에 크레딧이 {credits}개 남았습니다. 모두 소진되기 전에 크레딧을 추가하세요. | 이 워크스페이스에 크레딧이 {credits}개 남았습니다. 모두 소진되기 전에 크레딧을 추가하세요.",
+        "personalBody": "크레딧이 {credits}개 남았습니다. 모두 소진되기 전에 크레딧을 추가하세요. | 크레딧이 {credits}개 남았습니다. 모두 소진되기 전에 크레딧을 추가하세요.",
         "title": "크레딧이 부족합니다"
       },
       "outOfCredits": {
@@ -5824,7 +5946,7 @@
           "title": "결제를 받았습니다"
         },
         "verifyPayment": {
-          "action": "결제 확인",
+          "action": "인증 완료",
           "body": "이 결제를 완료하려면 은행에서 추가 인증을 요구합니다.",
           "title": "결제 확인"
         }
@@ -5859,8 +5981,10 @@
         "onHold": "기본 결제 수단이 없습니다. 자동 충전을 재개하려면 설정하세요.",
         "paused": "월간 한도에 도달했습니다. {date}에 재개됩니다.",
         "pausedNoDate": "월간 한도에 도달했습니다.",
+        "rule": "{threshold} 크레딧 미만일 때 {target} 크레딧까지 충전합니다.",
         "status": {
           "failed": "실패",
+          "limitReached": "한도 도달",
           "off": "끔",
           "on": "켬",
           "onHold": "보류 중",
@@ -5873,17 +5997,23 @@
       "credits": {
         "addCredits": "크레딧 추가",
         "available": "사용 가능",
+        "availableUntil": "{date}까지 이용 가능",
         "inUse": "현재 사용 중",
         "overdrawn": "실행에서 보유한 크레딧보다 {count}개 더 사용했습니다. | 실행에서 보유한 크레딧보다 {count}개 더 사용했습니다.",
         "plan": "요금제",
         "planOfPool": "{total}개 중 {remaining}개",
         "planTooltip": "요금제에 포함된 크레딧입니다. 각 청구 기간마다 충전됩니다.",
+        "planUsed": "{percent}% 사용됨",
         "rateInfo": "크레딧 정보",
         "rateTooltip": "크레딧은 실행 비용으로 사용됩니다. {credits}크레딧 = $1.",
         "title": "크레딧",
         "topUp": "충전",
         "topUpTooltip": "추가한 크레딧입니다. 요금제 크레딧을 모두 사용한 후 사용됩니다.",
         "unavailable": "잔액을 불러올 수 없습니다."
+      },
+      "footer": {
+        "messageSupport": "메시지 지원",
+        "partnerNodesPricing": "Partner Nodes 요금"
       },
       "handoff": {
         "member": {
@@ -5892,7 +6022,9 @@
         },
         "owner": {
           "action": "결제 관리 열기",
-          "label": "결제 수단, 청구서 및 사용량"
+          "label": "결제 수단, 청구서 및 사용량",
+          "line": "청구와 관련된 다른 모든 사항은 {platform}에서 관리하세요",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "요금제를 불러올 수 없습니다.",
@@ -5920,12 +6052,19 @@
           "line": "Cloud에서 워크플로를 실행하려면 구독하세요.",
           "title": "이 워크스페이스에는 활성 요금제가 없습니다"
         },
+        "paused": "일시 중지됨. 갱신 결제가 처리되지 않았습니다.",
         "resumeConfirm": {
           "body": "요금제가 {date}에 갱신됩니다. 언제든 다시 취소할 수 있습니다.",
           "title": "{plan} 요금제를 재개할까요?"
         },
+        "salesManaged": {
+          "line": "계약에 따라 청구됩니다.",
+          "renews": "계약에 따라 청구됩니다. {date}에 갱신됩니다.",
+          "title": "엔터프라이즈"
+        },
         "scheduledChange": "{date}에 {plan}(으)로 변경됩니다.",
         "stayConfirm": {
+          "bodyNoAmount": "{current} 플랜을 유지합니다. 언제든지 다시 변경을 예약할 수 있습니다.",
           "title": "{plan}(으)로 변경을 취소하시겠습니까?"
         },
         "unknown": {
@@ -6192,6 +6331,7 @@
     }
   },
   "workspaceSwitcher": {
+    "cannotCreateWorkspace": "현재 이 계정에서는 워크스페이스를 만들 수 없습니다.",
     "createWorkspace": "새 워크스페이스 만들기",
     "failedToSwitch": "워크스페이스 전환에 실패했습니다",
     "managedByOrganization": "조직에서 워크스페이스를 관리하므로 새로 만들 수 없습니다.",
