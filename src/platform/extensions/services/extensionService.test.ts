@@ -297,8 +297,6 @@ describe('invokeExtensionsAsync', () => {
         expect(file).toBeInstanceOf(File)
         origins[who] = isGraphLoadHookOrigin(options)
       }
-      // An extension wrapper already on app.handleFile delays delegation, so
-      // the independent call reaches the real entry first.
       vi.spyOn(app, 'handleFile').mockImplementation(
         async (file: File, _openSource?: unknown, options?: unknown) => {
           await heldForwarding
