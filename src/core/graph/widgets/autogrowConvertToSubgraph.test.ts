@@ -146,6 +146,7 @@ describe('Convert to Subgraph with a grown autogrow group (FE-3325)', () => {
   test('wires the grown group ahead of mask and strength', () => {
     const { node } = buildGraph()
     expect(node.inputs.map((input) => input.name)).toEqual([
+      'images',
       'images.image0',
       'images.image1',
       'images.image2',

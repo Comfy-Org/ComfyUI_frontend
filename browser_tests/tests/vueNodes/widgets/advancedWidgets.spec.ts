@@ -176,7 +176,7 @@ test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
 
 test.describe('Advanced socket-only input', { tag: '@vue-nodes' }, () => {
   test('is hidden until advanced inputs are shown', async ({ comfyPage }) => {
-    await comfyPage.nodeOps.addNode(
+    const nodeRef = await comfyPage.nodeOps.addNode(
       'DevToolsNodeWithAdvancedSocketInput',
       {},
       { x: 500, y: 200 }
@@ -184,12 +184,12 @@ test.describe('Advanced socket-only input', { tag: '@vue-nodes' }, () => {
     const node = comfyPage.vueNodes.getNodeByTitle(
       'Node With Advanced Socket Input'
     )
-    const widgetRows = node.getByTestId('node-widget')
+    const maskRow = comfyPage.vueNodes.getInputSlotRow(String(nodeRef.id), 1)
 
-    await expect(widgetRows).toHaveCount(0)
+    await expect(maskRow).toHaveCount(0)
     await node.getByText(SHOW_ADVANCED_INPUTS).click()
-    await expect(widgetRows).toHaveCount(1)
-    await expect(widgetRows.getByTestId('slot-dot')).toBeVisible()
-    await expect(widgetRows).toHaveText('mask')
+    await expect(maskRow).toHaveCount(1)
+    await expect(maskRow.getByTestId('slot-dot')).toBeVisible()
+    await expect(maskRow).toHaveText('mask')
   })
 })

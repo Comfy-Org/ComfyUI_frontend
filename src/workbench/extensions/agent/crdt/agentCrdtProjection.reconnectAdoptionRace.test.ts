@@ -195,6 +195,7 @@ describe('AgentCrdtProjection keeps a hand-wired autogrow link connected', () =>
     // first connect`, mirroring `agentAutogrowHandWiredLinkFixture.ts`).
     deliver()
     expect(readSinkSlots(graph, sink.id)).toEqual([
+      { name: GROUP, origin: null },
       { name: `${GROUP}.image_1`, origin: String(sourceAgent.id) },
       { name: `${GROUP}.image_2`, origin: null }
     ])
@@ -226,6 +227,7 @@ describe('AgentCrdtProjection keeps a hand-wired autogrow link connected', () =>
     // confirmed one — must not leave the slot reading back disconnected.
     const afterHandWire = readSinkSlots(graph, sink.id)
     expect(afterHandWire).toEqual([
+      { name: GROUP, origin: null },
       { name: `${GROUP}.image_1`, origin: String(sourceAgent.id) },
       { name: `${GROUP}.image_2`, origin: String(sourceHand.id) },
       { name: `${GROUP}.image_3`, origin: null }

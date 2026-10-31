@@ -1,16 +1,17 @@
 import type { Component } from 'vue'
 
+import type { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 export interface WidgetSlotMetadata {
-  alwaysVisible?: boolean
   index: number
   linked: boolean
   originNodeId?: NodeId
   originOutputName?: string
   promoted: boolean
+  shape?: RenderShape
   type: string
 }
 

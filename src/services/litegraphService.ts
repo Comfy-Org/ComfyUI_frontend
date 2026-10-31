@@ -11,7 +11,11 @@ import {
   addWidgetPromotionOptions,
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
-import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
+import {
+  applyDynamicInputs,
+  bindPromotedAutogrowGroup,
+  unbindPromotedAutogrowGroup
+} from '@/core/graph/widgets/dynamicWidgets'
 import { addShimWidget } from '@/core/graph/widgets/inputWidgetShim'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
@@ -472,6 +476,23 @@ export const useLitegraphService = () => {
           widgetId,
           sourceWidget
         })
+      }
+
+      protected override bindDynamicInput(
+        input: INodeInputSlot,
+        interiorNode: LGraphNode,
+        interiorInput: INodeInputSlot
+      ): boolean {
+        return bindPromotedAutogrowGroup(
+          this,
+          input,
+          interiorNode,
+          interiorInput
+        )
+      }
+
+      protected override unbindDynamicInput(input: INodeInputSlot): boolean {
+        return unbindPromotedAutogrowGroup(this, input)
       }
 
       /**

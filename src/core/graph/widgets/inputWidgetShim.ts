@@ -12,26 +12,36 @@ class ShimWidget extends BaseWidget {
   onClick(): void {}
 }
 
+export const AUTOGROW_GROUP_WIDGET_TYPE = 'autogrow_group'
+
 /** Gives a socket-only input a label widget so it can take a widget row. */
 export function addShimWidget(
   node: LGraphNode,
   input: INodeInputSlot,
-  { advanced }: Pick<NonNullable<InputSpec[1]>, 'advanced'> = {}
+  {
+    advanced,
+    autogrowGroup
+  }: Pick<NonNullable<InputSpec[1]>, 'advanced'> & {
+    autogrowGroup?: boolean
+  } = {}
 ) {
   node.addCustomWidget(
     new ShimWidget(
       {
         name: input.name,
         label: input.label ?? input.localized_name,
-        options: { advanced, hideInPanel: advanced },
+        hidden: autogrowGroup,
+        options: autogrowGroup
+          ? { serialize: false }
+          : { advanced, hideInPanel: advanced },
         serialize: false,
-        type: 'shim',
+        type: autogrowGroup ? AUTOGROW_GROUP_WIDGET_TYPE : 'shim',
         value: undefined,
         y: 0
       },
       node
     )
   )
-  input.alwaysVisible = true
+  if (!autogrowGroup) input.alwaysVisible = true
   input.widget = { name: input.name }
 }

@@ -800,33 +800,35 @@ describe('attachDocOpMinter', () => {
       withGraphIntentSource('load', () => {
         for (const source of sources) graph.add(source)
         graph.add(sink)
-        sources[0].connect(0, sink, 0)
+        sources[0].connect(0, sink, 1)
       })
       const doc = mintDocFrom(graph)
       docInputNames = (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs')
       expect(docInputs(doc, sink.id)).toEqual([
-        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
+        { name: IMAGES_GROUP, link: null },
+        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[1].link },
         { name: `${IMAGES_GROUP}.image_2`, link: null }
       ])
 
-      sources[1].connect(0, sink, 1)
+      sources[1].connect(0, sink, 2)
       await afterFlush()
       expect(minted).toEqual([
-        expect.objectContaining({ op: 'connect', to_slot: 1 })
+        expect.objectContaining({ op: 'connect', to_slot: 2 })
       ])
       expect(applyMinted(doc, minted)).toEqual(['applied'])
       minted.length = 0
 
       expect(sink.inputs.map(({ name }) => name)).toEqual([
+        IMAGES_GROUP,
         `${IMAGES_GROUP}.image_1`,
         `${IMAGES_GROUP}.image_2`,
         `${IMAGES_GROUP}.image_3`
       ])
-      sources[2].connect(0, sink, 2)
+      sources[2].connect(0, sink, 3)
       await afterFlush()
 
-      const handWired = sink.inputs[2].link
+      const handWired = sink.inputs[3].link
       expect(minted).toEqual([
         {
           op: 'connect',
@@ -836,13 +838,18 @@ describe('attachDocOpMinter', () => {
           to_node: sink.id,
           to_slot: null,
           link_type: 'IMAGE',
-          grow: { name: `${IMAGES_GROUP}.image_3`, type: 'IMAGE' }
+          grow: {
+            name: `${IMAGES_GROUP}.image_3`,
+            type: 'IMAGE',
+            widget: `${IMAGES_GROUP}.image_3`
+          }
         }
       ])
       expect(applyMinted(doc, minted)).toEqual(['applied'])
       expect(docInputs(doc, sink.id)).toEqual([
-        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
-        { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[1].link },
+        { name: IMAGES_GROUP, link: null },
+        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[1].link },
+        { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[2].link },
         { name: `${IMAGES_GROUP}.image_3`, link: handWired }
       ])
       doc.destroy()

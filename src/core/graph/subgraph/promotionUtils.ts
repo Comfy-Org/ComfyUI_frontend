@@ -6,6 +6,7 @@ import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { hostInputOf } from '@/lib/litegraph/src/subgraph/hostInput'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
@@ -155,7 +156,7 @@ export function reorderSubgraphInputsByWidgetOrder(
   subgraphNode: SubgraphNode,
   orderedWidgets: readonly Pick<IBaseWidget, 'widgetId'>[]
 ): void {
-  const remainingIndices = new Set(subgraphNode.inputs.keys())
+  const remainingIndices = new Set(subgraphNode.subgraph.inputs.keys())
   const orderedIndices = orderedWidgets.flatMap((orderedWidget) => {
     for (const index of remainingIndices) {
       if (isSamePromotedInput(subgraphNode, index, orderedWidget)) {
@@ -175,8 +176,10 @@ function applySubgraphInputOrder(
   subgraphNode: SubgraphNode,
   orderedIndices: readonly number[]
 ): void {
-  const widgetValues = subgraphNode.inputs.map((input) => {
-    const id = input.widgetId
+  const hostInputAt = (index: number) =>
+    hostInputOf(subgraphNode, subgraphNode.subgraph.inputs[index])
+  const widgetValues = subgraphNode.subgraph.inputs.map((_, index) => {
+    const id = hostInputAt(index)?.widgetId
     if (!id) return undefined
     return useWidgetValueStore().getWidget(id)?.value
   })
@@ -185,14 +188,16 @@ function applySubgraphInputOrder(
   useWidgetValueStore().setNodeWidgetOrder(
     subgraphNode.rootGraph.id,
     subgraphNode.id,
-    subgraphNode.inputs.flatMap((input) =>
-      input.widgetId ? [input.widgetId] : []
-    )
+    subgraphNode.inputs.flatMap((input) => {
+      const id =
+        input.widgetId ?? subgraphNode.getWidgetFromSlot(input)?.widgetId
+      return id ? [id] : []
+    })
   )
 
   for (const [newIndex, oldIndex] of orderedIndices.entries()) {
     const value = widgetValues[oldIndex]
-    const id = subgraphNode.inputs[newIndex]?.widgetId
+    const id = hostInputAt(newIndex)?.widgetId
     if (value === undefined || !id) continue
     useWidgetValueStore().setValue(id, value)
   }
@@ -203,8 +208,8 @@ function isSamePromotedInput(
   inputIndex: number,
   orderedWidget: Pick<IBaseWidget, 'widgetId'>
 ): boolean {
-  const input = subgraphNode.inputs.at(inputIndex)
-  const linkedInput = input?._subgraphSlot
+  const linkedInput = subgraphNode.subgraph.inputs.at(inputIndex)
+  const input = hostInputOf(subgraphNode, linkedInput)
   if (!input || !linkedInput) return false
 
   for (const linkId of linkedInput.linkIds) {

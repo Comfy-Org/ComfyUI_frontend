@@ -37,6 +37,7 @@ import type {
   SubgraphIO
 } from '@comfyorg/graph-model/serialisation'
 
+import { hostInputOf } from './hostInput'
 import { SubgraphInputNode } from './SubgraphInputNode'
 
 import { SubgraphOutputNode } from './SubgraphOutputNode'
@@ -585,7 +586,10 @@ export function reorderSubgraphInputs(
   const subgraph = subgraphNode.subgraph
 
   const n = subgraph.inputs.length
-  if (subgraphNode.inputs.length !== n) {
+  const hostInputs = subgraph.inputs.map((subgraphInput) =>
+    hostInputOf(subgraphNode, subgraphInput)
+  )
+  if (hostInputs.some((input) => !input)) {
     console.error('reorderSubgraphInputs: host and subgraph inputs differ', {
       hostInputs: subgraphNode.inputs.length,
       subgraphInputs: n
@@ -608,9 +612,23 @@ export function reorderSubgraphInputs(
   const oldOrder = subgraph.inputs.map((i) => i.id)
 
   const previousInputs = captureInputLayout(subgraphNode)
-  const orderedHostInputs = orderedIndices.map(
-    (index) => previousInputs.inputs[index]
-  )
+  const orderedHostInputs = orderedIndices.flatMap((index) => {
+    const hostInput = hostInputs[index]!
+    const prefix = `${hostInput.name}.`
+    return [
+      hostInput,
+      ...previousInputs.inputs.filter(
+        (input) => !hostInputs.includes(input) && input.name.startsWith(prefix)
+      )
+    ]
+  })
+  if (orderedHostInputs.length !== previousInputs.inputs.length) {
+    console.error('reorderSubgraphInputs: host has unowned inputs', {
+      hostInputs: previousInputs.inputs.length,
+      ownedInputs: orderedHostInputs.length
+    })
+    return
+  }
 
   const result = replaceNodeInputs(
     subgraphNode,
