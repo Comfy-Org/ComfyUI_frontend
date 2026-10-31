@@ -1,5 +1,9 @@
 <template>
-  <AppDialogPanel body-class="flex flex-col gap-6 text-sm" @close="onClose">
+  <AppDialogPanel
+    body-class="flex flex-col gap-6 text-sm"
+    class="w-lg max-w-full"
+    @close="onClose"
+  >
     <template #title>
       {{
         $t('workspacePanel.members.creditLimitDialog.title', {
@@ -31,7 +35,7 @@
           <span
             class="flex h-10 items-center gap-2 rounded-lg bg-secondary px-4"
           >
-            <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
+            <i class="icon-[lucide--coins] text-credit" />
             <input
               v-model="limitModel"
               inputmode="numeric"
@@ -62,7 +66,7 @@
       </div>
     </div>
     <p v-if="showWarning" class="m-0 flex gap-1 text-credit">
-      <i class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
+      <i class="mt-0.5 icon-[lucide--triangle-alert]" />
       {{
         $t('workspacePanel.members.creditLimitDialog.warning', {
           credits: $n(creditsUsed ?? 0)

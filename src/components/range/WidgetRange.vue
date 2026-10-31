@@ -31,9 +31,9 @@ import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButton
 import type {
   IWidgetRangeOptions,
   RangeValue
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import RangeEditor from './RangeEditor.vue'

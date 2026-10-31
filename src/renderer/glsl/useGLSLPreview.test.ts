@@ -9,8 +9,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 const mockRendererFactory = vi.hoisted(() => {
   const init = vi.fn(() => true)

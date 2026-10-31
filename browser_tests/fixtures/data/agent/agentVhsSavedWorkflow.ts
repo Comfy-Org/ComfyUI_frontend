@@ -1,7 +1,7 @@
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 export const VHS_WORKFLOW_ID = 'b7c1d2e3-0000-4000-8000-000000002018'

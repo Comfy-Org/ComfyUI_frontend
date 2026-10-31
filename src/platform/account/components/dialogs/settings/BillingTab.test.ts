@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -11,6 +11,7 @@ import type {
   SubscriptionState
 } from '@comfyorg/ingest-types'
 
+import { i18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
@@ -23,16 +24,23 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { Plan } from '@comfyorg/billing-core'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { activateBillingScope } from '@/platform/billing/__tests__/activateBillingScope'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
+import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/composables/usePausedBanner'), {
   spy: true
@@ -45,8 +53,10 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(
+  import('@/platform/billing/subscription/composables/useSubscriptionActions')
+)
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string, correlationId?: string) =>
     `https://platform.test${path}?workspace=ws_1&correlation_id=${correlationId}`
@@ -82,11 +92,12 @@ interface Scenario {
   capabilitiesReady?: boolean
   capabilitiesResolved?: boolean
   balance?: BalanceInfo | null
-  autoTopUpFlag?: boolean
+  autoTopUpEnabled?: boolean
   canManageAutoTopUp?: boolean
   canTopUp?: boolean
   topUpDenial?: string
   isPaused?: boolean
+  billingStatus?: 'paid' | 'paused'
   hasParkedBillingOperation?: boolean
 }
 
@@ -96,8 +107,14 @@ function correlationIdOf(link: HTMLElement) {
   )
 }
 
+const handleMessageSupport = vi.fn(async () => {})
+
 function arrange(scenario: Scenario = {}) {
   activateBillingScope('actor-a', 'workspace-a')
+  vi.mocked(useMessageSupport).mockReturnValue({
+    isLoadingSupport: ref(false),
+    handleMessageSupport
+  })
   const initialize = vi.fn(async () => {})
   const refresh = vi.fn(async () => {})
   const fetchStatus = vi.fn(async () => {})
@@ -123,7 +140,8 @@ function arrange(scenario: Scenario = {}) {
           : scenario.subscriptionStatus
       ),
       subscriptionState: computed(() => scenario.subscriptionState ?? null),
-      billingStatus: computed(() => 'paid'),
+      billingStatus: computed(() => scenario.billingStatus ?? 'paid'),
+      canAccessSubscriptionFeatures: computed(() => true),
       manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
@@ -184,6 +202,12 @@ function arrange(scenario: Scenario = {}) {
           scenario.canManageAutoTopUp ?? true
         )
       ),
+      autoTopUpEnabled: computed(() =>
+        receiveServerFact(
+          'auto_top_up_enabled',
+          scenario.autoTopUpEnabled ?? true
+        )
+      ),
       autoTopUpSetup: computed(() => null),
       isReady: computed(() => scenario.capabilitiesReady ?? true),
       hasResolvedCapabilities: computed(
@@ -193,8 +217,6 @@ function arrange(scenario: Scenario = {}) {
       refresh
     })
   )
-  vi.mocked(useFeatureFlags().flags).autoTopUpEnabled =
-    scenario.autoTopUpFlag ?? true
   vi.mocked(useFreeTierQuota).mockReturnValue(
     fromPartial({
       quotaEnabled: computed(() => false),
@@ -284,6 +306,20 @@ describe('BillingTab', () => {
   })
 
   describe('parked payment banner', () => {
+    it.for([
+      { name: 'an owner', canManageBilling: true, shown: true },
+      { name: 'a member', canManageBilling: false, shown: false }
+    ])(
+      'shows $name the parked banner: $shown',
+      ({ canManageBilling, shown }) => {
+        arrange({ hasParkedBillingOperation: true, canManageBilling })
+
+        expect(screen.queryByTestId('billing-parked-banner') !== null).toBe(
+          shown
+        )
+      }
+    )
+
     it('shows Contact support when a payment is parked', () => {
       arrange({ hasParkedBillingOperation: true })
 
@@ -379,7 +415,7 @@ describe('BillingTab', () => {
     expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
       'Activating your Pro plan…'
     )
-    expect(screen.getByRole('button', { name: 'Manage' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Manage' })).toBeInTheDocument()
   })
 
   it('lays out the plan and the owner handoff as headed 12px cards', () => {
@@ -402,7 +438,7 @@ describe('BillingTab', () => {
       'px-5',
       'py-4'
     )
-    expect(within(plan).getByRole('button', { name: 'Manage' })).toHaveClass(
+    expect(within(plan).getByRole('link', { name: 'Manage' })).toHaveClass(
       'h-8'
     )
     const handoff = screen.getByTestId('billing-handoff')
@@ -437,7 +473,7 @@ describe('BillingTab', () => {
     expect(link).toHaveAttribute('rel', 'noopener')
     expect(link).toHaveClass('no-underline')
     expect(
-      screen.queryByRole('button', { name: 'Manage' })
+      screen.queryByRole('link', { name: 'Manage' })
     ).not.toBeInTheDocument()
   })
 
@@ -456,43 +492,104 @@ describe('BillingTab', () => {
     }
   )
 
-  it('opens plan management on Cloud instead of a platform plans page', async () => {
-    arrange()
+  it.for([
+    {
+      case: 'a served renewal date',
+      renewalDate: '2027-10-28T00:00:00Z',
+      line: 'Billed by contract. Renews October 28, 2027.'
+    },
+    {
+      case: 'no renewal date',
+      renewalDate: null,
+      line: 'Billed by contract.'
+    }
+  ])(
+    'shows an active sales-managed plan as Enterprise with $case',
+    ({ renewalDate, line }) => {
+      arrange({
+        planKind: 'sales_managed',
+        canOpenPlans: false,
+        subscription: {
+          ...activeSubscription,
+          tier: 'ENTERPRISE',
+          duration: 'ANNUAL',
+          renewalDate
+        }
+      })
 
-    expect(
-      screen.queryByRole('link', { name: 'Manage' })
-    ).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Manage' }))
-
-    expect(
-      useSubscriptionPaywall().showSubscriptionDialog
-    ).toHaveBeenCalledWith({ reason: 'settings_billing_panel' })
-    expect(screen.getByRole('link', { name: 'Open billing' })).toHaveAttribute(
-      'href',
-      expect.stringMatching(
-        /^https:\/\/platform\.test\/profile\/billing\?workspace=ws_1&correlation_id=.+$/
+      expect(
+        screen.getByRole('heading', { name: 'Enterprise' })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+        line
       )
+      expect(
+        screen.getByRole('link', { name: 'Contact sales' })
+      ).toHaveAttribute('href', 'https://comfy.org/contact/')
+    }
+  )
+
+  it('picks the contract-billing row by plan_kind and keeps the served plan name on a PRO tier', () => {
+    arrange({ planKind: 'sales_managed', canOpenPlans: false })
+
+    expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      'Billed by contract. Renews November 15.'
     )
   })
 
-  it('opens Subscribe on Cloud for a workspace with no plan', async () => {
-    arrange({ subscription: null, subscriptionStatus: null })
+  it.for([
+    { name: 'Manage', scenario: {} },
+    {
+      name: 'Subscribe',
+      scenario: { subscription: null, subscriptionStatus: null }
+    },
+    {
+      name: 'Choose a plan',
+      scenario: {
+        subscription: {
+          ...activeSubscription,
+          isActive: false,
+          endDate: '2026-09-01T00:00:00Z'
+        },
+        subscriptionStatus: 'ended'
+      }
+    }
+  ] satisfies { name: string; scenario: Scenario }[])(
+    'opens $name on the billing site Plans page in a new tab',
+    async ({ name, scenario }) => {
+      arrange(scenario)
 
-    expect(
-      screen.queryByRole('link', { name: 'Subscribe' })
-    ).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Subscribe' }))
+      const link = screen.getByRole('link', { name })
+      expect(link).toHaveAttribute(
+        'href',
+        expect.stringMatching(
+          /^https:\/\/platform\.test\/profile\/billing\/plans\?workspace=ws_1&correlation_id=.+$/
+        )
+      )
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toContainHTML('icon-[lucide--arrow-up-right]')
+      link.addEventListener('click', (event) => event.preventDefault())
 
-    expect(
-      useSubscriptionPaywall().showSubscriptionDialog
-    ).toHaveBeenCalledWith({ reason: 'settings_billing_panel' })
-  })
+      await userEvent.click(link)
+
+      expect(vi.mocked(useTelemetry)()?.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'platform_handoff',
+          target: 'plans'
+        })
+      )
+      expect(
+        useSubscriptionPaywall().showSubscriptionDialog
+      ).not.toHaveBeenCalled()
+    }
+  )
 
   it('hides the plan action when the server does not grant it', () => {
     arrange({ canOpenPlans: false })
 
     expect(
-      screen.queryByRole('button', { name: 'Manage' })
+      screen.queryByRole('link', { name: 'Manage' })
     ).not.toBeInTheDocument()
   })
 
@@ -554,6 +651,56 @@ describe('BillingTab', () => {
     }
   )
 
+  it('tells an owner the rest of billing lives on the linked platform.comfy.org', () => {
+    arrange({ canManageBilling: true })
+
+    const card = screen.getByTestId('billing-handoff-card')
+    expect(
+      within(card).getByText(/Manage everything else about billing on/)
+    ).toBeInTheDocument()
+    const platformLink = within(card).getByRole('link', {
+      name: 'platform.comfy.org'
+    })
+    expect(platformLink).toHaveClass('underline')
+    expect(platformLink).toHaveAttribute(
+      'href',
+      expect.stringContaining('https://platform.test/profile/billing?')
+    )
+  })
+
+  it('gives a member no platform.comfy.org line or link', () => {
+    arrange({ canManageBilling: false })
+
+    const card = screen.getByTestId('billing-handoff-card')
+    expect(
+      within(card).queryByText(/Manage everything else about billing on/)
+    ).not.toBeInTheDocument()
+    expect(
+      within(card).queryByRole('link', { name: 'platform.comfy.org' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('links Partner Nodes pricing to the docs and messages support from the footer', async () => {
+    const previousLocale = i18n.global.locale.value
+    i18n.global.locale.value = 'en'
+    onTestFinished(() => {
+      i18n.global.locale.value = previousLocale
+    })
+    arrange()
+    const footer = screen.getByTestId('billing-footer')
+
+    expect(
+      within(footer).getByRole('link', { name: 'Partner Nodes pricing' })
+    ).toHaveAttribute(
+      'href',
+      'https://docs.comfy.org/tutorials/partner-nodes/pricing'
+    )
+    await userEvent.click(
+      within(footer).getByRole('button', { name: 'Message support' })
+    )
+    expect(handleMessageSupport).toHaveBeenCalledOnce()
+  })
+
   it.for([
     {
       name: 'the owner handoff',
@@ -614,14 +761,14 @@ describe('BillingTab', () => {
       return arranged
     }
 
-    it('confirms with the target and date the scheduled change carries, and no amount', async () => {
+    it('confirms that the current plan stays, with no amount', async () => {
       await openStay()
 
       const dialog = screen.getByRole('dialog', {
         name: 'Cancel your change to Creator?'
       })
       expect(dialog).toHaveTextContent(
-        "Your plan won't change to Creator on October 28, 2026. You can schedule a change again anytime."
+        "You'll stay on Pro. You can schedule a change again anytime."
       )
       expect(dialog).not.toHaveTextContent('$')
     })
@@ -838,6 +985,74 @@ describe('BillingTab', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument()
     })
 
+    it('offers Manage on the billing site after Resume plan', () => {
+      arrange(ending)
+
+      const row = screen.getByTestId('billing-plan-row')
+      const resume = within(row).getByRole('button', { name: 'Resume plan' })
+      const manage = within(row).getByRole('link', { name: 'Manage' })
+      expect(manage).toHaveAttribute(
+        'href',
+        expect.stringContaining(
+          'https://platform.test/profile/billing/plans?workspace=ws_1'
+        )
+      )
+      expect(
+        resume.compareDocumentPosition(manage) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+    })
+
+    it('offers no plan button to a member of an ending plan', () => {
+      arrange({
+        ...ending,
+        canReactivate: false,
+        canOpenPlans: false,
+        canManageSubscription: false,
+        canManageBilling: false
+      })
+
+      expect(
+        within(screen.getByTestId('billing-plan-row')).queryAllByRole('link')
+      ).toEqual([])
+      expect(
+        within(screen.getByTestId('billing-plan-row')).queryAllByRole('button')
+      ).toEqual([])
+    })
+
+    describe('plan lifecycle banner on Cloud', () => {
+      beforeEach(() => {
+        distribution.isCloud = true
+      })
+      afterEach(() => {
+        distribution.isCloud = false
+      })
+
+      function arrangeOnCloud(scenario: Scenario) {
+        vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+        arrange(scenario)
+      }
+
+      it('shows Plan ending with the plan row keeping the actions', () => {
+        arrangeOnCloud(ending)
+
+        const banner = screen.getByRole('status')
+        expect(banner).toHaveTextContent(
+          'Your Pro plan ends on October 28, 2026'
+        )
+        expect(within(banner).queryAllByRole('button')).toEqual([])
+        expect(
+          screen.getByRole('button', { name: 'Resume plan' })
+        ).toBeInTheDocument()
+      })
+
+      it('shows no lifecycle banner on an active plan', () => {
+        arrangeOnCloud({})
+
+        expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      })
+    })
+
     it('hides Resume when the server withholds can_reactivate', () => {
       arrange({ ...ending, canReactivate: false })
 
@@ -845,6 +1060,15 @@ describe('BillingTab', () => {
         screen.queryByRole('button', { name: 'Resume plan' })
       ).not.toBeInTheDocument()
     })
+  })
+
+  it('shows a paused plan by name with the paused line', () => {
+    arrange({ billingStatus: 'paused' })
+
+    expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
+      "Paused. The renewal payment didn't go through."
+    )
   })
 
   it('renders an unrecognised plan as Your plan', () => {
@@ -1000,16 +1224,72 @@ describe('BillingTab', () => {
       ).toEqual(['inverted', 'inverted'])
     })
 
-    it('keeps Add credits grey at 0 while the payment is processing', async () => {
+    function addCreditsVariants() {
+      return screen
+        .getAllByRole('button', { name: 'Add credits' })
+        .map((button) => button.getAttribute('data-variant'))
+    }
+
+    it('turns Add credits white in the out-of-credits banner and the Credits card when auto top-up is off', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      arrange({
+        balance: zeroBalance,
+        subscription: { ...activeSubscription, hasFunds: false }
+      })
+
+      await screen.findByTestId('billing-auto-top-up-status')
+      expect(
+        within(screen.getByTestId('billing-local-credit-banner')).getByRole(
+          'button',
+          { name: 'Add credits' }
+        )
+      ).toHaveAttribute('data-variant', 'inverted')
+      expect(addCreditsVariants()).toEqual(['inverted', 'inverted'])
+    })
+
+    it('turns Add credits white at 0 while a top-up payment is processing and auto top-up is off', async () => {
       servedCheckouts(checkout('payment_processing'))
       arrange({ balance: zeroBalance })
 
       await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-auto-top-up-status')
       expect(
         within(screen.getByTestId('billing-credits-card')).getByRole('button', {
           name: 'Add credits'
         })
-      ).toHaveAttribute('data-variant', 'secondary')
+      ).toHaveAttribute('data-variant', 'inverted')
+    })
+
+    it('keeps Add credits grey at 0 when the served auto top-up status will refill', async () => {
+      const served = await billingApi.getBillingAutoReload()
+      vi.mocked(billingApi.getBillingAutoReload).mockResolvedValue({
+        ...served,
+        configured: true,
+        enabled: true,
+        status: 'on'
+      })
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      arrange({
+        balance: zeroBalance,
+        subscription: { ...activeSubscription, hasFunds: false }
+      })
+
+      await screen.findByTestId('billing-auto-top-up-status')
+      expect(addCreditsVariants()).toEqual(['secondary', 'secondary'])
+    })
+
+    it('keeps Subscribe the one white button with no plan at 0', () => {
+      arrange({
+        balance: zeroBalance,
+        subscription: null,
+        subscriptionStatus: null
+      })
+
+      expect(screen.getByRole('link', { name: 'Subscribe' })).toHaveAttribute(
+        'data-variant',
+        'inverted'
+      )
+      expect(addCreditsVariants()).toEqual(['secondary'])
     })
 
     it('offers no Add credits on a failed top-up when the server withholds can_top_up', async () => {
@@ -1054,7 +1334,7 @@ describe('BillingTab', () => {
             settleDetail.push(resolve)
           })
       )
-      arrange({ autoTopUpFlag: false })
+      arrange({ autoTopUpEnabled: false })
 
       await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
       settleDetail[0](checkout('credits_applying', { session_id: 'cs_1' }))
@@ -1100,7 +1380,7 @@ describe('BillingTab', () => {
             settleDetail.push(resolve)
           })
       )
-      arrange({ autoTopUpFlag: false })
+      arrange({ autoTopUpEnabled: false })
       await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
 
       const visibility = vi.spyOn(document, 'visibilityState', 'get')
@@ -1212,7 +1492,7 @@ describe('BillingTab', () => {
             settleDetail.push(resolve)
           })
       )
-      arrange({ autoTopUpFlag: false })
+      arrange({ autoTopUpEnabled: false })
       await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
 
       vi.mocked(billingApi.listTopupCheckouts).mockClear()
@@ -1398,7 +1678,7 @@ describe('BillingTab', () => {
     it.for<{ case: string; scenario: Scenario; reads: number }>([
       {
         case: 'the flag is off',
-        scenario: { autoTopUpFlag: false },
+        scenario: { autoTopUpEnabled: false },
         reads: 0
       },
       {

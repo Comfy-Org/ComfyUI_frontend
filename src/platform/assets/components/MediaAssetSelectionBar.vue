@@ -14,7 +14,7 @@
         class="hover:bg-background/10"
         @click="emit('deselect')"
       >
-        <i class="icon-[lucide--x] size-4" />
+        <i class="icon-[lucide--x]" />
       </Button>
       <span class="pr-6 text-sm font-bold whitespace-nowrap tabular-nums">
         {{ $t('mediaAsset.selection.selectedCount', { count }) }}
@@ -30,7 +30,7 @@
           class="hover:bg-background/10"
           @click="emit('download')"
         >
-          <i class="icon-[lucide--download] size-4" />
+          <i class="icon-[lucide--download]" />
         </Button>
         <template v-if="showDelete">
           <span class="h-6 w-px bg-background/20" aria-hidden="true" />
@@ -44,7 +44,7 @@
             class="hover:bg-background/10"
             @click="emit('delete')"
           >
-            <i class="icon-[lucide--trash-2] size-4" />
+            <i class="icon-[lucide--trash-2]" />
           </Button>
         </template>
       </div>

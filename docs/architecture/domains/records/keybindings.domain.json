@@ -1,7 +1,7 @@
 {
   "id": "keybindings",
   "capability": "Keybindings",
-  "description": "Key combo and keybinding models, core default bindings, reserved-key policy, the keybinding store, global keydown dispatch to commands, Escape override registry, keybinding presets with import and export, the keybinding settings panel and edit dialogs, and the bottom-panel shortcuts reference. Commands, settings persistence, dialogs, and the bottom panel itself remain external.",
+  "description": "Command registration and execution, key combo and keybinding models, core default bindings, reserved-key policy, the keybinding store, global keydown dispatch to commands, Escape override registry, keybinding presets with import and export, the keybinding settings panel and edit dialogs, and the bottom-panel shortcuts reference. Settings persistence, dialogs, and the bottom panel itself remain external.",
   "modules": [
     {
       "path": "src/platform/keybindings/**",
@@ -16,10 +16,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/keybindings/composables/useShortcutsTab.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/platform/keybindings/composables/useShortcutsTab.ts",
       "role": "integration"
     },
@@ -32,31 +28,52 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/keybindings/keyCombo.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/keybindings/keybinding.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/keybindings/reserved.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/keybindings/types.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/modalUtil.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/keybindings/src/**",
+      "role": "domain"
+    },
+    {
+      "path": "packages/keybindings/src/commandStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "packages/keybindings/src/keybindingStore.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [
-    "src/platform/keybindings/composables/useShortcutsTab.ts"
+    "src/platform/keybindings/composables/useShortcutsTab.ts",
+    "src/platform/keybindings/commandStore.ts"
   ],
-  "allowedDependencies": [],
-  "allowedConsumers": ["bottom-panel"],
+  "allowedDependencies": ["design-system", "error-handling"],
+  "allowedConsumers": [
+    "agent",
+    "app-host",
+    "authentication",
+    "billing",
+    "bottom-panel",
+    "canvas-renderer",
+    "dialog-host",
+    "extension-manager",
+    "extension-runtime",
+    "first-run-tour",
+    "help-center",
+    "job-queue",
+    "linear-mode",
+    "minimap",
+    "node-library",
+    "release-notes",
+    "selection-toolbox",
+    "settings",
+    "subgraphs",
+    "workbench-shell",
+    "workflow-errors",
+    "workflow-management",
+    "workflow-persistence"
+  ],
   "characterizationScenarios": [
     {
       "name": "Key combos parse keyboard events and respect reserved keys",
@@ -93,13 +110,20 @@
         "src/platform/keybindings/components/shortcuts/ShortcutsList.test.ts",
         "src/platform/keybindings/composables/useShortcutsTab.test.ts"
       ]
+    },
+    {
+      "name": "Commands register, execute with error handling, and expose keybinding labels",
+      "checks": [
+        "src/platform/keybindings/commandStore.test.ts",
+        "browser_tests/tests/commands.spec.ts"
+      ]
     }
   ],
   "adrs": [],
   "compatibilityPromises": [
     "Unclassified callers may import keybinding internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "Extension-registered keybindings and the Comfy.Keybinding.* settings keep their stored shape.",
-    "presetService opening presentation dialogs and reaching scripts/api directly, and keybindingService reading settings, command, and dialog stores, remain visible as role-boundary debt; classification does not grant dependency exceptions."
+    "presetService opening presentation dialogs and reaching scripts/api directly, and keybindingService reading settings and dialog stores, remain visible as role-boundary debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

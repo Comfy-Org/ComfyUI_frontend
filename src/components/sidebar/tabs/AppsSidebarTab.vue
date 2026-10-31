@@ -18,7 +18,7 @@
         size="md"
         @click="createApp"
       >
-        <i class="icon-[lucide--plus] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--plus]" aria-hidden="true" />
         {{ $t('linearMode.appModeToolbar.create') }}
       </Button>
     </template>
@@ -37,11 +37,11 @@
 
 <script setup lang="ts">
 import Badge from '@comfyorg/design-system/badge/Badge'
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 const commandStore = useCommandStore()
 

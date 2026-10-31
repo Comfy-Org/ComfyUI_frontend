@@ -27,7 +27,7 @@ export const LeadingIcon: Story = {
     template: `
       <InputGroup class="w-80">
         <InputGroupAddon>
-          <i class="icon-[lucide--search] size-4" />
+          <i class="icon-[lucide--search]" />
         </InputGroupAddon>
         <InputGroupInput placeholder="Search nodes" />
       </InputGroup>`
@@ -42,7 +42,7 @@ export const TrailingButton: Story = {
         <InputGroupInput type="password" model-value="hunter2" />
         <InputGroupAddon align="inline-end">
           <InputGroupButton size="icon-sm" aria-label="Show password">
-            <i class="icon-[lucide--eye] size-4" />
+            <i class="icon-[lucide--eye]" />
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>`
@@ -70,7 +70,7 @@ export const Invalid: Story = {
       <InputGroup class="w-80">
         <InputGroupInput model-value="not a url" aria-invalid="true" />
         <InputGroupAddon align="inline-end">
-          <i class="icon-[lucide--x] size-4 text-destructive" />
+          <i class="icon-[lucide--x] text-destructive" />
         </InputGroupAddon>
       </InputGroup>`
   })
@@ -84,7 +84,7 @@ export const Disabled: Story = {
         <InputGroupInput disabled model-value="read only" />
         <InputGroupAddon align="inline-end">
           <InputGroupButton size="icon-sm" disabled aria-label="Copy">
-            <i class="icon-[lucide--copy] size-4" />
+            <i class="icon-[lucide--copy]" />
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>`

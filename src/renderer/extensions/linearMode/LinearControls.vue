@@ -7,7 +7,7 @@ import { computed, ref, toValue, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
-import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
@@ -20,12 +20,12 @@ import { isCloud } from '@/platform/distribution/types'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import SubscribeToRunButton from '@/platform/billing/subscription/components/SubscribeToRun.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErrorWarning.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -174,7 +174,7 @@ function replayAppModeTour() {
         class="border border-solid hover:border-border hover:text-foreground"
         @click="replayAppModeTour"
       >
-        <i class="icon-[lucide--circle-question-mark] size-4" />
+        <i class="icon-[lucide--circle-question-mark]" />
       </Button>
     </section>
     <div
@@ -280,7 +280,7 @@ function replayAppModeTour() {
                 side="top"
                 :side-offset="5"
                 dismiss-on-viewport-change
-                class="w-auto rounded-lg border-border/50 p-2 shadow-sm"
+                class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
                 @open-auto-focus.prevent
               >
                 <div

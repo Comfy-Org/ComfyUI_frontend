@@ -5,14 +5,14 @@ import { computed, defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 function serveCheckout(checkoutState: HostedTopupCheckout['state']) {
   vi.spyOn(billingApi, 'listTopupCheckouts').mockResolvedValue({

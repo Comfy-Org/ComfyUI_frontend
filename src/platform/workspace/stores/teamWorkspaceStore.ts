@@ -15,7 +15,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   clearWorkflowRestoreState,
   prepareWorkflowWorkspaceTransition
@@ -265,21 +265,31 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => workspaces.value.filter((w) => w.role === 'owner').length
   )
 
-  /** The server says an SSO organization manages this account's workspaces. */
+  const serverRefusesCreation = ref(false)
+
   const workspacesManagedByOrganization = ref(false)
 
   const canCreateWorkspace = computed(
     () =>
-      !workspacesManagedByOrganization.value &&
+      !serverRefusesCreation.value &&
       ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
   )
+
+  const createWorkspaceRefusal = computed<
+    'organization' | 'limit' | 'unknown' | null
+  >(() => {
+    if (canCreateWorkspace.value) return null
+    if (workspacesManagedByOrganization.value) return 'organization'
+    if (serverRefusesCreation.value) return 'unknown'
+    return 'limit'
+  })
 
   function applyWorkspaceList(response: ListedWorkspaces): void {
     workspaces.value = sortWorkspaces(
       response.workspaces.map(createWorkspaceState)
     )
-    workspacesManagedByOrganization.value =
-      response.can_create_workspace === false
+    serverRefusesCreation.value = response.can_create_workspace === false
+    workspacesManagedByOrganization.value = !!response.default_workspace_id
   }
 
   const members = computed<WorkspaceMember[]>(
@@ -1122,6 +1132,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     initializationPromise = null
     initState.value = 'uninitialized'
     workspaces.value = []
+    serverRefusesCreation.value = false
     workspacesManagedByOrganization.value = false
     mutableActiveWorkspaceId.value = null
     error.value = null
@@ -1154,7 +1165,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     sharedWorkspaces,
     ownedWorkspacesCount,
     canCreateWorkspace,
+    serverRefusesCreation,
     workspacesManagedByOrganization,
+    createWorkspaceRefusal,
     members,
     membersLoaded,
     pendingInvites,

@@ -176,15 +176,9 @@ export const TestIds = {
   },
   selectionToolbox: {
     root: 'selection-toolbox',
-    colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
-    colorRed: 'red',
-    convertSubgraph: 'convert-to-subgraph-button',
-    bypass: 'bypass-button',
-    hideLinks: 'hide-links-button',
-    showLinks: 'show-links-button',
-    deleteLinks: 'delete-links-button'
+    colorRed: 'red'
   },
   helpCenter: {
     button: 'help-center-button',

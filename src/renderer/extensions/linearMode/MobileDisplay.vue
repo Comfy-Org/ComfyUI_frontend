@@ -18,7 +18,7 @@ import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import MobileError from '@/renderer/extensions/linearMode/MobileError.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import { useQueueStore } from '@/stores/queueStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -190,10 +190,7 @@ const menuEntries = computed<MenuItem[]>(() => [
               class="min-w-0 flex-1 truncate"
               v-text="workflowStore.activeWorkflow?.filename"
             />
-            <i
-              class="icon-[lucide--chevron-down] size-4 shrink-0"
-              aria-hidden="true"
-            />
+            <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
           </Button>
         </template>
         <MenuRadioGroup
@@ -262,7 +259,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         @click="onClick(index)"
       >
         <div class="relative size-4">
-          <i :class="cn('size-4', icon)" />
+          <i :class="icon" />
           <div
             v-if="index === 1 && isErrorOverlayVisible"
             class="absolute -top-1 -right-1 size-2 rounded-full bg-destructive"

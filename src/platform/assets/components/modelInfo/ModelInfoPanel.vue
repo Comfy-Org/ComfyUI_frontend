@@ -25,7 +25,7 @@
             :aria-label="t('assetBrowser.modelInfo.editDisplayName')"
             @click="isEditingDisplayName = !isImmutable"
           >
-            <i class="icon-[lucide--square-pen] size-4 self-center" />
+            <i class="icon-[lucide--square-pen] self-center" />
           </Button>
         </div>
       </ModelInfoField>
@@ -57,7 +57,7 @@
             class="size-4 shrink-0"
           />
           {{ t('assetBrowser.modelInfo.viewOnSource', { source: sourceName }) }}
-          <i class="icon-[lucide--external-link] size-4 shrink-0" />
+          <i class="icon-[lucide--external-link]" />
         </a>
       </ModelInfoField>
     </PropertiesAccordionItem>
@@ -139,7 +139,7 @@
             :aria-label="t('g.copyAll')"
             @click="copyToClipboard(triggerPhrases.join(', '))"
           >
-            <i class="icon-[lucide--copy] size-4 min-h-4 min-w-4 opacity-60" />
+            <i class="icon-[lucide--copy] min-h-4 min-w-4 opacity-60" />
           </Button>
         </template>
         <div class="flex flex-wrap gap-1 pt-1">
@@ -153,7 +153,7 @@
             @click="copyToClipboard(phrase)"
           >
             {{ phrase }}
-            <i class="icon-[lucide--copy] size-4 min-h-4 min-w-4 opacity-60" />
+            <i class="icon-[lucide--copy] min-h-4 min-w-4 opacity-60" />
           </Button>
         </div>
       </ModelInfoField>
@@ -195,7 +195,7 @@ import { useI18n } from 'vue-i18n'
 import EditableText from '@comfyorg/design-system/common/EditableText'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
 import Button from '@comfyorg/design-system/button/Button'
 import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@comfyorg/design-system/select/SelectContent'

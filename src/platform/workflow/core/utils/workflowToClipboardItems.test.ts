@@ -9,9 +9,9 @@ import type {
   ExportedSubgraph,
   ISerialisedGraph,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
-import { toLinkId } from '@/types/linkId'
-import { toRerouteId } from '@/types/rerouteId'
+} from '@comfyorg/graph-model/serialisation'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { workflowToClipboardItems } from './workflowToClipboardItems'

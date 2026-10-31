@@ -1,3 +1,10 @@
+import type {
+  Quaternion as CameraQuaternion,
+  RectEdges as CameraFrustum,
+  Vector3,
+  Quaternion,
+  Size2D
+} from '@comfyorg/shared-frontend-utils/geometry'
 // Use type-only imports to avoid pulling THREE.js into the main bundle
 // These imports are erased at compile time and don't create runtime dependencies
 import type * as THREE from 'three'
@@ -17,20 +24,6 @@ export type CameraType = 'perspective' | 'orthographic'
 export type BackgroundRenderModeType = 'tiled' | 'panorama'
 export type LoadFolder = 'temp' | 'output'
 
-interface CameraQuaternion {
-  x: number
-  y: number
-  z: number
-  w: number
-}
-
-interface CameraFrustum {
-  left: number
-  right: number
-  top: number
-  bottom: number
-}
-
 export interface CameraState {
   position: THREE.Vector3
   target: THREE.Vector3
@@ -38,7 +31,7 @@ export interface CameraState {
   cameraType: CameraType
   quaternion?: CameraQuaternion
   useCustomUp?: boolean
-  customUp?: { x: number; y: number; z: number }
+  customUp?: Vector3
   fov?: number
   aspect?: number
   near?: number
@@ -48,9 +41,9 @@ export interface CameraState {
 
 // Coordinate system: right-handed, Y-up, world space
 export interface Model3DTransform {
-  position: { x: number; y: number; z: number } // scene units
-  quaternion: { x: number; y: number; z: number; w: number } // normalized, dimensionless; world rotation
-  scale: { x: number; y: number; z: number } // dimensionless multiplier
+  position: Vector3
+  quaternion: Quaternion
+  scale: Vector3
 }
 
 export type Model3DInfo = Model3DTransform[]
@@ -68,9 +61,9 @@ export type GizmoMode = 'translate' | 'rotate' | 'scale'
 export interface GizmoConfig {
   enabled: boolean
   mode: GizmoMode
-  position: { x: number; y: number; z: number }
-  rotation: { x: number; y: number; z: number }
-  scale: { x: number; y: number; z: number }
+  position: Vector3
+  rotation: Vector3
+  scale: Vector3
 }
 
 export interface ModelConfig {
@@ -111,14 +104,10 @@ export interface EventCallback<T = unknown> {
   (data: T): void
 }
 
-export interface Load3DOptions {
-  // Optional target dimensions for aspect ratio control
-  width?: number
-  height?: number
-
+export interface Load3DOptions extends Partial<Size2D> {
   // Dynamic dimension provider (called on every render)
   // Use this for reactive dimensions that change over time
-  getDimensions?: () => { width: number; height: number } | null
+  getDimensions?: () => Size2D | null
 
   // Returns the current canvas zoom scale (e.g. ds.scale from LiteGraph).
   // Used to scale the renderer pixel ratio so the 3D scene renders at the

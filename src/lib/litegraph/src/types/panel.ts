@@ -1,7 +1,7 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
 import type { IContextMenuValue } from './contextMenu'
-import type { TWidgetValue } from './widgets'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 
 /**
  * Callback for panel widget value changes.

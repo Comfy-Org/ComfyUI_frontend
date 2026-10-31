@@ -3,7 +3,7 @@ import { computed, onScopeDispose, ref, shallowReactive, shallowRef } from 'vue'
 
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
-import type { AgentInputMethod } from '@/platform/telemetry/types'
+import type { AgentInputMethod } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'

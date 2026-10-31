@@ -6,17 +6,24 @@ import { defineComponent, nextTick, ref, toRaw } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { LocatedWidget } from '@/composables/widgetHistoryScope'
 import {
   ExecutableNodeDTO,
   LGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import { usePainter } from './usePainter'
 
@@ -45,9 +52,6 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-const mockIsInputConnected = vi.fn(() => false)
-const mockGetInputNode = vi.fn(() => null)
-
 interface PaintWidgetSpec {
   name: string
   type: 'number' | 'string' | 'color'
@@ -64,8 +68,6 @@ function makePaintNode(widgets: PaintWidgetSpec[] = []) {
     callbacks[name] = callback
     node.addWidget(type, name, value, callback)
   }
-  node.isInputConnected = mockIsInputConnected
-  node.getInputNode = mockGetInputNode
   const rootGraph = app.canvas.graph
   if (!(rootGraph instanceof LGraph)) throw new Error('Expected a root graph')
   vi.spyOn(rootGraph, 'getNodeById').mockReturnValue(node)
@@ -95,6 +97,28 @@ function storedValue(name: string): unknown {
   return id ? useWidgetValueStore().getWidget(id)?.value : undefined
 }
 
+function hostedPainterWithImageSource() {
+  const rootGraph = app.rootGraph
+  vi.mocked(rootGraph.getNodeById).mockRestore()
+  const subgraph = createTestSubgraph({
+    rootGraph,
+    inputs: [{ name: 'image', type: 'IMAGE' }]
+  })
+  rootGraph.subgraphs.set(subgraph.id, subgraph)
+  const host = createTestSubgraphNode(subgraph)
+  rootGraph.add(host)
+  const source = new LGraphNode('LoadImage')
+  source.addOutput('IMAGE', 'IMAGE')
+  rootGraph.add(source)
+  source.connect(0, host, 0)
+  const interior = new LGraphNode('Painter')
+  const imageInput = interior.addInput('image', 'IMAGE')
+  subgraph.add(interior)
+  subgraph.inputNode.slots[0].connect(imageInput, interior)
+  useNodeOutputStore().setNodeOutputs(source, 'photo.png')
+  return { subgraph, host, interior }
+}
+
 type PainterResult = ReturnType<typeof usePainter>
 
 /**
@@ -102,7 +126,8 @@ type PainterResult = ReturnType<typeof usePainter>
  */
 function mountPainter(
   nodeId: NodeId = toNodeId('test-node'),
-  initialModelValue = ''
+  initialModelValue = '',
+  widget: LocatedWidget = { name: 'mask' }
 ) {
   let painter!: PainterResult
   const canvasEl = ref<HTMLCanvasElement | null>(null)
@@ -112,6 +137,7 @@ function mountPainter(
   const Wrapper = defineComponent({
     setup() {
       painter = usePainter(nodeId, {
+        widget,
         canvasEl,
         cursorEl,
         modelValue
@@ -138,8 +164,6 @@ describe('usePainter', () => {
       stop: vi.fn()
     }))
     makePaintNode()
-    mockIsInputConnected.mockReturnValue(false)
-    mockGetInputNode.mockReturnValue(null)
   })
 
   describe('canvas size projections', () => {
@@ -153,6 +177,21 @@ describe('usePainter', () => {
 
       expect(painter.canvasWidth.value).toBe(1024)
       expect(painter.canvasHeight.value).toBe(768)
+    })
+
+    it('reads the interior node when the widget is promoted out of a subgraph', () => {
+      const subgraph = createTestSubgraph({ rootGraph: app.rootGraph })
+      app.rootGraph.subgraphs.set(subgraph.id, subgraph)
+      const interior = new LGraphNode('Painter')
+      subgraph.add(interior)
+      interior.addWidget('number', 'width', 300, () => {})
+
+      const { painter } = mountPainter(toNodeId('host-node'), '', {
+        name: 'mask',
+        nodeLocatorId: createNodeLocatorId(subgraph.id, interior.id)
+      })
+
+      expect(painter.canvasWidth.value).toBe(300)
     })
 
     it('defaults to 512 when widgets are missing', () => {
@@ -333,7 +372,10 @@ describe('usePainter', () => {
     it('sets isImageInputConnected to true when input is connected', () => {
       const { node } = makePaintNode()
       node.addInput('image', 'IMAGE')
-      mockIsInputConnected.mockReturnValue(true)
+      const source = new LGraphNode('LoadImage')
+      source.addOutput('IMAGE', 'IMAGE')
+      node.graph?.add(source)
+      source.connect(0, node, 0)
 
       const { painter } = mountPainter()
 
@@ -344,13 +386,41 @@ describe('usePainter', () => {
       const { node } = makePaintNode()
       node.addInput('mask', 'MASK')
       node.addInput('image', 'IMAGE')
-      mockIsInputConnected.mockReturnValue(true)
+      const source = new LGraphNode('LoadImage')
+      source.addOutput('IMAGE', 'IMAGE')
+      node.graph?.add(source)
+      source.connect(0, node, 1)
+      useNodeOutputStore().setNodeOutputs(source, 'photo.png')
 
       const { painter } = mountPainter()
 
       expect(painter.isImageInputConnected.value).toBe(true)
-      expect(mockIsInputConnected).toHaveBeenCalledWith(1)
-      expect(mockGetInputNode).toHaveBeenCalledWith(1)
+      expect(painter.inputImageUrl.value).toContain('filename=photo.png')
+    })
+
+    it('shows the image fed into the subgraph input of a promoted painter', () => {
+      const { subgraph, host, interior } = hostedPainterWithImageSource()
+
+      const { painter } = mountPainter(host.id, '', {
+        name: 'mask',
+        nodeLocatorId: createNodeLocatorId(subgraph.id, interior.id)
+      })
+
+      expect(painter.inputImageUrl.value).toContain('filename=photo.png')
+    })
+
+    it('reports a promoted painter disconnected once the subgraph node input is unlinked', () => {
+      const { subgraph, host, interior } = hostedPainterWithImageSource()
+      const { painter } = mountPainter(host.id, '', {
+        name: 'mask',
+        nodeLocatorId: createNodeLocatorId(subgraph.id, interior.id)
+      })
+      expect(painter.isImageInputConnected.value).toBe(true)
+
+      host.disconnectInput(0)
+
+      expect(painter.isImageInputConnected.value).toBe(false)
+      expect(painter.inputImageUrl.value).toBeNull()
     })
   })
 

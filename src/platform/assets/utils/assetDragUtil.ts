@@ -11,11 +11,14 @@
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { api } from '@/scripts/api'
 
-import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
+import {
+  getAssetType,
+  isGeneratedTempOutput
+} from '@/platform/assets/composables/media/assetMappers'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { getAssetUrlFilename } from './assetMetadataUtils'
+import { getAssetUrlFilename, getOutputSubfolder } from './assetMetadataUtils'
 import { resolvePreviewUrl } from './assetPreviewUtil'
 import { getAssetFileUrl } from './assetUrlUtil'
 
@@ -87,7 +90,10 @@ export function startAssetDrag(
         }
       : {
           filename: asset.name,
-          type: getAssetType(asset.tags),
+          subfolder: getOutputSubfolder(asset.user_metadata),
+          type: isGeneratedTempOutput(asset)
+            ? 'temp'
+            : getAssetType(asset.tags),
           display_name: asset.display_name ?? undefined
         }),
     attachment_ref: getAssetUrlFilename(asset),

@@ -21,7 +21,7 @@ Testing Vue composables requires handling reactivity correctly:
 // Example from a colocated composable unit test
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { useServerLogs } from '@/composables/useServerLogs'
+import { useServerLogs } from '@/platform/customNodes/manager/services/useServerLogs'
 
 // Mock dependencies
 vi.mock(import('@/scripts/api'), () => ({

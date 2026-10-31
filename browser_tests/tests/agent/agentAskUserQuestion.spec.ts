@@ -10,8 +10,8 @@ import {
   askIdFor,
   askResolved,
   askUserQuestionFrame,
-  pausedAskFrame,
-  singleChoiceQuestionFrame
+  singleChoiceQuestionFrame,
+  unknownKindAskFrame
 } from '@e2e/fixtures/data/agent/agentAskFrames'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
@@ -145,7 +145,7 @@ test.describe(
       })
 
       await test.step('an ask the panel cannot render shows a notice', async () => {
-        send(pausedAskFrame(askIdFor('call-paused')))
+        send(unknownKindAskFrame(askIdFor('call-unknown-kind')))
         const notice = panel
           .getByRole('status')
           .filter({ hasText: enMessages.agent.askUnavailable })

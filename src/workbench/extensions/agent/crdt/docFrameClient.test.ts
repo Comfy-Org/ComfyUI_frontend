@@ -2,7 +2,7 @@ import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { DocFrameTransport, ServerDocFrame } from './docFrameClient'
 import {
@@ -13,8 +13,6 @@ import {
 import type { ServerDocFrameType } from './docFrameCodes'
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []

@@ -15,7 +15,7 @@
       :aria-label="$t('g.close')"
       @click="onClose"
     >
-      <i class="pi pi-times text-xl" />
+      <i class="icon-[lucide--x] size-5" />
     </Button>
 
     <!-- The confirm and success steps title themselves. -->
@@ -119,7 +119,7 @@ import { computed, onMounted } from 'vue'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { isCloud } from '@/platform/distribution/types'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'

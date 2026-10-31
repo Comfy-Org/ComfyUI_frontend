@@ -94,7 +94,7 @@ export const AUTOGROW_CASES = [
   {
     pack: 'ComfyUI-Impact-Pack',
     extensionName: 'Comfy.Impack',
-    extensionPathPack: 'comfyui-impact-pack',
+    customNodePathPack: 'comfyui-impact-pack',
     consumerType: 'ImpactMakeImageList',
     producerType: 'EmptyImage',
     producerSlot: 'IMAGE'
@@ -120,7 +120,7 @@ export const FRONTEND_ASSET_EXCLUSIONS: Record<
   }
 }
 
-function extensionPathPack(value: string): string | undefined {
+function customNodePathPack(value: string): string | undefined {
   try {
     const segments = new URL(value, 'http://comfy.invalid').pathname
       .split('/')
@@ -142,18 +142,18 @@ function extensionPathPack(value: string): string | undefined {
 }
 
 export function servesFrontendAssetsForPack(
-  servedExtensionPaths: readonly string[],
+  servedCustomNodePaths: readonly string[],
   pack: string
 ): boolean {
-  return servedExtensionPaths.some(
-    (value) => extensionPathPack(value)?.toLowerCase() === pack.toLowerCase()
+  return servedCustomNodePaths.some(
+    (value) => customNodePathPack(value)?.toLowerCase() === pack.toLowerCase()
   )
 }
 
 export function staleAutogrowApplicabilityIssues(
   entry: { pack: string; expectedExtensions: readonly string[] },
   registeredExtensions: readonly string[],
-  servedExtensionPaths: readonly string[]
+  servedCustomNodePaths: readonly string[]
 ): string[] {
   return AUTOGROW_CASES.flatMap((autogrowCase) => {
     if (
@@ -163,8 +163,8 @@ export function staleAutogrowApplicabilityIssues(
       return []
 
     const served = servesFrontendAssetsForPack(
-      servedExtensionPaths,
-      autogrowCase.extensionPathPack
+      servedCustomNodePaths,
+      autogrowCase.customNodePathPack
     )
     return [
       ...(served

@@ -16,7 +16,6 @@ import UserMessage from './UserMessage.vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./ReplyAssetGroup.vue'), () => ({
   default: defineComponent<{ assets: ReplyAsset[] }>({
     setup: () => () => null

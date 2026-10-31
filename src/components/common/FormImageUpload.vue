@@ -10,12 +10,12 @@
           :src="modelValue"
           class="max-h-full max-w-full object-contain"
         />
-        <i v-else class="pi pi-image text-xl text-muted-foreground" />
+        <i v-else class="icon-[lucide--image] size-5 text-muted-foreground" />
       </div>
 
       <div class="flex flex-col gap-2">
         <Button size="sm" @click="triggerFileInput">
-          <i class="pi pi-upload" />
+          <i class="icon-[lucide--upload]" />
           {{ $t('g.upload') }}
         </Button>
         <Button
@@ -26,7 +26,7 @@
           :aria-label="$t('g.delete')"
           @click="clearImage"
         >
-          <i class="pi pi-trash" />
+          <i class="icon-[lucide--trash-2]" />
         </Button>
       </div>
     </div>

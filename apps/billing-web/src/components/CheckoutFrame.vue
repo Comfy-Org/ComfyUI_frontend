@@ -31,7 +31,7 @@
         :aria-label="closeLabel"
         @click="emit('close')"
       >
-        <i class="pi pi-times text-xl" />
+        <i class="icon-[lucide--x] size-5" />
       </button>
       <slot />
     </div>

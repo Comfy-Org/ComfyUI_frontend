@@ -10,7 +10,7 @@ import {
   inputAsSerialisable,
   outputAsSerialisable
 } from '@/lib/litegraph/src/litegraph'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 
 const boundingRect: ReadOnlyRect = [0, 0, 10, 10]

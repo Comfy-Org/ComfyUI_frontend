@@ -9,7 +9,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'

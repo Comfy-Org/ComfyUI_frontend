@@ -1,6 +1,7 @@
 <template>
   <BaseModalLayout
     v-model:right-panel-open="isRightPanelOpen"
+    :labels="modalLayoutLabels"
     data-testid="asset-browser-modal"
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
@@ -9,7 +10,7 @@
     @close="handleClose"
   >
     <template v-if="shouldShowLeftPanel" #leftPanelHeaderTitle>
-      <i class="icon-[comfy--ai-model] size-4" />
+      <i class="icon-[comfy--ai-model]" />
       <h2 class="flex-auto text-base font-semibold text-nowrap select-none">
         {{ displayTitle }}
       </h2>
@@ -89,13 +90,13 @@
 
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { computed, provide, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import Button from '@comfyorg/design-system/button/Button'
-import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
-import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
@@ -109,7 +110,7 @@ import { getPrimaryCategoryTag } from '@/platform/assets/utils/assetMetadataUtil
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { OnCloseKey } from '@/types/widgetTypes'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
@@ -124,7 +125,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-provide(OnCloseKey, props.onClose ?? (() => {}))
+const modalLayoutLabels = useModalLayoutLabels()
 
 const cacheKey = computed(() => {
   if (props.nodeType) return props.nodeType

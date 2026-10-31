@@ -3,20 +3,28 @@ import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useResizeObserver } from '@vueuse/core'
 import { createApp, defineComponent, nextTick, ref, computed } from 'vue'
+import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LocatedWidget } from '@/composables/widgetHistoryScope'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { app } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { resolveNode } from '@/utils/litegraphUtil'
 import {
   createMockLGraphNode,
   createMockSubgraphNode
@@ -34,8 +42,7 @@ const CROP_NODE_ID = toNodeId(2)
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
-const mockResolveNode = vi.hoisted(() => vi.fn<typeof resolveNode>())
-vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+const mockCanvasNode = vi.fn<() => LGraphNode | undefined>()
 vi.mock(import('@/scripts/app'))
 
 const liveGraphNodes = vi.hoisted(() => ({
@@ -66,7 +73,11 @@ beforeEach(() => {
     resizeObserverCallbacks.push(() => cb([], fromPartial<ResizeObserver>({})))
     return { stop: vi.fn(), isSupported: computed(() => true) }
   })
-  vi.mocked(resolveNode).mockImplementation(mockResolveNode)
+  const canvasGraph = app.canvas.graph
+  if (!canvasGraph) throw new Error('Expected a canvas graph')
+  vi.spyOn(canvasGraph, 'getNodeById').mockImplementation(
+    () => mockCanvasNode() ?? null
+  )
   useCanvasStore().canvas = fromPartial<LGraphCanvas>({
     graph: { rootGraph: { id: 'test-graph' } }
   })
@@ -75,7 +86,11 @@ beforeEach(() => {
 const ImageCropHarness = defineComponent({
   name: 'ImageCropHarness',
   props: {
-    nodeId: { type: Number, default: 2 }
+    nodeId: { type: Number, default: 2 },
+    widget: {
+      type: Object as PropType<LocatedWidget>,
+      default: () => ({ name: 'crop_region' })
+    }
   },
   setup(props) {
     const modelValue = ref({ x: 40, y: 40, width: 160, height: 120 })
@@ -86,6 +101,7 @@ const ImageCropHarness = defineComponent({
       imageEl,
       containerEl,
       ...useImageCrop(toNodeId(props.nodeId), {
+        widget: props.widget,
         imageEl,
         containerEl,
         modelValue,
@@ -185,15 +201,21 @@ function setupImageLayout(vm: CropVm, nw: number, nh: number) {
 
 const harnessCleanups: Array<() => void> = []
 
-async function mountHarness(nodeId: NodeId = toNodeId(2)) {
+async function mountHarness(
+  nodeId: NodeId = toNodeId(2),
+  widget?: LocatedWidget
+) {
   const el = document.createElement('div')
   document.body.appendChild(el)
-  const app = createApp(ImageCropHarness, { nodeId: Number(nodeId) })
-  const vm = app.mount(el) as unknown as CropVm
+  const harness = createApp(ImageCropHarness, {
+    nodeId: Number(nodeId),
+    widget
+  })
+  const vm = harness.mount(el) as unknown as CropVm
   await nextTick()
   await Promise.resolve()
   harnessCleanups.push(() => {
-    app.unmount()
+    harness.unmount()
     el.remove()
   })
   return vm
@@ -240,11 +262,12 @@ describe('useImageCrop', () => {
     })
     cropNode = createMockLGraphNode({
       id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
       getInputNode: vi.fn(() => sourceNode),
       getInputLink: vi.fn(() => ({ origin_slot: 0 })),
       isSubgraphNode: () => false
     })
-    mockResolveNode.mockReturnValue(cropNode)
+    mockCanvasNode.mockReturnValue(cropNode)
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
       n === sourceNode ? ['https://example.com/a.png'] : undefined
     )
@@ -283,14 +306,11 @@ describe('useImageCrop', () => {
     })
   }
 
-  /**
-   * Resolves the image input through the link store, the way
-   * `LGraphNode.getInputLink` does, so link edits drive the preview.
-   */
-  function useLinkedCropNode() {
+  function useLinkedCropNode(inputs = [{ name: 'image', type: 'IMAGE' }]) {
     const linkStore = useLinkStore()
     cropNode = createMockLGraphNode({
       id: CROP_NODE_ID,
+      inputs,
       isSubgraphNode: () => false,
       getInputLink: (slot: number) =>
         linkStore.getInputSlotLink(GRAPH_SCOPE, CROP_NODE_ID, slot) ?? null,
@@ -299,18 +319,18 @@ describe('useImageCrop', () => {
           ? sourceNode
           : null
     })
-    mockResolveNode.mockReturnValue(cropNode)
+    mockCanvasNode.mockReturnValue(cropNode)
   }
 
-  function connectImageInput() {
+  function connectImageInput(targetSlot = 0, type = 'IMAGE') {
     useLinkStore().registerLink(GRAPH_SCOPE, {
       id: toLinkId(1),
       graphId: GRAPH_SCOPE.owningGraphId,
       originNodeId: toNodeId(99),
       originSlot: 0,
       targetNodeId: CROP_NODE_ID,
-      targetSlot: 0,
-      type: 'IMAGE'
+      targetSlot,
+      type
     })
   }
 
@@ -328,7 +348,7 @@ describe('useImageCrop', () => {
   })
 
   it('returns null image URL when the graph node cannot be resolved', async () => {
-    mockResolveNode.mockReturnValue(undefined)
+    mockCanvasNode.mockReturnValue(undefined)
     const vm = await mountHarness()
     expect(vm.imageUrl).toBeNull()
   })
@@ -336,11 +356,12 @@ describe('useImageCrop', () => {
   it('returns null image URL when there is no input node', async () => {
     const alone = createMockLGraphNode({
       id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
       getInputNode: vi.fn(() => null),
       getInputLink: vi.fn(),
       isSubgraphNode: () => false
     })
-    mockResolveNode.mockReturnValue(alone)
+    mockCanvasNode.mockReturnValue(alone)
     const vm = await mountHarness()
     expect(vm.imageUrl).toBeNull()
   })
@@ -352,11 +373,12 @@ describe('useImageCrop', () => {
     })
     const sgCrop = createMockLGraphNode({
       id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
       getInputNode: vi.fn(() => subgraphInput),
       getInputLink: vi.fn(() => null),
       isSubgraphNode: () => false
     })
-    mockResolveNode.mockReturnValue(sgCrop)
+    mockCanvasNode.mockReturnValue(sgCrop)
     const vm = await mountHarness()
     expect(vm.imageUrl).toBeNull()
   })
@@ -373,17 +395,47 @@ describe('useImageCrop', () => {
 
     const sgCrop = createMockLGraphNode({
       id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
       getInputNode: vi.fn(() => subgraphInput),
       getInputLink: vi.fn(() => ({ origin_slot: 0 })),
       isSubgraphNode: () => false
     })
-    mockResolveNode.mockReturnValue(sgCrop)
+    mockCanvasNode.mockReturnValue(sgCrop)
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
       n === innerSource ? ['https://subgraph.png'] : undefined
     )
 
     const vm = await mountHarness()
     expect(vm.imageUrl).toBe('https://subgraph.png')
+  })
+
+  it('resolves the crop node and its image behind a widget promoted to a subgraph node', async () => {
+    const rootGraph = app.rootGraph
+    vi.mocked(rootGraph.getNodeById).mockRestore()
+    const subgraph = createTestSubgraph({
+      rootGraph,
+      inputs: [{ name: 'image', type: 'IMAGE' }]
+    })
+    rootGraph.subgraphs.set(subgraph.id, subgraph)
+    const host = createTestSubgraphNode(subgraph)
+    rootGraph.add(host)
+    const source = new LGraphNode('LoadImage')
+    source.addOutput('IMAGE', 'IMAGE')
+    rootGraph.add(source)
+    source.connect(0, host, 0)
+    const crop = new LGraphNode('ImageCropV2')
+    const imageInput = crop.addInput('image', 'IMAGE')
+    subgraph.add(crop)
+    subgraph.inputNode.slots[0].connect(imageInput, crop)
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
+      n === source ? ['https://outer.png'] : undefined
+    )
+
+    const vm = await mountHarness(host.id, {
+      name: 'crop_region',
+      nodeLocatorId: createNodeLocatorId(subgraph.id, crop.id)
+    })
+    expect(vm.imageUrl).toBe('https://outer.png')
   })
 
   it('updates imageUrl when nodeOutputs change', async () => {
@@ -417,9 +469,10 @@ describe('useImageCrop', () => {
       id: 98,
       isSubgraphNode: () => false
     })
-    mockResolveNode.mockReturnValue(
+    mockCanvasNode.mockReturnValue(
       createMockLGraphNode({
         id: 2,
+        inputs: [{ name: 'image', type: 'IMAGE' }],
         getInputNode: vi.fn(() => reloadedSource),
         getInputLink: vi.fn(() => ({ origin_slot: 0 })),
         isSubgraphNode: () => false
@@ -442,6 +495,72 @@ describe('useImageCrop', () => {
 
     connectImageInput()
     await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows the image connected after mount to a first input not typed IMAGE', async () => {
+    useLinkedCropNode([{ name: 'image', type: '*' }])
+    const vm = await mountHarness()
+
+    connectImageInput(0)
+    await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows the upstream image when the image input is not the first input, as after reopening a dynamic-input node', async () => {
+    useLinkedCropNode([
+      { name: 'model', type: 'COMFY_DYNAMICCOMBO_V3' },
+      { name: 'model.images.image_1', type: 'IMAGE' },
+      { name: 'model.images.image_2', type: 'IMAGE' },
+      { name: 'model.region', type: 'BOUNDING_BOX' }
+    ])
+    connectImageInput(1)
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows the image from a union input before a later IMAGE input', async () => {
+    useLinkedCropNode([
+      { name: 'image', type: 'IMAGE,MASK' },
+      { name: 'reference', type: 'IMAGE' }
+    ])
+    connectImageInput(0)
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows an empty preview on a subgraph host with a later image input', async () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'prompt', type: 'STRING' },
+        { name: 'image', type: 'IMAGE' }
+      ],
+      outputs: [{ name: 'out', type: 'IMAGE' }]
+    })
+    const host = createTestSubgraphNode(subgraph, { id: 2 })
+    mockCanvasNode.mockReturnValue(host)
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBeNull()
+  })
+
+  it('shows the image connected to a custom input type through the slot-0 fallback', async () => {
+    sourceNode = createMockLGraphNode({
+      id: 99,
+      isSubgraphNode: () => false,
+      outputs: [{ name: 'image', type: 'CUSTOM_IMAGE' }]
+    })
+    useLinkedCropNode([{ name: 'image', type: 'CUSTOM_IMAGE' }])
+    connectImageInput(0, 'CUSTOM_IMAGE')
+
+    const vm = await mountHarness()
 
     expect(vm.imageUrl).toBe('https://example.com/a.png')
   })
@@ -790,11 +909,12 @@ describe('WidgetImageCrop', () => {
     const source = createMockLGraphNode({ id: 99, isSubgraphNode: () => false })
     const crop = createMockLGraphNode({
       id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
       getInputNode: vi.fn(() => source),
       getInputLink: vi.fn(),
       isSubgraphNode: () => false
     })
-    mockResolveNode.mockReturnValue(crop)
+    mockCanvasNode.mockReturnValue(crop)
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
       n === source ? ['https://example.com/a.png'] : undefined
     )

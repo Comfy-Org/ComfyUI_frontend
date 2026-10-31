@@ -1,6 +1,9 @@
 import { ref, watch } from 'vue'
 
-import type { Offset, Point } from './types'
+import type {
+  Point2D as Offset,
+  Point2D as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { useMaskEditorStore } from './maskEditorStore'
 
 import {
