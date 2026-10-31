@@ -30,6 +30,16 @@ const mockApp = vi.hoisted(() => ({
   }
 }))
 
+vi.mock<unknown>(
+  import('@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'),
+  () => ({
+    useAskAgentAboutIssues: () => ({
+      canAskAgent: { value: false },
+      askAgentAboutIssues: vi.fn()
+    })
+  })
+)
+
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
 
 vi.mock(import('@/composables/graph/useGraphHierarchy'), () => ({

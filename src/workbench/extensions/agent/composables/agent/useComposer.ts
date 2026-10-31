@@ -19,8 +19,14 @@ type ComposerSubmitIntent = 'keyboard' | 'explicit'
 
 export function useComposer(options: UseComposerOptions) {
   const store = useAgentComposerStore()
-  const { draft, attachments, prompt, workflowReferences, promptEpoch } =
-    storeToRefs(store)
+  const {
+    draft,
+    attachments,
+    prompt,
+    workflowReferences,
+    promptEpoch,
+    errorContext
+  } = storeToRefs(store)
   if (getCurrentScope()) onScopeDispose(store.releaseUnusedAssets)
 
   const canSend = computed(
@@ -86,6 +92,9 @@ export function useComposer(options: UseComposerOptions) {
     attachments,
     prompt,
     promptEpoch,
+    errorContext,
+    setErrorContext: store.setErrorContext,
+    clearErrorContext: store.clearErrorContext,
     applyEditorPrompt: store.applyEditorPrompt,
     resolveSkillMetadata: store.resolveSkillMetadata,
     setInsertionPoint: store.setInsertionPoint,

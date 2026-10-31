@@ -58,6 +58,17 @@
                 {{ hero.description }}
               </span>
             </div>
+            <Button
+              v-if="canAskAgent"
+              variant="outline"
+              size="sm"
+              class="shrink-0"
+              data-testid="error-card-ask-agent"
+              :aria-label="askAgentLabel"
+              @click="handleAskAgent"
+            >
+              {{ t('rightSidePanel.askAgent') }}
+            </Button>
           </div>
           <DeploymentBuildActions
             v-if="buildDeployment"
@@ -137,6 +148,7 @@
             v-for="group in visibleGroups"
             :key="group.groupKey"
             :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
+            :data-group-key="group.groupKey"
             :title="group.displayTitle"
             :count="group.count"
             :severity="group.severity"
@@ -353,6 +365,11 @@
                 v-for="card in group.cards"
                 :key="card.id"
                 :card="card"
+                :expand-details-token="
+                  detailGroupKeys.includes(group.groupKey)
+                    ? expandDetailsToken
+                    : 0
+                "
                 :aria-current="isCardInSelection(card.id) ? 'true' : undefined"
                 :class="
                   cn(
@@ -423,12 +440,17 @@ import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/mis
 import DeploymentBuildActions from './DeploymentBuildActions.vue'
 import { useBootDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import {
+  buildAllErrorContext,
+  buildGroupErrorContext
+} from './buildAgentErrorContext'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup, ErrorGroupSeverity } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
+import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 
 interface ExecutionItemListEntry {
   key: string
@@ -450,6 +472,7 @@ const { selectedItems = [] } = defineProps<{
 
 const emit = defineEmits<{
   locateNode: [nodeId: string, executionIdMap?: Map<string, LGraphNode>]
+  issueCount: [count: number]
 }>()
 
 /** Count-only `none` keys keep node-less errors from reading as "0 nodes". */
@@ -491,8 +514,11 @@ const { missingNodePacks } = manager.useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   manager.usePackInstall(() => missingNodePacks.value)
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
+const { canAskAgent, askAgentAboutIssues } = useAskAgentPort()
 
 const searchQuery = ref('')
+const expandDetailsToken = ref(0)
+const detailGroupKeys = ref<string[]>([])
 const expandedExecutionItemDetailKeys = ref(new Set<string>())
 const isSearching = computed(() => searchQuery.value.trim() !== '')
 
@@ -916,6 +942,34 @@ watch(
   { immediate: true }
 )
 
+function openClosedErrorDetails(groupKeys: readonly string[]) {
+  const keys = new Set(groupKeys)
+  const nextKeys = new Set(expandedExecutionItemDetailKeys.value)
+  for (const group of allErrorGroups.value) {
+    if (!keys.has(group.groupKey)) continue
+    if (isSectionCollapsed(group.groupKey)) {
+      setSectionCollapsed(group.groupKey, false)
+    }
+    for (const item of getExecutionItemList(group)) {
+      if (item.displayDetails) nextKeys.add(item.key)
+    }
+  }
+  expandedExecutionItemDetailKeys.value = nextKeys
+  detailGroupKeys.value = [...keys]
+  expandDetailsToken.value += 1
+}
+
+watch(
+  () => rightSidePanelStore.errorDetailsRequest,
+  (request) => {
+    if (request === 0) return
+    openClosedErrorDetails(rightSidePanelStore.errorDetailsGroupKeys)
+    rightSidePanelStore.errorDetailsRequest = 0
+    rightSidePanelStore.errorDetailsGroupKeys = []
+  },
+  { immediate: true }
+)
+
 function handleLocateNode(nodeId: string) {
   emit('locateNode', nodeId, errorNodeCache.value)
 }
@@ -944,4 +998,53 @@ function handleReplaceGroup(group: SwapNodeGroup) {
 function handleReplaceAll() {
   replaceAllGroups(swapNodeGroups.value)
 }
+
+const missingGroupContext = computed(() => ({
+  missingPackGroups: missingPackGroups.value,
+  swapNodeGroups: swapNodeGroups.value,
+  missingModelGroups: missingModelGroups.value,
+  missingMediaGroups: missingMediaGroups.value
+}))
+
+const askAgentLabel = computed(() => {
+  const groups = filteredGroups.value
+  const title = groups.length === 1 ? groups[0].displayTitle : hero.value.title
+  return t('rightSidePanel.askAgentAbout', { title })
+})
+
+const allIssuesContext = computed(() =>
+  buildAllErrorContext(allErrorGroups.value, missingGroupContext.value, {
+    label: t('agent.errorContext.allLabel')
+  })
+)
+
+watch(
+  () => allIssuesContext.value.count,
+  (count) => emit('issueCount', count),
+  { immediate: true }
+)
+
+function handleAskAgent() {
+  const groups = filteredGroups.value
+  if (groups.length === 0) return
+  if (groups.length === 1) {
+    askAgentAboutIssues(
+      buildGroupErrorContext(groups[0], missingGroupContext.value)
+    )
+    return
+  }
+  askAgentAboutIssues(
+    buildAllErrorContext(groups, missingGroupContext.value, {
+      label: hero.value.title,
+      scope: 'card'
+    })
+  )
+}
+
+function askAboutAllIssues() {
+  if (allIssuesContext.value.count === 0) return
+  askAgentAboutIssues(allIssuesContext.value)
+}
+
+defineExpose({ askAboutAllIssues })
 </script>

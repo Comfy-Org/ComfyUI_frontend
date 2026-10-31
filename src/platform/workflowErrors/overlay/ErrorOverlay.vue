@@ -18,9 +18,10 @@
         <div class="flex w-full items-start gap-2 pr-8">
           <i
             aria-hidden="true"
+            data-testid="error-overlay-icon"
             :class="
               cn(
-                'mt-0.5',
+                'mt-0.5 size-5',
                 hasError
                   ? 'icon-[lucide--circle-x] text-destructive'
                   : 'icon-[lucide--triangle-alert] text-warning'
@@ -39,7 +40,11 @@
           class="flex w-full items-start gap-2 pr-8"
           data-testid="error-overlay-messages"
         >
-          <span class="size-4 shrink-0" aria-hidden="true" />
+          <span
+            data-testid="error-overlay-message-spacer"
+            class="size-5 shrink-0"
+            aria-hidden="true"
+          />
           <p
             class="m-0 line-clamp-3 min-w-0 flex-1 text-sm/snug wrap-break-word whitespace-pre-wrap text-muted-foreground"
           >
@@ -49,19 +54,27 @@
 
         <ErrorOverlayDeploymentOffer v-if="hasMissingNodes" />
 
-        <div class="flex w-full items-center justify-end pt-2">
+        <div class="flex w-full items-center justify-end gap-2 pt-2">
           <Button
-            variant="secondary"
-            size="unset"
-            class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
+            variant="textonly"
+            size="sm"
             data-testid="error-overlay-see-errors"
-            @click="emit('viewErrors')"
+            @click="viewDetails"
           >
             {{
               appMode
                 ? t('linearMode.error.goto')
                 : t('errorOverlay.viewDetails')
             }}
+          </Button>
+          <Button
+            v-if="canAskAgent && askAgentContext"
+            variant="secondary"
+            size="sm"
+            data-testid="error-overlay-ask-agent"
+            @click="askAgent"
+          >
+            {{ t('errorOverlay.askAgent') }}
           </Button>
         </div>
 
@@ -88,18 +101,38 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import ErrorOverlayDeploymentOffer from '@/platform/workspace/components/ErrorOverlayDeploymentOffer.vue'
+import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
-const emit = defineEmits<{ viewErrors: [] }>()
+const emit = defineEmits<{ viewErrors: [groupKeys: readonly string[]] }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
+const { canAskAgent, askAgentAboutIssues } = useAskAgentPort()
 
-const { hasError, hasMissingNodes, isVisible, overlayMessage, overlayTitle } =
-  useErrorOverlayState()
+const {
+  hasError,
+  hasMissingNodes,
+  isVisible,
+  overlayMessage,
+  overlayTitle,
+  overlayGroupKeys,
+  askAgentContext
+} = useErrorOverlayState()
 
 function dismiss() {
+  executionErrorStore.dismissErrorOverlay()
+}
+
+function viewDetails() {
+  emit('viewErrors', overlayGroupKeys.value)
+}
+
+function askAgent() {
+  const context = askAgentContext.value
+  if (!context) return
+  askAgentAboutIssues(context)
   executionErrorStore.dismissErrorOverlay()
 }
 </script>

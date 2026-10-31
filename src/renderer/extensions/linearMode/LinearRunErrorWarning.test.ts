@@ -10,7 +10,8 @@ const mocks = vi.hoisted(() => ({
   hasError: vi.fn(() => true),
   overlayMessage: 'KSampler is missing a required input: model',
   overlayTitle: 'Required input missing',
-  viewErrorsInGraph: vi.fn()
+  viewErrorsInGraph: vi.fn(),
+  overlayGroupKeys: ['execution:missing_connection']
 }))
 
 vi.mock<unknown>(
@@ -19,7 +20,8 @@ vi.mock<unknown>(
     useErrorOverlayState: () => ({
       hasError: mocks.hasError(),
       overlayMessage: mocks.overlayMessage,
-      overlayTitle: mocks.overlayTitle
+      overlayTitle: mocks.overlayTitle,
+      overlayGroupKeys: { value: mocks.overlayGroupKeys }
     })
   })
 )
@@ -97,6 +99,8 @@ describe('LinearRunErrorWarning', () => {
       screen.getByRole('button', { name: 'Show errors in graph' })
     )
 
-    expect(mocks.viewErrorsInGraph).toHaveBeenCalledOnce()
+    expect(mocks.viewErrorsInGraph).toHaveBeenCalledExactlyOnceWith(
+      mocks.overlayGroupKeys
+    )
   })
 })
