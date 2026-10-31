@@ -42,7 +42,6 @@ function mintContext(firstVersion: number) {
   return {
     actor: ACTOR,
     baseVersion: firstVersion,
-    observedCounter: () => undefined,
     firstVersion
   }
 }
