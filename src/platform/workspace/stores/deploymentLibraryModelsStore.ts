@@ -77,9 +77,19 @@ export const useDeploymentLibraryModelsStore = defineStore(
       { flush: 'sync' }
     )
 
-    watch(() => flags.runtimeLibraryModelsEnabled, loadWatchedFolders, {
-      flush: 'sync'
-    })
+    watch(
+      () => flags.runtimeLibraryModelsEnabled,
+      (enabled) => {
+        if (enabled) {
+          loadWatchedFolders()
+          return
+        }
+        generation++
+        folders.clear()
+        latestRequest.clear()
+      },
+      { flush: 'sync' }
+    )
 
     watch(
       () => downloads.lastCompletedDownload,
