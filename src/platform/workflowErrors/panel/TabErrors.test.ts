@@ -47,6 +47,18 @@ const askAgentMock = {
   askAgentAboutIssues: vi.fn<AskAgentPort['askAgentAboutIssues']>()
 }
 
+// RightSidePanel, rendered here, is what provides the Ask agent port.
+vi.mock<unknown>(
+  // oxlint-disable-next-line comfy/no-restricted-paths
+  import('@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'),
+  () => ({
+    useAskAgentAboutIssues: () => ({
+      canAskAgent: { value: false },
+      askAgentAboutIssues: vi.fn()
+    })
+  })
+)
+
 vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
