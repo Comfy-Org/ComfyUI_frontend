@@ -1934,6 +1934,39 @@ describe('LiveGraphApplier', () => {
     )
   })
 
+  it('reports a link id collision with a subgraph once without replacing its link', () => {
+    const { graph, applyCollected, applyEdit, doc } = setup({
+      nodes: [sourceNode(1), sinkNode(2)],
+      links: [[1, 1, 0, 2, 0, 'IMAGE']]
+    })
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const interiorSource = new TestSource()
+    interiorSource.id = toNodeId(101)
+    const interiorSink = new TestSink()
+    interiorSink.id = toNodeId(102)
+    subgraph.add(interiorSource)
+    subgraph.add(interiorSink)
+    const existing = interiorSource.connect(0, interiorSink, 0)
+    expect(existing?.id).toBe(toLinkId(1))
+
+    applyCollected()
+    graph.removeLink(toLinkId(2))
+    applyEdit(() => linksMap(doc).set('1', [1, 1, 0, 2, 0, 'IMAGE']))
+
+    expect(subgraph.links.get(toLinkId(1))).toBe(existing)
+    expect(graph.getNodeById(toNodeId(2))?.getInputLink(0)?.id).toBe(
+      toLinkId(3)
+    )
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_graph_link_id_reminted',
+        context: { linkId: toLinkId(1), liveId: toLinkId(2) }
+      })
+    )
+  })
+
   it('mints a later local link above every document link id', () => {
     const { graph, applyCollected } = setup({
       nodes: [sourceNode(1), sinkNode(2), sourceNode(3), sinkNode(4)],
