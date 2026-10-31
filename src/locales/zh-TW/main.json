@@ -1202,6 +1202,7 @@
     "apiPricing": "API 價格",
     "charge": "扣款",
     "credits": "點數",
+    "creditUnit": "點數",
     "creditsAvailable": "可用點數",
     "details": "詳細資料",
     "eventType": "事件類型",

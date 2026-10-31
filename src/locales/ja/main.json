@@ -1202,6 +1202,7 @@
     "apiPricing": "API料金",
     "charge": "請求",
     "credits": "クレジット",
+    "creditUnit": "クレジット",
     "creditsAvailable": "利用可能なクレジット",
     "details": "詳細",
     "eventType": "イベントタイプ",
