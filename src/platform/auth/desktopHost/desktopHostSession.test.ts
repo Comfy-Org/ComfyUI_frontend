@@ -31,9 +31,9 @@ function fakeBridge(initial: DesktopHostAuthState) {
       async (_workspaceId: string): Promise<string | null> => 'host-token'
     ),
     requestSignIn: vi.fn(async (): Promise<DesktopHostAuthState> => SIGNED_IN),
-    signOut: vi.fn(
-      async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
-    ),
+    signOut: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+      status: 'signed_out'
+    })),
     switchWorkspace: vi.fn(
       async (workspaceId: string): Promise<DesktopHostAuthState> => ({
         status: 'signed_in',

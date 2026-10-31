@@ -511,16 +511,13 @@ describe('collectCrdtDebugReport', () => {
           {
             ...createAssistantMessage(toTurnId('turn-many-2')),
             parts: [
-              ...Array.from(
-                { length: count - 30 },
-                (_, index): ToolPart => ({
-                  type: 'tool',
-                  callId: `call-${index + 30}`,
-                  name: 'inspect_workflow',
-                  state: 'done',
-                  ok: true
-                })
-              ),
+              ...Array.from({ length: count - 30 }, (_, index): ToolPart => ({
+                type: 'tool',
+                callId: `call-${index + 30}`,
+                name: 'inspect_workflow',
+                state: 'done',
+                ok: true
+              })),
               {
                 type: 'text',
                 text: 'private text after the newest tool call',

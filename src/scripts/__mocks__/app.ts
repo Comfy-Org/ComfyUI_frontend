@@ -160,12 +160,14 @@ const uiActions: Pick<RealComfyApp['ui'], 'restoreMenuPosition'> = {
 }
 
 type AppState = {
-  -readonly [K in
-    | 'configuringGraph'
-    | 'lastExecutionError'
-    | 'nodeOutputs'
-    | 'nodePreviewImages'
-    | 'vueAppReady']: RealComfyApp[K]
+  -readonly [
+    K in
+      | 'configuringGraph'
+      | 'lastExecutionError'
+      | 'nodeOutputs'
+      | 'nodePreviewImages'
+      | 'vueAppReady'
+  ]: RealComfyApp[K]
 } & {
   rootGraph: ShallowRef<RealComfyApp['rootGraphOrUndefined']>
   canvas: Canvas

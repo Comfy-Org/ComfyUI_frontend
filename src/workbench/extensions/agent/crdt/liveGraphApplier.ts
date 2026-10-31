@@ -704,8 +704,8 @@ function positionalWidgetValues(
 ): WidgetValue[] | undefined {
   if (widgets === undefined) return undefined
   if (Array.isArray(widgets)) {
-    return widgets.map(
-      (value): WidgetValue => (isWidgetValue(value) ? value : undefined)
+    return widgets.map((value): WidgetValue =>
+      isWidgetValue(value) ? value : undefined
     )
   }
   return serializableWidgets(node).map((widget, index) => {

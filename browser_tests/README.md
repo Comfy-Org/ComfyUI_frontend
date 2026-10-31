@@ -948,7 +948,7 @@ Before merging a flaky-test fix, confirm all of these:
   `toHaveText`, `toHaveCount`, `toHaveClass`).
 - **Single async value** → `expect.poll(() => asyncFn()).toBe(expected)`.
 - **Multiple assertions that must settle together** → `expect(async () => {
-... }).toPass()`.
+  ... }).toPass()`.
 - Never make immediate assertions right after async UI mutations, settings
   writes, clipboard writes, or graph updates.
 - Never use `waitForTimeout()` to hide a race — it is always wrong.

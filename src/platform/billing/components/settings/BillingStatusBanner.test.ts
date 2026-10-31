@@ -44,9 +44,9 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: true,
   canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
-  manageSubscription: vi.fn(
-    async (): Promise<BillingPortalOutcome> => ({ ok: true })
-  ),
+  manageSubscription: vi.fn(async (): Promise<BillingPortalOutcome> => ({
+    ok: true
+  })),
   handleResubscribe: vi.fn(),
   showSubscriptionDialog: vi.fn()
 }))

@@ -40,8 +40,8 @@ function setup(
     }
   })
   const bindings = useAgentWorkflowTabBindingStore()
-  const listCloudWorkflows = vi.fn(
-    async (): Promise<CloudWorkflowListing> => listing(cloud)
+  const listCloudWorkflows = vi.fn(async (): Promise<CloudWorkflowListing> =>
+    listing(cloud)
   )
   const getCloudWorkflow = vi.fn(
     async (workflowId: string): Promise<WorkflowResponse> =>

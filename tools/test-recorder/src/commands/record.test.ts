@@ -21,16 +21,14 @@ const { autocomplete, info, path, runChecks, runCommand } = vi.hoisted(() => ({
     throw new Error('stop after file picker')
   }),
   runChecks: vi.fn(async () => ({ results: [], allPassed: true })),
-  runCommand: vi.fn(
-    (): SpawnSyncReturns<Buffer> => ({
-      pid: 1,
-      output: [],
-      stdout: Buffer.from('main'),
-      stderr: Buffer.alloc(0),
-      status: 0,
-      signal: null
-    })
-  )
+  runCommand: vi.fn((): SpawnSyncReturns<Buffer> => ({
+    pid: 1,
+    output: [],
+    stdout: Buffer.from('main'),
+    stderr: Buffer.alloc(0),
+    status: 0,
+    signal: null
+  }))
 }))
 
 vi.mock(import('@clack/prompts'), () => ({

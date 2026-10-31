@@ -513,11 +513,10 @@ describe('useFeatureFlags', () => {
     })
 
     it('lets a served server false turn off the nightly default', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) =>
-          path === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED
-            ? false
-            : defaultValue
+      vi.mocked(api.getServerFeature).mockImplementation((path, defaultValue) =>
+        path === ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED
+          ? false
+          : defaultValue
       )
 
       const { flags } = useFeatureFlags()
@@ -583,11 +582,8 @@ describe('useFeatureFlags', () => {
     })
 
     it('falls back to the server feature of the same key', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) =>
-          path === 'deployment_compatibility_marks_enabled'
-            ? true
-            : defaultValue
+      vi.mocked(api.getServerFeature).mockImplementation((path, defaultValue) =>
+        path === 'deployment_compatibility_marks_enabled' ? true : defaultValue
       )
 
       const { flags } = useFeatureFlags()
@@ -620,9 +616,8 @@ describe('useFeatureFlags', () => {
     })
 
     it('falls back to the server feature of the same key', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) =>
-          path === 'runtime_library_models_enabled' ? true : defaultValue
+      vi.mocked(api.getServerFeature).mockImplementation((path, defaultValue) =>
+        path === 'runtime_library_models_enabled' ? true : defaultValue
       )
 
       const { flags } = useFeatureFlags()
@@ -1052,9 +1047,8 @@ describe('useFeatureFlags', () => {
     it('ignores the server-feature fallback when /api/features lacks the flag', () => {
       remoteConfigState.value = 'authenticated'
       authenticatedRemoteConfigState.value = 'authenticated'
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) =>
-          path === ServerFeatureFlag.UNIFIED_WEB_SESSION ? true : defaultValue
+      vi.mocked(api.getServerFeature).mockImplementation((path, defaultValue) =>
+        path === ServerFeatureFlag.UNIFIED_WEB_SESSION ? true : defaultValue
       )
 
       expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)

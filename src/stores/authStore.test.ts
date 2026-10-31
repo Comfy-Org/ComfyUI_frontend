@@ -2611,9 +2611,9 @@ describe('useAuthStore in local/desktop distribution', () => {
           async (_workspaceId: string): Promise<string | null> => 'host-token'
         ),
         requestSignIn: vi.fn(async () => state),
-        signOut: vi.fn(
-          async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
-        ),
+        signOut: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+          status: 'signed_out'
+        })),
         onChanged: vi.fn((listener: (next: DesktopHostAuthState) => void) => {
           listeners.add(listener)
           return () => listeners.delete(listener)
