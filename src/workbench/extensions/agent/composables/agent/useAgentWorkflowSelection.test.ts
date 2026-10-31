@@ -117,6 +117,31 @@ function listing(
 describe('historical workflow restoration', () => {
   beforeEach(() => localStorage.clear())
 
+  it('retries a forced listing when the joined refresh predates a saved workflow', async () => {
+    const { selection, workflows, panel, listCloudWorkflows } = setup()
+    const saved = createMockLoadedWorkflow({
+      path: 'workflows/new.json',
+      filename: 'new',
+      isTemporary: false
+    })
+    saved.load = vi.fn(async () => saved)
+    workflows.attachWorkflow(saved)
+    workflows.openWorkflowsInBackground({ right: [saved.path] })
+    listCloudWorkflows
+      .mockResolvedValueOnce(listing([{ id: 'wf-current', name: 'current' }]))
+      .mockResolvedValueOnce(
+        listing([
+          { id: 'wf-current', name: 'current' },
+          { id: 'wf-new', name: 'new' }
+        ])
+      )
+
+    expect(await selection.selectTarget(saved.path)).toBe(true)
+
+    expect(listCloudWorkflows).toHaveBeenCalledTimes(2)
+    expect(panel.selectedWorkflow?.path).toBe(saved.path)
+  })
+
   it.for([false, true])(
     'switches to a known open target without refreshing Cloud metadata (bound: %s)',
     async (bound) => {

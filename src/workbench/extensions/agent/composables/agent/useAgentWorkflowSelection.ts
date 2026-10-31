@@ -114,6 +114,14 @@ export function useAgentWorkflowSelection({
     () => workflowSelection.value?.purpose === 'reference'
   )
   let targetSelectionGeneration = 0
+  let workflowReferencesRefreshPending = false
+
+  function flushPendingWorkflowReferencesRefresh(): void {
+    if (!workflowReferencesRefreshPending) return
+    workflowReferencesRefreshPending = false
+    onRequestWorkflowReferences()
+  }
+
   function onVisibleWorkflowChanged(): void {
     if (!panelStore.followsVisibleWorkflow) return
     if (
@@ -146,7 +154,7 @@ export function useAgentWorkflowSelection({
     }
     try {
       if (tab.isTemporary && cloudIdFor(tab) === undefined) {
-        if (!(await refreshCloudWorkflowIds())) return fail()
+        if (!(await refreshCloudWorkflowIds({ force: true }))) return fail()
         if (!isCurrent()) return
         const filename = nextSaveFilename(tab)
         if (!(await workflowService.saveWorkflowAs(tab, { filename })))
@@ -155,9 +163,14 @@ export function useAgentWorkflowSelection({
       if (!isCurrent()) return
       let workflowId = cloudIdFor(tab)
       if (workflowId === undefined) {
-        if (!(await refreshCloudWorkflowIds())) return fail()
+        if (!(await refreshCloudWorkflowIds({ force: true }))) return fail()
         if (!isCurrent()) return
         workflowId = cloudIdFor(tab)
+        if (workflowId === undefined) {
+          if (!(await refreshCloudWorkflowIds({ force: true }))) return fail()
+          if (!isCurrent()) return
+          workflowId = cloudIdFor(tab)
+        }
       }
       if (workflowId === undefined) warnWorkflowUnavailable()
       return workflowId
@@ -200,6 +213,7 @@ export function useAgentWorkflowSelection({
       return false
     } finally {
       workflowSelection.value = null
+      flushPendingWorkflowReferencesRefresh()
     }
   }
 
@@ -243,11 +257,19 @@ export function useAgentWorkflowSelection({
       return undefined
     } finally {
       workflowSelection.value = null
+      flushPendingWorkflowReferencesRefresh()
     }
   }
 
   function onRequestWorkflowReferences(): void {
-    if (!workflowSelection.value) void refreshCloudWorkflowIds()
+    if (workflowSelection.value) {
+      workflowReferencesRefreshPending = true
+      return
+    }
+    const hasUnindexedOpenWorkflow = workflowStore.openWorkflows.some(
+      (workflow) => !workflow.isTemporary && cloudIdFor(workflow) === undefined
+    )
+    void refreshCloudWorkflowIds({ force: hasUnindexedOpenWorkflow })
   }
 
   /**
