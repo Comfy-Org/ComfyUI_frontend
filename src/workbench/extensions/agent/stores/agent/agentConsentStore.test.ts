@@ -82,6 +82,39 @@ describe('agentConsentStore', () => {
     expect(store).toMatchObject({ isChecking: false })
   })
 
+  it('settles a failed scope probe, so a direct caller is not reported as still checking', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValueOnce(
+      new Error('offline')
+    )
+    const store = useAgentConsentStore()
+
+    await expect(store.ensureScope()).rejects.toThrow('offline')
+
+    expect(store.checkFailed).toBe(true)
+    expect(store).toMatchObject({ isChecking: false })
+  })
+
+  it('does not record a scope failure against the next workspace', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    const initialize = deferred<undefined>()
+    vi.mocked(useTeamWorkspaceStore().initialize).mockReturnValueOnce(
+      initialize.promise
+    )
+    const store = useAgentConsentStore()
+
+    const probe = store.ensureScope()
+    await vi.waitFor(() =>
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
+    )
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    initialize.reject(new Error('offline'))
+
+    await expect(probe).rejects.toThrow('offline')
+    expect(store.checkFailed).toBe(false)
+    expect(store).toMatchObject({ isChecking: true })
+  })
+
   it('does not let a stale response settle the next workspace initial check', async () => {
     const response = deferred<GlobalSetting>()
     accountApi.get.mockReturnValueOnce(response.promise)

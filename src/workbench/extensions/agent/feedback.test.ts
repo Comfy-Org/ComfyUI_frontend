@@ -4,6 +4,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { FEEDBACK_TYPEFORM_ID } from '@/platform/support/config'
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -178,6 +179,24 @@ describe('openFeedbackDialog (agent)', () => {
       useCurrentUser().resolvedUserInfo = computed(() => null)
       openFeedbackDialog('agent-panel')
       expect(sentFields()).toContain('consent=signed_out')
+    })
+
+    it('reports a failed scope probe as a failed check, not as one still running', async () => {
+      useAgentPanelStore().enabled = true
+      useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-264' }))
+      const workspace = useTeamWorkspaceStore()
+      Object.assign(workspace, { activeWorkspaceId: null })
+      workspace.isSwitching = false
+      vi.mocked(workspace.initialize).mockRejectedValueOnce(
+        new Error('offline')
+      )
+
+      await expect(useAgentConsentStore().ensureScope()).rejects.toThrow(
+        'offline'
+      )
+      openFeedbackDialog('agent-panel')
+
+      expect(sentFields()).toContain('consent=check_failed')
     })
 
     it('reports no hold as an explicit value, not a missing field', () => {

@@ -65,7 +65,24 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     { flush: 'sync' }
   )
 
+  // Every caller treats a throw from here as "consent state is unknown", so
+  // settle the check as failed before rethrowing. `load()` is not the only
+  // caller: `useAgentConsent` probes the scope before reading, and without this
+  // a failed probe left the check in flight forever and reported `unchecked`.
   async function ensureScope(): Promise<string | null> {
+    const initialSession = session
+    try {
+      return await resolveScope()
+    } catch (error) {
+      if (session === initialSession) {
+        checkSettled.value = true
+        checkFailed.value = true
+      }
+      throw error
+    }
+  }
+
+  async function resolveScope(): Promise<string | null> {
     const userId = currentUserId()
     if (!userId) {
       throw new AgentConsentAuthenticationError(
@@ -132,17 +149,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
   }
 
   async function load(): Promise<boolean> {
-    const initialSession = session
-    let identity: string | null
-    try {
-      identity = await ensureScope()
-    } catch (error) {
-      if (session === initialSession) {
-        checkSettled.value = true
-        checkFailed.value = true
-      }
-      throw error
-    }
+    const identity = await ensureScope()
     if (!identity) return false
     if (loadedIdentity.value === identity) return accepted.value
     if (pendingLoad?.identity === identity) return pendingLoad.result
