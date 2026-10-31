@@ -317,8 +317,8 @@ describe('UsageLogsTable', () => {
       { charge: 1, expected: 'Charge: <1 Credits' },
       { charge: 1_000, expected: 'Charge: <1 Credits' },
       { charge: 3_318, expected: 'Charge: <1 Credits' },
-      { charge: 4_740, expected: 'Charge: 1 Credits' },
-      { charge: 6_636, expected: 'Charge: 1 Credits' },
+      { charge: 4_740, expected: 'Charge: 1 Credit' },
+      { charge: 6_636, expected: 'Charge: 1 Credit' },
       { charge: 'n/a', expected: 'charge_micro_usd: n/a' }
     ])(
       'shows charge_micro_usd $charge as $expected',
