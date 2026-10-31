@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { mergeCustomNodesI18n, resolveNodeDefText } from '@/i18n'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import { useExtensionStore } from '@/stores/extensionStore'
 
 vi.mock(import('@/scripts/api'))
 
@@ -132,5 +134,20 @@ describe('ComfyApp.getNodeDefs', () => {
     expect(result.TestNode.display_name).toBe('Good Node')
     expect(result.NumericCategory.category).toBe('')
     expect(Object.keys(result).sort()).toEqual(['NumericCategory', 'TestNode'])
+  })
+})
+
+describe('ComfyApp.registerNodes', () => {
+  test('marks registered system nodes as core', async () => {
+    mockDefs()
+    useExtensionStore().registerExtension({
+      name: 'custom.Test',
+      registerCustomNodes: () =>
+        LiteGraph.registerNodeType('Note', class extends LGraphNode {})
+    })
+
+    await comfyApp.registerNodes()
+
+    expect(LiteGraph.registered_node_types.Note.nodeData?.isCoreNode).toBe(true)
   })
 })

@@ -17,9 +17,10 @@ class TestNode extends LGraphNode {
   }
 }
 
-function makeNodeClass(title: string) {
+function makeNodeClass(title: string, isCoreNode = false) {
   class N extends TestNode {
     static override title = title
+    static override nodeData = { isCoreNode }
 
     constructor() {
       super(title)
@@ -83,8 +84,8 @@ describe('LGraphCanvas.onMenuAdd category sorting', () => {
     registeredTypes.length = 0
   })
 
-  function register(type: string, title: string) {
-    LiteGraph.registerNodeType(type, makeNodeClass(title))
+  function register(type: string, title: string, isCoreNode?: boolean) {
+    LiteGraph.registerNodeType(type, makeNodeClass(title, isCoreNode))
     registeredTypes.push(type)
   }
 
@@ -169,5 +170,24 @@ describe('LGraphCanvas.onMenuAdd category sorting', () => {
     expect(ours[0].has_submenu).toBe(true)
     expect(ours[1].content).toBe('A Leaf')
     expect(ours[2].content).toBe('Z Leaf')
+  })
+
+  it('lists core entries, a separator, then custom entries, duplicating shared categories', () => {
+    register('split/Core', 'Core', true)
+    register('split/Custom', 'Custom')
+
+    const event = openTopLevelMenu()
+    const root = capturedEntries[0]
+    expect(root).toMatchObject([
+      { content: 'split' },
+      null,
+      { content: 'split' }
+    ])
+
+    drillInto('split', event)
+    capturedEntries.push(root.slice(2))
+    drillInto('split', event)
+    expect(capturedEntries[1].map((e) => e.content)).toEqual(['Core'])
+    expect(capturedEntries[3].map((e) => e.content)).toEqual(['Custom'])
   })
 })
