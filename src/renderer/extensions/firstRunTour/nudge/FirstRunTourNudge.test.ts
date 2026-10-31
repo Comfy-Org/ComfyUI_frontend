@@ -20,7 +20,7 @@ import {
 } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -216,10 +216,10 @@ describe('FirstRunTourNudge', () => {
     {
       blocker: 'agent node selection hides the sidebar',
       block: () => {
-        useCanvasStore().isPickingNodes = true
+        useAgentNodeSelectionStore().isActive = true
       },
       clear: () => {
-        useCanvasStore().isPickingNodes = false
+        useAgentNodeSelectionStore().isActive = false
       }
     },
     {
