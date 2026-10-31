@@ -17,7 +17,8 @@ test.describe(
     }
   },
   () => {
-    test.use({ connectWebSocketToServer: false })
+    // The flag seeds a ready agent and reapplies it on every feature_flags push.
+    test.use({ agentFlagEnabled: false, connectWebSocketToServer: false })
 
     test('stays inert while the agent starts or fails, then opens once it is ready', async ({
       page,
