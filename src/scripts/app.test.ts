@@ -2157,9 +2157,62 @@ describe('ComfyApp', () => {
 
       expect(
         useBillingDialogs().showSubscriptionRequiredDialog
-      ).toHaveBeenCalledExactlyOnceWith({ reason: 'subscription_required' })
+      ).toHaveBeenCalledExactlyOnceWith({
+        reason: 'subscription_required',
+        creditsLocked: false,
+        refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
+      })
       expect(useExecutionErrorStore().lastPromptError).toMatchObject({
         type: 'CLOUD_SUBSCRIPTION_REQUIRED'
+      })
+    })
+
+    it('reports no refusal type when the server sent none', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          error: 'Subscription required to queue workflows',
+          node_errors: {}
+        })
+      )
+      vi.mocked(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).mockResolvedValueOnce(true)
+
+      await app.queuePrompt(0)
+
+      expect(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).toHaveBeenCalledExactlyOnceWith({
+        reason: 'subscription_required',
+        creditsLocked: false
+      })
+    })
+
+    it('tells the subscription dialog when the refused account holds locked credits', async () => {
+      prepareEmptyPromptQueue()
+      const refusal = {
+        type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+        message:
+          'A cloud subscription is required to use your credits on cloud.',
+        details: '',
+        credits_locked: true
+      }
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({ error: refusal, node_errors: {} })
+      )
+      vi.mocked(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).mockResolvedValueOnce(true)
+
+      await app.queuePrompt(0)
+
+      expect(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).toHaveBeenCalledExactlyOnceWith({
+        reason: 'subscription_required',
+        creditsLocked: true,
+        refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
     })
 
@@ -2183,7 +2236,11 @@ describe('ComfyApp', () => {
 
       expect(
         useBillingDialogs().showSubscriptionRequiredDialog
-      ).toHaveBeenCalledExactlyOnceWith({ reason: 'subscription_required' })
+      ).toHaveBeenCalledExactlyOnceWith({
+        reason: 'subscription_required',
+        creditsLocked: false,
+        refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
+      })
       expect(useExecutionErrorStore().lastPromptError).toBeNull()
     })
 
