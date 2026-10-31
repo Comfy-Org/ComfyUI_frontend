@@ -407,8 +407,13 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_ONBOARDING_STEP,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentOnboardingStep({ step: 4, action: 'finish' }),
-      properties: { step: 4, action: 'finish' }
+        sink.trackAgentOnboardingStep({
+          step: 3,
+          card: 'history',
+          total: 3,
+          action: 'finish'
+        }),
+      properties: { step: 3, card: 'history', total: 3, action: 'finish' }
     },
     {
       name: TelemetryEvents.AGENT_NODE_TAGGED,
