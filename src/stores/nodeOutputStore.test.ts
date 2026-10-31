@@ -1110,6 +1110,7 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
       store.setNodeOutputs(node, value)
 
       expect(store.nodeOutputs['5']?.images).toEqual([resolved])
+      expect(app.nodeOutputs['5']?.images).toEqual([resolved])
     }
   )
 
@@ -1124,7 +1125,14 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
 
     store.setNodeOutputs(node, 'other.exr [output]')
 
+    const previewUrl = new URL(
+      store.getNodeImageUrls(node)?.[0] ?? '',
+      window.location.origin
+    )
+    expect(store.nodeOutputs['5']?.images).toHaveLength(1)
     expect(store.nodeOutputs['5']?.images?.[0]?.preview_id).toBeUndefined()
+    expect(previewUrl.searchParams.get('filename')).toBe('other.exr')
+    expect(previewUrl.searchParams.get('type')).toBe('output')
   })
 
   it('should skip empty array of filenames after createOutputs', () => {
