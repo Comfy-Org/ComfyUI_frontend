@@ -71,26 +71,29 @@ export function parseRetryAfterMs(
   return Number.isNaN(at) ? undefined : Math.max(0, at - now)
 }
 
-/** The `message` cloud's sign-in check sends when it could not check the credential. */
-const SIGN_IN_CHECK_UNAVAILABLE = 'authentication service unavailable'
-
-/** A write refused by the sign-in check is sent at most once more. */
-const SIGN_IN_REFUSAL_MAX_ATTEMPTS = 2
+const SIGN_IN_CHECK_UNAVAILABLE_MESSAGE = 'authentication service unavailable'
+const SIGN_IN_REFUSAL_MAX_SENDS = 2
+const SIGN_IN_REFUSAL_BODY_READ_MAX_MS = 1_000
 
 interface SignInRefusalInput {
   readonly status: number
   readonly readRetryAfter: () => string | null | undefined
-  /** The response body, parsed or as text; read only for a 503 with `Retry-After`. */
   readonly readBody: () => unknown
 }
 
-/**
- * Whether a 503 is cloud's sign-in check refusing the request before any
- * handler ran: it carries a `Retry-After` and a JSON body whose `message` is
- * {@link SIGN_IN_CHECK_UNAVAILABLE}. The server did nothing with the request,
- * so sending it again is safe for any method. A body that does not parse is
- * not a match.
- */
+async function readBodyWithinCap(readBody: () => unknown): Promise<unknown> {
+  const reading = new AbortController()
+  try {
+    return await Promise.race([
+      readBody(),
+      sleep(SIGN_IN_REFUSAL_BODY_READ_MAX_MS, reading.signal)
+    ])
+  } finally {
+    reading.abort()
+  }
+}
+
+/** Whether a 503 is cloud's sign-in check refusing a request before any handler ran. */
 export async function isSignInCheckRefusal({
   status,
   readRetryAfter,
@@ -99,13 +102,13 @@ export async function isSignInCheckRefusal({
   if (status !== 503) return false
   try {
     if (parseRetryAfterMs(readRetryAfter()) === undefined) return false
-    const body: unknown = await readBody()
+    const body = await readBodyWithinCap(readBody)
     const parsed: unknown = typeof body === 'string' ? JSON.parse(body) : body
     return (
       typeof parsed === 'object' &&
       parsed !== null &&
       'message' in parsed &&
-      parsed.message === SIGN_IN_CHECK_UNAVAILABLE
+      parsed.message === SIGN_IN_CHECK_UNAVAILABLE_MESSAGE
     )
   } catch {
     return false
@@ -120,7 +123,6 @@ interface RetryDecisionInput {
   readonly policy?: RetryPolicy
   readonly random?: () => number
   readonly now?: () => number
-  /** The answer is a {@link isSignInCheckRefusal}; a write the policy opts in may be sent once more. */
   readonly signInRefusal?: boolean
 }
 
@@ -152,7 +154,7 @@ export function nextRetry({
   }
   const maxAttempts = methodRetries
     ? policy.maxAttempts
-    : Math.min(policy.maxAttempts, SIGN_IN_REFUSAL_MAX_ATTEMPTS)
+    : Math.min(policy.maxAttempts, SIGN_IN_REFUSAL_MAX_SENDS)
   if (attempt >= maxAttempts) {
     return { retry: false, reason: 'attempts_spent' }
   }
@@ -184,11 +186,7 @@ interface RefusedWriteInput extends SignInRefusalInput {
   readonly random?: () => number
 }
 
-/**
- * Milliseconds to wait before sending a write the sign-in check refused once
- * more, or `undefined` when nothing more is sent: the policy does not opt in,
- * the answer is not a refusal, or its `Retry-After` is past the cap.
- */
+/** The wait before resending a refused write, or `undefined` to send nothing more. */
 export async function signInRefusalDelayMs({
   method,
   policy = DEFAULT_RETRY_POLICY,
@@ -196,7 +194,6 @@ export async function signInRefusalDelayMs({
   ...answer
 }: RefusedWriteInput): Promise<number | undefined> {
   if (!canRetrySignInRefusal(method, policy)) return undefined
-  if (!(await isSignInCheckRefusal(answer))) return undefined
   const decision = nextRetry({
     method,
     status: answer.status,
@@ -206,7 +203,8 @@ export async function signInRefusalDelayMs({
     random,
     signInRefusal: true
   })
-  return decision.retry ? decision.delayMs : undefined
+  if (!decision.retry) return undefined
+  return (await isSignInCheckRefusal(answer)) ? decision.delayMs : undefined
 }
 
 export function sleep(ms: number, signal?: AbortSignal): Promise<void> {

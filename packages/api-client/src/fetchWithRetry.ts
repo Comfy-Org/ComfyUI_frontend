@@ -39,11 +39,6 @@ function isReplayable(input: RequestInfo | URL, init: RequestInit): boolean {
   )
 }
 
-/**
- * Sends a write as is. When the sign-in check refused it, waits the
- * `Retry-After` and sends it once more, from a copy taken up front when the
- * body is on a `Request`. Records telemetry only for a write sent twice.
- */
 async function fetchWriteAfterRefusal(
   input: RequestInfo | URL,
   init: RequestInit,
@@ -90,8 +85,7 @@ async function fetchWriteAfterRefusal(
 
 /**
  * `fetch` that retries retryable statuses on idempotent methods, honoring
- * `Retry-After`. A write is sent once more after a sign-in check refusal when
- * the policy opts in.
+ * `Retry-After`; a policy may opt in a write the sign-in check refused.
  */
 export async function fetchWithRetry(
   input: RequestInfo | URL,

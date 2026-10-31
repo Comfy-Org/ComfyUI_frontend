@@ -160,7 +160,6 @@ type Pause = (
   settleAbort: (signal: AbortSignal | undefined) => void
 ) => Promise<void>
 
-/** Whether a sign-in check refusal is the only answer that resends this request. */
 function resendsSignInRefusal(
   config: InternalAxiosRequestConfig,
   policy: RetryPolicy | undefined
@@ -171,7 +170,6 @@ function resendsSignInRefusal(
   )
 }
 
-/** The wait before sending a refused write once more, or `undefined` to send nothing more. */
 async function refusedWriteDelay(
   error: unknown,
   config: InternalAxiosRequestConfig,
@@ -191,11 +189,6 @@ async function refusedWriteDelay(
   return delay !== undefined && fitsBudget(delay, remaining) ? delay : undefined
 }
 
-/**
- * Sends a write as is. When the sign-in check refused it, waits the
- * `Retry-After` and sends it once more. Records telemetry only for a write
- * sent twice.
- */
 async function sendWriteAfterRefusal(
   adapter: AxiosAdapter,
   config: InternalAxiosRequestConfig,
@@ -209,6 +202,7 @@ async function sendWriteAfterRefusal(
     const delay = await refusedWriteDelay(error, config, remainingMs(), options)
     if (delay === undefined) throw error
     await pause(delay, config, () => undefined)
+    if (!fitsBudget(0, remainingMs())) throw error
   }
   const tracker = statusRetryTracker(config)
   tracker.scheduled(503)
@@ -289,8 +283,7 @@ const retrying = new WeakSet<AxiosAdapter>()
 
 /**
  * Retries retryable statuses around each request's adapter, within its
- * `timeout`. A write is sent once more after a sign-in check refusal when the
- * policy opts in.
+ * `timeout`; a policy may opt in a write the sign-in check refused.
  */
 export function attachRetryableStatusRetry(
   client: AxiosInstance,

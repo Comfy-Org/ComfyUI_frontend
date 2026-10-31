@@ -233,6 +233,47 @@ describe('attachRetryableStatusRetry', () => {
       expect(adapter).toHaveBeenCalledTimes(DEFAULT_RETRY_POLICY.maxAttempts)
     })
 
+    function makeClientWhoseWaitTakes(waitMs: number) {
+      vi.useFakeTimers()
+      const adapter = scriptedAdapter([refusal(), { status: 200 }])
+      const client = axios.create({ adapter })
+      attachRetryableStatusRetry(client, {
+        random: () => 1,
+        policy,
+        sleep: async () => {
+          vi.setSystemTime(Date.now() + waitMs)
+        }
+      })
+      return { client, adapter }
+    }
+
+    it('rejects with the first 503 and sends nothing more when the wait spends the timeout', async () => {
+      const { client, adapter } = makeClientWhoseWaitTakes(7_000)
+
+      await expect(
+        client.post('https://api/x', {}, { timeout: 6_000 })
+      ).rejects.toMatchObject({
+        response: { status: 503, data: { message: AUTH_UNAVAILABLE } }
+      })
+      expect(adapter).toHaveBeenCalledOnce()
+      expect(tracked()).not.toHaveBeenCalled()
+    })
+
+    it('sends again with what is left of the timeout when the wait fits', async () => {
+      const { client, adapter } = makeClientWhoseWaitTakes(5_250)
+
+      const response = await client.post(
+        'https://api/x',
+        {},
+        { timeout: 6_000 }
+      )
+
+      expect(response.status).toBe(200)
+      expect(adapter.mock.calls.map(([config]) => config.timeout)).toEqual([
+        6_000, 750
+      ])
+    })
+
     it('waits the Retry-After before sending again', async () => {
       vi.useFakeTimers()
       const adapter = scriptedAdapter([refusal(), { status: 200 }])

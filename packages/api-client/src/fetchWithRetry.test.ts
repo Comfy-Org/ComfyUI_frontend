@@ -376,6 +376,70 @@ describe('fetchWithRetry', () => {
       expect(fetchImpl).toHaveBeenCalledTimes(DEFAULT_RETRY_POLICY.maxAttempts)
     })
 
+    function refusalWithUnfinishedBody(retryAfter: string) {
+      const partial = new TextEncoder().encode('{"message":')
+      return new Response(
+        new ReadableStream<Uint8Array>({
+          start: (controller) => controller.enqueue(partial)
+        }),
+        { status: 503, headers: { 'Retry-After': retryAfter } }
+      )
+    }
+
+    it('returns a 503 past the cap at its headers, leaving an unfinished body unread', async () => {
+      vi.useFakeTimers()
+      const answer = refusalWithUnfinishedBody('3600')
+      const fetchImpl = scriptedFetch(answer)
+      const settled = vi.fn()
+
+      void fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}' },
+        { fetchImpl, sleep, random, policy }
+      ).then(settled)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(settled).toHaveBeenCalledExactlyOnceWith(answer)
+      expect(fetchImpl).toHaveBeenCalledOnce()
+    })
+
+    it('returns a refusal-shaped 503 whose body stalls, without sending it again', async () => {
+      vi.useFakeTimers()
+      const answer = refusalWithUnfinishedBody('5')
+      const fetchImpl = scriptedFetch(answer)
+      const settled = vi.fn()
+
+      void fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}' },
+        { fetchImpl, sleep, random, policy }
+      ).then(settled)
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(settled).toHaveBeenCalledExactlyOnceWith(answer)
+      expect(fetchImpl).toHaveBeenCalledOnce()
+      expect(sleep).not.toHaveBeenCalled()
+    })
+
+    it('sends nothing more when the signal aborts during the wait', async () => {
+      vi.useFakeTimers()
+      const fetchImpl = scriptedFetch(refusal(), respond(200))
+      const controller = new AbortController()
+      const timeout = new DOMException('Fetch timeout', 'TimeoutError')
+
+      const outcome = fetchWithRetry(
+        'https://api/x',
+        { method: 'POST', body: '{}', signal: controller.signal },
+        { fetchImpl, random, policy }
+      ).catch((error: unknown) => error)
+      await vi.advanceTimersByTimeAsync(1_000)
+      controller.abort(timeout)
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(await outcome).toBe(timeout)
+      expect(fetchImpl).toHaveBeenCalledOnce()
+    })
+
     it('waits the Retry-After before sending again', async () => {
       vi.useFakeTimers()
       const fetchImpl = scriptedFetch(refusal(), respond(200))

@@ -271,6 +271,23 @@ describe('isSignInCheckRefusal', () => {
     expect(await matches(overrides)).toBe(false)
   })
 
+  it('does not match a body that never finishes', async () => {
+    vi.useFakeTimers()
+    const settled = vi.fn()
+
+    void matches({ readBody: () => new Promise(() => {}) }).then(settled)
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(settled).toHaveBeenCalledExactlyOnceWith(false)
+  })
+
+  it('leaves no timer behind once the body is read', async () => {
+    vi.useFakeTimers()
+
+    expect(await matches()).toBe(true)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('reads neither header nor body for another status', async () => {
     const readRetryAfter = vi.fn(() => '5')
     const readBody = vi.fn(() => refusal)
@@ -361,7 +378,13 @@ describe('signInRefusalDelayMs', () => {
   it.for<[string, Partial<Parameters<typeof signInRefusalDelayMs>[0]>]>([
     ['the default policy', { policy: DEFAULT_RETRY_POLICY }],
     ['a GET', { method: 'GET' }],
-    ['a 200', { status: 200 }]
+    ['a 200', { status: 200 }],
+    ['a 503 with no Retry-After', { readRetryAfter: () => null }],
+    ['a Retry-After past the cap', { readRetryAfter: () => '30' }],
+    [
+      'a policy with no send left',
+      { policy: withSignInRefusalRetry(NO_RETRY_POLICY) }
+    ]
   ])('reads no body for %s', async ([_name, overrides]) => {
     const readBody = vi.fn(() => refusalBody)
 

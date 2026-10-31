@@ -48,11 +48,7 @@ export async function shouldRemintCloudRequest(): Promise<boolean> {
   return cachedUnifiedFlags.unifiedCloudAuthEnabled
 }
 
-/**
- * `policy` for a request to cloud: on cloud, a write the sign-in check
- * refused with a 503 is sent once more (see `isSignInCheckRefusal`). Off
- * cloud, `policy` unchanged.
- */
+/** `policy`, also sending a write the sign-in check refused once more on cloud. */
 export function cloudRetryPolicy(
   policy?: RetryPolicy
 ): RetryPolicy | undefined {
@@ -150,14 +146,12 @@ async function presentSsoRequired(present: () => unknown): Promise<void> {
  * current cloud caller sends one).
  *
  * `shouldRetryOn401` is the caller's gate (see {@link shouldRemintCloudRequest}):
- * flag-OFF traffic returns after a single `fetch` and never enters the re-mint
- * path, so the legacy cascade stays untouched for instant rollback.
+ * flag-OFF traffic never enters the re-mint path, and that path is all the flag
+ * rolls back. `retryPolicy` passes through {@link cloudRetryPolicy}, so status
+ * retries and the cloud resend of a refused write run with the flag on or off.
  *
  * `retrySignalLifecycle`, when supplied, ends the initial fetch's timeout
  * before re-minting and creates a fresh signal immediately before the retry.
- *
- * `retryPolicy` passes through {@link cloudRetryPolicy}; the 401 path is
- * separate from it.
  */
 export async function fetchWithUnifiedRemint(
   input: RequestInfo | URL,
