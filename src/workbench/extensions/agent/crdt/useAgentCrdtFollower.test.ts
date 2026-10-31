@@ -24,7 +24,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
-import type { DocFrameTransport } from './docFrameClient'
+import type { DocFrameTransport, DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
@@ -2734,7 +2734,7 @@ describe('useAgentCrdtFollower', () => {
     await Promise.resolve()
     const [, , ops] = clientState.sendOps.mock.calls[0]
 
-    dispatchFrame('doc_ops_result', {
+    const result: DocOpsResult = {
       workflowId: 'wf-1',
       ok: false,
       seq: 10,
@@ -2746,7 +2746,8 @@ describe('useAgentCrdtFollower', () => {
         code: 'unknown_node',
         message: 'Unknown node'
       }
-    })
+    }
+    dispatchFrame('doc_ops_result', result)
 
     expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
       'wf-1',
