@@ -2,8 +2,17 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { FeedbackSource } from '@/platform/support/config'
 import { openFeedbackDialog as openGeneralFeedbackDialog } from '@/platform/support/feedbackDialog'
 
+import { agentClientSessionId } from './agentClientSession'
+import { useAgentComposerStore } from './stores/agent/agentComposerStore'
+import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+
+function consentState(): 'accepted' | 'not_accepted' | 'unchecked' {
+  const consent = useAgentConsentStore()
+  if (consent.accepted) return 'accepted'
+  return consent.isChecking ? 'unchecked' : 'not_accepted'
+}
 
 export function openFeedbackDialog(source: FeedbackSource) {
   if (!useAgentPanelStore().enabled) {
@@ -12,13 +21,18 @@ export function openFeedbackDialog(source: FeedbackSource) {
   }
 
   const { resolvedUserInfo } = useCurrentUser()
+  const { heldSendGate } = useAgentPanelStore()
   openGeneralFeedbackDialog(source, {
     typeformId: 'MZ6cjWIB',
     extraTags: {
       userid: resolvedUserInfo.value?.id,
       version: __COMFYUI_FRONTEND_VERSION__,
       os: navigator.platform,
-      session: useAgentConversationStore().threadId
+      session: useAgentConversationStore().threadId,
+      client: agentClientSessionId(),
+      consent: consentState(),
+      held: heldSendGate ?? 'none',
+      composer: useAgentComposerStore().submission?.phase ?? 'idle'
     }
   })
 }

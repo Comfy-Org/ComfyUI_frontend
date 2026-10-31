@@ -1,6 +1,7 @@
 import { useTelemetry } from '@comfyorg/telemetry'
 import { assert, describe, expect, it, vi } from 'vitest'
 
+import { agentClientSessionId } from '@/workbench/extensions/agent/agentClientSession'
 import { useAgentSendGates } from './useAgentSendGates'
 
 vi.mock(import('@comfyorg/telemetry'))
@@ -9,6 +10,35 @@ assert.exists(telemetryProvider)
 const trackAgentSendGated = vi.mocked(telemetryProvider.trackAgentSendGated)
 
 describe('useAgentSendGates', () => {
+  it('tags every outcome with the page load id a feedback report carries', () => {
+    const gates = useAgentSendGates(() => null)
+    trackAgentSendGated.mockClear()
+
+    gates.hold('consent', 'client-message-1')
+    gates.end({ gate: 'consent', outcome: 'released', reason: 'accepted' })
+    gates.rejectDraft('empty')
+
+    expect(
+      trackAgentSendGated.mock.calls.map(
+        ([metadata]) => metadata.client_session_id
+      )
+    ).toEqual(Array(3).fill(agentClientSessionId()))
+  })
+
+  it('exposes the gate holding a send until the hold ends', () => {
+    const gates = useAgentSendGates(() => null)
+
+    gates.hold('consent', 'client-message-1')
+    gates.hold('coach', 'client-message-1')
+    expect(gates.heldGate.value).toBe('coach')
+
+    gates.end({ gate: 'coach', outcome: 'released', reason: 'finished' })
+    expect(gates.heldGate.value).toBe('consent')
+
+    gates.end({ gate: 'consent', outcome: 'released', reason: 'accepted' })
+    expect(gates.heldGate.value).toBeNull()
+  })
+
   it('reports only the first end of a hold', () => {
     const gates = useAgentSendGates(() => 'thread-1')
 

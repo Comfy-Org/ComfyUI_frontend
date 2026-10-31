@@ -83,6 +83,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
+  /** The gate holding a send back from the turn POST, if one is. */
+  const heldSendGate = ref<'consent' | 'coach' | null>(null)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const { flags: featureFlags } = useFeatureFlags()
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
@@ -414,6 +416,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    heldSendGate,
     view,
     interruptHistorySelection,
     flagsSettled,

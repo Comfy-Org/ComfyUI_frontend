@@ -1,3 +1,5 @@
+import { ref } from 'vue'
+
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentCoachDropReason,
@@ -5,6 +7,8 @@ import type {
   AgentComposerDropReason,
   AgentConsentDropReason
 } from '@comfyorg/telemetry/types'
+
+import { agentClientSessionId } from '@/workbench/extensions/agent/agentClientSession'
 
 type HeldGate = 'consent' | 'coach'
 
@@ -27,6 +31,11 @@ interface Hold {
 /** Reports what happens to a send before its turn POST. */
 export function useAgentSendGates(threadId: () => string | null) {
   const holds = new Set<Hold>()
+  const heldGate = ref<HeldGate | null>(null)
+
+  function syncHeldGate(): void {
+    heldGate.value = [...holds].at(-1)?.gate ?? null
+  }
 
   function hold(gate: HeldGate, clientMessageId: string): void {
     const held: Hold = {
@@ -36,13 +45,15 @@ export function useAgentSendGates(threadId: () => string | null) {
       since: performance.now()
     }
     holds.add(held)
+    syncHeldGate()
     useTelemetry()?.trackAgentSendGated({
       gate,
       outcome: 'held',
       reason: null,
       client_message_id: clientMessageId,
       held_ms: null,
-      thread_id: held.threadId
+      thread_id: held.threadId,
+      client_session_id: agentClientSessionId()
     })
   }
 
@@ -51,11 +62,13 @@ export function useAgentSendGates(threadId: () => string | null) {
       if (held.gate !== holdEnd.gate) continue
       if (clientMessageId && held.clientMessageId !== clientMessageId) continue
       holds.delete(held)
+      syncHeldGate()
       useTelemetry()?.trackAgentSendGated({
         ...holdEnd,
         client_message_id: held.clientMessageId,
         held_ms: Math.round(performance.now() - held.since),
-        thread_id: held.threadId
+        thread_id: held.threadId,
+        client_session_id: agentClientSessionId()
       })
     }
   }
@@ -67,9 +80,10 @@ export function useAgentSendGates(threadId: () => string | null) {
       reason,
       client_message_id: null,
       held_ms: null,
-      thread_id: threadId()
+      thread_id: threadId(),
+      client_session_id: agentClientSessionId()
     })
   }
 
-  return { hold, end, rejectDraft }
+  return { heldGate, hold, end, rejectDraft }
 }

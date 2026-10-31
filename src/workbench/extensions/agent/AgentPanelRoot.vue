@@ -698,6 +698,16 @@ const coachDeferredBy = computed(() =>
         : null
 )
 const sendGates = useAgentSendGates(() => threadId.value)
+watch(
+  sendGates.heldGate,
+  (gate) => {
+    agentPanelStore.heldSendGate = gate
+  },
+  { flush: 'sync' }
+)
+onBeforeUnmount(() => {
+  agentPanelStore.heldSendGate = null
+})
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
 function releaseCoachCompletionWaiters(
   holdEnd: CoachHoldEnd,

@@ -836,6 +836,8 @@ type AgentSendGateOutcome =
  */
 export type AgentSendGatedMetadata = AgentSendGateOutcome & {
   thread_id: string | null
+  /** Page load id, also sent on the agent feedback form. */
+  client_session_id: string
 }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
