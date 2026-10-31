@@ -1143,14 +1143,8 @@ describe('AgentPanelRoot onboarding scope ownership', () => {
       ).toHaveLength(1)
     )
 
-    // account-a's dock closes while its completion read is still in flight.
     panel.unmount()
-
-    // Nothing re-publishes ownership: the account changes without the dock
-    // reopening to claim the new scope.
     currentUserInfo.value = { id: 'account-b' }
-
-    // account-a's deferred read finally comes back after the switch.
     resolveRead(new Response(JSON.stringify([]), { status: 200 }))
     await setImmediate()
     await setImmediate()
