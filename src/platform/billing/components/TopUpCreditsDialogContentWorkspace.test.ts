@@ -815,6 +815,26 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.queryByText(/credits minimum/)).not.toBeInTheDocument()
   })
 
+  it.for<{ name: string; balance: Partial<BalanceInfo>; cap: string }>([
+    {
+      name: 'the served maximum credits',
+      balance: SERVED_MAXIMUM,
+      cap: '10550'
+    },
+    {
+      name: '$10,000 in credits when no maximum is served',
+      balance: {},
+      cap: '2110000'
+    }
+  ])('caps the credits input at $name', ({ balance, cap }) => {
+    renderWithBalance(balance)
+
+    expect(screen.getByRole('spinbutton', { name: 'Credits' })).toHaveAttribute(
+      'aria-valuemax',
+      cap
+    )
+  })
+
   describe('without a default payment method', () => {
     const checkoutUrl = 'https://checkout.stripe.com/c/pay/cs_test'
 

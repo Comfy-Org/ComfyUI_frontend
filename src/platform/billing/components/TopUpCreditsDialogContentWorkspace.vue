@@ -144,6 +144,7 @@
       :credits="creditsModel"
       :selected-preset
       :max-amount="maxTopup.usd"
+      :max-credits="maxTopup.credits"
       :plan-credit-copy
       @preset="handlePresetClick"
       @pay-amount="handlePayAmountChange"
