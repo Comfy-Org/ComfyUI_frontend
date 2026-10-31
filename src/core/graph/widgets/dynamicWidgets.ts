@@ -1,21 +1,21 @@
 import { remove } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import { commonType } from '@/lib/litegraph/src/utils/type'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { LLink } from '@comfyorg/litegraph/LLink'
+import { commonType } from '@comfyorg/litegraph/utils/type'
 import {
   getWidgetIds,
   resolveNodeRootGraphId
-} from '@/lib/litegraph/src/utils/widget'
+} from '@comfyorg/litegraph/utils/widget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import {
   zAutogrowOptions,
   zDynamicComboInputSpec,
@@ -27,11 +27,11 @@ import type { ComfyApp } from '@/types/comfy'
 import {
   captureInputLayout,
   replaceNodeInputs
-} from '@/lib/litegraph/src/node/slotLinks'
-import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
-import { useLinkStore } from '@/stores/linkStore'
+} from '@comfyorg/litegraph/node/slotLinks'
+import type { InputLayoutSnapshot } from '@comfyorg/litegraph/node/slotLinks'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { dynamicGroupWidget } from './dynamicGroupWidget'

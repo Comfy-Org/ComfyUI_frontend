@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import commands from '@/locales/en/commands.json'
 import en from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -17,7 +17,7 @@ import { useExtensionService } from '@/platform/extensions/services/extensionSer
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
+import { createMockCanvas } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))

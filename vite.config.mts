@@ -55,9 +55,9 @@ const CRITICAL_COVERAGE_DIRS = [
   'src/base',
   'src/composables',
   'src/core',
-  'src/lib/litegraph/src/node',
-  'src/lib/litegraph/src/subgraph',
-  'src/lib/litegraph/src/utils',
+  'packages/litegraph/src/node',
+  'packages/litegraph/src/subgraph',
+  'packages/litegraph/src/utils',
   'src/platform/assets/composables',
   'src/platform/assets/mappings',
   'src/platform/assets/schemas',
@@ -133,15 +133,15 @@ const AGENT_PANEL_COVERAGE_THRESHOLDS = {
 }
 
 const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
-  'src/lib/litegraph/imgs/**',
-  'src/lib/litegraph/public/**',
-  'src/lib/litegraph/src/*.{ts,vue}',
-  'src/lib/litegraph/src/__fixtures__/**',
-  'src/lib/litegraph/src/__snapshots__/**',
-  'src/lib/litegraph/src/canvas/**',
-  'src/lib/litegraph/src/infrastructure/**',
-  'src/lib/litegraph/src/types/**',
-  'src/lib/litegraph/src/widgets/**'
+  'packages/litegraph/imgs/**',
+  'packages/litegraph/public/**',
+  'packages/litegraph/src/*.{ts,vue}',
+  'packages/litegraph/src/__fixtures__/**',
+  'packages/litegraph/src/__snapshots__/**',
+  'packages/litegraph/src/canvas/**',
+  'packages/litegraph/src/infrastructure/**',
+  'packages/litegraph/src/types/**',
+  'packages/litegraph/src/widgets/**'
 ]
 
 // Open Graph / Twitter Meta Tags Constants
@@ -991,6 +991,9 @@ export default defineConfig({
             'packages/api-client/src/**/*.test.ts',
             'packages/settings-core/src/**/*.test.ts',
             'packages/telemetry/src/**/*.test.ts',
+            'packages/graph-model/src/**/*.test.ts',
+            'packages/graph-state/src/**/*.test.ts',
+            'packages/litegraph/src/**/*.test.ts',
             'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             ...FRONTEND_SCRIPT_TESTS
           ]
@@ -1029,15 +1032,16 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
-      include: ['src/**/*.{ts,vue}'],
+      include: ['src/**/*.{ts,vue}', 'packages/litegraph/src/**/*.ts'],
       exclude: [
         'src/**/*.test.ts',
+        'packages/litegraph/src/**/*.test.ts',
         'src/**/*.spec.ts',
         'src/**/*.stories.ts',
         'src/**/*.d.ts',
         'src/locales/**',
         'src/assets/**',
-        'packages/**',
+        'packages/!(litegraph)/**',
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
       thresholds: process.env.VITEST_SHARD

@@ -20,7 +20,7 @@ import type {
   MaterialMode,
   UpDirection
 } from '@comfyorg/viewport3d/load3d/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 // Type for the useLoad3dViewer composable function

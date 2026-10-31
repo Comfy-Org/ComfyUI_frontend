@@ -5,10 +5,11 @@ import 'primeicons/primeicons.css'
 import { createApp } from 'vue'
 import type { App as VueApp } from 'vue'
 
-import { setAssertReporter } from '@/base/assert'
+import { setAssertReporter } from '@comfyorg/shared-frontend-utils/assert'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@comfyorg/litegraph/litegraph'
+import { provideTranslator } from '@comfyorg/litegraph/translate'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { provideTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
@@ -26,7 +27,7 @@ import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdS
 import '@/platform/telemetry/initErrorReporter'
 import { flushErrorReports } from '@comfyorg/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import '@/lib/litegraph/public/css/litegraph.css'
+import '@comfyorg/litegraph/litegraph.css'
 import { createAppRouter } from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/billing/subscription/utils/paymentReturnUrl'
@@ -39,7 +40,7 @@ import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
 import './assets/css/style.css'
-import { i18n, t } from './i18n'
+import { i18n, st, t } from './i18n'
 
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
@@ -189,6 +190,7 @@ async function bootstrap(): Promise<void> {
   }
 
   installSubgraphGraphHooks()
+  provideTranslator(st)
 
   void useBootstrapStore(pinia).startStoreBootstrap()
 

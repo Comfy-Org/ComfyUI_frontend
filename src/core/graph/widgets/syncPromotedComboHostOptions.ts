@@ -1,8 +1,8 @@
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import { resolveConcretePromotedWidget } from '@comfyorg/litegraph/subgraph/promotion/resolveConcretePromotedWidget'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
+import { forEachNode } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 /** Copies each promoted combo source's current options onto its subgraph host. */
 export function syncPromotedComboHostOptions(rootGraph: LGraph): void {

@@ -32,8 +32,8 @@
 import { computed } from 'vue'
 import type { Raw } from 'vue'
 
-import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphGroup } from '@comfyorg/litegraph/LGraphGroup'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 

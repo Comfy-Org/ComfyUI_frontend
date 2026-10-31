@@ -22,15 +22,15 @@ import type {
 } from '@comfyorg/api-client/executionTypes'
 import type { Settings } from '@comfyorg/settings-core/types'
 import type { ComfyApp } from '@/types/comfy'
-import type { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
-import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
+import type { ContextMenu } from '@comfyorg/litegraph/ContextMenu'
+import type { DragAndScale } from '@comfyorg/litegraph/DragAndScale'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphBadge } from '@comfyorg/litegraph/LGraphBadge'
+import type { LGraphCanvas } from '@comfyorg/litegraph/LGraphCanvas'
+import type { LGraphGroup } from '@comfyorg/litegraph/LGraphGroup'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import type { LLink } from '@comfyorg/litegraph/LLink'
+import type { LiteGraphGlobal } from '@comfyorg/litegraph/LiteGraphGlobal'
 
 import type {
   BottomPanelExtension,
@@ -72,7 +72,10 @@ export type {
   parseNodeExecutionId,
   createNodeExecutionId
 } from '@comfyorg/graph-model/nodeIdentification'
-export type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
+export type {
+  DOMWidget,
+  DOMWidgetOptions
+} from '@comfyorg/litegraph/types/domWidget'
 export type {
   EmbeddingsResponse,
   ExtensionsResponse,
@@ -113,17 +116,17 @@ export type {
   LLink,
   LiteGraphGlobal
 }
-export type { Subgraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
-export type { Reroute } from '@/lib/litegraph/src/Reroute'
-export type { LGraphNodeConstructor } from '@/lib/litegraph/src/types/nodeConstructor'
-export type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-export type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-export type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
+export type { Subgraph, SubgraphId } from '@comfyorg/litegraph/LGraph'
+export type { Reroute } from '@comfyorg/litegraph/Reroute'
+export type { LGraphNodeConstructor } from '@comfyorg/litegraph/types/nodeConstructor'
+export type { SubgraphInput } from '@comfyorg/litegraph/subgraph/SubgraphInput'
+export type { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
+export type { SubgraphOutput } from '@comfyorg/litegraph/subgraph/SubgraphOutput'
 
 export type {
   ExecutableLGraphNode,
   ExecutionId
-} from '@/lib/litegraph/src/subgraph/ExecutableNodeDTO'
+} from '@comfyorg/litegraph/subgraph/ExecutableNodeDTO'
 
 export type {
   CanvasColour,
@@ -139,11 +142,11 @@ export type {
   Rect,
   SizeTuple as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
-export type { CreateNodeOptions } from '@/lib/litegraph/src/LiteGraphGlobal'
+export type { CreateNodeOptions } from '@comfyorg/litegraph/LiteGraphGlobal'
 export type {
   IContextMenuOptions,
   IContextMenuValue
-} from '@/lib/litegraph/src/types/contextMenu'
+} from '@comfyorg/litegraph/types/contextMenu'
 export type {
   LinkNetwork,
   ReadonlyLinkNetwork
@@ -153,7 +156,7 @@ export type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-export type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+export type { Rectangle } from '@comfyorg/litegraph/infrastructure/Rectangle'
 
 export type {
   ComboWidgetValues,
@@ -205,7 +208,7 @@ export type {
   VideoEditValue,
   WidgetCallbackOptions
 } from '@comfyorg/graph-model/widgets'
-export type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
+export type { WidgetTypeMap } from '@comfyorg/litegraph/widgets/widgetMap'
 
 export type {
   ExportedSubgraph,
@@ -230,10 +233,10 @@ export type {
   RenderShape,
   TitleMode
 } from '@comfyorg/graph-model/globalEnums'
-export type { SlotShape, SlotType } from '@/lib/litegraph/src/draw'
+export type { SlotShape, SlotType } from '@comfyorg/litegraph/draw'
 
 export type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-export type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
+export type { LGraphCanvasEventMap } from '@comfyorg/litegraph/infrastructure/LGraphCanvasEventMap'
 export type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 
 declare global {

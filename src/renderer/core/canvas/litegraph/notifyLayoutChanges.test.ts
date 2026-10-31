@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLayoutMutations } from '@comfyorg/graph-state/layout/layoutMutations'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import { toGroupId } from '@comfyorg/graph-model/groupId'
-import { createUuidv4 } from '@/utils/uuid'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 
 function setup() {
   const graph = new LGraph()

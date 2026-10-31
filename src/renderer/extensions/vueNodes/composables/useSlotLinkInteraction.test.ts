@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
-import { setRevealedLinks } from '@/lib/litegraph/src/canvas/linkRevealState'
+import { LGraph, LGraphNode, LLink } from '@comfyorg/litegraph/litegraph'
+import { setRevealedLinks } from '@comfyorg/litegraph/canvas/linkRevealState'
 import {
   isRerouteVisibleForLinkDrag,
   resolvePointerTarget
 } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
+import { createTestLink } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 describe('isRerouteVisibleForLinkDrag', () => {
   it('accepts a shared reroute kept visible by a disconnected floating branch', () => {

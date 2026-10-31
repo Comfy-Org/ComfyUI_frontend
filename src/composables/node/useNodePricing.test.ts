@@ -9,11 +9,11 @@ import {
   formatPricingResult
 } from '@comfyorg/shared-frontend-utils/nodePricing'
 import { useNodePricing } from '@/composables/node/useNodePricing'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 // -----------------------------------------------------------------------------
 // Test Types

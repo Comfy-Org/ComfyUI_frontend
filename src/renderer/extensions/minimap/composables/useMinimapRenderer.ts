@@ -2,7 +2,7 @@ import type { MinBounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { ref } from 'vue'
 import type { Ref, ShallowRef } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
 
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'

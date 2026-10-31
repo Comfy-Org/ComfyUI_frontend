@@ -11,16 +11,16 @@ import {
   LGraphNode,
   LiteGraph,
   SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
   enableSubgraphNodeCreation
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import {
   stripGraphPrefix,
   useWidgetValueStore
-} from '@/stores/widgetValueStore'
+} from '@comfyorg/graph-state/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { AgentCrdtProjection } from '@/workbench/extensions/agent/crdt/agentCrdtProjection'
 import { FollowerDoc } from '@/workbench/extensions/agent/crdt/followerDoc'

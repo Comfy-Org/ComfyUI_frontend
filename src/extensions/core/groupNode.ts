@@ -5,11 +5,11 @@ import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import type {
   LGraphNodeConstructor,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
+} from '@comfyorg/litegraph/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
+import { outputLinks } from '@comfyorg/litegraph/node/slotLinks'
+import { selectedCanvasNodes } from '@comfyorg/litegraph/canvas/selectionAdapter'
+import { slotTypeKey } from '@comfyorg/litegraph/utils/type'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type {

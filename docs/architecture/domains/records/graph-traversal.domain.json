@@ -4,11 +4,11 @@
   "description": "Shared technical module for graph hierarchy traversal, node lookup, execution-path addressing, and input-source resolution. Its many functions and consumers remain a candidate for separating graph queries from execution addressing.",
   "modules": [
     {
-      "path": "src/utils/__mocks__/graphTraversalUtil.ts",
+      "path": "packages/litegraph/src/utils/__mocks__/graphTraversalUtil.ts",
       "role": "application"
     },
     {
-      "path": "src/utils/graphTraversalUtil.ts",
+      "path": "packages/litegraph/src/utils/graphTraversalUtil.ts",
       "role": "application"
     }
   ],
@@ -18,7 +18,7 @@
   "characterizationScenarios": [
     {
       "name": "Graph traversal and addressing preserves its existing behavior",
-      "checks": ["src/utils/graphTraversalUtil.test.ts"]
+      "checks": ["packages/litegraph/src/utils/graphTraversalUtil.test.ts"]
     }
   ],
   "adrs": [],

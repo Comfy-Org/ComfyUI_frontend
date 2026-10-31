@@ -1,10 +1,6 @@
-import type {
-  LGraph,
-  LGraphNode,
-  Subgraph
-} from '@comfyorg/graph-model/entityRegistry'
+import type { LGraph, Subgraph } from '@comfyorg/graph-model/entityRegistry'
 import type { INodeSlot } from '@comfyorg/graph-model/interfaces'
-import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import type { ResultItemType } from '@comfyorg/graph-model/resultItemTypeSchema'
 
 /**
  * Check if an error is an AbortError triggered by `AbortController#abort`
@@ -24,21 +20,6 @@ export const isSubgraph = (
  */
 export const isNonNullish = <T>(item: T | undefined | null): item is T =>
   item != null
-
-/**
- * Type guard to check if a node is a subgraph input/output node.
- * These nodes are essential to subgraph structure and should not be removed.
- */
-export const isSubgraphIoNode = (
-  node: Omit<LGraphNode, 'constructor'> & {
-    constructor?: LGraphNode['constructor']
-  }
-): node is LGraphNode & {
-  constructor: { comfyClass: 'SubgraphInputNode' | 'SubgraphOutputNode' }
-} => {
-  const nodeClass = node.constructor?.comfyClass
-  return nodeClass === 'SubgraphInputNode' || nodeClass === 'SubgraphOutputNode'
-}
 
 /**
  * Type guard for slot objects (inputs/outputs)

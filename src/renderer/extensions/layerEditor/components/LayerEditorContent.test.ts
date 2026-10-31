@@ -11,7 +11,7 @@ import { createI18n } from 'vue-i18n'
 import LayerEditorContent from '@/renderer/extensions/layerEditor/components/LayerEditorContent.vue'
 import TopBarHeader from '@/renderer/extensions/layerEditor/components/dialog/TopBarHeader.vue'
 import { useCompositorAutoSave } from '@/renderer/extensions/compositor/composables/useCompositorAutoSave'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const {

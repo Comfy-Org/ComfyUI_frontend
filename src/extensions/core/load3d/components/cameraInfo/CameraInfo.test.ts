@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import type { ComponentWidget } from '@/types/domWidget'
+import type { ComponentWidget } from '@comfyorg/litegraph/types/domWidget'
 
 const i18n = createI18n({
   legacy: false,

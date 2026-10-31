@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import { createExportMenuItems } from './exportMenuHelper'
@@ -13,7 +13,7 @@ const { contextMenuMock } = vi.hoisted(() => ({
 
 vi.mock(import('@/i18n'))
 
-vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/litegraph'), { spy: true })
 
 class MockContextMenu {
   constructor(...args: unknown[]) {

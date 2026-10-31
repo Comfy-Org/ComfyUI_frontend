@@ -8,7 +8,7 @@ import {
   LGraph,
   LGraphNode,
   isComboWidget
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -18,7 +18,7 @@ import {
 } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { t } from '@/i18n'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 
 function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {

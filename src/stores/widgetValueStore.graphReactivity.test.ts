@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
-import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { BaseWidget, LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { linkedWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { app } from '@/scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 

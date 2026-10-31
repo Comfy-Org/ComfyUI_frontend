@@ -5,8 +5,8 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComponentWidget } from '@/types/domWidget'
+import type { ComboInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
+import type { ComponentWidget } from '@comfyorg/litegraph/types/domWidget'
 
 import MultiSelectWidget from './MultiSelectWidget.vue'
 

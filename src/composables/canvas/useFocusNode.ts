@@ -3,9 +3,9 @@ import { nextTick } from 'vue'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { getNodeByExecutionId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 async function waitForAnimationFrame() {
   await new Promise<void>((resolve) => {

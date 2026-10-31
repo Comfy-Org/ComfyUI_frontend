@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 
-import type { IWidget } from '@/lib/litegraph/src/litegraph'
+import type { IWidget } from '@comfyorg/litegraph/litegraph'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -13,7 +13,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 type IdentityObserver = (user: User | null) => void
 

@@ -1,14 +1,14 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { UUID } from '@/utils/uuid'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
-} from '@/stores/previewExposureStore'
+} from '@comfyorg/graph-state/previewExposureStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   appendNodeExecutionId,

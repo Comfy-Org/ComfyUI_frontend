@@ -10,7 +10,7 @@ import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec as InputSpecV2,
   OutputSpec as OutputSpecV2
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+} from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type {
   ComfyInputsSpec as ComfyInputSpecV1,
   ComfyNodeDef as ComfyNodeDefV1,

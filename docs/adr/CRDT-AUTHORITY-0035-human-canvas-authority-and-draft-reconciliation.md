@@ -19,7 +19,7 @@ Two channels carry the human's canvas to the server:
 
 1. **Semantic operations.** While a chat is bound to the workflow and its tab
    is active, litegraph's graph API emits provenance-tagged commands through
-   `src/lib/litegraph/src/graphIntents.ts`.
+   `packages/litegraph/src/graphIntents.ts`.
    `src/workbench/extensions/agent/crdt/docOpMinter.ts` turns local commands
    into `doc_ops`, and `opSender.ts` delivers them. The minter's document-bound
    gate is closed when no thread is bound: before the first turn acknowledges,

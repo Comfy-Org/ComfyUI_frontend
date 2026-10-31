@@ -10,7 +10,7 @@ import {
   layerEditorDialogProps
 } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 

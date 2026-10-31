@@ -2,7 +2,7 @@
  * Simplified widget interface for Vue-based node rendering
  * Removes all DOM manipulation and positioning concerns
  */
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'

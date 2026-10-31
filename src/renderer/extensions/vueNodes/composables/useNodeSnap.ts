@@ -1,7 +1,7 @@
 import type { Point2D, Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { computed } from 'vue'
 
-import { snapPoint } from '@/lib/litegraph/src/measure'
+import { snapPoint } from '@comfyorg/litegraph/measure'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 export function useNodeSnap() {

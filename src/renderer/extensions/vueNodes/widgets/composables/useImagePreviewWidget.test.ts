@@ -3,10 +3,10 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { CanvasPointer, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { BaseWidget } from '@comfyorg/litegraph/widgets/BaseWidget'
+import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 
 const mockCanvas = vi.hoisted(() => ({
   graph_mouse: [0, 0] as [number, number],

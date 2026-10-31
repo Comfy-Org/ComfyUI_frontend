@@ -4,7 +4,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 
 import { useLayerEditor } from './useLayerEditor'
 

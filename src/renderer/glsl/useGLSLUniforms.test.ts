@@ -1,9 +1,9 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import type { Subgraph } from '@comfyorg/litegraph/subgraph/Subgraph'
+import type { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 
 import {
   extractUniformSources,

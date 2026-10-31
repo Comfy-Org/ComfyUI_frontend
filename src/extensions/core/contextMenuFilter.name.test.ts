@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import { legacyMenuCompat } from '@comfyorg/litegraph/contextMenuCompat'
 import type {
   IContextMenuValue,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
+import { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 
 /**
  * Test that demonstrates the extension name appearing in deprecation warnings

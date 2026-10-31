@@ -1,5 +1,5 @@
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { PromotedWidgetExecutionSource } from '@comfyorg/graph-model/promotedWidgetTypes'
 
 export type MediaType = 'image' | 'video' | 'audio'
 

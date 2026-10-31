@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import '@/scripts/changeTracker'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { getNodeByExecutionId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), { spy: true })
 
 vi.mock(import('@/i18n'))
 

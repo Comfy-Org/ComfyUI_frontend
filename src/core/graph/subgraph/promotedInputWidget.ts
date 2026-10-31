@@ -1,10 +1,10 @@
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
+import { resolveSubgraphInputTarget } from '@comfyorg/litegraph/subgraph/promotion/resolveSubgraphInputTarget'
 
 /**
  * Where a promoted subgraph input is sourced from inside the subgraph. The

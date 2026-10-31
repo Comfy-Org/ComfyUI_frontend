@@ -1,10 +1,10 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   getExecutionIdByNode,
   getRootParentNode
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 import { heuristicRoles } from './heuristicRoles'

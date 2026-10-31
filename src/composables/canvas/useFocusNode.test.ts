@@ -4,7 +4,7 @@ import type {
   LGraph,
   LGraphCanvas,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { fromPartial } from '@total-typescript/shoehorn'

@@ -18,12 +18,12 @@ import {
   LGraphGroup,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import {
   deleteSelectedLinks,
   hideSelectedLinks,
   showSelectedLinks
-} from '@/lib/litegraph/src/canvas/linkSelection'
+} from '@comfyorg/litegraph/canvas/linkSelection'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
@@ -69,7 +69,7 @@ import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   ManagerUIState,

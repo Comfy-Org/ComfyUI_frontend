@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { api } from '@/scripts/api'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))

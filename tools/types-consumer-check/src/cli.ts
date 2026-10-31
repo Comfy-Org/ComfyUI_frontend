@@ -7,6 +7,7 @@ const bundle = resolve('dist/index.d.ts')
 const declarations = readFileSync(bundle, 'utf8')
 const privateImports = [
   '@comfyorg/api-client',
+  '@comfyorg/graph-state',
   '@comfyorg/settings-core',
   '@comfyorg/keybindings',
   '@comfyorg/shared-frontend-utils/geometry',

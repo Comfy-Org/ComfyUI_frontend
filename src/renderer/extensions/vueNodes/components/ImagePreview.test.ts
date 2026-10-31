@@ -10,11 +10,11 @@ import { createI18n } from 'vue-i18n'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { ResultItem } from '@comfyorg/graph-model/nodeOutput'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 // Mock downloadFile to avoid DOM errors

@@ -111,11 +111,11 @@ import type {
   CameraAngleField,
   CameraAngleViewMode
 } from '@comfyorg/viewport3d/cameraAngle/types'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 const { widget } = defineProps<{
   widget: SimplifiedWidget

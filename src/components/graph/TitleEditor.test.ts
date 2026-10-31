@@ -4,8 +4,8 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   useCanvasStore,
   useTitleEditorStore

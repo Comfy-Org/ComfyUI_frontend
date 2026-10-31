@@ -1,0 +1,638 @@
+import type {
+  LGraph,
+  SubgraphId,
+  ResolvedConnection,
+  GraphOrSubgraph,
+  Subgraph,
+  SubgraphInput,
+  SubgraphNode
+} from '@comfyorg/graph-model/entityRegistry'
+import { isEqual } from 'es-toolkit'
+
+import { LGraphGroup } from '#/LGraphGroup'
+import { LGraphNode } from '#/LGraphNode'
+import { LLink, slotFloatingLinks } from '#/LLink'
+
+import {
+  captureInputLayout,
+  inputLinkId,
+  outputLinkIds,
+  replaceNodeInputs
+} from '#/node/slotLinks'
+import { Reroute } from '#/Reroute'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from '#/constants'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
+import { nextUniqueName } from '@comfyorg/graph-state/strings'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type {
+  ISerialisedNode,
+  SerialisableLLink,
+  SubgraphIO
+} from '@comfyorg/graph-model/serialisation'
+
+import { SubgraphInputNode } from './SubgraphInputNode'
+
+import { SubgraphOutputNode } from './SubgraphOutputNode'
+
+interface FilteredItems {
+  nodes: Set<LGraphNode>
+  reroutes: Set<Reroute>
+  groups: Set<LGraphGroup>
+  subgraphInputNodes: Set<SubgraphInputNode>
+  subgraphOutputNodes: Set<SubgraphOutputNode>
+  unknown: Set<Positionable>
+}
+
+export function splitPositionables(
+  items: Iterable<Positionable>
+): FilteredItems {
+  const nodes = new Set<LGraphNode>()
+  const reroutes = new Set<Reroute>()
+  const groups = new Set<LGraphGroup>()
+  const subgraphInputNodes = new Set<SubgraphInputNode>()
+  const subgraphOutputNodes = new Set<SubgraphOutputNode>()
+
+  const unknown = new Set<Positionable>()
+
+  for (const item of items) {
+    switch (true) {
+      case item instanceof LGraphNode:
+        nodes.add(item)
+        break
+      case item instanceof LGraphGroup:
+        groups.add(item)
+        break
+      case item instanceof Reroute:
+        reroutes.add(item)
+        break
+      case item instanceof SubgraphInputNode:
+        subgraphInputNodes.add(item)
+        break
+      case item instanceof SubgraphOutputNode:
+        subgraphOutputNodes.add(item)
+        break
+      default:
+        unknown.add(item)
+        break
+    }
+  }
+
+  return {
+    nodes,
+    reroutes,
+    groups,
+    subgraphInputNodes,
+    subgraphOutputNodes,
+    unknown
+  }
+}
+
+interface BoundaryLinks {
+  boundaryLinks: LLink[]
+  boundaryFloatingLinks: LLink[]
+  internalLinks: LLink[]
+  boundaryInputLinks: LLink[]
+  boundaryOutputLinks: LLink[]
+}
+
+export function getBoundaryLinks(
+  graph: LGraph,
+  items: Set<Positionable>
+): BoundaryLinks {
+  const internalLinks: LLink[] = []
+  const boundaryLinks: LLink[] = []
+  const boundaryInputLinks: LLink[] = []
+  const boundaryOutputLinks: LLink[] = []
+  const boundaryFloatingLinks: LLink[] = []
+  const visited = new WeakSet<Positionable>()
+
+  for (const item of items) {
+    if (visited.has(item)) continue
+    visited.add(item)
+
+    // Nodes
+    if (item instanceof LGraphNode) {
+      const node = item
+
+      // Inputs
+      for (const [inputIndex] of node.inputs.entries()) {
+        addFloatingLinks(slotFloatingLinks(graph, 'input', node.id, inputIndex))
+
+        const linkId = inputLinkId(graph, node.id, inputIndex)
+        if (linkId === undefined) continue
+
+        const resolved = LLink.resolve(linkId, graph)
+        if (!resolved) {
+          console.warn(`Failed to resolve link ID [${linkId}]`)
+          continue
+        }
+
+        // Output end of this link is outside the items set
+        const { link, outputNode } = resolved
+        if (outputNode) {
+          if (!items.has(outputNode)) {
+            boundaryInputLinks.push(link)
+          } else {
+            internalLinks.push(link)
+          }
+        } else if (link.origin_id === SUBGRAPH_INPUT_ID) {
+          // Subgraph input node - always boundary
+          boundaryInputLinks.push(link)
+        }
+      }
+
+      // Outputs
+      for (const [outputIndex] of node.outputs.entries()) {
+        addFloatingLinks(
+          slotFloatingLinks(graph, 'output', node.id, outputIndex)
+        )
+
+        const linkIds = outputLinkIds(graph, node.id, outputIndex)
+        if (!linkIds.length) continue
+
+        const many = LLink.resolveMany(linkIds, graph)
+        for (const { link, inputNode } of many) {
+          if (
+            // Subgraph output node
+            link.target_id === SUBGRAPH_OUTPUT_ID ||
+            // Input end of this link is outside the items set
+            (inputNode && !items.has(inputNode))
+          ) {
+            boundaryOutputLinks.push(link)
+          }
+          // Internal links are discovered on input side.
+        }
+      }
+    } else if (item instanceof Reroute) {
+      // Reroutes
+      const reroute = item
+
+      // TODO: This reroute should be on one side of the boundary.  We should mark the reroute that is on each side of the boundary.
+      // TODO: This could occur any number of times on a link; each time should be marked as a separate boundary.
+      // TODO: e.g. A link with 3 reroutes, the first and last reroute are in `items`, but the middle reroute is not. This will be two "in" and two "out" boundaries.
+      const results = LLink.resolveMany(reroute.linkIds, graph)
+      for (const { link } of results) {
+        const reroutes = LLink.getReroutes(graph, link)
+        const reroutesOutside = reroutes.filter(
+          (reroute) => !items.has(reroute)
+        )
+
+        // for (const reroute of reroutes) {
+        //   // TODO: Do the checks here.
+        // }
+
+        const { inputNode, outputNode } = link.resolve(graph)
+
+        if (
+          reroutesOutside.length ||
+          (inputNode && !items.has(inputNode)) ||
+          (outputNode && !items.has(outputNode))
+        ) {
+          boundaryLinks.push(link)
+        }
+      }
+    }
+  }
+
+  return {
+    boundaryLinks,
+    boundaryFloatingLinks,
+    internalLinks,
+    boundaryInputLinks,
+    boundaryOutputLinks
+  }
+
+  /**
+   * Adds any floating links that cross the boundary.
+   * @param floatingLinks The floating links to check
+   */
+  function addFloatingLinks(floatingLinks: LLink[]): void {
+    for (const link of floatingLinks) {
+      const crossesBoundary = LLink.getReroutes(graph, link).some(
+        (reroute) => !items.has(reroute)
+      )
+
+      if (crossesBoundary) boundaryFloatingLinks.push(link)
+    }
+  }
+}
+
+export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
+  return Array.from(nodes, (node) => structuredClone(node.serialize()))
+}
+
+export function findUnresolvableSubgraphLink(
+  subgraphNode: SubgraphNode
+): LLink | undefined {
+  const { subgraph } = subgraphNode
+
+  for (const link of subgraph.links.values()) {
+    const originOk =
+      link.origin_id === UNASSIGNED_NODE_ID ||
+      (link.origin_id === SUBGRAPH_INPUT_ID
+        ? Number.isInteger(link.origin_slot) &&
+          link.origin_slot >= 0 &&
+          link.origin_slot < subgraph.inputs.length
+        : subgraph.getNodeById(link.origin_id)?.outputs[link.origin_slot] !==
+          undefined)
+    const targetOk =
+      link.target_id === UNASSIGNED_NODE_ID ||
+      (link.target_id === SUBGRAPH_OUTPUT_ID
+        ? Number.isInteger(link.target_slot) &&
+          link.target_slot >= 0 &&
+          link.target_slot < subgraph.outputs.length
+        : subgraph.getNodeById(link.target_id)?.inputs[link.target_slot] !==
+          undefined)
+    if (!originOk || !targetOk) return link
+  }
+}
+
+/**
+ * Groups resolved connections by output object. If the output is nullish, the connection will be in its own group.
+ * @param resolvedConnections The resolved connections to group
+ * @returns A map of grouped connections.
+ */
+export function groupResolvedByOutput(
+  resolvedConnections: ResolvedConnection[]
+): Map<SubgraphIO | INodeOutputSlot | object, ResolvedConnection[]> {
+  const groupedByOutput: ReturnType<typeof groupResolvedByOutput> = new Map()
+
+  for (const resolved of resolvedConnections) {
+    // Force no group (unique object) if output is undefined; corruption or an error has occurred
+    const groupBy = resolved.subgraphInput ?? resolved.output ?? {}
+    const group = groupedByOutput.get(groupBy)
+    if (group) {
+      group.push(resolved)
+    } else {
+      groupedByOutput.set(groupBy, [resolved])
+    }
+  }
+
+  return groupedByOutput
+}
+function mapReroutes(
+  link: SerialisableLLink,
+  reroutes: Map<RerouteId, Reroute>
+) {
+  let child: SerialisableLLink | Reroute = link
+  let nextReroute =
+    child.parentId === undefined
+      ? undefined
+      : reroutes.get(toRerouteId(child.parentId))
+
+  while (child.parentId !== undefined && nextReroute) {
+    child = nextReroute
+    nextReroute =
+      child.parentId === undefined
+        ? undefined
+        : reroutes.get(toRerouteId(child.parentId))
+  }
+
+  const lastId = child.parentId
+  child.parentId = undefined
+  return lastId
+}
+
+export function mapSubgraphInputsAndLinks(
+  resolvedInputLinks: ResolvedConnection[],
+  links: SerialisableLLink[],
+  reroutes: Map<RerouteId, Reroute>
+): SubgraphIO[] {
+  // Group matching links
+  const groupedByOutput = groupResolvedByOutput(resolvedInputLinks)
+
+  // Create one input for each output (outside subgraph)
+  const inputs: SubgraphIO[] = []
+
+  for (const [, connections] of groupedByOutput) {
+    const inputLinks: SerialisableLLink[] = []
+
+    // Create serialised links for all links (will be recreated in subgraph)
+    for (const resolved of connections) {
+      const { link, input } = resolved
+      if (!input) continue
+
+      const linkData = link.asSerialisable()
+      const parentId = mapReroutes(link, reroutes)
+      link.parentId = parentId === undefined ? undefined : toRerouteId(parentId)
+      linkData.origin_id = SUBGRAPH_INPUT_ID
+      linkData.origin_slot = inputs.length
+
+      links.push(linkData)
+      inputLinks.push(linkData)
+    }
+
+    // Use first input link
+    const { input } = connections[0]
+    if (!input) continue
+
+    // Subgraph input slot
+    const {
+      color_off,
+      color_on,
+      dir,
+      hasErrors,
+      label,
+      localized_name,
+      name,
+      shape,
+      type
+    } = input
+    const uniqueName = nextUniqueName(
+      name,
+      inputs.map((input) => input.name)
+    )
+    const uniqueLocalizedName = localized_name
+      ? nextUniqueName(
+          localized_name,
+          inputs.map((input) => input.localized_name ?? '')
+        )
+      : undefined
+
+    const inputData: SubgraphIO = {
+      id: createUuidv4(),
+      type: String(type),
+      linkIds: inputLinks.map((link) => link.id),
+      name: uniqueName,
+      color_off,
+      color_on,
+      dir,
+      label,
+      localized_name: uniqueLocalizedName,
+      hasErrors,
+      shape
+    }
+
+    inputs.push(inputData)
+  }
+
+  return inputs
+}
+
+/**
+ * Clones the output slots, and updates existing links, when converting items to a subgraph.
+ * @param resolvedOutputLinks The resolved output links.
+ * @param links The links to add to the subgraph.
+ * @returns The subgraph output slots.
+ */
+export function mapSubgraphOutputsAndLinks(
+  resolvedOutputLinks: ResolvedConnection[],
+  links: SerialisableLLink[],
+  reroutes: Map<RerouteId, Reroute>
+): SubgraphIO[] {
+  // Group matching links
+  const groupedByOutput = groupResolvedByOutput(resolvedOutputLinks)
+
+  const outputs: SubgraphIO[] = []
+
+  for (const [, connections] of groupedByOutput) {
+    const outputLinks: SerialisableLLink[] = []
+
+    // Create serialised links for all links (will be recreated in subgraph)
+    for (const resolved of connections) {
+      const { link, output } = resolved
+      if (!output) continue
+
+      const linkData = link.asSerialisable()
+      linkData.parentId = mapReroutes(link, reroutes)
+      linkData.target_id = SUBGRAPH_OUTPUT_ID
+      linkData.target_slot = outputs.length
+
+      links.push(linkData)
+      outputLinks.push(linkData)
+    }
+
+    // Use first output link
+    const { output } = connections[0]
+    if (!output) continue
+
+    // Subgraph output slot
+    const {
+      color_off,
+      color_on,
+      dir,
+      hasErrors,
+      label,
+      localized_name,
+      name,
+      shape,
+      type
+    } = output
+    const uniqueName = nextUniqueName(
+      name,
+      outputs.map((output) => output.name)
+    )
+    const uniqueLocalizedName = localized_name
+      ? nextUniqueName(
+          localized_name,
+          outputs.map((output) => output.localized_name ?? '')
+        )
+      : undefined
+
+    const outputData = {
+      id: createUuidv4(),
+      type: String(type),
+      linkIds: outputLinks.map((link) => link.id),
+      name: uniqueName,
+      color_off,
+      color_on,
+      dir,
+      label,
+      localized_name: uniqueLocalizedName,
+      hasErrors,
+      shape
+    } satisfies SubgraphIO
+
+    outputs.push(structuredClone(outputData))
+  }
+  return outputs
+}
+
+/**
+ * Collects all subgraph IDs used directly in a single graph (non-recursive).
+ * @param graph The graph to check for subgraph nodes
+ * @returns Set of subgraph IDs used in this graph
+ */
+export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<SubgraphId> {
+  const subgraphIds = new Set<SubgraphId>()
+
+  for (const node of graph._nodes) {
+    if (node.isSubgraphNode()) {
+      subgraphIds.add(node.type)
+    }
+  }
+
+  return subgraphIds
+}
+
+/**
+ * Collects all subgraph IDs referenced in a graph hierarchy using BFS.
+ * @param rootGraph The graph to start from
+ * @param subgraphRegistry Map of all available subgraphs
+ * @returns Set of all subgraph IDs found
+ */
+export function findUsedSubgraphIds(
+  rootGraph: GraphOrSubgraph,
+  subgraphRegistry: Map<SubgraphId, GraphOrSubgraph>
+): Set<SubgraphId> {
+  const usedSubgraphIds = new Set<SubgraphId>()
+  const toVisit: GraphOrSubgraph[] = [rootGraph]
+
+  while (toVisit.length > 0) {
+    const graph = toVisit.shift()!
+    const directIds = getDirectSubgraphIds(graph)
+
+    for (const id of directIds) {
+      if (!usedSubgraphIds.has(id)) {
+        usedSubgraphIds.add(id)
+        const subgraph = subgraphRegistry.get(id)
+        if (subgraph) {
+          toVisit.push(subgraph)
+        }
+      }
+    }
+  }
+
+  return usedSubgraphIds
+}
+
+function findLiveSubgraphIds(
+  rootGraph: LGraph,
+  removedNode: SubgraphNode
+): Set<SubgraphId> {
+  const liveIds = new Set<SubgraphId>()
+  const toVisit: GraphOrSubgraph[] = [rootGraph]
+
+  while (toVisit.length > 0) {
+    const graph = toVisit.shift()!
+    for (const node of graph._nodes) {
+      if (node === removedNode || !node.isSubgraphNode()) continue
+      if (liveIds.has(node.subgraph.id)) continue
+      liveIds.add(node.subgraph.id)
+      toVisit.push(node.subgraph)
+    }
+  }
+
+  return liveIds
+}
+
+function collectSubgraphsPostOrder(
+  subgraph: Subgraph,
+  visitedIds: Set<SubgraphId>,
+  result: Subgraph[]
+): void {
+  if (visitedIds.has(subgraph.id)) return
+  visitedIds.add(subgraph.id)
+
+  for (const node of subgraph._nodes) {
+    if (node.isSubgraphNode()) {
+      collectSubgraphsPostOrder(node.subgraph, visitedIds, result)
+    }
+  }
+
+  result.push(subgraph)
+}
+
+export function findReleasableSubgraphs(
+  rootGraph: LGraph,
+  removedNode: SubgraphNode
+): Subgraph[] {
+  const liveIds = findLiveSubgraphIds(rootGraph, removedNode)
+  const removedSubtree: Subgraph[] = []
+  collectSubgraphsPostOrder(removedNode.subgraph, new Set(), removedSubtree)
+  return removedSubtree.filter((subgraph) => !liveIds.has(subgraph.id))
+}
+
+export function findOrphanedSubgraphs(
+  rootGraph: LGraph,
+  removedNodes: Iterable<LGraphNode>
+): Subgraph[] {
+  const orphaned = new Map<SubgraphId, Subgraph>()
+  for (const node of removedNodes) {
+    if (!node.isSubgraphNode()) continue
+    for (const subgraph of findReleasableSubgraphs(rootGraph, node))
+      orphaned.set(subgraph.id, subgraph)
+  }
+  return [...orphaned.values()]
+}
+
+function reorderInPlace(arr: unknown[], indices: readonly number[]): void {
+  arr.splice(0, arr.length, ...indices.flatMap((i) => arr[i] ?? []))
+}
+
+function* indexedLinks<S>(
+  slots: readonly S[],
+  resolve: (slot: S) => Iterable<LLink | undefined>
+): Generator<readonly [number, LLink]> {
+  for (const [index, slot] of slots.entries()) {
+    for (const link of resolve(slot)) {
+      if (link) yield [index, link] as const
+    }
+  }
+}
+
+export function reorderSubgraphInputs(
+  subgraphNode: SubgraphNode,
+  orderedIndices: readonly number[]
+): void {
+  const subgraph = subgraphNode.subgraph
+
+  const n = subgraph.inputs.length
+  if (subgraphNode.inputs.length !== n) {
+    console.error('reorderSubgraphInputs: host and subgraph inputs differ', {
+      hostInputs: subgraphNode.inputs.length,
+      subgraphInputs: n
+    })
+    return
+  }
+
+  if (
+    orderedIndices.length !== n ||
+    new Set(orderedIndices).size !== orderedIndices.length ||
+    orderedIndices.some((i) => i < 0 || i >= n)
+  ) {
+    console.error(
+      `reorderSubgraphInputs: orderedIndices must be a permutation of 0..${n - 1}`,
+      orderedIndices
+    )
+    return
+  }
+
+  const oldOrder = subgraph.inputs.map((i) => i.id)
+
+  const previousInputs = captureInputLayout(subgraphNode)
+  const orderedHostInputs = orderedIndices.map(
+    (index) => previousInputs.inputs[index]
+  )
+
+  const result = replaceNodeInputs(
+    subgraphNode,
+    previousInputs,
+    orderedHostInputs
+  )
+  if (!result.ok) return
+  reorderInPlace(subgraph.inputs, orderedIndices)
+  subgraphNode.invalidatePromotedViews()
+
+  function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
+    for (const id of input.linkIds) yield subgraph.getLink(id)
+  }
+  for (const [slot, link] of indexedLinks(subgraph.inputs, innerLinks)) {
+    link.origin_slot = slot
+  }
+
+  const newOrder = subgraph.inputs.map((i) => i.id)
+  if (!isEqual(oldOrder, newOrder)) {
+    subgraph.events.dispatch('inputs-reordered', {
+      subgraph,
+      oldOrder,
+      newOrder
+    })
+  }
+}
+
+export { isSubgraphInput, isSubgraphOutput } from './subgraphTypeGuards'

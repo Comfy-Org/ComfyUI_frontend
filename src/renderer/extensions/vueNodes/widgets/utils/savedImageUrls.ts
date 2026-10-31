@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { zResultItem } from '@comfyorg/api-client/executionTypes'
+import { zResultItem } from '@comfyorg/graph-model/nodeOutput'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 

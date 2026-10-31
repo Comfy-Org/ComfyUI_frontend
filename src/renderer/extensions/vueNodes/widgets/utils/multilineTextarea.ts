@@ -1,13 +1,13 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import { useApp } from '@/scripts/appInstance'
 import { DOMWidgetImpl, isDOMWidget } from '@/scripts/domWidget'
-import type { BaseDOMWidget } from '@/types/domWidget'
+import type { BaseDOMWidget } from '@comfyorg/litegraph/types/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50

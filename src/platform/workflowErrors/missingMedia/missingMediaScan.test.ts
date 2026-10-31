@@ -2,7 +2,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -27,7 +27,7 @@ import {
 } from './missingMediaGrouping'
 import type { MissingMediaCandidate } from './types'
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
+vi.mock<unknown>(import('@comfyorg/litegraph/utils/graphTraversalUtil'), () => {
   type TestNode = LGraphNode & { _testExecutionId?: string }
   type TestGraph = { _testNodes: TestNode[] }
   const isTestGraph = (graph: LGraph | TestGraph): graph is TestGraph =>

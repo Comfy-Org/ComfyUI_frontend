@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import messages from '@/locales/en/main.json'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'

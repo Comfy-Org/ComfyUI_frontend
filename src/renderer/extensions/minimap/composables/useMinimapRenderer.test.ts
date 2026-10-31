@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { useMinimapRenderer } from '@/renderer/extensions/minimap/composables/useMinimapRenderer'
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { UpdateFlags } from '@/renderer/extensions/minimap/types'

@@ -6,7 +6,7 @@ import type {
   CameraState,
   Model3DInfo
 } from '@comfyorg/viewport3d/load3d/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 
 type Load3dSerializedBase = {
   camera_info: CameraState | null

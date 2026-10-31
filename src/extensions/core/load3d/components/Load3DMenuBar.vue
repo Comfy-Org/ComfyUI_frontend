@@ -215,7 +215,7 @@ import {
   selectedMenuButtonClass
 } from '@comfyorg/design-system/lib/menu/menuStyles'
 import { getExportFormatOptions } from '@comfyorg/viewport3d/load3d/constants'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type {
   AnimationItem,
   CameraConfig,

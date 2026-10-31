@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyApp } from '@/scripts/app'

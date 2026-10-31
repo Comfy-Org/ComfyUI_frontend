@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'

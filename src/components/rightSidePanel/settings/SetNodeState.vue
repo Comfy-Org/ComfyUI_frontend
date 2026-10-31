@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import { LGraphEventMode } from '@comfyorg/litegraph/litegraph'
 import FormSelectButton from '@/renderer/extensions/vueNodes/widgets/components/form/FormSelectButton.vue'
 
 import LayoutField from '@comfyorg/design-system/field/LayoutField'

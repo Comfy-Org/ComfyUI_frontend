@@ -33,7 +33,7 @@ const mayBeActiveWorkflowPendingRef = ref(false)
 
 const allOutputsFn = vi.fn((): AugmentedResultItem[] => [])
 
-vi.mock<unknown>(import('@/lib/litegraph/src/CanvasPointer'), () => ({
+vi.mock<unknown>(import('@comfyorg/litegraph/CanvasPointer'), () => ({
   CanvasPointer: class {
     isTrackpadGesture() {
       return false

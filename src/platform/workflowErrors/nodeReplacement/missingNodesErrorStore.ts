@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { st } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -16,7 +16,7 @@ import { useApp } from '@/scripts/appInstance'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { getAncestorExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { getExecutionIdByNode } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 interface MissingNodesError {
   message: string

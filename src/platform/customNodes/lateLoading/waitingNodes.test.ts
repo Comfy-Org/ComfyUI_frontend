@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
 import { showPlaceholdersAsWaiting } from './waitingNodes'
 

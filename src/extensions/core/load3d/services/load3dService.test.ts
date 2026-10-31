@@ -9,9 +9,9 @@ import {
   removeLoad3d
 } from '@/extensions/core/load3d/load3dInstances'
 import { QuadWireframeOverlay } from '@comfyorg/viewport3d/load3d/quadWireframe/QuadWireframeManager'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 const { nodeMap, useLoad3dViewerMock, skeletonCloneMock } = vi.hoisted(() => ({
   nodeMap: new Map<LGraphNode, Load3d>(),

@@ -1,0 +1,41 @@
+{
+  "name": "@comfyorg/graph-state",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": {
+      "@comfyorg/graph-state": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "exports": {
+    "./*": {
+      "@comfyorg/graph-state": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.declarations.json",
+    "typecheck": "tsc --noEmit",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "@comfyorg/graph-model": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@comfyorg/telemetry": "workspace:*",
+    "es-toolkit": "catalog:",
+    "loglevel": "^1.9.2",
+    "pinia": "catalog:",
+    "vue": "catalog:",
+    "yjs": "catalog:",
+    "zod": "catalog:",
+    "zod-validation-error": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

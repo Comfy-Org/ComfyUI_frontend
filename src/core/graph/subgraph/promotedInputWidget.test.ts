@@ -5,11 +5,11 @@ import {
   promotedInputWidgets
 } from '@/core/graph/subgraph/promotedInputWidget'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 
 vi.mock(import('@/services/litegraphService'))
 

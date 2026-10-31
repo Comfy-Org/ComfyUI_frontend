@@ -1,6 +1,6 @@
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 
 export function notifyLayoutChanges(canvas: LGraphCanvas): () => void {
   const stopOperations = layoutStore.onChange((change) => {

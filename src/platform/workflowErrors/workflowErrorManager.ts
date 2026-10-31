@@ -1,8 +1,8 @@
 import { inject } from 'vue'
 import type { InjectionKey, Ref } from 'vue'
 
-import { assert } from '@/base/assert'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type NodePack = components['schemas']['Node']

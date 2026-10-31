@@ -5,12 +5,12 @@ import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WebSession } from '@comfyorg/account-core/webSession'
 
-import type { IWidget } from '@/lib/litegraph/src/litegraph'
+import type { IWidget } from '@comfyorg/litegraph/litegraph'
 import {
   LGraph,
   LGraphNode,
   isComboWidget
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
@@ -19,7 +19,7 @@ import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { api } from '@/scripts/api'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useAuthStore } from '@/stores/authStore'
 

@@ -1,6 +1,6 @@
 // import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems' // Unused for now
 import { t } from '@/i18n'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {

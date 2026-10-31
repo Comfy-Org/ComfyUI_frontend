@@ -4,11 +4,11 @@ import { nextTick } from 'vue'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import {
   LGraphEventMode,
   NodeSlotType

@@ -72,51 +72,47 @@
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/CurveEditor.ts",
+      "path": "packages/litegraph/src/CurveEditor.ts",
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/node/widgetsView.ts",
+      "path": "packages/litegraph/src/node/widgetsView.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/utils/mathParser.ts",
+      "path": "packages/litegraph/src/utils/mathParser.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiff.ts",
+      "path": "packages/litegraph/src/utils/namedValuesShadowDiff.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts",
+      "path": "packages/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/utils/restoredWidgetValue.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/utils/widget.ts",
+      "path": "packages/litegraph/src/utils/widget.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/widgetConnectionSuppression.test.ts",
+      "path": "packages/litegraph/src/widgetConnectionSuppression.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/widgetValueNullContract.test.ts",
+      "path": "packages/litegraph/src/widgetValueNullContract.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/**",
+      "path": "packages/litegraph/src/widgets/**",
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/widgetMap.ts",
+      "path": "packages/litegraph/src/widgets/widgetMap.ts",
       "role": "integration"
     },
     {
-      "path": "src/stores/widgetValueStore.ts",
+      "path": "src/stores/widgetValueStore.graphReactivity.test.ts",
       "role": "application"
     },
     {
@@ -125,10 +121,6 @@
     },
     {
       "path": "src/types/widgetState.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/widgetVisibility.ts",
       "role": "domain"
     },
     {
@@ -155,19 +147,19 @@
     {
       "name": "Legacy canvas widgets render and respond to input for each generic kind",
       "checks": [
-        "src/lib/litegraph/src/widgets/BaseWidget.test.ts",
-        "src/lib/litegraph/src/widgets/ComboWidget.test.ts",
-        "src/lib/litegraph/src/widgets/NumberWidget.test.ts",
-        "src/lib/litegraph/src/widgets/NumericWidgetRendering.test.ts",
-        "src/lib/litegraph/src/widgets/widgetMap.test.ts"
+        "packages/litegraph/src/widgets/BaseWidget.test.ts",
+        "packages/litegraph/src/widgets/ComboWidget.test.ts",
+        "packages/litegraph/src/widgets/NumberWidget.test.ts",
+        "packages/litegraph/src/widgets/NumericWidgetRendering.test.ts",
+        "packages/litegraph/src/widgets/widgetMap.test.ts"
       ]
     },
     {
       "name": "node.widgets stays a consistent view over stored widget values",
       "checks": [
-        "src/lib/litegraph/src/node/widgetsView.test.ts",
-        "src/lib/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
-        "src/lib/litegraph/src/widgetValueNullContract.test.ts",
+        "packages/litegraph/src/node/widgetsView.test.ts",
+        "packages/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
+        "packages/litegraph/src/widgetValueNullContract.test.ts",
         "src/core/graph/widgets/nodeWidgetValues.test.ts"
       ]
     },
@@ -183,7 +175,7 @@
     {
       "name": "Widget value store keeps scoped widget state reactive across graph edits and announces value intents",
       "checks": [
-        "src/stores/widgetValueStore.test.ts",
+        "packages/graph-state/src/widgetValueStore.test.ts",
         "src/stores/widgetValueStore.graphReactivity.test.ts"
       ]
     },
@@ -195,7 +187,7 @@
       "name": "Widget ids stay unique per node and widget visibility derives canvas, Vue node, and panel surfaces",
       "checks": [
         "src/types/widgetId.test.ts",
-        "src/types/widgetVisibility.test.ts"
+        "packages/graph-model/src/widgetVisibility.test.ts"
       ]
     },
     {

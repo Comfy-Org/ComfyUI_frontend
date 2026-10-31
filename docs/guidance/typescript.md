@@ -81,7 +81,7 @@ Extract type guards and their associated interfaces into **leaf modules** — fi
 
 ```typescript
 // ✅ myTypes.ts — leaf module (only type imports)
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/litegraph/types/widgets'
 
 export interface MyView extends IBaseWidget {
   /* ... */

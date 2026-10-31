@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   addWidget,

@@ -1,4 +1,4 @@
-import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LinkMarkerShape, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import {
   getDefaultLocale,
   SUPPORTED_LOCALE_OPTIONS

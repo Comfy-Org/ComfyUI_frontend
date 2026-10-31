@@ -1,9 +1,9 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type {
   IRangeWidget,
   IWidgetRangeOptions
 } from '@comfyorg/graph-model/widgets'
-import type { RangeInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { RangeInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useRangeWidget = (): ComfyWidgetConstructorV2 => {

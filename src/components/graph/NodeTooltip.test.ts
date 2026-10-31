@@ -8,7 +8,7 @@ import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import {
   isOverNodeInput,
   isOverNodeOutput
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@comfyorg/settings-core/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -58,7 +58,7 @@ const mockCanvas = vi.hoisted(
   })
 )
 
-vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/litegraph'), { spy: true })
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {

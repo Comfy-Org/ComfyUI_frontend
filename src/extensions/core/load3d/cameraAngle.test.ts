@@ -1,13 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { ComfyApp } from '@/scripts/app'
 import { graphToPrompt } from '@/utils/executionUtil'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
-} from '@/types/widgetVisibility'
+} from '@comfyorg/graph-model/widgetVisibility'
 
 import { cameraAngleExtension as extension } from './cameraAngle'
 import { load3dWidgets } from './load3dWidgets'

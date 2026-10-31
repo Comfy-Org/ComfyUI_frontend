@@ -4,7 +4,7 @@ import { merge } from 'es-toolkit/compat'
 import type { Component } from 'vue'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'

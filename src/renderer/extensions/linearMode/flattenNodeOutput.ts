@@ -1,4 +1,4 @@
-import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import { parseNodeOutput } from '@/stores/resultItemParsing'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 

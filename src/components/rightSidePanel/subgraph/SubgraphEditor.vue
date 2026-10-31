@@ -20,13 +20,13 @@ import {
 } from '@/core/graph/subgraph/promotedInputWidget'
 import type { PromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
-import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
+import type { PreviewExposure } from '@comfyorg/graph-state/previewExposureSchema'
 import type {
   INodeInputSlot,
   ISubgraphInput
 } from '@comfyorg/graph-model/slots'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
@@ -34,8 +34,8 @@ import { useLitegraphService } from '@/services/litegraphService'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
-} from '@/stores/previewExposureStore'
-import { deriveWidgetVisibility } from '@/types/widgetVisibility'
+} from '@comfyorg/graph-state/previewExposureStore'
+import { deriveWidgetVisibility } from '@comfyorg/graph-model/widgetVisibility'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'

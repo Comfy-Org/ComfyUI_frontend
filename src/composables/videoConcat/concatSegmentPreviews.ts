@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { resultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { resultItemType } from '@comfyorg/graph-model/resultItemTypeSchema'
 import { api } from '@/scripts/api'
-import { executionIdFromState } from '@/utils/graphTraversalUtil'
+import { executionIdFromState } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 const zSegmentPreview = z.object({
   filename: z.string(),

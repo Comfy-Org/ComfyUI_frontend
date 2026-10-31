@@ -9,9 +9,9 @@ import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
   applyViewport,
   measureViewportFromElement
-} from '@/renderer/core/canvas/canvasViewport'
+} from '@comfyorg/graph-state/layout/canvasViewport'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
-import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { selectedCanvasNodes } from '@comfyorg/litegraph/canvas/selectionAdapter'
 
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
@@ -24,18 +24,18 @@ import {
   pasteFromClipspace
 } from '@/scripts/clipspace'
 import type { Clipspace } from '@/scripts/clipspace'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
-import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
+import type { IContextMenuValue } from '@comfyorg/litegraph/types/contextMenu'
+import { withGraphIntentSource } from '@comfyorg/graph-state/graphIntents'
+import { createMutationView } from '@comfyorg/litegraph/infrastructure/createMutationView'
 import {
   inputAsSerialisable,
   LGraph,
   LGraphCanvas,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import { snapPoint } from '@/lib/litegraph/src/measure'
-import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
+import { snapPoint } from '@comfyorg/litegraph/measure'
+import type { ISerialisedGraph, Vector2 } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
@@ -85,15 +85,13 @@ import {
   parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
-import type {
-  ExecutionErrorWsMessage,
-  NodeExecutionOutput
-} from '@comfyorg/api-client/executionTypes'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import type { NodeError } from '@comfyorg/api-client/types'
 import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
-import type { BaseDOMWidget } from '@/types/domWidget'
+import type { BaseDOMWidget } from '@comfyorg/litegraph/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { resolveAccountPrecondition } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
@@ -141,7 +139,7 @@ import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { getCnrIdFromProperties } from '@comfyorg/litegraph/utils/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import {
@@ -159,14 +157,14 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 
 import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
-import { ensureNonZeroUuid } from '@/utils/uuid'
+import { ensureNonZeroUuid } from '@comfyorg/graph-model/uuid'
 import {
   collectAllNodes,
   forEachNode,
   getNodeByExecutionId,
   isAncestorPathActive,
   triggerCallbackOnAllNodes
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import {
   executeWidgetsCallback,
   isImageNode,

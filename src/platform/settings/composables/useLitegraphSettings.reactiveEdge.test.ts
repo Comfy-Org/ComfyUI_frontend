@@ -1,7 +1,7 @@
 import { effectScope, nextTick } from 'vue'
 import { expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 // oxlint-disable-next-line comfy/no-restricted-paths -- Settings adapter verifies legacy canvas synchronization.
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

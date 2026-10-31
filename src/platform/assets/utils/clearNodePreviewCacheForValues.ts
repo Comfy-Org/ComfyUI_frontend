@@ -2,9 +2,9 @@ import type {
   LGraph,
   LGraphNode,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 const LONGEST_ANNOTATION = '[output]'
 

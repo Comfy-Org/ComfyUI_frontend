@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { LGraph, Subgraph } from '@comfyorg/litegraph/litegraph'
 import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 
 import { heuristicRoles } from './heuristicRoles'

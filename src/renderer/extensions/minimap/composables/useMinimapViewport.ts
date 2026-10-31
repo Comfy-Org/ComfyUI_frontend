@@ -2,7 +2,7 @@ import { useRafFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import {
   calculateMinimapScale,
   enforceMinimumBounds

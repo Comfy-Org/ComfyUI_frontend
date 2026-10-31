@@ -1,7 +1,7 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -13,14 +13,14 @@ import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetD
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
-} from '@/stores/widgetValueStore'
+} from '@comfyorg/graph-state/widgetValueStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -33,8 +33,8 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { getControlWidget } from '@/types/simplifiedWidget'
-import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
-import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import { isWidgetVisibleOnSurface } from '@comfyorg/graph-model/widgetVisibility'
+import type { WidgetVisibilityComponent } from '@comfyorg/graph-model/widgetVisibility'
 import type {
   LinkedUpstreamInfo,
   SafeControlWidget,
@@ -47,7 +47,7 @@ import {
   executionIdToNodeLocatorId,
   getNodeByState,
   subgraphIdFromState
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
 
 type TooltipValueType = 'asset' | 'combo' | 'number' | 'text'

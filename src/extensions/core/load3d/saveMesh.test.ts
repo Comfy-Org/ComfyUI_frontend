@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import type { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import type { ComfyExtension } from '@/types/comfy'
-import type * as GraphTraversalModule from '@/utils/graphTraversalUtil'
+import type * as GraphTraversalModule from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 const { waitForLoad3dMock, onLoad3dReadyMock, configureForSaveMeshMock } =
   vi.hoisted(() => ({
@@ -56,7 +56,7 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'))
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'))
 
 type SaveMeshExtension = ComfyExtension & {
   nodeCreated: (node: LGraphNode) => Promise<void>
@@ -72,7 +72,8 @@ interface LoadedSaveMeshExtension {
 
 async function loadSaveMeshExtensionFresh(): Promise<LoadedSaveMeshExtension> {
   vi.resetModules()
-  const graphTraversal = await import('@/utils/graphTraversalUtil')
+  const graphTraversal =
+    await import('@comfyorg/litegraph/utils/graphTraversalUtil')
   const { saveMeshExtension } =
     await import('@/extensions/core/load3d/saveMesh')
   return {

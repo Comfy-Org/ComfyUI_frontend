@@ -5,11 +5,11 @@ import { markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -20,7 +20,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { getExecutionIdByNode } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 const mockApp = vi.hoisted(() => ({
   isGraphReady: true,

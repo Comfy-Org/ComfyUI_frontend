@@ -1,7 +1,7 @@
 {
   "id": "runtime-guards",
   "capability": "Runtime type guards",
-  "description": "Shared technical module for runtime narrowing of abort errors, nullable values, graph entities, slots, and result-item variants. The combined file imports types from multiple modules and remains an extraction candidate.",
+  "description": "Shared technical module for runtime narrowing of abort errors, nullable values, slots, and result-item variants. Graph entity guards live in litegraph.",
   "modules": [
     {
       "path": "src/utils/typeGuardUtil.ts",

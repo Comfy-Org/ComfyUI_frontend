@@ -53,6 +53,12 @@
       "path": "./packages/keybindings/tsconfig.declarations.json"
     },
     {
+      "path": "./packages/graph-state/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/litegraph/tsconfig.declarations.json"
+    },
+    {
       "path": "./packages/settings-core/tsconfig.declarations.json"
     },
     {

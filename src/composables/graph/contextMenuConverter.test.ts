@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
 
 import type { MenuOption } from './menuOption'
 import {

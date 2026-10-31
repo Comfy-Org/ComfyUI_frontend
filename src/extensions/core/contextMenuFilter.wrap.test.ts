@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
-import { ContextMenu, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { ContextMenu, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { ComfyApp } from '@/scripts/app'
 
 import { contextMenuFilterExtension } from './contextMenuFilter'

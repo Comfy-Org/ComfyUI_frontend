@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
-import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { LGraphGroup } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTitleEditorStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'

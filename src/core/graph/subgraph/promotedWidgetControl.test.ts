@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 import { applyPromotedWidgetControl } from './promotedWidgetControl'
 

@@ -1,8 +1,8 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { partition } from 'es-toolkit'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
-import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { ResultItem } from '@comfyorg/graph-model/nodeOutput'
 import { withHdrImageType } from '@/utils/eventUtils'
 
 type DragHandler = (e: DragEvent) => boolean

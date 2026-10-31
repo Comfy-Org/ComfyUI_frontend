@@ -9,13 +9,13 @@ import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisib
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { getAncestorExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 import type {
   NodeExecutionId,
   NodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
-import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
+import { getActiveGraphNodeIds } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 /**
  * Missing model error state and interaction state.

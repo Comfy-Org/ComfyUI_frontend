@@ -27,16 +27,16 @@ import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import type { IContextMenuValue } from '@comfyorg/litegraph/types/contextMenu'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   NodeExecutionOutput,
   NodeOutputWith
-} from '@comfyorg/api-client/executionTypes'
+} from '@comfyorg/graph-model/nodeOutput'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 type Matrix = number[][]
 
@@ -51,7 +51,7 @@ import { useLoad3dService } from '@/extensions/core/load3d/services/load3dServic
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isLoad3dNode } from '@/utils/litegraphUtil'
-import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { selectedCanvasNodes } from '@comfyorg/litegraph/canvas/selectionAdapter'
 
 export const load3dExtension: ComfyExtension = {
   name: 'Comfy.Load3D',

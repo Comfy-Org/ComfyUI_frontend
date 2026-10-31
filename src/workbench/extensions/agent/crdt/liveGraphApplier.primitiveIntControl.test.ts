@@ -4,7 +4,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { ComfyWidgets } from '@/scripts/widgets'

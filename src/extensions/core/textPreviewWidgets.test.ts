@@ -2,8 +2,8 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import type { ComfyApp } from '@/scripts/app'
 
 interface MockWidget {
@@ -17,7 +17,7 @@ vi.mock(import('@/scripts/app'), () => ({
   app: fromPartial<ComfyApp>({ rootGraph: { id: 'graph-1' } })
 }))
 
-vi.mock(import('@/lib/litegraph/src/litegraph'), () => ({
+vi.mock(import('@comfyorg/litegraph/litegraph'), () => ({
   resolveNodeRootGraphId: () => 'graph-1'
 }))
 

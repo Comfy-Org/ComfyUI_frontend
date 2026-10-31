@@ -8,7 +8,7 @@ import type {
 } from '@datadog/browser-rum'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { setAssertReporter } from '@/base/assert'
+import { setAssertReporter } from '@comfyorg/shared-frontend-utils/assert'
 import {
   CUSTOM_NODE_FAILURES_TRUNCATED_FIELD,
   CUSTOM_NODE_LOAD_ERROR_TYPE

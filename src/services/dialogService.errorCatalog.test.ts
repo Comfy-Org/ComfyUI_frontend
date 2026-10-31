@@ -11,7 +11,7 @@ import {
 } from 'vitest'
 
 import { i18n, loadLocale } from '@/i18n'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@comfyorg/litegraph/litegraph'
 import type { PromptFailureResponse } from '@comfyorg/api-client/types'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'

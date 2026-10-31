@@ -1,7 +1,7 @@
 import type { InjectionKey, Ref } from 'vue'
 import { z } from 'zod'
 
-import { zResultItem } from '@comfyorg/api-client/executionTypes'
+import { zResultItem } from '@comfyorg/graph-model/nodeOutput'
 
 import { assetItemSchema } from './assetSchema'
 

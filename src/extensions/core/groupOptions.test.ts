@@ -4,16 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   ContextMenuDivElement,
   IContextMenuValue
-} from '@/lib/litegraph/src/types/contextMenu'
+} from '@comfyorg/litegraph/types/contextMenu'
 import type {
   LGraph,
   LGraphCanvas,
   LGraphGroup,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
+import { LGraphEventMode } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 vi.mock(import('@/scripts/app'))
 

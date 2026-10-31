@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import type { EditorOutputData } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

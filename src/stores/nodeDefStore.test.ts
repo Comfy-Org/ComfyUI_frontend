@@ -2,12 +2,12 @@ import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { LGraph, SubgraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'

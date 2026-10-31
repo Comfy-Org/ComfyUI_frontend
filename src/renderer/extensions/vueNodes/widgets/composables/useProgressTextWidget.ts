@@ -1,13 +1,13 @@
 import TextPreviewWidget from '@/components/graph/widgets/TextPreviewWidget.vue'
-import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { resolveNodeRootGraphId } from '@comfyorg/litegraph/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import type { ComponentWidgetStandardProps } from '@/types/domWidget'
+import type { ComponentWidgetStandardProps } from '@comfyorg/litegraph/types/domWidget'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 type TextPreviewCustomProps = Omit<

@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 
 import { useAgentComposerStore } from './agentComposerStore'
 

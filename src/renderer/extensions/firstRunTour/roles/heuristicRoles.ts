@@ -1,11 +1,11 @@
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { resolveSubgraphInputTarget } from '@comfyorg/litegraph/subgraph/promotion/resolveSubgraphInputTarget'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import {
   collectAllNodes,
   getExecutionIdByNode,
   isExecutionPathActive
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 import { MEDIA_KIND_BY_SINK_TYPE } from './tourRolePins'

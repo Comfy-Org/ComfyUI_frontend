@@ -13,9 +13,9 @@ import { app } from '@/scripts/app'
 import {
   getActiveGraphNodeIds,
   getExecutionIdByNode
-} from '@/utils/graphTraversalUtil'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
+import { SubgraphNode } from '@comfyorg/litegraph/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'

@@ -14,9 +14,9 @@ import * as Y from 'yjs'
 import {
   onGraphIntent,
   withGraphIntentSource
-} from '@/lib/litegraph/src/graphIntents'
-import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/graph-state/graphIntents'
+import type { GraphIntentEvent } from '@comfyorg/graph-state/graphIntents'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {

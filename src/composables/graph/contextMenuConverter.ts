@@ -1,15 +1,15 @@
 import { default as DOMPurify } from 'dompurify'
 
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type {
   IContextMenuValue,
   LGraphNode,
   IContextMenuOptions,
   ContextMenu
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 
 import type { MenuOption, SubMenuOption } from './menuOption'
-import type { ContextMenuDivElement } from '@/lib/litegraph/src/types/contextMenu'
+import type { ContextMenuDivElement } from '@comfyorg/litegraph/types/contextMenu'
 
 /**
  * Hard blacklist - items that should NEVER be included

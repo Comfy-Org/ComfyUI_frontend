@@ -20,19 +20,19 @@ import {
 import { useDocumentVisibility } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import type {
   Bounds,
   Size2D as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
-import type { NodeId } from '@/renderer/core/layout/types'
+import type { NodeId } from '@comfyorg/graph-state/layout/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { isSizeEqual } from '@/renderer/core/layout/utils/geometry'
+import { isSizeEqual } from '@comfyorg/graph-state/layout/geometry'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 /**
  * Generic update item for element bounds tracking

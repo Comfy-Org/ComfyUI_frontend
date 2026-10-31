@@ -1,14 +1,14 @@
 import { createSharedComposable, useEventListener } from '@vueuse/core'
 import { computed, onUnmounted, ref } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { app } from '@/scripts/app'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { mapAllNodes } from '@/utils/graphTraversalUtil'
+import { mapAllNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { useNodePacks } from '@/platform/customNodes/manager/composables/nodePack/useNodePacks'
 
 export type WorkflowPack = {

@@ -1,5 +1,5 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import { isInputPreviewOutput } from '@/utils/nodeOutputUtil'
 
 const LINKED_CORE_MEDIA_LOADERS = {

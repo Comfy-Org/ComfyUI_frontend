@@ -36,6 +36,15 @@
       "severity": "error",
       "from": { "path": "^src/platform/remote/ingest/" },
       "to": { "path": "^src/platform/(workspace|billing|account)/" }
+    },
+    {
+      "name": "litegraph-does-not-import-the-app",
+      "severity": "error",
+      "from": {
+        "path": "^packages/litegraph/",
+        "pathNot": "/__(fixtures|mocks)__/"
+      },
+      "to": { "path": "^src/" }
     }
   ],
   "options": {

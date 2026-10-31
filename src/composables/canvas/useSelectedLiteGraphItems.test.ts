@@ -3,14 +3,14 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
-import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import type { Positionable } from '@comfyorg/litegraph/litegraph'
 import {
   LGraphEventMode,
   LGraphNode,
   Reroute
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeId } from '@/renderer/core/layout/types'
+import type { NodeId } from '@comfyorg/graph-state/layout/types'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'

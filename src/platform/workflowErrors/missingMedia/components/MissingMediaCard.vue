@@ -69,7 +69,7 @@ import { resolveMissingMediaItemLabel } from '@/platform/workflowErrors/errorCat
 import { getMissingMediaReferences } from '@/platform/workflowErrors/missingMedia/missingMediaGrouping'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import { app } from '@/scripts/app'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { getNodeByExecutionId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 
 const { missingMediaGroups } = defineProps<{

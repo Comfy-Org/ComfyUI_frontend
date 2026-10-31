@@ -47,7 +47,7 @@ import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 import { useErrorActions } from './useErrorActions'

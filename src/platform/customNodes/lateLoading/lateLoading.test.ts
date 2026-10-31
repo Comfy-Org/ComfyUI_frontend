@@ -23,7 +23,7 @@ import type { ComfyExtension } from '@/types/comfy'
 import {
   createMockChangeTracker,
   createMockLoadedWorkflow
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/workflowTestUtils'
 
 import {
   importNoticingFetchFailure,

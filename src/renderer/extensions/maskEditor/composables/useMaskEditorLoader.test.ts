@@ -2,8 +2,8 @@ import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { api } from '@/scripts/api'

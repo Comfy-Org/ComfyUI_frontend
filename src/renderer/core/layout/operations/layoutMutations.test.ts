@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { createTestSubgraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createUuidv4 } from '@/utils/uuid'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
 
-import { useLayoutMutations } from './layoutMutations'
+import { useLayoutMutations } from '@comfyorg/graph-state/layout/layoutMutations'
 
 const GRAPH = createUuidv4()
 const NODE_1 = toNodeId('1')

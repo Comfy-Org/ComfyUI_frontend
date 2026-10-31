@@ -11,11 +11,11 @@ import type {
   VideoEditFeature,
   VideoEditValue
 } from '@comfyorg/graph-model/widgets'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 import WidgetVideoEdit from './WidgetVideoEdit.vue'
 
@@ -55,7 +55,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'))
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'))
 
 vi.mock<unknown>(import('@/composables/video/useVideoSourceUrl'), () => {
   // oxlint-disable-next-line typescript/no-require-imports

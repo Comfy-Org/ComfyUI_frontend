@@ -3,7 +3,7 @@ import { toRaw } from 'vue'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { SerialisableGraph } from '@/lib/litegraph/src/litegraph'
+import type { SerialisableGraph } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
@@ -53,8 +53,8 @@ import {
   generateUUID
 } from '@/utils/formatUtil'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
-import type { UUID } from '@/utils/uuid'
-import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
+import { ensureNonZeroUuid, zeroUuid } from '@comfyorg/graph-model/uuid'
 
 export function readWorkflowDraftLineage(path: string) {
   return useWorkflowDraftStoreV2().getDraft(path)?.lineage ?? null

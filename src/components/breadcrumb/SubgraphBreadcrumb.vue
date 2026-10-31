@@ -80,7 +80,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { forEachSubgraphNode } from '@/utils/graphTraversalUtil'
+import { forEachSubgraphNode } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 const MIN_WIDTH = 28
 const ITEM_GAP = 8

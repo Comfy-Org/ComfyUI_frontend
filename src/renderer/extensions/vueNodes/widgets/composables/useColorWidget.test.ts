@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
-import type { ColorInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ColorInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 
 const DECLARED_DEFAULT = '#00ff00'
 const BLACK_FALLBACK = '#000000'

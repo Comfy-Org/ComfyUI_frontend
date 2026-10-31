@@ -4,7 +4,7 @@ import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/reposit
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { NodeSourceType } from '@/types/nodeSource'
 
 const hoisted = vi.hoisted(() => ({
@@ -22,7 +22,7 @@ function mockNode(
   }
 }
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), () => ({
   reduceAllNodes: vi.fn((_graph, reducer, initial) => {
     let result = initial
     for (const node of hoisted.mockNodes) {

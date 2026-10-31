@@ -4,11 +4,11 @@
   "description": "LiteGraph graph, node, link, reroute, group, and slot entities with their store-backed node shell state, identity allocation, serialisation shapes, load-time link repair, and geometry value types. Node, slot, and group classes still carry canvas drawing and import shared drawing, widget, subgraph-promotion, selection, and layout code; those imports are recorded coupling, not owned responsibilities.",
   "modules": [
     {
-      "path": "src/constants/slotColors.ts",
+      "path": "packages/litegraph/src/slotColors.ts",
       "role": "domain"
     },
     {
-      "path": "src/core/graph/nodeShell/**",
+      "path": "packages/litegraph/src/node/nodeShell/**",
       "role": "application"
     },
     {
@@ -16,139 +16,123 @@
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/LGraph.remintLinkRemap.test.ts",
+      "path": "src/utils/LGraph.configureStoreScope.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/litegraph/src/LGraph.remintLinkRemap.test.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/LGraph.ts",
+      "path": "packages/litegraph/src/LGraph.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/LGraphGroup.ts",
+      "path": "packages/litegraph/src/LGraphGroup.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/LGraphNode.ts",
+      "path": "packages/litegraph/src/LGraphNode.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/LLink.ts",
+      "path": "src/utils/LGraphNode.widgetLabelRename.regression.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/LinkMap.ts",
+      "path": "src/workbench/utils/LGraphNode.widgetOrder.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/MapProxyHandler.ts",
+      "path": "packages/litegraph/src/LLink.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/litegraph/src/LinkMap.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/litegraph/src/MapProxyHandler.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/Reroute.ts",
+      "path": "packages/litegraph/src/Reroute.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/__fixtures__/**",
+      "path": "packages/litegraph/src/__fixtures__/**",
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/extensionPersistence.ts",
+      "path": "packages/litegraph/src/extensionPersistence.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/geometryApiContracts.test.ts",
+      "path": "packages/litegraph/src/geometryApiContracts.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/idAllocation.ts",
+      "path": "packages/litegraph/src/idAllocation.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/**",
+      "path": "packages/litegraph/src/infrastructure/**",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/CustomEventTarget.ts",
+      "path": "packages/litegraph/src/infrastructure/CustomEventTarget.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/createMutationView.ts",
+      "path": "packages/litegraph/src/infrastructure/createMutationView.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/linkDeduplication.ts",
+      "path": "packages/litegraph/src/linkDeduplication.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/measure.ts",
+      "path": "packages/litegraph/src/measure.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/node/**",
+      "path": "packages/litegraph/src/node/**",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/node/slotDescriptorView.ts",
+      "path": "packages/litegraph/src/node/slotDescriptorView.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/node/slotLinks.ts",
+      "path": "packages/litegraph/src/node/slotLinks.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/remintLinkRemap.ts",
+      "path": "packages/litegraph/src/remintLinkRemap.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/serialization.test.ts",
+      "path": "packages/litegraph/src/serialization.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/strings.ts",
+      "path": "packages/litegraph/src/types/**",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/types/**",
+      "path": "packages/litegraph/src/utils/**",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/utils/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/test/**",
-      "role": "integration"
-    },
-    {
-      "path": "src/stores/clearNodeOwnedStoreState.ts",
+      "path": "src/stores/entityIdStore.test.ts",
       "role": "application"
     },
     {
-      "path": "src/stores/entityIdStore.ts",
+      "path": "src/stores/linkStore.test.ts",
       "role": "application"
     },
     {
-      "path": "src/stores/executionOrderStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/graphMetadataStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/linkStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/nodeDataStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/rekeyGraphId.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/rerouteStore.ts",
+      "path": "src/stores/nodeDataStore.test.ts",
       "role": "application"
     },
     {
@@ -184,10 +168,6 @@
       "role": "domain"
     },
     {
-      "path": "src/utils/uuid.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "packages/graph-model/src/**",
       "role": "domain"
     }
@@ -199,40 +179,40 @@
     {
       "name": "Graph configure and serialise round-trips preserve nodes, links, groups, and reroutes",
       "checks": [
-        "src/lib/litegraph/src/LGraph.roundTrip.test.ts",
-        "src/lib/litegraph/src/LGraph.serialise.test.ts",
-        "src/lib/litegraph/src/LGraph.failedConfigure.test.ts",
-        "src/lib/litegraph/src/serialization.test.ts"
+        "packages/litegraph/src/LGraph.roundTrip.test.ts",
+        "packages/litegraph/src/LGraph.serialise.test.ts",
+        "packages/litegraph/src/LGraph.failedConfigure.test.ts",
+        "packages/litegraph/src/serialization.test.ts"
       ]
     },
     {
       "name": "Entity identity allocation and collision recovery keep ids unique without link theft",
       "checks": [
-        "src/lib/litegraph/src/idAllocation.test.ts",
-        "src/lib/litegraph/src/idAllocation.property.test.ts",
-        "src/lib/litegraph/src/LGraph.deepCollision.test.ts",
-        "src/lib/litegraph/src/LGraph.remintLinkRemap.test.ts",
-        "src/lib/litegraph/src/linkDeduplication.remapReferences.test.ts"
+        "packages/litegraph/src/idAllocation.test.ts",
+        "packages/litegraph/src/idAllocation.property.test.ts",
+        "packages/litegraph/src/LGraph.deepCollision.test.ts",
+        "packages/litegraph/src/LGraph.remintLinkRemap.test.ts",
+        "packages/litegraph/src/linkDeduplication.remapReferences.test.ts"
       ]
     },
     {
       "name": "Slots and links stay consistent with store-held topology for legacy extension access",
       "checks": [
-        "src/lib/litegraph/src/node/slotLinks.test.ts",
-        "src/lib/litegraph/src/node/legacySlotLinkMutations.test.ts",
-        "src/lib/litegraph/src/node/slotEcosystemPatterns.test.ts",
-        "src/lib/litegraph/src/LLink.store.test.ts",
-        "src/lib/litegraph/src/Reroute.store.test.ts"
+        "packages/litegraph/src/node/slotLinks.test.ts",
+        "packages/litegraph/src/node/legacySlotLinkMutations.test.ts",
+        "packages/litegraph/src/node/slotEcosystemPatterns.test.ts",
+        "packages/litegraph/src/LLink.store.test.ts",
+        "packages/litegraph/src/Reroute.store.test.ts"
       ]
     },
     {
       "name": "Node shell state and geometry project store state onto LGraphNode",
       "checks": [
-        "src/core/graph/nodeShell/nodeShellState.test.ts",
-        "src/core/graph/nodeShell/nodeShellLifecycle.test.ts",
-        "src/lib/litegraph/src/LGraphNode.stateProjection.test.ts",
-        "src/lib/litegraph/src/LGraphNode.geometry.test.ts",
-        "src/lib/litegraph/src/geometryApiContracts.test.ts"
+        "packages/litegraph/src/node/nodeShell/nodeShellState.test.ts",
+        "packages/litegraph/src/node/nodeShell/nodeShellLifecycle.test.ts",
+        "packages/litegraph/src/LGraphNode.stateProjection.test.ts",
+        "packages/litegraph/src/LGraphNode.geometry.test.ts",
+        "packages/litegraph/src/geometryApiContracts.test.ts"
       ]
     },
     {
@@ -240,10 +220,10 @@
       "checks": [
         "src/stores/storeCollisionContracts.test.ts",
         "src/stores/linkStore.test.ts",
-        "src/stores/rerouteStore.test.ts",
+        "packages/graph-state/src/rerouteStore.test.ts",
         "src/stores/nodeDataStore.test.ts",
         "src/stores/entityIdStore.test.ts",
-        "src/stores/graphMetadataStore.test.ts"
+        "packages/graph-state/src/graphMetadataStore.test.ts"
       ]
     },
     {

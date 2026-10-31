@@ -1,9 +1,9 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IImageCompareWidget } from '@comfyorg/graph-model/widgets'
 import type {
   ImageCompareInputSpec,
   InputSpec as InputSpecV2
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+} from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useImageCompareWidget = (): ComfyWidgetConstructorV2 => {

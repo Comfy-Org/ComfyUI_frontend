@@ -5,7 +5,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@comfyorg/litegraph/litegraph'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

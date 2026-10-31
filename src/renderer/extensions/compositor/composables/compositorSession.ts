@@ -12,7 +12,7 @@ import {
   getCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 

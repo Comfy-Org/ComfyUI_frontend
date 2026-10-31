@@ -1,11 +1,11 @@
 import { effectScope } from 'vue'
 import { describe, expect, it, onTestFinished } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 import { useNodeEmphasis, useNodeEmphasisSource } from './nodeEmphasisSystem'
 

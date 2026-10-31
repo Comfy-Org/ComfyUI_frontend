@@ -9,7 +9,7 @@ import {
 } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import { useLayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
 
 export function useCompositorPsdDownload(

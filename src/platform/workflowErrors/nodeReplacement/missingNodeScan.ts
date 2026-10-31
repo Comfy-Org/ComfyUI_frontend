@@ -1,5 +1,5 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -8,8 +8,8 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import {
   collectAllNodes,
   getExecutionIdByNode
-} from '@/utils/graphTraversalUtil'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
+import { getCnrIdFromNode } from '@comfyorg/litegraph/utils/cnrIdUtil'
 
 /** Scan the live graph for unregistered node types and build a full MissingNodeType list. */
 function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {

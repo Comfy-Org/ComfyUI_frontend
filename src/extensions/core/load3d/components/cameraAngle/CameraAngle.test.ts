@@ -95,9 +95,12 @@ const { getNodeByLocatorIdMock, rootGraph } = vi.hoisted(() => ({
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraphOrUndefined: rootGraph }
 }))
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  getNodeByLocatorId: getNodeByLocatorIdMock
-}))
+vi.mock<unknown>(
+  import('@comfyorg/litegraph/utils/graphTraversalUtil'),
+  () => ({
+    getNodeByLocatorId: getNodeByLocatorIdMock
+  })
+)
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'

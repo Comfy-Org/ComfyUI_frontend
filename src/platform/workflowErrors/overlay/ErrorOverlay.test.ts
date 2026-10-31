@@ -40,12 +40,15 @@ vi.mock(import('@/composables/graph/useNodeErrorFlagSync'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  executionIdToNodeLocatorId: vi.fn((id: string) => id),
-  getActiveGraphNodeIds: vi.fn(() => new Set()),
-  getExecutionIdByNode: vi.fn(),
-  getNodeByExecutionId: vi.fn()
-}))
+vi.mock<unknown>(
+  import('@comfyorg/litegraph/utils/graphTraversalUtil'),
+  () => ({
+    executionIdToNodeLocatorId: vi.fn((id: string) => id),
+    getActiveGraphNodeIds: vi.fn(() => new Set()),
+    getExecutionIdByNode: vi.fn(),
+    getNodeByExecutionId: vi.fn()
+  })
+)
 
 function createTestI18n() {
   return createI18n({

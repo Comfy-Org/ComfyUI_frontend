@@ -11,7 +11,7 @@ import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'

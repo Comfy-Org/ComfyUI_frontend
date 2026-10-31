@@ -5,8 +5,8 @@ import { describe, expect, it, test, vi } from 'vitest'
 
 import { t } from '@/i18n'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { ComfyNode } from '@comfyorg/graph-model/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'

@@ -1,5 +1,8 @@
 {
   "extends": ["./tsconfig.json", "../../tsconfig.declarations.json"],
+  "compilerOptions": {
+    "types": ["vite/client"]
+  },
   "references": [
     {
       "path": "../object-info-parser/tsconfig.build.json"

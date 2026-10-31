@@ -2,35 +2,10 @@ import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskStatus } from './taskSchema'
-import { resultItemType } from './resultItemTypeSchema'
+import { zOutputs } from '@comfyorg/graph-model/nodeOutput'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 
 export type JobId = string
-
-export const zResultItem = z.object({
-  filename: z.string().optional(),
-  subfolder: z.string().optional(),
-  type: resultItemType.optional(),
-  display_name: z.string().optional(),
-  id: z.string().optional(),
-  preview_id: z.string().optional()
-})
-export type ResultItem = z.infer<typeof zResultItem>
-// Uses .passthrough() because custom nodes can output arbitrary keys.
-// See docs/adr/NODE-OUTPUTS-0007-output-passthrough-for-extensible-nodes.md
-const zOutputs = z
-  .object({
-    audio: z.array(zResultItem).optional(),
-    images: z.array(zResultItem).optional(),
-    video: z.array(zResultItem).optional(),
-    animated: z.array(z.boolean()).optional(),
-    text: z.union([z.string(), z.array(z.string())]).optional()
-  })
-  .passthrough()
-
-export type NodeExecutionOutput = z.infer<typeof zOutputs>
-
-export type NodeOutputWith<T extends Record<string, unknown>> =
-  NodeExecutionOutput & T
 
 type NodeId = z.infer<typeof zNodeId>
 

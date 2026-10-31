@@ -10,9 +10,9 @@ import type {
   SwapNodeGroup
 } from '@/platform/workflowErrors/panel/useErrorGroups'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
+import { createTestRootGraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'

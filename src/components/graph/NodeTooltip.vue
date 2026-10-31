@@ -18,7 +18,7 @@ import {
   LiteGraph,
   isOverNodeInput,
   isOverNodeOutput
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app as comfyApp } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'

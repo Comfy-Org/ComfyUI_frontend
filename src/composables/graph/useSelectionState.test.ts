@@ -2,7 +2,7 @@ import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@comfyorg/settings-core/types'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
@@ -14,7 +14,7 @@ import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   createMockLGraphNode,
   createMockPositionable
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(),

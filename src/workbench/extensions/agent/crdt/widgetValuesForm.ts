@@ -21,13 +21,13 @@
  */
 import type { WidgetValuesForm } from '@comfyorg/comfy-multi-player'
 
-import { assert } from '@/base/assert'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 

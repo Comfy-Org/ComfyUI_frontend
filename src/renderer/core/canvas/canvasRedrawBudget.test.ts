@@ -6,11 +6,11 @@ import {
   LGraphCanvas,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { createMockCanvasRenderingContext2D } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 const PROGRESS_EVENTS = 100
 

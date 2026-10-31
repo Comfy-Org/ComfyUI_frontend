@@ -18,7 +18,7 @@ import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/Widg
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

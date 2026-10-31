@@ -1,13 +1,13 @@
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 // Installs `addDOMWidget` on the LGraphNode prototype for the real-graph cases.
 import '@/scripts/domWidget'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { DOMWidget } from '@/types/domWidget'
+import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
+import type { DOMWidget } from '@comfyorg/litegraph/types/domWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 

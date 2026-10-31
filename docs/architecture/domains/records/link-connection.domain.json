@@ -12,55 +12,55 @@
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/FloatingRenderLink.ts",
+      "path": "packages/litegraph/src/canvas/FloatingRenderLink.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/LinkConnector.ts",
+      "path": "packages/litegraph/src/canvas/LinkConnector.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/LinkConnectorSubgraphInputValidation.test.ts",
+      "path": "packages/litegraph/src/canvas/LinkConnectorSubgraphInputValidation.test.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/MovingInputLink.ts",
+      "path": "packages/litegraph/src/canvas/MovingInputLink.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/MovingLinkBase.ts",
+      "path": "packages/litegraph/src/canvas/MovingLinkBase.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/MovingOutputLink.ts",
+      "path": "packages/litegraph/src/canvas/MovingOutputLink.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/RenderLink.ts",
+      "path": "packages/litegraph/src/canvas/RenderLink.ts",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/ToInputFromIoNodeLink.ts",
+      "path": "packages/litegraph/src/canvas/ToInputFromIoNodeLink.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/ToInputRenderLink.ts",
+      "path": "packages/litegraph/src/canvas/ToInputRenderLink.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/ToOutputFromIoNodeLink.ts",
+      "path": "packages/litegraph/src/canvas/ToOutputFromIoNodeLink.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/ToOutputFromRerouteLink.ts",
+      "path": "packages/litegraph/src/canvas/ToOutputFromRerouteLink.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/ToOutputRenderLink.ts",
+      "path": "packages/litegraph/src/canvas/ToOutputRenderLink.ts",
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/LinkConnectorEventMap.ts",
+      "path": "packages/litegraph/src/infrastructure/LinkConnectorEventMap.ts",
       "role": "domain"
     },
     {
@@ -75,17 +75,17 @@
     {
       "name": "Dragging and dropping links connects compatible slots and rejects invalid targets",
       "checks": [
-        "src/lib/litegraph/src/canvas/LinkConnector.core.test.ts",
-        "src/lib/litegraph/src/canvas/LinkConnector.dropOnNode.test.ts",
-        "src/lib/litegraph/src/canvas/LinkConnector.integration.test.ts",
-        "src/lib/litegraph/src/canvas/LinkConnectorSubgraphInputValidation.test.ts"
+        "packages/litegraph/src/canvas/LinkConnector.core.test.ts",
+        "packages/litegraph/src/canvas/LinkConnector.dropOnNode.test.ts",
+        "packages/litegraph/src/canvas/LinkConnector.integration.test.ts",
+        "packages/litegraph/src/canvas/LinkConnectorSubgraphInputValidation.test.ts"
       ]
     },
     {
       "name": "Moving and floating links keep reroutes and link state intact",
       "checks": [
-        "src/lib/litegraph/src/canvas/FloatingRenderLink.test.ts",
-        "src/lib/litegraph/src/canvas/ToOutputRenderLink.test.ts",
+        "packages/litegraph/src/canvas/FloatingRenderLink.test.ts",
+        "packages/litegraph/src/canvas/ToOutputRenderLink.test.ts",
         "browser_tests/tests/rerouteNode.spec.ts"
       ]
     },

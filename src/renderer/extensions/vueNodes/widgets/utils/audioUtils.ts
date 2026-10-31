@@ -1,4 +1,4 @@
-import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import type { ResultItemType } from '@comfyorg/graph-model/resultItemTypeSchema'
 import { app } from '@/scripts/app'
 
 export function getResourceURL(

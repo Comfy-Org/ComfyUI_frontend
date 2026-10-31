@@ -1,27 +1,27 @@
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { beforeEach, describe, expect, it, test, vi } from 'vitest'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
+import { LGraphEventMode } from '@comfyorg/litegraph/litegraph'
 import {
   MINIMAP_DECORATION_POP_MS,
   renderMinimapToCanvas
 } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import {
   createMockLGraph,
   createMockLGraphNode,
   createMockNodeOutputSlot
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import {
   toOwningGraphId,
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 vi.mock(import('@comfyorg/shared-frontend-utils/colorUtil'), () => ({
   adjustColor: vi.fn((color: string) => color + '_adjusted')

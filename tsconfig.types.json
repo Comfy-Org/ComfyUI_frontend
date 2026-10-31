@@ -25,11 +25,14 @@
       "@comfyorg/telemetry/*": ["./packages/telemetry/src/*"],
       "@comfyorg/shared-frontend-utils/geometry": [
         "./packages/shared-frontend-utils/src/geometry.ts"
-      ]
-    }
+      ],
+      "@comfyorg/litegraph/*": ["./packages/litegraph/src/*"]
+    },
+    "customConditions": ["@comfyorg/litegraph"]
   },
   "include": [
     "src/**/*.ts",
+    "packages/litegraph/src/**/*.ts",
     "packages/graph-model/src/**/*.ts",
     "packages/keybindings/src/**/*.ts",
     "packages/api-client/src/**/*.ts",

@@ -1,18 +1,18 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import { Rectangle } from '@comfyorg/litegraph/infrastructure/Rectangle'
 import type {
   LGraphCanvas,
   LGraphGroup,
   LGraphNode
-} from '@/lib/litegraph/src/litegraph'
-import * as measure from '@/lib/litegraph/src/measure'
+} from '@comfyorg/litegraph/litegraph'
+import * as measure from '@comfyorg/litegraph/measure'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   createMockLGraphNode,
   createMockLGraphGroup
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 import { useGraphHierarchy } from './useGraphHierarchy'
 
 function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {

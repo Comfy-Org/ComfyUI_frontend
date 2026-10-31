@@ -1,10 +1,10 @@
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveConcretePromotedWidget } from '@comfyorg/litegraph/subgraph/promotion/resolveConcretePromotedWidget'
 import {
   isValueControlWidget,
   nextValueForLinkedTarget
 } from '@/core/graph/widgets/valueControl'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 

@@ -526,7 +526,7 @@
         "count": 1
       }
     },
-    "src/components/rightSidePanel/errors/ErrorGroupList.vue": {
+    "src/platform/workflowErrors/panel/ErrorGroupList.vue": {
       "complexity_critical": {
         "count": 1
       },
@@ -1081,7 +1081,7 @@
         "count": 1
       }
     },
-    "src/core/graph/subgraph/resolveConcretePromotedWidget.ts": {
+    "packages/litegraph/src/subgraph/promotion/resolveConcretePromotedWidget.ts": {
       "complexity_high": {
         "count": 1
       },
@@ -1245,7 +1245,7 @@
         "count": 1
       }
     },
-    "src/lib/litegraph/src/ContextMenu.ts": {
+    "packages/litegraph/src/ContextMenu.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -1259,12 +1259,12 @@
         "count": 2
       }
     },
-    "src/lib/litegraph/src/CurveEditor.ts": {
+    "packages/litegraph/src/CurveEditor.ts": {
       "crap_moderate": {
         "count": 2
       }
     },
-    "src/lib/litegraph/src/LGraph.ts": {
+    "packages/litegraph/src/LGraph.ts": {
       "complexity_critical": {
         "count": 6
       },
@@ -1284,12 +1284,12 @@
         "count": 5
       }
     },
-    "src/lib/litegraph/src/LGraphCanvas.clipboard.test.ts": {
+    "src/core/graph/subgraph/LGraphCanvas.clipboard.test.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/LGraphCanvas.ts": {
+    "packages/litegraph/src/LGraphCanvas.ts": {
       "complexity_critical": {
         "count": 21
       },
@@ -1309,12 +1309,12 @@
         "count": 15
       }
     },
-    "src/lib/litegraph/src/LGraphGroup.ts": {
+    "packages/litegraph/src/LGraphGroup.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/LGraphNode.ts": {
+    "packages/litegraph/src/LGraphNode.ts": {
       "complexity_critical": {
         "count": 10
       },
@@ -1331,12 +1331,12 @@
         "count": 10
       }
     },
-    "src/lib/litegraph/src/LLink.ts": {
+    "packages/litegraph/src/LLink.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/LiteGraphGlobal.ts": {
+    "packages/litegraph/src/LiteGraphGlobal.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -1353,22 +1353,22 @@
         "count": 5
       }
     },
-    "src/lib/litegraph/src/Reroute.ts": {
+    "packages/litegraph/src/Reroute.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/canvas/FloatingRenderLink.ts": {
+    "packages/litegraph/src/canvas/FloatingRenderLink.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/canvas/InputIndicators.ts": {
+    "packages/litegraph/src/canvas/InputIndicators.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/canvas/LinkConnector.integration.test.ts": {
+    "packages/litegraph/src/canvas/LinkConnector.integration.test.ts": {
       "complexity_high": {
         "count": 2
       },
@@ -1376,7 +1376,7 @@
         "count": 2
       }
     },
-    "src/lib/litegraph/src/canvas/LinkConnector.ts": {
+    "packages/litegraph/src/canvas/LinkConnector.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -1396,22 +1396,22 @@
         "count": 2
       }
     },
-    "src/lib/litegraph/src/canvas/ToInputFromIoNodeLink.ts": {
+    "packages/litegraph/src/canvas/ToInputFromIoNodeLink.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/contextMenuCompat.ts": {
+    "packages/litegraph/src/contextMenuCompat.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/draw.ts": {
+    "packages/litegraph/src/draw.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/node/NodeSlot.ts": {
+    "packages/litegraph/src/node/NodeSlot.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -1419,12 +1419,12 @@
         "count": 1
       }
     },
-    "src/lib/litegraph/src/polyfills.ts": {
+    "packages/litegraph/src/polyfills.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
+    "packages/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
       "complexity_high": {
         "count": 2
       },
@@ -1432,57 +1432,57 @@
         "count": 2
       }
     },
-    "src/lib/litegraph/src/subgraph/SubgraphInput.ts": {
+    "packages/litegraph/src/subgraph/SubgraphInput.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/subgraph/SubgraphInputNode.ts": {
+    "packages/litegraph/src/subgraph/SubgraphInputNode.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/subgraph/SubgraphOutput.ts": {
+    "packages/litegraph/src/subgraph/SubgraphOutput.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/subgraph/SubgraphSlotBase.ts": {
+    "packages/litegraph/src/subgraph/SubgraphSlotBase.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers.ts": {
+    "packages/litegraph/src/subgraph/__fixtures__/subgraphHelpers.ts": {
       "complexity_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/subgraph/subgraphDeduplication.ts": {
+    "packages/litegraph/src/subgraph/subgraphDeduplication.ts": {
       "complexity_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/subgraph/subgraphUtils.ts": {
+    "packages/litegraph/src/subgraph/subgraphUtils.ts": {
       "complexity_critical": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/utils/collections.ts": {
+    "packages/litegraph/src/utils/collections.ts": {
       "complexity_high": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/utils/mathParser.ts": {
+    "packages/litegraph/src/utils/mathParser.ts": {
       "crap_moderate": {
         "count": 2
       }
     },
-    "src/lib/litegraph/src/widgets/BaseWidget.ts": {
+    "packages/litegraph/src/widgets/BaseWidget.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/lib/litegraph/src/widgets/ComboWidget.ts": {
+    "packages/litegraph/src/widgets/ComboWidget.ts": {
       "complexity_moderate": {
         "count": 1
       },
@@ -1490,12 +1490,12 @@
         "count": 2
       }
     },
-    "src/lib/litegraph/src/widgets/KnobWidget.ts": {
+    "packages/litegraph/src/widgets/KnobWidget.ts": {
       "crap_moderate": {
         "count": 2
       }
     },
-    "src/lib/litegraph/src/widgets/widgetMap.ts": {
+    "packages/litegraph/src/widgets/widgetMap.ts": {
       "complexity_high": {
         "count": 1
       },
@@ -2186,7 +2186,7 @@
         "count": 1
       }
     },
-    "src/renderer/core/canvas/litegraph/litegraphLinkAdapter.ts": {
+    "packages/litegraph/src/canvas/litegraphLinkAdapter.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -2194,7 +2194,7 @@
         "count": 1
       }
     },
-    "src/renderer/core/canvas/pathRenderer.ts": {
+    "packages/litegraph/src/canvas/pathRenderer.ts": {
       "complexity_critical": {
         "count": 1
       },
@@ -2208,12 +2208,12 @@
         "count": 3
       }
     },
-    "src/renderer/core/layout/operations/layoutMutations.ts": {
+    "packages/graph-state/src/layout/layoutMutations.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/renderer/core/layout/store/layoutStore.ts": {
+    "packages/graph-state/src/layout/layoutStore.ts": {
       "complexity_moderate": {
         "count": 1
       },
@@ -2226,7 +2226,7 @@
         "count": 1
       }
     },
-    "src/renderer/core/spatial/QuadTree.ts": {
+    "packages/graph-state/src/layout/QuadTree.ts": {
       "crap_moderate": {
         "count": 1
       }
@@ -3057,20 +3057,20 @@
     "src/composables/useUpstreamValue.ts:high impact",
     "src/renderer/glsl/useGLSLUniforms.ts:high impact",
     "src/renderer/extensions/vueNodes/composables/usePartitionedBadges.ts:untested risk",
-    "src/lib/litegraph/src/LGraphCanvas.ts:circular dependency",
+    "packages/litegraph/src/LGraphCanvas.ts:circular dependency",
     "src/extensions/core/load3d/composables/useLoad3d.ts:circular dependency",
     "src/composables/node/usePriceBadge.ts:circular dependency",
     "src/platform/keybindings/keyCombo.ts:high impact",
     "src/views/LinearView.vue:complexity",
-    "src/lib/litegraph/src/LGraphNode.ts:circular dependency",
+    "packages/litegraph/src/LGraphNode.ts:circular dependency",
     "src/core/graph/subgraph/promotionUtils.ts:circular dependency",
-    "src/lib/litegraph/src/LGraph.ts:circular dependency",
+    "packages/litegraph/src/LGraph.ts:circular dependency",
     "src/composables/useTreeExpansion.ts:high impact",
     "src/platform/billing/subscription/components/CreditsTile.vue:complexity",
     "src/platform/assets/composables/useMediaAssetActions.ts:complexity",
     "src/platform/workflow/core/services/workflowService.ts:circular dependency",
     "src/services/litegraphService.ts:circular dependency",
-    "src/lib/litegraph/src/subgraph/SubgraphNode.ts:circular dependency",
+    "packages/litegraph/src/subgraph/SubgraphNode.ts:circular dependency",
     "src/components/rightSidePanel/errors/MissingPackGroupRow.vue:complexity",
     "src/platform/customNodes/manager/composables/nodePack/useMissingNodes.ts:circular dependency",
     "browser_tests/fixtures/ComfyPage.ts:circular dependency",
@@ -3082,8 +3082,8 @@
     "src/stores/subgraphNavigationStore.ts:circular dependency",
     "src/components/builder/AppBuilder.vue:complexity",
     "src/composables/node/useNodeDragAndDrop.ts:high impact",
-    "src/lib/litegraph/src/node/NodeInputSlot.ts:circular dependency",
-    "src/lib/litegraph/src/utils/type.ts:high impact",
+    "packages/litegraph/src/node/NodeInputSlot.ts:circular dependency",
+    "packages/litegraph/src/utils/type.ts:high impact",
     "src/components/graph/SelectionToolbox.vue:complexity",
     "src/platform/workflowErrors/missingModel/missingModelStore.ts:circular dependency",
     "src/platform/workspace/stores/workspaceAuthStore.ts:circular dependency",
@@ -3103,7 +3103,7 @@
     "src/base/webviewDetection.ts:high impact",
     "src/components/builder/useResolvedSelectedInputs.ts:high impact",
     "src/platform/billing/composables/useDowngradeToPersonal.ts:complexity",
-    "src/lib/litegraph/src/Reroute.ts:circular dependency",
+    "packages/litegraph/src/Reroute.ts:circular dependency",
     "src/platform/workspace/components/CurrentUserPopoverWorkspace.vue:complexity",
     "src/composables/useCanvasDrop.ts:complexity",
     "src/renderer/extensions/linearMode/LinearControls.vue:complexity",
@@ -3116,18 +3116,18 @@
     "src/composables/auth/useCurrentUser.ts:high impact",
     "src/extensions/core/widgetInputs.ts:high impact",
     "src/extensions/core/groupNode.ts:complexity",
-    "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts:circular dependency",
+    "packages/litegraph/src/subgraph/ExecutableNodeDTO.ts:circular dependency",
     "src/platform/customNodes/manager/components/manager/button/PackInstallButton.vue:circular dependency",
     "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue:complexity",
     "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts:complexity",
     "src/platform/customNodes/manager/composables/nodePack/usePackInstall.ts:circular dependency",
-    "src/lib/litegraph/src/LGraphGroup.ts:circular dependency",
+    "packages/litegraph/src/LGraphGroup.ts:circular dependency",
     "src/platform/customNodes/manager/stores/comfyManagerStore.ts:circular dependency",
-    "src/lib/litegraph/src/DragAndScale.ts:circular dependency",
+    "packages/litegraph/src/DragAndScale.ts:circular dependency",
     "src/components/videoEdit/VideoEditPanel.vue:complexity",
     "src/utils/eventUtils.ts:high impact",
     "src/composables/useAppMode.ts:high impact",
-    "src/lib/litegraph/src/utils/collections.ts:circular dependency",
+    "packages/litegraph/src/utils/collections.ts:circular dependency",
     "src/renderer/extensions/vueNodes/components/LGraphNode.vue:complexity",
     "src/components/searchbox/v2/NodeSearchListItem.vue:complexity",
     "src/platform/billing/composables/useTeamPlan.ts:high impact",
@@ -3137,16 +3137,16 @@
     "src/platform/customNodes/manager/services/comfyManagerService.ts:circular dependency",
     "src/platform/customNodes/manager/composables/useManagerState.ts:circular dependency",
     "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts:complexity",
-    "src/lib/litegraph/src/node/NodeSlot.ts:complexity",
-    "src/lib/litegraph/src/subgraph/subgraphUtils.ts:circular dependency",
+    "packages/litegraph/src/node/NodeSlot.ts:complexity",
+    "packages/litegraph/src/subgraph/subgraphUtils.ts:circular dependency",
     "src/utils/hdrFormatUtil.ts:high impact",
-    "src/lib/litegraph/src/canvas/LinkConnector.ts:complexity",
-    "src/lib/litegraph/src/widgets/NumberWidget.ts:high impact",
+    "packages/litegraph/src/canvas/LinkConnector.ts:complexity",
+    "packages/litegraph/src/widgets/NumberWidget.ts:high impact",
     "src/platform/customNodes/manager/components/manager/infoPanel/InfoPanel.vue:circular dependency",
     "src/platform/customNodes/manager/components/manager/infoPanel/InfoPanelMultiItem.vue:circular dependency",
     "src/extensions/core/load3d/services/load3dService.ts:circular dependency",
     "src/platform/workspace/components/dialogs/settings/MembersPanelContent.vue:complexity",
-    "src/lib/litegraph/src/node/NodeOutputSlot.ts:circular dependency",
+    "packages/litegraph/src/node/NodeOutputSlot.ts:circular dependency",
     "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.ts:complexity",
     "src/components/dialog/GlobalDialog.vue:complexity",
     "src/platform/customNodes/manager/components/manager/PackVersionSelectorPopover.vue:circular dependency",
@@ -3160,7 +3160,7 @@
     "src/renderer/extensions/vueNodes/widgets/components/DisplayCarousel.vue:complexity",
     "src/extensions/core/load3d/components/menubar/SceneMenuGroup.vue:complexity",
     "src/extensions/core/load3d/composables/useLoad3dViewer.ts:circular dependency",
-    "src/lib/litegraph/src/utils/mathParser.ts:untested risk",
+    "packages/litegraph/src/utils/mathParser.ts:untested risk",
     "src/composables/node/useNodePricing.ts:complexity",
     "src/platform/workflowErrors/missingModel/components/MissingModelRow.vue:complexity",
     "src/utils/linkFixer.ts:complexity",
@@ -3168,22 +3168,22 @@
     "src/extensions/core/load3d/Load3dUtils.ts:circular dependency",
     "src/platform/customNodes/manager/components/manager/packCard/PackCard.vue:circular dependency",
     "src/components/dialog/content/SignInContent.vue:complexity",
-    "src/lib/litegraph/src/ContextMenu.ts:complexity",
+    "packages/litegraph/src/ContextMenu.ts:complexity",
     "src/platform/customNodes/manager/components/manager/PackVersionBadge.vue:circular dependency",
     "src/platform/workflow/sharing/components/publish/ComfyHubThumbnailStep.vue:complexity",
     "src/platform/customNodes/manager/components/manager/packCard/PackCardFooter.vue:circular dependency",
-    "src/lib/litegraph/src/LiteGraphGlobal.ts:circular dependency",
+    "packages/litegraph/src/LiteGraphGlobal.ts:circular dependency",
     "src/platform/cloud/onboarding/survey/DynamicSurveyField.vue:complexity",
     "src/platform/keybindings/composables/useEditKeybindingDialog.ts:circular dependency",
     "packages/mask-editor/src/maskEditorStore.ts:circular dependency",
     "src/components/videoEdit/VideoFilmstripTrim.vue:complexity",
     "src/composables/boundingBoxes/useBoundingBoxes.ts:complexity",
     "src/extensions/core/rerouteNode.ts:complexity",
-    "src/renderer/core/canvas/litegraph/litegraphLinkAdapter.ts:complexity",
+    "packages/litegraph/src/canvas/litegraphLinkAdapter.ts:complexity",
     "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue:complexity",
     "src/utils/executionUtil.ts:complexity",
     "src/scripts/metadata/avif.ts:complexity",
-    "src/components/rightSidePanel/errors/ErrorGroupList.vue:complexity",
+    "src/platform/workflowErrors/panel/ErrorGroupList.vue:complexity",
     "src/renderer/extensions/linearMode/DropZone.vue:complexity",
     "src/platform/customNodes/manager/components/manager/ManagerDialog.vue:circular dependency",
     "packages/mask-editor/src/useCanvasHistory.ts:circular dependency",
@@ -3196,7 +3196,7 @@
     "src/scripts/pnginfo.ts:complexity",
     "src/scripts/metadata/png.ts:complexity",
     "src/composables/graph/useSelectionMenuOptions.ts:circular dependency",
-    "src/lib/litegraph/src/widgets/LegacyWidget.ts:circular dependency",
+    "packages/litegraph/src/widgets/LegacyWidget.ts:circular dependency",
     "src/platform/customNodes/manager/composables/useManagerDialog.ts:circular dependency",
     "browser_tests/fixtures/components/SubgraphEditor.ts:circular dependency",
     "scripts/cicd/extract-playwright-counts.ts:complexity",

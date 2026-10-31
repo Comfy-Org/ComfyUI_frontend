@@ -3,12 +3,12 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { app } from '@/scripts/app'
 import type { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import * as graphTraversal from '@/utils/graphTraversalUtil'
+import * as graphTraversal from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import {
   previewGaussianSplatExtension,
   previewPointCloudExtension,
@@ -62,7 +62,7 @@ vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'))
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'))
 
 vi.mock(import('@/i18n'))
 

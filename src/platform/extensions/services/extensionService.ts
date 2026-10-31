@@ -3,7 +3,7 @@ import type { WatchHandle } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import { legacyMenuCompat } from '@comfyorg/litegraph/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'

@@ -1,13 +1,13 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -19,7 +19,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   createMockChangeTracker,
   createMockLoadedWorkflow
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/workflowTestUtils'
 
 import { useReconnectNodeDefinitionRefresh as createReconnectRefresh } from './useReconnectNodeDefinitionRefresh'
 

@@ -1,0 +1,231 @@
+import type {
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
+
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
+import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from '#/constants'
+import type { CustomEventTarget } from '#/infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotIndex } from '@comfyorg/graph-model/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
+
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+
+import type { RenderLink } from './RenderLink'
+
+/**
+ * Represents a floating link that is currently being dragged from one slot to another.
+ *
+ * This is a heavier, but short-lived convenience data structure. All refs to FloatingRenderLinks should be discarded on drop.
+ * @remarks
+ * At time of writing, Litegraph is using several different styles and methods to handle link dragging.
+ *
+ * Once the library has undergone more substantial changes to the way links are managed,
+ * many properties of this class will be superfluous and removable.
+ */
+export class FloatingRenderLink implements RenderLink {
+  readonly node: LGraphNode
+  readonly fromSlot: INodeOutputSlot | INodeInputSlot
+  readonly fromPos: Point
+  readonly fromDirection: LinkDirection
+  readonly fromSlotIndex: SlotIndex
+
+  readonly outputNodeId: NodeId = UNASSIGNED_NODE_ID
+  readonly outputNode?: LGraphNode
+  readonly outputSlot?: INodeOutputSlot
+  readonly outputIndex: number = -1
+  readonly outputPos?: Point
+
+  readonly inputNodeId: NodeId = UNASSIGNED_NODE_ID
+  readonly inputNode?: LGraphNode
+  readonly inputSlot?: INodeInputSlot
+  readonly inputIndex: number = -1
+  readonly inputPos?: Point
+
+  constructor(
+    readonly network: LinkNetwork,
+    readonly link: LLink,
+    readonly toType: 'input' | 'output',
+    readonly fromReroute: Reroute,
+    readonly dragDirection: LinkDirection = LinkDirection.CENTER
+  ) {
+    const {
+      origin_id: outputNodeId,
+      target_id: inputNodeId,
+      origin_slot: outputIndex,
+      target_slot: inputIndex
+    } = link
+
+    if (outputNodeId !== UNASSIGNED_NODE_ID) {
+      // Output connected
+      const outputNode = network.getNodeById(outputNodeId) ?? undefined
+      if (!outputNode)
+        throw new Error(
+          `Creating DraggingRenderLink for link [${link.id}] failed: Output node [${outputNodeId}] not found.`
+        )
+
+      const outputSlot = outputNode.outputs.at(outputIndex)
+      if (!outputSlot)
+        throw new Error(
+          `Creating DraggingRenderLink for link [${link.id}] failed: Output slot [${outputIndex}] not found.`
+        )
+
+      this.outputNodeId = outputNodeId
+      this.outputNode = outputNode
+      this.outputSlot = outputSlot
+      this.outputIndex = outputIndex
+      this.outputPos = outputNode.getOutputPos(outputIndex)
+
+      // RenderLink props
+      this.node = outputNode
+      this.fromSlot = outputSlot
+      this.fromPos = fromReroute.pos
+      this.fromDirection = LinkDirection.LEFT
+      this.dragDirection = LinkDirection.RIGHT
+      this.fromSlotIndex = outputIndex
+    } else {
+      // Input connected
+      const inputNode = network.getNodeById(inputNodeId) ?? undefined
+      if (!inputNode)
+        throw new Error(
+          `Creating DraggingRenderLink for link [${link.id}] failed: Input node [${inputNodeId}] not found.`
+        )
+
+      const inputSlot = inputNode.inputs.at(inputIndex)
+      if (!inputSlot)
+        throw new Error(
+          `Creating DraggingRenderLink for link [${link.id}] failed: Input slot [${inputIndex}] not found.`
+        )
+
+      this.inputNodeId = inputNodeId
+      this.inputNode = inputNode
+      this.inputSlot = inputSlot
+      this.inputIndex = inputIndex
+      this.inputPos = inputNode.getInputPos(inputIndex)
+
+      // RenderLink props
+      this.node = inputNode
+      this.fromSlot = inputSlot
+      this.fromDirection = LinkDirection.RIGHT
+      this.fromSlotIndex = inputIndex
+    }
+    this.fromPos = fromReroute.pos
+  }
+
+  canConnectToInput(): boolean {
+    return this.toType === 'input'
+  }
+
+  canConnectToOutput(): boolean {
+    return this.toType === 'output'
+  }
+
+  canConnectToReroute(reroute: Reroute): boolean {
+    if (this.toType === 'input') {
+      if (reroute.origin_id === this.inputNode?.id) return false
+    } else {
+      if (reroute.origin_id === this.outputNode?.id) return false
+    }
+    return true
+  }
+
+  canConnectToSubgraphInput(input: SubgraphInput): boolean {
+    return this.toType === 'output' && input.isValidTarget(this.fromSlot)
+  }
+
+  connectToInput(
+    node: LGraphNode,
+    input: INodeInputSlot,
+    _events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void {
+    // Disconnect before re-targeting, or the floating link would be
+    // caught (and removed) by the target slot's floating-link cleanup.
+    node.disconnectInput(node.inputs.indexOf(input))
+
+    const floatingLink = this.link
+    floatingLink.updateEndpoints({
+      targetNodeId: node.id,
+      targetSlot: node.inputs.indexOf(input)
+    })
+  }
+
+  connectToOutput(
+    node: LGraphNode,
+    output: INodeOutputSlot,
+    _events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void {
+    const floatingLink = this.link
+    floatingLink.updateEndpoints({
+      originNodeId: node.id,
+      originSlot: node.outputs.indexOf(output)
+    })
+  }
+
+  connectToSubgraphInput(
+    input: SubgraphInput,
+    _events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void {
+    const floatingLink = this.link
+    floatingLink.updateEndpoints({
+      originNodeId: SUBGRAPH_INPUT_ID,
+      originSlot: input.parent.slots.indexOf(input)
+    })
+  }
+
+  connectToSubgraphOutput(
+    output: SubgraphOutput,
+    _events?: CustomEventTarget<LinkConnectorEventMap>
+  ): void {
+    const floatingLink = this.link
+    floatingLink.updateEndpoints({
+      targetNodeId: SUBGRAPH_OUTPUT_ID,
+      targetSlot: output.parent.slots.indexOf(output)
+    })
+  }
+
+  connectToRerouteInput(
+    _reroute: Reroute,
+    { node: inputNode, input }: { node: LGraphNode; input: INodeInputSlot },
+    events: CustomEventTarget<LinkConnectorEventMap>
+  ) {
+    const floatingLink = this.link
+    floatingLink.updateEndpoints({
+      targetNodeId: inputNode.id,
+      targetSlot: inputNode.inputs.indexOf(input)
+    })
+
+    events.dispatch('input-moved', this)
+  }
+
+  connectToRerouteOutput(
+    _reroute: Reroute,
+    outputNode: LGraphNode,
+    output: INodeOutputSlot,
+    events: CustomEventTarget<LinkConnectorEventMap>
+  ) {
+    const floatingLink = this.link
+    floatingLink.updateEndpoints({
+      originNodeId: outputNode.id,
+      originSlot: outputNode.outputs.indexOf(output)
+    })
+
+    events.dispatch('output-moved', this)
+  }
+}
+
+type RegisteredFloatingRenderLink = FloatingRenderLink
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface FloatingRenderLink extends RegisteredFloatingRenderLink {}
+}

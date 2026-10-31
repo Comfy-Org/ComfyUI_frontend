@@ -1,0 +1,273 @@
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import { CustomEventTarget } from '#/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
+import { Rectangle } from '#/infrastructure/Rectangle'
+import type {
+  ISerialisedGraph,
+  LGraph,
+  LGraphGroup,
+  LinkNetwork,
+  SerialisableGraph
+} from '#/litegraph'
+import { LGraphEventMode, LGraphNode, LLink } from '#/litegraph'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { vi } from 'vitest'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import { usePreviewExposureStore } from '@comfyorg/graph-state/previewExposureStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
+
+/** Creates a node shell state with minimal required fields. */
+export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
+  return {
+    flags: {},
+    graphId: zeroUuid,
+    id: toNodeId(1),
+    inputs: [],
+    mode: LGraphEventMode.ALWAYS,
+    outputs: [],
+    title: 'Test Node',
+    type: 'TestNode',
+    ...overrides,
+    properties: overrides.properties ?? {}
+  }
+}
+
+/**
+ * Creates a mock LGraphNode with minimal required properties
+ */
+export function createMockLGraphNode(
+  overrides: Partial<LGraphNode> | Record<string, unknown> = {}
+): LGraphNode {
+  const nodeOverrides = overrides as Partial<LGraphNode>
+  const size = nodeOverrides.size ?? [100, 100]
+  return fromPartial<LGraphNode>({
+    id: toNodeId(1),
+    pos: [0, 0],
+    size,
+    renderingSize: size,
+    title: 'Test Node',
+    mode: LGraphEventMode.ALWAYS,
+    flags: {},
+    ...nodeOverrides
+  })
+}
+
+/**
+ * Creates a mock Positionable object
+ */
+export function createMockPositionable(
+  overrides: Partial<Positionable> = {}
+): Positionable {
+  const partial: Partial<Positionable> = {
+    id: toGroupId(1),
+    pos: [0, 0],
+    ...overrides
+  }
+  return partial as Positionable
+}
+
+/**
+ * Creates a mock LGraphGroup with minimal required properties
+ */
+export function createMockLGraphGroup(
+  overrides: Partial<LGraphGroup> = {}
+): LGraphGroup {
+  const partial: Partial<LGraphGroup> = {
+    id: toGroupId(1),
+    pos: [0, 0],
+    boundingRect: new Rectangle(0, 0, 100, 100),
+    ...overrides
+  }
+  return partial as LGraphGroup
+}
+
+/**
+ * Creates a mock SubgraphNode with sub-nodes
+ */
+export function createMockSubgraphNode(
+  subNodes: LGraphNode[],
+  overrides: Partial<LGraphNode> | Record<string, unknown> = {}
+): LGraphNode {
+  const baseNode = createMockLGraphNode(overrides)
+  return Object.assign(baseNode, {
+    isSubgraphNode: () => true,
+    subgraph: {
+      nodes: subNodes
+    }
+  })
+}
+
+/**
+ * Creates a mock LGraph with trigger function
+ */
+export function createMockLGraph(overrides: Partial<LGraph> = {}): LGraph {
+  const nodes = overrides._nodes ?? []
+  const byId = new Map(nodes.map((node) => [String(node.id), node]))
+  const graph = fromPartial<LGraph>({
+    trigger: vi.fn(),
+    // A real dispatcher: node lifecycle subscribers listen on `graph.events`.
+    events: new CustomEventTarget<LGraphEventMap>(),
+    _nodes: nodes,
+    _groups: [],
+    links: createMockLinks([]),
+    getNodeById: (id: NodeId) => byId.get(String(id)) ?? null,
+    ...overrides
+  })
+  return Object.assign(graph, { rootGraph: overrides.rootGraph ?? graph })
+}
+
+/**
+ * Creates a mock LinkNetwork
+ */
+export function createMockLinkNetwork(
+  overrides: Partial<LinkNetwork> = {}
+): LinkNetwork {
+  return {
+    ...overrides
+  } as LinkNetwork
+}
+
+/**
+ * Creates a mock INodeInputSlot
+ */
+export function createMockNodeInputSlot(
+  overrides: Partial<INodeInputSlot> = {}
+): INodeInputSlot {
+  return {
+    name: 'input',
+    type: '*',
+    boundingRect: [0, 0, 0, 0],
+    link: null,
+    ...overrides
+  }
+}
+
+/**
+ * Creates a mock INodeOutputSlot
+ */
+export function createMockNodeOutputSlot(
+  overrides: Partial<INodeOutputSlot> = {}
+): INodeOutputSlot {
+  return {
+    name: 'output',
+    type: '*',
+    boundingRect: [0, 0, 0, 0],
+    links: null,
+    ...overrides
+  }
+}
+
+/**
+ * Creates a real LGraphNode instance (not a lightweight mock) with its boundingRect
+ * property represented as a Float64Array for testing position methods.
+ *
+ * Use createMockLGraphNodeWithArrayBoundingRect when:
+ * - Tests rely on Float64Array boundingRect behavior
+ * - Tests call position-related methods like updateArea()
+ * - Tests need actual LGraphNode implementation details
+ *
+ * Use createMockLGraphNode when:
+ * - Tests only need simple/mock-only behavior
+ * - Tests don't depend on boundingRect being a Float64Array
+ * - A lightweight mock with minimal properties is sufficient
+ *
+ * @param name - The node name/type to pass to the LGraphNode constructor
+ * @returns A fully constructed LGraphNode instance with Float64Array boundingRect
+ */
+export function createMockLGraphNodeWithArrayBoundingRect(
+  name: string
+): LGraphNode {
+  const node = new LGraphNode(name)
+  // The actual node has a Float64Array boundingRect, we just need to type it correctly
+  return node
+}
+
+/**
+ * Creates a mock FileList from an array of files
+ */
+export function createMockFileList(files: File[]): FileList {
+  const fileList = Object.assign(
+    {
+      length: files.length,
+      item: (index: number) => files[index] ?? null,
+      [Symbol.iterator]: function* () {
+        yield* files
+      }
+    },
+    files
+  )
+  return fileList
+}
+
+export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
+  const partial: Partial<LLink> = {
+    id: toLinkId(1),
+    type: '*',
+    origin_id: toNodeId(1),
+    origin_slot: 0,
+    target_id: toNodeId(2),
+    target_slot: 0,
+    _pos: [0, 0],
+    ...overrides
+  }
+  return partial as LLink
+}
+
+export function createMockLinks(links: LLink[]): LGraph['links'] {
+  const map = new Map<LinkId, LLink>()
+  const record: Record<number, LLink> = {}
+  for (const link of links) {
+    map.set(link.id, link)
+    record[link.id] = link
+  }
+  return Object.assign(map, record)
+}
+export function reloadSerializedGraph(
+  serialized: ISerialisedGraph | SerialisableGraph,
+  graphFactory: () => LGraph
+): LGraph {
+  const payload = JSON.parse(JSON.stringify(serialized)) as typeof serialized
+  const reloaded = graphFactory()
+  payload.id = reloaded.id
+  useWidgetValueStore().clearGraph(payload.id)
+  usePreviewExposureStore().clearGraph(payload.id)
+  reloaded.configure(payload)
+  return reloaded
+}
+
+/**
+ * Creates a link between two nodes by directly mutating graph state,
+ * bypassing the layout store integration in connect().
+ */
+export function createTestLink(
+  graph: LGraph,
+  sourceNode: LGraphNode,
+  outputSlot: number,
+  targetNode: LGraphNode,
+  inputSlot: number
+): LLink {
+  const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
+  graph.state.lastLinkId = linkId
+  const link = new LLink(
+    linkId,
+    sourceNode.outputs[outputSlot].type,
+    sourceNode.id,
+    outputSlot,
+    targetNode.id,
+    inputSlot
+  )
+  if (!graph._addLink(link)) {
+    throw new Error('Failed to add test link')
+  }
+  return link
+}

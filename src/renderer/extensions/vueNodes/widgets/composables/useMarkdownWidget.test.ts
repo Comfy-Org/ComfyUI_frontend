@@ -1,8 +1,8 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { DOMWidget } from '@/types/domWidget'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
+import type { DOMWidget } from '@comfyorg/litegraph/types/domWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
 import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { createMarkdownEditor } from '@/renderer/extensions/vueNodes/widgets/composables/markdownEditor'

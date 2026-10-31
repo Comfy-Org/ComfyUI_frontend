@@ -41,7 +41,7 @@ Runtime execution paths are a separate identity domain.
 | Link segment geometry | `${linkId}:${rerouteId ?? 'final'}`                      | Unscoped layout spatial index                                                | `makeLinkSegmentKey()`; safe only while link and reroute IDs remain root-unique.                                                    |
 
 Stable definitions are in `src/types/graphScopeId.ts`,
-`src/lib/litegraph/src/idAllocation.ts`, `src/types/nodeIdentification.ts`,
+`packages/litegraph/src/idAllocation.ts`, `src/types/nodeIdentification.ts`,
 `src/types/widgetId.ts`, and `src/types/slotId.ts`.
 
 ## Allocation and recursive ownership
@@ -71,13 +71,13 @@ counter state.
 ## Collision normalization
 
 `normalizeSubgraphDefinitions()` in
-`src/lib/litegraph/src/subgraph/subgraphDeduplication.ts` traverses definitions
+`packages/litegraph/src/subgraph/subgraphDeduplication.ts` traverses definitions
 in dependency order. It preserves the first owner of an ID and remaps later
 cross-definition node, link, reroute, and group collisions from the root
 allocator. Remaps also patch regular and floating link endpoints, reroute and
 group references, promoted-widget references, and proxy-widget metadata.
 
-`normalizeConfiguredTopology()` in `src/lib/litegraph/src/linkDeduplication.ts` separately
+`normalizeConfiguredTopology()` in `packages/litegraph/src/linkDeduplication.ts` separately
 enforces one live link per target slot, removes duplicate topology, remaps
 references, and realigns serialized slot mirrors after nodes are configured.
 Runtime registration is deliberately not a repair boundary. `linkStore` and

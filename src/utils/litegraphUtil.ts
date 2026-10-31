@@ -1,6 +1,6 @@
 import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
-import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
+import type { ColorOption, LGraph } from '@comfyorg/litegraph/litegraph'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import {
   LGraphCanvas,
@@ -8,7 +8,7 @@ import {
   LGraphNode,
   LiteGraph,
   isColorable
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,
@@ -19,7 +19,7 @@ import type {
   IComboWidget,
   WidgetCallbackOptions
 } from '@comfyorg/graph-model/widgets'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
 import { useApp } from '@/scripts/appInstance'
 import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'

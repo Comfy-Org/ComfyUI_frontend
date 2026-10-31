@@ -1,14 +1,14 @@
 import type { Editor as TiptapEditor } from '@tiptap/core'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { resolveNodeRootGraphId } from '@comfyorg/litegraph/utils/widget'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 function addMarkdownWidget(

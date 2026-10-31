@@ -9,12 +9,12 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useLinkStore } from '@/stores/linkStore'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -24,7 +24,7 @@ import { resolveNode } from '@/utils/litegraphUtil'
 import {
   createMockLGraphNode,
   createMockSubgraphNode
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
 

@@ -4,8 +4,8 @@ import type { Ref } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 

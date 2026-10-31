@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   cleanupComplexPromotionFixtureNodeType,
   resetSubgraphFixtureState,
   setupComplexPromotionFixture
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import type { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -15,9 +15,9 @@ import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composab
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useLinkStore } from '@/stores/linkStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetRenderState } from '@/stores/widgetValueStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
+import type { WidgetRenderState } from '@comfyorg/graph-state/widgetValueStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId

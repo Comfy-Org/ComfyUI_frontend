@@ -15,8 +15,8 @@
  */
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LLink } from '@comfyorg/litegraph/LLink'
 
 import { docInputIndex, wireNodeSnapshot } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'

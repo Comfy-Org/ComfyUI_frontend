@@ -1,8 +1,8 @@
 import { useI18n } from 'vue-i18n'
 
 import type { RectSide as Direction } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { alignNodes, distributeNodes } from '@/lib/litegraph/src/utils/arrange'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { alignNodes, distributeNodes } from '@comfyorg/litegraph/utils/arrange'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 

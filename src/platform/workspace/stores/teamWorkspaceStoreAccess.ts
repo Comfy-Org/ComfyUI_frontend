@@ -1,4 +1,4 @@
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 
 interface TeamWorkspaceStoreAccess {
   readonly activeWorkspaceId: string | null

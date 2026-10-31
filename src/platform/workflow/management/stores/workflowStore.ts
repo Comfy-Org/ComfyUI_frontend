@@ -9,7 +9,7 @@ import type {
   LGraph,
   LGraphNode,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import {
   areWorkflowIdsEquivalent,
   ensureWorkflowId,

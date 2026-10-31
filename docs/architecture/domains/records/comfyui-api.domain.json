@@ -16,10 +16,6 @@
       "role": "domain"
     },
     {
-      "path": "packages/api-client/src/resultItemTypeSchema.ts",
-      "role": "domain"
-    },
-    {
       "path": "packages/api-client/src/types.ts",
       "role": "domain"
     }

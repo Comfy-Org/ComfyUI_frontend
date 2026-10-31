@@ -1,10 +1,10 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
-import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
+import { getCanvasContextMenuTarget } from '@comfyorg/litegraph/canvas/getCanvasContextMenuTarget'
 import {
   LGraphCanvas,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 
 function shouldUseLegacyContextMenu(
   canvas: LGraphCanvas,

@@ -22,17 +22,17 @@ import {
 } from 'vitest'
 import * as Y from 'yjs'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
+import { onGraphIntent } from '@comfyorg/graph-state/graphIntents'
+import type { GraphIntentEvent } from '@comfyorg/graph-state/graphIntents'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type {
   ISerialisedNode,
   LGraphCanvas
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { toLinkId } from '@comfyorg/graph-model/linkId'

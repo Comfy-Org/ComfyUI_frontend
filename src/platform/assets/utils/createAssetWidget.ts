@@ -1,7 +1,7 @@
 import { fromZodError } from 'zod-validation-error'
 
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type {
   IBaseWidget,
   IWidgetAssetOptions

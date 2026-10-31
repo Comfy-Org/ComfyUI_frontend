@@ -5,7 +5,7 @@ import type { ConsoleMessage, Locator, Page } from '@playwright/test'
 import type {
   CanvasPointerEvent,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'

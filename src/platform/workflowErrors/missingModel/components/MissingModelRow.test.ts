@@ -56,10 +56,13 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  getActiveGraphNodeIds: vi.fn(() => new Set()),
-  getNodeByExecutionId: mockGetNodeByExecutionId
-}))
+vi.mock<unknown>(
+  import('@comfyorg/litegraph/utils/graphTraversalUtil'),
+  () => ({
+    getActiveGraphNodeIds: vi.fn(() => new Set()),
+    getNodeByExecutionId: mockGetNodeByExecutionId
+  })
+)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {

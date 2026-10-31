@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { WatchHandle } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import { legacyMenuCompat } from '@comfyorg/litegraph/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'

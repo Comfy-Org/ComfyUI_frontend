@@ -9,7 +9,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { blankGraph } from '@/scripts/defaultGraph'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { AgentApiError } from '@/workbench/extensions/agent/services/agent/agentRestClient'

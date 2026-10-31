@@ -1,10 +1,10 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { INumericWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { isFloatInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isFloatInputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { addValueControlWidget } from '@/core/graph/widgets/valueControlWidgets'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'

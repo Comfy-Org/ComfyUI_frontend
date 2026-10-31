@@ -38,7 +38,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, RenderShape } from '@comfyorg/litegraph/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
@@ -46,12 +46,12 @@ import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widget
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { dynamicComboOptionKeys } from '@/schemas/nodeDef/inputSpecTree'
-import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type { WidgetValueBinding } from '@/utils/widgetBinding'
 import { cn } from '@comfyorg/tailwind-utils'

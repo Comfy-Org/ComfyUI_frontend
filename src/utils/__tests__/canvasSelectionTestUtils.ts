@@ -1,9 +1,9 @@
-import type { SelectableKey } from '@/core/selection/selectionState'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { SelectableKey } from '@comfyorg/graph-state/selection/selectionState'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { useSelectionStore } from '@/core/selection/selectionStore'
+import { selectableKeyOf } from '@comfyorg/litegraph/canvas/selectionAdapter'
+import { useSelectionStore } from '@comfyorg/graph-state/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 /**

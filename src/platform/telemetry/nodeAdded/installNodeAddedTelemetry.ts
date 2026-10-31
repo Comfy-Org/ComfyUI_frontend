@@ -1,4 +1,4 @@
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { ChangeTracker } from '@/scripts/changeTracker'
 
 import { useTelemetry } from '@comfyorg/telemetry'

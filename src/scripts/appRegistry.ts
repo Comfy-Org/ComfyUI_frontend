@@ -1,4 +1,4 @@
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 import type { ComfyApp } from '@/types/comfy'
 
 let instance: ComfyApp | undefined

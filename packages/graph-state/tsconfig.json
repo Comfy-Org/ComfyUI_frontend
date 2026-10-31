@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "paths": {},
+    "types": [],
+    "customConditions": ["@comfyorg/graph-state"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/__mocks__/**"]
+}

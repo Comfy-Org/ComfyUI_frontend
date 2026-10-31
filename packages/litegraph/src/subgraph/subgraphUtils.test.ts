@@ -1,0 +1,202 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  LGraph,
+  LGraphNode,
+  findUsedSubgraphIds,
+  getDirectSubgraphIds
+} from '#/litegraph'
+import type { UUID } from '#/litegraph'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+
+import { reorderSubgraphInputs } from './subgraphUtils'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode,
+  resetSubgraphFixtureState
+} from './__fixtures__/subgraphHelpers'
+
+describe('subgraphUtils', () => {
+  beforeEach(() => {
+    resetSubgraphFixtureState()
+  })
+
+  describe('reorderSubgraphInputs', () => {
+    it('logs and preserves mismatched host and subgraph inputs', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'first', type: 'STRING' },
+          { name: 'second', type: 'STRING' }
+        ]
+      })
+      const host = createTestSubgraphNode(subgraph)
+      host.inputs.pop()
+
+      reorderSubgraphInputs(host, [1, 0])
+
+      expect(subgraph.inputs.map(({ name }) => name)).toEqual([
+        'first',
+        'second'
+      ])
+      expect(console.error).toHaveBeenCalledWith(
+        'reorderSubgraphInputs: host and subgraph inputs differ',
+        { hostInputs: 1, subgraphInputs: 2 }
+      )
+    })
+
+    it('preserves both input orders when endpoint updates are rejected', () => {
+      const graph = new LGraph()
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'first', type: 'STRING' },
+          { name: 'second', type: 'STRING' }
+        ]
+      })
+      const host = createTestSubgraphNode(subgraph)
+      graph.add(host)
+      const source = new LGraphNode('Source')
+      source.addOutput('out', 'STRING')
+      graph.add(source)
+      const link = source.connect(0, host, 0)!
+      vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
+        ok: false,
+        error: { code: 'occupied-target', message: 'Target is occupied' }
+      })
+      const invalidatePromotedViews = vi.spyOn(host, 'invalidatePromotedViews')
+
+      reorderSubgraphInputs(host, [1, 0])
+
+      expect(host.inputs.map(({ name }) => name)).toEqual(['first', 'second'])
+      expect(subgraph.inputs.map(({ name }) => name)).toEqual([
+        'first',
+        'second'
+      ])
+      expect(link.target_slot).toBe(0)
+      expect(invalidatePromotedViews).not.toHaveBeenCalled()
+    })
+  })
+  describe('getDirectSubgraphIds', () => {
+    it('should return empty set for graph with no subgraph nodes', () => {
+      const graph = new LGraph()
+      const result = getDirectSubgraphIds(graph)
+      expect(result.size).toBe(0)
+    })
+
+    it('should find single subgraph node', () => {
+      const graph = new LGraph()
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      graph.add(subgraphNode)
+
+      const result = getDirectSubgraphIds(graph)
+      expect(result.size).toBe(1)
+      expect(result.has(subgraph.id)).toBe(true)
+    })
+
+    it('should find multiple unique subgraph nodes', () => {
+      const graph = new LGraph()
+      const subgraph1 = createTestSubgraph({ name: 'Subgraph 1' })
+      const subgraph2 = createTestSubgraph({ name: 'Subgraph 2' })
+
+      const node1 = createTestSubgraphNode(subgraph1)
+      const node2 = createTestSubgraphNode(subgraph2)
+
+      graph.add(node1)
+      graph.add(node2)
+
+      const result = getDirectSubgraphIds(graph)
+      expect(result.size).toBe(2)
+      expect(result.has(subgraph1.id)).toBe(true)
+      expect(result.has(subgraph2.id)).toBe(true)
+    })
+
+    it('should return unique IDs when same subgraph is used multiple times', () => {
+      const graph = new LGraph()
+      const subgraph = createTestSubgraph()
+
+      const node1 = createTestSubgraphNode(subgraph, { id: 1 })
+      const node2 = createTestSubgraphNode(subgraph, { id: 2 })
+
+      graph.add(node1)
+      graph.add(node2)
+
+      const result = getDirectSubgraphIds(graph)
+      expect(result.size).toBe(1)
+      expect(result.has(subgraph.id)).toBe(true)
+    })
+  })
+
+  describe('findUsedSubgraphIds', () => {
+    it('should handle graph with no subgraphs', () => {
+      const graph = new LGraph()
+      const registry = new Map<UUID, LGraph>()
+
+      const result = findUsedSubgraphIds(graph, registry)
+      expect(result.size).toBe(0)
+    })
+
+    it('should find nested subgraphs', () => {
+      const rootGraph = new LGraph()
+      const subgraph1 = createTestSubgraph({ name: 'Level 1' })
+      const subgraph2 = createTestSubgraph({ name: 'Level 2' })
+
+      // Add subgraph1 node to root
+      const node1 = createTestSubgraphNode(subgraph1)
+      rootGraph.add(node1)
+
+      // Add subgraph2 node inside subgraph1
+      const node2 = createTestSubgraphNode(subgraph2)
+      subgraph1.add(node2)
+
+      const registry = new Map<UUID, LGraph>([
+        [subgraph1.id, subgraph1],
+        [subgraph2.id, subgraph2]
+      ])
+
+      const result = findUsedSubgraphIds(rootGraph, registry)
+      expect(result.size).toBe(2)
+      expect(result.has(subgraph1.id)).toBe(true)
+      expect(result.has(subgraph2.id)).toBe(true)
+    })
+
+    it('throws RangeError when graph.add() creates a circular subgraph reference', () => {
+      const rootGraph = new LGraph()
+      const subgraph1 = createTestSubgraph({ name: 'Subgraph 1' })
+      const subgraph2 = createTestSubgraph({ name: 'Subgraph 2' })
+
+      // Add subgraph1 to root
+      const node1 = createTestSubgraphNode(subgraph1)
+      rootGraph.add(node1)
+
+      // Add subgraph2 to subgraph1
+      const node2 = createTestSubgraphNode(subgraph2)
+      subgraph1.add(node2)
+
+      // Add subgraph1 to subgraph2 (circular reference)
+      // Note: add() itself throws RangeError due to recursive forEachNode
+      const node3 = createTestSubgraphNode(subgraph1, { id: 3 })
+      expect(() => subgraph2.add(node3)).toThrow(RangeError)
+    })
+
+    it('should handle missing subgraphs in registry gracefully', () => {
+      const rootGraph = new LGraph()
+      const subgraph1 = createTestSubgraph({ name: 'Subgraph 1' })
+      const subgraph2 = createTestSubgraph({ name: 'Subgraph 2' })
+
+      // Add both subgraph nodes
+      const node1 = createTestSubgraphNode(subgraph1)
+      const node2 = createTestSubgraphNode(subgraph2)
+
+      rootGraph.add(node1)
+      rootGraph.add(node2)
+
+      // Only register subgraph1
+      const registry = new Map<UUID, LGraph>([[subgraph1.id, subgraph1]])
+
+      const result = findUsedSubgraphIds(rootGraph, registry)
+      expect(result.size).toBe(2)
+      expect(result.has(subgraph1.id)).toBe(true)
+      expect(result.has(subgraph2.id)).toBe(true) // Still found, just can't recurse into it
+    })
+  })
+})

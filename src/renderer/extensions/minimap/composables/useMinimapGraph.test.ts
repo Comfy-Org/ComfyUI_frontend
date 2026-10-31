@@ -4,12 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import { CustomEventTarget } from '@comfyorg/litegraph/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { useLayoutMutations } from '@comfyorg/graph-state/layout/layoutMutations'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
+import { LayoutSource } from '@comfyorg/graph-state/layout/types'
 import { useMinimapGraph } from '@/renderer/extensions/minimap/composables/useMinimapGraph'
 import { api } from '@/scripts/api'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
@@ -19,7 +19,7 @@ import {
   createMockLGraphNode,
   createMockLLink,
   createMockLinks
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 vi.mock(import('@vueuse/core'), { spy: true })
 

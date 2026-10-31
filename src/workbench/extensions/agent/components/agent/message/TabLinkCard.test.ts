@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 
 import TabLinkCard from './TabLinkCard.vue'
 import { AgentTargetNavigationError } from '@/workbench/extensions/agent/services/agent/targetAwareAgentNavigation'

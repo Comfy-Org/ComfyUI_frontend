@@ -9,9 +9,9 @@ import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useDialogStore } from '@/stores/dialogStore'

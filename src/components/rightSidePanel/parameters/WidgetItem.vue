@@ -3,8 +3,8 @@ import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@comfyorg/design-system/common/EditableText'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { draggableItemClass } from '@/scripts/ui/draggableList'
@@ -13,13 +13,13 @@ import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
-} from '@/stores/widgetValueStore'
+} from '@comfyorg/graph-state/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { getControlWidget } from '@/types/simplifiedWidget'
 import type {

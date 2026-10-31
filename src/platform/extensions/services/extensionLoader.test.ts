@@ -1,6 +1,6 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -18,7 +18,7 @@ const coreLoad = vi.hoisted(() => ({
 vi.mock(import('@/extensions/core/index'), () => ({
   registerCoreExtensions: async () => {
     const { LGraphCanvas, LGraphNode } =
-      await import('@/lib/litegraph/src/litegraph')
+      await import('@comfyorg/litegraph/litegraph')
     const { useExtensionStore } =
       await import('@/platform/extensions/stores/extensionStore')
     coreLoad.onConfigure = LGraphNode.prototype.onConfigure

@@ -5,11 +5,11 @@ import {
   addNode,
   createCanvas,
   selectedTitles
-} from '@/lib/litegraph/src/__fixtures__/canvasHarness'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/__fixtures__/canvasHarness'
+import { LGraph } from '@comfyorg/litegraph/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))

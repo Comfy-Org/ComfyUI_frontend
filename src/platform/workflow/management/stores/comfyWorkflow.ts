@@ -1,6 +1,6 @@
 import { markRaw } from 'vue'
 
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'

@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import {
   createBoundaryLinkedSubgraph,
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { scanAllModelCandidates } from '@/platform/workflowErrors/missingModel/missingModelScan'
@@ -22,8 +22,8 @@ import { scanAllMediaCandidates } from '@/platform/workflowErrors/missingMedia/m
 import {
   getExecutionIdByNode,
   isCandidateScopeActive
-} from '@/utils/graphTraversalUtil'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'

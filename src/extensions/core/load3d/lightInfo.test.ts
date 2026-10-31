@@ -1,7 +1,7 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 
 import { lightInfoExtension } from './lightInfo'
 

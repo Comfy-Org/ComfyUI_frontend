@@ -59,6 +59,180 @@
       "count": 8
     }
   },
+  "packages/litegraph/src/ContextMenu.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/CurveEditor.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/DragAndScale.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/LGraph.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 9
+    },
+    "comfy/no-positional-boolean-params": {
+      "count": 7
+    }
+  },
+  "packages/litegraph/src/LGraphCanvas.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 13
+    }
+  },
+  "packages/litegraph/src/LGraphGroup.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/LGraphNode.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    },
+    "comfy/no-positional-boolean-params": {
+      "count": 22
+    }
+  },
+  "packages/litegraph/src/LiteGraphGlobal.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 3
+    }
+  },
+  "packages/litegraph/src/Reroute.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/canvas/FloatingRenderLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "packages/litegraph/src/canvas/MovingInputLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "packages/litegraph/src/canvas/MovingLinkBase.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "packages/litegraph/src/canvas/MovingOutputLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 3
+    }
+  },
+  "packages/litegraph/src/canvas/ToInputFromIoNodeLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 5
+    }
+  },
+  "packages/litegraph/src/canvas/ToInputRenderLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "packages/litegraph/src/canvas/ToOutputFromIoNodeLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 5
+    }
+  },
+  "packages/litegraph/src/canvas/ToOutputRenderLink.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    }
+  },
+  "packages/litegraph/src/canvas/litegraphLinkAdapter.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/canvas/selectionAdapter.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 2
+    }
+  },
+  "packages/litegraph/src/canvas/slotCalculations.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 3
+    }
+  },
+  "packages/litegraph/src/litegraph.ts": {
+    "comfy/no-reexports": {
+      "count": 41
+    }
+  },
+  "packages/litegraph/src/litegraphInstance.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/node/slotLinks.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
+    },
+    "comfy/no-positional-boolean-params": {
+      "count": 2
+    }
+  },
+  "packages/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 6
+    }
+  },
+  "packages/litegraph/src/subgraph/Subgraph.ts": {
+    "comfy/no-reexports": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/subgraph/SubgraphConversion.nestedDefinitions.test.ts": {
+    "comfy/prefer-array-containing": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/subgraph/SubgraphInputNode.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/subgraph/SubgraphOutput.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/subgraph/subgraphUtils.ts": {
+    "comfy/no-reexports": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/utils/__mocks__/graphTraversalUtil.ts": {
+    "comfy/no-reexports": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/utils/arrange.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
+  "packages/litegraph/src/widgets/widgetMap.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
+    }
+  },
   "packages/settings-core/src/settingStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
@@ -86,11 +260,6 @@
   },
   "scripts/agentConversationFromLangfuse.test.ts": {
     "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/base/assert.ts": {
-    "comfy/no-new-error-throw": {
       "count": 1
     }
   },
@@ -199,11 +368,6 @@
       "count": 7
     }
   },
-  "src/core/selection/selectionStore.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/extensions/core/load3d/Load3dUtils.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
@@ -261,163 +425,6 @@
   },
   "src/i18n.ts": {
     "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/ContextMenu.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/CurveEditor.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/DragAndScale.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/LGraph.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 9
-    },
-    "comfy/no-positional-boolean-params": {
-      "count": 7
-    },
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/LGraphCanvas.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 13
-    }
-  },
-  "src/lib/litegraph/src/LGraphGroup.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/LGraphNode.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    },
-    "comfy/no-positional-boolean-params": {
-      "count": 22
-    }
-  },
-  "src/lib/litegraph/src/LiteGraphGlobal.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 3
-    }
-  },
-  "src/lib/litegraph/src/Reroute.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/canvas/FloatingRenderLink.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 4
-    }
-  },
-  "src/lib/litegraph/src/canvas/MovingInputLink.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
-    }
-  },
-  "src/lib/litegraph/src/canvas/MovingLinkBase.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 4
-    }
-  },
-  "src/lib/litegraph/src/canvas/MovingOutputLink.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
-    }
-  },
-  "src/lib/litegraph/src/canvas/ToInputFromIoNodeLink.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 5
-    }
-  },
-  "src/lib/litegraph/src/canvas/ToInputRenderLink.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 4
-    }
-  },
-  "src/lib/litegraph/src/canvas/ToOutputFromIoNodeLink.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 5
-    }
-  },
-  "src/lib/litegraph/src/canvas/ToOutputRenderLink.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 4
-    }
-  },
-  "src/lib/litegraph/src/litegraph.ts": {
-    "comfy/no-reexports": {
-      "count": 43
-    }
-  },
-  "src/lib/litegraph/src/litegraphInstance.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/node/slotLinks.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 4
-    },
-    "comfy/no-positional-boolean-params": {
-      "count": 2
-    }
-  },
-  "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 6
-    }
-  },
-  "src/lib/litegraph/src/subgraph/Subgraph.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/subgraph/SubgraphConversion.nestedDefinitions.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/subgraph/SubgraphInputNode.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/subgraph/SubgraphOutput.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/subgraph/subgraphUtils.ts": {
-    "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/utils/arrange.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/widgets/widgetMap.ts": {
-    "comfy/no-positional-boolean-params": {
       "count": 1
     }
   },
@@ -801,21 +808,6 @@
       "count": 1
     }
   },
-  "src/renderer/core/canvas/litegraph/litegraphLinkAdapter.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/renderer/core/canvas/litegraph/selectionAdapter.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 2
-    }
-  },
-  "src/renderer/core/canvas/litegraph/slotCalculations.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 3
-    }
-  },
   "src/renderer/core/layout/slots/slotIdentifier.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
@@ -1119,21 +1111,11 @@
   },
   "src/types/index.ts": {
     "comfy/no-reexports": {
-      "count": 37
+      "count": 14
     }
   },
   "src/types/slotId.test.ts": {
     "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/types/widgetVisibility.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 5
-    }
-  },
-  "src/utils/__mocks__/graphTraversalUtil.ts": {
-    "comfy/no-reexports": {
       "count": 1
     }
   },

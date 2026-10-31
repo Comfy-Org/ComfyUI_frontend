@@ -5,12 +5,12 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 
 import { render, screen } from '@testing-library/vue'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 type ResizeEntryLike = Pick<
   ResizeObserverEntry,
@@ -85,7 +85,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
+vi.mock<unknown>(import('@comfyorg/graph-state/layout/layoutStore'), () => ({
   layoutStore: {
     reportContentSize: testState.reportContentSize,
     contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>

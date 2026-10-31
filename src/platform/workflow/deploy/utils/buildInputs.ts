@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 
 import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
-import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { getCnrIdFromProperties } from '@comfyorg/litegraph/utils/cnrIdUtil'
 import {
   collectReachableSubgraphDefinitions,
   parseFlattenableSubgraphDefinitions

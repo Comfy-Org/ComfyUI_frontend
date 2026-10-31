@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 const mockReportError = vi.hoisted(() => vi.fn())
@@ -13,7 +13,7 @@ vi.mock(import('@/services/litegraphService'))
 // Rules out one hypothesis for the tab-switch node loss: that graph.serialize()
 // silently drops a node whose nodeDataStore record is already gone. It does
 // not — this pins the store/telemetry-owned side of that investigation,
-// moved out of src/lib/litegraph (see LGraph.tabSwitchSnapshot.test.ts for
+// moved out of packages/litegraph (see LGraph.tabSwitchSnapshot.test.ts for
 // the pure library-boundary half).
 describe('LGraph serialize when the node data store has already diverged', () => {
   it('still emits a live node whose store record is gone, and reports the divergence', () => {

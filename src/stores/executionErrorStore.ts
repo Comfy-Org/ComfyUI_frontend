@@ -12,7 +12,7 @@ import {
   liftNodeErrorsToBoundary,
   resolveLiftChain
 } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
-import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, LGraph } from '@comfyorg/litegraph/litegraph'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
@@ -37,9 +37,9 @@ import {
   executionIdToNodeLocatorId,
   getExecutionIdByNode,
   getNodeByExecutionId
-} from '@/utils/graphTraversalUtil'
-import type { UUID } from '@/utils/uuid'
-import { zeroUuid } from '@/utils/uuid'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
+import type { UUID } from '@comfyorg/graph-model/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import {
   SIMPLE_ERROR_TYPES,
   errorsForSlot,

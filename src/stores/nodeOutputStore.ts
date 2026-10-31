@@ -7,14 +7,12 @@ import type {
   LGraph,
   LGraphNode,
   SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type {
-  ExecutedWsMessage,
-  ResultItem
-} from '@comfyorg/api-client/executionTypes'
-import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
+import type { ResultItem } from '@comfyorg/graph-model/nodeOutput'
+import type { ResultItemType } from '@comfyorg/graph-model/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { clone } from '@/scripts/utils'
@@ -26,7 +24,7 @@ import type {
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { parseFilePath } from '@/utils/formatUtil'
-import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { executionIdToNodeLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import {
   isAnimatedOutput,
   isVideoNode,

@@ -217,7 +217,7 @@ See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, a
 ## Testing
 
 - Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).
-- Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`.
+- Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `packages/litegraph/src/**/*.test.ts`.
 - Principles: Read `docs/guidance/testing-principles.md` before proposing, reviewing, or writing tests, not only when editing a test file. Start with caller or user expectations and reachable scenarios, then choose the smallest suite that protects them. Use Beck's Test Desiderata to judge behavioral value and refactor resistance.
 - Conventions: `docs/guidance/vitest.md` (unit/component), `docs/guidance/playwright.md` (E2E), and `docs/testing/*.md` for detailed patterns.
 

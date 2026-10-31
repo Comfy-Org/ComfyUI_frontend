@@ -4,14 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   clearRootLinkReveals,
   isLinkRevealed
-} from '@/lib/litegraph/src/canvas/linkRevealState'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/canvas/linkRevealState'
+import { LGraph } from '@comfyorg/litegraph/litegraph'
 import { app } from '@/scripts/app'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkPresentationStore } from '@comfyorg/graph-state/linkPresentationStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import {
   toOwningGraphId,
   toRootGraphId

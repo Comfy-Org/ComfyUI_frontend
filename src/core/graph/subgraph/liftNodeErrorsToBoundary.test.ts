@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   createBoundaryLinkedSubgraph,
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { liftNodeErrorsToBoundary } from './liftNodeErrorsToBoundary'

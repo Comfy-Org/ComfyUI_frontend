@@ -1,8 +1,8 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { DOMWidgetOptions } from '@/types/domWidget'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { DOMWidgetOptions } from '@comfyorg/litegraph/types/domWidget'
 
 interface FakeDOMWidget {
   name: string

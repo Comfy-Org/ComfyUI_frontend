@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
-import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode, SubgraphNode } from '@comfyorg/litegraph/litegraph'
+import { createBoundaryLinkedSubgraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -27,7 +27,7 @@ import {
   getNodeByExecutionId,
   getRootParentNode,
   mapAllNodes
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 import { useErrorGroups } from './useErrorGroups'
@@ -45,7 +45,7 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), { spy: true })
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 const unknownValidationMessage = vi.hoisted(

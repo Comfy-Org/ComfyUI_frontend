@@ -27,7 +27,7 @@ import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'

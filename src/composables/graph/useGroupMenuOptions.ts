@@ -1,7 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@comfyorg/litegraph/litegraph'
+import type { LGraphGroup } from '@comfyorg/litegraph/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

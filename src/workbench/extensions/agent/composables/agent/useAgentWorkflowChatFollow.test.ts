@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 import type { ThreadListing } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 
 import { useAgentWorkflowChatFollow } from './useAgentWorkflowChatFollow'

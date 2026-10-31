@@ -1,5 +1,5 @@
 import { app } from '../../scripts/app.js'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 
 const store = useWidgetValueStore()
 

@@ -28,7 +28,7 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"],
+  "publicEntryPoints": [],
   "allowedDependencies": ["extension-manager"],
   "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [

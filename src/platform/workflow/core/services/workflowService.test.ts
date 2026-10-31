@@ -39,11 +39,11 @@ import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { createTestSubgraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import { createMockChangeTracker } from '@/utils/__tests__/workflowTestUtils'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { t } from '@/i18n'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -105,7 +105,7 @@ vi.mock(import('@/scripts/app'))
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/base/assert'), () => ({
+vi.mock(import('@comfyorg/shared-frontend-utils/assert'), () => ({
   assert: mockAssert
 }))
 

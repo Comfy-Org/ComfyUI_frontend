@@ -12,13 +12,13 @@ import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { app } from '@/scripts/app'
 import { isCloud } from '@/platform/distribution/types'
 import { useBootDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@comfyorg/litegraph/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 
 import {
   getNodeByExecutionId,
   getExecutionIdByNode
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { createCancelToken } from '@/utils/createCancelToken'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'

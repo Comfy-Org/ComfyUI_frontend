@@ -4,18 +4,18 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { st, t } from '@/i18n'
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import { CustomEventTarget } from '@comfyorg/litegraph/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
-} from '@/core/graph/nodeShell/nodeShellState'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/node/nodeShell/nodeShellState'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
-import { useLinkStore } from '@/stores/linkStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
+import { usePreviewExposureStore } from '@comfyorg/graph-state/previewExposureStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import {
   toOwningGraphId,
   toRootGraphId
@@ -23,14 +23,14 @@ import {
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 import type { MissingNodeType, NodeReplacement } from './types'
 
-vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/litegraph'), { spy: true })
 LiteGraph.createNode = vi.fn()
 LiteGraph.registered_node_types = {}
 
-vi.mock(import('@/core/graph/nodeShell/nodeShellState'), () => ({
+vi.mock(import('@comfyorg/litegraph/node/nodeShell/nodeShellState'), () => ({
   canTransferReplacementOwnership: vi.fn(() => true),
   transferReplacementOwnership: vi.fn(
     (node: LGraphNode, replacement: LGraphNode) => {
@@ -46,7 +46,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   sanitizeNodeName: (name: string) => name.replace(/[&<>"'`=]/g, '')
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn()
 }))
 
@@ -54,7 +54,7 @@ vi.mock(import('@/i18n'))
 
 import { app } from '@/scripts/app'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { collectAllNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { useNodeReplacement } from './useNodeReplacement'
 
 beforeEach(() => {

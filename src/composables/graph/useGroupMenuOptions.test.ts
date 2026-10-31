@@ -4,7 +4,7 @@ import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useGroupMenuOptions } from '@/composables/graph/useGroupMenuOptions'
-import { LGraphCanvas, LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LGraphGroup } from '@comfyorg/litegraph/litegraph'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 vi.mock(import('@/scripts/app'))

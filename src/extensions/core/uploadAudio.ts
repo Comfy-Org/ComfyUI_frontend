@@ -4,8 +4,8 @@ import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { resolveNodeRootGraphId } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget, IStringWidget } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -13,18 +13,18 @@ import {
   getResourceURL,
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
-import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import type { DOMWidget } from '@/types/domWidget'
+import type { DOMWidget } from '@comfyorg/litegraph/types/domWidget'
 import { useAudioService } from '@/services/audioService'
 import type { NodeLocatorId } from '@/types'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 function updateUIWidget(

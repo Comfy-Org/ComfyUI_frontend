@@ -6,7 +6,7 @@ import type {
   IContextMenuValue,
   INodeInputSlot,
   IWidget
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 
 import { translateContextMenuItems } from './useContextMenuTranslation'
 

@@ -4,7 +4,7 @@ import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/reposit
 import { useApp } from '@/scripts/appInstance'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
-import { reduceAllNodes } from '@/utils/graphTraversalUtil'
+import { reduceAllNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 import type { ExecutionContext } from '@comfyorg/telemetry/types'
 

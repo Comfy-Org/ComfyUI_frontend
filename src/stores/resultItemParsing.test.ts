@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
-import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
+import type { NodeExecutionOutput } from '@comfyorg/graph-model/nodeOutput'
 import { isTextResult, resultItemSupportsPreview } from '@/utils/resultItem'
 import { parseNodeOutput, parseTaskOutput } from '@/stores/resultItemParsing'
 

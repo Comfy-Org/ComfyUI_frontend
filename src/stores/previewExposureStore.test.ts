@@ -1,14 +1,14 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@comfyorg/litegraph/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { UUID } from '@/utils/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
-} from './previewExposureStore'
+} from '@comfyorg/graph-state/previewExposureStore'
 
 describe(getPreviewExposureHostLocator, () => {
   it('encodes a delimiter-bearing host ID', () => {

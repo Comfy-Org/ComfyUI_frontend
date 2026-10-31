@@ -6,6 +6,10 @@
   "keywords": [],
   "type": "module",
   "exports": {
+    "./assert": {
+      "types": "./dist-types/assert.d.ts",
+      "default": "./src/assert.ts"
+    },
     "./colorUtil": {
       "@comfyorg/shared-frontend-utils": "./src/colorUtil.ts",
       "types": "./dist-types/colorUtil.d.ts",
@@ -50,6 +54,10 @@
       "@comfyorg/shared-frontend-utils": "./src/piiUtil.ts",
       "types": "./dist-types/piiUtil.d.ts",
       "default": "./src/piiUtil.ts"
+    },
+    "./pointerUtils": {
+      "types": "./dist-types/pointerUtils.d.ts",
+      "default": "./src/pointerUtils.ts"
     },
     "./telemetry": {
       "@comfyorg/shared-frontend-utils": "./src/telemetry.ts",

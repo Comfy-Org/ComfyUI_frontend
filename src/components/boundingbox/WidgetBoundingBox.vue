@@ -58,7 +58,7 @@ import { computed, nextTick } from 'vue'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
-import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import { isBoundsObject } from '@comfyorg/graph-state/layout/geometry'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'

@@ -1,6 +1,6 @@
 import type { ComputedRef } from 'vue'
 
-import { assert } from '@/base/assert'
+import { assert } from '@comfyorg/shared-frontend-utils/assert'
 
 interface CurrentUserAccess {
   readonly userEmail: ComputedRef<string | null | undefined>

@@ -56,15 +56,15 @@
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/BoundingBoxWidget.ts",
+      "path": "packages/litegraph/src/widgets/BoundingBoxWidget.ts",
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/CurveWidget.ts",
+      "path": "packages/litegraph/src/widgets/CurveWidget.ts",
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/VideoEditWidget.ts",
+      "path": "packages/litegraph/src/widgets/VideoEditWidget.ts",
       "role": "presentation"
     },
     {

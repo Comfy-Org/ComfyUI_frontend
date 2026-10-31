@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphCanvas } from '@comfyorg/litegraph/LGraphCanvas'
 
 import { useRafFn } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref } from 'vue'

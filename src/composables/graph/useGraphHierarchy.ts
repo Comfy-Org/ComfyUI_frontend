@@ -1,5 +1,5 @@
-import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { containsCentre, containsRect } from '@/lib/litegraph/src/measure'
+import type { LGraphGroup, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { containsCentre, containsRect } from '@comfyorg/litegraph/measure'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 /**

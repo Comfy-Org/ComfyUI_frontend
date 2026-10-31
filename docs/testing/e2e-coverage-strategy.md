@@ -99,8 +99,8 @@ regenerated.
    those tests.
 
 3. The litegraph canvas has one measuring layer. `vite.config.mts`
-   excludes `src/lib/litegraph/src/canvas/**`, `widgets/**`, and the top-level
-   `src/lib/litegraph/src/*.ts` from unit coverage. E2E is therefore the only
+   excludes `packages/litegraph/src/canvas/**`, `widgets/**`, and the top-level
+   `packages/litegraph/src/*.ts` from unit coverage. E2E is therefore the only
    coverage those 11.9k lines get, and it stands at 49.6% (canvas) and 48.3%
    (widgets). `CurveEditor`, `KnobWidget`, `ColorWidget`,
    `GradientSliderWidget`, `InputIndicators`, and `FloatingRenderLink` are at

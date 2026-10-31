@@ -1,4 +1,4 @@
-import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { ResultItem } from '@comfyorg/graph-model/nodeOutput'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 

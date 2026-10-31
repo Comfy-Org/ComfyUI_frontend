@@ -15,10 +15,10 @@ import * as Y from 'yjs'
 
 import { render, screen, within } from '@testing-library/vue'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeDataStore } from '@comfyorg/graph-state/nodeDataStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { AgentCrdtProjection } from '@/workbench/extensions/agent/crdt/agentCrdtProjection'
 import { FollowerDoc } from '@/workbench/extensions/agent/crdt/followerDoc'

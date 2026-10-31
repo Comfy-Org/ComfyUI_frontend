@@ -4,7 +4,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import { app } from '@/scripts/app'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 export function useWidgetHostNode(
   nodeLocatorId: MaybeRefOrGetter<NodeLocatorId | undefined>,

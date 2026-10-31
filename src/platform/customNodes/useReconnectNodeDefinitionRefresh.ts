@@ -2,7 +2,7 @@ import { delay } from 'es-toolkit'
 import { getCurrentScope } from 'vue'
 import type { ComputedRef } from 'vue'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -11,7 +11,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import { forEachNode } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 import { useUserBusy } from './useUserBusy'
 

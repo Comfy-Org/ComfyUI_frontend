@@ -12,8 +12,8 @@ import type {
   NodeBeforeRemovedEvent,
   NodeLifecycleEvent
 } from '@comfyorg/graph-model/LGraphEventMap'
-import { LiteGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph, Subgraph } from '@comfyorg/litegraph/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import {
   LGraphEventMode,
   NodeSlotType
@@ -38,7 +38,7 @@ import {
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import { getCnrIdFromNode } from '@comfyorg/litegraph/utils/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -51,7 +51,7 @@ import {
   getNodeByExecutionId,
   isExecutionPathActive,
   isMissingCandidateActive
-} from '@/utils/graphTraversalUtil'
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 
 const hookedNodes = new WeakSet<LGraphNode>()

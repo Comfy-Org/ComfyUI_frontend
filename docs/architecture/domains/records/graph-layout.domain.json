@@ -16,7 +16,7 @@
       "role": "integration"
     },
     {
-      "path": "src/renderer/core/layout/operations/layoutMutations.ts",
+      "path": "src/renderer/core/layout/operations/layoutMutations.test.ts",
       "role": "application"
     },
     {
@@ -40,19 +40,11 @@
       "role": "integration"
     },
     {
-      "path": "src/renderer/core/layout/utils/mappers.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/renderer/core/layout/utils/nodeSizeUtil.ts",
       "role": "integration"
     },
     {
       "path": "src/renderer/core/spatial/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/spatialIndex.ts",
       "role": "domain"
     },
     {
@@ -67,17 +59,17 @@
     {
       "name": "Layout store preserves geometry, actors, holders, and hit targets",
       "checks": [
-        "src/renderer/core/layout/store/layoutStore.test.ts",
-        "src/renderer/core/layout/store/layoutStore.withActor.test.ts",
-        "src/renderer/core/layout/store/layoutStore.multiHolder.test.ts",
+        "packages/graph-state/src/layout/layoutStore.test.ts",
+        "packages/graph-state/src/layout/layoutStore.withActor.test.ts",
+        "packages/graph-state/src/layout/layoutStore.multiHolder.test.ts",
         "src/renderer/core/layout/store/hitTargetAuthority.test.ts",
-        "src/renderer/core/layout/store/batchUpdateNodeBounds.test.ts"
+        "src/renderer/core/layout/utils/nodeSizeUtil.test.ts"
       ]
     },
     {
       "name": "Graph attachment and layout mutations keep LiteGraph and the layout store in sync",
       "checks": [
-        "src/renderer/core/layout/operations/graphLayoutAttachment.test.ts",
+        "packages/litegraph/src/layout/graphLayoutAttachment.test.ts",
         "src/renderer/core/layout/operations/layoutMutations.test.ts",
         "src/renderer/core/layout/operations/subgraphConversionLayout.test.ts",
         "src/renderer/core/layout/slots/syncSlotOffsets.test.ts",
@@ -91,9 +83,9 @@
         "src/renderer/core/layout/transform/useTransformState.test.ts",
         "src/renderer/core/layout/transform/graphRenderTransform.test.ts",
         "src/renderer/core/layout/transform/TransformPane.test.ts",
-        "src/renderer/core/layout/utils/layoutMath.test.ts",
-        "src/renderer/core/layout/utils/mappers.test.ts",
-        "src/renderer/core/spatial/QuadTree.test.ts"
+        "packages/graph-state/src/layout/layoutMath.test.ts",
+        "packages/graph-state/src/layout/mappers.test.ts",
+        "packages/graph-state/src/layout/QuadTree.test.ts"
       ]
     },
     {

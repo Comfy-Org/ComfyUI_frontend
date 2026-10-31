@@ -208,8 +208,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
-import { RenderShape } from '@/lib/litegraph/src/litegraph'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { RenderShape } from '@comfyorg/litegraph/litegraph'
+import { layoutStore } from '@comfyorg/graph-state/layout/layoutStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()

@@ -1,8 +1,8 @@
 import { t } from '@/i18n'
-import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
+import type { IContextMenuValue } from '@comfyorg/litegraph/types/contextMenu'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 
 const EXPORT_FORMATS = [
   { label: 'GLB', value: 'glb' },

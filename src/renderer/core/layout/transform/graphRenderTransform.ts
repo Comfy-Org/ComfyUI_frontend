@@ -1,5 +1,5 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import { createBounds } from '@/lib/litegraph/src/measure'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import { createBounds } from '@comfyorg/litegraph/measure'
 import type {
   Bounds,
   Point2D as Point

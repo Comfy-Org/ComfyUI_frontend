@@ -3,12 +3,12 @@ import type { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
 
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
+import { resolveInputSourceNode } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 type ResizeDirection =

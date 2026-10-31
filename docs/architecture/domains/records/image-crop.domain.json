@@ -16,7 +16,7 @@
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/ImageCropWidget.ts",
+      "path": "packages/litegraph/src/widgets/ImageCropWidget.ts",
       "role": "integration"
     }
   ],

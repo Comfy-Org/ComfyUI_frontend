@@ -19,6 +19,13 @@ export interface LinkTopology {
   parentId?: RerouteId
 }
 
+export type EndpointPatch = Partial<
+  Pick<
+    LinkTopology,
+    'originNodeId' | 'originSlot' | 'targetNodeId' | 'targetSlot'
+  >
+>
+
 export function isFloatingTopology(topology: LinkTopology): boolean {
   return (
     topology.originNodeId === UNASSIGNED_NODE_ID ||

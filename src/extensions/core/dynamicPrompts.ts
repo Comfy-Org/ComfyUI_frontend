@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { processDynamicPrompt } from '@/utils/formatUtil'
 import type { ComfyExtension } from '@/types/comfy'
 

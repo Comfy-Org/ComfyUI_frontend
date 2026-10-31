@@ -22,14 +22,14 @@ import {
   SubgraphNode,
   createBounds,
   outputAsSerialisable
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type {
   CreateNodeOptions,
   GraphAddOptions,
   IContextMenuValue,
   INodeInputSlot,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import type {
@@ -39,7 +39,7 @@ import type {
   ISerialisedNode
 } from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
+import { toConcreteWidget } from '@comfyorg/litegraph/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -53,7 +53,7 @@ import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec,
   OutputSpec
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+} from '@comfyorg/graph-model/nodeDefSchemaV2'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec as InputSpecV1
@@ -76,7 +76,7 @@ import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
-} from '@/stores/previewExposureStore'
+} from '@comfyorg/graph-state/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'

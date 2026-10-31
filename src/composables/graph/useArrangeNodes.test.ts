@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { computeArrangement } from '@/composables/graph/useArrangeNodes'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNode } from '@comfyorg/litegraph/__fixtures__/litegraphTestUtils'
 
 const GAP = 12
 const TITLE = 30 // LiteGraph.NODE_TITLE_HEIGHT default

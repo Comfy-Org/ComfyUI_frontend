@@ -8,7 +8,7 @@ import {
 } from '@/composables/videoConcat/concatSegmentPreviews'
 import { linkedConcatSlots } from '@/composables/videoConcat/linkedConcatSlots'
 import type { ConcatClipSlot } from '@/composables/videoConcat/videoConcatOrder'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 export interface ConcatClip extends ConcatClipSlot {

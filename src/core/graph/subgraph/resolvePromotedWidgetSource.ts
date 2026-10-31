@@ -1,14 +1,14 @@
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { getExecutionIdByNode } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 import { inputForWidget, promotedInputSource } from './promotedInputWidget'
 import {
   buildPromotedSourceExecutionId,
   resolveConcretePromotedWidget
-} from './resolveConcretePromotedWidget'
+} from '@comfyorg/litegraph/subgraph/promotion/resolveConcretePromotedWidget'
 
 type PromotedWidgetInput = INodeInputSlot & {
   widgetId: NonNullable<INodeInputSlot['widgetId']>

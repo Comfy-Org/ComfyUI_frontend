@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 
 export const CANVAS_IMAGE_PREVIEW_WIDGET = '$$canvas-image-preview'
 

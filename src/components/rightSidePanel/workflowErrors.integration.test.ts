@@ -16,18 +16,18 @@ import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
   createTestCanvasElement,
   createTestDragAndScale
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { getNodeByExecutionId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
+import { Rectangle } from '@comfyorg/litegraph/infrastructure/Rectangle'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type {
   LGraph,
   LGraphCanvas,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
@@ -67,7 +67,7 @@ vi.mock(
     }) as const
 )
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn(),
   getExecutionIdByNode: vi.fn(),
   getRootParentNode: vi.fn(() => null),

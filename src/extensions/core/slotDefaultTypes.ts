@@ -1,5 +1,5 @@
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/graph-model/nodeDefSchemaV2'
 import { inputSpecTree, ownSlotTypes } from '@/schemas/nodeDef/inputSpecTree'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import { collectSearchableOutputTypes } from '@/schemas/nodeDef/searchableSlotTypes'

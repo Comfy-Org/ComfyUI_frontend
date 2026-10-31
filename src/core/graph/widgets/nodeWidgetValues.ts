@@ -1,5 +1,5 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'

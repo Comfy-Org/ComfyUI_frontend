@@ -8,20 +8,20 @@ import { createI18n } from 'vue-i18n'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+} from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
+import type { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { getExecutionIdByNode } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 import SectionWidgets from './SectionWidgets.vue'
 

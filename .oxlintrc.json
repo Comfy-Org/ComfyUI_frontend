@@ -234,7 +234,7 @@
               },
               {
                 "target": "src/world",
-                "from": "src/lib/litegraph",
+                "from": "packages/litegraph",
                 "message": "src/world/ must remain free of litegraph dependencies. The world layer owns canonical entity identity and must not depend on litegraph types or values."
               }
             ]
@@ -243,27 +243,16 @@
       }
     },
     {
-      "files": ["src/lib/**/*.{ts,vue}"],
+      "files": ["packages/litegraph/**/*.{ts,vue}"],
       "rules": {
         "comfy/no-restricted-paths": [
           "warn",
           {
             "zones": [
               {
-                "target": "src/lib",
-                "from": [
-                  "src/components",
-                  "src/composables",
-                  "src/extensions",
-                  "src/platform",
-                  "src/renderer",
-                  "src/services",
-                  "src/stores",
-                  "src/views",
-                  "src/workbench",
-                  "src/world"
-                ],
-                "message": "src/lib/ is vendored leaf code and cannot import from app layers (violates layer architecture: lib → base → platform → workbench → renderer). Invert the dependency: have the app layer pass what it needs in, or move the shared type down into src/lib/ or src/base/."
+                "target": "packages/litegraph",
+                "from": "src",
+                "message": "Litegraph cannot import from the app. Move the shared module into a package below litegraph (ADR-ECS-PACKAGES-0051)."
               }
             ]
           }
@@ -287,6 +276,7 @@
       "files": [
         "src/**/*.{ts,tsx,vue}",
         "packages/api-client/src/**/*.ts",
+        "packages/litegraph/src/**/*.ts",
         "packages/settings-core/src/**/*.ts"
       ],
       "excludeFiles": [
@@ -294,7 +284,9 @@
         "src/**/*.{test,spec,stories}.{ts,tsx,vue}",
         "packages/*/src/**/*.test.ts",
         "src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**",
-        "src/**/{generated,vendor}/**"
+        "src/**/{generated,vendor}/**",
+        "packages/litegraph/src/**/*.test.ts",
+        "packages/litegraph/src/**/__fixtures__/**"
       ],
       "rules": {
         "comfy/no-new-error-throw": "error",
@@ -305,18 +297,18 @@
     {
       "files": [
         "src/composables/graph/**/*.{ts,vue}",
-        "src/lib/litegraph/src/**/*.{ts,vue}",
+        "packages/litegraph/src/**/*.{ts,vue}",
         "src/renderer/core/canvas/**/*.{ts,vue}",
         "src/renderer/extensions/vueNodes/**/*.{ts,vue}"
       ],
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "src/lib/litegraph/src/CurveEditor.ts",
-        "src/lib/litegraph/src/LGraph.ts",
-        "src/lib/litegraph/src/LGraphCanvas.ts",
-        "src/lib/litegraph/src/LGraphNode.ts",
-        "src/renderer/core/canvas/litegraph/selectionAdapter.ts"
+        "packages/litegraph/src/CurveEditor.ts",
+        "packages/litegraph/src/LGraph.ts",
+        "packages/litegraph/src/LGraphCanvas.ts",
+        "packages/litegraph/src/LGraphNode.ts",
+        "packages/litegraph/src/canvas/selectionAdapter.ts"
       ],
       "rules": {
         "comfy/no-direct-selection-write": "error"

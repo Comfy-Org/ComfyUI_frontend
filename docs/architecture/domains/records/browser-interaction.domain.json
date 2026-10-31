@@ -27,7 +27,7 @@
     {
       "name": "Pointer and click-drag classification distinguish middle-button pans and drags from clicks",
       "checks": [
-        "src/base/pointerUtils.test.ts",
+        "packages/shared-frontend-utils/src/pointerUtils.test.ts",
         "src/composables/useClickDragGuard.test.ts"
       ]
     },

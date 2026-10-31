@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "paths": {},
+    "types": ["vite/client", "vitest/globals", "node"],
+    "customConditions": ["@comfyorg/litegraph"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/__mocks__/**"]
+}

@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { app } from '@/scripts/app'

@@ -21,7 +21,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 //  - Interior rewire: rebinding the link feeding the interior node *behind*
 //    the promoted widget, from inside the subgraph
 //    (SubgraphInputNode._disconnectNodeInput -> SubgraphNode's
-//    'input-disconnected' handler, src/lib/litegraph/src/subgraph/
+//    'input-disconnected' handler, packages/litegraph/src/subgraph/
 //    SubgraphNode.ts:325-354 / SubgraphInputNode.ts:173-234).
 //  - External boundary wire: dragging a brand-new node directly onto the
 //    SubgraphNode's own exposed widget socket from the parent graph -- the

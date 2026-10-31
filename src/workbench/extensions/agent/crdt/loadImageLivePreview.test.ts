@@ -10,7 +10,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 // Test-only: builds a node with the real renderer-owned widget constructor
 // so the fixture's `image` widget carries the same preview-rendering
 // callback a production LoadImage node does.

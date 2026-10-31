@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@comfyorg/litegraph/litegraph'
 
 import type { MenuOption } from './menuOption'
 import { useNodeCustomization } from './useNodeCustomization'

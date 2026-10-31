@@ -3,7 +3,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type {
   ISerialisedNode,
   SerialisableGraph
@@ -11,12 +11,12 @@ import type {
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { app } from '@/scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
-import { createUuidv4 } from '@/utils/uuid'
-import type { UUID } from '@/utils/uuid'
+import { createMockCanvasRenderingContext2D } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
+import { createUuidv4 } from '@comfyorg/graph-model/uuid'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 vi.mock(import('@/scripts/app'))
 

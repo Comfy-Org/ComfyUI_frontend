@@ -5,8 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraph } from '@comfyorg/litegraph/LGraph'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import type { IBaseWidget, IComboWidget } from '@comfyorg/graph-model/widgets'
 import {
   scanAllModelCandidates,
@@ -20,14 +20,14 @@ import {
 import type { ReleaseModelOptions } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 type TestNode = Omit<LGraphNode, 'constructor'> & {
   _testExecutionId?: string
 }
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
+vi.mock<unknown>(import('@comfyorg/litegraph/utils/graphTraversalUtil'), () => {
   type TestNode = LGraphNode & {
     _testExecutionId?: string
     _testActiveExecutionIds?: string[]

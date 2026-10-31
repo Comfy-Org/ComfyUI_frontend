@@ -72,13 +72,13 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import type {
   NodeOutputWith,
   ResultItem
-} from '@comfyorg/api-client/executionTypes'
+} from '@comfyorg/graph-model/nodeOutput'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
-} from '@/stores/widgetValueStore'
+} from '@comfyorg/graph-state/widgetValueStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'

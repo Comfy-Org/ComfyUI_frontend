@@ -2,7 +2,7 @@ import { MAX_OVERFLOW_WIDGETS, nodesMap } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useLitegraphService } from '@/services/litegraphService'

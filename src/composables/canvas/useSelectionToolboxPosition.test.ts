@@ -11,9 +11,9 @@ import {
   LGraphGroup,
   LGraphNode,
   LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { createMockCanvasRenderingContext2D } from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 vi.mock(import('@/scripts/app'))
 

@@ -10,15 +10,15 @@ import { createI18n } from 'vue-i18n'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nextTick } from 'vue'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph } from '@comfyorg/litegraph/litegraph'
 import type {
   LGraphNode as LGLGraphNode,
   SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/litegraph/litegraph'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { getNodeByLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 const SUBGRAPH_ID = '00000000-0000-4000-8000-000000000002'
 const mockApp: {
@@ -31,7 +31,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mock(import('@comfyorg/litegraph/utils/graphTraversalUtil'), { spy: true })
 
 vi.mock(import('@/composables/useErrorHandling'))
 

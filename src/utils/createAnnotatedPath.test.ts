@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { ResultItem } from '@comfyorg/graph-model/nodeOutput'
 import {
   createAnnotatedPath,
   parseAnnotatedPath

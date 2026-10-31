@@ -3,10 +3,10 @@ import type { ComputedRef } from 'vue'
 
 import { isBoundingBox } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import type { BoundingBoxInput } from '@/composables/boundingBoxes/boundingBoxesUtil'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
 import { savedImageUrls } from '@/renderer/extensions/vueNodes/widgets/utils/savedImageUrls'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
+import { resolveInputSourceNode } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 const BACKGROUND_INPUT = 'background'
 const BBOXES_INPUT = 'bboxes'

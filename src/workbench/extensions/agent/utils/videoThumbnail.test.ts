@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvasElement
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 
 import { createVideoThumbnail } from './videoThumbnail'
 

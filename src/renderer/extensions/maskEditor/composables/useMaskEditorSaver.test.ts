@@ -4,8 +4,8 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { markRaw } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { api } from '@/scripts/api'
@@ -77,9 +77,12 @@ vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
-}))
+vi.mock<unknown>(
+  import('@comfyorg/litegraph/utils/graphTraversalUtil'),
+  () => ({
+    executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
+  })
+)
 
 describe('useMaskEditorSaver', () => {
   let mockNode: LGraphNode

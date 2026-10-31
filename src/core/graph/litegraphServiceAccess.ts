@@ -1,5 +1,5 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { LGraphNode } from '@comfyorg/litegraph/litegraph'
+import type { InputSpec } from '@comfyorg/graph-model/nodeDefSchemaV2'
 
 interface LitegraphServiceAccess {
   addNodeInput(node: LGraphNode, inputSpec: InputSpec): void

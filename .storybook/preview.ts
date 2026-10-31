@@ -10,7 +10,7 @@ import {
 } from '@/constants/coreColorPalettes'
 import { i18n } from '@/i18n'
 import { applyPaletteTheme } from '@/utils/colorPaletteTheme'
-import '@/lib/litegraph/public/css/litegraph.css'
+import '@comfyorg/litegraph/litegraph.css'
 import '@/assets/css/style.css'
 
 // Setup Vue app for Storybook

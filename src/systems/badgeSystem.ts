@@ -8,21 +8,24 @@ import type {
   LGraph,
   LGraphNode,
   SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
-import { registerBadgeRowsProvider } from '@/lib/litegraph/src/nodeBadgeDraw'
+} from '@comfyorg/litegraph/litegraph'
+import { registerBadgeRowsProvider } from '@comfyorg/litegraph/nodeBadgeDraw'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStore } from '@comfyorg/graph-state/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetValueStore } from '@comfyorg/graph-state/widgetValueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { CORE_PART_ORDER } from '@/types/badgeData'
-import type { BadgeData, CoreBadgePart } from '@/types/badgeData'
+import { CORE_PART_ORDER } from '@comfyorg/litegraph/types/badgeData'
+import type {
+  BadgeData,
+  CoreBadgePart
+} from '@comfyorg/litegraph/types/badgeData'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
-import type { UUID } from '@/utils/uuid'
+import { mapUniqueNodes } from '@comfyorg/litegraph/utils/graphTraversalUtil'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 /** The badge-relevant projection of a node's definition. */
 interface NodeDefBadgeSources {

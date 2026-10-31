@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
 
 import { useAppMode } from '@/composables/useAppMode'
-import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { SubgraphNode } from '@comfyorg/litegraph/subgraph/SubgraphNode'
 import type {
   InputWidgetConfig,
   LinearData,
@@ -16,8 +16,8 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { resolveSubgraphInputTarget } from '@comfyorg/litegraph/subgraph/promotion/resolveSubgraphInputTarget'
+import type { LGraph } from '@comfyorg/litegraph/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
   getWidgetIdForNode,

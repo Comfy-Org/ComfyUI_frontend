@@ -12,7 +12,7 @@
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/CompositorWidget.ts",
+      "path": "packages/litegraph/src/widgets/CompositorWidget.ts",
       "role": "integration"
     },
     {

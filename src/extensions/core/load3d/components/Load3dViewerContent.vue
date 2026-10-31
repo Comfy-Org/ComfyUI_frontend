@@ -115,7 +115,7 @@ import SceneControls from '@/extensions/core/load3d/components/controls/viewer/V
 import Button from '@comfyorg/design-system/button/Button'
 import { useLoad3dDrag } from '@/extensions/core/load3d/composables/useLoad3dDrag'
 import { useLoad3dViewer } from '@/extensions/core/load3d/composables/useLoad3dViewer'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph/LGraphNode'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 

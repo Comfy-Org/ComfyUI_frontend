@@ -30,19 +30,19 @@ import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
 import type { useExtensionService } from '@/platform/extensions/services/extensionService'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
+import { createTestSubgraph } from '@comfyorg/litegraph/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/workflowTestUtils'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
+} from '@comfyorg/litegraph/__fixtures__/canvasTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 

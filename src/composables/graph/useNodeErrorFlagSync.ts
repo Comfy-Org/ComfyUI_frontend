@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import { computed, watch } from 'vue'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/litegraph/litegraph'
 import type { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -10,7 +10,10 @@ import { useApp } from '@/scripts/appInstance'
 import type { NodeError } from '@comfyorg/api-client/types'
 import { getParentExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 import { hasErrorForSlot } from '@/utils/executionErrorUtil'
-import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import {
+  forEachNode,
+  getNodeByExecutionId
+} from '@comfyorg/litegraph/utils/graphTraversalUtil'
 
 function setNodeHasErrors(node: LGraphNode, hasErrors: boolean): void {
   if (node.has_errors === hasErrors) return

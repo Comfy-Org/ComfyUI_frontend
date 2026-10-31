@@ -41,7 +41,7 @@ import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import { isAppModeValue } from '@comfyorg/graph-model/appMode'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
-import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { executionIdToNodeLocatorId } from '@comfyorg/litegraph/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
 
 type RuntimeExecutionError = Omit<

@@ -1,7 +1,7 @@
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { PromotedWidgetExecutionSource } from '@comfyorg/graph-model/promotedWidgetTypes'
 import { getLiftedErrorSource } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LiftedErrorExtraInfo } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import {

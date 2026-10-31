@@ -455,12 +455,18 @@ importers:
       '@comfyorg/graph-model':
         specifier: workspace:*
         version: link:packages/graph-model
+      '@comfyorg/graph-state':
+        specifier: workspace:*
+        version: link:packages/graph-state
       '@comfyorg/keybindings':
         specifier: workspace:*
         version: link:packages/keybindings
       '@comfyorg/layer-editor':
         specifier: workspace:*
         version: link:packages/layer-editor
+      '@comfyorg/litegraph':
+        specifier: workspace:*
+        version: link:packages/litegraph
       '@comfyorg/mask-editor':
         specifier: workspace:*
         version: link:packages/mask-editor
@@ -1293,6 +1299,46 @@ importers:
       '@comfyorg/viewport3d':
         specifier: workspace:*
         version: link:../viewport3d
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.49.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+      zod-validation-error:
+        specifier: 'catalog:'
+        version: 5.0.0(zod@4.6.5)
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/graph-state:
+    dependencies:
+      '@comfyorg/graph-model':
+        specifier: workspace:*
+        version: link:../graph-model
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
+      '@comfyorg/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.49.0
+      loglevel:
+        specifier: ^1.9.2
+        version: 1.9.2
+      pinia:
+        specifier: 'catalog:'
+        version: 4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.42(typescript@6.0.3)
+      yjs:
+        specifier: 'catalog:'
+        version: 13.6.32
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -1365,6 +1411,49 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 5.0.2(@types/node@25.9.5)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+
+  packages/litegraph:
+    dependencies:
+      '@comfyorg/graph-model':
+        specifier: workspace:*
+        version: link:../graph-model
+      '@comfyorg/graph-state':
+        specifier: workspace:*
+        version: link:../graph-state
+      '@comfyorg/object-info-parser':
+        specifier: workspace:*
+        version: link:../object-info-parser
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
+      '@comfyorg/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 14.4.0(vue@3.5.42(typescript@6.0.3))
+      dompurify:
+        specifier: 'catalog:'
+        version: 3.4.13
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.49.0
+      loglevel:
+        specifier: ^1.9.2
+        version: 1.9.2
+      pinia:
+        specifier: 'catalog:'
+        version: 4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.42(typescript@6.0.3)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/mask-editor:
     dependencies:
