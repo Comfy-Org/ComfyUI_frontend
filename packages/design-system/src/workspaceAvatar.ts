@@ -29,7 +29,7 @@ export function workspaceAvatarStyle(
   return {
     backgroundColor: `oklch(${lightness} ${chroma} ${hue})`,
     color:
-      plan === 'ENTERPRISE' ? 'var(--color-charcoal-800)' : 'var(--color-white)'
+      plan === 'ENTERPRISE' ? 'var(--color-charcoal-900)' : 'var(--color-white)'
   }
 }
 

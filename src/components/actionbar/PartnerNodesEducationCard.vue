@@ -49,7 +49,7 @@
               <Button
                 variant="textonly"
                 size="icon"
-                class="absolute top-1.5 right-1.5 size-7 rounded-full bg-charcoal-600/50 text-white opacity-50 transition-opacity hover:bg-charcoal-600/50 hover:opacity-100"
+                class="absolute top-1.5 right-1.5 size-7 rounded-full bg-charcoal-800/50 text-white opacity-50 transition-opacity hover:bg-charcoal-800/50 hover:opacity-100"
                 data-testid="partner-nodes-education-dismiss"
                 :aria-label="t('g.close')"
                 @click="educationStore.dismissCard"
