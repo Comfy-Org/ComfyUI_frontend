@@ -65,6 +65,7 @@ describe('core extensions', () => {
       'Comfy.RecordAudio',
       'Comfy.UploadImage',
       'Comfy.WebcamCapture',
+      'Comfy.ZipTie',
       'Comfy.NodeTemplates',
       'Comfy.AgentPanel'
     ])
