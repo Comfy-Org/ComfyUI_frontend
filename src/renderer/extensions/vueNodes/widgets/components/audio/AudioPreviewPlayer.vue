@@ -264,6 +264,7 @@ const handlePause = () => {
 
 const handleError = () => {
   if (!isPlaying.value) return
+  playAttempt++
   isPlaying.value = false
   showPlaybackError(audioRef.value?.error)
 }

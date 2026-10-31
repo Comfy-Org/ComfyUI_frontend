@@ -328,6 +328,43 @@ describe('AudioPreviewPlayer', () => {
       expect(useToast().toasts).toEqual([])
     })
 
+    it('reports once when the source fails while a play attempt is pending', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(
+        function (this: HTMLMediaElement) {
+          const rejection = Promise.reject(notSupported())
+          this.dispatchEvent(new Event('error'))
+          return rejection
+        }
+      )
+      const user = userEvent.setup()
+
+      renderPlayer('http://example.com/audio.ogg')
+      const button = screen.getByRole('button', { name: 'g.playPause' })
+      await user.click(button)
+
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(useToast().toasts).toHaveLength(1)
+      expect(button).toHaveAttribute('aria-pressed', 'false')
+    })
+
+    it('reports once when the source error follows a handled rejection', async () => {
+      const elements: HTMLMediaElement[] = []
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(
+        function (this: HTMLMediaElement) {
+          elements.push(this)
+          return Promise.reject(notSupported())
+        }
+      )
+      const user = userEvent.setup()
+
+      renderPlayer('http://example.com/audio.ogg')
+      await user.click(screen.getByRole('button', { name: 'g.playPause' }))
+      elements[0].dispatchEvent(new Event('error'))
+
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(useToast().toasts).toHaveLength(1)
+    })
+
     it('stays silent when the current play attempt is aborted', async () => {
       const play = vi
         .spyOn(HTMLMediaElement.prototype, 'play')
