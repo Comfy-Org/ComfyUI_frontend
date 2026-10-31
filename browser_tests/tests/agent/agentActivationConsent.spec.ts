@@ -173,7 +173,6 @@ test.describe(
         const coachTitles = [
           enMessages.agent.coachTitle,
           enMessages.agent.coachWorkflowTitle,
-          enMessages.agent.coachGraphTitle,
           enMessages.agent.coachHistoryTitle
         ]
         await expect(
