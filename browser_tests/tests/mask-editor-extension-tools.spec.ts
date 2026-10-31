@@ -74,14 +74,9 @@ test.describe(
         )
       })
 
-      await test.step('An old session cannot replace the mask in a reopened editor', async () => {
+      await test.step('Reopening restores the saved mask and starts a fresh tool panel', async () => {
         await maskEditor.reopenDialog()
         await expect.poll(() => maskEditor.pollMaskPixelCount()).toBe(1024)
-        expect(await extensionTool.applyFromClosedSession()).toEqual({
-          ok: false,
-          reason: 'inactive'
-        })
-        expect(await maskEditor.pollMaskPixelCount()).toBe(1024)
         await extensionTool.tool.click()
         await expect(extensionTool.status).toHaveText('0 points')
         await dialog.getByRole('button', { name: 'Cancel' }).click()

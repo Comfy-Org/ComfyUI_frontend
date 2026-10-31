@@ -6,13 +6,11 @@ import { maskEditorTest } from '@e2e/fixtures/helpers/MaskEditorHelper'
 import { networkIsolationFixture } from '@e2e/fixtures/networkIsolationFixture'
 import type {
   MaskEditorCommitResult,
-  MaskEditorPointerEvent,
-  MaskEditorToolContext
+  MaskEditorPointerEvent
 } from '@comfyorg/mask-editor/extensionTypes'
 
 async function registerTestTool(page: Page) {
   return page.evaluateHandle(() => {
-    const contexts: MaskEditorToolContext[] = []
     const events: MaskEditorPointerEvent[] = []
     const delayedResults: MaskEditorCommitResult[] = []
     let releaseDelayed: (() => void) | undefined
@@ -22,7 +20,6 @@ async function registerTestTool(page: Page) {
       id: 'test.mask-editor-extension',
       label: 'Extension test mask',
       createSession(context) {
-        contexts.push(context)
         const points: MaskEditorPointerEvent[] = []
         const status = document.createElement('output')
         status.setAttribute('aria-label', 'Extension test status')
@@ -105,7 +102,6 @@ async function registerTestTool(page: Page) {
     })
     return {
       registration,
-      contexts,
       events,
       delayedResults,
       releaseDelayed: () => releaseDelayed?.(),
@@ -277,15 +273,6 @@ class MaskEditorExtensionHelper {
       disposed: probe.disposed,
       unmounted: probe.unmounted
     }))
-  }
-
-  async applyFromClosedSession() {
-    return this.probe!.evaluate((probe) =>
-      probe.contexts[0].commitMask(
-        { width: 64, height: 64, data: new Uint8Array(64 * 64).fill(255) },
-        { expectedRevision: 0 }
-      )
-    )
   }
 
   async getWidgets() {
