@@ -2947,6 +2947,16 @@
     "loginButton": {
       "tooltipHelp": "Login to be able to use \"API Nodes\"",
       "tooltipLearnMore": "Learn more..."
+    },
+    "emailVerification": {
+      "genericMessage": "Please verify your email address",
+      "resendButton": "Resend verification email",
+      "dismiss": "Dismiss",
+      "resentSuccess": "Verification email sent",
+      "resentSuccessDetail": "Check your inbox for a link to verify your email.",
+      "resendFailed": "Couldn't send verification email",
+      "resendFailedDetail": "Something went wrong. Please try again in a moment.",
+      "cooldownMessage": "Too many requests. Please wait a moment before trying again."
     }
   },
   "desktopLogin": {

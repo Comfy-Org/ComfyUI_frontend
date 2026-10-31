@@ -36,6 +36,7 @@ export enum ServerFeatureFlag {
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   UNIFIED_BILLING_SETTINGS = 'unified_billing_settings',
   SIGNUP_TURNSTILE = 'signup_turnstile',
+  EMAIL_VERIFICATION_NUDGE_ENABLED = 'email_verification_nudge_enabled',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',
   AGENT = 'agent'

@@ -7,6 +7,7 @@
     class="ml-auto flex shrink-0 items-center gap-2 px-2"
   >
     <TopbarBadges />
+    <EmailVerificationNudge />
     <TopbarSubscribeButton />
     <div
       v-if="topbarBadgeStore.badges.length"
@@ -41,6 +42,7 @@
   </div>
   <div v-else class="ml-auto flex h-full shrink-0 items-center">
     <TopbarBadges />
+    <EmailVerificationNudge />
     <TopbarSubscribeButton />
   </div>
 </template>
@@ -50,6 +52,7 @@ import { computed, ref } from 'vue'
 
 import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
+import EmailVerificationNudge from '@/components/topbar/EmailVerificationNudge.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/platform/billing/components/TopbarSubscribeButton.vue'
