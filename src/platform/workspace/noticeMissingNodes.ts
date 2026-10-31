@@ -5,7 +5,7 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
-import { useCustomDeploymentOffered } from '@/platform/workspace/composables/useCustomDeploymentOffered'
+import { useWorkflowNeedsDeployment } from '@/platform/workspace/composables/useCustomDeploymentOffered'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { nodesNeedingDeployment } from '@/platform/workspace/missingForDeployment'
 import {
@@ -14,14 +14,17 @@ import {
 } from '@/platform/workspace/openCustomDeploymentDialog'
 import { openWorkflowForCheck } from '@/platform/workspace/openWorkflowForCheck'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { answersForWorkflow } from '@/platform/workspace/workflowDeploymentOffer'
+import {
+  answersForWorkflow,
+  workflowDeploymentOffer
+} from '@/platform/workspace/workflowDeploymentOffer'
 import type {
   CheckedWorkflow,
   MarkFor
 } from '@/platform/workspace/workflowDeploymentOffer'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
-/** How long the dialog waits for the compatibility check before it opens without it. */
+/** How long the dialog waits for the compatibility check before it stays closed. */
 export const COMPATIBILITY_WAIT_MS = 3000
 
 function waitForListing(): Promise<void> {
@@ -47,6 +50,17 @@ async function compatibilityAnswered(
   })
 }
 
+function knowsWhatToOffer(
+  markFor: MarkFor,
+  workflow: CheckedWorkflow
+): boolean {
+  const deployments = useDeploymentPickStore().deployments
+  return (
+    deployments.length === 0 ||
+    workflowDeploymentOffer(deployments, markFor, workflow).kind !== 'unchecked'
+  )
+}
+
 async function offerCustomDeployment(
   missingNodes: readonly MissingNodeType[],
   markFor: MarkFor
@@ -55,17 +69,23 @@ async function offerCustomDeployment(
   const noticedWorkflow = workflowStore.activeWorkflow
   const checkedWorkflow = openWorkflowForCheck(missingNodes)
   const cardLoaded = preloadWorkflowNeedsDeploymentDialog()
-  const offered = useCustomDeploymentOffered()
+  const needsDeployment = useWorkflowNeedsDeployment()
   await waitForListing()
   await compatibilityAnswered(markFor, checkedWorkflow)
   await cardLoaded
-  if (workflowStore.activeWorkflow !== noticedWorkflow || !offered.value) return
+  if (
+    workflowStore.activeWorkflow !== noticedWorkflow ||
+    !needsDeployment.value ||
+    !knowsWhatToOffer(markFor, checkedWorkflow)
+  ) {
+    return
+  }
   await openWorkflowNeedsDeploymentDialog()
 }
 
 /**
  * Shows the error overlay for the open workflow's missing nodes and, on Comfy
- * Cloud, the custom deployment dialog over it for nodes with no replacement.
+ * Cloud, the deployment dialog over it once it knows what to offer.
  */
 export async function noticeMissingNodes(
   nodeTypes: readonly MissingNodeType[],

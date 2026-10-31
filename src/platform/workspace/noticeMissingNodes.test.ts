@@ -53,12 +53,33 @@ const deployment: WorkspaceDeployment = {
   can_start: false
 }
 
+const stopped: WorkspaceDeployment = {
+  ...deployment,
+  deployment_id: 'dep-stopped',
+  status: 'stopped'
+}
+
 const UNSUPPORTED: MissingNodeType[] = [
   { type: 'BiRefNet', cnrId: 'comfyui-birefnet', isReplaceable: false }
 ]
 
+const RUNS: DeploymentCompatibilityMark = { kind: 'runs' }
+const LACKS_BIREFNET: DeploymentCompatibilityMark = {
+  kind: 'missing',
+  nodeTypes: ['BiRefNet']
+}
+
 const cloudMark = shallowRef<DeploymentCompatibilityMark | null>(null)
-const markFor: MarkFor = (id) => (id === null ? cloudMark.value : null)
+const deploymentMarks = shallowRef<Record<string, DeploymentCompatibilityMark>>(
+  {}
+)
+const markFor: MarkFor = (id) =>
+  id === null ? cloudMark.value : (deploymentMarks.value[id] ?? null)
+
+function checkAnswers(marks: Record<string, DeploymentCompatibilityMark>) {
+  deploymentMarks.value = marks
+  cloudMark.value = LACKS_BIREFNET
+}
 
 function listing(
   served: boolean,
@@ -99,6 +120,7 @@ describe(noticeMissingNodes, () => {
   beforeEach(() => {
     offered.value = true
     cloudMark.value = null
+    deploymentMarks.value = {}
     vi.mocked(openWorkflowNeedsDeploymentDialog).mockReset()
     vi.mocked(openWorkflowNeedsDeploymentDialog).mockResolvedValue(true)
   })
@@ -108,42 +130,73 @@ describe(noticeMissingNodes, () => {
       vi.useFakeTimers()
       vi.mocked(useFeatureFlags().flags).deploymentCompatibilityMarksEnabled =
         true
-      listing(true, null, [deployment])
+      listing(true, null, [deployment, stopped])
       workflowMissing(UNSUPPORTED)
     })
 
-    it('opens the dialog once the check answers for this workflow', async () => {
+    it.for([
+      {
+        finds: 'a ready deployment that runs this workflow',
+        marks: { 'dep-1': RUNS, 'dep-stopped': LACKS_BIREFNET }
+      },
+      {
+        finds: 'that every deployment lacks its nodes',
+        marks: { 'dep-1': LACKS_BIREFNET, 'dep-stopped': LACKS_BIREFNET }
+      }
+    ])('opens the dialog once the check finds $finds', async ({ marks }) => {
       void noticeMissingNodes(UNSUPPORTED, markFor)
       await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS - 1)
       expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
 
-      cloudMark.value = { kind: 'missing', nodeTypes: ['BiRefNet'] }
+      checkAnswers(marks)
       await vi.advanceTimersByTimeAsync(0)
 
       expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
     })
 
-    it('waits past an answer for another workflow, then opens without the check', async () => {
+    it.for([
+      {
+        finds: 'that only a deployment that is not ready runs it',
+        marks: { 'dep-1': LACKS_BIREFNET, 'dep-stopped': RUNS }
+      },
+      {
+        finds: 'a deployment it could not check',
+        marks: {
+          'dep-1': LACKS_BIREFNET,
+          'dep-stopped': { kind: 'unknown' }
+        }
+      }
+    ] satisfies {
+      finds: string
+      marks: Record<string, DeploymentCompatibilityMark>
+    }[])('opens no dialog when the check finds $finds', async ({ marks }) => {
+      void noticeMissingNodes(UNSUPPORTED, markFor)
+      checkAnswers(marks)
+      await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS)
+
+      expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+    })
+
+    it('opens no dialog when the check has not answered for this workflow within the wait', async () => {
       cloudMark.value = { kind: 'missing', nodeTypes: ['RMBG'] }
 
       void noticeMissingNodes(UNSUPPORTED, markFor)
-      await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS - 1)
-      expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
-      await vi.advanceTimersByTimeAsync(1)
+      await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS)
 
-      expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
+      expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
     })
 
     it('opens no dialog once another workflow is active', async () => {
       void noticeMissingNodes(UNSUPPORTED, markFor)
       anotherWorkflowOpens()
+      checkAnswers({ 'dep-1': RUNS, 'dep-stopped': LACKS_BIREFNET })
       await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS)
 
       expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
     })
   })
 
-  it('opens the custom deployment dialog over the error overlay on Comfy Cloud, to an account served the deployments listing', async () => {
+  it('opens the custom deployment dialog over the error overlay on Comfy Cloud, to a workspace served an empty deployments listing', async () => {
     listing(true, null)
     workflowMissing(UNSUPPORTED)
 
@@ -171,17 +224,25 @@ describe(noticeMissingNodes, () => {
       offer: true,
       boot: null,
       nodes: [{ type: 'OldSampler', isReplaceable: true }]
+    },
+    {
+      when: 'the workspace has a deployment the compatibility check is off for',
+      offer: true,
+      boot: null,
+      nodes: UNSUPPORTED,
+      deployments: [deployment]
     }
   ] satisfies {
     when: string
     offer: boolean
     boot: WorkspaceDeployment | null
     nodes: MissingNodeType[]
+    deployments?: WorkspaceDeployment[]
   }[])(
     'shows only the error overlay when $when',
-    async ({ offer, boot, nodes }) => {
+    async ({ offer, boot, nodes, deployments }) => {
       offered.value = offer
-      listing(true, boot)
+      listing(true, boot, deployments)
       workflowMissing(nodes)
 
       await noticeMissingNodes(nodes, markFor)
