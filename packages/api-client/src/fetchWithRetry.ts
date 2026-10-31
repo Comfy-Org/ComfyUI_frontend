@@ -61,25 +61,34 @@ async function fetchWriteAfterRefusal(
 
   const signal = requestSignal(input, init)
   await first.body?.cancel().catch(() => undefined)
-  await sleep(delayMs, signal)
-  const settle = (end: StatusRetryEnd, finalStatus = first.status) =>
+  const settle = (
+    end: StatusRetryEnd,
+    attempts: number,
+    finalStatus = first.status
+  ) =>
     trackStatusRetry({
       transport: 'fetch',
       method,
       url: () => (input instanceof Request ? input.url : String(input)),
       end,
-      attempts: 2,
+      attempts,
       finalStatus,
       retryScheduled: true
     })
+  try {
+    await sleep(delayMs, signal)
+  } catch (error) {
+    settle(abortEnd(signal), 1)
+    throw error
+  }
   let second: Response
   try {
     second = await fetchImpl(replay, init)
   } catch (error) {
-    settle(abortEnd(signal))
+    settle(abortEnd(signal), 2)
     throw error
   }
-  settle('answered', second.status)
+  settle('answered', 2, second.status)
   return second
 }
 

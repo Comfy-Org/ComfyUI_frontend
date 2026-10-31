@@ -259,6 +259,42 @@ describe('attachRetryableStatusRetry', () => {
       expect(tracked()).not.toHaveBeenCalled()
     })
 
+    it('records one send and the first 503 when its timeout signal fires during the wait', async () => {
+      const controller = new AbortController()
+      const timeout = new DOMException('signal timed out', 'TimeoutError')
+      const adapter = scriptedAdapter([refusal(), { status: 200 }])
+      const client = axios.create({ adapter })
+      attachRetryableStatusRetry(client, {
+        random: () => 1,
+        policy,
+        sleep: async () => {
+          controller.abort(timeout)
+          throw timeout
+        }
+      })
+
+      await expect(
+        client.post(
+          'https://api.comfy.org/customers/balance',
+          {},
+          {
+            signal: controller.signal
+          }
+        )
+      ).rejects.toBeInstanceOf(axios.CanceledError)
+
+      expect(adapter).toHaveBeenCalledOnce()
+      expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          transport: 'axios',
+          method: 'POST',
+          attempts: 1,
+          final_status: 503,
+          outcome: 'timeout_budget'
+        })
+      )
+    })
+
     it('sends again with what is left of the timeout when the wait fits', async () => {
       const { client, adapter } = makeClientWhoseWaitTakes(5_250)
 

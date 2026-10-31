@@ -440,6 +440,34 @@ describe('fetchWithRetry', () => {
       expect(fetchImpl).toHaveBeenCalledOnce()
     })
 
+    it('records one send and the first 503 when its timeout fires during the wait', async () => {
+      const controller = new AbortController()
+      const timeout = new DOMException('Fetch timeout', 'TimeoutError')
+      const fetchImpl = scriptedFetch(refusal(), respond(200))
+      const sleepUntilTimeout = vi.fn(async () => {
+        controller.abort(timeout)
+        throw timeout
+      })
+
+      await expect(
+        fetchWithRetry(
+          'https://api.comfy.org/customers/balance',
+          { method: 'POST', body: '{}', signal: controller.signal },
+          { fetchImpl, sleep: sleepUntilTimeout, random, policy }
+        )
+      ).rejects.toBe(timeout)
+
+      expect(fetchImpl).toHaveBeenCalledOnce()
+      expect(tracked()).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          method: 'POST',
+          attempts: 1,
+          final_status: 503,
+          outcome: 'timeout_budget'
+        })
+      )
+    })
+
     it('waits the Retry-After before sending again', async () => {
       vi.useFakeTimers()
       const fetchImpl = scriptedFetch(refusal(), respond(200))

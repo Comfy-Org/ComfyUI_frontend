@@ -71,6 +71,7 @@ export function parseRetryAfterMs(
   return Number.isNaN(at) ? undefined : Math.max(0, at - now)
 }
 
+// Temporary: BE-24676 replaces this message match with a marker from ingest.
 const SIGN_IN_CHECK_UNAVAILABLE_MESSAGE = 'authentication service unavailable'
 const SIGN_IN_REFUSAL_MAX_SENDS = 2
 const SIGN_IN_REFUSAL_BODY_READ_MAX_MS = 1_000

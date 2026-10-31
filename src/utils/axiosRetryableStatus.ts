@@ -196,16 +196,16 @@ async function sendWriteAfterRefusal(
   pause: Pause
 ): Promise<AxiosResponse> {
   const remainingMs = timeBudget(config.timeout)
+  const tracker = statusRetryTracker(config)
   try {
     return await runAttempt(adapter, config, remainingMs())
   } catch (error) {
     const delay = await refusedWriteDelay(error, config, remainingMs(), options)
     if (delay === undefined) throw error
-    await pause(delay, config, () => undefined)
+    tracker.scheduled(503)
+    await pause(delay, config, (signal) => tracker.settle(abortEnd(signal), 1))
     if (!fitsBudget(0, remainingMs())) throw error
   }
-  const tracker = statusRetryTracker(config)
-  tracker.scheduled(503)
   try {
     const response = await runAttempt(adapter, config, remainingMs())
     tracker.settle('answered', 2, response.status)
