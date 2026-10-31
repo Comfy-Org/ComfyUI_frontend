@@ -270,6 +270,15 @@ describe('Load3d', () => {
       expect(ctx.forceRender).toHaveBeenCalledOnce()
     })
 
+    it('clearModel announces that the model is gone', () => {
+      ctx.load3d.clearModel()
+
+      expect(ctx.eventManager.emitEvent).toHaveBeenCalledWith(
+        'modelCleared',
+        null
+      )
+    })
+
     it('clearModel nulls adapterRef.current so capability queries fall back to defaults', () => {
       Object.assign(ctx.load3d, {
         adapterRef: { current: { kind: 'splat' } }

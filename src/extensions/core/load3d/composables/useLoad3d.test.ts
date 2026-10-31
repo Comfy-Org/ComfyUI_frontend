@@ -578,6 +578,52 @@ describe('useLoad3d', () => {
       )
     })
 
+    it('recounts the kept model after a stats count was cut short by the reload', async () => {
+      const nodeRef = shallowRef(mockNode)
+      const composable = useLoad3d(nodeRef)
+      await composable.initializeLoad3d(document.createElement('div'))
+      const stats = { vertices: 4, edges: 5, triangles: 2 }
+      vi.mocked(mockLoad3d.getModelStats!).mockResolvedValue(stats)
+
+      await replaceNode(nodeRef, replacementNode())
+
+      await vi.waitFor(() => expect(composable.modelStats.value).toEqual(stats))
+    })
+
+    it('forgets the stats when a node of another workflow takes its place', async () => {
+      let modelLoadingEndHandler: (() => void) | undefined
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'modelLoadingEnd') {
+            modelLoadingEndHandler = handler as () => void
+          }
+        }
+      )
+      const nodeRef = shallowRef(mockNode)
+      const composable = useLoad3d(nodeRef)
+      await composable.initializeLoad3d(document.createElement('div'))
+      const stats = { vertices: 4, edges: 5, triangles: 2 }
+      vi.mocked(mockLoad3d.getModelStats!).mockResolvedValue(stats)
+      modelLoadingEndHandler?.()
+      await vi.waitFor(() => expect(composable.modelStats.value).toEqual(stats))
+      vi.mocked(mockLoad3d.getModelStats!).mockResolvedValue(null)
+
+      reloadGraphInto(
+        nodeRef,
+        createMockLGraphNode({
+          properties: mockNode.properties,
+          widgets: mockNode.widgets,
+          graph: fromPartial<LGraph>({
+            rootGraph: fromPartial<LGraph>({ id: 'other-graph' })
+          }),
+          flags: {}
+        })
+      )
+      await nextTick()
+
+      expect(composable.modelStats.value).toBeNull()
+    })
+
     it('leaves disposing the Load3d of a removed node to its widget', async () => {
       const composable = useLoad3d(mockNode)
       await composable.initializeLoad3d(document.createElement('div'))
@@ -1370,6 +1416,36 @@ describe('useLoad3d', () => {
       await firstStats
       await nextTick()
 
+      expect(composable.modelStats.value).toBeNull()
+    })
+
+    it('forgets the stats and cancels a pending count when the model is cleared', async () => {
+      const handlers = new Map<string, () => void>()
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          handlers.set(event, handler as () => void)
+        }
+      )
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      const stats = { vertices: 4, edges: 5, triangles: 2 }
+      vi.mocked(mockLoad3d.getModelStats!).mockResolvedValue(stats)
+      handlers.get('modelLoadingEnd')?.()
+      await vi.waitFor(() => expect(composable.modelStats.value).toEqual(stats))
+
+      const signals: AbortSignal[] = []
+      vi.mocked(mockLoad3d.getModelStats!).mockImplementation(
+        (signal?: AbortSignal) => {
+          if (signal) signals.push(signal)
+          return Promise.resolve(stats)
+        }
+      )
+      handlers.get('modelLoadingEnd')?.()
+      handlers.get('modelCleared')?.()
+      await nextTick()
+
+      expect(signals[0].aborted).toBe(true)
       expect(composable.modelStats.value).toBeNull()
     })
 
