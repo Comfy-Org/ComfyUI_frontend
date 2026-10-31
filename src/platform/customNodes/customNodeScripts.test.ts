@@ -148,7 +148,7 @@ describe('reportCustomNodeLoadFailures', () => {
     assert(cause instanceof AggregateError)
     expect(cause.message).toBe('Error loading extensions')
     expect(cause.stack).toContain(
-      `Failed extensions: ${BROKEN}, /extensions/b/b.js`
+      `Failed extensions: ${BROKEN}, /extensions/b/b.js\nFailed extension: ${BROKEN}: Cannot find module '${BROKEN}'\nFailed extension: /extensions/b/b.js: Cannot find module '/extensions/b/b.js'`
     )
     expect(options).toMatchObject({
       errorType: 'error_loading_extension',
@@ -172,6 +172,44 @@ describe('reportCustomNodeLoadFailures', () => {
         }
       ]
     })
+  })
+
+  it.for([
+    "Unexpected token '}'",
+    'Unexpected end of input',
+    'Unexpected end of script',
+    'unexpected garbage after module'
+  ])(
+    'attributes a module that does not parse (%s) to its extension path',
+    (message) => {
+      const ext = '/extensions/comfyui-pack/js/guide.js'
+
+      reportCustomNodeLoadFailures([{ ext, error: new SyntaxError(message) }])
+
+      expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual(
+        [{ ext, message, stack: expect.any(String) }]
+      )
+    }
+  )
+
+  it('strips query strings from a failure message before naming it in the stack', () => {
+    const ext = '/extensions/comfyui-pack/js/guide.js'
+
+    reportCustomNodeLoadFailures([
+      {
+        ext,
+        error: new Error(
+          'Failed to load https://cdn.example.com/guide.js?token=secret'
+        )
+      }
+    ])
+
+    const [cause] = vi.mocked(reportError).mock.calls[0]
+    assert(cause instanceof AggregateError)
+    expect(cause.stack).toContain(
+      `Failed extension: ${ext}: Failed to load https://cdn.example.com/guide.js`
+    )
+    expect(cause.stack).not.toContain('secret')
   })
 
   it('keeps a batch at the cap untruncated', () => {

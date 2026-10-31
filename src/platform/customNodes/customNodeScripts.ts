@@ -4,11 +4,13 @@ import {
   loadCustomNodesWithDeadline
 } from '@/platform/customNodes/lateLoading/lateLoading'
 import {
+  claimExtensionImportError,
   CUSTOM_NODE_FAILURES_TRUNCATED_FIELD,
   CUSTOM_NODE_LOAD_ERROR_TYPE
 } from '@/platform/telemetry/customNodeLoadTelemetry'
 import type { CustomNodeFailureDiagnostic } from '@/platform/telemetry/customNodeLoadTelemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { redactTelemetryUrls } from '@comfyorg/telemetry/redactTelemetryUrls'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import {
@@ -89,8 +91,13 @@ function toFailureDiagnostic({
   }
 }
 
-function importModule(url: string): Promise<unknown> {
-  return import(/* @vite-ignore */ url)
+async function importModule(url: string): Promise<unknown> {
+  try {
+    return await import(/* @vite-ignore */ url)
+  } catch (error) {
+    claimExtensionImportError(error)
+    throw error
+  }
 }
 
 async function importCustomNodeScript(
@@ -120,7 +127,11 @@ export function reportCustomNodeLoadFailures(
     Object.assign(new Error(message), stack ? { stack } : {})
   )
   const aggregate = new AggregateError(errors, 'Error loading extensions')
-  aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}`
+  const failureLines = reportedFailures.map(
+    ({ ext, message }) =>
+      `\nFailed extension: ${ext}: ${redactTelemetryUrls(message.split('\n')[0])}`
+  )
+  aggregate.stack = `${aggregate.stack ?? aggregate.message}\nFailed extensions: ${reportedFailures.map(({ ext }) => ext).join(', ')}${failureLines.join('')}`
 
   reportError(aggregate, {
     errorType: CUSTOM_NODE_LOAD_ERROR_TYPE,
