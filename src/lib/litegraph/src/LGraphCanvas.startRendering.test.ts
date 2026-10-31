@@ -15,15 +15,30 @@ function captureFrames() {
       frames.push(callback)
       return frames.length
     })
-  const runNextFrame = () => {
+  function runNextFrame() {
     const frame = frames.shift()
     if (!frame) throw new Error('No frame was scheduled')
     frame(0)
   }
-  const runFrames = (count: number) => {
+  function runFrames(count: number) {
     for (let i = 0; i < count; i++) runNextFrame()
   }
-  return { requestAnimationFrame, runNextFrame, runFrames, frames }
+  function drainFrames(
+    limit: number,
+    beforeFrame: (index: number) => void = () => {}
+  ) {
+    for (let i = 0; i < limit && frames.length > 0; i++) {
+      beforeFrame(i)
+      runNextFrame()
+    }
+  }
+  return {
+    requestAnimationFrame,
+    runNextFrame,
+    runFrames,
+    drainFrames,
+    frames
+  }
 }
 
 function createCanvas() {
@@ -75,7 +90,8 @@ describe('LGraphCanvas.startRendering', () => {
 
   it.for([
     { name: 'same type, different message', second: new TypeError('second') },
-    { name: 'different type, same message', second: new RangeError('first') }
+    { name: 'different type, same message', second: new RangeError('first') },
+    { name: 'literal string matching an error key', second: 'TypeError:first' }
   ])('reports each distinct drawing failure once: $name', ({ second }) => {
     const { runFrames } = captureFrames()
     const first = new TypeError('first')
@@ -134,8 +150,6 @@ describe('LGraphCanvas.startRendering', () => {
 
   it('reports a failure that first happens on a later frame and keeps rendering', () => {
     const { runNextFrame, frames } = captureFrames()
-    // Null-prototype: cannot be string-coerced, so building the failure key
-    // must not abort recovery before the next frame is scheduled.
     const drawFailure: unknown = Object.assign(Object.create(null), {
       message: 'extension draw failed'
     })
@@ -194,17 +208,16 @@ describe('LGraphCanvas.startRendering', () => {
   })
 
   it('stops after repeated failures even when idle frames succeed between them', () => {
-    const { runNextFrame, frames } = captureFrames()
+    const { drainFrames } = captureFrames()
     const draw = vi.spyOn(LGraphCanvas.prototype, 'draw')
     draw.mockImplementation(function (this: LGraphCanvas) {
       if (this.dirty_canvas) throw new TypeError('dirty frames fail')
     })
 
     const canvas = createCanvas()
-    for (let i = 0; i < 200 && frames.length > 0; i++) {
-      canvas.dirty_canvas = canvas.dirty_bgcanvas = i % 2 === 0
-      runNextFrame()
-    }
+    drainFrames(200, (index) => {
+      canvas.dirty_canvas = canvas.dirty_bgcanvas = index % 2 === 0
+    })
 
     expect(canvas.is_rendering).toBe(false)
   })

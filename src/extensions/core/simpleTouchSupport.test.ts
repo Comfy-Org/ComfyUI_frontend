@@ -210,7 +210,7 @@ describe('Comfy.SimpleTouchSupport', () => {
       resetViewport()
 
       dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
-      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 2)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 7)])
       dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
 
       expect(ds.scale).toBe(1)
