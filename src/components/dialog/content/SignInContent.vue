@@ -197,6 +197,7 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import {
+  desktopHostReportsSignInFailures,
   isDesktopHostSessionActive,
   requestDesktopHostSignIn
 } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -221,9 +222,18 @@ const showGoogleSsoInAppBrowserNotice = isEmbeddedWebView()
 const desktopHostSso = isDesktopHostSessionActive()
 
 const signInWithDesktopHost = async () => {
+  if (desktopHostReportsSignInFailures()) {
+    if (await requestDesktopHostSignIn()) onSuccess()
+    return
+  }
   const toast = useToast()
-  toast.info(t('auth.desktopHost.continueInBrowser'), { duration: 6000 })
-  if (await requestDesktopHostSignIn()) {
+  const continueInBrowser = toast.info(
+    t('auth.desktopHost.continueInBrowser'),
+    { duration: 6000 }
+  )
+  const signedIn = await requestDesktopHostSignIn()
+  toast.dismiss(continueInBrowser)
+  if (signedIn) {
     onSuccess()
     return
   }
