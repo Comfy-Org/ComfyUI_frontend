@@ -285,6 +285,36 @@
     },
     {
       "files": [
+        "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
+        "packages/**/*.{js,mjs,cjs,ts,mts,cts,vue}"
+      ],
+      "excludeFiles": [
+        "**/*.{test,spec}.{ts,tsx}",
+        "packages/api-client/src/abortSignal.ts"
+      ],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "AbortSignal",
+            "property": "any",
+            "message": "Crashes on Chrome < 116. Use combineAbortSignals from @comfyorg/api-client/abortSignal."
+          },
+          {
+            "object": "URL",
+            "property": "parse",
+            "message": "Crashes on Chrome < 126. Use parseUrl from @/utils/urlSafety."
+          },
+          {
+            "object": "URL",
+            "property": "canParse",
+            "message": "Crashes on Chrome < 120. Use parseUrl from @/utils/urlSafety."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
         "src/**/*.{ts,tsx,vue}",
         "packages/api-client/src/**/*.ts",
         "packages/settings-core/src/**/*.ts"

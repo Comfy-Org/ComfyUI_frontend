@@ -218,6 +218,33 @@ describe('useNodeDragAndDrop', () => {
     expect(onDrop.mock.calls[0][0][0].name).toBe('uri.png')
   })
 
+  it('fetches a same-origin uri on browsers without URL.parse', async () => {
+    const nativeParse = Object.getOwnPropertyDescriptor(URL, 'parse')
+    Object.defineProperty(URL, 'parse', {
+      configurable: true,
+      value: undefined
+    })
+    const onDrop = vi.fn().mockResolvedValue([])
+    const uri = `${location.origin}/api/file?filename=uri.png`
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(new Blob(['image'], { type: 'image/png' }))
+    )
+    const node = createNode()
+    useNodeDragAndDrop(node, { onDrop })
+
+    try {
+      const result = await node.onDragDrop?.(
+        createDragEvent({ uri, types: ['text/uri-list'] })
+      )
+
+      expect(result).toBe(true)
+      expect(fetch).toHaveBeenCalledWith(new URL(uri))
+    } finally {
+      if (nativeParse) Object.defineProperty(URL, 'parse', nativeParse)
+      else Reflect.deleteProperty(URL, 'parse')
+    }
+  })
+
   it('onDragDrop names a fetched asset-card file after its asset-info filename', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
     vi.mocked(fetch).mockResolvedValue(

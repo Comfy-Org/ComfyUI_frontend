@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -187,4 +187,46 @@ describe('asset drag root for non-output assets tagged temp', () => {
       expect(createAnnotatedPath(dropped)).toBe(written)
     }
   )
+})
+
+describe('asset drag on browsers without URL.parse or URL.canParse', () => {
+  const nativeParse = Object.getOwnPropertyDescriptor(URL, 'parse')
+  const nativeCanParse = Object.getOwnPropertyDescriptor(URL, 'canParse')
+
+  afterEach(() => {
+    if (nativeParse) Object.defineProperty(URL, 'parse', nativeParse)
+    else Reflect.deleteProperty(URL, 'parse')
+    if (nativeCanParse) Object.defineProperty(URL, 'canParse', nativeCanParse)
+    else Reflect.deleteProperty(URL, 'canParse')
+  })
+
+  it('still resolves the drag media sources', () => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+    vi.mocked(api.apiURL).mockImplementation(
+      (path) => `http://localhost:8188/api${path}`
+    )
+    for (const name of ['parse', 'canParse'])
+      Object.defineProperty(URL, name, {
+        configurable: true,
+        value: undefined
+      })
+
+    expect(
+      drag({
+        id: 'video-id',
+        name: 'clip.mp4',
+        display_name: 'My clip',
+        tags: ['input'],
+        created_at: '2026-10-05T00:00:00Z',
+        updated_at: '2026-10-05T00:00:00Z',
+        thumbnail_url: '/view?filename=poster.png',
+        preview_url: '/view?filename=clip.mp4'
+      })
+    ).toMatchObject({
+      kind: 'video',
+      mediaUrl:
+        'http://localhost:8188/api/assets/video-id/content?disposition=inline',
+      previewUrl: 'http://localhost:8188/api/view?filename=poster.png'
+    })
+  })
 })
