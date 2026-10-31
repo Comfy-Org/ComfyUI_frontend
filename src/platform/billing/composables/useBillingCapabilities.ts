@@ -6,8 +6,8 @@ import {
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/remote/ingest/capabilityRevision'
 import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -195,6 +195,12 @@ function useBillingCapabilitiesInternal() {
     receiveServerFact(
       'can_manage_auto_top_up',
       capabilities.value?.can_manage_auto_top_up ?? false
+    )
+  )
+  const autoTopUpEnabled = computed(() =>
+    receiveServerFact(
+      'auto_top_up_enabled',
+      resolvedResponse.value?.auto_top_up_enabled ?? false
     )
   )
   const autoTopUpSetup = computed(
@@ -570,6 +576,7 @@ function useBillingCapabilitiesInternal() {
     canManageSubscription,
     canDowngradeToPersonal,
     canManageAutoTopUp,
+    autoTopUpEnabled,
     autoTopUpSetup,
     canRunWorkflows,
     planKind,

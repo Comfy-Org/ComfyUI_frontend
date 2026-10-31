@@ -1,6 +1,6 @@
 <template>
   <div
-    class="fixed bottom-4 left-1/2 z-1000 flex -translate-x-1/2 flex-col items-center"
+    class="fixed bottom-4 left-1/2 flex -translate-x-1/2 flex-col items-center"
   >
     <!-- "Opens as" attachment tab -->
     <BuilderOpensAsPopover
@@ -87,10 +87,7 @@
                 data-testid="builder-save-as-chevron"
                 class="w-6 rounded-l-none border-l px-0"
               >
-                <i
-                  class="icon-[lucide--chevron-down] size-4"
-                  aria-hidden="true"
-                />
+                <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
               </Button>
             </template>
           </Menu>

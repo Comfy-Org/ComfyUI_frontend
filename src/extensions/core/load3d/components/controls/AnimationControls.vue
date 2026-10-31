@@ -13,7 +13,10 @@
       >
         <i
           :class="
-            cn('pi text-lg text-foreground', playing ? 'pi-pause' : 'pi-play')
+            cn(
+              'size-4.5 text-foreground',
+              playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'
+            )
           "
         />
       </Button>

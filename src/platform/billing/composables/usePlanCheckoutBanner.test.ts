@@ -15,11 +15,11 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/api/billingApi'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 import { usePlanCheckoutBanner } from './usePlanCheckoutBanner'
 
 const status = {
+  ended_at: null,
   is_active: true,
   has_funds: true,
   max_seats: 1,

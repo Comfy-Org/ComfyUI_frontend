@@ -126,6 +126,33 @@ describe('unflattenOutputAssets', () => {
     ])
   })
 
+  it('keeps the subfolder of an output whose metadata names only the subfolder', () => {
+    const [grouped] = unflattenOutputAssets([
+      {
+        id: 'temp-id',
+        name: 'single_temp.png',
+        job_id: 'job-id',
+        size: 1,
+        tags: ['output', 'temp'],
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+        user_metadata: { subfolder: 'previews' }
+      }
+    ] satisfies AssetItem[])
+    const metadata = getOutputAssetMetadata(grouped.user_metadata)
+
+    expect(metadata?.subfolder).toBe('previews')
+    expect(
+      metadata?.allOutputs?.map(({ filename, subfolder, type }) => ({
+        filename,
+        subfolder,
+        type
+      }))
+    ).toEqual([
+      { filename: 'single_temp.png', subfolder: 'previews', type: 'temp' }
+    ])
+  })
+
   it('keeps the representative asset id apart from same-named outputs', () => {
     const asset = {
       job_id: 'job-id',

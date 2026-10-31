@@ -10,8 +10,8 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
 const {
@@ -211,6 +211,43 @@ describe('DatadogRumTelemetryProvider', () => {
       schema_version: 1,
       billing_surface: 'cloud_app'
     })
+  })
+
+  it('records gated agent sends as RUM actions so drop-offs can be monitored', () => {
+    const metadata = {
+      gate: 'coach',
+      outcome: 'dropped',
+      reason: 'panel_closed',
+      client_message_id: 'client-message-1',
+      held_ms: 800,
+      thread_id: 'thread-1'
+    } as const
+
+    new DatadogRumTelemetryProvider().trackAgentSendGated(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_SEND_GATED,
+      metadata
+    )
+  })
+
+  it('records status retries as RUM actions', () => {
+    const metadata = {
+      transport: 'axios',
+      method: 'GET',
+      host: 'cloud.comfy.org',
+      route: '/api/billing/balance',
+      attempts: 3,
+      final_status: 503,
+      outcome: 'exhausted'
+    } as const
+
+    new DatadogRumTelemetryProvider().trackFetchStatusRetry(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.FETCH_STATUS_RETRY,
+      metadata
+    )
   })
 
   it('records fetch timeouts as RUM actions', () => {

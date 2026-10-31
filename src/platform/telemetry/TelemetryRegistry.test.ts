@@ -4,10 +4,11 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import { TelemetryRegistry } from './TelemetryRegistry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditUsageExposureMetadata,
   AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
@@ -22,10 +23,9 @@ import type {
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentStarterPromptClickedMetadata,
-  AgentStarterPromptExposureMetadata,
   AgentWorkflowAppliedMetadata,
   TelemetryProvider
-} from './types'
+} from '@comfyorg/telemetry/types'
 
 type AgentDispatchMethod = keyof TelemetryProvider & `trackAgent${string}`
 
@@ -338,9 +338,6 @@ describe('TelemetryRegistry', () => {
       click_id: 'click-1',
       draft_was_empty: true
     } satisfies AgentStarterPromptClickedMetadata
-    const starterPromptExposureMetadata = {
-      '$feature/agent-starter-prompt-set': 'test'
-    } satisfies AgentStarterPromptExposureMetadata
     const consentShownMetadata = {
       trigger: 'button_click'
     } satisfies AgentConsentShownMetadata
@@ -385,6 +382,10 @@ describe('TelemetryRegistry', () => {
     const creditTransitionNoticeMetadata = {
       action: 'shown'
     } satisfies AgentCreditTransitionNoticeMetadata
+    const creditUsageExposureMetadata = {
+      variant: 'treatment',
+      '$feature/agent-credit-usage-summary': 'treatment'
+    } satisfies AgentCreditUsageExposureMetadata
 
     const cases = [
       {
@@ -411,6 +412,12 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentCreditTransitionNotice(
             creditTransitionNoticeMetadata
           )
+      },
+      {
+        method: 'trackAgentCreditUsageExposure',
+        expected: { ...creditUsageExposureMetadata },
+        invoke: (registry) =>
+          registry.trackAgentCreditUsageExposure(creditUsageExposureMetadata)
       },
       {
         method: 'trackAgentMessageFeedback',
@@ -458,14 +465,6 @@ describe('TelemetryRegistry', () => {
         expected: { ...starterPromptClickedMetadata },
         invoke: (registry) =>
           registry.trackAgentStarterPromptClicked(starterPromptClickedMetadata)
-      },
-      {
-        method: 'trackAgentStarterPromptExposure',
-        expected: { ...starterPromptExposureMetadata },
-        invoke: (registry) =>
-          registry.trackAgentStarterPromptExposure(
-            starterPromptExposureMetadata
-          )
       },
       {
         method: 'trackAgentConsentShown',
@@ -597,13 +596,13 @@ describe('TelemetryRegistry', () => {
       {
         method: 'trackAgentConsentOfferExited',
         expected: {
-          exit: 'already_offered',
+          exit: 'card_already_seen',
           stage: 'offer',
           retry_armed: false
         },
         invoke: (registry) =>
           registry.trackAgentConsentOfferExited({
-            exit: 'already_offered',
+            exit: 'card_already_seen',
             stage: 'offer',
             retry_armed: false
           })
@@ -629,6 +628,26 @@ describe('TelemetryRegistry', () => {
         expected: { reason: 'app_mode' },
         invoke: (registry) =>
           registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
+      },
+      {
+        method: 'trackAgentSendGated',
+        expected: {
+          gate: 'coach',
+          outcome: 'held',
+          reason: null,
+          client_message_id: 'client-message-1',
+          held_ms: null,
+          thread_id: 'thread-1'
+        },
+        invoke: (registry) =>
+          registry.trackAgentSendGated({
+            gate: 'coach',
+            outcome: 'held',
+            reason: null,
+            client_message_id: 'client-message-1',
+            held_ms: null,
+            thread_id: 'thread-1'
+          })
       },
       {
         method: 'trackAgentPaywallShown',

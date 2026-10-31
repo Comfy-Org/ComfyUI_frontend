@@ -11,10 +11,10 @@ import {
 import {
   WebSessionTokenError,
   webSessionResourceHeader
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 
 // Hoist the mocks to avoid hoisting issues
 const mockAxiosInstance = vi.hoisted(() => ({
@@ -47,7 +47,7 @@ vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isAbortError: vi.fn()
 }))
 
-vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
+vi.mock(import('@comfyorg/api-client/webSessionFetch'), { spy: true })
 
 describe('useCustomerEventsService', () => {
   let service: ReturnType<typeof useCustomerEventsService>
@@ -556,6 +556,20 @@ describe('useCustomerEventsService', () => {
         expected: 'credits.charge: 2,110,000 credits.credits'
       },
       { charge: 0, expected: 'credits.charge: 0 credits.credits' },
+      {
+        charge: 1,
+        expected: 'credits.charge: credits.lessThanOne credits.credits'
+      },
+      {
+        charge: 1_000,
+        expected: 'credits.charge: credits.lessThanOne credits.credits'
+      },
+      {
+        charge: 3_318,
+        expected: 'credits.charge: credits.lessThanOne credits.credits'
+      },
+      { charge: 4_740, expected: 'credits.charge: 1 credits.credits' },
+      { charge: 6_636, expected: 'credits.charge: 1 credits.credits' },
       { charge: 'n/a', expected: 'Charge Micro Usd: n/a' }
     ])(
       'should render charge_micro_usd $charge as $expected',

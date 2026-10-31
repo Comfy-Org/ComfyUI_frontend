@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ImageLightbox from '@/components/common/ImageLightbox.vue'
+import ImageLightbox from '@comfyorg/design-system/media/ImageLightbox'
 
 const { mediaUrl, label, onMaskEdit } = defineProps<{
   mediaUrl: string
@@ -25,7 +25,7 @@ const lightboxOpen = ref(false)
       class="flex cursor-pointer items-center justify-center rounded-lg bg-foreground p-2 transition-colors hover:bg-foreground/90"
       @click.stop="onMaskEdit()"
     >
-      <i class="icon-[comfy--mask] size-4" />
+      <i class="icon-[comfy--mask]" />
     </button>
     <button
       type="button"
@@ -34,8 +34,14 @@ const lightboxOpen = ref(false)
       class="flex cursor-pointer items-center justify-center rounded-lg bg-foreground p-2 transition-colors hover:bg-foreground/90"
       @click.stop="lightboxOpen = true"
     >
-      <i class="icon-[lucide--zoom-in] size-4" />
+      <i class="icon-[lucide--zoom-in]" />
     </button>
   </div>
-  <ImageLightbox v-model="lightboxOpen" :src="mediaUrl" :alt="label ?? ''" />
+  <ImageLightbox
+    v-model="lightboxOpen"
+    :src="mediaUrl"
+    :alt="label ?? ''"
+    :fallback-title="$t('g.imageLightbox')"
+    :close-label="$t('g.close')"
+  />
 </template>

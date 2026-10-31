@@ -98,6 +98,6 @@ test.describe('Agent-generated video asset', { tag: '@cloud' }, () => {
 
     const getTabName = () => comfyPage.menu.topbar.getActiveTabName()
     await expect.poll(getTabName).toContain('agent_generated_video')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+    await comfyPage.expectNodeCount(2)
   })
 })

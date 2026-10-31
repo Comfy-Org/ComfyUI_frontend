@@ -33,9 +33,9 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   NodeExecutionOutput,
   NodeOutputWith
-} from '@/platform/remote/comfyui/execution/types'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+} from '@comfyorg/api-client/executionTypes'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 type Matrix = number[][]
@@ -58,7 +58,7 @@ export const load3dExtension: ComfyExtension = {
   commands: [
     {
       id: 'Comfy.3DViewer.Open3DViewer',
-      icon: 'pi pi-pencil',
+      icon: 'icon-[lucide--pencil]',
       label: 'Open 3D Viewer (Beta) for Selected Node',
       function: () => {
         const selectedNodes = selectedCanvasNodes(app.canvas)

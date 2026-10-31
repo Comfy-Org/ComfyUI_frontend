@@ -105,7 +105,7 @@ function namedLabel(key: string): string {
     class="col-start-3 row-start-1 size-8 shrink-0 p-1.5"
     @click="requestDownload()"
   >
-    <i aria-hidden="true" class="icon-[tabler--download] size-4" />
+    <i aria-hidden="true" class="icon-[tabler--download]" />
   </Button>
   <span
     v-else-if="

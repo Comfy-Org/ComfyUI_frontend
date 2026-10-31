@@ -13,11 +13,11 @@ import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { AgentGraphProjectionStage } from '@/platform/telemetry/types'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { AgentGraphProjectionStage } from '@comfyorg/telemetry/types'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -820,6 +820,7 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       forgetUnsyncedAtLoad(subscribedWorkflowId.value)
       resumeHeldOpsIfSubscribed()
+      sender.retryTransport()
     } else {
       handleRejectedSubscription(detail)
     }

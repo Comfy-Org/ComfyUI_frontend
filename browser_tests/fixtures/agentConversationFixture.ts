@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { ApplyOutcome, WorkflowJSON } from '@comfyorg/comfy-multi-player'
@@ -6,11 +7,11 @@ import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   AgentCancelAccepted,
   AgentMessages,
@@ -580,8 +581,6 @@ export class AgentConversationHarness {
       )
       .toBe(text)
 
-    // A finished turn folds its tool calls into one closed summary; the
-    // thinking rows it lists between them are not part of the recording.
     const rows = expected.groups.flat()
     await expect(this.summaries).toHaveCount(
       before.summaries + (rows.length > 0 ? 1 : 0)
@@ -598,7 +597,7 @@ export class AgentConversationHarness {
     for (const [at, row] of rows.entries()) {
       const item = items.nth(at)
       await expect(item.getByText(row.label, { exact: true })).toBeVisible()
-      const glyph = item.locator('span').first()
+      const glyph = item.locator('[class*="icon-["]')
       if (row.failed) await expect(glyph).toHaveClass(FAILED_GLYPH)
       else await expect(glyph).not.toHaveClass(FAILED_GLYPH)
       if (row.count > 1) await expect(item).toContainText(`×${row.count}`)
@@ -1033,10 +1032,7 @@ export class AgentConversationHarness {
   // search box, double-clicked open, typed into, Enter — not a direct
   // LiteGraph.createNode call. The non-Agent baseline
   // (workflowTabSwitchKeepsAddedNodes.spec.ts) covers this path too.
-  async addNoteThroughSearchBox(position: {
-    x: number
-    y: number
-  }): Promise<string> {
+  async addNoteThroughSearchBox(position: Point2D): Promise<string> {
     const before = new Set(await this.graphNodeIds())
     await this.page.mouse.dblclick(position.x, position.y, { delay: 5 })
     const dialog = this.page.getByRole('search')

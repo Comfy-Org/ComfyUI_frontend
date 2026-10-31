@@ -44,7 +44,9 @@ const menuItems = computed(() =>
     label: workflow.filename,
     key: workflow.path,
     icon:
-      props.activeWorkflow?.key === workflow.key ? 'pi pi-check' : undefined,
+      props.activeWorkflow?.key === workflow.key
+        ? 'icon-[lucide--check]'
+        : undefined,
     command: () => {
       void workflowService.openWorkflow(workflow, { initiator: 'user' })
     }

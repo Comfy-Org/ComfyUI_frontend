@@ -22,7 +22,7 @@ const forwardedProps = useForwardProps(restProps)
     :class="className"
   >
     <slot>
-      <i class="icon-[lucide--x] size-4" />
+      <i class="icon-[lucide--x]" />
     </slot>
   </TagsInputItemDelete>
 </template>

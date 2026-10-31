@@ -1,3 +1,5 @@
+import type { AxiosRequestConfig } from 'axios'
+
 import type {
   AcceptInviteResponse,
   CreateInviteRequest,
@@ -12,6 +14,7 @@ import type {
   PendingInvite,
   PickWorkspaceDeploymentRequest,
   ReleaseUnsupportedPacks,
+  StartWorkspaceDeploymentResult,
   UpdateWorkspaceRequest,
   WorkspaceDeployment,
   WorkspaceDeploymentCpuServer,
@@ -21,14 +24,18 @@ import type {
 import {
   zDeploymentCompatibility,
   zReleaseUnsupportedPacks,
+  zStartWorkspaceDeploymentResult,
   zWorkspaceDeploymentCpuServer
 } from '@comfyorg/ingest-types/zod'
-import { DEPLOYMENT_LISTING_TIMEOUT_MS } from './deploymentListingTimeouts'
+import {
+  DEPLOYMENT_LISTING_TIMEOUT_MS,
+  DEPLOYMENT_START_TIMEOUT_MS
+} from './deploymentListingTimeouts'
 import type {
   WorkspaceId,
   WorkspaceInviteId
 } from '@/platform/workspace/workspaceTypes'
-import type { UserId } from '@/types/authTypes'
+import type { UserId } from '@comfyorg/api-client/authTypes'
 import {
   ingestApiClient as workspaceApiClient,
   requestAuth,
@@ -64,25 +71,39 @@ export type { WorkspaceDeploymentCpuServer }
 
 const CPU_SERVER_READ_TIMEOUT_MS = 15_000
 
+/** For callers that already retry on their own schedule. */
+interface ReadOptions {
+  skipStatusRetry?: boolean
+}
+
+function withReadOptions(
+  auth: AxiosRequestConfig,
+  { skipStatusRetry }: ReadOptions
+): AxiosRequestConfig {
+  return skipStatusRetry ? { ...auth, __skipStatusRetry: true } : auth
+}
+
 export const workspaceApi = {
-  async list(): Promise<ListWorkspacesResponse> {
+  async list(options: ReadOptions = {}): Promise<ListWorkspacesResponse> {
     const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.get<ListWorkspacesResponse>(
         ingestApiUrl('/workspaces'),
-        auth
+        withReadOptions(auth, options)
       )
       return response.data
     } catch (err) {
       handleAxiosError(err, 'list')
     }
   },
-  async getCurrentWorkspace(): Promise<CurrentWorkspaceResponse> {
+  async getCurrentWorkspace(
+    options: ReadOptions = {}
+  ): Promise<CurrentWorkspaceResponse> {
     const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.get<CurrentWorkspaceResponse>(
         ingestApiUrl('/workspaces/current'),
-        auth
+        withReadOptions(auth, options)
       )
       return response.data
     } catch (err) {
@@ -119,13 +140,20 @@ export const workspaceApi = {
     }
   },
   async listDeployments(
-    workspaceId: WorkspaceId
+    workspaceId: WorkspaceId,
+    startedDeploymentIds: readonly string[]
   ): Promise<WorkspaceDeploymentList> {
     const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.get<WorkspaceDeploymentList>(
         ingestApiUrl(`/workspaces/${workspaceId}/deployments`),
-        { ...auth, timeout: DEPLOYMENT_LISTING_TIMEOUT_MS }
+        {
+          ...auth,
+          params: { started_deployment_id: startedDeploymentIds },
+          paramsSerializer: { indexes: null },
+          timeout: DEPLOYMENT_LISTING_TIMEOUT_MS,
+          __skipStatusRetry: true
+        }
       )
       return response.data
     } catch (err) {
@@ -147,6 +175,24 @@ export const workspaceApi = {
       )
     } catch (err) {
       handleAxiosError(err, 'pickDeployment')
+    }
+  },
+  async startDeployment(
+    workspaceId: WorkspaceId,
+    deploymentId: string
+  ): Promise<StartWorkspaceDeploymentResult> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        ingestApiUrl(
+          `/workspaces/${workspaceId}/deployments/${encodeURIComponent(deploymentId)}/start`
+        ),
+        undefined,
+        { ...auth, timeout: DEPLOYMENT_START_TIMEOUT_MS }
+      )
+      return zStartWorkspaceDeploymentResult.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'startDeployment')
     }
   },
   async clearDeployment(

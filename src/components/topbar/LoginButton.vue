@@ -16,7 +16,7 @@
         <span
           class="flex size-full items-center justify-center rounded-full bg-secondary transition-colors group-hover:bg-transparent"
         >
-          <i class="icon-[lucide--user] size-4" />
+          <i class="icon-[lucide--user]" />
         </span>
       </Button>
     </PopoverAnchor>

@@ -2,12 +2,12 @@ import type {
   Subgraph,
   SubgraphInput,
   SubgraphOutput
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 
 export let isSubgraph: (value: unknown) => value is Subgraph
 export let isSubgraphInput: (slot: unknown) => slot is SubgraphInput

@@ -1,7 +1,7 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 /**

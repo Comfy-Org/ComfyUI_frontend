@@ -3,7 +3,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 test.describe(
   'Plain legacy widgets',

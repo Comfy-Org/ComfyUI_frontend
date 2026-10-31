@@ -17,7 +17,7 @@
           :aria-label="t('g.close')"
           class="flex cursor-pointer appearance-none items-center justify-center border-none bg-transparent p-0 text-muted-foreground hover:text-foreground"
         >
-          <i class="icon-[lucide--x] size-4" />
+          <i class="icon-[lucide--x]" />
         </PopoverClose>
       </div>
       <div class="border-t" />

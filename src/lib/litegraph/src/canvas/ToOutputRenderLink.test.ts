@@ -5,7 +5,7 @@ import {
   ToOutputRenderLink
 } from '@/lib/litegraph/src/litegraph'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
 import {
   createMockLGraphNode,
   createMockLinkNetwork,

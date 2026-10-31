@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import HighlightedText from '@/components/searchbox/HighlightedText.vue'
+import HighlightedText from '@comfyorg/design-system/common/HighlightedText'
 import Badge from '@comfyorg/design-system/badge/Badge'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'

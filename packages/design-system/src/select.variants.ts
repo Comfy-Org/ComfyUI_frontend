@@ -38,7 +38,7 @@ export const selectContentClass =
   'z-overlay overflow-hidden rounded-lg p-2 bg-background text-foreground border border-solid shadow-md data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2'
 
 export const selectDropdownClass =
-  'flex shrink-0 cursor-pointer items-center justify-center pl-3'
+  'flex shrink-0 cursor-pointer items-center justify-center pl-3 [&_i]:size-5'
 
 export const selectEmptyMessageClass = 'px-3 pb-4 text-sm text-muted-foreground'
 

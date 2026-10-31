@@ -7,7 +7,8 @@ import {
 } from '#/fill'
 import { generateId } from '#/id'
 import { defaultMode } from '#/mode'
-import type { FillData, Rect } from '#/node'
+import type { FillData } from '#/node'
+import type { CompactRect as Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { NodeKind, RenderNodeCtx } from '#/nodeKind'
 
 const bitmapCache = new Map<

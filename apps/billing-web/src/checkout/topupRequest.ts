@@ -2,6 +2,7 @@ import type {
   InteractiveTopupPayment,
   TopupResult
 } from '@comfyorg/account-core/billing'
+import { isPurchaseRefusal } from '@comfyorg/account-core/billing'
 import type { BillingEntry } from '@comfyorg/billing-contract'
 import { buildBillingEntryUrl } from '@comfyorg/billing-contract'
 
@@ -72,11 +73,13 @@ export function isSamePayment(
 /**
  * Whether the server answered this purchase for good, so the next Pay is a
  * new purchase. A pending, conflicting, rate-limited, unanswered or 5xx
- * attempt is resent unchanged under its key.
+ * attempt is resent unchanged under its key; a purchase the server refuses
+ * for now is answered.
  */
 export function settlesAttempt(result: TopupResult): boolean {
   if (result.status === 'ok' || result.status === 'declined') return true
   if (result.status === 'unsettled') return false
+  if ('serverCode' in result && isPurchaseRefusal(result)) return true
   if (!('httpStatus' in result) || result.httpStatus === undefined)
     return STATUSLESS_ANSWERS.has(result.code)
   const { httpStatus } = result

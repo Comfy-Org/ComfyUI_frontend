@@ -105,6 +105,9 @@ const WidgetBoundingBoxes = defineAsyncComponent(
 const WidgetVideoEdit = defineAsyncComponent(
   () => import('@/components/videoEdit/WidgetVideoEdit.vue')
 )
+const WidgetVideoConcat = defineAsyncComponent(
+  () => import('@/components/videoConcat/WidgetVideoConcat.vue')
+)
 const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
 )
@@ -331,6 +334,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'videoconcat',
+    {
+      component: WidgetVideoConcat,
+      aliases: ['VIDEO_CONCAT'],
+      essential: false
+    }
+  ],
+  [
     'colors',
     {
       component: WidgetColors,
@@ -387,7 +398,8 @@ const EXPANDING_TYPES = [
   'imagecompare',
   'range',
   'boundingboxes',
-  'videoedit'
+  'videoedit',
+  'videoconcat'
 ] as const
 
 export function shouldExpand(type: string): boolean {

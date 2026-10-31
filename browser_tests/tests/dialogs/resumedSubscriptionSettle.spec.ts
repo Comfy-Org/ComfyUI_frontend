@@ -103,6 +103,7 @@ const ACTIVE_STANDARD = {
   renewal_date: '2099-02-20T00:00:00Z',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null
 } satisfies BillingStatusResponse

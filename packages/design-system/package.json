@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/design-system",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Shared design system for ComfyUI Frontend",
   "homepage": "https://comfy.org",
   "license": "MIT",
@@ -26,6 +26,7 @@
   "type": "module",
   "exports": {
     "./*": "./src/components/*.vue",
+    "./lib/color-picker/types": "./src/components/color-picker/types.ts",
     "./lib/composables/useAttrsClass": "./src/components/composables/useAttrsClass.ts",
     "./lib/composables/usePopoverSizing": "./src/components/composables/usePopoverSizing.ts",
     "./lib/dialog/dialog.variants": "./src/components/dialog/dialog.variants.ts",
@@ -37,6 +38,7 @@
     "./lib/menu/types": "./src/components/menu/types.ts",
     "./lib/message/message.variants": "./src/components/message/message.variants.ts",
     "./lib/multi-select/types": "./src/components/multi-select/types.ts",
+    "./lib/navigation/types": "./src/components/navigation/types.ts",
     "./lib/popover/usePopoverViewportDismiss": "./src/components/popover/usePopoverViewportDismiss.ts",
     "./lib/select/types": "./src/components/select/types.ts",
     "./lib/select/useSelectSearch": "./src/components/select/useSelectSearch.ts",
@@ -48,18 +50,22 @@
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
     "./button.variants": {
+      "@comfyorg/design-system": "./src/button.variants.ts",
       "types": "./dist-types/button.variants.d.ts",
       "default": "./src/button.variants.ts"
     },
     "./select.variants": {
+      "@comfyorg/design-system": "./src/select.variants.ts",
       "types": "./dist-types/select.variants.d.ts",
       "default": "./src/select.variants.ts"
     },
     "./tag.variants": {
+      "@comfyorg/design-system": "./src/tag.variants.ts",
       "types": "./dist-types/tag.variants.d.ts",
       "default": "./src/tag.variants.ts"
     },
     "./workspaceAvatar": {
+      "@comfyorg/design-system": "./src/workspaceAvatar.ts",
       "types": "./dist-types/workspaceAvatar.d.ts",
       "default": "./src/workspaceAvatar.ts"
     }
@@ -70,6 +76,11 @@
         "types": "./dist/*.vue.d.ts",
         "import": "./dist/*.vue.js",
         "default": "./dist/*.vue.js"
+      },
+      "./lib/color-picker/types": {
+        "types": "./dist/color-picker/types.d.ts",
+        "import": "./dist/color-picker/types.js",
+        "default": "./dist/color-picker/types.js"
       },
       "./lib/composables/useAttrsClass": {
         "types": "./dist/composables/useAttrsClass.d.ts",
@@ -126,6 +137,11 @@
         "import": "./dist/multi-select/types.js",
         "default": "./dist/multi-select/types.js"
       },
+      "./lib/navigation/types": {
+        "types": "./dist/navigation/types.d.ts",
+        "import": "./dist/navigation/types.js",
+        "default": "./dist/navigation/types.js"
+      },
       "./lib/popover/usePopoverViewportDismiss": {
         "types": "./dist/popover/usePopoverViewportDismiss.d.ts",
         "import": "./dist/popover/usePopoverViewportDismiss.js",
@@ -162,6 +178,7 @@
         "default": "./dist/tree/treeStyles.js"
       },
       "./components.css": "./dist/components.css",
+      "./css/style.css": "./src/css/published.css",
       "./css/*": "./src/css/*",
       "./icons/*": "./src/icons/*",
       "./button.variants": {
@@ -196,8 +213,6 @@
     "@iconify/tailwind4": "catalog:",
     "@iconify/tools": "catalog:",
     "@iconify/utils": "catalog:",
-    "@vueuse/core": "catalog:",
-    "@vueuse/integrations": "catalog:",
     "chart.js": "^4.5.0",
     "clsx": "^2.1.1",
     "cva": "catalog:",
@@ -208,6 +223,7 @@
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {
+    "@comfyorg/shared-frontend-utils": "workspace:^",
     "@comfyorg/tailwind-utils": "workspace:^",
     "@storybook/vue3-vite": "catalog:",
     "@tailwindcss/vite": "catalog:",
@@ -216,8 +232,11 @@
     "@testing-library/vue": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "@vueuse/core": "catalog:",
+    "@vueuse/integrations": "catalog:",
     "happy-dom": "catalog:",
     "reka-ui": "catalog:",
+    "storybook": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
@@ -227,12 +246,20 @@
     "vue-component-type-helpers": "catalog:"
   },
   "peerDependencies": {
-    "reka-ui": "^2.11.0",
+    "@vueuse/core": "^14.4.0",
+    "@vueuse/integrations": "^14.4.0",
+    "reka-ui": "^2.10.5",
     "tailwindcss": "^4.1.0",
     "vue": "^3.5.40",
     "vue-component-type-helpers": "^3.3.0"
   },
   "peerDependenciesMeta": {
+    "@vueuse/core": {
+      "optional": true
+    },
+    "@vueuse/integrations": {
+      "optional": true
+    },
     "reka-ui": {
       "optional": true
     },

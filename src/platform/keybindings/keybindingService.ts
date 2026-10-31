@@ -1,14 +1,14 @@
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { CORE_KEYBINDINGS } from './defaults'
 import { consultEscapeOverride } from './escapeOverride'
-import { KeyComboImpl } from './keyCombo'
-import { KeybindingImpl } from './keybinding'
-import { useKeybindingStore } from './keybindingStore'
+import { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 
 function isExcludedFromDistribution(keybinding: { commandId: string }) {
   return (

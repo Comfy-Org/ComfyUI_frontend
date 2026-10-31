@@ -2,10 +2,14 @@ import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { ref } from 'vue'
 
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import { webSessionResourceHeader } from '@comfyorg/api-client/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
-import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
+import {
+  formatCredits,
+  isSubCreditCharge,
+  microUsdToCredits
+} from '@/base/credits/comfyCredits'
 import {
   hasParamsBeyondDetailsColumn,
   presentTooltipParamKeys,
@@ -158,11 +162,14 @@ export const useCustomerEventsService = () => {
   }
 
   function formatChargeCredits(microUsd: number) {
-    const amount = formatCreditsFromUsd({
-      usd: microUsd / 1_000_000,
-      locale: i18n.global.locale.value,
-      numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
-    })
+    const credits = microUsdToCredits(microUsd)
+    const amount = isSubCreditCharge(credits)
+      ? t('credits.lessThanOne')
+      : formatCredits({
+          value: credits,
+          locale: i18n.global.locale.value,
+          numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+        })
     return `${amount} ${t('credits.credits')}`
   }
 

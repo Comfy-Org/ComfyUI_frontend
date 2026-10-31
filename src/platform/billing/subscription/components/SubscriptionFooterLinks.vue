@@ -6,7 +6,7 @@
         variant="muted-textonly"
         @click="handleFullUsageActivity"
       >
-        <i class="pi pi-external-link text-xs text-muted-foreground" />
+        <i class="icon-[lucide--external-link] size-3 text-muted-foreground" />
         {{ $t('subscription.fullUsageActivity') }}
       </Button>
       <Button
@@ -14,11 +14,13 @@
         variant="muted-textonly"
         @click="$emit('viewPlans')"
       >
-        <i class="pi pi-external-link text-xs text-muted-foreground" />
+        <i class="icon-[lucide--external-link] size-3 text-muted-foreground" />
         {{ $t('subscription.plansAndPricing') }}
       </Button>
       <Button variant="muted-textonly" @click="handleOpenPartnerNodesInfo">
-        <i class="pi pi-question-circle text-xs text-muted-foreground" />
+        <i
+          class="icon-[lucide--circle-question-mark] size-3 text-muted-foreground"
+        />
         {{ $t('subscription.partnerNodesPricingTable') }}
       </Button>
       <Button
@@ -26,7 +28,7 @@
         :loading="isLoadingSupport"
         @click="handleMessageSupport"
       >
-        <i class="pi pi-comment text-xs text-muted-foreground" />
+        <i class="icon-[lucide--message-circle] size-3 text-muted-foreground" />
         {{ $t('subscription.messageSupport') }}
       </Button>
     </div>
@@ -37,7 +39,7 @@
       @click="handleInvoiceHistory"
     >
       {{ $t('subscription.invoiceHistory') }}
-      <i class="pi pi-external-link text-xs text-muted-foreground" />
+      <i class="icon-[lucide--external-link] size-3 text-muted-foreground" />
     </Button>
   </div>
 </template>

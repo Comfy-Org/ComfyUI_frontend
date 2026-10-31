@@ -9,7 +9,7 @@
               'border-0 bg-transparent p-0 shadow-none duration-100',
               useSearchBoxV2
                 ? 'w-full max-w-4xl min-w-lg overflow-visible max-md:min-w-0 sm:max-w-4xl'
-                : 'top-1/4 ml-[200px] w-3/5 max-w-3xl min-w-96 translate-y-0 max-md:ml-0 sm:max-w-3xl'
+                : 'w-3/5 max-w-3xl min-w-96 sm:max-w-3xl'
             )
           "
           @pointer-down-outside="
@@ -64,7 +64,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
 import { revealDynamicInputSlot } from '@/core/graph/widgets/revealDynamicInputSlot'
-import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
@@ -73,7 +73,7 @@ import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
@@ -83,7 +83,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
-import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'

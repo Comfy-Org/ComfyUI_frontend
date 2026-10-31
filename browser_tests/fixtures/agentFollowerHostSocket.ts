@@ -16,7 +16,7 @@ import type {
   ProgressStateWsMessage,
   ProgressWsMessage,
   StatusWsMessage
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -27,6 +27,7 @@ import type {
   ParsedWireBatch,
   WireOpEnvelope
 } from '@e2e/fixtures/agentWireFrame'
+import { isPlainObject } from 'es-toolkit'
 
 const SUBSCRIBE_TIMEOUT = 15_000
 /** The sid the fake ComfyUI reports on its first `status` frame. */
@@ -88,11 +89,11 @@ function docFrameEnvelope(
   raw: string | Buffer
 ): { type: string; data: Record<string, unknown> } | null {
   const frame: unknown = JSON.parse(raw.toString())
-  if (typeof frame !== 'object' || frame === null) return null
-  const { type, data } = frame as { type?: unknown; data?: unknown }
+  if (!isPlainObject(frame)) return null
+  const { type, data } = frame
   if (typeof type !== 'string' || !type.startsWith('doc_')) return null
-  if (typeof data !== 'object' || data === null) return null
-  return { type, data: data as Record<string, unknown> }
+  if (!isPlainObject(data)) return null
+  return { type, data }
 }
 
 function stringOrNull(value: unknown): string | null {
@@ -145,6 +146,8 @@ export class AgentFollowerHostSocket {
   private refusedSubscribes = 0
 
   private socket: WebSocketRoute | null = null
+  private agentProcessDown = false
+  private refusedConnections = 0
   private comfySocket: WebSocketRoute | null = null
   private comfyConnections = 0
   private connections = 0
@@ -229,10 +232,33 @@ export class AgentFollowerHostSocket {
       )
     })
     await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
+      if (this.agentProcessDown) {
+        this.refusedConnections += 1
+        void socket.close()
+        return
+      }
       this.connections += 1
       this.socket = socket
       socket.onMessage((raw) => this.onClientFrame(raw))
     })
+  }
+
+  /** Refuses reconnect attempts until the outage ends. */
+  async beginAgentOutage(): Promise<void> {
+    this.agentProcessDown = true
+    const socket = this.socket
+    this.socket = null
+    await socket?.close()
+  }
+
+  /** Allows the next reconnect attempt. */
+  endAgentOutage(): void {
+    this.agentProcessDown = false
+  }
+
+  /** Returns the number of refused reconnect attempts. */
+  refusedConnectionCount(): number {
+    return this.refusedConnections
   }
 
   send(frame: AgentWsEvent | AgentAskServerFrame | HostFrame): void {

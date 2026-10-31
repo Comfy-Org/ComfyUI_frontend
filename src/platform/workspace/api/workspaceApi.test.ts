@@ -1,5 +1,5 @@
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -14,7 +14,7 @@ const { mockAxiosInstance } = vi.hoisted(() => ({
     put: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
-    interceptors: { response: { use: vi.fn() } }
+    interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } }
   }
 }))
 
@@ -355,15 +355,19 @@ describe('workspaceApi', () => {
   })
 
   describe('deployment picking', () => {
-    it('listDeployments() sends GET /workspaces/:id/deployments with a 30 second timeout', async () => {
+    it('listDeployments() sends GET /workspaces/:id/deployments with a 30 second timeout and no status retry', async () => {
       const data = { items: [], builds_visible: true }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.listDeployments('ws-1')
+      const result = await workspaceApi.listDeployments('ws-1', [])
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/workspaces/ws-1/deployments',
-        { headers: AUTH_HEADER, timeout: 30_000 }
+        expect.objectContaining({
+          headers: AUTH_HEADER,
+          timeout: 30_000,
+          __skipStatusRetry: true
+        })
       )
       expect(result).toEqual(data)
     })
@@ -496,6 +500,49 @@ describe('workspaceApi', () => {
         { deployment_id: 'dep-1' },
         { headers: AUTH_HEADER }
       )
+    })
+
+    it('startDeployment() sends POST /workspaces/:id/deployments/:deployment/start with no body and a 30 second timeout', async () => {
+      const data = { deployment_id: 'dep-1/x', status: 'queued' }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      const result = await workspaceApi.startDeployment('ws-1', 'dep-1/x')
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments/dep-1%2Fx/start',
+        undefined,
+        { headers: AUTH_HEADER, timeout: 30_000 }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('startDeployment() rejects an answer that does not say the status', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { deployment_id: 'dep-1' }
+      })
+
+      await expect(
+        workspaceApi.startDeployment('ws-1', 'dep-1')
+      ).rejects.toThrow()
+    })
+
+    it('startDeployment() turns a refusal into a WorkspaceApiError with its code and message', async () => {
+      mockAxiosInstance.post.mockRejectedValue(
+        axiosRejection(429, {
+          code: 'CONCURRENCY_LIMIT',
+          message: 'Three deployments are already running.'
+        })
+      )
+
+      await expect(
+        workspaceApi.startDeployment('ws-1', 'dep-1')
+      ).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 429,
+        code: 'CONCURRENCY_LIMIT',
+        message: 'Three deployments are already running.',
+        operation: 'startDeployment'
+      })
     })
 
     it('does not dispatch a canceled deployment selection when authorization finishes late', async () => {

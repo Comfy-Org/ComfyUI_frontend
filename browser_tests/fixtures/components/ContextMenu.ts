@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
@@ -33,7 +34,7 @@ export class ContextMenu {
     return this.anyMenu.getByRole('menuitem', { name, exact: true })
   }
 
-  async distanceFrom(point: { x: number; y: number }): Promise<number> {
+  async distanceFrom(point: Point2D): Promise<number> {
     return this.ariaMenu.evaluate((element, point) => {
       const { x, y } = element.getBoundingClientRect()
       return Math.hypot(x - point.x, y - point.y)

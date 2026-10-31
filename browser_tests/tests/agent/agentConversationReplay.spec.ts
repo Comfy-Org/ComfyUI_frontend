@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import {
   expectElementScreenshot,

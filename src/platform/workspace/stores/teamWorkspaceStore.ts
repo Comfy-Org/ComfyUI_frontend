@@ -15,7 +15,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   clearWorkflowRestoreState,
   prepareWorkflowWorkspaceTransition
@@ -197,6 +197,7 @@ function reportSsoLanding(
 const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
+const INIT_READ_WITHOUT_STATUS_RETRY = { skipStatusRetry: true }
 
 const MAX_SESSION_REVOKED_RETRIES = 1
 
@@ -232,6 +233,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   )
   const identityGeneration = ref(0)
   let initializationPromise: Promise<void> | null = null
+  let hostChangedWhileLoading = false
   let pendingWorkspaceSwitch: Promise<void> | null = null
 
   function isStaleIdentity(generation: number): boolean {
@@ -264,21 +266,31 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => workspaces.value.filter((w) => w.role === 'owner').length
   )
 
-  /** The server says an SSO organization manages this account's workspaces. */
+  const serverRefusesCreation = ref(false)
+
   const workspacesManagedByOrganization = ref(false)
 
   const canCreateWorkspace = computed(
     () =>
-      !workspacesManagedByOrganization.value &&
+      !serverRefusesCreation.value &&
       ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
   )
+
+  const createWorkspaceRefusal = computed<
+    'organization' | 'limit' | 'unknown' | null
+  >(() => {
+    if (canCreateWorkspace.value) return null
+    if (workspacesManagedByOrganization.value) return 'organization'
+    if (serverRefusesCreation.value) return 'unknown'
+    return 'limit'
+  })
 
   function applyWorkspaceList(response: ListedWorkspaces): void {
     workspaces.value = sortWorkspaces(
       response.workspaces.map(createWorkspaceState)
     )
-    workspacesManagedByOrganization.value =
-      response.can_create_workspace === false
+    serverRefusesCreation.value = response.can_create_workspace === false
+    workspacesManagedByOrganization.value = !!response.default_workspace_id
   }
 
   const members = computed<WorkspaceMember[]>(
@@ -357,7 +369,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
       try {
         if (isDesktopHostSignedIn()) {
-          const response = await workspaceApi.list()
+          const response = await workspaceApi.list(
+            INIT_READ_WITHOUT_STATUS_RETRY
+          )
           if (isStaleIdentity(generation)) return
           applyWorkspaceList(response)
           const hostWorkspaceId = desktopHostUser.value?.workspaceId
@@ -371,7 +385,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         }
 
         if (isApiKeySession) {
-          const current = await workspaceApi.getCurrentWorkspace()
+          const current = await workspaceApi.getCurrentWorkspace(
+            INIT_READ_WITHOUT_STATUS_RETRY
+          )
           if (isStaleIdentity(generation)) return
           workspaces.value = [createWorkspaceStateFromCredential(current)]
           mutableActiveWorkspaceId.value = current.id
@@ -386,7 +402,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         const hasValidSession = workspaceAuthStore.initializeFromSession()
 
         if (hasValidSession && workspaceAuthStore.currentWorkspace) {
-          const response = await workspaceApi.list()
+          const response = await workspaceApi.list(
+            INIT_READ_WITHOUT_STATUS_RETRY
+          )
           if (isStaleIdentity(generation)) return
           applyWorkspaceList(response)
 
@@ -425,7 +443,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           return
         }
 
-        const response: ListedWorkspaces = await workspaceApi.list()
+        const response: ListedWorkspaces = await workspaceApi.list(
+          INIT_READ_WITHOUT_STATUS_RETRY
+        )
         if (isStaleIdentity(generation)) return
         applyWorkspaceList(response)
 
@@ -509,10 +529,14 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     initializationPromise = promise
     void promise.then(
       () => {
-        if (initializationPromise === promise) initializationPromise = null
+        if (initializationPromise !== promise) return
+        initializationPromise = null
+        hostChangedWhileLoading = false
       },
       () => {
-        if (initializationPromise === promise) initializationPromise = null
+        if (initializationPromise !== promise) return
+        initializationPromise = null
+        retryIfHostChangedWhileLoading()
       }
     )
     return promise
@@ -1092,6 +1116,27 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     if (isListed()) mutableActiveWorkspaceId.value = hostWorkspaceId
   }
 
+  function retryInitializationForHost(): void {
+    initialize().catch((error: unknown) =>
+      reportError(error, {
+        errorType: 'error_reinitializing_workspaces_for_desktop_host',
+        surface: 'workspace'
+      })
+    )
+  }
+
+  watch(desktopHostUser, (hostUser) => {
+    if (!hostUser) return
+    if (initState.value === 'loading') hostChangedWhileLoading = true
+    if (initState.value === 'error') retryInitializationForHost()
+  })
+
+  function retryIfHostChangedWhileLoading(): void {
+    const retry = hostChangedWhileLoading && desktopHostUser.value !== null
+    hostChangedWhileLoading = false
+    if (retry) retryInitializationForHost()
+  }
+
   watch(
     () => desktopHostUser.value?.workspaceId,
     (hostWorkspaceId) => {
@@ -1111,8 +1156,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     mutableWorkspaceTransitionGeneration.value++
     pendingWorkspaceSwitch = null
     initializationPromise = null
+    hostChangedWhileLoading = false
     initState.value = 'uninitialized'
     workspaces.value = []
+    serverRefusesCreation.value = false
     workspacesManagedByOrganization.value = false
     mutableActiveWorkspaceId.value = null
     error.value = null
@@ -1145,7 +1192,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     sharedWorkspaces,
     ownedWorkspacesCount,
     canCreateWorkspace,
+    serverRefusesCreation,
     workspacesManagedByOrganization,
+    createWorkspaceRefusal,
     members,
     membersLoaded,
     pendingInvites,
