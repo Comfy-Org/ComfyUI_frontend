@@ -45,7 +45,7 @@
     "format": "oxfmt --write \"!apps/**\" \"!packages/**\" \"!tools/test-recorder/**\" \"!tools/architecture/**\"",
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "qa:desktop-frontend": "tsx scripts/qa-desktop-frontend.ts",
-    "deps:audit": "depcruise src",
+    "deps:audit": "depcruise src --output-type err-long",
     "knip": "knip --cache",
     "knip:components": "knip --production --workspace . --include files",
     "lint:eslint": "eslint --cache --concurrency auto",
