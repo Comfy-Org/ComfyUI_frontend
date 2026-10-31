@@ -394,6 +394,21 @@ export class PromptExecutionError extends Error {
   }
 }
 
+function getApiWebSocketHostOverride(): string {
+  if (!Object.hasOwn(window, '__COMFY_API_WS_HOST__')) {
+    return ''
+  }
+  const override: unknown = Reflect.get(window, '__COMFY_API_WS_HOST__')
+  if (typeof override !== 'string') {
+    return ''
+  }
+  return override.trim()
+}
+
+function isBareHost(host: string): boolean {
+  return !/[\s/\\?#@]/.test(host)
+}
+
 interface LaunchContext {
   host: string
   base: string
@@ -457,6 +472,8 @@ export class ComfyApi extends EventTarget {
    */
   private socketGeneration = 0
   private socketRetryDelayMs = 1_000
+
+  private pollQueueInterval: ReturnType<typeof setInterval> | null = null
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -908,15 +925,19 @@ export class ComfyApi extends EventTarget {
    * Poll status  for colab and other things that don't support websockets.
    */
   private _pollQueue() {
-    setInterval(async () => {
+    if (this.pollQueueInterval !== null) return
+    const interval = setInterval(async () => {
+      let status: StatusWsMessageStatus | null
       try {
         const resp = await this.fetchApi('/prompt')
-        const status = (await resp.json()) as StatusWsMessageStatus
-        this.dispatchCustomEvent('status', status)
+        status = resp.ok ? ((await resp.json()) as StatusWsMessageStatus) : null
       } catch {
-        this.dispatchCustomEvent('status', null)
+        status = null
       }
+      if (this.pollQueueInterval !== interval) return
+      this.dispatchCustomEvent('status', status)
     }, 1000)
+    this.pollQueueInterval = interval
   }
 
   /** False when the web session is on and no one is signed in to open it. */
@@ -939,6 +960,12 @@ export class ComfyApi extends EventTarget {
   async socketAuthParams(): Promise<URLSearchParams | null> {
     const params = new URLSearchParams()
     return (await this.addSocketAuth(params)) ? params : null
+  }
+
+  private _stopPollQueue() {
+    if (this.pollQueueInterval === null) return
+    clearInterval(this.pollQueueInterval)
+    this.pollQueueInterval = null
   }
 
   private async createSocket(isReconnect?: boolean) {
@@ -964,13 +991,29 @@ export class ComfyApi extends EventTarget {
         : undefined
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
+    const wsHostOverride = getApiWebSocketHostOverride()
+    const wsHost = wsHostOverride || this.api_host
+    const baseUrl = `${protocol}://${wsHost}${this.api_base}/ws`
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 
     if (generation !== this.socketGeneration) return
 
-    const socket = new WebSocket(wsUrl)
+    let socket: WebSocket
+    try {
+      if (wsHostOverride && !isBareHost(wsHostOverride)) {
+        throw new SyntaxError('WebSocket host override must be a bare host')
+      }
+      socket = new WebSocket(wsUrl)
+    } catch (error) {
+      const reason = error instanceof Error ? error.name : 'UnknownError'
+      reportError(new Error(`Failed to open WebSocket (${reason})`), {
+        errorType: 'websocket_construction_failure',
+        surface: 'platform'
+      })
+      this._pollQueue()
+      return
+    }
     this.socket = socket
     this.serverFeatureFlagsSettled.value = false
     socket.binaryType = 'arraybuffer'
@@ -984,6 +1027,7 @@ export class ComfyApi extends EventTarget {
     socket.addEventListener('open', () => {
       if (this.socket !== socket) return
       opened = true
+      this._stopPollQueue()
       this.socketRetryDelayMs = 1_000
 
       socket.send(
