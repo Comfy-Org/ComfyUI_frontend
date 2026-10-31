@@ -4,17 +4,17 @@ import { fromPartial, fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetActions from './WidgetActions.vue'
 
@@ -22,7 +22,7 @@ vi.mock(import('@/core/graph/subgraph/promotionUtils'), () => ({
   promoteWidget: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/services/dialogService'))
 

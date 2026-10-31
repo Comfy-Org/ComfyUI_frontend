@@ -10,8 +10,8 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -20,7 +20,6 @@ import { useNodeOutputsExport } from './useNodeOutputsExport'
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/assets/services/assetService'))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn(),
   downloadFileAsBlob: vi.fn()
@@ -233,5 +232,21 @@ describe('useNodeOutputsExport', () => {
       })
     ])
     expect(useAssetExportStore().exportList).toEqual([])
+  })
+
+  it('shows HDR outputs by their generated preview, or a placeholder without one', async () => {
+    const node = nodeWithOutputs([
+      { filename: 'sky.exr', type: 'output', preview_id: 'sky-preview' },
+      { filename: 'dusk.exr', type: 'output' },
+      { filename: 'a.png', type: 'output' }
+    ])
+
+    const { dialog } = await openExportDialog(node)
+
+    const thumbnails = within(dialog).getAllByTestId('output-thumbnail')
+    expect(thumbnails.map((img) => img.getAttribute('src'))).toEqual([
+      expect.stringContaining('/assets/sky-preview/content'),
+      expect.stringContaining('filename=a.png')
+    ])
   })
 })

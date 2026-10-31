@@ -1,0 +1,458 @@
+import { until, useEventListener } from '@vueuse/core'
+import { delay } from 'es-toolkit'
+import { effectScope, ref } from 'vue'
+
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useUserBusy } from '@/platform/customNodes/useUserBusy'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { couldBootOnDeployment } from '@/platform/workspace/composables/waitForDeploymentPick'
+import { useApp } from '@/scripts/appInstance'
+import type { StartupHookFailure } from '@/platform/extensions/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { ComfyExtension } from '@/types/comfy'
+import { isNonNullish } from '@/utils/typeGuardUtil'
+
+import type {
+  CpuServerReading,
+  CpuServerStep,
+  CpuServerWatch
+} from './cpuServerStep'
+import { isBeingSetUp, watchCpuServer } from './cpuServerStep'
+import {
+  showFailedToast,
+  showReadyToast,
+  showStartingToast
+} from './lateToasts'
+
+interface LateScriptFailure {
+  ext: string
+  error: unknown
+}
+
+interface ScriptLoader {
+  importScript: (
+    ext: string,
+    options?: { retry?: boolean }
+  ) => Promise<LateScriptFailure | undefined>
+  reportFailures: (failures: LateScriptFailure[]) => void
+}
+
+const LATE_CUSTOM_NODE_WAIT_MS = 2000
+const LATE_CUSTOM_NODE_RETRY_MS = 5000
+const CPU_SERVER_FIRST_ANSWER_WAIT_MS = 1000
+const ARTIST_PAUSE_TIMEOUT_MS = 30_000
+const LATE_CUSTOM_NODE_ERROR_TYPE = 'late_extension_failed'
+
+const MODULE_FETCH_FAILURES = [
+  'Failed to fetch dynamically imported module',
+  'error loading dynamically imported module'
+]
+
+function messageOf(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return typeof error === 'string' ? error : ''
+}
+
+function fetchFailureUrl(error: unknown): string | undefined {
+  const message = messageOf(error)
+  const wording = MODULE_FETCH_FAILURES.find((prefix) =>
+    message.startsWith(`${prefix}: `)
+  )
+  return wording === undefined
+    ? undefined
+    : message.slice(wording.length + ': '.length)
+}
+
+function namesExactly(url: string, error: unknown): boolean {
+  const failedUrl = fetchFailureUrl(error)
+  return (
+    failedUrl !== undefined &&
+    (failedUrl === url || failedUrl === new URL(url, document.baseURI).href)
+  )
+}
+
+class ScriptNotFetched extends Error {
+  constructor(failure: unknown) {
+    super(messageOf(failure), { cause: failure })
+    this.name = 'ScriptNotFetched'
+  }
+}
+
+function isModuleFetchFailure(error: unknown): boolean {
+  return error instanceof ScriptNotFetched
+}
+
+function ownFailure(url: string, error: unknown): unknown {
+  return namesExactly(url, error) ? new ScriptNotFetched(error) : error
+}
+
+function swallowedFailure(url: string, swallowed: unknown[]): Error {
+  const named = swallowed.find((error) => namesExactly(url, error))
+  return named === undefined
+    ? new Error(`Could not import ${url}`)
+    : new ScriptNotFetched(named)
+}
+
+/** Imports `url` through `load`; a failure counts as not fetched only when it names exactly `url`. */
+export async function importNoticingFetchFailure(
+  url: string,
+  load: (url: string) => Promise<unknown>
+): Promise<void> {
+  const swallowed: unknown[] = []
+  const stopListening = useEventListener(
+    window,
+    'vite:preloadError',
+    (event) => {
+      const payload: unknown = event.payload
+      swallowed.push(payload)
+    }
+  )
+  try {
+    if ((await load(url)) !== undefined) return
+  } catch (error) {
+    throw ownFailure(url, error)
+  } finally {
+    stopListening()
+  }
+  throw swallowedFailure(url, swallowed)
+}
+
+/** Whether startup may stop waiting for slow custom node scripts. */
+export function lateLoadingApplies(): boolean {
+  return (
+    useFeatureFlags().flags.lateCustomNodesEnabled && couldBootOnDeployment()
+  )
+}
+
+function watchLateWork(signal: AbortSignal, onAbort: () => void) {
+  const scope = effectScope(true)
+  const state = scope.run(() => {
+    const aborted = ref(signal.aborted)
+    const artistBusy = useUserBusy()
+    if (signal.aborted) onAbort()
+    useEventListener(signal, 'abort', () => {
+      aborted.value = true
+      onAbort()
+    })
+    return { aborted, artistBusy }
+  })
+  return {
+    isAborted: () => state?.aborted.value ?? true,
+    isArtistBusy: () => state?.artistBusy.value ?? false,
+    stop: () => scope.stop()
+  }
+}
+
+async function rebuildOpenWorkflow() {
+  const workflow = useWorkflowStore().activeWorkflow
+  const baseline = workflow?.changeTracker.initialState
+  const wasModified = workflow?.isModified ?? false
+  await useWorkflowService().reloadCurrentWorkflow()
+  if (!workflow || !baseline) return
+  workflow.changeTracker.initialState = baseline
+  workflow.isModified = wasModified
+}
+
+function reportLateCustomNodeFailure(
+  extension: ComfyExtension,
+  step: string,
+  error: unknown
+) {
+  reportError(error, {
+    errorType: LATE_CUSTOM_NODE_ERROR_TYPE,
+    surface: 'platform',
+    level: 'warning',
+    tags: { extension: extension.name, step }
+  })
+}
+
+function reportStartupHookFailures(failures: StartupHookFailure[]) {
+  for (const { extension, method, error } of failures)
+    reportLateCustomNodeFailure(extension, method, error)
+}
+
+function registerHeldCustomNodes(last: boolean) {
+  const service = useExtensionService()
+  const extensionStore = useExtensionStore()
+  const held = last
+    ? extensionStore.stopHoldingCustomNodes()
+    : extensionStore.takeHeldCustomNodes()
+  const registered = held.filter((extension) => {
+    try {
+      service.registerExtensionNow(extension)
+      return true
+    } catch (error) {
+      reportLateCustomNodeFailure(extension, 'register', error)
+      return false
+    }
+  })
+  return { registered, allRegistered: registered.length === held.length }
+}
+
+function keepHeldCustomNodesForNextEditor() {
+  registerHeldCustomNodes(true)
+  useExtensionStore().finishLateCustomNodes()
+}
+
+function reportNodeDefsFailure(error: unknown) {
+  reportError(error, {
+    errorType: LATE_CUSTOM_NODE_ERROR_TYPE,
+    surface: 'platform',
+    level: 'warning',
+    tags: { step: 'getNodeDefs' }
+  })
+}
+
+async function fetchNodeDefs() {
+  try {
+    const fetched = await useApp().fetchNodeDefs()
+    if (fetched.ok) return fetched.defs
+    reportNodeDefsFailure(
+      new Error(`GET /object_info answered ${fetched.status}`)
+    )
+  } catch (error) {
+    reportNodeDefsFailure(error)
+  }
+  return undefined
+}
+
+async function startLateCustomNodes(
+  extensions: ComfyExtension[]
+): Promise<boolean> {
+  const service = useExtensionService()
+  const failures = await service.invokeStartupHook(extensions, 'init')
+  const defs = await fetchNodeDefs()
+  if (defs)
+    failures.push(
+      ...(await service.invokeStartupHook(
+        useExtensionStore().extensions,
+        'addCustomNodeDefs',
+        defs
+      ))
+    )
+  else useExtensionStore().oweNodeDefHooks()
+  failures.push(
+    ...(await service.invokeStartupHook(extensions, 'registerCustomNodes'))
+  )
+  if (defs) await useApp().reloadNodeDefs(defs)
+  failures.push(...(await service.invokeStartupHook(extensions, 'setup')))
+  reportStartupHookFailures(failures)
+  return (
+    defs !== undefined &&
+    failures.every(({ extension }) => !extensions.includes(extension))
+  )
+}
+
+interface BatchOutcome {
+  turnedOn: boolean
+  allStarted: boolean
+}
+
+async function runLateBatch(
+  work: ReturnType<typeof watchLateWork>,
+  last: boolean
+): Promise<BatchOutcome> {
+  await until(() => !useWorkspaceStore().spinner || work.isAborted()).toBe(true)
+  await until(() => !work.isArtistBusy() || work.isAborted()).toBe(true, {
+    timeout: ARTIST_PAUSE_TIMEOUT_MS
+  })
+  if (work.isAborted()) return { turnedOn: false, allStarted: false }
+
+  const { registered, allRegistered } = registerHeldCustomNodes(last)
+  const allHooksRan =
+    registered.length === 0 || (await startLateCustomNodes(registered))
+  if (work.isAborted()) return { turnedOn: false, allStarted: false }
+  if (last) useExtensionStore().finishLateCustomNodes()
+  if (last || registered.length > 0) await rebuildOpenWorkflow()
+  return {
+    turnedOn: registered.length > 0,
+    allStarted: allRegistered && allHooksRan
+  }
+}
+
+interface LateRun {
+  firstTries: Promise<(LateScriptFailure | undefined)[]>
+  waiting: Set<string>
+  loader: ScriptLoader
+  signal: AbortSignal
+  server: CpuServerWatch
+  stopWatchingServer: () => void
+}
+
+interface LateOutcome extends BatchOutcome {
+  failedAgain: LateScriptFailure[]
+}
+
+function isSettingUp(step: CpuServerStep | undefined): boolean {
+  return step === 'creating' || step === 'building'
+}
+
+async function retryFetchFailures(
+  failures: LateScriptFailure[],
+  { loader, waiting, signal, server }: LateRun
+): Promise<LateScriptFailure[]> {
+  const waited = await delay(LATE_CUSTOM_NODE_RETRY_MS, { signal }).then(
+    () => true,
+    () => false
+  )
+  if (!waited) return []
+  if (isSettingUp(server.step())) await server.ready
+  if (signal.aborted) return []
+  const retries = await Promise.all(
+    failures.map(({ ext }) =>
+      loader
+        .importScript(ext, { retry: true })
+        .finally(() => waiting.delete(ext))
+    )
+  )
+  return retries.filter(isNonNullish)
+}
+
+async function turnOnInBatches(
+  run: LateRun,
+  work: ReturnType<typeof watchLateWork>,
+  onWaitingChange: () => void
+): Promise<LateOutcome> {
+  const failures = (await run.firstTries).filter(isNonNullish)
+  const fetchFailures = failures.filter(({ error }) =>
+    isModuleFetchFailure(error)
+  )
+  const otherFailures = failures.filter(
+    (failure) => !fetchFailures.includes(failure)
+  )
+  run.loader.reportFailures(otherFailures)
+  const scriptsLoaded = otherFailures.length === 0
+  if (fetchFailures.length === 0) {
+    const batch = await runLateBatch(work, true)
+    return {
+      turnedOn: batch.turnedOn,
+      allStarted: batch.allStarted && scriptsLoaded,
+      failedAgain: []
+    }
+  }
+
+  fetchFailures.forEach(({ ext }) => run.waiting.add(ext))
+  onWaitingChange()
+  const retries = retryFetchFailures(fetchFailures, run)
+  const first = await runLateBatch(work, false)
+  const failedAgain = await retries
+  const last = await runLateBatch(work, true)
+  return {
+    turnedOn: first.turnedOn || last.turnedOn,
+    allStarted: first.allStarted && last.allStarted && scriptsLoaded,
+    failedAgain
+  }
+}
+
+function showOutcome({ turnedOn, allStarted, failedAgain }: LateOutcome) {
+  if (failedAgain.length > 0) showFailedToast(failedAgain.map(({ ext }) => ext))
+  else if (turnedOn && allStarted) showReadyToast()
+}
+
+async function turnOnLateCustomNodes(run: LateRun, startedAt: number) {
+  const starting = showStartingToast(startedAt, run.waiting, run.server.step)
+  const work = watchLateWork(run.signal, () => {
+    starting.dismiss()
+    keepHeldCustomNodesForNextEditor()
+  })
+  try {
+    const outcome = await turnOnInBatches(run, work, starting.refresh)
+    run.loader.reportFailures(outcome.failedAgain)
+    if (!work.isAborted()) showOutcome(outcome)
+  } catch (error) {
+    if (!run.signal.aborted)
+      reportError(error, {
+        errorType: LATE_CUSTOM_NODE_ERROR_TYPE,
+        surface: 'platform',
+        level: 'warning'
+      })
+  } finally {
+    run.stopWatchingServer()
+    starting.dismiss()
+    work.stop()
+    if (!work.isAborted()) useExtensionStore().finishLateCustomNodes()
+  }
+}
+
+function startLateRun(
+  run: Pick<LateRun, 'waiting' | 'loader' | 'signal'>,
+  firstReading: Promise<CpuServerReading>,
+  startedAt: number,
+  firstTries: (server: CpuServerWatch) => LateRun['firstTries']
+) {
+  const watching = new AbortController()
+  const server = watchCpuServer(
+    firstReading,
+    combineAbortSignals([run.signal, watching.signal])
+  )
+  useExtensionStore().holdNewCustomNodes()
+  void turnOnLateCustomNodes(
+    {
+      ...run,
+      firstTries: firstTries(server),
+      server,
+      stopWatchingServer: () => watching.abort()
+    },
+    startedAt
+  )
+}
+
+/** Loads custom scripts with a two-second wait; later arrivals are turned on until `signal` aborts. */
+export async function loadCustomNodesWithDeadline(
+  scripts: string[],
+  loader: ScriptLoader,
+  signal: AbortSignal,
+  firstReading: Promise<CpuServerReading>
+) {
+  const startedAt = Date.now()
+  const waiting = new Set(scripts)
+  const importAll = () =>
+    Promise.all(
+      scripts.map((ext) =>
+        loader.importScript(ext).finally(() => waiting.delete(ext))
+      )
+    )
+  const readingInTime = await Promise.race([
+    firstReading,
+    delay(CPU_SERVER_FIRST_ANSWER_WAIT_MS, { signal }).then(
+      () => undefined,
+      () => undefined
+    )
+  ])
+  if (signal.aborted) return
+  if (isBeingSetUp(readingInTime)) {
+    startLateRun(
+      { waiting, loader, signal },
+      firstReading,
+      startedAt,
+      (server) => server.ready.then(() => (signal.aborted ? [] : importAll()))
+    )
+    return
+  }
+
+  const firstTries = importAll()
+  const settledInTime = await Promise.race([
+    firstTries.then(() => true),
+    delay(Math.max(0, startedAt + LATE_CUSTOM_NODE_WAIT_MS - Date.now())).then(
+      () => false
+    )
+  ])
+  if (settledInTime) {
+    const failures = (await firstTries).filter(isNonNullish)
+    if (!failures.some(({ error }) => isModuleFetchFailure(error))) {
+      loader.reportFailures(failures)
+      return
+    }
+  }
+  startLateRun(
+    { waiting, loader, signal },
+    firstReading,
+    startedAt,
+    () => firstTries
+  )
+}

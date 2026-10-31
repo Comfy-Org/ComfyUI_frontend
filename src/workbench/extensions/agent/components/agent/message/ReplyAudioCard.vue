@@ -2,14 +2,13 @@
 import { toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Slider from '@/components/ui/slider/Slider.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
+import Button from '@comfyorg/design-system/button/Button'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
-import { cn } from '@comfyorg/tailwind-utils'
 
-import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
-import type { ReplyAsset } from '../../../utils/replyAssets'
+import { resolveReplyAssetDownload } from '@/workbench/extensions/agent/utils/resolveReplyAssetDownload'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 
 const { asset, title } = defineProps<{ asset: ReplyAsset; title: string }>()
 
@@ -27,7 +26,11 @@ const {
   volumeIcon,
   toggleMute,
   seekToRatio
-} = useWaveAudioPlayer({ src: toRef(() => asset.url), waveform: false })
+} = useWaveAudioPlayer({
+  src: toRef(() => asset.url),
+  surface: 'agent',
+  waveform: false
+})
 
 function onScrub(value: number[] | undefined): void {
   if (value?.length) seekToRatio(value[0] / 100)
@@ -40,7 +43,7 @@ async function download(): Promise<void> {
 
 <template>
   <div
-    class="group/audio flex w-full items-center gap-2.5 rounded-lg border border-component-node-border px-3 py-2.5"
+    class="group/audio flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5"
   >
     <audio
       :ref="(el) => (audioRef = el as HTMLAudioElement)"
@@ -57,17 +60,13 @@ async function download(): Promise<void> {
       class="shrink-0"
       @click="togglePlayPause"
     >
-      <span
-        :class="
-          cn(
-            'size-4',
-            isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'
-          )
-        "
+      <i
+        aria-hidden="true"
+        :class="isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'"
       />
     </Button>
     <div class="flex min-w-0 flex-1 flex-col">
-      <span class="truncate text-sm/4 text-base-foreground">{{ title }}</span>
+      <span class="truncate text-sm/4">{{ title }}</span>
       <div class="flex h-6 items-center gap-4">
         <span
           class="text-xs whitespace-nowrap text-muted-foreground tabular-nums"
@@ -91,7 +90,7 @@ async function download(): Promise<void> {
             class="size-6 rounded-lg"
             @click="toggleMute"
           >
-            <span :class="cn('size-4', volumeIcon)" />
+            <i aria-hidden="true" :class="volumeIcon" />
           </Button>
           <Button
             type="button"
@@ -101,7 +100,7 @@ async function download(): Promise<void> {
             class="size-6 rounded-lg"
             @click="download"
           >
-            <span class="icon-[lucide--download] size-4" />
+            <i aria-hidden="true" class="icon-[lucide--download]" />
           </Button>
         </div>
       </div>

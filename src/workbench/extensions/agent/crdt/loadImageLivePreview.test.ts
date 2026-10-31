@@ -17,7 +17,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'

@@ -3,7 +3,7 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'lg-node flex w-[350px] touch-none flex-col rounded-2xl border border-solid border-node-stroke bg-component-node-background pb-1 outline-2 outline-transparent contain-layout contain-style',
+        'lg-node flex w-[350px] touch-none flex-col rounded-2xl border border-solid border-node-border bg-node pb-1 text-xs text-node-foreground outline-2 outline-transparent contain-layout contain-style',
         position
       )
     "
@@ -37,7 +37,7 @@ import { computed } from 'vue'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
@@ -48,8 +48,8 @@ import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/wi
 import { dynamicComboOptionKeys } from '@/schemas/nodeDef/inputSpecTree'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { zeroUuid } from '@/utils/uuid'
 import { matchesWidgetName } from '@/utils/widgetBinding'

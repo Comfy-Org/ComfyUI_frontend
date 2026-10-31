@@ -1,3 +1,5 @@
+import type { ListAssetsData } from '@comfyorg/ingest-types'
+import { uniq } from 'es-toolkit'
 import { fromZodError } from 'zod-validation-error'
 import { z } from 'zod'
 
@@ -28,6 +30,7 @@ import {
   isModelTypeCovered
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
@@ -50,6 +53,7 @@ interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
   excludeTags?: string[]
   includePublic?: boolean
+  workspaceLibrary?: boolean
   after?: string
   signal?: AbortSignal
 }
@@ -235,6 +239,10 @@ function compareLoaderPaths(a: string, b: string): number {
   return 0
 }
 
+const WORKSPACE_LIBRARY_PARAM = 'workspace_library' satisfies keyof NonNullable<
+  ListAssetsData['query']
+>
+
 /**
  * Validates asset response data using Zod schema
  */
@@ -268,6 +276,8 @@ function validateUploadedAssetResponse(
  * Not exposed globally - used internally by ComfyApi
  */
 function createAssetService() {
+  const assetChangeListeners = new Set<() => void>()
+
   /**
    * Model assets bucketed by folder category, built from a single walk of the
    * `models` tag rather than a fetch per category. Shared by the folder list
@@ -307,6 +317,7 @@ function createAssetService() {
       offset,
       after,
       includePublic,
+      workspaceLibrary,
       signal
     } = options
     const normalizedIncludeTags = normalizeAssetTags(includeTags)
@@ -328,6 +339,9 @@ function createAssetService() {
     }
     if (includePublic !== undefined) {
       queryParams.set('include_public', includePublic ? 'true' : 'false')
+    }
+    if (workspaceLibrary) {
+      queryParams.set(WORKSPACE_LIBRARY_PARAM, 'true')
     }
 
     const url = `${ASSETS_ENDPOINT}?${queryParams.toString()}`
@@ -531,12 +545,12 @@ function createAssetService() {
 
   /**
    * Whether widget-embedded asset pickers (canvas + Vue node model widgets) are
-   * enabled. Hardcoded to cloud: MODEL_NODE_MAPPINGS is only maintained for
+   * enabled on Comfy Cloud without a deployment: MODEL_NODE_MAPPINGS is maintained for
    * cloud asset tagging. NOT the asset-API gate — that is
    * useFeatureFlags().flags.assetsEnabled.
    */
   function isWidgetAssetPickerEnabled(): boolean {
-    return isCloud
+    return isCloud && !useDeploymentPickStore().bootDeployment
   }
 
   /**
@@ -718,8 +732,21 @@ function createAssetService() {
       signal
     }: Pick<AssetPaginationOptions, 'limit' | 'signal'> = {}
   ): Promise<AssetItem[]> {
+    return walkAssetPages(`tag '${tag}'`, signal, (after) =>
+      getAssetsPageByTag(tag, includePublic, {
+        limit: limit > 0 ? limit : DEFAULT_LIMIT,
+        after,
+        signal
+      })
+    )
+  }
+
+  async function walkAssetPages(
+    label: string,
+    signal: AbortSignal | undefined,
+    fetchPage: (after: string | undefined) => Promise<AssetResponse>
+  ): Promise<AssetItem[]> {
     const assets: AssetItem[] = []
-    const pageSize = limit > 0 ? limit : DEFAULT_LIMIT
     let after: string | undefined
     let batchCount = 0
 
@@ -727,16 +754,12 @@ function createAssetService() {
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
       if (batchCount++ >= MAX_PAGINATION_BATCHES) {
         console.warn(
-          `Paginated walk for tag '${tag}' hit the ${MAX_PAGINATION_BATCHES}-batch backstop; returning a truncated listing.`
+          `Paginated walk for ${label} hit the ${MAX_PAGINATION_BATCHES}-batch backstop; returning a truncated listing.`
         )
         return assets
       }
 
-      const data = await getAssetsPageByTag(tag, includePublic, {
-        limit: pageSize,
-        after,
-        signal
-      })
+      const data = await fetchPage(after)
       const batch = data.assets
       if (batch.length === 0) {
         return assets
@@ -751,6 +774,32 @@ function createAssetService() {
 
       after = data.next_cursor
     }
+  }
+
+  /**
+   * Lists the unique loader names in one folder of the workspace library.
+   */
+  async function getWorkspaceLibraryModels(folder: string): Promise<string[]> {
+    const assets = await walkAssetPages(
+      `workspace library folder '${folder}'`,
+      undefined,
+      (after) =>
+        handleAssetRequest(
+          {
+            includeTags: [MODELS_TAG, folder],
+            includePublic: false,
+            workspaceLibrary: true,
+            limit: DEFAULT_LIMIT,
+            after
+          },
+          `workspace library models in ${folder}`
+        )
+    )
+    return uniq(
+      assets
+        .map((asset) => asset.loader_path ?? getAssetFilename(asset))
+        .filter((name) => assetFilenameSchema.safeParse(name).success)
+    )
   }
 
   /**
@@ -770,6 +819,21 @@ function createAssetService() {
       throw new Error(
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
+    }
+    notifyAssetsChanged()
+  }
+
+  function notifyAssetsChanged() {
+    for (const listener of assetChangeListeners) listener()
+  }
+
+  /**
+   * Calls back after this client deletes an asset or an import finishes at once; returns the unsubscribe.
+   */
+  function onAssetsChanged(callback: () => void): () => void {
+    assetChangeListeners.add(callback)
+    return () => {
+      assetChangeListeners.delete(callback)
     }
   }
 
@@ -1042,6 +1106,12 @@ function createAssetService() {
           )
         )
       }
+      if (
+        result.data.type === 'async' &&
+        result.data.task.status === 'completed'
+      ) {
+        notifyAssetsChanged()
+      }
       return result.data
     }
 
@@ -1057,6 +1127,7 @@ function createAssetService() {
         )
       )
     }
+    notifyAssetsChanged()
     return result.data
   }
 
@@ -1102,7 +1173,9 @@ function createAssetService() {
     getAssetsByTag,
     getAssetsPageByTag,
     getAllAssetsByTag,
+    getWorkspaceLibraryModels,
     deleteAsset,
+    onAssetsChanged,
     updateAsset,
     addAssetTags,
     removeAssetTags,

@@ -62,6 +62,7 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
       const response: WorkspaceTokenResponse = {
         token: `mock-workspace-token-${workspace.id}`,
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: {
           id: workspace.id,
           name: workspace.name,

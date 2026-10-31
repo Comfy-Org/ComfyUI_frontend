@@ -1,5 +1,5 @@
 import { assert } from '@/base/assert'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type {
   DocFrameClient,
@@ -19,13 +19,13 @@ export interface ClassifiedDocUpdate extends DocUpdate {
   catchUp: boolean
 }
 
-/**
- * Outbound frames are advisory: the follower's correctness never depends on one
- * arriving. A transport that cannot carry a frame reports `false`; one that
- * throws (the shape `apiTransport` had before this seam was fixed, and the shape
- * any future transport might regress to) is contained here rather than being
- * allowed to abort a Vue watcher or an unmount hook.
- */
+export function isLiveAgentUpdate(
+  update: Pick<DocUpdate, 'actor'> &
+    Partial<Pick<ClassifiedDocUpdate, 'catchUp'>>
+): boolean {
+  return update.catchUp === false && update.actor?.startsWith('agent:') === true
+}
+
 function trySend(send: () => boolean): boolean {
   try {
     return send()
@@ -74,6 +74,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * a later subscribe to a DIFFERENT workflow must still re-mint it.
    */
   private lineageWorkflowId: string | null = null
+  private lineageSeq: number | null = null
   /**
    * Subscription INTENT — the workflow the app wants followed. Set
    * synchronously by the caller; independent of whether any frame has left the
@@ -99,22 +100,10 @@ export class LayoutFollowerBridge extends EventTarget {
    * again — see {@link onDocUpdate}.
    */
   private schemaError: FollowerSchemaError | null = null
-  /**
-   * Highest doc seq APPLIED since the last subscribe left the transport;
-   * `null` until the first post-subscribe update, so catch-up re-baselines
-   * instead of being compared across a resubscribe. See the gap detector in
-   * {@link onDocUpdate}.
-   */
   private lastSeq: number | null = null
-  /**
-   * The host's seq at the moment it acknowledged the current subscribe
-   * (`doc_subscribed.seq`); `null` until that ack lands. It is NOT an applied
-   * baseline — the catch-up carrying that very seq may still be in flight, or
-   * may never come when the follower was already current — so it never gates
-   * a frame as stale. It only arms the gap detector before the first applied
-   * update and stands in for {@link lastSeq} in {@link lastSequence} while no
-   * update has been applied.
-   */
+  private attemptFirstSeq: number | null = null
+  private attemptLastSeq: number | null = null
+  private integratedSeq: number | null = null
   private ackSeq: number | null = null
   /**
    * Armed by the ack, disarmed by the first applied frame whose seq equals
@@ -151,15 +140,18 @@ export class LayoutFollowerBridge extends EventTarget {
     return this.sentWorkflowId
   }
 
-  /**
-   * The host seq this follower is known to be at: the last applied update, or
-   * — before any update has been applied for the current subscribe — the seq
-   * the host acknowledged. An already-current follower receives an ack and no
-   * catch-up, so without the fallback the outbound op `baseVersion` would sit
-   * at 0 until the next live frame.
-   */
+  /** The higher of the last applied doc seq and the current subscribe's ack. */
   get lastSequence(): number {
-    return this.lastSeq ?? this.ackSeq ?? 0
+    return Math.max(this.lastSeq ?? 0, this.ackSeq ?? 0)
+  }
+
+  get isSubscribeBaselineIntegrated(): boolean {
+    return (
+      this.ackSeq !== null &&
+      this.integratedSeq !== null &&
+      this.integratedSeq >= this.ackSeq &&
+      this.schemaError === null
+    )
   }
 
   /** The KA-11 read-gate failure that closed this bridge's read path, if any. */
@@ -185,7 +177,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * workflow keeps the doc: that is the same-lineage catch-up path
    * (ADR-GRAPH-DOCUMENT-0024), where the state vector makes the delta cheap.
    */
-  subscribe(workflowId: string): void {
+  subscribe(workflowId: string, knownLineageSeq: number | null = null): void {
     const lineage = this.lineageWorkflowId
     if (this.desiredWorkflowId !== workflowId) {
       this.reseedBlockedUntilConfirmedWorkflowId = null
@@ -195,37 +187,38 @@ export class LayoutFollowerBridge extends EventTarget {
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
       this.dropDocForNewLineage()
+      this.lineageSeq = knownLineageSeq
       this.dispatchEvent(
         new CustomEvent('follower_replaced', { detail: { workflowId } })
       )
       this.reconcile()
       return
     }
+    this.lineageSeq ??= knownLineageSeq
     this.reconcile()
   }
 
-  /**
-   * Drive intent at the transport. Idempotent and safe to call at any time —
-   * the composition root calls it whenever the socket may have become usable
-   * (first open, reconnect, any `status` frame), which is what makes a subscribe
-   * attempted against a closed socket recoverable.
-   */
-  reconcile(): void {
+  /** Drive intent at the transport. Idempotent and safe to call at any time. */
+  reconcile(): boolean {
     const desired = this.desiredWorkflowId
     if (this.sentWorkflowId !== null && this.sentWorkflowId !== desired) {
-      // Best effort. If the frame cannot leave, the socket is down and the
-      // server has already dropped this subscription with it, so the local
-      // record is cleared either way.
       const sent = this.sentWorkflowId
       this.sentWorkflowId = null
       trySend(() => this.client.unsubscribe(sent))
     }
-    if (desired === null || this.sentWorkflowId === desired) return
+    if (desired === null || this.sentWorkflowId === desired) return false
     if (
-      trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
+      trySend(() =>
+        this.client.subscribe(
+          desired,
+          this.follower.stateVector(),
+          this.lineageSeq ?? 0
+        )
+      )
     ) {
       this.sentWorkflowId = desired
-      this.lastSeq = null
+      this.attemptFirstSeq = null
+      this.attemptLastSeq = null
       this.ackSeq = null
       this.catchUpPending = false
       this.dispatchEvent(
@@ -233,12 +226,14 @@ export class LayoutFollowerBridge extends EventTarget {
           detail: { workflowId: desired }
         })
       )
+      return true
     }
+    return false
   }
 
-  resubscribe(): void {
+  resubscribe(): boolean {
     this.sentWorkflowId = null
-    this.reconcile()
+    return this.reconcile()
   }
 
   reconnect(): void {
@@ -316,46 +311,16 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
+    if (this.rejectForeignLineageUpdate(update)) return
 
-    // A stale/duplicate frame cannot advance the replica. Ignoring it also
-    // prevents a replayed Yjs frame from spuriously re-running ECS effects.
-    // The one exception is the subscribe's own catch-up (seq == ackSeq) when
-    // a live frame overtook the ack: see {@link catchUpPending}.
-    // Deliberately compares against lastSeq, never ackSeq: while lastSeq is
-    // null the catch-up arrives AT ackSeq, so `<= ackSeq` would drop it and
-    // leave the follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
     if (this.rejectStaleUpdate(update, isCatchUp)) return
 
-    // Seq is only a gap detector. A jump withholds the uncertain frame and
-    // asks the host for a same-lineage state-vector delta using this EXACT
-    // follower doc. Only an explicit doc_reset may replace it (ADR-GRAPH-DOCUMENT-0024).
-    //
-    // Before the first applied update the detector is armed from the ack seq
-    // N instead: the catch-up (seq N) and the first live frame (seq N+1) are
-    // both contiguous with it, so neither trips it, while a first frame at
-    // N+2 or beyond is a real drop. Nothing arms it before the ack lands.
     if (this.rejectSequenceGap(update)) return
-    if (this.lastSeq === null || update.seq > this.lastSeq)
-      this.lastSeq = update.seq
-    if (isCatchUp) this.catchUpPending = false
-
-    // Merge every same-lineage, in-order frame — even one arriving after a
-    // schema-gate failure. Yjs merge is monotonic and a Y.Map key is
-    // last-writer-wins, so a later frame CAN restore a readable
-    // `meta.schema_version` that an earlier one broke (e.g. a repair); never
-    // merging while latched would make that repair permanently unreachable.
+    this.recordAppliedSequence(update.seq)
     this.follower.applyRemoteUpdate(update.update)
+    this.recordIntegratedSequence(update.seq, isCatchUp)
 
-    // KA-11 read-time gate, re-checked on every merge rather than only the
-    // first: the frame must merge before its schema can be checked, but
-    // nothing downstream may READ a doc whose declared schema this build was
-    // not written against. Failing closed here, before the frame is
-    // re-dispatched, is what keeps a v2 doc from being half-projected onto
-    // the canvas by a v1 reader. Re-checking every time — instead of
-    // latching forever on the first failure — lets a later same-lineage
-    // frame that restores a readable version un-latch the gate and resume
-    // projecting.
     if (!this.isReadableUpdate(update)) return
 
     const classifiedUpdate: ClassifiedDocUpdate = {
@@ -369,6 +334,31 @@ export class LayoutFollowerBridge extends EventTarget {
     )
   }
 
+  private rejectForeignLineageUpdate(update: DocUpdate): boolean {
+    if (
+      update.lineageSeq !== undefined &&
+      this.lineageSeq !== null &&
+      update.lineageSeq !== this.lineageSeq
+    ) {
+      const reset: DocReset = {
+        workflowId: update.workflowId,
+        seq: update.seq,
+        lineageSeq: update.lineageSeq,
+        actor: update.actor
+      }
+      this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+      this.dropDocForNewLineage()
+      this.lineageSeq = update.lineageSeq
+      this.resubscribe()
+      this.dispatchEvent(
+        new CustomEvent('follower_replaced', { detail: reset })
+      )
+      return true
+    }
+    this.lineageSeq ??= update.lineageSeq ?? null
+    return false
+  }
+
   private rejectStaleUpdate(update: DocUpdate, isCatchUp: boolean): boolean {
     if (isCatchUp || this.lastSeq === null || update.seq > this.lastSeq)
       return false
@@ -380,20 +370,37 @@ export class LayoutFollowerBridge extends EventTarget {
     return true
   }
 
+  private recordAppliedSequence(seq: number): void {
+    this.lastSeq = Math.max(this.lastSeq ?? seq, seq)
+    this.attemptFirstSeq ??= seq
+    this.attemptLastSeq = Math.max(this.attemptLastSeq ?? seq, seq)
+  }
+
   private rejectSequenceGap(update: DocUpdate): boolean {
-    const baseline = this.lastSeq ?? this.ackSeq
+    const baseline =
+      this.ackSeq === null
+        ? this.attemptLastSeq
+        : Math.max(this.attemptLastSeq ?? 0, this.ackSeq)
     if (baseline === null || update.seq <= baseline + 1) return false
+    this.reportGap(update.workflowId, baseline + 1, update.seq)
+    return true
+  }
+
+  private rejectPreAckGap(workflowId: string): void {
+    if (
+      this.ackSeq === null ||
+      this.attemptFirstSeq === null ||
+      this.attemptFirstSeq <= this.ackSeq + 1
+    )
+      return
+    this.reportGap(workflowId, this.ackSeq + 1, this.attemptFirstSeq)
+  }
+
+  private reportGap(workflowId: string, expected: number, received: number) {
     this.dispatchEvent(
-      new CustomEvent('doc_gap', {
-        detail: {
-          workflowId: update.workflowId,
-          expected: baseline + 1,
-          received: update.seq
-        }
-      })
+      new CustomEvent('doc_gap', { detail: { workflowId, expected, received } })
     )
     this.resubscribe()
-    return true
   }
 
   private isReadableUpdate(update: DocUpdate): boolean {
@@ -424,36 +431,23 @@ export class LayoutFollowerBridge extends EventTarget {
     if (reset.workflowId !== this.sentWorkflowId) return
     this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
     this.dropDocForNewLineage()
+    this.lineageSeq = reset.lineageSeq
     this.resubscribe()
     this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
 
-  /**
-   * Replace the doc after an explicit lineage reset so the next subscribe
-   * carries an empty state vector and pulls the new folded state.
-   */
   private dropDocForNewLineage(): void {
     this.followerDoc.destroy()
     this.followerDoc = new FollowerDoc()
     this.schemaError = null
+    this.lastSeq = null
+    this.attemptFirstSeq = null
+    this.attemptLastSeq = null
+    this.integratedSeq = null
+    this.ackSeq = null
+    this.catchUpPending = false
   }
 
-  /**
-   * `ok: true` confirms the subscription but does not mean its catch-up update
-   * has already been integrated. The host sends `doc_subscribed(seq=N)` and
-   * THEN `doc_update(seq=N)` — and sends no catch-up at all when the follower
-   * was already current — so recording N as the applied baseline drops the
-   * snapshot as stale and leaves a fresh follower empty (the KA-11
-   * `schema_version=undefined` symptom). The ack seq is kept apart in
-   * {@link ackSeq}: it arms the gap detector and backs {@link lastSequence},
-   * but only an applied update ever moves {@link lastSeq}. The ack therefore
-   * never rewinds a baseline established by an update that arrived first.
-   *
-   * `ok: false` means the server refused: clearing REALITY re-opens
-   * the intent/reality disagreement so the next `reconcile()` (any status
-   * frame) retries, instead of the bridge holding a subscription that does not
-   * exist server-side and going silently deaf.
-   */
   private readonly onDocSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
@@ -468,12 +462,55 @@ export class LayoutFollowerBridge extends EventTarget {
             expectedSeq: subscribed.expectedSeq
           }
         : null
-    if (subscribed.ok) {
-      this.reseedBlockedUntilConfirmedWorkflowId = null
-      this.ackSeq = subscribed.seq ?? null
-      this.catchUpPending = this.ackSeq !== null
-    } else this.sentWorkflowId = null
+    if (!subscribed.ok) {
+      this.ackSeq = null
+      this.catchUpPending = false
+      this.sentWorkflowId = null
+      this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+      return
+    }
+    this.adoptSubscribedLineage(subscribed)
+    this.reseedBlockedUntilConfirmedWorkflowId = null
+    this.ackSeq = subscribed.seq ?? 0
+    this.catchUpPending = this.ackSeq > 0
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+    this.rejectPreAckGap(subscribed.workflowId)
+  }
+
+  private adoptSubscribedLineage(subscribed: DocSubscribed): void {
+    const lineageSeq = subscribed.lineageSeq
+    if (
+      lineageSeq !== undefined &&
+      this.lineageSeq !== null &&
+      lineageSeq !== this.lineageSeq
+    ) {
+      const reset: DocReset = {
+        workflowId: subscribed.workflowId,
+        seq: subscribed.seq ?? 0,
+        lineageSeq
+      }
+      this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+      this.dropDocForNewLineage()
+      this.dispatchEvent(
+        new CustomEvent('follower_replaced', { detail: reset })
+      )
+    }
+    this.lineageSeq = lineageSeq ?? this.lineageSeq
+  }
+
+  private recordIntegratedSequence(seq: number, isCatchUp: boolean): void {
+    if (isCatchUp) {
+      this.catchUpPending = false
+      this.integratedSeq = Math.max(
+        this.integratedSeq ?? 0,
+        this.lastSeq ?? seq
+      )
+    } else if (
+      (this.integratedSeq !== null && seq === this.integratedSeq + 1) ||
+      (this.ackSeq === 0 && seq === 1)
+    ) {
+      this.integratedSeq = seq
+    }
   }
 
   private readonly onDocReseedResult: EventListener = (event) => {
@@ -493,6 +530,7 @@ export class LayoutFollowerBridge extends EventTarget {
     }
     this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
     this.dropDocForNewLineage()
+    this.lineageSeq = reset.lineageSeq
     this.resubscribe()
     this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }

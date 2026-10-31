@@ -1,19 +1,25 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
+import type {
+  LGraphNode,
+  LLink,
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
+
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
-import type { OptionalProps, Point } from '@/lib/litegraph/src/interfaces'
+import type { OptionalProps } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+} from '@comfyorg/graph-model/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+
+import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {

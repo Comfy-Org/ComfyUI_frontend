@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed, reactive, watchEffect } from 'vue'
 
-import type { useFeatureFlags as realUseFeatureFlags } from '../useFeatureFlags'
+import type { useFeatureFlags as realUseFeatureFlags } from '@/composables/useFeatureFlags'
 
 export const startFeatureFlagTelemetry = vi.fn(() => watchEffect(() => {}))
 
@@ -11,38 +11,42 @@ const defaultFlags: FeatureFlags = {
   supportsPreviewMetadata: false,
   maxUploadSize: 0,
   supportsManagerV4: false,
+  agent: undefined,
   modelUploadButtonEnabled: false,
   assetDeletionEnabled: false,
   privateModelsEnabled: false,
   onboardingSurveyEnabled: false,
-  linearToggleEnabled: false,
   partnerNodeGovernanceEnabled: false,
   partnerRunGateEnabled: false,
   partnerNodeTokenEnabled: false,
+  deploymentStartEnabled: false,
   userSecretsEnabled: false,
   nodeReplacementsEnabled: false,
+  deployToCloud: false,
   nodeLibraryEssentialsEnabled: false,
   comfyHubUploadEnabled: false,
   comfyHubProfileGateEnabled: false,
+  deploymentCompatibilityMarksEnabled: false,
+  lateCustomNodesEnabled: false,
+  runtimeLibraryModelsEnabled: false,
+  modelUploadFolders: [],
   hostedBillingDestination: 'stripe',
   hostedBillingWebEnabled: false,
   showSignInButton: undefined,
   unifiedCloudAuthEnabled: false,
   unifiedWebSessionEnabled: false,
   ssoEnabled: false,
+  localWebSsoEnabled: false,
   billingControlEnabled: false,
   memberCreditLimitsEnabled: false,
-  legacyBillingMigrationEnabled: false,
-  embeddedCheckoutEnabled: false,
   billingSdkTopupEnabled: false,
   billingSdkTopupRailEnabled: false,
   billingSdkSubscriptionEnabled: false,
+  unifiedBillingSettingsEnabled: false,
   billingSdkSubscriptionRailEnabled: false,
   v1PaymentRecovery: false,
-  freeTierJobAllowanceEnabled: false,
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
-  onboardingTourEnabled: false,
   assetsEnabled: false,
   agentInAppExperienceEnabled: false
 }

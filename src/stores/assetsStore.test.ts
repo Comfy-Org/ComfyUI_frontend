@@ -3,28 +3,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, toValue, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   AssetItem,
   AssetResponse
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
 
-// Mock the api module
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getHistory: vi.fn(),
-    internalURL: vi.fn((path) => `http://localhost:3000${path}`),
-    apiURL: vi.fn((path) => `http://localhost:3000/api${path}`),
-    addEventListener: vi.fn(),
-    fetchApi: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false),
-    user: 'test-user'
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.internalURL).mockImplementation(
+    (path) => `http://localhost:3000${path}`
+  )
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:3000/api${path}`
+  )
+  vi.mocked(api.getServerFeature).mockReturnValue(false)
+  api.user = 'test-user'
+})
 
 vi.mock(import('@/platform/assets/services/assetService'))
 
@@ -1336,5 +1336,62 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
       store.setAssetDeleting('asset-A', false)
       expect(store.isAssetDeleting('asset-A')).toBe(false)
     })
+  })
+})
+
+describe('assetsStore - assets.seed.completed', () => {
+  const seed = { created: 0, elapsed: 0, enriched: 0, skipped: 0, total: 0 }
+  const invalidated = { invalidate: 1, loadNew: 0 }
+
+  it.for([
+    {
+      case: 'full phase invalidates',
+      detail: { phase: 'full', created: 2, enriched: 2 },
+      calls: invalidated
+    },
+    {
+      case: 'enrich phase invalidates even with no enriched count',
+      detail: { phase: 'enrich' },
+      calls: invalidated
+    },
+    {
+      case: 'fast phase with new assets loads new',
+      detail: { phase: 'fast', created: 2 },
+      calls: { invalidate: 0, loadNew: 1 }
+    },
+    {
+      case: 'fast phase with nothing created does nothing',
+      detail: { phase: 'fast' },
+      calls: { invalidate: 0, loadNew: 0 }
+    }
+  ] as const)('$case', async ({ detail, calls }) => {
+    const store = useAssetsStore()
+    const pagedList = () => ({
+      items: [],
+      hasMore: false,
+      isLoading: false,
+      loadMore: vi.fn(async () => false),
+      loadNew: vi.fn(async () => {}),
+      invalidate: vi.fn(async () => {})
+    })
+    const lists = [pagedList(), pagedList()]
+    ;[store.inputAssets, store.outputAssets] = lists
+    const handler = vi
+      .mocked(api.addEventListener)
+      .mock.calls.findLast(([type]) => type === 'assets.seed.completed')?.[1]
+    if (typeof handler !== 'function') throw new Error('no listener')
+
+    await handler(
+      new CustomEvent('assets.seed.completed', {
+        detail: { ...seed, ...detail }
+      })
+    )
+
+    expect(
+      lists.map((list) => ({
+        invalidate: list.invalidate.mock.calls.length,
+        loadNew: list.loadNew.mock.calls.length
+      }))
+    ).toEqual([calls, calls])
   })
 })

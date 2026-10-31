@@ -1,7 +1,7 @@
 <template>
   <footer
     data-testid="publish-footer"
-    class="flex shrink items-center justify-end gap-4 border-t border-border-default px-6 py-4"
+    class="flex items-center justify-end gap-4 border-t px-6 py-4"
   >
     <Button v-if="!isFirstStep" size="lg" @click="$emit('back')">
       {{ $t('comfyHubPublish.back') }}
@@ -13,7 +13,7 @@
       @click="$emit('next')"
     >
       {{ $t('comfyHubPublish.next') }}
-      <i class="icon-[lucide--chevron-right] size-4" />
+      <i class="icon-[lucide--chevron-right]" />
     </Button>
     <Button
       v-else
@@ -25,10 +25,7 @@
     >
       <i
         :class="
-          cn(
-            'size-4',
-            isUpdate ? 'icon-[lucide--refresh-cw]' : 'icon-[lucide--upload]'
-          )
+          isUpdate ? 'icon-[lucide--refresh-cw]' : 'icon-[lucide--upload]'
         "
       />
       {{
@@ -41,9 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 defineProps<{
   isFirstStep: boolean

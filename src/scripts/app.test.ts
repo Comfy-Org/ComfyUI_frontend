@@ -1,4 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 import { ComfyApp, app as singletonApp } from './app'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -22,7 +23,8 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { ref } from 'vue'
+import { effectScope, markRaw, ref } from 'vue'
+import { markGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -30,8 +32,9 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
-import type { CurveData } from '@/components/curve/types'
-import type { useExtensionService } from '@/services/extensionService'
+import type { CurveData } from '@comfyorg/graph-model/curve'
+import type { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { isGraphLoadHookOrigin } from '@/platform/extensions/services/extensionService'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -42,11 +45,11 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import * as keybindingServiceModule from '@/platform/keybindings/keybindingService'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -55,21 +58,23 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import {
   createTestCanvasElement,
   createTestDragAndScale,
   setCanvasVisible
 } from '@/utils/__tests__/canvasTestUtils'
-import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
-import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
-import type { NodeReplacement } from '@/platform/nodeReplacement/types'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
+import type { NodeReplacement } from '@/platform/workflowErrors/nodeReplacement/types'
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
+import type { NodeError } from '@comfyorg/api-client/types'
 import * as litegraphUtil from '@/utils/litegraphUtil'
-import { createNode, executeWidgetsCallback } from '@/utils/litegraphUtil'
+import { createNode } from '@/utils/createNode'
+import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -80,30 +85,34 @@ import {
 } from '@/composables/usePaste'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { runMissingModelPipeline } from '@/platform/missingModel/missingModelPipeline'
-import * as missingMediaPipeline from '@/platform/missingMedia/missingMediaPipeline'
-import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
+import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
+import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { createMissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
-import { PromptExecutionError, api } from '@/scripts/api'
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
+import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   createTestRootGraph,
   createTestSubgraph,
@@ -112,7 +121,7 @@ import {
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
@@ -143,6 +152,8 @@ const {
   mockValidateWorkflow: vi.fn<WorkflowValidation['validateWorkflow']>()
 }))
 
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
+
 vi.mock(
   import('@/platform/workflow/validation/composables/useWorkflowValidation'),
   () => ({
@@ -154,6 +165,7 @@ vi.mock(
 )
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+vi.mock(import('@/utils/createNode'), { spy: true })
 
 vi.mock(import('@/composables/usePaste'), () => ({
   pasteAudioNode: vi.fn(),
@@ -170,7 +182,7 @@ vi.mock(import('@/scripts/metadata/parser'), () => ({
 
 vi.mock(import('@/utils/eventUtils'), { spy: true })
 
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 vi.mock(import('./pnginfo'), () => ({
   importA1111: mockImportA1111
@@ -186,16 +198,20 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
+  isGraphLoadHookOrigin: vi.fn(() => false),
   useExtensionService: vi.fn(() =>
     fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
   )
 }))
 
-vi.mock(import('@/platform/missingModel/missingModelPipeline'), () => ({
-  refreshMissingModelPipeline: mockRefreshMissingModelPipeline,
-  runMissingModelPipeline: vi.fn()
-}))
+vi.mock(
+  import('@/platform/workflowErrors/missingModel/missingModelPipeline'),
+  () => ({
+    refreshMissingModelPipeline: mockRefreshMissingModelPipeline,
+    runMissingModelPipeline: vi.fn()
+  })
+)
 
 function createMockNode(
   options: Partial<Record<keyof LGraphNode, unknown>> = {}
@@ -274,6 +290,22 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
 describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
+
+  it('applies extension paste overrides when the clipspace editor saves', () => {
+    const node = new LGraphNode('original')
+    const previousReturnNode = ComfyApp.clipspace_return_node
+    onTestFinished(() => {
+      ComfyApp.clipspace_return_node = previousReturnNode
+    })
+    ComfyApp.clipspace_return_node = node
+    vi.spyOn(ComfyApp, 'pasteFromClipspace').mockImplementation((target) => {
+      target.title = 'extension-edited'
+    })
+
+    ComfyApp.onClipspaceEditorSave()
+
+    expect(node.title).toBe('extension-edited')
+  })
 
   beforeEach(() => {
     vi.mocked(createNode).mockResolvedValue(null)
@@ -489,14 +521,14 @@ describe('ComfyApp', () => {
       const [offer] = useToast().toasts
       expect(offer).toEqual(
         expect.objectContaining({
-          action: expect.objectContaining({ label: t('g.migrate') }),
+          actions: [expect.objectContaining({ label: t('g.migrate') })],
           kind: 'warning',
           title: t('toastMessages.migrateToLitegraphReroute')
         })
       )
       const reload = vi.spyOn(app, 'loadGraphData').mockResolvedValue(true)
 
-      await offer.action?.onClick()
+      await offer.actions[0]?.onClick()
 
       const [migrated] = reload.mock.calls[0]
       expect(migrated?.nodes.map((node) => node.type)).not.toContain('Reroute')
@@ -575,19 +607,41 @@ describe('ComfyApp', () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
-      mockExtensionService.invokeExtensionsAsync.mockImplementation(
-        async (hook: string) => {
-          if (hook === 'beforeConfigureGraph') {
-            throw new Error('bad extension')
-          }
-        }
+      const error = new Error('bad extension')
+      let releaseErrorHandling!: () => void
+      const errorHandling = new Promise<void>((resolve) => {
+        releaseErrorHandling = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+        .thenRejectOnce(error)
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('onGraphLoadError', error)
+        .thenReturnOnce(errorHandling)
+      const load = app.loadGraphData(
+        createWorkflowGraphData(),
+        false,
+        true,
+        null,
+        { workflowNavigationId: 9 }
       )
-
-      await expect(
-        app.loadGraphData(createWorkflowGraphData(), false, true, null, {
-          workflowNavigationId: 9
-        })
-      ).resolves.toBe(false)
+      try {
+        await vi.waitFor(() =>
+          expect(
+            mockExtensionService.invokeExtensionsAsync
+          ).toHaveBeenCalledWith('onGraphLoadError', error)
+        )
+        expect(ChangeTracker.isLoadingGraph).toBe(true)
+      } finally {
+        releaseErrorHandling()
+        await load
+      }
+      await expect(load).resolves.toBe(false)
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
 
       expect(showDialog).toHaveBeenCalledOnce()
       expect(useSubgraphNavigationStore().updateHash).toHaveBeenCalledWith(
@@ -598,6 +652,31 @@ describe('ComfyApp', () => {
         'onGraphLoadError',
         expect.objectContaining({ message: 'bad extension' })
       )
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+    })
+
+    it('resolves false and notifies onGraphLoadError when the outgoing preflight throws', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+      mockWorkflowService.beforeLoadNewGraph.mockImplementationOnce(() => {
+        throw new Error('outgoing serializer blew up')
+      })
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+          workflowNavigationId: 21
+        })
+      ).resolves.toBe(false)
+
+      expect(showDialog).toHaveBeenCalledOnce()
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ message: 'outgoing serializer blew up' })
+      )
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
       expect(
         mockExtensionService.invokeExtensionsAsync
       ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
@@ -735,33 +814,314 @@ describe('ComfyApp', () => {
       ])
     })
 
-    it('closes every beforeLoadGraph when a newer load overtakes an older one', async () => {
+    it('closes beforeLoadGraph with an abort when the graph is cleared during activation', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
-      let releaseFirstLoad!: () => void
-      const firstLoadBlocked = new Promise<void>((resolve) => {
-        releaseFirstLoad = resolve
+      mockWorkflowService.afterLoadNewGraph.mockImplementation(async () => {
+        app.clean()
       })
-      vi.when(mockExtensionService.invokeExtensionsAsync)
-        .calledWith('beforeLoadGraph')
-        .thenReturnOnce(firstLoadBlocked)
 
-      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
-      await app.loadGraphData(createWorkflowGraphData(), false)
-      releaseFirstLoad()
-      await expect(olderLoad).resolves.toBeUndefined()
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false)
+      ).resolves.toBeUndefined()
 
-      const hooks = mockExtensionService.invokeExtensionsAsync.mock.calls.map(
-        ([hook]) => hook
+      const terminalHooks =
+        mockExtensionService.invokeExtensionsAsync.mock.calls
+          .map(([hook]) => hook)
+          .filter(
+            (hook) => hook === 'afterLoadGraph' || hook === 'onGraphLoadError'
+          )
+      expect(terminalHooks).toEqual(['onGraphLoadError'])
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ name: 'AbortError' })
       )
-      const opened = hooks.filter((hook) => hook === 'beforeLoadGraph')
-      const closed = hooks.filter(
-        (hook) => hook === 'afterConfigureGraph' || hook === 'onGraphLoadError'
-      )
-      expect(closed).toHaveLength(opened.length)
     })
 
-    it('lets an older valid load commit when its newer replacement fails', async () => {
+    it('does not assign a newer workflow graph to an Undo load waiting after configuration', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const firstWorkflow = new ComfyWorkflow({
+        path: 'workflows/undo.json',
+        modified: 0,
+        size: 0
+      })
+      const saved = createWorkflowGraphData()
+      saved.extra = { marker: 'saved' }
+      const changed = structuredClone(saved)
+      changed.extra = { marker: 'changed' }
+      const firstTracker = new ChangeTracker(firstWorkflow, saved)
+      firstTracker.activeState = changed
+      firstTracker._restoringState = true
+      firstWorkflow.changeTracker = firstTracker
+      const secondWorkflow = new ComfyWorkflow({
+        path: 'workflows/other.json',
+        modified: 0,
+        size: 0
+      })
+      const other = createWorkflowGraphData()
+      other.extra = { marker: 'other' }
+      const secondTracker = new ChangeTracker(secondWorkflow, other)
+      secondWorkflow.changeTracker = secondTracker
+      mockWorkflowService.afterLoadNewGraph.mockImplementation(
+        async (
+          workflow: string | ComfyWorkflow | null,
+          state: ComfyWorkflowJSON
+        ) => {
+          assert(workflow instanceof ComfyWorkflow)
+          workflow.changeTracker?.reset(state)
+        }
+      )
+      let releasePending!: () => void
+      const pending = new Promise<void>((resolve) => {
+        releasePending = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterConfigureGraph', expect.anything())
+        .thenReturnOnce(pending)
+
+      const undoLoad = app.loadGraphData(saved, false, false, firstWorkflow, {
+        skipAssetScans: true
+      })
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'afterConfigureGraph',
+          expect.anything()
+        )
+      )
+      const newerLoad = app.loadGraphData(other, false, false, secondWorkflow, {
+        skipAssetScans: true
+      })
+      releasePending()
+      await expect(undoLoad).resolves.toBeTruthy()
+      await expect(newerLoad).resolves.toBeTruthy()
+
+      expect(firstTracker.activeState.extra).toMatchObject({ marker: 'saved' })
+      expect(firstTracker.initialState.extra).toMatchObject({ marker: 'saved' })
+      expect(secondTracker.activeState.extra).toMatchObject({ marker: 'other' })
+      expect(app.rootGraph.extra).toMatchObject({ marker: 'other' })
+    })
+
+    it.for(['activation', 'tracker restoration', 'afterLoadGraph'] as const)(
+      'finishes an older restore paused during %s before the newer workflow loads',
+      async (pauseAt) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        const previousCanvas = singletonApp.canvas
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+          singletonApp.canvas = previousCanvas
+        })
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        singletonApp.canvas = mockCanvas
+        Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+        await useRealWorkflowService()
+        const workflowStore = useWorkflowStore()
+        vi.mocked(workflowStore.openWorkflow).mockRestore()
+        vi.mocked(workflowStore.isActive).mockRestore()
+
+        const saved = createWorkflowGraphData()
+        saved.extra = { marker: 'saved' }
+        const changed = structuredClone(saved)
+        changed.extra = { marker: 'changed' }
+        const firstWorkflow = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/undo.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        const firstTracker = markRaw(new ChangeTracker(firstWorkflow, saved))
+        firstTracker.activeState = changed
+        firstTracker._restoringState = true
+        firstWorkflow.changeTracker = firstTracker
+        const other = createWorkflowGraphData()
+        other.extra = { marker: 'other' }
+        const secondWorkflow = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/other.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        const secondTracker = markRaw(new ChangeTracker(secondWorkflow, other))
+        secondWorkflow.changeTracker = secondTracker
+        let releasePause!: () => void
+        const pause = new Promise<void>((resolve) => {
+          releasePause = resolve
+        })
+        let reachedPause = false
+        if (pauseAt === 'activation') {
+          vi.spyOn(firstWorkflow, 'load').mockImplementationOnce(async () => {
+            reachedPause = true
+            await pause
+            return firstWorkflow
+          })
+        } else if (pauseAt === 'tracker restoration') {
+          const openWorkflow = vi
+            .mocked(workflowStore.openWorkflow)
+            .getMockImplementation()
+          assert(openWorkflow)
+          vi.mocked(workflowStore.openWorkflow).mockImplementation(
+            async (workflow) => {
+              const loaded = await openWorkflow(workflow)
+              if (workflow.path === firstWorkflow.path) {
+                reachedPause = true
+                await pause
+              }
+              return loaded
+            }
+          )
+        } else {
+          mockExtensionService.invokeExtensionsAsync.mockImplementation(
+            async (hook) => {
+              if (hook === 'afterLoadGraph' && !reachedPause) {
+                reachedPause = true
+                await pause
+              }
+            }
+          )
+        }
+
+        const olderLoad = app.loadGraphData(
+          saved,
+          false,
+          false,
+          firstWorkflow,
+          {
+            skipAssetScans: true
+          }
+        )
+        await vi.waitFor(() => expect(reachedPause).toBe(true))
+        const newerLoad = app.loadGraphData(
+          other,
+          false,
+          false,
+          secondWorkflow,
+          {
+            skipAssetScans: true
+          }
+        )
+        releasePause()
+        await expect(olderLoad).resolves.toBeTruthy()
+        await expect(newerLoad).resolves.toBeTruthy()
+
+        expect(workflowStore.activeWorkflow?.path).toBe(secondWorkflow.path)
+        expect(workflowStore.activeWorkflow?.changeTracker).toBe(secondTracker)
+        expect(secondTracker.activeState.extra).toMatchObject({
+          marker: 'other'
+        })
+        expect(secondTracker.initialState.extra).toMatchObject({
+          marker: 'other'
+        })
+        expect(firstTracker.initialState).toEqual(saved)
+        expect(firstTracker.activeState.extra).toMatchObject({
+          marker: 'saved'
+        })
+        expect(graph.extra).toMatchObject({ marker: 'other' })
+        expect(ChangeTracker.isLoadingGraph).toBe(false)
+      }
+    )
+
+    it('does not assign a cleared canvas to Undo while the newer workflow is still preparing', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      graph.add(new LGraphNode('outgoing'))
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+      })
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const outgoing = new ComfyWorkflow({
+        path: 'workflows/outgoing.json',
+        modified: 0,
+        size: 0
+      })
+      const outgoingState = structuredClone(
+        graph.serialize()
+      ) as ComfyWorkflowJSON
+      const tracker = markRaw(new ChangeTracker(outgoing, outgoingState))
+      const loadedOutgoing = markLoaded(outgoing)
+      loadedOutgoing.changeTracker = tracker
+      useWorkflowStore().activeWorkflow = loadedOutgoing
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'beforeConfigureGraph') tracker.captureCanvasState()
+        }
+      )
+
+      await app.loadGraphData(createWorkflowGraphData(), true)
+
+      expect(tracker.activeState).toEqual(outgoingState)
+      expect(tracker.undoQueue).toHaveLength(0)
+    })
+
+    it('allows capture while the loaded workflow resource scans are pending', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let releaseModels!: () => void
+      const modelsPending = new Promise<void>((resolve) => {
+        releaseModels = resolve
+      })
+      vi.mocked(runMissingModelPipeline).mockImplementationOnce(async () => {
+        await modelsPending
+        return { missingModels: [], confirmedCandidates: [] }
+      })
+      const load = app.loadGraphData(createWorkflowGraphData(), false, false)
+      try {
+        await vi.waitFor(() =>
+          expect(runMissingModelPipeline).toHaveBeenCalledOnce()
+        )
+
+        expect(ChangeTracker.isLoadingGraph).toBe(false)
+      } finally {
+        releaseModels()
+        await load
+      }
+    })
+
+    it('keeps a configured load when the next queued configure fails without clearing it', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const graph = createWorkflowGraphData()
+      graph.extra = { marker: 'configured' }
+      let releaseFirst!: () => void
+      const firstPending = new Promise<void>((resolve) => {
+        releaseFirst = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterConfigureGraph', expect.anything())
+        .thenReturnOnce(firstPending)
+      const firstLoad = app.loadGraphData(graph, false, false, null, {
+        skipAssetScans: true
+      })
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'afterConfigureGraph',
+          expect.anything()
+        )
+      )
+      vi.spyOn(app.rootGraph, 'configure').mockImplementationOnce(() => {
+        throw new Error('Configuration failed before clearing')
+      })
+      const failedLoad = app.loadGraphData(
+        createWorkflowGraphData(),
+        false,
+        false,
+        null,
+        { skipAssetScans: true }
+      )
+      releaseFirst()
+
+      await expect(firstLoad).resolves.toBeTruthy()
+      await expect(failedLoad).resolves.toBe(false)
+      expect(app.rootGraph.extra).toMatchObject({ marker: 'configured' })
+    })
+
+    it('lets an older valid load commit when its queued replacement fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       let releaseOlderLoad!: () => void
@@ -771,21 +1131,25 @@ describe('ComfyApp', () => {
       vi.when(mockExtensionService.invokeExtensionsAsync)
         .calledWith('beforeLoadGraph')
         .thenReturnOnce(olderLoadBlocked)
+      const older = createWorkflowGraphData()
+      older.extra = { marker: 'older' }
+      const newer = createWorkflowGraphData()
+      newer.extra = { marker: 'newer' }
       vi.when(mockExtensionService.invokeExtensionsAsync)
         .calledWith(
           'beforeConfigureGraph',
-          expect.anything(),
+          expect.objectContaining({ extra: { marker: 'newer' } }),
           expect.anything()
         )
-        .thenRejectOnce(new Error('newer load failed'))
+        .thenReject(new Error('newer load failed'))
 
-      const olderLoad = app.loadGraphData(createWorkflowGraphData(), false)
-      await expect(
-        app.loadGraphData(createWorkflowGraphData(), false)
-      ).resolves.toBe(false)
+      const olderLoad = app.loadGraphData(older, false)
+      const newerLoad = app.loadGraphData(newer, false)
       releaseOlderLoad()
 
       await expect(olderLoad).resolves.toBe(true)
+      await expect(newerLoad).resolves.toBe(false)
+      expect(app.rootGraph.extra).toMatchObject({ marker: 'older' })
     })
 
     describe('pending camera restore while the canvas is hidden', () => {
@@ -834,9 +1198,15 @@ describe('ComfyApp', () => {
       })
     })
 
-    it('brackets an API JSON import with graph-load hooks', async () => {
+    it('brackets an API JSON import with graph-load hooks', async ({
+      onTestFinished
+    }) => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+      })
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
 
@@ -849,6 +1219,179 @@ describe('ComfyApp', () => {
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
     })
+
+    it('closes a failed API JSON lifecycle and resumes undo capture', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+      })
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      vi.spyOn(useNodeReplacementStore(), 'load').mockRejectedValueOnce(
+        new Error('replacement lookup failed')
+      )
+
+      await expect(app.loadApiJson({}, 'broken.json')).rejects.toThrow(
+        'replacement lookup failed'
+      )
+
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+          ([hook]) => hook
+        )
+      ).toEqual(['beforeLoadGraph', 'onGraphLoadError'])
+      onTestFinished(attachLegacyUI(singletonApp))
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/recovered.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const tracker = markRaw(
+        new ChangeTracker(
+          workflow,
+          structuredClone(graph.serialize()) as ComfyWorkflowJSON
+        )
+      )
+      workflow.changeTracker = tracker
+      useWorkflowStore().activeWorkflow = workflow
+      graph.add(new LGraphNode('after-failure'))
+      tracker.captureCanvasState()
+      expect(tracker.activeState.nodes.map((node) => node.title)).toEqual([
+        'after-failure'
+      ])
+    })
+
+    it.for([
+      {
+        format: 'API JSON',
+        load: () => app.loadApiJson({}, 'empty.json')
+      },
+      {
+        format: 'A1111',
+        load: async () => {
+          vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+            parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+          })
+          mockImportA1111.mockImplementation(
+            async (incomingGraph, _parameters, beforeGraphClear) => {
+              await beforeGraphClear?.()
+              incomingGraph.clear()
+              return 'imported'
+            }
+          )
+          await app.handleFile(createTestFile('a1111.png', 'image/png'))
+        }
+      }
+    ])(
+      'does not capture a $format import into the outgoing workflow',
+      async ({ load }) => {
+        onTestFinished(attachLegacyUI(singletonApp))
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        graph.add(new LGraphNode('outgoing'))
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        })
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const outgoing = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/outgoing-api.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        const outgoingState = structuredClone(
+          graph.serialize()
+        ) as ComfyWorkflowJSON
+        const tracker = markRaw(new ChangeTracker(outgoing, outgoingState))
+        outgoing.changeTracker = tracker
+        useWorkflowStore().activeWorkflow = outgoing
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (hook) => {
+            if (hook === 'afterConfigureGraph') tracker.captureCanvasState()
+          }
+        )
+
+        await load()
+
+        expect(tracker.activeState).toEqual(outgoingState)
+        expect(tracker.undoQueue).toHaveLength(0)
+      }
+    )
+
+    it.for([
+      {
+        path: 'API JSON',
+        load: () => app.loadApiJson({}, 'empty.json')
+      },
+      {
+        path: 'A1111',
+        load: async () => {
+          vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+            parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+          })
+          mockImportA1111.mockImplementation(
+            async (_graph, _parameters, beforeGraphClear) => {
+              await beforeGraphClear?.()
+              return 'imported'
+            }
+          )
+          await app.handleFile(createTestFile('a1111.png', 'image/png'))
+        }
+      }
+    ])(
+      'flushes an outgoing edit made during $path preparation',
+      async ({ load }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        graph.add(new LGraphNode('outgoing'))
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        const previousCanvas = singletonApp.canvas
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+          singletonApp.canvas = previousCanvas
+        })
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        singletonApp.canvas = mockCanvas
+        Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+        onTestFinished(attachLegacyUI(singletonApp))
+        await useRealWorkflowService()
+        const outgoing = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/pending-edit.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        const tracker = markRaw(
+          new ChangeTracker(
+            outgoing,
+            structuredClone(graph.serialize()) as ComfyWorkflowJSON
+          )
+        )
+        outgoing.changeTracker = tracker
+        useWorkflowStore().activeWorkflow = outgoing
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (hook) => {
+            if (hook === 'beforeLoadGraph')
+              graph.nodes[0].title = 'edited-during-preparation'
+          }
+        )
+
+        await load()
+
+        expect(tracker.activeState.nodes.map((node) => node.title)).toEqual([
+          'edited-during-preparation'
+        ])
+      }
+    )
   })
 
   describe('nodeOutputs', () => {
@@ -984,6 +1527,7 @@ describe('ComfyApp', () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      onTestFinished(attachLegacyUI(app))
       useWorkflowStore().activeWorkflow = markLoaded(workflow)
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: {},
@@ -1374,6 +1918,7 @@ describe('ComfyApp', () => {
       }
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      onTestFinished(attachLegacyUI(app))
       useWorkflowStore().activeWorkflow = markLoaded(workflow)
       vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
         output: promptOutput,
@@ -1439,6 +1984,32 @@ describe('ComfyApp', () => {
       } finally {
         setTelemetryRegistry(null)
       }
+    })
+
+    it('redraws and refreshes the queue UI once after submitting a batch', async () => {
+      prepareEmptyPromptQueue()
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockResolvedValueOnce({ prompt_id: 'job-1' })
+        .mockResolvedValueOnce({ prompt_id: 'job-2' })
+      let resolveUpdate!: () => void
+      const updateQueue = vi.spyOn(app.ui.queue, 'update').mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveUpdate = resolve
+          })
+      )
+
+      // The queue UI refresh is fire-and-forget: queuePrompt resolves while the
+      // update is still pending, having already redrawn the canvas once.
+      await app.queuePrompt(0, 2)
+
+      expect(updateQueue).toHaveBeenCalledOnce()
+      expect(queuePrompt).toHaveBeenCalledTimes(2)
+      expect(mockCanvas.draw).toHaveBeenCalledOnce()
+
+      // Settle the detached update so the test leaves no pending promise.
+      resolveUpdate()
     })
 
     it('attributes a queued job to the mode used when submission started', async () => {
@@ -1566,6 +2137,55 @@ describe('ComfyApp', () => {
         now.mockRestore()
         setTelemetryRegistry(null)
       }
+    })
+
+    it('falls back to the error panel when the subscription dialog cannot open', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          error: {
+            type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+            message: 'A cloud subscription is required',
+            details: ''
+          }
+        })
+      )
+      vi.mocked(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).mockResolvedValueOnce(false)
+
+      await app.queuePrompt(0)
+
+      expect(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'subscription_required' })
+      expect(useExecutionErrorStore().lastPromptError).toMatchObject({
+        type: 'CLOUD_SUBSCRIPTION_REQUIRED'
+      })
+    })
+
+    it('still reports a rejected submission once the dialog takes over', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          error: {
+            type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+            message: 'You have enough credits for this workflow',
+            details: ''
+          },
+          node_errors: {}
+        })
+      )
+      vi.mocked(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).mockResolvedValueOnce(true)
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'subscription_required' })
+      expect(useExecutionErrorStore().lastPromptError).toBeNull()
     })
 
     it('records a rejected submission on the workflow that queued it', async () => {
@@ -1738,20 +2358,21 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
         prompt_id: 'job-1'
       })
-      vi.spyOn(app.ui.queue, 'update').mockRejectedValue(
-        new Error('Queue UI refresh failed')
-      )
+      const refreshError = new Error('Queue UI refresh failed')
+      vi.spyOn(app.ui.queue, 'update').mockRejectedValue(refreshError)
 
       try {
-        await expect(
-          app.queuePrompt(0, 1, {
-            intent: { trigger_source: 'button' }
-          })
-        ).rejects.toThrow('Queue UI refresh failed')
+        await app.queuePrompt(0, 1, {
+          intent: { trigger_source: 'button' }
+        })
         expect(useExecutionStore().queuedJobs['job-1']).toMatchObject({
           workflowExecutionIntent: {
             trigger_source: 'button'
           }
+        })
+        expect(reportError).toHaveBeenCalledWith(refreshError, {
+          surface: 'graph',
+          errorType: 'queue_ui_update_failure'
         })
       } finally {
         setTelemetryRegistry(null)
@@ -2957,6 +3578,316 @@ describe('ComfyApp', () => {
         ])
       }
     )
+
+    it('closes a failed import lifecycle and restores change tracking', async () => {
+      const graph = new LGraph()
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+      })
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      mockImportA1111.mockImplementation(
+        async (_graph, _parameters, beforeGraphClear) => {
+          await beforeGraphClear?.()
+          throw new Error('A1111 import failed')
+        }
+      )
+
+      await expect(
+        app.handleFile(createTestFile('a1111.png', 'image/png'))
+      ).rejects.toThrow('A1111 import failed')
+
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+          ([hook]) => hook
+        )
+      ).toEqual(['beforeLoadGraph', 'onGraphLoadError'])
+      onTestFinished(attachLegacyUI(singletonApp))
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/recovered-a1111.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const tracker = markRaw(
+        new ChangeTracker(
+          workflow,
+          structuredClone(graph.serialize()) as ComfyWorkflowJSON
+        )
+      )
+      workflow.changeTracker = tracker
+      useWorkflowStore().activeWorkflow = workflow
+      graph.add(new LGraphNode('after-a1111-failure'))
+      tracker.captureCanvasState()
+      expect(tracker.activeState.nodes.map((node) => node.title)).toEqual([
+        'after-a1111-failure'
+      ])
+    })
+  })
+
+  describe('graph-load FIFO across import paths', () => {
+    beforeEach(() => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+      })
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+    })
+
+    it('runs the next workflow after a load rejects', async () => {
+      mockWorkflowService.afterLoadNewGraph.mockRejectedValueOnce(
+        new Error('activation failed')
+      )
+
+      const first = app.loadGraphData(createWorkflowGraphData(), true)
+      const second = app.loadGraphData(createWorkflowGraphData(), true)
+
+      await expect(first).rejects.toThrow('activation failed')
+      await expect(second).resolves.toBeTruthy()
+    })
+
+    it('queues an API JSON import behind an in-flight workflow load', async () => {
+      let releaseWorkflow!: () => void
+      const workflowBlocked = new Promise<void>((resolve) => {
+        releaseWorkflow = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('beforeLoadGraph')
+        .thenReturnOnce(workflowBlocked)
+
+      const workflow = app.loadGraphData(createWorkflowGraphData(), true)
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeLoadGraph'
+        )
+      )
+      const apiImport = app.loadApiJson(
+        { '1': { class_type: 'KSampler', inputs: {} } },
+        'queued.json'
+      )
+      releaseWorkflow()
+      await workflow
+      await apiImport
+
+      expect(app.rootGraph.nodes).toHaveLength(1)
+      expect(app.rootGraph.nodes[0].type).toBe('KSampler')
+    })
+
+    it('starts an A1111 import only after the in-flight workflow load finishes', async () => {
+      let releaseWorkflow!: () => void
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('beforeLoadGraph')
+        .thenReturnOnce(
+          new Promise<void>((resolve) => {
+            releaseWorkflow = resolve
+          })
+        )
+      vi.mocked(getWorkflowDataFromFile).mockImplementation(async () => {
+        releaseWorkflow()
+        return { parameters: 'positive\nNegative prompt: negative\nSteps: 20' }
+      })
+      let workflowFinishedBeforeImport: boolean | undefined
+      mockImportA1111.mockImplementation(async () => {
+        workflowFinishedBeforeImport =
+          mockExtensionService.invokeExtensionsAsync.mock.calls.some(
+            ([hook]) => hook === 'afterLoadGraph'
+          )
+        return 'imported'
+      })
+
+      const workflow = app.loadGraphData(createWorkflowGraphData(), true)
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeLoadGraph'
+        )
+      )
+      await app.handleFile(createTestFile('queued-a1111.png', 'image/png'))
+      await workflow
+
+      expect(workflowFinishedBeforeImport).toBe(true)
+    })
+
+    it('preserves file call order when a later parse finishes first', async () => {
+      let resolveFirst!: (
+        value: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+      ) => void
+      const firstParsed = new Promise<
+        Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+      >((resolve) => {
+        resolveFirst = resolve
+      })
+      const firstGraph = createWorkflowGraphData()
+      firstGraph.extra = { marker: 'first' }
+      const secondGraph = createWorkflowGraphData()
+      secondGraph.extra = { marker: 'second' }
+      vi.mocked(getWorkflowDataFromFile)
+        .mockReturnValueOnce(firstParsed)
+        .mockResolvedValueOnce({ workflow: secondGraph })
+      const loadedMarkers: unknown[] = []
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'afterLoadGraph')
+            loadedMarkers.push(app.rootGraph.extra.marker)
+        }
+      )
+
+      const first = app.handleFile(
+        createTestFile('first.json', 'application/json')
+      )
+      const second = app.handleFile(
+        createTestFile('second.json', 'application/json')
+      )
+      await Promise.resolve()
+      expect(app.rootGraph.extra).not.toMatchObject({ marker: 'second' })
+
+      resolveFirst({ workflow: firstGraph })
+      await Promise.all([first, second])
+
+      expect(app.rootGraph.extra).toMatchObject({ marker: 'second' })
+      expect(loadedMarkers).toEqual(['first', 'second'])
+    })
+
+    it.for([
+      [0, 1, 2, 3],
+      [0, 1, 3, 2],
+      [0, 2, 1, 3],
+      [0, 2, 3, 1],
+      [0, 3, 1, 2],
+      [0, 3, 2, 1],
+      [1, 0, 2, 3],
+      [1, 0, 3, 2],
+      [1, 2, 0, 3],
+      [1, 2, 3, 0],
+      [1, 3, 0, 2],
+      [1, 3, 2, 0],
+      [2, 0, 1, 3],
+      [2, 0, 3, 1],
+      [2, 1, 0, 3],
+      [2, 1, 3, 0],
+      [2, 3, 0, 1],
+      [2, 3, 1, 0],
+      [3, 0, 1, 2],
+      [3, 0, 2, 1],
+      [3, 1, 0, 2],
+      [3, 1, 2, 0],
+      [3, 2, 0, 1],
+      [3, 2, 1, 0]
+    ])(
+      'applies files in call order for completion order %j',
+      async (completionOrder) => {
+        const callOrder = [0, 1, 2, 3]
+        const resolvers: ((
+          value: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+        ) => void)[] = []
+        for (const _ of callOrder) {
+          vi.mocked(getWorkflowDataFromFile).mockReturnValueOnce(
+            new Promise((resolve) => {
+              resolvers.push(resolve)
+            })
+          )
+        }
+        const loadedMarkers: unknown[] = []
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (hook) => {
+            if (hook === 'afterLoadGraph')
+              loadedMarkers.push(app.rootGraph.extra.marker)
+          }
+        )
+
+        const pending = callOrder.map((index) =>
+          app.handleFile(
+            createTestFile(`file-${index}.json`, 'application/json')
+          )
+        )
+        await Promise.resolve()
+        for (const index of completionOrder) {
+          const graph = createWorkflowGraphData()
+          graph.extra = { marker: index }
+          resolvers[index]({ workflow: graph })
+        }
+        await Promise.all(pending)
+
+        expect(loadedMarkers).toEqual(callOrder)
+      }
+    )
+
+    it('loads the next file after an earlier metadata parse rejects', async () => {
+      const parsed = createWorkflowGraphData()
+      parsed.extra = { marker: 'recovered' }
+      vi.mocked(getWorkflowDataFromFile)
+        .mockRejectedValueOnce(new RangeError('metadata parse failed'))
+        .mockResolvedValueOnce({ workflow: parsed })
+
+      const failed = app.handleFile(createTestFile('broken.png', 'image/png'))
+      const next = app.handleFile(
+        createTestFile('next.json', 'application/json')
+      )
+
+      await expect(failed).rejects.toThrow(RangeError)
+      await next
+
+      expect(app.rootGraph.extra).toMatchObject({ marker: 'recovered' })
+    })
+
+    it('allows a non-graph media file from a graph lifecycle hook', async () => {
+      vi.mocked(isGraphLoadHookOrigin).mockReturnValueOnce(true)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
+
+      await expect(
+        app.handleFile(createTestFile('preview.png', 'image/png'))
+      ).resolves.toBeUndefined()
+      expect(pasteImageNode).toHaveBeenCalled()
+    })
+
+    it.for([
+      {
+        name: 'workflow',
+        metadata: { workflow: createWorkflowGraphData() }
+      },
+      {
+        name: 'API prompt',
+        metadata: { prompt: { '1': { class_type: 'KSampler', inputs: {} } } }
+      },
+      {
+        name: 'A1111 parameters',
+        metadata: {
+          parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+        }
+      }
+    ])(
+      'refuses $name metadata from a graph lifecycle hook',
+      async ({ metadata }) => {
+        vi.mocked(isGraphLoadHookOrigin).mockReturnValueOnce(true)
+        vi.mocked(getWorkflowDataFromFile).mockResolvedValue(metadata)
+
+        await expect(
+          app.handleFile(createTestFile('nested.png', 'image/png'))
+        ).resolves.toBe(false)
+      }
+    )
+
+    it('cleans before extensions prepare the incoming workflow', async () => {
+      app.rootGraph.add(new LGraphNode('outgoing'))
+      let nodesDuringPreparation: number | undefined
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'beforeConfigureGraph')
+            nodesDuringPreparation = app.rootGraph.nodes.length
+        }
+      )
+
+      await app.loadGraphData(createWorkflowGraphData(), true)
+
+      expect(nodesDuringPreparation).toBe(0)
+    })
   })
 
   describe('clean', () => {
@@ -3103,6 +4034,78 @@ describe('ComfyApp', () => {
       expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
     })
 
+    it('keeps outputs and previews of a background run off the visible workflow', () => {
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      const workflowB = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
+      )
+      useWorkflowStore().activeWorkflow = workflowA
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-a',
+        promptOutput: {},
+        workflow: workflowA,
+        mode: 'graph'
+      })
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-b',
+        promptOutput: {},
+        workflow: workflowB,
+        mode: 'graph'
+      })
+
+      vi.spyOn(URL, 'createObjectURL').mockImplementation(
+        (blob) => `blob:${blob instanceof Blob ? blob.size : 0}`
+      )
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      function handlerFor(event: string) {
+        return addEventListener.mock.calls.find(
+          ([name]) => name === event
+        )?.[1] as EventListener | undefined
+      }
+      function executedEvent(jobId: string) {
+        return new CustomEvent('executed', {
+          detail: {
+            node: '1',
+            display_node: '1',
+            prompt_id: jobId,
+            output: { text: [jobId] }
+          }
+        })
+      }
+      function previewEvent(jobId: string, blobText: string) {
+        return new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: new Blob([blobText]),
+            nodeId: '1',
+            parentNodeId: '1',
+            displayNodeId: '1',
+            realNodeId: '1',
+            jobId
+          }
+        })
+      }
+
+      handlerFor('executed')?.(executedEvent('job-a'))
+      handlerFor('b_preview_with_metadata')?.(previewEvent('job-a', 'a'))
+      handlerFor('executed')?.(executedEvent('job-b'))
+      handlerFor('b_preview_with_metadata')?.(previewEvent('job-b', 'bb'))
+
+      const nodeOutputStore = useNodeOutputStore()
+      const executionId = createNodeExecutionId([1])
+      expect(nodeOutputStore.getNodeOutputByExecutionId(executionId)).toEqual({
+        text: ['job-a']
+      })
+      expect(
+        nodeOutputStore.getNodePreviewImagesByExecutionId(executionId)
+      ).toEqual(['blob:1'])
+    })
+
     it('restores the failed run state when returning to a workflow tab', async () => {
       const workflowService = await useRealWorkflowService()
       const graph = new LGraph()
@@ -3200,10 +4203,35 @@ describe('ComfyApp', () => {
     })
   })
 
+  describe('socket handlers', () => {
+    it('keeps a model download that arrives as the socket starts', async () => {
+      vi.spyOn(api, 'init').mockImplementation(async () => {
+        api.dispatchCustomEvent('model_download', {
+          status: 'downloading',
+          name: 'my_style_v2.safetensors',
+          dir: 'loras',
+          index: 1,
+          count: 1,
+          bytes_downloaded: 1,
+          bytes_total: 2,
+          progress: 0.5,
+          prompt_id: 'job-1'
+        })
+      })
+
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+
+      expect(api.init).toHaveBeenCalledOnce()
+      expect(useJobModelDownloadStore().downloadFor('job-1')?.progress).toBe(
+        0.5
+      )
+    })
+  })
+
   describe('refreshComboInNodes', () => {
     it('shows success toast and removes the pending toast after node defs reload', async () => {
       app.vueAppReady = true
-      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
 
       await app.refreshComboInNodes()
 
@@ -3221,6 +4249,17 @@ describe('ComfyApp', () => {
       vi.spyOn(app, 'reloadNodeDefs').mockRejectedValue(error)
 
       await expect(app.refreshComboInNodes()).rejects.toThrow(error)
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'error' })
+      ])
+    })
+
+    it('shows the failure toast, not the success one, when the reload refuses the definitions', async () => {
+      app.vueAppReady = true
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(false)
+
+      await app.refreshComboInNodes()
 
       expect(useToast().toasts).toEqual([
         expect.objectContaining({ kind: 'error' })
@@ -3302,6 +4341,140 @@ describe('ComfyApp', () => {
         defs
       )
     })
+
+    it('fetches the definitions, or the status of an HTTP error answer that getNodeDefs reads as none', async () => {
+      const refusal = () =>
+        Response.json(
+          { code: 'unauthorized', message: 'invalid auth token' },
+          { status: 401 }
+        )
+      vi.spyOn(api, 'fetchApi')
+        .mockResolvedValueOnce(Response.json({ Server: { name: 'Server' } }))
+        .mockResolvedValueOnce(refusal())
+        .mockResolvedValueOnce(refusal())
+
+      await expect(app.fetchNodeDefs()).resolves.toEqual({
+        ok: true,
+        defs: { Server: expect.objectContaining({ name: 'Server' }) }
+      })
+      await expect(app.fetchNodeDefs()).resolves.toEqual({
+        ok: false,
+        status: 401
+      })
+      await expect(app.getNodeDefs()).resolves.toEqual({})
+    })
+
+    it('registers the definitions it is given without fetching them', async () => {
+      const defs: Record<string, ComfyNodeDef> = {
+        Custom: fromPartial<ComfyNodeDef>({ name: 'Custom' })
+      }
+      Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
+      const getNodeDefs = vi.spyOn(app, 'getNodeDefs')
+      const registerNodeDef = vi
+        .spyOn(app, 'registerNodeDef')
+        .mockResolvedValue(undefined)
+
+      await app.reloadNodeDefs(defs)
+
+      expect(getNodeDefs).not.toHaveBeenCalled()
+      expect(registerNodeDef).toHaveBeenCalledWith('Custom', defs.Custom)
+    })
+
+    it('gives the next fetched definitions to addCustomNodeDefs once when late extensions are owed them, and registers what they add', async () => {
+      const custom = fromPartial<ComfyNodeDef>({ name: 'Custom' })
+      Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
+      vi.spyOn(api, 'fetchApi').mockImplementation(async () =>
+        Response.json({ Server: { name: 'Server' } })
+      )
+      const registerNodeDef = vi
+        .spyOn(app, 'registerNodeDef')
+        .mockResolvedValue(undefined)
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (method: string, defs: Record<string, ComfyNodeDef>) => {
+          if (method === 'addCustomNodeDefs') defs.Custom = custom
+        }
+      )
+      useExtensionStore().oweNodeDefHooks()
+
+      await app.reloadNodeDefs()
+      await app.reloadNodeDefs()
+
+      expect(registerNodeDef).toHaveBeenCalledWith('Custom', custom)
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.filter(
+          ([method]) => method === 'addCustomNodeDefs'
+        )
+      ).toHaveLength(1)
+    })
+
+    it('keeps the definitions owed to addCustomNodeDefs through a refused refresh and gives them the next successful ones', async () => {
+      Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+      vi.spyOn(api, 'fetchApi')
+        .mockResolvedValueOnce(
+          Response.json({ code: 'unavailable' }, { status: 502 })
+        )
+        .mockResolvedValueOnce(Response.json({ Server: { name: 'Server' } }))
+      useExtensionStore().oweNodeDefHooks()
+
+      await app.reloadNodeDefs()
+      await app.reloadNodeDefs()
+
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.filter(
+          ([method]) => method === 'addCustomNodeDefs'
+        )
+      ).toEqual([
+        [
+          'addCustomNodeDefs',
+          { Server: expect.objectContaining({ name: 'Server' }) }
+        ]
+      ])
+      expect(useExtensionStore().takeOwedNodeDefHooks()).toBe(false)
+    })
+
+    it('refuses each refused refresh while definitions are owed, reports it, keeps them owed, and registers nothing', async () => {
+      Reflect.set(app, 'rootGraphInternal', createTestRootGraph())
+      const registerNodeDef = vi
+        .spyOn(app, 'registerNodeDef')
+        .mockResolvedValue(undefined)
+      vi.spyOn(api, 'fetchApi')
+        .mockResolvedValueOnce(
+          Response.json({ code: 'unavailable' }, { status: 502 })
+        )
+        .mockResolvedValueOnce(
+          Response.json({ code: 'unauthorized' }, { status: 401 })
+        )
+        .mockResolvedValueOnce(Response.json({ Server: { name: 'Server' } }))
+      useExtensionStore().oweNodeDefHooks()
+
+      await expect(app.reloadNodeDefs()).resolves.toBe(false)
+      await expect(app.reloadNodeDefs()).resolves.toBe(false)
+      expect(registerNodeDef).not.toHaveBeenCalled()
+      expect(
+        vi
+          .mocked(reportError)
+          .mock.calls.map(([error, options]) => [
+            String(error),
+            options.errorType
+          ])
+      ).toEqual([
+        ['Error: GET /object_info answered 502', 'late_extension_failed'],
+        ['Error: GET /object_info answered 401', 'late_extension_failed']
+      ])
+      await expect(app.reloadNodeDefs()).resolves.toBe(true)
+
+      expect(
+        mockExtensionService.invokeExtensionsAsync.mock.calls.filter(
+          ([method]) => method === 'addCustomNodeDefs'
+        )
+      ).toEqual([
+        [
+          'addCustomNodeDefs',
+          { Server: expect.objectContaining({ name: 'Server' }) }
+        ]
+      ])
+    })
   })
 
   describe('refreshMissingModels', () => {
@@ -3315,7 +4488,7 @@ describe('ComfyApp', () => {
         confirmedCandidates: []
       }
       Reflect.set(app, 'rootGraphInternal', graph)
-      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
       mockRefreshMissingModelPipeline.mockResolvedValue(result)
 
       await expect(app.refreshMissingModels({ silent: false })).resolves.toBe(
@@ -3339,7 +4512,7 @@ describe('ComfyApp', () => {
         serialize: vi.fn(() => createWorkflowGraphData())
       }
       Reflect.set(app, 'rootGraphInternal', graph)
-      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
       mockRefreshMissingModelPipeline.mockResolvedValue({
         missingModels: [],
         confirmedCandidates: []
@@ -3776,6 +4949,49 @@ describe('ComfyApp', () => {
       }
     )
 
+    it.for([
+      {
+        source: 'workflow',
+        metadata: { workflow: createWorkflowGraphData() },
+        loader: 'loadGraphData'
+      },
+      {
+        source: 'api prompt',
+        metadata: { prompt: { '1': { class_type: 'KSampler', inputs: {} } } },
+        loader: 'loadApiJson'
+      }
+    ] as const)(
+      'adds no toast when a $source load failure was already presented',
+      async ({ metadata, loader }) => {
+        vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+          ...metadata,
+          parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+        })
+        vi.spyOn(app, loader).mockRejectedValue(
+          markGraphLoadFailurePresented(new Error('load failed'))
+        )
+
+        await app.handleFile(createTestFile('both.png', 'image/png'))
+
+        expect(mockImportA1111).not.toHaveBeenCalled()
+        expect(useToast().toasts).toEqual([])
+      }
+    )
+
+    it('returns false without importing A1111 parameters when the workflow load resolves false', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        workflow: createWorkflowGraphData(),
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      vi.spyOn(app, 'loadGraphData').mockResolvedValue(false)
+
+      await expect(
+        app.handleFile(createTestFile('both.png', 'image/png'))
+      ).resolves.toBe(false)
+
+      expect(mockImportA1111).not.toHaveBeenCalled()
+    })
+
     it('still falls back to A1111 parameters when the workflow fails to parse', async () => {
       const graph = new LGraph()
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
@@ -3894,6 +5110,12 @@ describe('ComfyApp', () => {
   })
 
   describe('drop handler', () => {
+    function addScopedDropHandler() {
+      const scope = effectScope()
+      scope.run(() => app['addDropHandler']())
+      onTestFinished(() => scope.stop())
+    }
+
     it('syncs the drop position and waits for the replacement workflow before restoring warnings', async () => {
       const graphMouse: [number, number] = [-999, -999]
       const adjustMouseEvent = vi.fn((e: DragEvent) => {
@@ -3951,7 +5173,7 @@ describe('ComfyApp', () => {
       )
 
       try {
-        ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+        addScopedDropHandler()
 
         document.dispatchEvent(new DragEvent('drop'))
         await vi.waitFor(() => {
@@ -3985,7 +5207,7 @@ describe('ComfyApp', () => {
       vi.spyOn(litegraphUtil, 'isSelectOnly').mockReturnValue(true)
       const onDragDrop = vi.fn()
       app.dragOverNode = fromPartial({ onDragDrop })
-      app['addDropHandler']()
+      addScopedDropHandler()
 
       const event = new DragEvent('drop')
       const preventDefault = vi.spyOn(event, 'preventDefault')
@@ -4021,7 +5243,7 @@ describe('ComfyApp', () => {
         vi.mocked(reportError).mockImplementation(() => {})
         const noFiles = Promise.resolve<File[]>([])
         vi.mocked(extractFilesFromDragEvent).mockReturnValue(noFiles)
-        ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+        addScopedDropHandler()
 
         const dataTransfer = new DataTransfer()
         dataTransfer.setData(mime, 'https://example.com/content')
@@ -4040,6 +5262,79 @@ describe('ComfyApp', () => {
         expect(
           vi.mocked(reportError).mock.calls.map(([, opts]) => opts.errorType)
         ).toEqual(errorTypes)
+      }
+    )
+
+    it.for([
+      {
+        when: 'the failed import already reported itself',
+        reachLifecycle: true,
+        failure: new Error('A1111 import failed'),
+        expectedWarnings: 0
+      },
+      {
+        when: 'the reported import threw a primitive',
+        reachLifecycle: true,
+        failure: 'A1111 import failed',
+        expectedWarnings: 0
+      },
+      {
+        when: 'the import failed before it reported anything',
+        reachLifecycle: false,
+        failure: new Error('A1111 import failed'),
+        expectedWarnings: 1
+      }
+    ])(
+      'warns about a dropped file only when $when',
+      async ({ reachLifecycle, failure, expectedWarnings }) => {
+        app.canvas = fromPartial<LGraphCanvas>({
+          ...createMockCanvas(),
+          graph_mouse: [0, 0],
+          adjustMouseEvent: vi.fn()
+        })
+        const graph = new LGraph()
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        })
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        vi.mocked(extractFilesFromDragEvent).mockResolvedValue([
+          createTestFile('a1111.png', 'image/png')
+        ])
+        vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+          parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+        })
+        mockImportA1111.mockImplementation(
+          async (_graph, _parameters, beforeGraphClear) => {
+            if (reachLifecycle) await beforeGraphClear?.()
+            throw failure
+          }
+        )
+        const handleFile = app.handleFile.bind(app)
+        let dropFinished = false
+        vi.spyOn(app, 'handleFile').mockImplementation(async (...args) => {
+          try {
+            return await handleFile(...args)
+          } finally {
+            dropFinished = true
+          }
+        })
+        addScopedDropHandler()
+
+        document.dispatchEvent(new DragEvent('drop'))
+
+        await vi.waitFor(() => {
+          expect(mockImportA1111).toHaveBeenCalled()
+        })
+        const droppedFileWarnings = () =>
+          vi
+            .mocked(useToast().warning)
+            .mock.calls.filter(([title]) =>
+              title.includes('A1111 import failed')
+            )
+        await vi.waitFor(() => expect(dropFinished).toBe(true))
+        expect(droppedFileWarnings()).toHaveLength(expectedWarnings)
       }
     )
   })
@@ -4064,7 +5359,10 @@ describe('ComfyApp', () => {
 
       const graph = new LGraph()
       const change = vi.spyOn(graph, 'change')
-      const canvas = fromPartial<LGraphCanvas>({ graph, selected_nodes: {} })
+      const canvas = fromPartial<LGraphCanvas>({
+        graph,
+        selectedItems: new Set()
+      })
       const event = new KeyboardEvent('keydown', {
         key: 'F9',
         cancelable: true
@@ -4093,7 +5391,10 @@ describe('ComfyApp', () => {
 
       const graph = new LGraph()
       const change = vi.spyOn(graph, 'change')
-      const canvas = fromPartial<LGraphCanvas>({ graph, selected_nodes: {} })
+      const canvas = fromPartial<LGraphCanvas>({
+        graph,
+        selectedItems: new Set()
+      })
       const event = new KeyboardEvent('keydown', {
         key: 'F9',
         cancelable: true

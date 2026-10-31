@@ -3,7 +3,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useTextPreviewWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget'
 import { useApp } from '@/scripts/appInstance'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 const TEXT_PREVIEW_WIDGET_NAME = '$$node-text-preview'
 

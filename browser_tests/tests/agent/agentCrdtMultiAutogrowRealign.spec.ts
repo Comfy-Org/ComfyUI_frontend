@@ -5,8 +5,8 @@ import {
   SENTINEL_HEIGHT,
   SENTINEL_PROMPT,
   SENTINEL_WIDTH,
-  multiAutogrowRealignTest as test
-} from '@e2e/fixtures/multiAutogrowRealignFixture'
+  agentMultiAutogrowRealignTest as test
+} from '@e2e/fixtures/agentMultiAutogrowRealignFixture'
 import {
   SOURCE_NODE_ID,
   TARGET_ID

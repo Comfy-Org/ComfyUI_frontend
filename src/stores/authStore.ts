@@ -28,11 +28,12 @@ import {
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
-import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
+import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import {
   webSessionRequests,
   webSessionResourceHeader
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
 import { clearOnboardingReplay } from '@/platform/onboarding/onboardingReplay'
@@ -42,17 +43,20 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { invalidateRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
-import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import type { AuthHeader } from '@/types/authTypes'
+import { provideAuthStore } from '@/platform/auth/authStoreAccess'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+
+const BILLING_PORTAL_REQUEST_TIMEOUT_MS = 30_000
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
@@ -672,6 +676,14 @@ export const useAuthStore = defineStore('auth', () => {
     return authHeader
   }
 
+  const getWorkspaceAuthTokenOrThrow = async (): Promise<string> => {
+    const token = await getWorkspaceAuthToken()
+    if (!token) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    return token
+  }
+
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     if (!hasPersonalWorkspace.value) return null
     isFetchingBalance.value = true
@@ -701,14 +713,16 @@ export const useAuthStore = defineStore('auth', () => {
           // Customer not found is expected for new users
           return null
         }
-        const { message } = await parseErrorResponse(response)
+        const { message, code } = await parseErrorResponse(response)
         if (!requestIsCurrent()) {
           return null
         }
         throw new AuthStoreError(
           t('toastMessages.failedToFetchBalance', {
             error: message
-          })
+          }),
+          response.status,
+          code
         )
       }
 
@@ -988,8 +1002,23 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
+  const revokePartnerNodeLogin = async (): Promise<void> => {
+    if (isCloud || !flags.partnerNodeTokenEnabled) return
+    const credential = isDesktopHostSignedIn()
+      ? await desktopHostTabToken()
+      : await revokingFirebaseIdToken()
+    void partnerNodeTokens.revokeLogin(credential)
+  }
+
+  const revokingFirebaseIdToken = async (): Promise<string | undefined> => {
+    const user = currentUser.value
+    const token = await user?.getIdToken().catch(() => undefined)
+    return currentUser.value?.uid === user?.uid ? token : undefined
+  }
+
   const logout = async (): Promise<void> =>
     executeAuthAction(async () => {
+      await revokePartnerNodeLogin()
       const signsOutDesktopHost = isDesktopHostSignedIn()
       if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
         throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
@@ -1090,6 +1119,7 @@ export const useAuthStore = defineStore('auth', () => {
       buildApiUrl('/customers/billing'),
       {
         method: 'POST',
+        signal: AbortSignal.timeout(BILLING_PORTAL_REQUEST_TIMEOUT_MS),
         headers: {
           ...authHeader,
           'Content-Type': 'application/json'
@@ -1163,6 +1193,14 @@ export const useAuthStore = defineStore('auth', () => {
     getWorkspaceAuthHeaderOrThrow,
     getAuthToken,
     getWorkspaceAuthToken,
+    getWorkspaceAuthTokenOrThrow,
     notifyTokenRefreshed
   }
+})
+
+provideAuthStore(useAuthStore)
+provideEnsureSessionCookie(async () => {
+  const { useSessionCookie } =
+    await import('@/platform/auth/session/useSessionCookie')
+  await useSessionCookie().ensureSessionCookie()
 })

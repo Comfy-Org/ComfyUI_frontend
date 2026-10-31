@@ -45,6 +45,24 @@ export type WorkspaceSummary = {
 }
 
 /**
+ * Per-member action guidance for the authenticated actor; render each field as received rather than deriving it from roles.
+ */
+export type WorkspaceMemberCapabilities = {
+  /**
+   * Whether the actor may switch this member to the other supported role. Requires current owner authority and respects directory management, creator protection and the last-owner guard. Non-creator self-demotion is allowed when another owner remains. Not mutation authorization.
+   */
+  can_change_role: boolean
+  /**
+   * Whether the actor may remove this member. Requires current owner authority, refuses self-removal and protects the creator. Directory management alone does not refuse the existing removal route. Not permission to leave the workspace; use can_leave_workspace.
+   */
+  can_remove: boolean
+  /**
+   * Whether a persisted member credit-limit mutation is available. Currently false: no such backend mutation exists. Not a balance, local UI setting, permission to change roles or permission to remove.
+   */
+  can_set_credit_limit: boolean
+}
+
+/**
  * The deployments a browser in this workspace may pick, newest first by created_at (always present). A row without a Build name keeps its place in that order.
  */
 export type WorkspaceDeploymentList = {
@@ -61,7 +79,7 @@ export type WorkspaceDeploymentList = {
    */
   gone_default_deployment_id?: string
   /**
-   * The deployment this browser had picked, present only when it is no longer one of the workspace's live deployments (deleted, or no longer the workspace's). Every catalog read and submit already ran this browser on Comfy Cloud for it, and this response clears the pick: the pick cookie is rewritten as the explicit Comfy Cloud pick (pick_source `browser`), whether or not the workspace has a live default, so a default an owner sets later does not move this browser. The browser is on Comfy Cloud and picked_deployment_id is absent. The next listing no longer carries it, so the editor tells the person on this response.
+   * The deployment this browser had picked, present only when it is no longer one of the workspace's live deployments (deleted, or no longer the workspace's). Every catalog read and submit already ran this browser on Comfy Cloud for it. The response leaves the cookie untouched, so an older listing cannot overwrite a newer pick. The stale cookie remains an explicit browser pick (pick_source `browser`), so a workspace default set later does not move this browser. The browser is on Comfy Cloud and picked_deployment_id is absent. Subsequent listings report the same gone id until the cookie changes or expires.
    */
   gone_picked_deployment_id?: string
   items: Array<WorkspaceDeployment>
@@ -88,6 +106,10 @@ export type WorkspaceDeployment = {
    */
   build_name?: string
   /**
+   * Whether starting the deployment (POST /api/workspaces/{id}/deployments/{deployment_id}/start) brings it back: true while it is stopped or failed, the statuses comfy-deploy's start re-runs; for any other status the start answers it unchanged. Answers "may the switcher offer Start on this row", for any member. It does not say the start will be taken: credit, the concurrency cap and the deployment's own config are the start route's refusals.
+   */
+  can_start: boolean
+  /**
    * When the deployment was created.
    */
   created_at: string
@@ -108,9 +130,42 @@ export type WorkspaceDeployment = {
    */
   release_version?: number
   /**
-   * The deployment's status (ready, provisioning, stopped, ...). Any of them may be picked; a job is taken only while it is ready.
+   * The deployment's lifecycle status as comfy-deploy reports it; a job is taken only while it is ready.
    */
-  status: string
+  status:
+    | 'queued'
+    | 'provisioning'
+    | 'starting'
+    | 'ready'
+    | 'unhealthy'
+    | 'stopping'
+    | 'stop_failed'
+    | 'stopped'
+    | 'failed'
+}
+
+/**
+ * Which step the CPU server of the deployment this browser's editor runs on is on.
+ */
+export type WorkspaceDeploymentCpuServer = {
+  /**
+   * none: the deployment gets no CPU server (Comfy Cloud, a deployment that is stopping, stop_failed, stopped or failed, or a Release with no route list or no pack route in it), so stop asking. A route list ingest could not read, or a status it does not know, is the 502, never none. creating: none yet, and setting one up takes seconds (a Modal deployment, or one on its way up). building: none yet, and Modal builds the Release's image first, which can take minutes the first time (RunPod). created: the CPU server exists; it may still be starting ComfyUI, which this does not say.
+   */
+  cpu_server: 'none' | 'creating' | 'building' | 'created'
+  /**
+   * The deployment the answer is about. Absent when the editor runs on Comfy Cloud.
+   */
+  deployment_id?: string
+}
+
+/**
+ * Present only for can_delete_workspace denied with plan_ending when all live subscription rows carry a known future cancel_at. This is guidance, not a promise that deletion will succeed at that time; writes recheck.
+ */
+export type WorkspaceDeletionDenialParams = {
+  /**
+   * Latest authoritative cancel_at across live subscription rows. Absent means no known boundary; never synthesize a date.
+   */
+  effective_at?: string
 }
 
 /**
@@ -290,84 +345,6 @@ export type AssetInfo = {
 }
 
 /**
- * The workflow to read.
- */
-export type WorkflowPacksRequest = {
-  /**
-   * A ComfyUI workflow as the editor holds it (the UI format: a `nodes` array beside a `links` array, subgraphs under `definitions.subgraphs`). The API format is read too. Passed to comfy-builder as it is.
-   */
-  workflow: {
-    [key: string]: unknown
-  }
-}
-
-/**
- * What a workflow needs. A node class built into ComfyUI, or served by a partner provider, is in none of the lists: there is nothing to install for it.
- */
-export type WorkflowPacks = {
-  /**
-   * Which export format the workflow was read as.
-   */
-  format: 'api' | 'ui'
-  /**
-   * Packs found for the workflow's nodes by Cloud's own map of node classes to packs.
-   */
-  matched_packs: Array<WorkflowPack>
-  /**
-   * Node classes Cloud cannot confirm a pack provides, sorted by class, each with its reason. Empty when every node is built in, served by a partner provider, or placed by Cloud's own map in a listed pack. A `stamped` entry's pack is listed and will be installed, yet the workflow may still not run on Cloud as it is.
-   */
-  missing_nodes: Array<WorkflowMissingNode>
-  /**
-   * Packs the workflow itself names on its nodes (`cnr_id`) for node classes Cloud's map does not know, where the Comfy Registry's class index named the same pack. Cloud's map did not choose them, so Comfy Cloud cannot be assumed to have them installed.
-   */
-  stamped_packs: Array<WorkflowPack>
-}
-
-/**
- * One node class of the workflow that Cloud cannot confirm a pack provides, and why.
- */
-export type WorkflowMissingNode = {
-  /**
-   * The node class, as the workflow names it.
-   */
-  class_type: string
-  /**
-   * The Comfy Registry id the workflow's own stamp names on the node (its `cnr_id`, lowercased, as comfy-builder reads it); present only with reason `stamped`. The pack Cloud installs for the node is in `matched_packs` or `stamped_packs`, but not always under this id: Cloud's map lists some packs by their repository URL instead, with no `id`. So a client cannot count on finding that entry by this id.
-   */
-  pack?: string
-  /**
-   * `github`: the workflow says the node was installed from GitHub (its `aux_id`), and no Registry pack provides it. `unknown`: no pack provides it, or the pack that claims it publishes nothing to fetch, and the workflow names no GitHub source. `unchecked`: the Comfy Registry did not answer about it, so nothing says it is missing; asking again may find its pack. `stamped`: the node names a pack (its `cnr_id`, in `pack`) that will be installed, but Cloud could not confirm that pack provides this node: only the workflow's own stamp ties the node to it, and Cloud's map of node classes does not place it there, so the workflow may not run on Cloud as it is (the node may be newer than the pack version Cloud installs, or not the pack's at all).
-   */
-  reason: 'github' | 'unknown' | 'unchecked' | 'stamped'
-  /**
-   * The GitHub repository (`org/repo`) the workflow names for the node; present only with reason `github`.
-   */
-  repository?: string
-}
-
-/**
- * One node pack the workflow needs, as it would be installed.
- */
-export type WorkflowPack = {
-  /**
-   * The pack's Comfy Registry id. Absent for a pack the Registry publishes no installable version of, which is installed from `repository` instead.
-   */
-  id?: string
-  /**
-   * The pack's name, or its Registry id when it has none.
-   */
-  name: string
-  /**
-   * The repository the pack is installed from, present only when the Registry publishes no installable version of it.
-   */
-  repository?: string
-  /**
-   * The Registry version that would be installed: the newest one published, since a workflow names no versions. Absent when the pack is installed from `repository`.
-   */
-  version?: string
-}
-
-/**
  * Paginated list of saved workflows.
  */
 export type WorkflowListResponse = {
@@ -497,6 +474,35 @@ export type ValidationResult = {
 }
 
 /**
+ * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
+ */
+export type ModelUploadStarted = {
+  /**
+   * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
+   */
+  upload_id: string
+  /**
+   * Signed URL for exactly one staged object; works until `expires_at`.
+   */
+  upload_url: string
+  method: 'PUT'
+  /**
+   * Every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
+   */
+  headers: {
+    [key: string]: string
+  }
+  /**
+   * When `upload_url` stops working (15 minutes after the answer).
+   */
+  expires_at: string
+  /**
+   * The largest file an upload accepts, 2147483648 (2 GiB).
+   */
+  max_size_bytes: number
+}
+
+/**
  * Details of a single validation error encountered during asset operations.
  */
 export type ValidationError = {
@@ -541,6 +547,14 @@ export type UserDataResponseFull = {
 }
 
 export type UsageTimeSeries = {
+  /**
+   * When the numbers were read. An open billing period is still moving.
+   */
+  as_of?: string
+  /**
+   * When per-charge recording began for this environment. The `person` and `source` groupings, and every `filter_*`, hold spend from this instant on: a range starting earlier shows only the recorded part under them, while `product_line` and `model` from the invoice show all of it. Absent where no charges are recorded yet.
+   */
+  attribution_since?: string
   breakdown: Array<UsageBreakdownRow>
   buckets: Array<UsageBucket>
   ending_before: string
@@ -558,6 +572,10 @@ export type UsageTimeSeries = {
   group_labels?: Array<UsageGroupLabel>
   groups: Array<string>
   not_available?: UsageNotAvailable
+  /**
+   * `ledger` when `groups` are the usage ledger's keys, which the `filter_*` parameters accept. `invoice` when a range the ledger does not hold was read from Metronome's invoices narrowed by `filter_product_line` (alone, on `product_line` or `model`): its groups are the invoices' models and accept no further filter. Absent for any other invoice-served answer.
+   */
+  served_from?: 'ledger' | 'invoice'
   starting_on: string
   summary: UsageSummary
 }
@@ -614,14 +632,34 @@ export type UsageSummary = {
  * Present, with empty groups, buckets and breakdown, when the requested grouping is not served for this workspace. Render as unavailable, not as zero spend.
  */
 export type UsageNotAvailable = {
-  reason: 'no_attribution_source'
+  reason: 'no_attribution_source' | 'filter_needs_ledger'
 }
 
 export type UsageGroupLabel = {
   /**
-   * Human-readable name for the key: a person's name, a product line's label, or the key's owner and prefix.
+   * Only for `model` when the key is a Serverless deployment: `gpu` for the deployment's GPU time, `storage` for its network-volume and container-disk storage.
+   */
+  cost_kind?: 'gpu' | 'storage'
+  /**
+   * For `model` and `source` when the key is a Serverless deployment: the deployment's id. Under Serverless the model level is the deployment, with its GPU time and its storage as separate keys; under `source` each deployment is one key.
+   */
+  deployment_id?: string
+  /**
+   * For `model` and `source` when the key is a Serverless deployment and the caller is a signed-in session comfy-deploy can name it for; absent on an API-key read or when comfy-deploy could not be reached, and `display_name` then carries the id.
+   */
+  deployment_name?: string
+  /**
+   * Human-readable name for the key: a person's name, a product line's label, a model's name (`Not specified` for `unspecified`: charges that name no model, such as Agent rounds, partner calls that send none, and Comfy Cloud GPU time), or the key's owner and prefix.
    */
   display_name?: string
+  /**
+   * Only for `person` when the member is known; tells two members with one name apart.
+   */
+  email?: string
+  /**
+   * Only for `person`: true when the person is no longer a member of this workspace. Their spend stays under their name.
+   */
+  former_member?: boolean
   /**
    * The value as it appears in `groups`, `buckets` and `breakdown`.
    */
@@ -635,17 +673,33 @@ export type UsageGroupLabel = {
    */
   key_prefix?: string
   /**
-   * Only for `source`.
+   * Only for `source` when kind is `api_key` and the key is known to this workspace: true when the key has been revoked. Its spend stays under its name.
+   */
+  key_revoked?: boolean
+  /**
+   * Only for `source`. A `deployment` key is one Serverless deployment's id (`deployment_id` set); the bare key `deployment` is deployment spend recorded without an id.
    */
   kind?: 'api_key' | 'session' | 'deployment'
   /**
-   * Only for `source` when the key's owner is known.
+   * Only for `source` when the key's or deployment's owner is known.
    */
   owner_display_name?: string
   /**
-   * Only for `source` when the key is known to this workspace.
+   * Only for `source` when the key's or deployment's owner is known; tells two owners with one name apart.
+   */
+  owner_email?: string
+  /**
+   * Only for `source`: the API key's owner when the key is known to this workspace, or the member who deployed a deployment when comfy-deploy names it.
    */
   owner_user_id?: string
+  /**
+   * Only for `model` on a ledger-served answer: the partner the model's charges came through, as the partner catalog's provider id (the id workspace provider policy uses). Absent for a model whose charges name no known partner, a deployment and `unspecified`.
+   */
+  provider?: string
+  /**
+   * With `provider`: the partner's name, e.g. `Black Forest Labs`. Render beside `display_name`; `display_name` stays the model's own name.
+   */
+  provider_display_name?: string
 }
 
 export type UsageBucket = {
@@ -658,6 +712,10 @@ export type UsageBucket = {
 export type UsageBreakdownRow = {
   cost_micros: number
   group_key: string
+  /**
+   * Only on a ledger-served answer (`served_from: ledger`): how many distinct charges — jobs, calls, metered hours — the group's spend came from over the range.
+   */
+  run_count?: number
   share: number
 }
 
@@ -770,10 +828,32 @@ export type TopupQuoteResponse = {
    *
    */
   expires_at: string
+  /**
+   * Environment-configured Stripe payment method configuration for
+   * one-time credit top-up checkout. Omitted when not configured.
+   * This metadata does not establish interactive payment eligibility,
+   * ownership of a saved method, or guarantee payment success. The
+   * interactive endpoint independently accepts only cards without
+   * future usage and revalidates payment authority.
+   * Clients must constrain the interactive payment form to that
+   * card-only, no-future-use contract; this configuration alone does
+   * not guarantee its enabled methods are compatible.
+   *
+   */
+  payment_method_configuration_id?: string
 }
 
 /**
- * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * Requested credit purchase from this operation's validated stored interactive top-up intent. Visible only to callers authorized for payment details. Not the amount charged or proof of payment. Omitted for historical, non-interactive, invalid or non-top-up operations.
+ *
+ */
+export type TopUpPurchaseAmount = {
+  amount_cents: number
+  currency: 'usd'
+}
+
+/**
+ * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. The optional produced_asset field is a strict exception containing only the server-recorded id/hash from a successful asset-producing media call. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
  * This object is projected at read time by services/agent/internal/persist.ToolCallsForThread from agent_tool_calls; it is never stored in agent_messages.content, so there is no legacy persisted shape. Because of that projection the contract holds for every row ever served: tool_call_id is always present (it falls back to id for rows written before the column existed), status is always one of the enum values (the audit-table word "ok" is translated by ToolCallWireStatus), and duration_ms is always an integer when present. Clients (the frontend's zPersistedToolCallSummary) must not relax these fields to parse "historical" rows — a row that fails this schema is a server bug (BE-20134).
  */
 export type ToolCallSummary = {
@@ -794,6 +874,19 @@ export type ToolCallSummary = {
    * Mirrors agent_tool_calls.prompt_id at read time. This is the exact-attempt ownership signal an eval driver needs to prove which job a given turn submitted — a model-authored result string, workflow id, or URL in the assistant's final text is not equivalent evidence. It is parsed from the comfy-cli runner's stdout envelope and never cross-checked against the job table, so it is proof of turn-to-job submission only, not proof the job completed or that any output URL belongs to it; a consumer must still authenticate job detail and bind the artifact to this id. Absence does NOT prove no job was submitted: most tool calls never submit one, but a call that submitted a job and then errored (for example while polling) also omits this field, as does any row outside the history window.
    */
   job_id?: string
+  /**
+   * Present only when this exact row is a successful process_media or combine_media call whose persisted audit result contains a complete saved_asset identity. It binds an assistant message and tool call to the asset representing that call's output bytes. Ingest may dedupe identical bytes to an existing asset, so this does not prove the call created the asset, and multiple calls may name the same id. Consumers must still authenticate the asset id and match the hash against the candidate selector. Omitted for failed calls, non-producing tools, malformed/legacy results, and rows outside the history window. Raw results, arguments, asset names, URLs, credentials, notes, and unrelated metadata are never exposed.
+   */
+  produced_asset?: {
+    /**
+     * The canonical asset hash/filename selector recorded by the producing call, including its media extension.
+     */
+    hash: string
+    /**
+     * The server-assigned asset id recorded by the producing call.
+     */
+    id: string
+  }
   started_at?: string
   /**
    * The WIRE status vocabulary (api/agent_events.schema.json's agent_tool_call), translated from the audit-row vocabulary (pending/running/ok/error) via ToolCallWireStatus — the same function the live agent_tool_call broadcast uses, so reloaded history and a live frame for the same call never disagree on the vocabulary. "running" never appears here: only terminal rows are queried, so a call still in flight when its turn died is omitted rather than shown as a perpetually in-progress chip.
@@ -817,14 +910,61 @@ export type TeamCreditStops = {
   stops: Array<TeamCreditStop>
 }
 
+export type PlanActionDeniedReasonParams = {
+  /**
+   * Billing boundary when the already-scheduled successor takes effect.
+   */
+  effective_at?: string
+}
+
+/**
+ * Why action is none. Permission refusals precede sales management, parked and running operations, a scheduled successor, transition restrictions, and seats. Scheduled successors include effective_at in denied_reason_params. Unknown or unavailable state fails closed with billing_state_unknown. Absent for an actionable choice.
+ */
+export type PlanActionDeniedReason =
+  | 'not_a_member'
+  | 'not_workspace_owner'
+  | 'not_original_owner'
+  | 'sales_managed'
+  | 'billing_operation_parked'
+  | 'billing_operation_in_progress'
+  | 'subscription_change_in_progress'
+  | 'annual_to_monthly_unsupported'
+  | 'same_plan'
+  | 'incompatible_transition'
+  | 'exceeds_max_seats'
+  | 'billing_state_unknown'
+
+/**
+ * Action for this exact plan and billing interval. Render as received. Subscribe starts or resumes checkout, change changes the plan now, reactivate removes a scheduled cancellation, downgrade schedules a reduction at the billing boundary, and none disables the choice. This is presentation guidance, not authorization; writes recheck policy.
+ */
+export type PlanAction =
+  | 'subscribe'
+  | 'change'
+  | 'reactivate'
+  | 'downgrade'
+  | 'none'
+
 /**
  * Pre/post-discount price for a team credit stop, in cents.
  */
 export type TeamCreditStopPrice = {
+  action: PlanAction
+  denied_reason?: PlanActionDeniedReason
+  denied_reason_params?: PlanActionDeniedReasonParams
   /**
    * Pre-discount (struck-through) price in cents
    */
   list_price_cents: number
+  /**
+   * What one billing period at this stop is charged, in cents: one month
+   * for monthly, the whole year for yearly. This is the current catalog
+   * amount a new checkout at this stop quotes and invoices; an existing
+   * subscription's invoice can differ. Show this server amount as the
+   * billed total rather than deriving price_cents x 12: Stripe rounds
+   * the per-credit line before applying the discount.
+   *
+   */
+  period_charge_cents: number
   /**
    * Post-discount (bold) price in cents
    */
@@ -1084,6 +1224,18 @@ export type SystemStatsResponse = {
 }
 
 /**
+ * Server-owned subscription presentation state. A future scheduled plan change remains active, with its target in scheduled_change. Paused means a recoverable renewal collection failure; past_due requires direct subscription payment evidence, never an unattributed workspace or top-up failure. Activating means the initial subscription is awaiting payment. This is not an authorization or workflow admission decision; use capabilities.
+ */
+export type SubscriptionState =
+  | 'never_subscribed'
+  | 'active'
+  | 'cancel_scheduled'
+  | 'past_due'
+  | 'paused'
+  | 'activating'
+  | 'ended'
+
+/**
  * Billing period (uppercase to match comfy-api)
  */
 export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
@@ -1296,9 +1448,27 @@ export type AgentConsentSettingValue = {
 }
 
 /**
+ * The deployment a start was asked for, and its status after the ask.
+ */
+export type StartWorkspaceDeploymentResult = {
+  /**
+   * The deployment's id (dep-{uuid}).
+   */
+  deployment_id: string
+  /**
+   * The status comfy-deploy reports after the start: queued when it accepted the start, or the deployment's current status, unchanged, when it was already up. A job is taken only once the listing shows it ready.
+   */
+  status: string
+}
+
+/**
  * Server-to-client CRDT document frame carried by the /ws envelope.
  */
-export type ServerDocFrame = DocUpdateFrame | DocResetFrame | DocOpsResultFrame
+export type ServerDocFrame =
+  | DocSubscribedFrame
+  | DocUpdateFrame
+  | DocResetFrame
+  | DocOpsResultFrame
 
 /**
  * First rejected op in an abort-remainder batch.
@@ -1316,6 +1486,10 @@ export type DocOpsResultData = {
   failed?: DocOpFailure
   message?: string
   ok: boolean
+  /**
+   * The op_id of every op in the doc_ops batch this result answers, verbatim and in submission order, on success and on every refusal, including refusals made before the batch reached the document host. Correlation only: it names the batch, not each op's outcome (see applied, skipped and failed), and it is not an ordering key. Absent only when the batch's op ids could not be read under the doc_ops op_id grammar, which a conforming sender never produces.
+   */
+  op_ids?: Array<string>
   seq?: number
   skipped?: Array<string>
   v: number
@@ -1368,6 +1542,37 @@ export type DocUpdateData = {
 export type DocUpdateFrame = {
   data: DocUpdateData
   type: 'doc_update'
+}
+
+export type DocSubscribedData = {
+  code?: string
+  /**
+   * Binds a stale-schema refusal to the exact row the client may re-mint. Present only with stale_schema_reseed_required.
+   */
+  expected_seq?: number
+  /**
+   * Current lineage sequence. On an accepted subscription, omission means lineage 0 (the document has not been minted yet).
+   */
+  lineage_seq?: number
+  /**
+   * Human-readable rejection reason. The generated Go field is named Reason so it does not collide with the frame's Message method.
+   */
+  message?: string
+  ok: boolean
+  /**
+   * Current document sequence. On an accepted subscription, omission means sequence 0 (the document has not been minted yet).
+   */
+  seq?: number
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Server acknowledgement for a doc_subscribe request.
+ */
+export type DocSubscribedFrame = {
+  data: DocSubscribedData
+  type: 'doc_subscribed'
 }
 
 /**
@@ -1477,6 +1682,22 @@ export type SavedPaymentMethod = {
    * Card brand. Present only for card payment methods.
    */
   brand?: string
+  /**
+   * Display-only card expiry month. Returned with exp_year only when both are known and valid; omitted otherwise, including non-card methods.
+   */
+  exp_month?: number
+  /**
+   * Display-only four-digit card expiry year. Returned with exp_month only when both are known and valid; omitted otherwise, including non-card methods.
+   */
+  exp_year?: number
+  /**
+   * Whether the card has expired, at 00:00 UTC on the first day after its expiry month. Omitted when expiry is unknown or invalid, including non-card methods. A display warning, not payment eligibility.
+   */
+  expired?: boolean
+  /**
+   * Whether the card expires within the next 30 days, including already expired cards, using the UTC expiry-month boundary. Omitted when expiry is unknown or invalid, including non-card methods. A display warning, not payment eligibility.
+   */
+  expiring_soon?: boolean
   id: string
   /**
    * Exactly one item is the default when the returned list is non-empty.
@@ -1643,6 +1864,39 @@ export type RenewalInvoice = {
    * When Stripe will next retry automatically; absent when no retry is scheduled.
    */
   next_payment_attempt?: string
+}
+
+/**
+ * The declared packs that failed to import on the build of the editor's Release, in the order the build declared them, and which Release that is.
+ */
+export type ReleaseUnsupportedPacks = {
+  packs: Array<ReleaseUnsupportedPack>
+  /**
+   * The Release whose build the packs were read for, the same id as a deployment's release_id in GET /api/workspaces/{id}/deployments. The route answers for the Release the deployment runs now, so an editor that booted on an earlier Release compares this id with its own and ignores the packs when they differ. Null when no Release's build was read: Comfy Cloud, the rollout flag off, or comfy-builder could not be read.
+   */
+  release_id: string | null
+}
+
+/**
+ * One declared pack that failed to import on the Release's build, as comfy-builder names it.
+ */
+export type ReleaseUnsupportedPack = {
+  /**
+   * Why the pack failed to import: the last line of its import error, or "needs a GPU". Empty when ComfyUI logged no reason.
+   */
+  cause: string
+  /**
+   * The pack's folder under custom_nodes.
+   */
+  folder: string
+  /**
+   * The pack's Comfy Registry id; empty for a pack not installed from the registry.
+   */
+  registry_id: string
+  /**
+   * The repository URL the pack's own pyproject.toml names, for matching only, never a verified source; empty when it names none.
+   */
+  repository: string
 }
 
 /**
@@ -1919,6 +2173,20 @@ export type PromptErrorResponse = {
 }
 
 /**
+ * Identity of the workspace-bound terminal subscription, not a checkout target or permission to resubscribe. Historical identity is independent of current plan availability and pricing.
+ */
+export type PreviousPlan = {
+  /**
+   * Exact recorded plan identifier; never inferred from tier.
+   */
+  plan_slug: string
+  /**
+   * Recorded Team commitment-stop choice, when known. No price is inferred.
+   */
+  team_credit_stop_id?: string
+}
+
+/**
  * Itemized cost preview for a pending subscription change.
  */
 export type PreviewSubscribeResponse = {
@@ -2185,22 +2453,68 @@ export type PreviewSubscribeRequest = {
   team_credit_stop_id?: string
 }
 
+export type PlanFeatureItem = {
+  /**
+   * Stable semantic display identifier; additions appear in generated client types.
+   */
+  key:
+    | 'shortRuntime'
+    | 'longRuntime'
+    | 'addCredits'
+    | 'importModels'
+    | 'sharedCreditPool'
+    | 'membersUpTo'
+    | 'perMemberCreditLimits'
+    | 'memberSpendAuditing'
+    | 'sharedWorkflowsAssets'
+    | 'projects'
+  /**
+   * Named raw interpolation values only, never preformatted copy.
+   */
+  params?: {
+    /**
+     * Resolved Team member limit for membersUpTo; use locale plural rules.
+     */
+    count: number
+  }
+  /**
+   * Coming-soon items are display promises, not currently available entitlements.
+   */
+  status: 'available' | 'coming_soon'
+  /**
+   * English fallback for this display item; available items also appear in features.
+   */
+  text: string
+}
+
 /**
- * Reason why a plan is unavailable
+ * Why a plan is unavailable. Present exactly when available is false and
+ * absent when it is true. Only the first reason that applies is reported,
+ * in the order below. Render the value as received; do not recompute it.
+ * same_plan: (a) Why can this plan not be picked? (b) It is the plan the workspace is already on. (c) Absent means the plan is not the current one. (d) Not a refusal of a different plan; see incompatible_transition. (e) The plan slug equals the slug of the workspace's active subscription.
+ * incompatible_transition: (a) Why is this plan closed for the workspace's current plan? (b) The transition rules never allow it: the Free plan, which is provisioned only through free-tier eligibility, or a switch into the Founders plan. (c) Absent means no such rule applies. (d) Not a temporary state, and not billing_operation_in_progress, billing_operation_parked or annual_to_monthly_unsupported. (e) The target is the Free plan, or the transition matrix refuses the pair for a reason other than annual_to_monthly_unsupported.
+ * billing_operation_in_progress: (a) Why can no other plan be picked for now? (b) A subscription-changing billing operation is running for the workspace's active subscription. It settles on its own, so a client may say that plans will be available again shortly. (c) Absent means no such operation is running. (d) Not billing_operation_parked, which does not clear on its own, not a successor already scheduled for a future billing boundary, and not a seat problem. (e) The workspace has a non-scheduled active subscription and a subscription-changing billing operation is running and none is parked.
+ * billing_operation_parked: (a) Why can no other plan be picked until support steps in? (b) A subscription-changing billing operation is parked for reconciliation for the workspace's active subscription: it is either paid but credits not granted, or a replacement subscription that could not finish superseding the old one. It does not clear on its own, so a client must route the user to support and never imply a wait. (c) Absent means no operation is parked. (d) Not billing_operation_in_progress, which settles on its own, not a successor already scheduled for a future billing boundary, and not a seat problem. (e) The workspace has a non-scheduled active subscription and a subscription-changing billing operation is parked; reported instead of billing_operation_in_progress when both exist.
+ * annual_to_monthly_unsupported: (a) Why can a monthly plan not be chosen from an annual plan? (b) The annual commitment binds, so a move to a higher-tier monthly plan is not supported before the term ends. (c) Absent means the transition is not an annual to higher-tier monthly move. (d) Not a downgrade, which is allowed and scheduled, and not incompatible_transition. (e) The transition matrix refuses the pair with its annual-to-monthly tier upgrade rule.
+ * exceeds_max_seats: (a) Why is this plan closed to a workspace with many people? (b) The occupied seats exceed the plan's seat limit, counted as the subscribe request counts them: a team plan counts members plus unexpired pending invitations, any other plan counts members alone. (c) Absent means the occupied seats fit the plan. (d) Not a pending-invitation count for non-team plans, where an invitation does not occupy a seat. (e) For a team plan, members + pending invitations is greater than the seat limit; for any other plan, members is greater than the seat limit; a positive workspace override replaces the plan default in both cases.
+ * requires_team and requires_personal are part of this enum but are not reported today.
  */
 export type PlanAvailabilityReason =
   | 'same_plan'
   | 'incompatible_transition'
+  | 'billing_operation_in_progress'
+  | 'billing_operation_parked'
+  | 'annual_to_monthly_unsupported'
+  | 'exceeds_max_seats'
   | 'requires_team'
   | 'requires_personal'
-  | 'exceeds_max_seats'
 
 /**
  * Availability and eligibility information for a billing plan.
  */
 export type PlanAvailability = {
   /**
-   * Whether the workspace can subscribe to this plan
+   * Whether the workspace can switch to this plan right now. False exactly when reason is present.
    */
   available: boolean
   reason?: PlanAvailabilityReason
@@ -2210,6 +2524,7 @@ export type PlanAvailability = {
  * Billing plan details including pricing, limits, and features.
  */
 export type Plan = {
+  action: PlanAction
   availability: PlanAvailability
   /**
    * Raw credit count (not cents) the plan grants for one billing period,
@@ -2225,11 +2540,25 @@ export type Plan = {
    * Per-member credits in cents (base + one seat)
    */
   credits_cents: number
+  denied_reason?: PlanActionDeniedReason
+  denied_reason_params?: PlanActionDeniedReasonParams
   duration: SubscriptionDuration
+  /**
+   * Optional ordered localization companion selected by the server. Only available items appear in the existing features strings; coming-soon items remain separate. Key is a stable semantic identifier, not a client locale path. Clients map known keys to translations and may use text as an English fallback according to their locale policy. Unknown keys never imply entitlements. Omitted for older string-only metadata. Team count uses the resolved max_seats.
+   */
+  feature_items?: Array<PlanFeatureItem>
+  /**
+   * Optional ordered English feature copy for this offer, for display only. Omitted when metadata is unavailable. Team member count uses max_seats. Does not grant entitlements or change plan actions or availability.
+   */
+  features?: Array<string>
   /**
    * Maximum number of seats allowed for this plan
    */
   max_seats: number
+  /**
+   * Optional display badge for this offer. True recommends a Popular chip; false means no Popular chip. Omitted when metadata is unavailable. False for a matching current or scheduled plan, and for every offer in a known previous plan's tier across billing periods. Unknown previous tier is not inferred. At most one plan per billing period is true, breaking ties by plan slug within each period. Monthly and yearly recommendations can both be true. The server resolves this precedence. Not eligibility.
+   */
+  popular?: boolean
   /**
    * Per-member price in cents (base + one seat)
    */
@@ -2250,6 +2579,21 @@ export type PickWorkspaceDeploymentRequest = {
    * Developer-platform deployment id: one of this workspace's, not deleted. The error message names which check failed.
    */
   deployment_id: string
+}
+
+/**
+ * Configured credit allowance of the current plan, not remaining balance, an invoice or proof of live provider grants. Amount includes credits and period; none is a proven configured zero. Native-empty or incoherent Enterprise configuration remains unknown, never none. Missing data and unresolved, unsupported, ended or activating plans remain unknown. Unknown or missing means unavailable; clients must not render zero. Does not change eligibility.
+ */
+export type PeriodCreditGrant = {
+  /**
+   * Configured whole display credits. Present only for amount.
+   */
+  credits?: number
+  /**
+   * Grant cadence, which may differ from Enterprise invoice cadence. Present only for amount.
+   */
+  period?: SubscriptionDuration
+  state: 'amount' | 'none' | 'unknown'
 }
 
 /**
@@ -2292,6 +2636,15 @@ export type PaymentPortalResponse = {
  * Request body for generating a payment portal session URL.
  */
 export type PaymentPortalRequest = {
+  /**
+   * Omitted or empty opens the generic Billing and invoices portal.
+   * payment_method_update opens Stripe's dedicated add-payment-method flow;
+   * completing it sets only customer.invoice_settings.default_payment_method.
+   * It does not update subscription-specific defaults or guarantee renewal recovery.
+   * Completion uses Stripe's hosted confirmation page.
+   *
+   */
+  flow_type?: '' | 'payment_method_update'
   /**
    * URL to redirect after the user exits the portal
    */
@@ -2464,7 +2817,7 @@ export type ErrorResponse = {
   }
   message: string
   /**
-   * On `sso_required`: the SSO organization the caller must sign in with (its WorkOS id, `org_...`), the value `GET /api/auth/sso/start?organization=` takes: the organization that owns the account's email domain, else the workspace's. Absent when no sign-in would admit the caller (an account another organization holds, in an SSO organization's workspace), when unknown, and on every other code.
+   * On `sso_required`: the SSO organization the caller must sign in with (its WorkOS id, `org_...`), the value `GET /api/auth/sso/start?organization=` takes: the organization that owns the account's email domain, else the workspace's. Absent when no sign-in would admit the caller (an account another organization holds, in an SSO organization's workspace), when unknown, and on every other code but `account_outside_organization`, where it is the workspace's organization, which no sign-in of the account joins, and `personal_workspace_disabled`, where it is the organization holding the account.
    */
   organization_id?: string
 }
@@ -2671,9 +3024,67 @@ export type ModelFile = {
 }
 
 /**
+ * Server-to-client model_download frame on /ws. A Cloud job's model file download moved.
+ */
+export type ModelDownloadFrame = {
+  data: ModelDownloadData
+  type: 'model_download'
+}
+
+/**
+ * The `data` of a model_download WebSocket event: the latest state of one model file a Cloud job on a deployment downloads before ComfyUI starts it. Sent by the deployment's worker (services/comfy-deploy/containerruntime worker.py, _ModelNews) only when the job asked for live progress, for each file the job fetches and never for a file the release ships, all before the job's execution_start. A failed file ends the job: no other source is tried and the job is not retried, so its execution_error (or execution_interrupted, when a cancel was in flight) follows. New fields may be added; a client ignores the ones it does not read.
+ */
+export type ModelDownloadData = {
+  /**
+   * Bytes received so far. On done and cached, the file's size.
+   */
+  bytes_downloaded: number
+  /**
+   * The download's Content-Length, or null when the storage response sent none. On cached, the file's size; on done with no Content-Length, the bytes received.
+   */
+  bytes_total: number | null
+  /**
+   * How many files this job fetches; files the release ships are not counted.
+   */
+  count: number
+  /**
+   * The ComfyUI model folder the file goes in.
+   */
+  dir: string
+  /**
+   * The file's 1-based position among the files this job fetches.
+   */
+  index: number
+  /**
+   * The file name the workflow loads, as it appears in the model folder.
+   */
+  name: string
+  /**
+   * bytes_downloaded over bytes_total, from 0 to 1, rounded to four decimal places; null when bytes_total is null or 0. 1 on done and cached.
+   */
+  progress: number | null
+  /**
+   * The Cloud job id, stamped by platform-gateway on every frame it forwards.
+   */
+  prompt_id: string
+  /**
+   * Known values are downloading, done, cached and failed. downloading is sent as the download opens and then at most every 0.5 seconds while bytes arrive; done once the whole file arrived and matched its hash; cached once, instead of the others, when the worker already holds the file; failed when the download stopped. Treat it as an open string: a client shows the file as downloading only while the value is downloading, and reads any other value as the end of that file's download.
+   */
+  status: string
+  /**
+   * The job's workflow id, present when the job has one.
+   */
+  workflow_id?: string
+}
+
+/**
  * Workspace member with profile and role information.
  */
 export type Member = {
+  /**
+   * Actions the authenticated actor may offer for this exact member row. Supplied by the member list; role-update responses may omit it. Absent means unknown, not permission. Writes recheck current membership.
+   */
+  capabilities?: WorkspaceMemberCapabilities
   /**
    * User's email address, or an empty string if none is on file.
    */
@@ -2721,13 +3132,7 @@ export type MediaBadRequestError = ErrorResponse | MediaQueryError
  */
 export type ListWorkspacesResponse = {
   /**
-   * Whether `POST /api/workspaces` accepts this account. False for an
-   * account an SSO organization holds (its email is on the
-   * organization's verified domains): the organization manages its
-   * workspaces, and signing in again does not change it. Lets a client
-   * disable workspace creation up front instead of after the request
-   * is refused with 403 `FORBIDDEN`.
-   *
+   * Whether the client should offer creating another workspace. False for an account managed by an SSO organization or an actor with ten or more owner workspace memberships, including the personal workspace. This is guidance only: POST /api/workspaces does not enforce this ten-membership limit. It is not write authorization.
    */
   can_create_workspace: boolean
   /**
@@ -2980,6 +3385,32 @@ export type ExecutionError = {
 }
 
 /**
+ * The deployment a job ran on and the Release it ran, as they were when the job was sent: deployment_id and release_id stay the same after the deployment is updated to another Release or deleted. build_name and release_version are read from comfy-builder when the job is read, so a renamed Build shows its new name within a few minutes.
+ */
+export type JobDeployment = {
+  /**
+   * The name of the Build the Release was cut from, as comfy-builder names it now. Absent when it is not named for this caller: an API-key caller, a caller reading a job outside their active workspace (an admin reading another workspace's job), comfy-builder not configured on this server, minting the token to ask comfy-builder failing, comfy-builder failing or not answering in time, or a Release or Build since deleted.
+   */
+  build_name?: string
+  /**
+   * Developer-platform deployment id.
+   */
+  deployment_id: string
+  /**
+   * The deployment's own name from comfy-deploy, including for a deleted deployment. Read when the job is read and cached for five minutes, so a rename appears after the cache expires; not a job-time snapshot. Absent for unnamed or unavailable deployments, API-key callers, jobs outside the caller's active workspace, or when the service or token mint is unavailable. Does not replace build_name or the stable IDs.
+   */
+  name?: string
+  /**
+   * The Release the job ran.
+   */
+  release_id: string
+  /**
+   * The Release's version number within its Build. Absent whenever build_name is.
+   */
+  release_version?: number
+}
+
+/**
  * Lightweight job data for list views (workflow and full outputs excluded)
  */
 export type JobEntry = {
@@ -2987,6 +3418,10 @@ export type JobEntry = {
    * Job creation timestamp (Unix timestamp in milliseconds)
    */
   create_time: number
+  /**
+   * Where a platform_gateway job ran. Absent for cloud_inference jobs. Also absent when the platform has not taken the job, refused it, failed before dispatch, or removed its platform record; when the record names no deployment; or when that record could not be read. Absence does not mean the job is pending: use status for its state. A failed job can retain executor=platform_gateway without a known deployment. No deployment is inferred from the caller's current pick.
+   */
+  deployment?: JobDeployment
   /**
    * Workflow execution completion timestamp (Unix milliseconds, only present for terminal states)
    */
@@ -2999,6 +3434,10 @@ export type JobEntry = {
    * Workflow execution start timestamp (Unix milliseconds, only present for terminal states)
    */
   execution_start_time?: number
+  /**
+   * What ran the job: cloud_inference is Comfy Cloud's own GPUs; platform_gateway is a deployment of the workspace's own Build, which deployment names.
+   */
+  executor?: 'cloud_inference' | 'platform_gateway'
   /**
    * Unique job identifier
    */
@@ -3141,6 +3580,32 @@ export type JobOutputAsset = {
 }
 
 /**
+ * Where one executed node ran and where its output is shown, as ComfyUI
+ * records it in the history `meta`. Live `executed` messages carry the
+ * same `display_node`.
+ *
+ */
+export type JobExecutionMetaEntry = {
+  /**
+   * Canvas node id that shows this output
+   */
+  display_node?: string
+  /**
+   * Executed node id (the `outputs` key), e.g. `15.0.0.3` for an expanded node
+   */
+  node_id?: string
+  /**
+   * Id of the node that expanded this one, or null for a node that was not expanded
+   */
+  parent_node?: string | null
+  /**
+   * Top-level workflow node this node was expanded from (its own id when not expanded)
+   */
+  real_node_id?: string
+  [key: string]: unknown
+}
+
+/**
  * Full job details including workflow and outputs
  */
 export type JobDetailResponse = {
@@ -3148,6 +3613,10 @@ export type JobDetailResponse = {
    * Job creation timestamp (Unix timestamp in milliseconds)
    */
   create_time: number
+  /**
+   * Where a platform_gateway job ran. Absent for cloud_inference jobs. Also absent when the platform has not taken the job, refused it, failed before dispatch, or removed its platform record; when the record names no deployment; or when that record could not be read. Absence does not mean the job is pending: use status for its state. A failed job can retain executor=platform_gateway without a known deployment. No deployment is inferred from the caller's current pick.
+   */
+  deployment?: JobDeployment
   /**
    * Workflow execution completion timestamp (Unix milliseconds, only present for terminal states)
    */
@@ -3157,10 +3626,15 @@ export type JobDetailResponse = {
    */
   execution_error?: ExecutionError
   /**
-   * Node-level execution metadata (only for terminal states)
+   * Node-level execution metadata (only for terminal states), keyed by
+   * the executed node id, the same keys as `outputs`. Each entry says
+   * which canvas node shows that node's output, which matters for nodes
+   * that ComfyUI expands at run time (their executed id, such as
+   * `15.0.0.3`, is not on the canvas).
+   *
    */
   execution_meta?: {
-    [key: string]: unknown
+    [key: string]: JobExecutionMetaEntry
   }
   /**
    * Workflow execution start timestamp (Unix milliseconds, only present once execution has started)
@@ -3172,6 +3646,10 @@ export type JobDetailResponse = {
   execution_status?: {
     [key: string]: unknown
   }
+  /**
+   * What ran the job: cloud_inference is Comfy Cloud's own GPUs; platform_gateway is a deployment of the workspace's own Build, which deployment names.
+   */
+  executor?: 'cloud_inference' | 'platform_gateway'
   /**
    * Unique job identifier
    */
@@ -3222,10 +3700,12 @@ export type JobDetailResponse = {
    * (the frontend's filter categories depend on that), so this field
    * is the one that tells the two kinds of waiting apart:
    *
-   * - `concurrency_limit` — the job is held behind the caller's OWN
-   * per-user/per-auth-method concurrent-job cap. Nothing in the
-   * fleet is blocking it; the caller's other running jobs are.
-   * - `capacity` — the job is past that cap and admitted, and is now
+   * - `concurrency_limit` — the job is awaiting admission under the
+   * per-user/per-auth-method or aggregate workspace concurrent-job
+   * cap. Other members' running jobs can fill the workspace cap
+   * even when this job's owner has no running jobs. This field
+   * does not distinguish which cap is full.
+   * - `capacity` — the job has passed concurrency admission and is
    * waiting for an inference worker to become free.
    *
    * Detail-only: this field is NOT present on the list view's
@@ -3317,6 +3797,56 @@ export type JobAssetsResponse = {
 }
 
 /**
+ * Pay once with exactly one new-card confirmation token or explicitly selected attached card. Keep the exact request and key on retry; never fall back to the on-file route.
+ */
+export type InteractiveTopupRequest = {
+  /**
+   * Nominal credit purchase in USD cents, excluding tax and discounts; at most `max_topup_cents` on GET /api/billing/balance. Actual payment and credit grant are asynchronous.
+   */
+  amount_cents: number
+  /**
+   * Client-minted identifier for one checkout attempt, generated when
+   * the customer starts checkout and sent on every request and
+   * analytics event of that attempt. Purely for observability: it is
+   * what joins the frontend funnel (which emits events before any
+   * billing op exists) to the backend outcome. Expected to match
+   * ^[A-Za-z0-9_-]{1,64}$; a present value that does not is ignored,
+   * never rejected, so the constraint is intentionally not declared
+   * here as pattern/maxLength -- either would make a conforming
+   * client or request validator reject the request before the backend
+   * ever applies that "ignored, not rejected" behavior.
+   *
+   */
+  checkout_attempt_id?: string
+  /**
+   * New-card confirmation authority. Valid only on the dedicated interactive route; mutually exclusive with saved_payment_method_id. At most 255 UTF-8 bytes. No implicit saving.
+   */
+  confirmation_token?: string
+  /**
+   * Required globally unique opaque key for this exact purchase (for example, a UUID), at most 255 UTF-8 bytes. Replays bind amount, actor, customer, selected authority and return URL; changing them returns IDEMPOTENCY_MISMATCH. Never mint a new key while payment is unresolved.
+   *
+   */
+  idempotency_key: string
+  /**
+   * Valid only on the interactive route. True is currently rejected; paying does not change invoice defaults.
+   */
+  make_default?: boolean
+  /**
+   * Required with confirmation_token; at most 2048 bytes before and after URL normalization. Must use an existing allowed HTTPS destination (HTTP only for configured localhost or 127.0.0.1). Bound to the request. Callers must supply credential-free routing URLs: the validator rejects userinfo, fragments, known authentication query keys and recognizable Stripe authority patterns, but cannot identify every opaque secret.
+   *
+   */
+  return_url?: string
+  /**
+   * Valid only on the interactive route. True is currently rejected; pay once does not save a new card.
+   */
+  save_payment_method?: boolean
+  /**
+   * Explicit attached card selection, at most 255 UTF-8 bytes. Valid only on the dedicated interactive route; never changes the invoice default.
+   */
+  saved_payment_method_id?: string
+}
+
+/**
  * Request body for minting an input-image, input-audio or input-video upload grant.
  */
 export type InputUploadUrlRequest = {
@@ -3324,8 +3854,7 @@ export type InputUploadUrlRequest = {
    * MIME type of the file to upload. Must be one of the image types
    * image/jpeg, image/png, image/webp, image/gif, the audio types
    * audio/mpeg, audio/mp3, audio/wav, audio/wave, audio/x-wav,
-   * audio/flac, audio/x-flac, audio/ogg, or — where the deployment has
-   * enabled video input uploads — the video types video/mp4,
+   * audio/flac, audio/x-flac, audio/ogg, or the video types video/mp4,
    * video/webm, video/quicktime.
    * Advisory: the stored asset's format always follows the uploaded
    * bytes as identified server-side (decoded for images, sniffed for
@@ -3688,6 +4217,47 @@ export type HubAssetUploadUrlRequest = {
 }
 
 /**
+ * Durable discovery record only. Fetch the session endpoint for current payment and credit-fulfillment state; a summary proves neither. An unavailable session remains discoverable without hiding other rows.
+ *
+ */
+export type HostedTopupCheckoutSummary = {
+  amount_cents: number
+  created_at: string
+  session_id: string
+}
+
+export type HostedTopupCheckoutList = {
+  checkouts: Array<HostedTopupCheckoutSummary>
+  /**
+   * Opaque cursor for the next page, null when exhausted.
+   */
+  next_cursor: string | null
+}
+
+export type HostedTopupCheckout = {
+  /**
+   * Original credit purchase amount before promotions, not the settled payment amount.
+   */
+  amount_cents: number
+  /**
+   * Actual USD Stripe total after promotions, including a confirmed fully discounted zero. Null when unavailable; use this for payment messages, not amount_cents.
+   */
+  payment_amount_cents: number | null
+  session_id: string
+  /**
+   * open means payment has not completed; payment_processing means Checkout completed but payment is not settled; credits_applying means payment is confirmed (including a fully discounted purchase) but the durable credit grant is not yet recorded; fulfilled confirms that grant. expired is an unpaid expired link; failed is a completed checkout whose delayed payment failed. A failed credit grant remains credits_applying until fulfillment succeeds. Render this fact; do not infer payment from a return redirect or Checkout completion.
+   *
+   */
+  state:
+    | 'open'
+    | 'payment_processing'
+    | 'credits_applying'
+    | 'fulfilled'
+    | 'expired'
+    | 'failed'
+}
+
+/**
  * Execution history response with history array.
  * Returns an object with a "history" key containing an array of history entries.
  * Each entry includes prompt_id as a property along with execution data.
@@ -4022,6 +4592,14 @@ export type ExchangeTokenResponse = {
    * Cloud JWT token
    */
   token: string
+  /**
+   * Canonical Comfy user ID the token was minted for: the token's `sub`,
+   * and the same ID `GET /api/billing/capabilities` returns in
+   * `resolved_for.user_id`. Clients scope per-user reads with it. It is
+   * not the Firebase UID, which can differ.
+   *
+   */
+  user_id: string
   workspace: WorkspaceSummary
 }
 
@@ -4032,6 +4610,19 @@ export type ExchangeTokenResponse = {
  *
  */
 export type ExchangeTokenRequest = {
+  /**
+   * What the token is for. Omitted mints today's workspace token.
+   * `partner-node` mints a partner-node token: audience
+   * `comfy-partner-node` only, a `sid` claim naming a new renewable
+   * session, and the partner-node lifetime. Only a sign-in mints one
+   * (a Firebase JWT, the web session, or an OAuth access token from a
+   * client in `PARTNER_NODE_OAUTH_CLIENTS`); an API key gets 403
+   * `partner_node_requires_sign_in`. While the mint is switched off
+   * it is 503 `partner_node_token_disabled`. Any other value is 400
+   * `resource_invalid`.
+   *
+   */
+  resource?: 'partner-node'
   /**
    * Workspace ID to get token for. Defaults to personal workspace if omitted.
    */
@@ -4124,6 +4715,68 @@ export type DesktopLoginCodeCreateRequest = {
    * Desktop platform identifier (e.g. darwin, win32, linux).
    */
   platform: string
+}
+
+export type DeploymentNodeCompatibility = {
+  deployment_id: string
+  /**
+   * The posted node types this deployment's Release does not have, in the order they were posted. Empty when it has them all, and when unknown is true.
+   */
+  missing_node_types: Array<string>
+  /**
+   * True when the node list of the Release this deployment runs could not be read, so it was not checked: the Release is not built yet or is gone, comfy-builder could not be reached or refused the caller, its extensions list could not be read, a browser that picked the deployment failed to load it on the same ingest pod (for good when the Release is gone or its archive is corrupt or too large to ever load, see below; for any other fault, an archive missing from storage among them, only within its 30-second retry window, after which the check follows what a browser's next load gets), its catalog fails to build (in each of the last three a browser that picked the deployment is served Comfy Cloud's catalog), it is past the 16 distinct Releases one check reads (the newest deployments' Releases are read first), or the request ended before it was read. The check reads the catalog and the extensions list but not the extensions archive: a Release whose archive fails to load (missing from storage, corrupt, too large, past 64 MiB unpacked, or an entry whose path escapes the extensions folder) is answered from its catalog, not unknown, until a browser that picked it has failed to load it on the same ingest pod (each pod keeps its own record).
+   */
+  unknown: boolean
+}
+
+/**
+ * The node types of the workflow open in the editor.
+ */
+export type DeploymentCompatibilityRequest = {
+  /**
+   * The workflow's node types (class_type), subgraphs included. Duplicates are dropped before counting; more than 2,000 distinct types is a 400.
+   */
+  node_types: Array<string>
+}
+
+/**
+ * Which of the posted node types each of the workspace's deployments, and Comfy Cloud, does not have.
+ */
+export type DeploymentCompatibility = {
+  cloud: CloudNodeCompatibility
+  /**
+   * Every live deployment GET /api/workspaces/{id}/deployments lists, in the same order (newest first).
+   */
+  deployments: Array<DeploymentNodeCompatibility>
+}
+
+export type CloudNodeCompatibility = {
+  /**
+   * The posted node types a browser on Comfy Cloud (no pick) is not served, hidden ones included, in the order they were posted.
+   */
+  missing_node_types: Array<string>
+}
+
+/**
+ * Error body of local ComfyUI's /api/deploy* routes. Branch on `error`, never on `message`.
+ */
+export type DeployToCloudError = {
+  error:
+    | 'offline'
+    | 'multiple_credentials'
+    | 'invalid_api_key_format'
+    | 'invalid_body'
+    | 'missing_credentials'
+    | 'unauthorized'
+    | 'too_large'
+    | 'too_many_bundles'
+    | 'builder_rejected'
+    | 'builder_unavailable'
+    | 'builder_busy'
+  /**
+   * Human-readable detail, present for invalid_body and builder_rejected.
+   */
+  message?: string
 }
 
 /**
@@ -4290,11 +4943,11 @@ export type CreateTopupResponse = {
 }
 
 /**
- * Request body for purchasing a one-time credit top-up.
+ * Legacy on-file top-up. Explicit payment authority and save/default fields require the dedicated interactive route and are rejected here, including null or false values.
  */
 export type CreateTopupRequest = {
   /**
-   * Amount to charge and grant as credits (in cents). Minimum $5.00.
+   * Amount to charge and grant as credits (in cents). Minimum $5.00; maximum `max_topup_cents` on GET /api/billing/balance (400 INVALID_AMOUNT above it).
    */
   amount_cents: number
   /**
@@ -4353,9 +5006,7 @@ export type CreateTopupCheckoutResponse = {
 export type CreateTopupCheckoutRequest = {
   /**
    * Amount to charge in cents, before any promotion code the customer
-   * enters. Whole dollars only, from $5.00 to $16,000.00. The ceiling is
-   * a fixed business limit (not a Stripe technical constraint) on how
-   * much a single unauthenticated-approval session may sell. The
+   * enters. Whole dollars only, from $5.00 to `max_topup_cents` on GET /api/billing/balance. The
    * credits granted are derived server-side from this amount and
    * cannot be set by the caller.
    *
@@ -4447,6 +5098,33 @@ export type CreateHubProfileRequest = {
   workspace_id: string
 }
 
+export type ContentCatalogRecord = {
+  data: {
+    [key: string]: unknown
+  }
+  deleted: boolean
+  edit_version: string
+  enabled: boolean
+  kind: 'MODEL' | 'WORKFLOW' | 'APP' | 'TEMPLATE_SET'
+  /**
+   * Integer revision supplying this entity; may precede the requested catalog revision.
+   */
+  revision: number
+  /**
+   * Canonical website pathname for page content; native slug for template sets. Identity is always UID.
+   */
+  slug: string
+  uid: string
+  visibility: 'PUBLIC' | 'STAFF'
+  visible_from?: string
+}
+
+export type ContentCatalogProjection = {
+  generation: number
+  items: Array<ContentCatalogRecord>
+  revision_id: number
+}
+
 /**
  * Credentials the Churnkey embed requires to launch the cancel flow.
  * `auth_hash` is hex-encoded HMAC-SHA256 of `customer_id` signed with the
@@ -4519,6 +5197,222 @@ export type CancelSubscriptionAcceptedResponse = {
   status: 'pending'
 }
 
+export type CccWebsiteRootTabs = {
+  apps: CccWebsiteRootTab
+  models: CccWebsiteRootTab
+  workflows: CccWebsiteRootTab
+}
+
+export type CccWebsiteRootPageInfo = {
+  has_more: boolean
+  page_size: 24
+}
+
+export type CccWebsiteCardFacet = {
+  /**
+   * Staff-only eligible facet count
+   */
+  count?: number
+  label: string
+  value: string
+}
+
+export type CccWebsiteCardFacets = {
+  categories: Array<CccWebsiteCardFacet>
+  models: Array<CccWebsiteCardFacet>
+  use_cases: Array<CccWebsiteCardFacet>
+}
+
+export type CccWebsiteRootTab = {
+  facets: CccWebsiteCardFacets
+  page: CccWebsiteRootPageInfo
+  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
+}
+
+export type CccWebsiteRootPresentation = {
+  /**
+   * Database observation clock for this complete presentation.
+   */
+  as_of: string
+  items: Array<ContentCatalogRecord>
+  model_directory: CccWebsiteModelDirectory
+  /**
+   * Never reuse the artifact at or after this scheduled visibility boundary. Null means no pending boundary.
+   */
+  next_visibility_at: string | null
+  revision_id: number
+  tabs: CccWebsiteRootTabs
+}
+
+export type CccWebsiteModelDirectory = {
+  /**
+   * Staff-only Draft generation
+   */
+  generation?: number
+  items: Array<{
+    /**
+     * Authored provider label; empty when not set
+     */
+    provider: string
+    /**
+     * Canonical /hub/models path without a trailing slash
+     */
+    slug: string
+    /**
+     * Localized title when reviewed, otherwise source title
+     */
+    title: string
+    uid: string
+  }>
+  revision_id: number
+}
+
+export type CccWebsiteCardsPage = {
+  available_kinds: Array<'MODEL' | 'WORKFLOW' | 'APP'>
+  facets: CccWebsiteCardFacets
+  /**
+   * Staff-only Draft generation
+   */
+  generation?: number
+  has_more: boolean
+  items: Array<ContentCatalogRecord>
+  next_cursor?: string
+  page_size: number
+  previous_cursor?: string
+  revision_id: number
+  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
+  /**
+   * Staff-only filtered count; omitted for anonymous callers
+   */
+  total?: number
+}
+
+export type CccPublicItemsPage = ContentCatalogProjection & {
+  has_more: boolean
+  /**
+   * Opaque continuation bound to this query and publication identity; omitted on the last page.
+   */
+  next_cursor?: string
+  page_size: number
+}
+
+/**
+ * Current Hub page that replaces an old public URL
+ */
+export type CccLegacyTarget = {
+  /**
+   * Website path of the Hub page, for example /hub/workflows/<slug>/
+   */
+  path: string
+  /**
+   * Current slug of the record
+   */
+  slug: string
+  type: 'workflow' | 'app' | 'model'
+}
+
+/**
+ * Flat type-versioned CCC JSON. Domain schemas (/api/v1/catalog/schemas/{type}/{version}) constrain authored fields. The readOnly properties are server metadata returned by reads; a save may send them back unchanged and they are ignored, never applied. expected_draft_rev and expected_revision_uid are the save concurrency tokens.
+ */
+export type Cccjson = {
+  /**
+   * Catalog revision of this edit; may be older than the working Draft.
+   */
+  readonly catalog_rev?: number
+  /**
+   * Immutable account that created the resource.
+   */
+  readonly creator_uid?: string
+  /**
+   * SHA-256 of the canonical authored document.
+   */
+  readonly digest?: string
+  readonly draft_generation?: number
+  readonly edit_sequence?: number
+  /**
+   * Tombstone flag. false may be sent back; true is refused (use restore).
+   */
+  readonly is_deleted?: boolean
+  /**
+   * Fixed organization owner; never transferred by a save.
+   */
+  readonly owner_uid?: string
+  /**
+   * This immutable edit; send it back as expected_revision_uid.
+   */
+  readonly revision_uid?: string
+  /**
+   * RFC3339 UTC save time of this exact edit.
+   */
+  readonly saved_at?: string
+  /**
+   * Account that saved this edit.
+   */
+  readonly saved_by_uid?: string
+  /**
+   * Server-assigned logical resource UID.
+   */
+  readonly uid?: string
+  [key: string]: unknown
+}
+
+export type CccCreatorsPage = {
+  items: Array<CccCreatorSummary>
+  next_cursor?: string
+}
+
+export type CccCreatorSummary = {
+  avatar_url: string
+  display_name: string
+  username: string
+  workflow_count: number
+}
+
+export type CccCreatorProfile = {
+  /**
+   * Empty when the creator has no safe https avatar
+   */
+  avatar_url: string
+  bio: string
+  display_name: string
+  links: Array<CccCreatorLink>
+  username: string
+}
+
+export type CccCreatorLink = {
+  label: string
+  /**
+   * An https URL
+   */
+  url: string
+}
+
+export type CccCheckedReviewReceipt = {
+  publish_enabled: boolean
+  receipt_version: 1
+  selected_count: number
+  selected_versions_digest: string
+  selection_digest: string
+  state: CccCatalogState
+  unchecked_count: number
+}
+
+export type CccCatalogState = {
+  draft_generation: number
+  draft_rev: number
+  live_rev: number
+  next_rev: number
+  previous_live_rev: number | null
+}
+
+export type CccAuthoringContext = {
+  actor_uid: string
+  can_apply: boolean
+  can_edit: boolean
+  owner_uid: string
+  state: CccCatalogState
+}
+
 /**
  * Response after bulk-revoking API keys for a workspace member.
  */
@@ -4570,6 +5464,18 @@ export type BillingStatusResponse = {
    */
   cancel_at?: string
   /**
+   * When the current billing period began. Together with renewal_date it is the range for "current billing period" views; render the pair as received rather than deriving one from the other. Present exactly when renewal_date is: omitted for a canceled plan, a never-subscribed workspace and a free plan with no subscription.
+   */
+  current_period_start?: string
+  /**
+   * Actual recorded subscription end, only when subscription_state is ended. Null when unknown or not ended; never inferred from cancel_at, period end or update time.
+   */
+  ended_at: string | null
+  /**
+   * Present when subscription_state is ended but no actual end timestamp was recorded. Render an undated ended state; do not infer a date.
+   */
+  ended_at_unavailable_reason?: 'not_recorded'
+  /**
    * Whether the workspace has available credits
    */
   has_funds: boolean
@@ -4577,6 +5483,10 @@ export type BillingStatusResponse = {
    * Whether the workspace has an active subscription
    */
   is_active: boolean
+  /**
+   * Owner-only ID of the workspace's newest initial subscription or plan transition, in any status, ordered by creation time then ID. A newer attempt supersedes an older one regardless of completion time. Poll /api/billing/ops/{id} for its checkout state. Independent of pending top-up discovery. Omitted for non-owners, no matching attempt, disabled billing, unavailable reads and older servers; omission is unknown and must not be interpreted as successful checkout or acknowledgment.
+   */
+  latest_subscription_op_id?: string
   /**
    * Effective active workspace seat limit after applying any workspace override. 0 means unlimited (billing-disabled/no-op).
    */
@@ -4616,11 +5526,19 @@ export type BillingStatusResponse = {
    */
   pending_billing_op_type?: 'subscription' | 'topup'
   /**
+   * Server-resolved configured period allowance. Missing on older servers means unknown, never none; clients must not infer it from tier.
+   */
+  period_credit_grant?: PeriodCreditGrant
+  /**
    * Plan identifier (e.g., standard-monthly, team-pro-annual)
    */
   plan_slug?: string
   /**
-   * When the current billing period ends and the next one begins
+   * Optional identity only when subscription_state is ended and the workspace's bound terminal subscription and plan can be verified. Visible to all workspace members, not only owners. Absent for unknown history, pointerless or unprojected legacy history, unreadable bindings and older servers. Absence is unknown, not no previous plan. Does not change plan actions or resubscribe eligibility.
+   */
+  previous_plan?: PreviousPlan
+  /**
+   * When the current billing period ends and the next one begins: the end of the period current_period_start begins.
    */
   renewal_date?: string
   renewal_invoice?: RenewalInvoice
@@ -4641,6 +5559,10 @@ export type BillingStatusResponse = {
     [key: string]: boolean
   }
   subscription_duration?: SubscriptionDuration
+  /**
+   * Render this state without recombining payment, tier, dates or activity. Native and legacy provider history distinguish never-subscribed from ended. Ended means a historical provider Cloud subscription ended, regardless of whether an invoice was ever paid. Omitted when an older upstream/server exposes no usable history facts. Optional history failures leave guidance unknown while ordinary status remains available. Also omitted for a native live subscription when a workspace payment_failed label has no authoritative subscription-payment provenance. Unknown states must not be inferred from missing fields.
+   */
+  subscription_state?: SubscriptionState
   /**
    * Subscription activity status (scheduled subscriptions are not returned)
    */
@@ -4699,6 +5621,18 @@ export type BillingOpStatusResponse = {
    */
   amount_charged_cents?: number
   /**
+   * Original server-owned deadline for this top-up's authentication wait.
+   * Present only while a pending top-up requires customer authentication
+   * and the caller may read its payment details. Historical or unknown
+   * deadlines, terminal and reconciliation states omit it. The server also
+   * omits expired deadlines using its own clock. Absence is not a payment
+   * outcome. Polling and
+   * retries never extend the deadline. At expiry the server begins its
+   * existing payment cleanup; this is not proof that a payment failed.
+   *
+   */
+  authentication_deadline?: string
+  /**
    * State derived from the PaymentIntent attached to this operation's
    * exact stored Stripe invoice. Absent when the operation has no
    * correlated PaymentIntent.
@@ -4724,6 +5658,16 @@ export type BillingOpStatusResponse = {
    */
   cancelable?: boolean
   charge_breakdown?: BillingOpChargeBreakdown
+  /**
+   * Owner-only subscription-checkout banner fact for initial subscriptions and plan transitions. unfinished means awaiting a payment method for a known target plan; verify_payment has a usable payment action; processing means the bank is processing the payment; payment_received means payment succeeded while the operation remains pending; failed is a terminal payment refusal, excluding abandoned/superseded checkouts. none is a known non-banner state, including resolved or reconciliation operations. Omitted for members, other operation types, uncertain provider reads and older servers. Omission is unknown, never an implied none.
+   */
+  checkout_state?:
+    | 'unfinished'
+    | 'verify_payment'
+    | 'processing'
+    | 'payment_received'
+    | 'failed'
+    | 'none'
   /**
    * When the operation completed (success or failure)
    */
@@ -4813,6 +5757,7 @@ export type BillingOpStatusResponse = {
    *
    */
   status: 'pending' | 'succeeded' | 'failed' | 'reconciliation_needed'
+  topup_purchase_amount?: TopUpPurchaseAmount
 }
 
 /**
@@ -4931,6 +5876,10 @@ export type BillingOpCancelResponse = {
  * Paginated list of billing events for a workspace.
  */
 export type BillingEventsResponse = {
+  /**
+   * When this environment began attributing every charge, the same instant as `attribution_since` on the usage time series. Charges from before it may still name their member and source (many carried them long before); the start is only the instant from which a charge naming no member is known to be unattributed, which each such event states itself with `unattributed`. Absent where no such start is configured, and on the admin history feed.
+   */
+  attribution_since?: string
   events: Array<BillingEvent>
   /**
    * Items per page
@@ -4955,9 +5904,29 @@ export type BillingEventsResponse = {
  */
 export type BillingEvent = {
   /**
+   * That key's name, when the key is known to this workspace (revoked keys included).
+   */
+  api_key_name?: string
+  /**
+   * The API key the charge came through, from the event's `spend_source`; absent for a signed-in session or a deployment.
+   */
+  api_key_prefix?: string
+  /**
+   * True when that key, known to this workspace, has been revoked. Absent when the key is unknown.
+   */
+  api_key_revoked?: boolean
+  /**
    * When the event occurred
    */
   createdAt: string
+  /**
+   * The Serverless deployment the charge came through, from the event's `deployment_id`; absent for a session or an API key.
+   */
+  deployment_id?: string
+  /**
+   * That deployment's name, when the caller is a signed-in session comfy-deploy can name it for; absent on an API-key read or when comfy-deploy could not be reached.
+   */
+  deployment_name?: string
   /**
    * Unique event identifier
    */
@@ -4967,11 +5936,31 @@ export type BillingEvent = {
    */
   event_type: string
   /**
+   * That member's name, or their email when they have no name set.
+   */
+  member_display_name?: string
+  /**
+   * That member's email, so two members with one name can be told apart.
+   */
+  member_email?: string
+  /**
+   * True when that person is no longer a member of this workspace.
+   */
+  member_former?: boolean
+  /**
+   * The member the charge counts toward, from the event's `user_id`; absent when the event names none.
+   */
+  member_user_id?: string
+  /**
    * Event-specific parameters
    */
   params?: {
     [key: string]: unknown
   }
+  /**
+   * True for a charge made at or after the instant this environment began attributing every charge (`attribution_since`) that names no member: the system tried and could not say who it was. A charge names a member by any identity the `scope` filter matches it on. Absent on money and lifecycle events, on charges that name a member, on deployment charges (attributed to their deployment), on charges made before attribution began (by the charge's own time where recorded, else when it was written), where no start is configured, and on the admin history feed.
+   */
+  unattributed?: boolean
 }
 
 /**
@@ -5041,12 +6030,24 @@ export type BillingCapabilityRolloutDefaults = {
  * names the policy branch that decided, not customer-facing wording: the
  * client owns the message.
  *
+ * How to read this: render each capability from `capabilities` as received, and
+ * use a reason only to explain a capability that is false. Never recombine
+ * capabilities or reasons into a new decision, and never derive a reason from
+ * tier, role, status or plan slug. A missing reason is not a grant. A refused
+ * capability usually has a key here naming the branch that refused it. A false
+ * capability with no matching key is an unexplained refusal: no recognised
+ * explanation, still false. A true capability never has a key.
+ * Within a key the values are listed in the order the resolver reaches them,
+ * and the first one reached is the one reported. Capabilities are UI guidance,
+ * not authorization: the write endpoints decide.
+ *
  * The invariant runs one way only. **Presence implies refusal**: a key is
  * present only alongside `capabilities.<key> == false`, reconciled before
  * the response is built, so a reason never accompanies a granted
- * capability. **Absence implies nothing** -- it means no recognised
- * explanation, not that the capability was granted. Consult
- * `capabilities`, which stays authoritative for what the client may offer.
+ * capability. **Absence implies nothing**: on a false capability it
+ * means no recognised explanation, and on a true capability it is the
+ * expected state. Consult `capabilities`, which stays authoritative for what
+ * the client may offer.
  *
  * A key is absent for a refused capability whenever this service is
  * talking to a billing-api that predates the field, and whenever it drops
@@ -5061,34 +6062,586 @@ export type BillingCapabilityRolloutDefaults = {
  */
 export type BillingCapabilityDenials = {
   /**
-   * not_a_member is unreachable through this endpoint -- a non-member is
-   * answered 403 before capabilities resolve. subscription_not_started
-   * is a subscription row reserved before payment that never began.
-   * subscription_change_in_progress means the current subscription
-   * already has a successor scheduled for a future billing boundary.
-   * subscription_status_unrecognized is the server having no guidance
-   * for the row, as distinct from a deliberate refusal.
+   * Present only when can_cancel is false. The value names the resolver branch
+   * that decided, not customer wording. Values are listed in the order the
+   * resolver reaches them; the first one reached wins. cancellation_scheduled,
+   * subscription_ended, subscription_not_started and
+   * subscription_status_unrecognized belong to different subscription statuses and
+   * are alternatives that never compete. Absent while the capability is false
+   * means no recognised explanation, not a grant.
+   * - not_a_member: the caller is not a member of the workspace. Unreachable
+   * over HTTP: a non-member is answered 403 before capabilities resolve.
+   * - not_workspace_owner: the caller is a member whose role is not owner. Not
+   * the same as not_a_member.
+   * - not_original_owner: the caller is an owner but not the workspace's creator;
+   * only the creator may start, change, cancel or reactivate the plan. Reached
+   * after not_workspace_owner. Reported only when the rollout mode is not
+   * `owner`. Not not_workspace_owner (role) and not creator_only_provisioning
+   * (provisioning a personal workspace's billing identity).
+   * - free_plan: the current tier is FREE. Checked on the tier alone, whatever
+   * the status, and before the no-subscription check. A FREE plan is not a paid
+   * subscription, so there is nothing to cancel.
+   * - no_subscription: there is no subscription row and the server treats that
+   * absence as authoritative. Where the absence is only unknown (a legacy
+   * Stripe workspace) can_cancel stays true and no reason is sent. A leftover
+   * reserved row with no live operation behind it, on a self-serve tier, is
+   * reported as no subscription.
+   * - tier_not_self_serve: the subscription's tier is sales-managed or
+   * unrecognised, so its lifecycle is not customer-driven.
+   * - billing_operation_in_progress: an initial subscription, plan change,
+   * cancel, resubscribe, seat change, revert or retention offer is running,
+   * either a pending workflow or the retention-offer gate between the Stripe
+   * write and its confirmation. It settles on its own, so a client may tell the
+   * user to wait, and cancel is refused until it does. Not
+   * subscription_change_in_progress, where a successor plan is scheduled. Not
+   * evaluated for a reserved subscription, which reports
+   * subscription_not_started. Reached before cancellation_scheduled.
+   * - billing_operation_parked: such an operation is parked for reconciliation,
+   * either paid but credits not granted or a replacement subscription that
+   * could not finish superseding the old one. It does not clear on its own, so
+   * a client must route the user to support and never imply a wait. Reported
+   * instead of billing_operation_in_progress when both kinds exist, and reached
+   * at the same point, before cancellation_scheduled.
+   * - cancellation_scheduled: a cancellation is already scheduled, so cancelling
+   * again is refused. The opposite of cancellation_not_scheduled on
+   * can_reactivate.
+   * - subscription_ended: the subscription has stopped for good: ended, or
+   * canceled with no cancellation date. Never competes with
+   * billing_operation_in_progress or billing_operation_parked, which a stopped
+   * subscription does not evaluate.
+   * - subscription_not_started: a subscription row is reserved but not running.
+   * Not no_subscription (no row at all) and not subscription_ended.
+   * - subscription_status_unrecognized: the subscription status is one the
+   * resolver has no guidance for. The server is undetermined, which is not a
+   * deliberate refusal.
+   *
+   */
+  can_cancel?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'not_original_owner'
+    | 'free_plan'
+    | 'no_subscription'
+    | 'tier_not_self_serve'
+    | 'billing_operation_in_progress'
+    | 'billing_operation_parked'
+    | 'cancellation_scheduled'
+    | 'subscription_ended'
+    | 'subscription_not_started'
+    | 'subscription_status_unrecognized'
+  /**
+   * Why can_change_seats is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below; mutually exclusive lifecycle statuses do not compete.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not have the workspace owner role.
+   * - no_subscription: No subscription exists for the action to apply to.
+   * - tier_not_self_serve: The existing plan is sales-managed or unrecognized.
+   * - subscription_ended: The subscription has ended.
+   * - subscription_not_started: The subscription has not started.
+   * - subscription_status_unrecognized: The subscription status is unrecognized.
+   *
+   */
+  can_change_seats?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'no_subscription'
+    | 'tier_not_self_serve'
+    | 'subscription_ended'
+    | 'subscription_not_started'
+    | 'subscription_status_unrecognized'
+  /**
+   * Present only when can_delete_workspace is false. The value names the
+   * resolver branch that decided, not customer wording. The list follows the
+   * order the resolver reaches the branches, and the first one reached wins.
+   * Absent while the capability is false means no recognised explanation, not
+   * a grant: a fact could not be read, or the team-workspaces feature is off.
+   * - not_a_member: the caller is not a member of the workspace. Unreachable
+   * through this endpoint: a non-member is answered 403 before capabilities
+   * resolve.
+   * - sales_managed_plan: a live subscription row is on a sales-managed tier
+   * (plan_kind sales_managed), so sales ends the plan, not the customer, and
+   * there is no customer step to point at. Reported to every member, owner
+   * or not, before any role or workspace refusal; it reveals only what
+   * plan_kind already does. An ended or reserved sales-managed row does not
+   * report it. Not plan_not_ended, which the customer can end by cancelling.
+   * - not_workspace_owner: the caller is a member whose role is not owner. A
+   * non-owner is told nothing below this branch, so it never learns whether
+   * an SSO organization holds the workspace.
+   * - not_original_owner: the caller is an owner who did not create the
+   * workspace and the rollout mode is not owner. Reached after
+   * not_workspace_owner and before any workspace-specific refusal.
+   * - workspace_sso_attached: the workspace belongs to an SSO organization and
+   * only an operator detach can delete it.
+   * - personal_workspace: a personal workspace, which is never deleted.
+   * - billing_operation_in_progress: an initial subscription, plan change,
+   * cancel, resubscribe, seat change, revert or retention offer is running,
+   * either a pending workflow or the retention-offer gate between the
+   * Stripe write and its confirmation. It settles on its own, so a client
+   * may tell the user to wait. The same fact as the reason of that name on
+   * can_cancel and can_reactivate. Not plan_not_ended, which is about a
+   * subscription row.
+   * - billing_operation_parked: such an operation is parked for
+   * reconciliation, either paid but credits not granted or a replacement
+   * subscription that could not finish superseding the old one. It does
+   * not clear on its own, so a client must route the user to support and
+   * never imply a wait. Reported instead of billing_operation_in_progress
+   * when both kinds exist. The same fact as the reason of that name on
+   * can_cancel and can_reactivate.
+   * - plan_not_ended: at least one live subscription row has not started
+   * ending, so deleting the workspace would leave a plan charging.
+   * Reached after permission, workspace and operation refusals.
+   * - plan_ending: every live subscription is ending (a canceled row or a
+   * future cancel_at). When all cancellation boundaries are known,
+   * denied_reason_params.can_delete_workspace.effective_at gives the
+   * latest one. Missing params mean an unknown date. This and
+   * plan_not_ended describe different states and never compete.
+   *
+   */
+  can_delete_workspace?:
+    | 'not_a_member'
+    | 'sales_managed_plan'
+    | 'not_workspace_owner'
+    | 'not_original_owner'
+    | 'workspace_sso_attached'
+    | 'personal_workspace'
+    | 'billing_operation_in_progress'
+    | 'billing_operation_parked'
+    | 'plan_not_ended'
+    | 'plan_ending'
+  /**
+   * Why can_downgrade_to_personal is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below; mutually exclusive lifecycle statuses do not compete.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not have the workspace owner role.
+   * - not_original_owner: The action requires the workspace creator.
+   * - no_subscription: No subscription exists for the action to apply to.
+   * - tier_not_self_serve: The existing plan is sales-managed or unrecognized.
+   * - subscription_change_in_progress: A successor plan change is already scheduled.
+   * - subscription_ended: The subscription has ended.
+   * - subscription_not_started: The subscription has not started.
+   * - subscription_status_unrecognized: The subscription status is unrecognized.
+   * - rollout_disabled: The server read default keeps this action disabled independently of its policy permission.
+   *
+   */
+  can_downgrade_to_personal?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'not_original_owner'
+    | 'no_subscription'
+    | 'tier_not_self_serve'
+    | 'subscription_change_in_progress'
+    | 'subscription_ended'
+    | 'subscription_not_started'
+    | 'subscription_status_unrecognized'
+    | 'rollout_disabled'
+  /**
+   * Why can_edit_workspace is false. Permission refusals precede unavailable feature or entitlement facts; first reached wins in enum order. A present key implies refusal. Missing means unknown, including a disabled team-workspaces feature or an unavailable membership read, never permission. This explains only this capability and does not authorize a mutation.
+   */
+  can_edit_workspace?: 'not_a_member' | 'not_workspace_owner'
+  /**
+   * Why can_invite_members is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below; mutually exclusive lifecycle statuses do not compete.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not have the workspace owner role.
+   * - invite_capacity_reached: No invitation capacity is available, including a failed capacity read.
+   *
+   */
+  can_invite_members?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'invite_capacity_reached'
+  /**
+   * Present only when can_leave_workspace is false. The value names the
+   * resolver branch that decided, not customer wording. The list follows the
+   * order the resolver reaches the branches, and the first one reached wins.
+   * Absent while the capability is false means no recognised explanation, not
+   * a grant: a fact could not be read, or the team-workspaces feature is off.
+   * - not_a_member: the caller is not a member of the workspace. Unreachable
+   * through this endpoint: a non-member is answered 403 before capabilities
+   * resolve.
+   * - membership_managed_by_directory: the workspace's SSO organization is
+   * attached and holds this account, so the membership is the organization's
+   * to manage and leaving would strand an SSO account with no workspace.
+   * - personal_workspace_creator: the caller created this personal workspace
+   * and can never leave it. Not personal_workspace on can_delete_workspace,
+   * which is about deleting the workspace.
+   * - workspace_creator: the caller created this team workspace and can never
+   * leave it, even while other owners remain. Reached after
+   * personal_workspace_creator and before only_owner, which a creator who
+   * is the sole owner therefore never sees.
+   * - only_owner: the caller is the sole owner, so leaving would leave the
+   * workspace with no owner. Another owner must exist first.
+   *
+   */
+  can_leave_workspace?:
+    | 'not_a_member'
+    | 'membership_managed_by_directory'
+    | 'personal_workspace_creator'
+    | 'workspace_creator'
+    | 'only_owner'
+  /**
+   * Why can_manage_auto_top_up is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below; mutually exclusive lifecycle statuses do not compete.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not have the workspace owner role.
+   *
+   */
+  can_manage_auto_top_up?: 'not_a_member' | 'not_workspace_owner'
+  /**
+   * Why can_manage_billing is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below; mutually exclusive lifecycle statuses do not compete.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not have the workspace owner role.
+   * - creator_only_provisioning: Only the creator can provision this workspace billing identity.
+   *
+   */
+  can_manage_billing?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'creator_only_provisioning'
+  /**
+   * Why can_manage_members is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below; mutually exclusive lifecycle statuses do not compete.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not have the workspace owner role.
+   *
+   */
+  can_manage_members?: 'not_a_member' | 'not_workspace_owner'
+  /**
+   * Why can_manage_partner_node_access is false. Permission refusals precede unavailable feature or entitlement facts; first reached wins in enum order. A present key implies refusal. Missing means unknown, including a disabled team-workspaces feature or an unavailable membership read, never permission. This explains only this capability and does not authorize a mutation.
+   */
+  can_manage_partner_node_access?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'partner_governance_not_entitled'
+  /**
+   * Why can_manage_subscription is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below; mutually exclusive lifecycle statuses do not compete.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not have the workspace owner role.
+   *
+   */
+  can_manage_subscription?: 'not_a_member' | 'not_workspace_owner'
+  /**
+   * Why can_open_plans is false, present only for a refused capability. Missing means no recognized explanation, never permission. It is the can_subscribe_self_serve reason with the creator rule always applied and a scheduled plan change set aside: a non-creator owner gets not_original_owner in every rollout mode, and subscription_change_in_progress never appears here.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not hold the workspace owner role.
+   * - not_original_owner: Plan changes require the workspace creator.
+   * - creator_only_provisioning: Only the creator can provision this billing identity.
+   * - tier_not_self_serve: The current tier is sales-managed or unrecognized.
+   * - subscription_not_started: The existing subscription has not started.
+   * - subscription_status_unrecognized: The existing subscription status is unrecognized.
+   *
+   */
+  can_open_plans?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'not_original_owner'
+    | 'creator_only_provisioning'
+    | 'tier_not_self_serve'
+    | 'subscription_not_started'
+    | 'subscription_status_unrecognized'
+  /**
+   * Present only when can_reactivate is false. The value names the resolver
+   * branch that decided, not customer wording. Values are listed in the order the
+   * resolver reaches them; the first one reached wins. cancellation_not_scheduled,
+   * subscription_ended, subscription_not_started and
+   * subscription_status_unrecognized belong to different subscription statuses and
+   * are alternatives that never compete. Absent while the capability is false
+   * means no recognised explanation, not a grant.
+   * - not_a_member: the caller is not a member of the workspace. Unreachable
+   * over HTTP: a non-member is answered 403 before capabilities resolve.
+   * - not_workspace_owner: the caller is a member whose role is not owner. Not
+   * the same as not_a_member.
+   * - not_original_owner: the caller is an owner but not the workspace's creator;
+   * only the creator may start, change, cancel or reactivate the plan. Reached
+   * after not_workspace_owner. Reported only when the rollout mode is not
+   * `owner`. Not not_workspace_owner (role) and not creator_only_provisioning
+   * (provisioning a personal workspace's billing identity).
+   * - no_subscription: there is no subscription row, so there is nothing to
+   * reactivate. Unlike can_cancel, reported even where the absence is only
+   * unknown, because reactivation needs a subscription id that does not exist
+   * without a row.
+   * - tier_not_self_serve: the subscription's tier is sales-managed or
+   * unrecognised, so its lifecycle is not customer-driven.
+   * - billing_operation_in_progress: an initial subscription, plan change,
+   * cancel, resubscribe, seat change, revert or retention offer is running,
+   * either a pending workflow or the retention-offer gate between the Stripe
+   * write and its confirmation. It settles on its own, so a client may tell the
+   * user to wait, and reactivate is refused until it does. Not
+   * subscription_change_in_progress, where a successor plan is scheduled. Not
+   * evaluated for a reserved subscription, which reports
+   * subscription_not_started. Reached before cancellation_not_scheduled.
+   * - billing_operation_parked: such an operation is parked for reconciliation,
+   * either paid but credits not granted or a replacement subscription that
+   * could not finish superseding the old one. It does not clear on its own, so
+   * a client must route the user to support and never imply a wait. Reported
+   * instead of billing_operation_in_progress when both kinds exist, and reached
+   * at the same point, before cancellation_not_scheduled.
+   * - cancellation_not_scheduled: the subscription is running with no
+   * cancellation scheduled, so there is nothing to undo. The opposite of
+   * cancellation_scheduled on can_cancel. A FREE plan reports this too, since
+   * free_plan is a reason for can_cancel only.
+   * - subscription_ended: the subscription has stopped for good: ended, or
+   * canceled with no cancellation date. A plan that has ended is not recovered
+   * by reactivating; can_subscribe_self_serve is the way back.
+   * - subscription_not_started: a subscription row is reserved but not running.
+   * Not no_subscription (no row at all) and not subscription_ended.
+   * - subscription_status_unrecognized: the subscription status is one the
+   * resolver has no guidance for. The server is undetermined, which is not a
+   * deliberate refusal.
+   *
+   */
+  can_reactivate?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'not_original_owner'
+    | 'no_subscription'
+    | 'tier_not_self_serve'
+    | 'billing_operation_in_progress'
+    | 'billing_operation_parked'
+    | 'cancellation_not_scheduled'
+    | 'subscription_ended'
+    | 'subscription_not_started'
+    | 'subscription_status_unrecognized'
+  /**
+   * Why can_revert_scheduled_change is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below; mutually exclusive lifecycle statuses do not compete.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not have the workspace owner role.
+   * - not_original_owner: The action requires the workspace creator.
+   * - tier_not_self_serve: The existing plan is sales-managed or unrecognized.
+   * - subscription_ended: The subscription has ended.
+   * - subscription_not_started: The subscription has not started.
+   * - subscription_status_unrecognized: The subscription status is unrecognized.
+   * - no_revertible_scheduled_change: No scheduled change is currently revertible; it may be absent or past its revert window.
+   *
+   */
+  can_revert_scheduled_change?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'not_original_owner'
+    | 'tier_not_self_serve'
+    | 'subscription_ended'
+    | 'subscription_not_started'
+    | 'subscription_status_unrecognized'
+    | 'no_revertible_scheduled_change'
+  /**
+   * Why can_run_workflows is false, present only for a refused capability. Missing means no recognized explanation, never permission. Values describe the existing deciding policy branches, not authorization or sibling capabilities. Workflow rules short-circuit in policy order.
+   * - manual_block: The workspace is manually blocked.
+   * - subscription_inactive: Cloud workflow billing admission requires an active or eligible Free subscription.
+   * - payment_past_due: Subscription inactivity blocks workflow billing admission and a bound live subscription has a recoverable payment failure. Visible to workspace members; does not grant payment management.
+   * - no_funds: The applicable balance is exhausted and allowance does not bypass it.
+   * - workspace_cap_exceeded: The workspace spend cap is exceeded.
+   * - project_cap_exceeded: The applicable project spend cap is exceeded.
+   * - user_cap_exceeded: The actor spend cap is exceeded.
+   * - free_tier_exhausted: The acting user has used their available free job allowance.
+   *
+   */
+  can_run_workflows?:
+    | 'manual_block'
+    | 'subscription_inactive'
+    | 'payment_past_due'
+    | 'no_funds'
+    | 'workspace_cap_exceeded'
+    | 'project_cap_exceeded'
+    | 'user_cap_exceeded'
+    | 'free_tier_exhausted'
+  /**
+   * Present only when can_subscribe_self_serve is false. The value names the
+   * resolver branch that decided, not customer wording. Values are listed in the
+   * order the resolver reaches them; the first one reached wins.
+   * subscription_not_started and subscription_status_unrecognized are
+   * alternatives for different subscription statuses and never compete. Absent
+   * while the capability is false means no recognised explanation, not a grant.
+   * - not_a_member: the caller is not a member of the workspace. Unreachable
+   * over HTTP: a non-member is answered 403 before capabilities resolve.
+   * - not_workspace_owner: the caller is a member whose role is not owner. Not
+   * the same as not_a_member.
+   * - not_original_owner: the caller is an owner but not the workspace's creator;
+   * only the creator may start, change, cancel or reactivate the plan. Reached
+   * after not_workspace_owner. Reported only when the rollout mode is not
+   * `owner`. Not not_workspace_owner (role) and not creator_only_provisioning
+   * (provisioning a personal workspace's billing identity).
+   * - creator_only_provisioning: the caller is an owner but not the creator of a
+   * personal workspace whose billing identity (Stripe customer, Metronome
+   * customer or Metronome contract) is not provisioned yet. Subscribing
+   * provisions it first, and only the creator may. The same reason appears on
+   * can_top_up. When the rollout mode is not `owner`, such an owner is told
+   * not_original_owner first, so this reason is reached only in mode `owner`.
+   * - tier_not_self_serve: the subscription's tier is sales-managed or
+   * unrecognised, so its lifecycle is not customer-driven.
+   * - subscription_change_in_progress: the current subscription already has a
+   * successor plan scheduled for a future billing boundary. Reached before
+   * subscription_not_started and subscription_status_unrecognized. Not
+   * billing_operation_in_progress, which names an operation that is running or
+   * parked and is a reason for can_cancel and can_reactivate only.
+   * - subscription_not_started: a subscription row is reserved but not running
+   * and no live checkout can safely be resumed for it. Not no_subscription (no
+   * row at all) and not subscription_ended (a plan that ran and stopped).
+   * - subscription_status_unrecognized: the subscription status is one the
+   * resolver has no guidance for. The server is undetermined, which is not a
+   * deliberate refusal.
    *
    */
   can_subscribe_self_serve?:
     | 'not_a_member'
     | 'not_workspace_owner'
+    | 'not_original_owner'
+    | 'creator_only_provisioning'
     | 'tier_not_self_serve'
-    | 'subscription_not_started'
     | 'subscription_change_in_progress'
+    | 'subscription_not_started'
     | 'subscription_status_unrecognized'
+  /**
+   * Present only when can_top_up is false. Current reach order: membership,
+   * owner role, initial personal provisioning, past-due billing, unknown
+   * existing tier or status, then the staff top-up pause
+   * (topup_purchases_paused, which lifts without customer action).
+   * tier_not_self_serve here means an unknown tier;
+   * recognised Enterprise and Free qualify. Known absence and ended terms
+   * do not refuse purchases. Legacy free_plan, no_subscription and
+   * subscription_ended remain accepted from older servers during rollout;
+   * the current resolver does not emit these three values.
+   *
+   */
+  can_top_up?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'creator_only_provisioning'
+    | 'payment_past_due'
+    | 'tier_not_self_serve'
+    | 'subscription_status_unrecognized'
+    | 'topup_purchases_paused'
+    | 'free_plan'
+    | 'no_subscription'
+    | 'subscription_ended'
+  /**
+   * Why can_upgrade is false, present only for a refused capability. Missing means no recognized explanation, never permission. Values describe the existing deciding policy branches, not authorization or sibling capabilities. Upgrade permission and current-state refusals precede catalog choice evaluation.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor does not hold the workspace owner role.
+   * - not_original_owner: Plan changes require the workspace creator.
+   * - creator_only_provisioning: Only the creator can provision this billing identity.
+   * - tier_not_self_serve: The current tier is sales-managed or unrecognized.
+   * - subscription_change_in_progress: A successor plan change is already scheduled.
+   * - subscription_not_started: The existing subscription has not started.
+   * - subscription_status_unrecognized: The existing subscription status is unrecognized.
+   * - billing_state_unknown: The current plan is not authoritative or its binding cannot be classified.
+   * - no_subscription: No current plan exists; subscribe is a separate action.
+   * - subscription_ended: The prior subscription has ended; resubscribe is a separate action.
+   * - payment_past_due: An outstanding payment must be recovered before changing plans.
+   * - billing_operation_parked: A subscription operation requires reconciliation.
+   * - billing_operation_in_progress: A subscription operation is still processing.
+   * - sales_managed: This plan is managed through sales.
+   * - no_upgrade_available: No active catalog choice is a valid upgrade for the actor, interval, credit stop and seat occupancy.
+   *
+   */
+  can_upgrade?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'not_original_owner'
+    | 'creator_only_provisioning'
+    | 'tier_not_self_serve'
+    | 'subscription_change_in_progress'
+    | 'subscription_not_started'
+    | 'subscription_status_unrecognized'
+    | 'billing_state_unknown'
+    | 'no_subscription'
+    | 'subscription_ended'
+    | 'payment_past_due'
+    | 'billing_operation_parked'
+    | 'billing_operation_in_progress'
+    | 'sales_managed'
+    | 'no_upgrade_available'
+  /**
+   * Why can_view_own_usage is false, in enum order. Attribution disabled emits usage_attribution_unavailable. Missing means no recognized explanation, including disabled team-workspaces or unreadable membership, never permission. This does not explain can_view_team_usage.
+   */
+  can_view_own_usage?: 'not_a_member' | 'usage_attribution_unavailable'
+  /**
+   * Why can_view_pending_invites is false. Permission refusals precede unavailable feature or entitlement facts; first reached wins in enum order. A present key implies refusal. Missing means unknown, including a disabled team-workspaces feature or an unavailable membership read, never permission. This explains only this capability and does not authorize a mutation.
+   */
+  can_view_pending_invites?: 'not_a_member' | 'not_workspace_owner'
+  /**
+   * Why can_view_team_usage is false. Disabled usage attribution emits usage_attribution_unavailable. Permission refusals precede unavailable feature or entitlement facts; first reached wins in enum order. A present key implies refusal. Missing means unknown, including a disabled team-workspaces feature or an unavailable membership read, never permission. This explains only this capability and does not authorize a mutation.
+   */
+  can_view_team_usage?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'usage_attribution_unavailable'
+}
+
+/**
+ * Optional facts for the matching denied_reasons key; absent facts are unknown and must not be inferred from other fields.
+ */
+export type BillingCapabilityDenialParams = {
+  can_delete_workspace?: WorkspaceDeletionDenialParams
 }
 
 /**
  * Effective billing UI guidance for one authenticated user and workspace.
  */
 export type BillingCapabilitiesResponse = {
+  /**
+   * Whether auto top-up is rolled out to this user: the auto_top_up_enabled
+   * rollout flag, evaluated by ingest the same way GET /api/features
+   * evaluates it. Any evaluation failure reads as false. It gates
+   * visibility only; capabilities.can_manage_auto_top_up still decides
+   * who may manage auto top-up.
+   *
+   */
+  auto_top_up_enabled: boolean
+  auto_top_up_setup?: AutoTopUpSetup
   capabilities: BillingCapabilities
+  denied_reason_params?: BillingCapabilityDenialParams
   denied_reasons?: BillingCapabilityDenials
   /**
    * Time after which the client must refetch this snapshot.
    */
   expires_at: string
+  /**
+   * Whether any workspace billing operation needs support reconciliation (paid_ungrantable or supersede_uncancelled), across all operation types including automatic top-ups, and independent of an active plan. Shown only when can_manage_billing is true; true requests the payment support banner, not proof of a charge. False means the local read found no parked operation. Omitted for non-managers, unavailable reads, older servers or disabled billing; omission means unknown, not a healthy payment state.
+   */
+  has_parked_billing_operation?: boolean
+  /**
+   * Whether this actor may use payment management to recover an outstanding
+   * subscription payment. True only when can_manage_billing is true, the
+   * workspace payment state is payment_failed or paused, and the provider
+   * confirms its bound live Stripe subscription is past_due, unpaid, or paused.
+   * False when known ineligible or healthy; no denied_reasons key explains it.
+   * Absent when the live binding or provider state cannot be verified, on
+   * older servers, or when billing is disabled; absence means unknown.
+   * This is not authorization, a promise that a payable invoice or hosted
+   * payment link exists, or permission to subscribe or run workflows.
+   * Use can_manage_billing for general payment-method and invoice management.
+   *
+   */
+  payment_recovery_available?: boolean
+  /**
+   * Who runs the plan lifecycle. Rendered as received; never derive it from
+   * tier names or slugs.
+   * - none: the workspace has no subscription in the capability facts. An
+   * orphaned reserved row on a self-serve tier is reported as none.
+   * - self_serve: a subscription on a tier with a customer-driven lifecycle,
+   * including a FREE plan.
+   * - sales_managed: a subscription on a sales-managed tier. It also covers a
+   * tier the resolver does not recognise.
+   * It classifies the plan by tier only. It says nothing about whether the plan
+   * is running (a reserved or ended subscription still has a kind) and nothing
+   * about what the user may do; that is capabilities. Absent in the same cases as
+   * recovery_route.
+   *
+   */
+  plan_kind?: 'none' | 'self_serve' | 'sales_managed'
+  /**
+   * Where the customer goes when the plan has ended. Rendered as received;
+   * never derive it from tier names or slugs.
+   * - none: there is no subscription, or it has not stopped for good (a
+   * canceled plan that still has a cancellation date has not).
+   * - resubscribe: the subscription has stopped for good (ended, or canceled
+   * with no cancellation date) on a self-serve tier. The route is subscribing
+   * again.
+   * - contact_sales: the subscription has stopped for good on a sales-managed
+   * or unrecognised tier. The route is through sales.
+   * It names the route only and deliberately ignores the user's role. Whether
+   * the control is enabled stays with capabilities.can_subscribe_self_serve
+   * and its denied reason. It is not a capability and not authorization.
+   * Absent when billing is disabled, when talking to a billing-api version
+   * that predates it, and when the upstream value is not recognised.
+   *
+   */
+  recovery_route?: 'none' | 'resubscribe' | 'contact_sales'
   resolved_for: BillingCapabilityScope
   /**
    * JavaScript-safe, time-sortable revision for this snapshot. It
@@ -5113,23 +6666,378 @@ export type BillingCapabilitiesResponse = {
  * Conservative UI guidance. These values do not authorize billing writes;
  * each write endpoint independently enforces its permission policy.
  *
+ * Each field answers one UI question for the authenticated user in the
+ * authenticated workspace. Render each as received and never combine fields
+ * into a new decision. False without a matching key in denied_reasons means no
+ * recognised explanation, not necessarily a refusal. A field is never
+ * per-surface: one value serves every screen. The plan-lifecycle fields
+ * (can_subscribe_self_serve, can_cancel, can_reactivate,
+ * can_revert_scheduled_change) require the workspace's creator only when the
+ * rollout mode is not `owner`; every other owner-level field stays open to
+ * every owner.
+ *
+ * When the deployment has billing disabled, this endpoint answers without
+ * consulting billing-api: can_top_up is true; can_manage_members,
+ * can_invite_members, can_manage_subscription and can_manage_auto_top_up
+ * follow the owner role. Other billing-action fields are false. These role
+ * facts do not promise that billing endpoints are available.
+ *
  */
 export type BillingCapabilities = {
+  /**
+   * - Answers: should the client offer cancelling the subscription?
+   * - True: the user is a workspace owner (the workspace's creator when the
+   * rollout mode is not `owner`) of a paid self-serve subscription that is
+   * running with no cancellation scheduled and no billing operation in flight.
+   * It is also true where there is no local subscription row but that absence
+   * is not authoritative (the state is unknown, not none).
+   * - False: denied_reasons.can_cancel names the branch that decided. False
+   * without that key means no recognised explanation, not necessarily a
+   * refusal, for example when billing-api predates the field.
+   * - Not: authorization (the cancel route enforces its own rules). Not
+   * can_reactivate, which undoes a scheduled cancellation, and not
+   * can_subscribe_self_serve. Not can_top_up or can_manage_billing, which stay
+   * open to every owner. A FREE plan is not a paid subscription, so it has
+   * nothing to cancel.
+   * - False when: the user is not an owner; the user is an owner who is not the
+   * workspace's creator (rollout mode not `owner`); the tier is FREE; there is no
+   * subscription row and the absence is authoritative; the tier is
+   * sales-managed or unrecognised; the subscription is reserved but not
+   * running; its status is not recognised; it has ended or been canceled for
+   * good; a billing operation is running or parked; a cancellation is already
+   * scheduled.
+   *
+   */
   can_cancel: boolean
+  /**
+   * - Answers: should the client offer changing the seat quantity of the
+   * subscription?
+   * - True: the user is a workspace owner with a subscription row on a
+   * self-serve tier whose status is active, or canceled with a cancellation
+   * date still set.
+   * - False: never explained. There is no denied_reasons key for this field, so
+   * false without a reason is the normal case, not a gap.
+   * - Not: authorization (the seat-change route enforces its own rules). Not room
+   * to invite (can_invite_members) and not member management
+   * (can_manage_members). The resolver tests the tier only against the
+   * self-serve list and does not check that the plan is seat-based, so true
+   * does not mean the plan has seats to change: an owner on a FREE plan gets
+   * true. A scheduled cancellation, a scheduled successor plan, a running
+   * billing operation and a past-due payment do not change it.
+   * - False when: the user is not an owner; there is no subscription row, even
+   * where that absence is only unknown; the tier is sales-managed or
+   * unrecognised; the subscription is reserved but not running; its status is
+   * not recognised; it has ended or been canceled for good.
+   *
+   */
   can_change_seats: boolean
+  /**
+   * - Answers: should the client offer deleting this workspace?
+   * - True: the user is an owner of a team workspace and, when the answer was
+   * read, the user is also its creator when the rollout mode is not owner,
+   * the workspace is not attached to an SSO organization, has no
+   * subscription-changing billing operation running or parked, and has no
+   * live subscription, sales-managed or not.
+   * - False: denied_reasons.can_delete_workspace names the branch that
+   * decided. False without that key means no recognised explanation, not a
+   * refusal: a fact it depends on could not be read, or the team-workspaces
+   * feature is off.
+   * - Not: authorization. It reports what the DELETE /api/workspaces/{id}
+   * handler guards, except creator_guidance applies the creator restriction
+   * to guidance while writes still accept any owner. Only creator mode
+   * enforces that restriction. The handler stays authoritative and re-checks
+   * under the workspace lock, so this answer can be stale. Not a billing
+   * capability: use can_cancel to ask about cancelling a subscription.
+   * - False when: a live subscription is on a sales-managed plan; the user is
+   * not an owner; the user is a non-creator owner and the rollout mode is
+   * not owner; the workspace is personal; the
+   * workspace is attached to an SSO organization; a billing operation is
+   * running or parked; a subscription is still live; a dependent fact could
+   * not be read; the team-workspaces feature is off.
+   *
+   */
+  can_delete_workspace: boolean
+  /**
+   * - Answers: may the user downgrade the workspace's subscription to a personal
+   * plan?
+   * - True: not in practice today. billing-api forces this field to false in
+   * every response, a retired rollout's closed default, so a client must not
+   * wait for it to become true.
+   * - False: always on this server version. There is no denied_reasons key for
+   * this field.
+   * - Not: authorization. Not the same as
+   * rollout_defaults_applied.can_downgrade_to_personal, which is true by design
+   * and says nothing about this value.
+   * - Before that override the resolver would grant it only to the workspace's
+   * original owner (its creator) who also has the owner role, on a running
+   * self-serve subscription with no successor plan scheduled.
+   *
+   */
   can_downgrade_to_personal: boolean
+  /**
+   * Whether to offer workspace name editing to this actor. True for a current owner while workspace features are available. False with no denied_reasons key is unknown or unavailable guidance. Not member management or write authorization; the update route rechecks owner membership. A permission refusal has its matching denial key.
+   */
+  can_edit_workspace: boolean
+  /**
+   * - Answers: should the client offer sending a new workspace invitation right
+   * now?
+   * - True: the user is a workspace owner and the workspace has room: members
+   * plus unexpired pending invitations are below the seat limit, or the limit
+   * is not positive (unlimited).
+   * - False: never explained. There is no denied_reasons key for this field.
+   * - Not: authorization (invitation creation enforces the same limit itself).
+   * Not member management (can_manage_members) and not buying seats
+   * (can_change_seats). Pending invitations count toward capacity. The
+   * resolver ignores tier, subscription status, cancellation and past-due
+   * payment; only the seat limit, which can come from the active plan, reflects
+   * the plan.
+   * - False when: the user is not an owner; the seat limit is 1 (the limit is the
+   * workspace override if set, else the active plan's default max seats, and
+   * defaults to one seat with no active subscription); members plus unexpired
+   * pending invitations have reached the limit; the capacity could not be
+   * read, which fails closed.
+   *
+   */
   can_invite_members: boolean
   /**
-   * Workspace owner may manage members independently of seat quantity and subscription lifecycle. Individual target restrictions still apply.
+   * - Answers: should the client offer leaving this workspace?
+   * - True: the user is a member and no branch below applies. A plain member
+   * of a team workspace who did not create it can leave; an owner who did
+   * not create it can leave only when another owner remains.
+   * - False: denied_reasons.can_leave_workspace names the branch that decided.
+   * False without that key means no recognised explanation, not a refusal: a
+   * fact it depends on could not be read, or the team-workspaces feature is
+   * off.
+   * - Not: authorization. It reports what POST /api/workspace/leave would
+   * decide for the authenticated workspace; the route stays authoritative.
+   * Not can_delete_workspace: leaving ends one membership, deleting removes
+   * the workspace.
+   * - False when: the user is not a member; the membership is managed by the
+   * workspace's SSO organization; the user created this personal workspace;
+   * the user created this team workspace; the user is the only owner.
+   *
+   */
+  can_leave_workspace: boolean
+  /**
+   * - Answers: does this workspace member have owner authority to view
+   * and manage auto top-up, including reading or disabling saved settings?
+   * - When billing-api omits this field, ingest resolves owner authority
+   * from the authenticated workspace role. Explicit upstream booleans are
+   * preserved; null or non-boolean values fail the response. False means
+   * non-owner fallback or an explicit upstream false. No denied_reasons
+   * key explains this role fact.
+   * - Not: service or setup readiness, write authorization or permission
+   * to charge. Missing payment methods, frozen billing or a disabled
+   * billing service do not remove owner authority; these deployment and
+   * setup checks remain separate from whether the actor is an owner.
+   *
+   */
+  can_manage_auto_top_up: boolean
+  /**
+   * - Answers: should the client offer payment-method, invoice, payment-update
+   * and company-details management?
+   * - True: the user is a member of the workspace whose role is owner, except in
+   * the false case below.
+   * - False: never explained. There is no denied_reasons key for this field.
+   * - Not: authorization. Not member management (can_manage_members) and not
+   * buying or subscribing (can_top_up, can_subscribe_self_serve). Independent
+   * of tier, subscription status, cancellation, past-due payment, a running
+   * billing operation and invite capacity.
+   * - False when: the user is not an owner, or is a non-creator owner of a
+   * personal workspace that is missing a billing provider id (not yet
+   * provisioned).
+   *
+   */
+  can_manage_billing: boolean
+  /**
+   * - Answers: should the client offer member-management controls?
+   * - True: the user is a member of the workspace whose role is owner.
+   * - False: never explained. There is no denied_reasons key for this field.
+   * - Not: authorization; individual target restrictions still apply. Not invite
+   * capacity (can_invite_members), seat quantity (can_change_seats) or billing
+   * management (can_manage_billing). Independent of tier, subscription status,
+   * cancellation, past-due payment and billing provisioning.
+   * - False when: the user is not a member, or is a member whose role is not
+   * owner. Nothing else closes it.
+   *
    */
   can_manage_members: boolean
+  /**
+   * Whether to offer editing the workspace partner-provider access policy. Requires current owner membership and the partner governance entitlement. A false capability may have its matching denial key; absence means no recognized explanation, including disabled workspace features or unavailable membership. Not permission to read the policy, manage members or authorize a write; the policy route rechecks.
+   */
+  can_manage_partner_node_access: boolean
+  /**
+   * - Answers: does this workspace member have owner authority for the
+   * subscription-management section?
+   * - When billing-api omits this field, ingest resolves owner authority
+   * from the authenticated workspace role. Explicit upstream booleans are
+   * preserved; null or non-boolean values fail the response. False means
+   * non-owner fallback or an explicit upstream false. No denied_reasons
+   * key explains this role fact.
+   * - Not: action availability, service readiness or write authorization.
+   * Portal, payment-method and invoice guidance still uses can_manage_billing,
+   * with provisioning and endpoint-specific checks. Lifecycle actions use
+   * their dedicated capabilities and permissions. This role authority is
+   * independent of plan, billing state and personal-workspace creator.
+   *
+   */
+  can_manage_subscription: boolean
+  /**
+   * Whether to offer this actor the way into Plans (Manage, Explore plans, Choose a plan). Creator-only, whatever the lifecycle rollout mode: false for members and for owners who are not the workspace's creator. Otherwise the same rule as can_subscribe_self_serve, except that a plan change already scheduled (subscription_change_in_progress) does not close it, so the creator can still open Plans to review or revert that change. Which plans are selectable stays with the plans listing. False when an older billing-api omits it. Guidance only; writes recheck.
+   */
+  can_open_plans: boolean
+  /**
+   * - Answers: may the user undo a SCHEDULED cancellation on a subscription that
+   * is still running?
+   * - True: the user is a workspace owner (the workspace's creator when the
+   * rollout mode is not `owner`), the subscription is active or canceled with a
+   * cancellation date still set (running until that date), and no billing
+   * operation is in flight.
+   * - False: denied_reasons.can_reactivate names the branch that decided. False
+   * without that key means no recognised explanation, not necessarily a
+   * refusal, for example when billing-api predates the field.
+   * - Not: authorization (the resubscribe route enforces its own rules). Not a
+   * way back from a plan that has ended: that is can_subscribe_self_serve,
+   * which stays open there. Not an undo of a scheduled plan change, which is
+   * can_revert_scheduled_change. Not can_top_up or can_manage_billing, which stay
+   * open to every owner.
+   * - False when: the user is not an owner; the user is an owner who is not the
+   * workspace's creator (rollout mode not `owner`); there is no subscription row at all,
+   * even where that absence is only unknown; the tier is sales-managed or
+   * unrecognised; the subscription is reserved but not running; its status is
+   * not recognised; it has ended or been canceled for good; a billing
+   * operation is running or parked; no cancellation is scheduled.
+   *
+   */
   can_reactivate: boolean
   /**
-   * Stripe-billed only; false within 1 hour of the change.
+   * - Answers: may the user undo a plan change that is already scheduled for a
+   * future billing boundary?
+   * - True: the user is a workspace owner (the workspace's creator when the
+   * rollout mode is not `owner`), the subscription is Stripe-billed and has a
+   * pending scheduled change from it, and the revert window is open: more than
+   * one hour before the change takes effect and, when reverting would restore a
+   * cancellation, more than one hour before that cancellation date.
+   * - False: never explained. There is no denied_reasons key for this field, so
+   * it does not say which of the conditions failed, including that the user is
+   * an owner who is not the creator.
+   * - Not: authorization. Not can_reactivate (undo a scheduled cancellation) and
+   * not can_subscribe_self_serve. Not can_top_up or can_manage_billing, which
+   * stay open to every owner. When subscribe is refused with
+   * subscription_change_in_progress, a successor plan is scheduled; this field
+   * says whether that change can still be reverted.
+   * - False when: the user is not an owner; the user is an owner who is not the
+   * workspace's creator (rollout mode not `owner`); there is no pending
+   * scheduled change from this subscription; the cutoff has passed; the tier is
+   * sales-managed or unrecognised; the subscription has ended or been canceled
+   * for good.
+   *
    */
   can_revert_scheduled_change: boolean
+  /**
+   * Point-in-time Cloud billing guidance for this actor, combining the supplied workflow_run decision with ingest's existing account gate and cutover mode, local enrollment, Google-session requirement, and acting-user allowance. Legacy authority includes the same fail-open behavior as submission. True means these account gates allow the attempt; false has a denial when recognized. Billing-disabled environments return true. False without a reason is unknown where authoritative guidance is unavailable. No allowance is consumed or reserved. This is not authorization for a specific job or project: the submission path rechecks its full context.
+   */
+  can_run_workflows: boolean
+  /**
+   * - Answers: may this user start, recover or change a self-serve plan?
+   * - True: the user is a workspace owner and no resolver branch closed it. When
+   * the rollout mode is not `owner`, the user must also be the workspace's
+   * creator; in mode `owner` any owner qualifies. That includes a workspace
+   * with no plan, a running self-serve plan, and a plan that has ended or been
+   * canceled for good, where it stays open because it is the only path back.
+   * - False: the user is not an owner, the user is an owner who is not the
+   * workspace's creator (rollout mode not `owner`), the user is a non-creator
+   * owner of a personal workspace whose billing is not yet provisioned, the
+   * tier is sales-managed or unrecognised, a successor plan is already
+   * scheduled, the subscription is reserved but not running and has no
+   * recoverable checkout, or its status is not recognised.
+   * denied_reasons.can_subscribe_self_serve names the branch that decided.
+   * False without that key means no recognised explanation, not necessarily a
+   * refusal, for example when billing-api predates the field.
+   * - Not: authorization (the subscribe route enforces its own rules). Not
+   * can_top_up (buy credits) or can_manage_billing, which stay open to every
+   * owner. Not can_reactivate (undo a scheduled cancellation) or can_cancel.
+   * One value serves every surface; there is no per-surface variant.
+   *
+   */
   can_subscribe_self_serve: boolean
+  /**
+   * Should this owner be offered a one-off prepaid credit purchase? Known
+   * Free, no-subscription, ended and inactive Enterprise states qualify.
+   * Non-members, non-owner members, non-creator initial personal billing
+   * provisioning and past-due billing (payment_failed or paused) are refused.
+   * Unknown existing subscription tier or status is refused, matching purchase
+   * and quote validation, and so is every purchase while staff pause top-ups.
+   * This is guidance, not authorization: write routes
+   * retain workspace, rail, provider, amount and operation checks. Cloud
+   * workflow execution still requires its existing subscription/run policy.
+   *
+   */
   can_top_up: boolean
+  /**
+   * Whether at least one active catalog choice is an actionable upgrade from the current plan for this actor, including a Free-to-paid choice, longer interval or higher Team credit commitment. Uses the same exact target selector as plan actions, including seats, processing operations and scheduled changes. No current or ended plan is false: subscribe or resubscribe is a separate action. Unknown legacy bindings fail closed. False with no reason is unknown; this guidance does not authorize writes.
+   */
+  can_upgrade: boolean
+  /**
+   * Whether to offer the actor's own usage attribution view. Optional for rolling deployments; absent means unknown. True for a current workspace member with usage attribution enabled. Clients must use person/source ledger groupings or person/source filters, which the existing route scopes to the actor for members. This is not permission for the default model grouping, whole-workspace analytics, or other unscoped queries. Query authorization and filters are unchanged. Attribution disabled emits usage_attribution_unavailable; missing denial means unknown.
+   */
+  can_view_own_usage?: boolean
+  /**
+   * Whether to offer the workspace invitation list. True for a current owner while workspace features are available. A false capability may have its matching denied_reasons key; absence means no recognized explanation. This is not capacity to send another invitation; use can_invite_members. The owner-only list route stays authoritative and can include expired invitations despite the word pending.
+   */
+  can_view_pending_invites: boolean
+  /**
+   * Whether to offer whole-workspace usage analytics. True only for a current workspace owner with usage attribution enabled. Members use can_view_own_usage instead. False with no matching denied_reasons key means unknown or unavailable guidance. This does not authorize a read.
+   */
+  can_view_team_usage: boolean
+}
+
+/**
+ * Recorded account setup guidance, separate from owner authority in
+ * can_manage_auto_top_up. Frozen prevents enabling/editing; unavailable
+ * means setup is not available. Owner read/disable authority remains separate.
+ * These states do not determine surface visibility. Unified billing settings
+ * hide the auto top-up card when can_top_up is false, including paused or
+ * payment-failed billing.
+ * Ready does not authorize a charge or guarantee an off-session payment method.
+ * This fact ignores saved consent and monthly budget. An absent fact is unknown.
+ *
+ */
+export type AutoTopUpSetup = {
+  /**
+   * Absent for ready; required for frozen or unavailable. Frozen reasons are
+   * payment_past_due, billing_paused, billing_awaiting_payment_method,
+   * billing_payment_pending, default_payment_method_missing,
+   * default_payment_method_unsupported and billing_operation_parked.
+   * Remaining reasons are unavailable. The first recorded workspace, provider,
+   * rail, billing, subscription, parked-operation or default-payment-method
+   * check that refuses setup supplies the reason.
+   * default_payment_method_unsupported means the default payment method cannot
+   * be charged off-session (Korea-only wallets, WeChat Pay); the owner must set
+   * a different default. It is checked against the payment provider; when
+   * that read fails, the setup stays ready.
+   * Creator-only provisioning replaces otherwise ready or frozen guidance
+   * for a noncreator; existing unavailable account reasons remain.
+   *
+   */
+  reason?:
+    | 'workspace_deleted'
+    | 'workspace_blocked'
+    | 'billing_not_provisioned'
+    | 'billing_rail_not_supported'
+    | 'billing_status_unrecognized'
+    | 'payment_past_due'
+    | 'billing_paused'
+    | 'billing_awaiting_payment_method'
+    | 'billing_payment_pending'
+    | 'subscription_tier_unrecognized'
+    | 'subscription_status_unrecognized'
+    | 'subscription_state_unknown'
+    | 'billing_operation_parked'
+    | 'default_payment_method_missing'
+    | 'default_payment_method_unsupported'
+    | 'creator_only_provisioning'
+  state: 'ready' | 'frozen' | 'unavailable'
 }
 
 /**
@@ -5175,6 +7083,18 @@ export type BillingBalanceResponse = {
    */
   effective_balance_micros?: number
   /**
+   * True when the effective balance is above 0 and at or below the low-balance threshold ($5 of credits). False when the balance is not authoritative.
+   */
+  low_balance?: boolean
+  /**
+   * The most one top-up from this API may charge, in cents. Absent when the workspace has no billing account yet.
+   */
+  max_topup_cents?: number
+  /**
+   * The whole credits `max_topup_cents` buys. Absent when `max_topup_cents` is.
+   */
+  max_topup_credits?: number
+  /**
    * Pending/unbilled charges from draft invoices. Cents of `currency`, the same value as `pending_charges_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
    */
   pending_charges_cents?: number
@@ -5194,6 +7114,219 @@ export type BillingBalanceResponse = {
    * @deprecated
    */
   prepaid_balance_micros?: number
+  /**
+   * Amount in cents to prefill for a top-up when the effective balance is negative: covers the shortfall plus the minimum top-up, rounded up to a whole dollar, never below the default amount and never above max_topup_cents. Null when the balance is zero or positive, or not authoritative.
+   */
+  suggested_topup_amount_cents?: number | null
+}
+
+/**
+ * Every listed field is required, and one of target_credits or
+ * reload_credits. reload_credits alone means target_credits =
+ * threshold_credits + reload_credits. On every save, disabled included,
+ * threshold_credits must be a positive whole number of credits and a
+ * non-null monthly_budget_cents positive. When enabled is true:
+ * target_credits must be greater than threshold_credits; target_credits
+ * and reload_credits must agree (reload_credits = target_credits -
+ * threshold_credits) when both are sent; a non-null monthly_budget_cents
+ * must be at most max_monthly_budget_cents, and a null one means no
+ * owner limit and is stored as max_monthly_budget_cents; target_credits
+ * must be at least threshold_credits + min_reload_credits and at most
+ * threshold_credits + max_reload_credits; and the smallest automatic
+ * reload (from one credit below threshold_credits to target_credits)
+ * must cost no more than the budget. A save with enabled false accepts a
+ * null budget, stores it as null, and skips the enabled-only rules. A
+ * save with enabled false is never refused over target_credits or
+ * reload_credits: it stores target_credits minus threshold_credits when
+ * the target is above the threshold, else a positive reload_credits,
+ * else min_reload_credits.
+ *
+ */
+export type AutoReloadSettingsRequest = {
+  enabled: boolean
+  monthly_budget_cents: number | null
+  /**
+   * Older form, target_credits minus threshold_credits; must agree with target_credits when both are sent on an enabled save.
+   */
+  reload_credits?: number
+  /**
+   * The balance to top up to.
+   */
+  target_credits?: number
+  threshold_credits: number
+}
+
+/**
+ * billing-api's automatic top-up settings, server prices and automatic
+ * spend this cycle, passed through unchanged. Credits are whole credits;
+ * amounts are US cents. When `configured` is false, `enabled` is false
+ * and the other setting fields are null.
+ *
+ */
+export type AutoReloadSettings = {
+  /**
+   * True when the validated default card is already expired or its expiry-month boundary (00:00 UTC on the first day of the following month) is within the next 30 days. Absent or null means unknown, never a healthy-card claim. This includes non-card methods, malformed data, provider errors or a live Stripe default that differs from the recorded default payment method (for example, before a portal-change webhook syncs). Independent of status and charge eligibility; save responses omit the fact. Missing on an older server also means unknown.
+   *
+   */
+  card_expiring_soon?: boolean | null
+  /**
+   * Expiry of the validated default card, from the same read as card_expiring_soon; null whenever card_expiring_soon is null or absent, including save responses. Read expired for the state; do not compare month and year against the client clock.
+   */
+  card_expiry: AutoReloadCardExpiry | null
+  configured: boolean
+  /**
+   * When the budget cycle resets; null when no cycle anchor is known.
+   */
+  cycle_resets_at: string | null
+  /**
+   * The payment method whose declines caused the current failed state, for a notice such as "Visa ending 4242 was declined". Set only while paused_by_decline is true or disabled_reason is consecutive_declines; null otherwise, and null when the method cannot be read or is no longer attached. Also null once the default changed to a payment method whose match with the declined one could not be determined (a wallet, or an unreadable method), since the pause then continues on an untried method. Never carries a payment method ID.
+   */
+  declined_payment_method: AutoReloadDeclinedPaymentMethod | null
+  /**
+   * Why the system, not an owner, turned automatic reload off: consecutive_declines. Null after any owner save, or once a different default card re-enables it.
+   */
+  disabled_reason: string | null
+  enabled: boolean
+  /**
+   * When the most recent automatic reload declined, or null.
+   */
+  last_failure_at: string | null
+  /**
+   * Decline code of the most recent declined automatic reload, or null. Fraud codes read as generic_decline. Kept after a later success; read paused_by_decline for the current state.
+   */
+  last_failure_reason: string | null
+  /**
+   * The largest monthly_budget_cents an enabled save accepts.
+   */
+  max_monthly_budget_cents: number
+  /**
+   * The most credits a single automatic reload buys. An enabled save needs target_credits at most threshold_credits plus this; a disable keeps a target saved above it. The smallest automatic reload must also fit the monthly limit (monthly_budget_cents, at most max_monthly_budget_cents). Null when billing-api did not report the cap.
+   *
+   */
+  max_reload_credits: number | null
+  /**
+   * The fewest credits a single automatic reload buys. An enabled save needs target_credits at least threshold_credits plus this.
+   */
+  min_reload_credits: number
+  monthly_budget_cents: number | null
+  /**
+   * true when the stored monthly limit came from an owner's null (no-limit) save and still equals the current ceiling; the dialog reopens with the limit switch off. False when unconfigured, when the owner sent a limit or disabled, or when the ceiling has since changed. A consecutive-declines system disable keeps the saved value.
+   *
+   */
+  monthly_budget_is_default: boolean
+  /**
+   * Enabled, but no budget cycle is known, monthly_budget_cents is null, or the remaining budget cannot fund even the smallest automatic reload, from one credit below threshold_credits to target_credits. Always false when disabled. Read guidance only; it does not enforce charging.
+   */
+  paused_by_budget: boolean
+  /**
+   * True only when paused_by_budget holds because the unspent part of the monthly limit is positive but smaller than the smallest automatic reload (from one credit below threshold_credits to target_credits); false when the limit is fully used or exceeded, when no cycle or limit is known, and when disabled.
+   */
+  paused_by_budget_remainder: boolean
+  /**
+   * Enabled, but the default card is the one that last declined an automatic reload, so none is attempted until the default card changes. Not the workspace billing status.
+   */
+  paused_by_decline: boolean
+  /**
+   * Current server price of the smallest automatic reload, from one credit below threshold_credits to target_credits (reload_credits + 1 credit, clamped to the reload bounds). Reloads for lower balances cost more, so show it as a starting price. Display only; never sent back.
+   */
+  reload_amount_cents: number | null
+  /**
+   * target_credits minus threshold_credits. Kept for older clients; read target_credits. A reload buys the gap between the balance and target_credits, so it can buy more than this.
+   */
+  reload_credits: number | null
+  /**
+   * Automatic reload spend counted in the current budget cycle.
+   */
+  spent_this_cycle_cents: number
+  /**
+   * The one automatic reload state the card renders, decided by
+   * billing-api so clients never order the separate facts themselves.
+   * Render it as received. Values are listed in precedence order; the
+   * first that holds wins:
+   * - failed: paused_by_decline is true, or the system turned automatic
+   * reload off after consecutive declines (disabled_reason is
+   * consecutive_declines). The card asks for a new payment method.
+   * - off: not configured, or an owner turned it off.
+   * - on_hold: enabled, but the workspace has no default payment method
+   * recorded, so no automatic reload can be attempted.
+   * - paused_by_budget: enabled, and paused_by_budget is true; it
+   * resumes at cycle_resets_at.
+   * - on: enabled and able to reload.
+   * Read guidance, not charging enforcement or the workspace billing
+   * status. An expired card that is still the default reads as on
+   * until a reload declines, then failed. Treat an unknown value as off.
+   *
+   */
+  status: 'failed' | 'off' | 'on_hold' | 'paused_by_budget' | 'on'
+  /**
+   * The balance an automatic reload tops up to: threshold_credits plus reload_credits. Null when not configured, when that sum does not fit in an int64, and from an older billing-api that does not report it.
+   */
+  target_credits: number | null
+  /**
+   * Reload when the balance falls below this many credits.
+   */
+  threshold_credits: number | null
+}
+
+/**
+ * Display facts about a declined payment method. Carries no identifier.
+ */
+export type AutoReloadDeclinedPaymentMethod = {
+  /**
+   * Card brand as Stripe reports it (for example visa or mastercard); null for non-card methods.
+   */
+  brand: string | null
+  /**
+   * Last four card digits; null for non-card methods.
+   */
+  last4: string | null
+  /**
+   * Stripe payment method type, such as card, alipay or link. Render an unknown value generically.
+   */
+  type: string
+}
+
+/**
+ * Expiry of the default card. Carries no identifier.
+ */
+export type AutoReloadCardExpiry = {
+  /**
+   * True once 00:00 UTC on the first day after the expiry month has passed.
+   */
+  expired: boolean
+  /**
+   * Expiry month, 1 to 12.
+   */
+  month: number
+  /**
+   * Four-digit expiry year.
+   */
+  year: number
+}
+
+/**
+ * Estimated automatic charge for the proposed settings.
+ */
+export type AutoReloadPreview = {
+  /**
+   * Price of charge_credits in cents; null when charge_credits is null.
+   */
+  charge_cents: number | null
+  /**
+   * Credits the charge buys; null when the balance is at or above the threshold.
+   */
+  charge_credits: number | null
+  /**
+   * Whether saving would start a charge at the next check.
+   */
+  charges_now: boolean
+  /**
+   * Why saving would not start a charge; null when charges_now is true.
+   */
+  not_charging_reason:
+    | 'above_threshold'
+    | 'monthly_budget'
+    | 'paused_by_decline'
 }
 
 export type AuthenticateResponse = {
@@ -5363,7 +7496,56 @@ export type AssetCreated = Asset & {
 }
 
 /**
- * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, draft_patch, agent_message_done).
+ * Attachment extensions whose content the model can see: the raster formats Go's image
+ * package decodes, plus HEIC/HEIF stills (iPhone photos), which view_asset converts to JPEG
+ * first. view_asset always re-encodes to PNG or JPEG, so the provider's own four-type image
+ * allowlist is satisfied by construction rather than by matching this list.
+ *
+ */
+export type AgentViewableAttachmentExtension =
+  | '.png'
+  | '.jpg'
+  | '.jpeg'
+  | '.gif'
+  | '.webp'
+  | '.bmp'
+  | '.tif'
+  | '.tiff'
+  | '.heic'
+  | '.heif'
+
+/**
+ * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
+ */
+export type AgentTurnUsage = {
+  cache_creation_input_tokens: number
+  cache_read_input_tokens: number
+  charge_micro_usd?: number
+  input_tokens: number
+  output_tokens: number
+  total_tokens: number
+}
+
+/**
+ * Present on agent_message_done only when the model service refused the turn. Mirrors `$defs.agent_message_done.data.refusal` in services/agent/api/agent_events.schema.json, which states the full rendering rules. Absence must not be read as the account having credit.
+ */
+export type AgentTurnRefusal = {
+  /**
+   * Whether adding credit to the account clears this refusal. True only for no_funds.
+   */
+  can_add_credit: boolean
+  /**
+   * What refused the turn. Clients must treat an unknown kind like payment_required (show the text) rather than fail.
+   */
+  kind: 'no_funds' | 'manual_block' | 'payment_required' | 'auth' | 'rate_limit'
+  /**
+   * Ingest's error.reason from the refused 402, verbatim, for logging and analytics. Render from kind and can_add_credit, not from this field.
+   */
+  reason?: string
+}
+
+/**
+ * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, agent_message_done); canvas edits arrive as doc_update frames.
  */
 export type AgentTurnAccepted = {
   /**
@@ -5371,6 +7553,55 @@ export type AgentTurnAccepted = {
    */
   message_id: string
   thread_id: string
+}
+
+/**
+ * Server-to-client agent_tool_call frame on /ws. A tool invocation started or reached a terminal state. Closed, like the canonical envelope.
+ */
+export type AgentToolCallFrame = {
+  data: AgentToolCallData
+  type: 'agent_tool_call'
+}
+
+/**
+ * The `data` of an agent_tool_call WebSocket event: one tool invocation's lifecycle. Mirrors `$defs.agent_tool_call.data` in services/agent/api/agent_events.schema.json, which also states the presence rules: the document correlation fields appear only on a terminal (success or error) frame, workflow_id and op_ids appear together, doc_seq and doc_lineage_seq appear together and only with both of them, and job_id and job_workflow_id appear together only on a terminal run frame when a job was submitted. This schema leaves those rules out on purpose. A oneOf over closed variants could express them, but it would turn the generated frontend type into a union the consumer cannot extend field by field. The producer enforces them instead: the Publisher omits incomplete correlation, and TestToolCallEmissionsSatisfyBothContracts validates every emitted shape against the canonical schema. Consumers treat correlation as advisory and use it only when workflow_id and op_ids are both present on a terminal frame. TestToolCallFrameMatchesContract holds the two definitions to the same fields and constraints.
+ */
+export type AgentToolCallData = {
+  /**
+   * Present with doc_seq. The lineage containing every correlated update, so a follower can detect replacement and resync.
+   */
+  doc_lineage_seq?: number
+  /**
+   * Optional terminal recovery barrier. The highest published doc_update sequence carrying this call's op_ids.
+   */
+  doc_seq?: number
+  duration_ms?: number
+  error_code?: string
+  /**
+   * Terminal run frame with a submitted job only. The job (prompt_id) this call submitted. Present with job_workflow_id, including when a later step made the run observation an error.
+   */
+  job_id?: string
+  /**
+   * Terminal run frame with a submitted job only. The workflow the job was submitted for, so the client can attribute the job's execution events to that workflow's tab. Present with job_id.
+   */
+  job_workflow_id?: string
+  message_id: string
+  /**
+   * Terminal success or error only. The semantic operations whose effects are carried by published doc_update frames for this call.
+   */
+  op_ids?: Array<string>
+  /**
+   * load_skill only. The skill pack name the call's input names, on its running frame and on its terminal frame, including an unknown_skill error. Omitted on every other tool.
+   */
+  skill?: string
+  status: 'running' | 'success' | 'error'
+  thread_id: string
+  tool_call_id: string
+  tool_name: string
+  /**
+   * Terminal success or error only. The workflow whose published doc_update contains op_ids. Replace-canvas doc_reset calls do not carry this correlation.
+   */
+  workflow_id?: string
 }
 
 /**
@@ -5438,6 +7669,17 @@ export type AgentThreadCreateRequest = {
    * Workflow the thread is about. Optional — a thread can exist without a workflow.
    */
   workflow_id?: string
+}
+
+/**
+ * One model round's thinking as persisted on an assistant message's content.thinking (services/agent/internal/loop.persistedThinking): the round's reasoning text, then its narration, scrubbed exactly as the live agent_thinking frames were. Display data only.
+ */
+export type AgentThinkingEntry = {
+  text: string
+  /**
+   * The provider tool-use id of the round's first tool call, the same id ToolCallSummary.tool_call_id carries, so a client can place the entry ahead of that round's calls. Absent for the final round, whose thinking follows the last call.
+   */
+  tool_call_id?: string
 }
 
 /**
@@ -5529,9 +7771,21 @@ export type AgentRunMode = {
 }
 
 /**
- * The `context` of a `run_approval` ask. Ids and a display name, never the user's prose.
+ * The `context` of a `run_approval` ask. It names the workflow and, for cards opened by content-binding builds, the exact canonical graph the user approved. Older in-flight cards may omit graph_binding; consumers must preserve that explicit legacy compatibility case.
  */
 export type AgentRunApprovalContext = {
+  /**
+   * The document sequence projected into the approved graph, when document-backed.
+   */
+  doc_seq?: number
+  /**
+   * sha256 means graph_sha256 is enforced; identity_only means no durable graph existed to bind; unavailable means binding failed and execution must be denied.
+   */
+  graph_binding?: 'sha256' | 'identity_only' | 'unavailable'
+  /**
+   * SHA-256 of the canonical graph content the card authorizes.
+   */
+  graph_sha256?: string
   /**
    * The workflow the run will execute.
    */
@@ -5543,6 +7797,82 @@ export type AgentRunApprovalContext = {
 }
 
 /**
+ * Attachment extensions that are accepted so a user can keep them beside a workflow, and
+ * nothing more — the agent can neither read the contents nor wire the file in.
+ *
+ * .avif is the only one: it is an image the turn cannot decode (no registry entry, so
+ * view_asset would fail) and it is not text, so read_asset would return mojibake. It stays
+ * accepted because it was attachable before the policy existed.
+ *
+ */
+export type AgentRetainedAttachmentExtension = '.avif'
+
+/**
+ * Attachment extensions the agent cannot open but wires into a load node by filename. The 3D
+ * models go into Load3D's model_file widget and are exactly the set Load3D accepts
+ * (comfy_extras/nodes_load_3d.py); .usdz is absent from both lists, so it is not an exclusion
+ * this tier makes. .exr goes into LoadImage's image widget: ComfyUI core v0.40.0 registers it
+ * as an image type, but it is HDR, so view_asset cannot decode it and it is not on the view
+ * tier.
+ *
+ */
+export type AgentReferenceAttachmentExtension =
+  | '.glb'
+  | '.obj'
+  | '.fbx'
+  | '.gltf'
+  | '.stl'
+  | '.ply'
+  | '.spz'
+  | '.splat'
+  | '.ksplat'
+  | '.exr'
+
+/**
+ * Attachment extensions whose contents the agent reads verbatim, with read_asset. The bytes
+ * are decoded as UTF-8 and returned as text, bounded and truncation-marked.
+ *
+ * This tier describes CONTENT ACCESS only and says nothing about whether the file can be
+ * wired into a graph. Those are separate questions, so a format becoming a node input later
+ * does not move it out of this tier.
+ *
+ * .svg is here rather than with the images because it is XML: view_asset cannot decode it,
+ * but its markup is exactly what a caller would want read.
+ *
+ */
+export type AgentReadableAttachmentExtension =
+  | '.md'
+  | '.markdown'
+  | '.txt'
+  | '.json'
+  | '.csv'
+  | '.yaml'
+  | '.yml'
+  | '.xml'
+  | '.log'
+  | '.svg'
+
+/**
+ * Attachment extensions the agent can only describe from metadata. A subset of the containers
+ * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
+ * .aac and .wma, which the agreed attachment list rejects.
+ *
+ */
+export type AgentProbeableAttachmentExtension =
+  | '.mp4'
+  | '.webm'
+  | '.mov'
+  | '.m4v'
+  | '.avi'
+  | '.mkv'
+  | '.mp3'
+  | '.wav'
+  | '.ogg'
+  | '.opus'
+  | '.flac'
+  | '.m4a'
+
+/**
  * A user turn posted to the agent.
  */
 export type AgentPostMessageRequest = {
@@ -5551,7 +7881,24 @@ export type AgentPostMessageRequest = {
    */
   ask_kinds?: Array<AgentAskKind>
   /**
-   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). Images, video and audio are all accepted. The agent wires them into the workflow by filename — it never receives file bytes here, and reads an attachment's contents through its own asset tools when a request depends on them.
+   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via
+   * /api/upload/image, which returns the {name, subfolder, type} reference). The agent never
+   * receives file bytes here; what it can read or wire depends on the policy tier.
+   *
+   * Each entry's extension must appear in AgentAttachmentPolicy; a reference outside it is
+   * rejected with 422 (AgentAttachmentRejected). A reference with NO extension is the one
+   * exception: not every reference is a filename — an asset hash may be a bare hex digest or
+   * "blake3:<hex>" — so one with nothing to judge is admitted here and checked again once it
+   * resolves to a stored name. A refusal there costs the attachment its asset id and its
+   * kind, so the agent gets no tool for it and the turn is not refused; the reference itself
+   * is still echoed back by GET .../messages. Which tier of that policy an extension lands
+   * in says what the agent can do with it, and the tiers differ sharply — a client that
+   * presents them as one flat list misleads the user.
+   *
+   * The constraint is expressed as extension enums rather than on this array because the array
+   * carries FILENAMES, not content types: an extension is what both ends can actually agree
+   * on, and the upload route this list references stores no MIME type for what it accepts.
+   *
    */
   attachments?: Array<string>
   /**
@@ -5562,6 +7909,10 @@ export type AgentPostMessageRequest = {
    * Client-generated identifier for this send attempt. The frontend emits the same value on app:agent_message_sent; the agent echoes it on agent_turn_started so accepted turns can be joined to their originating sends without using timestamp proximity. Retries mint a new value. Older clients may omit it.
    */
   client_message_id?: string
+  /**
+   * The frontend build that sent this turn (ComfyUI_frontend __COMFYUI_FRONTEND_VERSION__, optionally +commit). Observability only; never changes the turn. Recorded on the turn's trace as `comfy.client.version`. A value longer than 64 bytes, or one containing anything other than ASCII letters, digits, `.`, `+` and `-`, is DROPPED, not rejected — accepted with 202 exactly like omitting the field. Surrounding whitespace is trimmed.
+   */
+  client_version?: string
   /**
    * The user's message.
    */
@@ -5749,11 +8100,32 @@ export type AgentPendingAsk =
     } & AgentPendingDeleteApproval)
 
 /**
+ * Server-to-client agent_message_done frame on /ws. Closed, like the canonical envelope.
+ */
+export type AgentMessageDoneFrame = {
+  data: AgentMessageDoneData
+  type: 'agent_message_done'
+}
+
+/**
+ * The `data` of an agent_message_done WebSocket event: the assistant message is complete. Mirrors `$defs.agent_message_done.data` in services/agent/api/agent_events.schema.json.
+ */
+export type AgentMessageDoneData = {
+  message_id: string
+  refusal?: AgentTurnRefusal
+  thread_id: string
+  /**
+   * Null on a turn that failed or was refused; its rounds were billed as they ran, and the failed round has no usage.
+   */
+  usage: AgentTurnUsage | null
+}
+
+/**
  * A persisted message in an agent thread.
  */
 export type AgentMessage = {
   /**
-   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?, display_name?} objects. display_name preserves the original user-facing filename when name is an opaque storage key. To bound denormalized data, repeated entries with the same name carry display_name only on the first occurrence; clients should apply it to every entry sharing that name. The sibling exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows.
+   * Message payload. User turns carry {text, attachments?, attachment_refs?, workflow_references?}. Attachments are the input-image filenames from the request. attachment_refs is the server's own resolution of those same filenames to library assets, as {name, id?, kind?, display_name?} objects. display_name carries the validated user-facing filename when name is an opaque storage key; the server may remove a registered emoji selector that does not change the displayed glyph. To bound denormalized data, repeated entries with the same name carry display_name only on the first occurrence; clients should apply it to every entry sharing that name. The sibling exists so a later turn in the thread can reach an earlier turn's file — clients should keep reading attachments. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast. tool_calls is an optional array of ToolCallSummary, attached to an assistant message that has persisted terminal (ok/error) tool-call rows — it lets a chat reload render the tool history a turn produced instead of showing nothing until the next live turn. Omitted when the message has no such rows. thinking is an optional array of AgentThinkingEntry on a completed assistant message: the agent_thinking text the live turn showed, one entry per model round in order, so a reload keeps the thinking in the turn's work trace. Omitted when the turn produced none.
    */
   content?: {
     attachment_refs?: Array<{
@@ -5763,6 +8135,7 @@ export type AgentMessage = {
       name?: string
       [key: string]: unknown
     }>
+    thinking?: Array<AgentThinkingEntry>
     tool_calls?: Array<ToolCallSummary>
     [key: string]: unknown
   }
@@ -5804,7 +8177,7 @@ export type AgentError = {
 }
 
 /**
- * Authoritative snapshot of a workflow's agent draft — the replay-on-reconnect baseline for the draft_patch stream.
+ * Authoritative snapshot of a workflow's agent draft — a snapshot for recovery and tooling.
  */
 export type AgentDraftSnapshot = {
   /**
@@ -5814,7 +8187,7 @@ export type AgentDraftSnapshot = {
     [key: string]: unknown
   }
   /**
-   * Monotonic draft version; compare against draft_patch base_version/version to detect gaps.
+   * Monotonic draft version of the snapshot, for recovery and tooling; not a concurrency token.
    */
   version: number
 }
@@ -5842,6 +8215,83 @@ export type AgentCancelUnconfirmed = {
  */
 export type AgentCancelAccepted = {
   status: 'cancelling'
+}
+
+/**
+ * 422 body when a posted attachment's extension is outside the accepted list. It carries the
+ * policy rather than only an error string so a client never has to hardcode the list to
+ * explain the refusal — the same reason the list is expressed as enums the frontend generates
+ * its types from.
+ *
+ */
+export type AgentAttachmentRejected = {
+  accepted: AgentAttachmentPolicy
+  error: string
+  /**
+   * The offending references, in the order they were posted. Capped, so it can be shorter than rejected_count — a client that reports "N were refused" must read that field rather than this array's length.
+   */
+  rejected: Array<string>
+  /**
+   * How many references were refused in total, before the list above was capped.
+   */
+  rejected_count: number
+  type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+}
+
+/**
+ * Every extension the agent accepts as an attachment, grouped by what it can actually DO with
+ * one. The grouping is the point: the tiers differ sharply, and a client that renders them as
+ * one flat "supported files" list tells the user something false (PM-1855).
+ *
+ * - `view`: the model sees the content. view_asset decodes the still (converting HEIC/HEIF to
+ * JPEG first) and re-encodes it as PNG/JPEG into the turn, so the model reasons about actual
+ * pixels.
+ * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
+ * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
+ * video means cutting a frame out with process_media and viewing that.
+ * - `reference`: the agent knows what the file is, with its kind and id, and wires its
+ * filename into the load node that takes it: a 3D model into a Load3D node's model_file
+ * widget, an .exr into a LoadImage node's image widget. No tool opens the file itself: the
+ * cloud turn registers neither a shell nor a file-read tool, by design, as it is a shared
+ * multi-tenant pod, and view_asset cannot decode an EXR.
+ * - `read`: the agent reads the contents verbatim with read_asset — UTF-8 decoded, bounded
+ * and truncation-marked. The tier describes CONTENT ACCESS only; whether the file can also
+ * be wired into a graph is a separate axis, so a format gaining an upload-backed node input
+ * later stays in this tier.
+ * - `retain`: the file is attached and nothing more — neither readable nor wirable. Only
+ * .avif, which the turn cannot decode as an image and is not text.
+ *
+ * The union of the five arrays is the accepted list. Anything absent is rejected.
+ *
+ */
+export type AgentAttachmentPolicy = {
+  probe: Array<AgentProbeableAttachmentExtension>
+  read: Array<AgentReadableAttachmentExtension>
+  reference: Array<AgentReferenceAttachmentExtension>
+  retain: Array<AgentRetainedAttachmentExtension>
+  view: Array<AgentViewableAttachmentExtension>
+}
+
+export type AgentAttachmentError =
+  | ({
+      type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+    } & AgentAttachmentRejected)
+  | ({
+      type: 'ATTACHMENT_BOUNDS_EXCEEDED'
+    } & AgentAttachmentBoundsExceeded)
+
+export type AgentAttachmentBoundsExceeded = {
+  error: string
+  limits: {
+    max_item_length: number
+    max_items: number
+  }
+  /**
+   * A bounded example of the first overlong reference; empty for count-only violations.
+   */
+  overlong_ref: string
+  received_count: number
+  type: 'ATTACHMENT_BOUNDS_EXCEEDED'
 }
 
 /**
@@ -6393,7 +8843,7 @@ export type AgentGetIdentityErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -6453,7 +8903,7 @@ export type AgentLlmAdmitErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -6526,7 +8976,7 @@ export type AgentLlmMessagesErrors = {
    */
   402: AgentAdmissionError
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -6576,7 +9026,7 @@ export type AgentLlmTracesErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -6635,7 +9085,7 @@ export type AgentGetRunModeErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -6686,7 +9136,7 @@ export type AgentPutRunModeErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -6741,7 +9191,7 @@ export type AgentListSkillsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -6792,7 +9242,7 @@ export type AgentPublishSkillErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -6860,7 +9310,7 @@ export type AgentDeleteSkillErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -6908,6 +9358,25 @@ export type AgentListThreadsData = {
      *
      */
     after?: string
+    /**
+     * Return only the threads currently associated with this workflow.
+     * The association is the thread's current target and may change on a
+     * later turn. `workflow_id` is not unique across threads, so this can
+     * still match several, and the page ordering is unchanged
+     * (newest-created first).
+     *
+     * Use this rather than listing threads and matching `workflow_id`
+     * client-side: an unfiltered list is one page of at most 100, so a
+     * client-side match silently misses a workflow's thread once the
+     * caller has more threads than the page holds. A workflow with no
+     * threads returns an empty page, not an error.
+     *
+     * Narrowing applies within the caller's own workspace and user scope
+     * and cannot widen it. `total` in the response counts the narrowed
+     * set.
+     *
+     */
+    workflow_id?: string
   }
   url: '/api/agent/threads'
 }
@@ -6922,7 +9391,7 @@ export type AgentListThreadsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -6965,7 +9434,7 @@ export type AgentCreateThreadErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -7084,7 +9553,7 @@ export type AgentGetMessagesErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -7143,6 +9612,10 @@ export type AgentPostMessageErrors = {
    * Forbidden (workflow or thread not owned by the caller). An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
    */
   403: ErrorResponse | AgentError
+  /**
+   * One or more attachments name a file type the agent does not accept. The body names the offending references and carries the full accepted policy, so the client can explain the refusal without hardcoding the list.
+   */
+  422: AgentAttachmentError
   /**
    * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
    */
@@ -7321,6 +9794,19 @@ export type ListAssetsData = {
      */
     include_public?: boolean
     /**
+     * List the workspace's model library: every member's private model
+     * rows in this workspace, not only the caller's, and none of the
+     * public catalog. A browser that runs on a picked deployment gets the
+     * whole library, not only the Release's models, so its loader
+     * dropdowns can offer a model the deployment downloads for the job.
+     * Needs `models` among the tags (`tags_all` or `include_tags`), else
+     * 400 `INVALID_TAG_FILTER`. Honoured only while the
+     * `runtime_library_models_enabled` flag is on for the caller;
+     * otherwise ignored and the listing is the default one.
+     *
+     */
+    workspace_library?: boolean
+    /**
      * Filter assets by content hash, in the canonical `blake3:<hex>`
      * form. Matches regardless of which of this asset store's two
      * internal hash storage formats the matching row was written
@@ -7355,7 +9841,7 @@ export type ListAssetsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -7386,7 +9872,7 @@ export type CreateAssetData = {
      */
     hash?: string
     /**
-     * Optional caller-chosen asset ID. If the upload's content matches an asset you already own in this workspace, that asset is returned and its `id` may differ from the one requested. Otherwise, an ID already taken by any asset is refused with 400 `ASSET_ID_UNAVAILABLE`.
+     * Optional caller-chosen asset ID. Any letter case is accepted; the asset is stored and returned under the canonical lowercase form, and a value that is not a UUID is refused with 400 `INVALID_BODY`. If the upload's content matches an asset you already own in this workspace, that asset is returned and its `id` may differ from the one requested. Otherwise, an ID already taken by any asset is refused with 400 `ASSET_ID_UNAVAILABLE`.
      */
     id?: string
     /**
@@ -7398,11 +9884,11 @@ export type CreateAssetData = {
      */
     name?: string
     /**
-     * Optional preview asset ID. Must be your own asset in this workspace; anything else (including a catalog asset, another user's published asset, or an ID that does not exist) is refused with 400 `INVALID_PREVIEW_ID`. If not provided, images use their own ID as preview, except OpenEXR and Radiance HDR, which get no preview; a preview_id equal to the asset's own id is ignored for those.
+     * Optional preview asset ID, in any letter case (a value that is not a UUID is refused with 400 `INVALID_BODY`). Must be your own asset in this workspace; anything else (including a catalog asset, another user's published asset, or an ID that does not exist) is refused with 400 `INVALID_PREVIEW_ID`. If not provided, images use their own ID as preview, except OpenEXR and Radiance HDR, which get no preview; a preview_id equal to the asset's own id is ignored for those.
      */
     preview_id?: string
     /**
-     * JSON-encoded array of freeform tag strings, e.g. '["models","checkpoint"]'. Common types include "models", "input", "output", and "temp", but any tag can be used in any order.
+     * JSON-encoded array of freeform tag strings, e.g. '["models","checkpoint"]'. Common types include "models", "input", "output", and "temp", but any tag can be used in any order. At most 64 tags, each a non-empty UTF-8 string of at most 256 bytes (surrounding whitespace included) with no NUL; a request breaking either rule is refused with 400 `INVALID_BODY`. JSON decoding replaces invalid UTF-8 and lone surrogate escapes (e.g. `�`) with U+FFFD (3 bytes each) instead of refusing them, and the 256-byte limit applies to the replaced value.
      */
     tags?: string
     /**
@@ -7425,7 +9911,7 @@ export type CreateAssetErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -7444,6 +9930,10 @@ export type CreateAssetErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Temporary upload unavailability. `PRIVATE_MODELS_UNAVAILABLE` means model-import eligibility could not be resolved; retry without inferring plan ineligibility. `UPLOAD_BUDGET_EXHAUSTED` means the image buffer budget is full; retry after the Retry-After seconds.
+   */
+  503: ErrorResponse
 }
 
 export type CreateAssetError = CreateAssetErrors[keyof CreateAssetErrors]
@@ -7486,7 +9976,7 @@ export type DeleteAssetErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -7494,7 +9984,7 @@ export type DeleteAssetErrors = {
    */
   404: ErrorResponse
   /**
-   * Asset cannot be deleted because it is referenced by another resource, e.g. a workflow version (error code: ASSET_IN_USE)
+   * Asset cannot be deleted because it is referenced by another resource, e.g. a workflow version, or because content moderation still holds it (error code: ASSET_IN_USE for both; a moderation hold is deliberately not distinguishable)
    */
   409: ErrorResponse
   /**
@@ -7537,7 +10027,7 @@ export type GetAssetByIdErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -7605,7 +10095,7 @@ export type UpdateAssetErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -7667,7 +10157,7 @@ export type GetAssetContentErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -7720,7 +10210,7 @@ export type RemoveAssetTagsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -7753,7 +10243,7 @@ export type RemoveAssetTagsResponse =
 export type AddAssetTagsData = {
   body: {
     /**
-     * Tags to add to the asset
+     * Tags to add to the asset. At most 64 tags, each a non-empty UTF-8 string of at most 256 bytes (surrounding whitespace included) with no NUL; a request breaking either rule is refused with 400 `INVALID_BODY`. An add that would grow the asset's stored set (server-added tags included) past 64 is refused the same way; an asset already over 64 is not trimmed and can still re-apply its stored non-category tags that add no new server-derived tag (`input`, `output`, `temp` and `models` are refused with 422 `RESERVED_TAG` before any count check; re-applying a legacy bare model-directory tag whose `model_type:` twin is not stored adds that twin, so it counts as growth). The counted set is the stored one, which the response's `total_tags` need not equal, as it hides stored `model_type:` tags or shows synthesized ones, depending on the deployment. JSON decoding replaces invalid UTF-8 and lone surrogate escapes (e.g. `�`) with U+FFFD (3 bytes each) instead of refusing them, and the 256-byte limit applies to the replaced value.
      */
     tags: Array<string>
   }
@@ -7777,7 +10267,7 @@ export type AddAssetTagsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -7817,7 +10307,7 @@ export type CreateAssetDownloadData = {
      */
     source_url: string
     /**
-     * Optional tags for the asset (e.g., ["model", "checkpoint"])
+     * Optional tags for the asset (e.g., ["model", "checkpoint"]). At most 64 tags, each a non-empty UTF-8 string of at most 256 bytes (surrounding whitespace included) with no NUL; a request breaking either rule is refused with 400 `INVALID_BODY`. JSON decoding replaces invalid UTF-8 and lone surrogate escapes (e.g. `�`) with U+FFFD (3 bytes each) instead of refusing them, and the 256-byte limit applies to the replaced value.
      */
     tags?: Array<string>
     /**
@@ -7842,7 +10332,7 @@ export type CreateAssetDownloadErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -7853,6 +10343,10 @@ export type CreateAssetDownloadErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Model-import eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
 }
 
 export type CreateAssetDownloadError =
@@ -7871,6 +10365,123 @@ export type CreateAssetDownloadResponses = {
 
 export type CreateAssetDownloadResponse =
   CreateAssetDownloadResponses[keyof CreateAssetDownloadResponses]
+
+export type StartModelUploadData = {
+  body: {
+    /**
+     * A bare file name ending in `.safetensors` (any case), at most 255 bytes, no path, no leading dot.
+     */
+    filename: string
+    /**
+     * The file's size, 1 to 2147483648 (2 GiB).
+     */
+    size_bytes: number
+    /**
+     * Exactly `models` plus one model folder from `model_upload_folders` in GET /api/features (`loras`, `checkpoints`, `vae`, `embeddings`, ...); another folder is `400 UNSUPPORTED_MODEL_TYPE`.
+     */
+    tags: Array<string>
+  }
+  path?: never
+  query?: never
+  url: '/api/assets/uploads'
+}
+
+export type StartModelUploadErrors = {
+  /**
+   * `INVALID_BODY` (bad filename, size or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`: a pickle format such as `.ckpt`, `.pt` or `.bin` can run code when loaded), `UNSUPPORTED_MODEL_TYPE` (`models` plus a folder not in `model_upload_folders` of GET /api/features) or `FILE_TOO_LARGE` (over 2 GiB; the message is "Files can be up to 2 GB.")
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), or a refused session write (see `SessionWriteForbidden`)
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Private-model eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
+}
+
+export type StartModelUploadError =
+  StartModelUploadErrors[keyof StartModelUploadErrors]
+
+export type StartModelUploadResponses = {
+  /**
+   * Signed upload URL for one staged object
+   */
+  201: ModelUploadStarted
+}
+
+export type StartModelUploadResponse =
+  StartModelUploadResponses[keyof StartModelUploadResponses]
+
+export type CompleteModelUploadData = {
+  body: {
+    /**
+     * The `filename` sent to start the upload.
+     */
+    filename: string
+    /**
+     * The `tags` sent to start the upload.
+     */
+    tags: Array<string>
+  }
+  path: {
+    /**
+     * The `upload_id` from `POST /api/assets/uploads`.
+     */
+    upload_id: string
+  }
+  query?: never
+  url: '/api/assets/uploads/{upload_id}/complete'
+}
+
+export type CompleteModelUploadErrors = {
+  /**
+   * `INVALID_BODY` (bad filename or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`), `UNSUPPORTED_MODEL_TYPE` (a folder not in `model_upload_folders`) or `FILE_TOO_LARGE` (the stored object is over 2 GiB; the message is "Files can be up to 2 GB.")
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), or a refused session write (see `SessionWriteForbidden`)
+   */
+  403: ErrorResponse
+  /**
+   * `UPLOAD_NOT_FOUND`: no uploaded object for this `upload_id` under this caller and workspace (not uploaded yet, cleaned up, or someone else's)
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Private-model eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
+}
+
+export type CompleteModelUploadError =
+  CompleteModelUploadErrors[keyof CompleteModelUploadErrors]
+
+export type CompleteModelUploadResponses = {
+  /**
+   * Accepted; a task stores the file as an asset
+   */
+  202: AssetDownloadResponse
+}
+
+export type CompleteModelUploadResponse =
+  CompleteModelUploadResponses[keyof CompleteModelUploadResponses]
 
 export type CreateAssetExportData = {
   body: {
@@ -7924,7 +10535,7 @@ export type CreateAssetExportErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -7968,7 +10579,7 @@ export type DownloadExportErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -8009,7 +10620,7 @@ export type CreateAssetFromHashData = {
      */
     name?: string
     /**
-     * Freeform tags for the asset. Common types include "models", "input", "output", and "temp", but any tag can be used in any order.
+     * Freeform tags for the asset. Common types include "models", "input", "output", and "temp", but any tag can be used in any order. At most 64 tags, each a non-empty UTF-8 string of at most 256 bytes (surrounding whitespace included) with no NUL; a request breaking either rule is refused with 400 `INVALID_BODY`. JSON decoding replaces invalid UTF-8 and lone surrogate escapes (e.g. `�`) with U+FFFD (3 bytes each) instead of refusing them, and the 256-byte limit applies to the replaced value.
      */
     tags: Array<string>
     /**
@@ -8034,7 +10645,7 @@ export type CreateAssetFromHashErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -8049,6 +10660,10 @@ export type CreateAssetFromHashErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Model-import eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
 }
 
 export type CreateAssetFromHashError =
@@ -8087,7 +10702,7 @@ export type PostAssetsFromWorkflowErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -8175,7 +10790,7 @@ export type ImportPublishedAssetsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -8242,7 +10857,7 @@ export type GetRemoteAssetMetadataErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -8405,7 +11020,7 @@ export type GetAssetTagHistogramErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -8703,7 +11318,7 @@ export type RevokeAllSessionsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -8842,7 +11457,7 @@ export type ExchangeTokenErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused web session request. `code` is `origin_not_allowed`, `cross_site_request` or `csrf_invalid` (see the `WebSessionAuth` scheme). While `web_session_enabled` is off for the user, and for a credential this route does not take, the body is instead `{"error": {"message", "type": "auth_type_not_allowed"}, "accepted": [...]}`. An API key whose user is not allowed to use it, whose workspace was deleted, or whose registry account is on the free tier gets `code` `FORBIDDEN`. `sso_required`: an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not that organization's, or the target workspace is an SSO organization's and the account is not on its domains or the credential is not its SSO sign-in; `organization_id`, when present, names the organization to sign in with.
+   * A refused web session request. `code` is `origin_not_allowed`, `cross_site_request` or `csrf_invalid` (see the `WebSessionAuth` scheme). While `web_session_enabled` is off for the user, and for a credential this route does not take, the body is instead `{"error": {"message", "type": "auth_type_not_allowed"}, "accepted": [...]}`. An API key whose user is not allowed to use it, whose workspace was deleted, or whose registry account is on the free tier gets `code` `FORBIDDEN`. `sso_required`: an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not that organization's, or the target workspace is an SSO organization's and the account is not on its domains or the credential is not its SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization`: the target workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled`: the target is the account's personal workspace and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization.
    */
   403: ErrorResponse
   /**
@@ -8858,7 +11473,7 @@ export type ExchangeTokenErrors = {
    */
   500: ErrorResponse
   /**
-   * The comfy-api registry could not verify an API key. `code` is `SERVICE_UNAVAILABLE`; retry, since the key may be good.
+   * The comfy-api registry could not verify an API key. `code` is `SERVICE_UNAVAILABLE`; retry, since the key may be good. `partner_node_token_disabled`: a partner-node mint while ops have switched those off (`PartnerNodeTokenMintDisabled`); mint without `resource` instead.
    */
   503: ErrorResponse
 }
@@ -8874,6 +11489,197 @@ export type ExchangeTokenResponses = {
 
 export type ExchangeTokenResponse2 =
   ExchangeTokenResponses[keyof ExchangeTokenResponses]
+
+export type RevokePartnerNodeSessionsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/auth/token/revoke'
+}
+
+export type RevokePartnerNodeSessionsErrors = {
+  /**
+   * No credential, an invalid one, or a partner-node token whose session is unknown.
+   */
+  401: ErrorResponse
+  /**
+   * A credential this route does not take (`auth_type_not_allowed`: an API key or a workspace token), a web session request that fails the session guard (`csrf_invalid`, `origin_not_allowed`), or `partner_node_requires_sign_in` for a credential that names no sign-in, such as an OAuth access token for another audience.
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type RevokePartnerNodeSessionsError =
+  RevokePartnerNodeSessionsErrors[keyof RevokePartnerNodeSessionsErrors]
+
+export type RevokePartnerNodeSessionsResponses = {
+  /**
+   * The sessions are revoked
+   */
+  204: void
+}
+
+export type RevokePartnerNodeSessionsResponse =
+  RevokePartnerNodeSessionsResponses[keyof RevokePartnerNodeSessionsResponses]
+
+export type GetBillingAutoReloadData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/billing/auto-reload'
+}
+
+export type GetBillingAutoReloadErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * `SUBSCRIPTION_CHANGE_IN_PROGRESS`: a subscription change holds the workspace; retry after it completes.
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetBillingAutoReloadError =
+  GetBillingAutoReloadErrors[keyof GetBillingAutoReloadErrors]
+
+export type GetBillingAutoReloadResponses = {
+  /**
+   * Success
+   */
+  200: AutoReloadSettings
+}
+
+export type GetBillingAutoReloadResponse =
+  GetBillingAutoReloadResponses[keyof GetBillingAutoReloadResponses]
+
+export type PutBillingAutoReloadData = {
+  body: AutoReloadSettingsRequest
+  path?: never
+  query?: never
+  url: '/api/billing/auto-reload'
+}
+
+export type PutBillingAutoReloadErrors = {
+  /**
+   * `INVALID_REQUEST` (a field is absent), `INVALID_AUTO_TOP_UP` (a
+   * value the rules on AutoReloadSettingsRequest refuse), or
+   * `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   *
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * `SUBSCRIPTION_CHANGE_IN_PROGRESS`: a subscription change holds the workspace; retry after it completes.
+   */
+  409: ErrorResponse
+  /**
+   * `AUTO_TOP_UP_NOT_ELIGIBLE`: enabling needs provisioned billing, a
+   * default payment method and an eligible billing state.
+   *
+   */
+  422: ErrorResponse
+  /**
+   * The save may have committed, so re-read with GET after any 5xx.
+   * `AUTO_TOP_UP_DISABLED_ACCOUNTING_UNAVAILABLE` means the disable
+   * did commit but its accounting could not be read.
+   *
+   */
+  500: ErrorResponse
+}
+
+export type PutBillingAutoReloadError =
+  PutBillingAutoReloadErrors[keyof PutBillingAutoReloadErrors]
+
+export type PutBillingAutoReloadResponses = {
+  /**
+   * The saved settings and current accounting
+   */
+  200: AutoReloadSettings
+}
+
+export type PutBillingAutoReloadResponse =
+  PutBillingAutoReloadResponses[keyof PutBillingAutoReloadResponses]
+
+export type GetBillingAutoReloadPreviewData = {
+  body?: never
+  path?: never
+  query: {
+    threshold_credits: number
+    target_credits: number
+    /**
+     * Proposed monthly limit; absent means `max_monthly_budget_cents`.
+     */
+    monthly_budget_cents?: number
+  }
+  url: '/api/billing/auto-reload/preview'
+}
+
+export type GetBillingAutoReloadPreviewErrors = {
+  /**
+   * `INVALID_REQUEST`, `INVALID_AUTO_TOP_UP`, or `workspace_id_invalid`.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * `SUBSCRIPTION_CHANGE_IN_PROGRESS`.
+   */
+  409: ErrorResponse
+  /**
+   * `AUTO_TOP_UP_NOT_ELIGIBLE` (setup not ready, or no readable balance) or `AUTO_TOP_UP_NOT_AVAILABLE` (not in the rollout).
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `AUTO_TOP_UP_PREVIEW_UNAVAILABLE` (the balance could not be read).
+   */
+  503: ErrorResponse
+}
+
+export type GetBillingAutoReloadPreviewError =
+  GetBillingAutoReloadPreviewErrors[keyof GetBillingAutoReloadPreviewErrors]
+
+export type GetBillingAutoReloadPreviewResponses = {
+  /**
+   * Success
+   */
+  200: AutoReloadPreview
+}
+
+export type GetBillingAutoReloadPreviewResponse =
+  GetBillingAutoReloadPreviewResponses[keyof GetBillingAutoReloadPreviewResponses]
 
 export type GetBillingBalanceData = {
   body?: never
@@ -8892,7 +11698,7 @@ export type GetBillingBalanceErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -8978,7 +11784,7 @@ export type GetChurnkeyAuthErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -9064,7 +11870,7 @@ export type UpdateBillingCompanyDetailsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -9106,6 +11912,10 @@ export type GetBillingEventsData = {
      * Current workspace member to filter by when scope is user
      */
     user_id?: string
+    /**
+     * Keep only charges made through this source: `session`; one deployment's id or one API key's display prefix (`comfyui-` plus eight hex characters), as the usage `source` grouping returns them; or every source of a kind, `deployment` for every deployment and `api_key` for every API key. Combines with `scope`, so a member sees only their own charges through it. Any other value is a 400 `INVALID_FILTER`.
+     */
+    spend_source?: string
     /**
      * Event type to filter
      */
@@ -9176,7 +11986,7 @@ export type GetBillingOpStatusErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -9224,7 +12034,7 @@ export type CancelBillingOpErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -9306,7 +12116,7 @@ export type GetPaymentPortalData = {
 
 export type GetPaymentPortalErrors = {
   /**
-   * Bad request (e.g., missing return_url)
+   * Bad request (e.g., missing return_url or unsupported flow_type)
    */
   400: ErrorResponse
   /**
@@ -9314,7 +12124,7 @@ export type GetPaymentPortalErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -9353,9 +12163,13 @@ export type GetBillingPlansErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
   /**
    * Internal server error
    */
@@ -9392,7 +12206,7 @@ export type PreviewSubscribeErrors = {
    */
   401: ErrorResponse
   /**
-   * Workspace owner role required
+   * `FORBIDDEN`: workspace owner role required. `NOT_ORIGINAL_OWNER`: the caller is an owner but not the workspace's creator, and only the creator may change the plan; returned only when the rollout mode is `creator`.
    */
   403: ErrorResponse
   /**
@@ -9431,7 +12245,7 @@ export type AcceptRetentionOfferErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -9478,7 +12292,7 @@ export type RecordRetentionFlowEventErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -9525,11 +12339,11 @@ export type PrepareRetentionFlowErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
-   * Subscription does not support this flow
+   * Subscription does not support this flow, or cancellation offers are switched off
    */
   422: ErrorResponse
   /**
@@ -9572,7 +12386,7 @@ export type GetBillingStatusErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -9615,9 +12429,13 @@ export type SubscribeErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
+  /**
+   * `SUBSCRIBE_ATTEMPTS_LIMITED`: a new workspace, or an older one that has never paid, made too many failed payment attempts in a short time; no subscription was started. A later sign-up is admitted again.
+   */
+  429: ErrorResponse
   /**
    * Internal server error
    */
@@ -9652,7 +12470,7 @@ export type CancelSubscriptionErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -9695,7 +12513,7 @@ export type ResubscribeErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -9736,7 +12554,7 @@ export type RevertScheduledChangeErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -9775,9 +12593,13 @@ export type CreateTopupErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
+  /**
+   * `TOPUP_RATE_LIMITED`: the workspace made too many top-ups in a short time; no billing operation was created. A later purchase is admitted again.
+   */
+  429: ErrorResponse
   /**
    * Internal server error
    */
@@ -9817,6 +12639,8 @@ export type CreateTopupCheckoutErrors = {
    * registered on the workspace-owner group, so a workspace member
    * is rejected by middleware before the handler runs. Email
    * verification is enforced on the same group.
+   * `TOPUP_PURCHASES_PAUSED` means credit purchases are paused; no
+   * session was created.
    *
    */
   403: ErrorResponse
@@ -9825,9 +12649,21 @@ export type CreateTopupCheckoutErrors = {
    */
   404: ErrorResponse
   /**
+   * Checkout cannot proceed. `TOPUP_CHECKOUT_BUSY` means retry shortly; `TOPUP_CHECKOUT_NOT_PAYABLE` requires a new purchase key.
+   */
+  409: ErrorResponse
+  /**
+   * `TOPUP_RATE_LIMITED`: the workspace made too many top-ups in a short time; no session was created. A later purchase is admitted again.
+   */
+  429: ErrorResponse
+  /**
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Temporary checkout or cleanup failure. `TOPUP_CHECKOUT_UNAVAILABLE`; retry the same purchase key, when supplied.
+   */
+  503: ErrorResponse
 }
 
 export type CreateTopupCheckoutError =
@@ -9843,6 +12679,167 @@ export type CreateTopupCheckoutResponses = {
 export type CreateTopupCheckoutResponse2 =
   CreateTopupCheckoutResponses[keyof CreateTopupCheckoutResponses]
 
+export type ListTopupCheckoutsData = {
+  body?: never
+  path?: never
+  query?: {
+    cursor?: string
+  }
+  url: '/api/billing/topup/checkouts'
+}
+
+export type ListTopupCheckoutsErrors = {
+  /**
+   * Invalid cursor or request
+   */
+  400: ErrorResponse
+  /**
+   * Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Workspace billing owner required
+   */
+  403: ErrorResponse
+  /**
+   * Checkout not in the authorized workspace or environment
+   */
+  404: ErrorResponse
+  /**
+   * Could not read checkout state
+   */
+  500: ErrorResponse
+  /**
+   * Stripe state could not be confirmed
+   */
+  502: ErrorResponse
+  /**
+   * Billing unavailable
+   */
+  503: ErrorResponse
+}
+
+export type ListTopupCheckoutsError =
+  ListTopupCheckoutsErrors[keyof ListTopupCheckoutsErrors]
+
+export type ListTopupCheckoutsResponses = {
+  /**
+   * Durable discovery summaries; Cache-Control no-store.
+   */
+  200: HostedTopupCheckoutList
+}
+
+export type ListTopupCheckoutsResponse =
+  ListTopupCheckoutsResponses[keyof ListTopupCheckoutsResponses]
+
+export type GetTopupCheckoutData = {
+  body?: never
+  path: {
+    id: string
+  }
+  query?: never
+  url: '/api/billing/topup/checkouts/{id}'
+}
+
+export type GetTopupCheckoutErrors = {
+  /**
+   * Invalid cursor or request
+   */
+  400: ErrorResponse
+  /**
+   * Authentication required
+   */
+  401: ErrorResponse
+  /**
+   * Workspace billing owner required
+   */
+  403: ErrorResponse
+  /**
+   * Checkout not in the authorized workspace or environment
+   */
+  404: ErrorResponse
+  /**
+   * Could not read checkout state
+   */
+  500: ErrorResponse
+  /**
+   * Stripe state could not be confirmed
+   */
+  502: ErrorResponse
+  /**
+   * Billing unavailable
+   */
+  503: ErrorResponse
+}
+
+export type GetTopupCheckoutError =
+  GetTopupCheckoutErrors[keyof GetTopupCheckoutErrors]
+
+export type GetTopupCheckoutResponses = {
+  /**
+   * Current checkout facts; Cache-Control no-store.
+   */
+  200: HostedTopupCheckout
+}
+
+export type GetTopupCheckoutResponse =
+  GetTopupCheckoutResponses[keyof GetTopupCheckoutResponses]
+
+export type CreateInteractiveTopupData = {
+  body: InteractiveTopupRequest
+  path?: never
+  query?: never
+  url: '/api/billing/topup/interactive'
+}
+
+export type CreateInteractiveTopupErrors = {
+  /**
+   * Bad request (invalid amount, no payment method)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Immutable request mismatch, another pending operation, or billing reconciliation required. Do not start another purchase while unresolved.
+   */
+  409: ErrorResponse
+  /**
+   * Request body exceeds the 16 KiB resource limit.
+   */
+  413: unknown
+  /**
+   * `TOPUP_RATE_LIMITED`: the workspace made too many top-ups in a short time; no purchase was started. A later purchase is admitted again.
+   */
+  429: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Interactive route unavailable or payment/workflow state unknown. Preserve the original request, key and operation; no fallback purchase.
+   */
+  503: ErrorResponse
+}
+
+export type CreateInteractiveTopupError =
+  CreateInteractiveTopupErrors[keyof CreateInteractiveTopupErrors]
+
+export type CreateInteractiveTopupResponses = {
+  /**
+   * Top-up initiated successfully
+   */
+  200: CreateTopupResponse
+}
+
+export type CreateInteractiveTopupResponse =
+  CreateInteractiveTopupResponses[keyof CreateInteractiveTopupResponses]
+
 export type CreateTopupQuoteData = {
   body: CreateTopupQuoteRequest
   path?: never
@@ -9854,7 +12851,7 @@ export type CreateTopupQuoteErrors = {
   /**
    * Refused: `INVALID_REQUEST`, `INVALID_AMOUNT`,
    * `LEGACY_STRIPE_CHECKOUT_REQUIRED` (use Stripe Checkout),
-   * `BILLING_PLAN_ENDED` (sales-managed plan has ended), or
+   * `BILLING_PLAN_ENDED` (retained code for unresolved existing plan/tier/status), or
    * `BILLING_DISABLED`.
    *
    */
@@ -9864,7 +12861,7 @@ export type CreateTopupQuoteErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -9892,7 +12889,7 @@ export type GetBillingUsageTimeSeriesData = {
   query?: {
     /**
      * `product_line` folds products into the customer-facing lines (Agent,
-     * Third-Party Partner API, Comfy Cloud, Serverless) plus an
+     * Partner Models, Comfy Cloud, Serverless) plus an
      * `unattributed` bucket that is always counted in the total.
      * `person` and `source` attribute spend to the member or to the API
      * key (`spend_source`) that caused it, read from the usage ledger
@@ -9901,7 +12898,14 @@ export type GetBillingUsageTimeSeriesData = {
      * key, a member's `person` and `source` views hold only their own
      * rows, and an `unattributed` group carries spend with no usable
      * identity so the groups still sum to the total. Elsewhere the response is an empty series with
-     * `not_available` set. Group keys for those three carry a matching
+     * `not_available` set. For an enabled workspace `product_line` and
+     * `model` are also read from the ledger when the range starts on or
+     * after the environment's ledger start, and from the invoice otherwise; a model the
+     * ledger has no name for is `unspecified`. Under Serverless the model
+     * level is the deployment: `<deployment id>` for its GPU time and
+     * `<deployment id>/storage` for its storage, each with a
+     * `group_labels` entry naming the deployment and the `cost_kind`. Group keys for
+     * `product_line`, `model`, `person` and `source` carry a matching
      * entry in `group_labels`.
      *
      */
@@ -9912,6 +12916,35 @@ export type GetBillingUsageTimeSeriesData = {
       | 'product_line'
       | 'person'
       | 'source'
+    /**
+     * Keep only spend on this product line (a key the `product_line`
+     * grouping returns). The four `filter_*` parameters combine with each
+     * other and with the ledger groupings `product_line`, `model`,
+     * `person` and `source`, so a page can drill from a line to its
+     * models to the people behind one model. They apply to
+     * ledger-served reads of an enabled workspace. One more read takes
+     * a filter: `filter_product_line` alone on `product_line` or `model`
+     * over a range the ledger does not hold is answered from Metronome's
+     * invoices, narrowed to that line, with `served_from: invoice`. On
+     * any other read, including the invoice groupings `product` and
+     * `endpoint`, the response is an empty series with `not_available`
+     * reason `filter_needs_ledger`. A member's view is still only their own
+     * rows: filtering on a colleague returns nothing.
+     *
+     */
+    filter_product_line?: string
+    /**
+     * Keep only spend on this model (a key the `model` grouping returns, `unspecified` for none). See `filter_product_line`.
+     */
+    filter_model?: string
+    /**
+     * Keep only spend by this member (a key the `person` grouping returns, or `unattributed`). See `filter_product_line`.
+     */
+    filter_person?: string
+    /**
+     * Keep only spend from this source (a key the `source` grouping returns, or `unattributed`), or every source of one kind (`api_key` for every API key, `deployment` for every deployment). See `filter_product_line`.
+     */
+    filter_source?: string
     granularity?: 'hour' | 'day' | 'month'
     starting_on?: string
     ending_before?: string
@@ -9922,7 +12955,7 @@ export type GetBillingUsageTimeSeriesData = {
 
 export type GetBillingUsageTimeSeriesErrors = {
   /**
-   * Invalid time range
+   * Invalid time range or filter value
    */
   400: ErrorResponse
   /**
@@ -9930,7 +12963,7 @@ export type GetBillingUsageTimeSeriesErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -9951,6 +12984,140 @@ export type GetBillingUsageTimeSeriesResponses = {
 
 export type GetBillingUsageTimeSeriesResponse =
   GetBillingUsageTimeSeriesResponses[keyof GetBillingUsageTimeSeriesResponses]
+
+export type GetDefaultWorkflowData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/default_workflow'
+}
+
+export type GetDefaultWorkflowResponses = {
+  /**
+   * Default workflow JSON
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type GetDefaultWorkflowResponse =
+  GetDefaultWorkflowResponses[keyof GetDefaultWorkflowResponses]
+
+export type CreateDeployBundleData = {
+  /**
+   * A JSON object; `{}` is valid. Null members count as absent.
+   */
+  body: {
+    /**
+     * Optional label for the bundle.
+     */
+    name?: string | null
+    /**
+     * The workflow open in ComfyUI, sent as is.
+     */
+    workflow?: {
+      [key: string]: unknown
+    } | null
+  }
+  path?: never
+  query?: never
+  url: '/api/deploy/bundle'
+}
+
+export type CreateDeployBundleErrors = {
+  /**
+   * Rejected before upload: `multiple_credentials` (both headers sent), `invalid_api_key_format` (X-API-Key is not comfyui- followed by 64 hex characters) or `invalid_body` (not a JSON object, or a bad workflow or name).
+   */
+  400: DeployToCloudError
+  /**
+   * `missing_credentials` (no credential sent) or `unauthorized` (the builder refused the credential).
+   */
+  401: DeployToCloudError
+  /**
+   * `offline` (the server runs with --offline) or `unauthorized` (the builder refused the credential).
+   */
+  403: DeployToCloudError
+  /**
+   * The bundle exceeds the builder's size cap (`too_large`).
+   */
+  413: DeployToCloudError
+  /**
+   * The user already holds the builder's limit of unexpired bundles in this workspace (`too_many_bundles`); clears as older bundles expire.
+   */
+  429: DeployToCloudError
+  /**
+   * `builder_rejected` (the builder refused the bundle as invalid; `message` carries its reason, at most 500 characters) or `builder_unavailable` (the builder could not be reached or answered unexpectedly).
+   */
+  502: DeployToCloudError
+  /**
+   * The builder is busy (`builder_busy`); retry after Retry-After seconds when present.
+   */
+  503: DeployToCloudError
+}
+
+export type CreateDeployBundleError =
+  CreateDeployBundleErrors[keyof CreateDeployBundleErrors]
+
+export type CreateDeployBundleResponses = {
+  /**
+   * Bundle stored on comfy-builder
+   */
+  200: {
+    bundle_id: string
+    /**
+     * When the bundle stops being readable (24 hours after creation).
+     */
+    expires_at: string
+    /**
+     * The Create a Build wizard link that opens the bundle (/profile/builds/new?step=import&bundle=&workspace=&bundle_workspace=).
+     */
+    url: string
+    /**
+     * The workspace the bundle belongs to (the credential's).
+     */
+    workspace_id: string
+  }
+}
+
+export type CreateDeployBundleResponse =
+  CreateDeployBundleResponses[keyof CreateDeployBundleResponses]
+
+export type GetDeploySummaryData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/deploy/summary'
+}
+
+export type GetDeploySummaryErrors = {
+  /**
+   * The server runs with --offline (error `offline`)
+   */
+  403: DeployToCloudError
+}
+
+export type GetDeploySummaryError =
+  GetDeploySummaryErrors[keyof GetDeploySummaryErrors]
+
+export type GetDeploySummaryResponses = {
+  /**
+   * Counts of what the bundle would include
+   */
+  200: {
+    /**
+     * Custom node packages found in the custom_nodes folders
+     */
+    custom_nodes: number
+    /**
+     * Model files found across the model folders
+     */
+    models: number
+  }
+}
+
+export type GetDeploySummaryResponse =
+  GetDeploySummaryResponses[keyof GetDeploySummaryResponses]
 
 export type GetEmbeddingsData = {
   body?: never
@@ -10092,7 +13259,7 @@ export type GetNodeInfoSchemaErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
 }
@@ -10129,7 +13296,7 @@ export type GetNodeByIdErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -10203,6 +13370,12 @@ export type GetFeaturesResponses = {
    */
   200: {
     /**
+     * Present when the caller passes the agent-in-app-experience rollout gate that /api/agent* also enforces; the frontend mounts the agent panel only when it is. Absent when the gate is off and for unauthenticated requests. It answers the rollout question only: it does not reflect a scoped OAuth token's agent scope or whether the agent service is currently reachable.
+     */
+    agent?: {
+      state: 'ready'
+    }
+    /**
      * Authenticated assignment for the Agent free-use notice placement experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract, as agent-starter-prompt-set does, so older environments mid-rolling-deploy and partial feature fixtures fail closed rather than decoding an absent field as the empty string, which is not a member of this enum.
      */
     'agent-free-use-message-placement'?:
@@ -10211,6 +13384,10 @@ export type GetFeaturesResponses = {
       | 'near-composer'
       | 'above-input'
       | 'inside-input'
+    /**
+     * Authenticated assignment for the Agent per-turn credit usage experiment. Control renders no usage line; treatment renders the authoritative server-reported charge beneath completed replies. It remains optional so older environments and partial fixtures fail closed. Reading this field is not exposure; the frontend records exposure only when a charged reply is rendered.
+     */
+    'agent-credit-usage-summary'?: 'control' | 'treatment'
     /**
      * Authenticated assignment for the Agent starter-prompt experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments and partial feature fixtures fail closed. Reading this field does not constitute experiment exposure; the frontend emits the custom exposure event only after rendering the starter prompt surface.
      */
@@ -10229,6 +13406,10 @@ export type GetFeaturesResponses = {
      * Because absence carries that meaning, the field is only ever the authority's answer: unlike the flags beside it, it cannot be set from dynamic configuration, and it is removed from the response rather than left at a configured value when it is unresolvable. It is likewise absent from the WebSocket feature_flags push, which resolves no capability, so a client refreshing from the socket reads "unknown" and fails open rather than inheriting a stale answer.
      */
     can_run_partner_nodes?: boolean
+    /**
+     * Local ComfyUI only: whether the UI should offer Deploy to Cloud. True when the server is not --offline and this installation has ever had a prompt queued by a non-browser client (a persistent marker in the user directory). A discovery hint only: it grants nothing, and the /api/deploy* routes do not check it. Not settable with --feature-flag.
+     */
+    deploy_to_cloud?: boolean
     /**
      * Free-tier job allowance for an authenticated non-paid (FREE-tier) user in the rollout. Absent for paid users and unauthenticated requests. Synthesized from config before a grant row exists so a brand-new user still sees their full allowance.
      */
@@ -10264,9 +13445,17 @@ export type GetFeaturesResponses = {
      */
     max_upload_size?: number
     /**
+     * The model types (folder names, sorted) a model file uploaded from disk may be: the list POST /api/assets/uploads checks, which answers any other with 400 UNSUPPORTED_MODEL_TYPE. Present only while runtime_library_models_enabled is on for the caller.
+     */
+    model_upload_folders?: Array<string>
+    /**
      * Whether new free-tier subscriptions are enabled for this caller. Current servers always emit a boolean; clients should tolerate absence when talking to older servers that predate this declared field.
      */
     new_free_tier_subscriptions?: boolean
+    /**
+     * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
+     */
+    private_workflow_links_enabled?: boolean
     /**
      * Global switch, the same for every caller and readable without credentials. When true, the frontend shows enterprise single sign-on (the SSO sign-in entry and SSO workspace states); when false it shows today's app. It gates no backend behaviour. Defaults to false.
      */
@@ -10307,7 +13496,7 @@ export type SubmitFeedbackErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -10351,7 +13540,7 @@ export type GetMaskLayersErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -10655,7 +13844,7 @@ export type ManageHistoryErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -10715,7 +13904,7 @@ export type GetHistoryErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -10757,7 +13946,7 @@ export type GetHistoryForPromptErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -10800,7 +13989,7 @@ export type CreateHubAssetUploadUrlErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -10848,7 +14037,7 @@ export type ListHubLabelsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -10886,7 +14075,7 @@ export type CreateHubProfileErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -10974,7 +14163,7 @@ export type UpdateHubProfileErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -11019,7 +14208,7 @@ export type CheckHubUsernameErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -11062,7 +14251,7 @@ export type GetMyHubProfileErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -11167,7 +14356,7 @@ export type PublishHubWorkflowErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -11215,7 +14404,7 @@ export type DeleteHubWorkflowErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -11364,7 +14553,7 @@ export type CreateInputUploadUrlErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -11411,7 +14600,7 @@ export type InterruptJobErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -11624,7 +14813,7 @@ export type ListJobsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -11666,7 +14855,7 @@ export type DeleteJobErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -11778,7 +14967,7 @@ export type GetJobAssetsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -11825,7 +15014,7 @@ export type CancelJobErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -11866,7 +15055,7 @@ export type CancelJobsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -11978,7 +15167,7 @@ export type GetNodeInfoErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
 }
@@ -12030,7 +15219,7 @@ export type GetPromptInfoErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -12176,7 +15365,7 @@ export type GetQueueInfoErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -12214,7 +15403,7 @@ export type ManageQueueErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -12235,6 +15424,41 @@ export type ManageQueueResponses = {
 export type ManageQueueResponse =
   ManageQueueResponses[keyof ManageQueueResponses]
 
+export type GetReleaseUnsupportedPacksData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/release/unsupported-packs'
+}
+
+export type GetReleaseUnsupportedPacksErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+}
+
+export type GetReleaseUnsupportedPacksError =
+  GetReleaseUnsupportedPacksErrors[keyof GetReleaseUnsupportedPacksErrors]
+
+export type GetReleaseUnsupportedPacksResponses = {
+  /**
+   * The packs the Release built without, in the order the build declared them
+   */
+  200: ReleaseUnsupportedPacks
+}
+
+export type GetReleaseUnsupportedPacksResponse =
+  GetReleaseUnsupportedPacksResponses[keyof GetReleaseUnsupportedPacksResponses]
+
 export type ListSecretsData = {
   body?: never
   path?: never
@@ -12252,7 +15476,7 @@ export type ListSecretsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -12504,7 +15728,7 @@ export type ListSecretProvidersErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -12543,7 +15767,7 @@ export type GetAllSettingsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
 }
@@ -12585,7 +15809,7 @@ export type UpdateMultipleSettingsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
 }
@@ -12627,7 +15851,7 @@ export type GetSettingByIdErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -12679,7 +15903,7 @@ export type UpdateSettingByIdErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
 }
@@ -12771,7 +15995,7 @@ export type ListTagsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -12841,7 +16065,7 @@ export type ListTasksErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -12884,7 +16108,7 @@ export type CancelTaskErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -12938,7 +16162,7 @@ export type GetTaskErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -12996,13 +16220,17 @@ export type UploadImageErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Upload buffer budget exhausted on this pod; retry after the Retry-After seconds. `code` is `UPLOAD_BUDGET_EXHAUSTED`.
+   */
+  503: ErrorResponse
 }
 
 export type UploadImageError = UploadImageErrors[keyof UploadImageErrors]
@@ -13056,13 +16284,17 @@ export type UploadMaskErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Upload buffer budget exhausted on this pod; retry after the Retry-After seconds. `code` is `UPLOAD_BUDGET_EXHAUSTED`.
+   */
+  503: ErrorResponse
 }
 
 export type UploadMaskError = UploadMaskErrors[keyof UploadMaskErrors]
@@ -13108,7 +16340,7 @@ export type UploadGrantPutErrors = {
    */
   404: unknown
   /**
-   * Body exceeds the per-purpose size cap
+   * Body exceeds the per-purpose size cap, or is more than the pod's upload memory budget could ever buffer
    */
   413: unknown
   /**
@@ -13120,7 +16352,7 @@ export type UploadGrantPutErrors = {
    */
   500: unknown
   /**
-   * Uploads temporarily unavailable (grant store not reachable)
+   * Uploads temporarily unavailable (grant store not reachable, `code` SERVICE_UNAVAILABLE), or upload buffer budget exhausted on this pod; retry after the Retry-After seconds (`code` UPLOAD_BUDGET_EXHAUSTED).
    */
   503: unknown
 }
@@ -13156,7 +16388,7 @@ export type GetUserErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
 }
@@ -13206,7 +16438,7 @@ export type GetUserdataErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -13253,7 +16485,7 @@ export type DeleteUserdataFileErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -13301,7 +16533,7 @@ export type GetUserdataFileErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -13415,7 +16647,7 @@ export type MoveUserdataFileErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -13445,6 +16677,54 @@ export type MoveUserdataFileResponses = {
 export type MoveUserdataFileResponse =
   MoveUserdataFileResponses[keyof MoveUserdataFileResponses]
 
+export type DeleteUserdataFilePublishData = {
+  body?: never
+  path: {
+    /**
+     * The workflow file path within the user's data directory (URL encoded if necessary).
+     */
+    file: string
+  }
+  query?: never
+  url: '/api/userdata/{file}/publish'
+}
+
+export type DeleteUserdataFilePublishErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Workflow or share not found
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type DeleteUserdataFilePublishError =
+  DeleteUserdataFilePublishErrors[keyof DeleteUserdataFilePublishErrors]
+
+export type DeleteUserdataFilePublishResponses = {
+  /**
+   * Share revoked
+   */
+  204: void
+}
+
+export type DeleteUserdataFilePublishResponse =
+  DeleteUserdataFilePublishResponses[keyof DeleteUserdataFilePublishResponses]
+
 export type GetUserdataFilePublishData = {
   body?: never
   path: {
@@ -13467,7 +16747,7 @@ export type GetUserdataFilePublishErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -13515,7 +16795,7 @@ export type PostUserdataFilePublishErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -13558,7 +16838,7 @@ export type GetUsersInfoErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
 }
@@ -13583,6 +16863,1698 @@ export type GetUsersInfoResponses = {
 
 export type GetUsersInfoResponse =
   GetUsersInfoResponses[keyof GetUsersInfoResponses]
+
+export type GetCatalogAgentInstructionsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/agents'
+}
+
+export type GetCatalogAgentInstructionsErrors = {
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type GetCatalogAgentInstructionsResponses = {
+  /**
+   * Editing instructions from this deployed catalog API build
+   */
+  200: string
+}
+
+export type GetCatalogAgentInstructionsResponse =
+  GetCatalogAgentInstructionsResponses[keyof GetCatalogAgentInstructionsResponses]
+
+export type GetCccAuthoringContextData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/authoring-context'
+}
+
+export type GetCccAuthoringContextErrors = {
+  /**
+   * Unsupported query parameters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccAuthoringContextError =
+  GetCccAuthoringContextErrors[keyof GetCccAuthoringContextErrors]
+
+export type GetCccAuthoringContextResponses = {
+  /**
+   * Current verified authoring context; private no-store
+   */
+  200: CccAuthoringContext
+}
+
+export type GetCccAuthoringContextResponse =
+  GetCccAuthoringContextResponses[keyof GetCccAuthoringContextResponses]
+
+export type ListCccWebsiteCardsData = {
+  body?: never
+  headers?: {
+    /**
+     * Optional exact public cache version from public-authority for an initial page. Cursor continuations are not cache fills. Invalid, superseded or cursor-bearing pins fail with 409. A guarded response is returned only when the version is unchanged before and after complete presentation.
+     */
+    'X-Comfy-Catalog-Authority'?: string
+  }
+  path?: never
+  query: {
+    kind: 'MODEL' | 'WORKFLOW' | 'APP'
+    limit?: number
+    cursor?: string
+    locale?: 'en' | 'zh-CN'
+    q?: string
+    sort?: 'popular' | 'name' | 'priceAsc' | 'priceDesc'
+    category?: Array<string>
+    model?: Array<string>
+    use?: Array<string>
+    modality?: Array<string>
+    provider?: Array<string>
+    capability?: Array<string>
+    /**
+     * Only Live public cards credited to this creator username (case-insensitive)
+     */
+    author?: string
+  }
+  url: '/api/v1/catalog/cards'
+}
+
+export type ListCccWebsiteCardsErrors = {
+  /**
+   * Invalid or unsupported query or cursor
+   */
+  400: unknown
+  /**
+   * Verified staff permission required for Preview
+   */
+  403: unknown
+  /**
+   * Public authority or Draft cursor selection changed or expired; restart from current authority
+   */
+  409: unknown
+  /**
+   * Catalog unavailable or card budget exceeded
+   */
+  503: unknown
+}
+
+export type ListCccWebsiteCardsResponses = {
+  /**
+   * At most 24 card summaries; no graphs, inputs, examples or long bodies. Anonymous responses omit total, generation and facet counts. Cursors are audience and filter bound. LIVE cursors resume after their sort key at the current Live and clock; Draft cursors are clock and state bound and expire after five minutes.
+   */
+  200: CccWebsiteCardsPage
+}
+
+export type ListCccWebsiteCardsResponse =
+  ListCccWebsiteCardsResponses[keyof ListCccWebsiteCardsResponses]
+
+export type ListCccCreatorsData = {
+  body?: never
+  path?: never
+  query?: {
+    limit?: number
+    cursor?: string
+  }
+  url: '/api/v1/catalog/creators'
+}
+
+export type ListCccCreatorsErrors = {
+  /**
+   * Invalid or unsupported query or cursor
+   */
+  400: unknown
+  /**
+   * Catalog unavailable
+   */
+  503: unknown
+}
+
+export type ListCccCreatorsResponses = {
+  /**
+   * One page of creators
+   */
+  200: CccCreatorsPage
+}
+
+export type ListCccCreatorsResponse =
+  ListCccCreatorsResponses[keyof ListCccCreatorsResponses]
+
+export type GetCccCreatorData = {
+  body?: never
+  path: {
+    username: string
+  }
+  query?: never
+  url: '/api/v1/catalog/creators/{username}'
+}
+
+export type GetCccCreatorErrors = {
+  /**
+   * Unsupported query parameter
+   */
+  400: unknown
+  /**
+   * No creator with a Live public workflow has this username
+   */
+  404: unknown
+  /**
+   * Catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccCreatorResponses = {
+  /**
+   * Public creator profile
+   */
+  200: CccCreatorProfile
+}
+
+export type GetCccCreatorResponse =
+  GetCccCreatorResponses[keyof GetCccCreatorResponses]
+
+export type GetCatalogDocsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/docs'
+}
+
+export type GetCatalogDocsErrors = {
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type GetCatalogDocsResponses = {
+  /**
+   * Build-coupled catalog instructions, permissions and endpoint contracts
+   */
+  200: string
+}
+
+export type GetCatalogDocsResponse =
+  GetCatalogDocsResponses[keyof GetCatalogDocsResponses]
+
+export type BatchCccItemsData = {
+  body: {
+    expected_draft_rev: number
+    items: Array<Cccjson>
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/batch'
+}
+
+export type BatchCccItemsErrors = {
+  /**
+   * Structured validation failure with item field paths
+   */
+  400: Cccjson
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Existing target absent from owner-scoped Draft
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or idempotency mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type BatchCccItemsError = BatchCccItemsErrors[keyof BatchCccItemsErrors]
+
+export type BatchCccItemsResponses = {
+  /**
+   * Flat immutable edits in request order; retry returns identical UIDs/tokens
+   */
+  200: Array<Cccjson>
+}
+
+export type BatchCccItemsResponse =
+  BatchCccItemsResponses[keyof BatchCccItemsResponses]
+
+export type DiscardCccChangesData = {
+  body: Cccjson
+  headers: {
+    'Idempotency-Key': string
+    Prefer?: 'return=minimal'
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/discard-changes'
+}
+
+export type DiscardCccChangesErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Stale state/selection/exact version or idempotency mismatch; no partial discard
+   */
+  409: unknown
+  /**
+   * Invalid confirmed selection or remaining Draft dependency/pin conflict; no partial discard
+   */
+  422: Cccjson
+  /**
+   * Catalog unavailable
+   */
+  503: unknown
+}
+
+export type DiscardCccChangesError =
+  DiscardCccChangesErrors[keyof DiscardCccChangesErrors]
+
+export type DiscardCccChangesResponses = {
+  /**
+   * Updated complete unfiltered private staging snapshot and global unresolved_count
+   */
+  200: Cccjson
+}
+
+export type DiscardCccChangesResponse =
+  DiscardCccChangesResponses[keyof DiscardCccChangesResponses]
+
+export type GetCccFinalReviewData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/final-review'
+}
+
+export type GetCccFinalReviewErrors = {
+  /**
+   * Unsupported query parameters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Unreviewed work, no approved changes, or invalid selective candidate
+   */
+  422: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccFinalReviewError =
+  GetCccFinalReviewErrors[keyof GetCccFinalReviewErrors]
+
+export type GetCccFinalReviewResponses = {
+  /**
+   * Private exact approved changes, deferred work, state and selection digest
+   */
+  200: Cccjson
+}
+
+export type GetCccFinalReviewResponse =
+  GetCccFinalReviewResponses[keyof GetCccFinalReviewResponses]
+
+export type ReviewCccCheckedPublicationData = {
+  body: Cccjson
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/final-review'
+}
+
+export type ReviewCccCheckedPublicationErrors = {
+  /**
+   * Unsupported query parameters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Stale reviewed state or selected item no longer pending
+   */
+  409: unknown
+  /**
+   * Invalid explicit selection or candidate dependencies; bounded field_errors include the affected resource_uid when known
+   */
+  422: Cccjson
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type ReviewCccCheckedPublicationError =
+  ReviewCccCheckedPublicationErrors[keyof ReviewCccCheckedPublicationErrors]
+
+export type ReviewCccCheckedPublicationResponses = {
+  /**
+   * Exact checked changes and unchecked private work with state and selection digest
+   */
+  200: Cccjson
+}
+
+export type ReviewCccCheckedPublicationResponse =
+  ReviewCccCheckedPublicationResponses[keyof ReviewCccCheckedPublicationResponses]
+
+export type ReviewCccCheckedReceiptData = {
+  body: Cccjson
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/final-review/receipt'
+}
+
+export type ReviewCccCheckedReceiptErrors = {
+  /**
+   * Unsupported query parameters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Stale reviewed state or selected item no longer pending
+   */
+  409: unknown
+  /**
+   * Invalid explicit selection or candidate dependencies; bounded field_errors include affected resource_uid
+   */
+  422: Cccjson
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type ReviewCccCheckedReceiptError =
+  ReviewCccCheckedReceiptErrors[keyof ReviewCccCheckedReceiptErrors]
+
+export type ReviewCccCheckedReceiptResponses = {
+  /**
+   * Exact checked-version receipt after complete candidate validation
+   */
+  200: CccCheckedReviewReceipt
+}
+
+export type ReviewCccCheckedReceiptResponse =
+  ReviewCccCheckedReceiptResponses[keyof ReviewCccCheckedReceiptResponses]
+
+export type CreateCccItemData = {
+  body: Cccjson
+  headers: {
+    'Idempotency-Key': string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/items'
+}
+
+export type CreateCccItemErrors = {
+  /**
+   * Structured document or token validation errors
+   */
+  400: Cccjson
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Stale Draft/edit token or idempotency payload mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type CreateCccItemError = CreateCccItemErrors[keyof CreateCccItemErrors]
+
+export type CreateCccItemResponses = {
+  /**
+   * Flat immutable Content edit with exact concurrency tokens
+   */
+  201: Cccjson
+}
+
+export type CreateCccItemResponse =
+  CreateCccItemResponses[keyof CreateCccItemResponses]
+
+export type DeleteCccItemData = {
+  body: {
+    expected_draft_rev: number
+    expected_revision_uid: string
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/items/{uid}'
+}
+
+export type DeleteCccItemErrors = {
+  /**
+   * Invalid tokens; generic Media mutation refused
+   */
+  400: Cccjson
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Resource absent from owner-scoped Draft
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or idempotency mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type DeleteCccItemError = DeleteCccItemErrors[keyof DeleteCccItemErrors]
+
+export type DeleteCccItemResponses = {
+  /**
+   * Flat retained Content with is_deleted=true and new exact edit token
+   */
+  200: Cccjson
+}
+
+export type DeleteCccItemResponse =
+  DeleteCccItemResponses[keyof DeleteCccItemResponses]
+
+export type GetCccDraftItemData = {
+  body?: never
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/items/{uid}'
+}
+
+export type GetCccDraftItemErrors = {
+  /**
+   * Invalid UID or unsupported query parameters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Resource missing or outside canonical owner scope
+   */
+  404: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccDraftItemError =
+  GetCccDraftItemErrors[keyof GetCccDraftItemErrors]
+
+export type GetCccDraftItemResponses = {
+  /**
+   * Current complete authored JSON with exact working-save tokens and read-only metadata
+   */
+  200: Cccjson
+}
+
+export type GetCccDraftItemResponse =
+  GetCccDraftItemResponses[keyof GetCccDraftItemResponses]
+
+export type ReplaceCccItemData = {
+  body: Cccjson
+  headers: {
+    'Idempotency-Key': string
+  }
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/items/{uid}'
+}
+
+export type ReplaceCccItemErrors = {
+  /**
+   * Structured document or token validation errors
+   */
+  400: Cccjson
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Resource not found in the selected Draft/owner scope
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or idempotency payload mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type ReplaceCccItemError =
+  ReplaceCccItemErrors[keyof ReplaceCccItemErrors]
+
+export type ReplaceCccItemResponses = {
+  /**
+   * New immutable edit; owner stays fixed, author attribution is versioned and saved_by_uid records the actual editor
+   */
+  200: Cccjson
+}
+
+export type ReplaceCccItemResponse =
+  ReplaceCccItemResponses[keyof ReplaceCccItemResponses]
+
+export type RestoreCccItemVersionData = {
+  body: {
+    expected_draft_rev: number
+    expected_revision_uid: string
+    source_revision_uid: string
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/items/{uid}/restore'
+}
+
+export type RestoreCccItemVersionErrors = {
+  /**
+   * Invalid tokens or unsupported historical schema
+   */
+  400: Cccjson
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Current or source edit not found in the target UID/owner scope
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or idempotency mismatch
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type RestoreCccItemVersionError =
+  RestoreCccItemVersionErrors[keyof RestoreCccItemVersionErrors]
+
+export type RestoreCccItemVersionResponses = {
+  /**
+   * New immutable forward Draft save and exact concurrency tokens
+   */
+  200: Cccjson
+}
+
+export type RestoreCccItemVersionResponse =
+  RestoreCccItemVersionResponses[keyof RestoreCccItemVersionResponses]
+
+export type UploadCccMediaData = {
+  body: unknown & {
+    /**
+     * Optional case-sensitive editorial batch label; not identity or approval.
+     */
+    change_id?: string
+    expected_draft_rev: number
+    file?: Blob | File
+    /**
+     * Safe contextual filename/path; normally entity-slug/filename.
+     */
+    name: string
+    originating_entity_uid: string
+    role: string
+    upload_token?: string
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/media'
+}
+
+export type UploadCccMediaErrors = {
+  /**
+   * Malformed multipart request; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Origin is absent or outside owner scope
+   */
+  404: unknown
+  /**
+   * Stale Draft or reused retry key with different input
+   */
+  409: unknown
+  /**
+   * Request body exceeds bounded upload envelope
+   */
+  413: unknown
+  /**
+   * Invalid fields or unsupported/unsafe bytes
+   */
+  422: Cccjson
+  /**
+   * Private storage or dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type UploadCccMediaError =
+  UploadCccMediaErrors[keyof UploadCccMediaErrors]
+
+export type UploadCccMediaResponses = {
+  /**
+   * Private verified media metadata and exact Draft/edit tokens; bytes remain unreleased
+   */
+  201: Cccjson
+}
+
+export type UploadCccMediaResponse =
+  UploadCccMediaResponses[keyof UploadCccMediaResponses]
+
+export type DeleteCccMediaData = {
+  body: Cccjson
+  headers: {
+    'Idempotency-Key': string
+  }
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/media/{uid}'
+}
+
+export type DeleteCccMediaErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Logical media is absent or outside owner scope
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or retry mismatch
+   */
+  409: unknown
+  /**
+   * Invalid exact edit tokens or non-Media target
+   */
+  422: Cccjson
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type DeleteCccMediaError =
+  DeleteCccMediaErrors[keyof DeleteCccMediaErrors]
+
+export type DeleteCccMediaResponses = {
+  /**
+   * New tombstone version and Draft generation; history bytes retained
+   */
+  200: Cccjson
+}
+
+export type DeleteCccMediaResponse =
+  DeleteCccMediaResponses[keyof DeleteCccMediaResponses]
+
+export type ReplaceCccMediaFileData = {
+  body: unknown & {
+    /**
+     * Optional case-sensitive editorial batch label; not identity or approval.
+     */
+    change_id?: string
+    expected_draft_rev: number
+    expected_revision_uid: string
+    file?: Blob | File
+    name: string
+    upload_token?: string
+  }
+  headers: {
+    'Idempotency-Key': string
+  }
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/draft/media/{uid}/file'
+}
+
+export type ReplaceCccMediaFileErrors = {
+  /**
+   * Malformed multipart request; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Logical media is absent or outside owner scope
+   */
+  404: unknown
+  /**
+   * Stale Draft/edit token or retry mismatch
+   */
+  409: unknown
+  /**
+   * Request body exceeds bounded upload envelope
+   */
+  413: unknown
+  /**
+   * Invalid fields or unsupported/unsafe bytes
+   */
+  422: Cccjson
+  /**
+   * Private storage or dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type ReplaceCccMediaFileError =
+  ReplaceCccMediaFileErrors[keyof ReplaceCccMediaFileErrors]
+
+export type ReplaceCccMediaFileResponses = {
+  /**
+   * New immutable Draft file-version metadata under the same media UID
+   */
+  200: Cccjson
+}
+
+export type ReplaceCccMediaFileResponse =
+  ReplaceCccMediaFileResponses[keyof ReplaceCccMediaFileResponses]
+
+export type RequestCccUploadUrlData = {
+  body: Cccjson
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/media/upload-url'
+}
+
+export type RequestCccUploadUrlErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Unsupported filename, invalid hash or empty/oversized file
+   */
+  422: Cccjson
+  /**
+   * Direct-upload storage or catalog unavailable
+   */
+  503: unknown
+}
+
+export type RequestCccUploadUrlError =
+  RequestCccUploadUrlErrors[keyof RequestCccUploadUrlErrors]
+
+export type RequestCccUploadUrlResponses = {
+  /**
+   * Expiring private upload URL, token and required request headers
+   */
+  200: Cccjson
+}
+
+export type RequestCccUploadUrlResponse =
+  RequestCccUploadUrlResponses[keyof RequestCccUploadUrlResponses]
+
+export type PublishCccDraftData = {
+  body: Cccjson
+  headers: {
+    'Idempotency-Key': string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/publish'
+}
+
+export type PublishCccDraftErrors = {
+  /**
+   * Unsupported query parameters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Stale reviewed state or decisions or conflicting retry; nothing published
+   */
+  409: unknown
+  /**
+   * Invalid review, unfinished decisions or reference/dependency validation failed; nothing published. Bounded field_errors include the affected resource_uid when known.
+   */
+  422: Cccjson
+  /**
+   * Catalog unavailable
+   */
+  503: unknown
+}
+
+export type PublishCccDraftError =
+  PublishCccDraftErrors[keyof PublishCccDraftErrors]
+
+export type PublishCccDraftResponses = {
+  /**
+   * New Live, previous Live and fresh Draft state after atomic commit
+   */
+  200: Cccjson
+}
+
+export type PublishCccDraftResponse =
+  PublishCccDraftResponses[keyof PublishCccDraftResponses]
+
+export type GetCccStagingData = {
+  body?: never
+  path?: never
+  query?: {
+    representation?: 'page' | 'selection' | 'detail'
+    limit?: number
+    cursor?: string
+    sort?: 'name' | 'latest'
+    change?: 'new' | 'updates'
+    uid?: string
+    search?: string
+    author_uid?: string
+    change_id?: string
+    tags?: Array<string>
+    types?: Array<'model' | 'workflow' | 'app' | 'media' | 'template_set'>
+    statuses?: Array<'NEW' | 'APPROVED' | 'DEFERRED' | 'DELETED'>
+  }
+  url: '/api/v1/catalog/draft/staging'
+}
+
+export type GetCccStagingErrors = {
+  /**
+   * Unknown, repeated scalar or invalid filter; bounded result exceeded; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * The frozen page, selection or detail belongs to a stale Draft generation
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccStagingError = GetCccStagingErrors[keyof GetCccStagingErrors]
+
+export type GetCccStagingResponses = {
+  /**
+   * Private review with exact Draft generation and optional sparse page metadata
+   */
+  200: Cccjson
+}
+
+export type GetCccStagingResponse =
+  GetCccStagingResponses[keyof GetCccStagingResponses]
+
+export type StageCccChangesData = {
+  body: Cccjson
+  headers: {
+    'Idempotency-Key': string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/draft/staging'
+}
+
+export type StageCccChangesErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Stale review, changed matching count or conflicting retry
+   */
+  409: unknown
+  /**
+   * Invalid status/filter/tokens/count or missing unfiltered confirmation
+   */
+  422: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type StageCccChangesError =
+  StageCccChangesErrors[keyof StageCccChangesErrors]
+
+export type StageCccChangesResponses = {
+  /**
+   * Atomic matching-set decisions and updated private staging state
+   */
+  200: Cccjson
+}
+
+export type StageCccChangesResponse =
+  StageCccChangesResponses[keyof StageCccChangesResponses]
+
+export type ListContentCatalogItemsData = {
+  body?: never
+  headers?: {
+    /**
+     * Optional exact public-authority token for a workflow_slug detail fill only. Collections and cursors with this header return 409. The token is checked before and after all presentation and file reads, including misses and conditional responses. Guarded responses are no-store; unavailable author or selected API-file reads return 503.
+     */
+    'X-Comfy-Catalog-Authority'?: string
+  }
+  path?: never
+  query?: {
+    q?: string
+    slug?: string
+    kind?: 'MODEL' | 'WORKFLOW' | 'APP'
+    type?: 'model' | 'workflow' | 'app' | 'template_set'
+    surface?:
+      | 'hub'
+      | 'cloud_templates'
+      | 'local_templates'
+      | 'desktop_starters'
+      | 'nvidia_performance_tests'
+    tag?: string
+    use_case?: string
+    sort?: 'sort_order' | 'title'
+    limit?: number
+    cursor?: string
+    /**
+     * Compatibility detail lookup, exclusive with all other query parameters. Select at most one eligible record by canonical path, UID or website detail slug, expanding the verified primary API file for that workflow only. A miss returns an empty page, never the collection. Collection reads never open API blobs. kind is a legacy alias for type and cannot be combined with type; slug accepts a canonical Hub pathname or native slug.
+     */
+    workflow_slug?: string
+  }
+  url: '/api/v1/catalog/items'
+}
+
+export type ListContentCatalogItemsErrors = {
+  /**
+   * Invalid, repeated, unsupported or conflicting query parameters or malformed cursor
+   */
+  400: ErrorResponse
+  /**
+   * Cursor publication identity or public authority changed, or a guarded request was not a single detail lookup
+   */
+  409: ErrorResponse
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type ListContentCatalogItemsError =
+  ListContentCatalogItemsErrors[keyof ListContentCatalogItemsErrors]
+
+export type ListContentCatalogItemsResponses = {
+  /**
+   * Bounded LIVE page with continuation metadata
+   */
+  200: CccPublicItemsPage
+}
+
+export type ListContentCatalogItemsResponse =
+  ListContentCatalogItemsResponses[keyof ListContentCatalogItemsResponses]
+
+export type GetContentCatalogItemData = {
+  body?: never
+  headers?: {
+    /**
+     * Optional exact public-authority token checked before and after complete detail presentation, including a not-found result. Malformed or superseded tokens return 409; unavailable author or selected API-file reads return 503. Responses are no-store and grant no private access.
+     */
+    'X-Comfy-Catalog-Authority'?: string
+  }
+  path: {
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/items/{uid}'
+}
+
+export type GetContentCatalogItemErrors = {
+  /**
+   * Not found or not publicly eligible
+   */
+  404: unknown
+  /**
+   * Public authority changed; select the current version before filling
+   */
+  409: unknown
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type GetContentCatalogItemResponses = {
+  /**
+   * Website content record
+   */
+  200: ContentCatalogRecord
+}
+
+export type GetContentCatalogItemResponse =
+  GetContentCatalogItemResponses[keyof GetContentCatalogItemResponses]
+
+export type GetCccItemHistoryData = {
+  body?: never
+  path: {
+    uid: string
+  }
+  query?: {
+    limit?: number
+    cursor?: string
+  }
+  url: '/api/v1/catalog/items/{uid}/history'
+}
+
+export type GetCccItemHistoryErrors = {
+  /**
+   * Invalid limit, cursor or unsupported query parameter; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Resource outside organization scope or absent
+   */
+  404: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccItemHistoryError =
+  GetCccItemHistoryErrors[keyof GetCccItemHistoryErrors]
+
+export type GetCccItemHistoryResponses = {
+  /**
+   * Flat immutable items with catalog_status and saved_at, has_more and optional opaque next_cursor; no total
+   */
+  200: Cccjson
+}
+
+export type GetCccItemHistoryResponse =
+  GetCccItemHistoryResponses[keyof GetCccItemHistoryResponses]
+
+export type GetCccLegacyTargetData = {
+  body?: never
+  path: {
+    /**
+     * `template` or `hub`
+     */
+    source: string
+    /**
+     * Template name or Hub share id
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/v1/catalog/legacy/{source}/{id}'
+}
+
+export type GetCccLegacyTargetErrors = {
+  /**
+   * Unknown source or id, or the target is not publicly eligible
+   */
+  404: unknown
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type GetCccLegacyTargetResponses = {
+  /**
+   * Current Hub page of the mapped record
+   */
+  200: CccLegacyTarget
+}
+
+export type GetCccLegacyTargetResponse =
+  GetCccLegacyTargetResponses[keyof GetCccLegacyTargetResponses]
+
+export type GetCccPublicMediaBytesData = {
+  body?: never
+  path: {
+    uid: string
+    version: string
+  }
+  query?: never
+  url: '/api/v1/catalog/media/{uid}/{version}'
+}
+
+export type GetCccPublicMediaBytesErrors = {
+  /**
+   * Missing or unverifiable authority, unpublished/scheduled/private, or query alias
+   */
+  404: unknown
+  /**
+   * Requested range is outside the file
+   */
+  416: unknown
+}
+
+export type GetCccPublicMediaBytesResponses = {
+  /**
+   * Exact current LIVE bytes; authority checked before byte access; no-store
+   */
+  200: Blob | File
+  /**
+   * Requested byte range (Range header) of the same LIVE bytes, after the same checks
+   */
+  206: Blob | File
+}
+
+export type GetCccPublicMediaBytesResponse =
+  GetCccPublicMediaBytesResponses[keyof GetCccPublicMediaBytesResponses]
+
+export type HeadCccPublicMediaBytesData = {
+  body?: never
+  path: {
+    uid: string
+    version: string
+  }
+  query?: never
+  url: '/api/v1/catalog/media/{uid}/{version}'
+}
+
+export type HeadCccPublicMediaBytesErrors = {
+  /**
+   * Missing or unverifiable authority, unpublished/scheduled/private, or query alias; no body
+   */
+  404: unknown
+}
+
+export type HeadCccPublicMediaBytesResponses = {
+  /**
+   * Headers of the current LIVE bytes; no-store; no body
+   */
+  200: unknown
+}
+
+export type ListCccWebsiteModelDirectoryData = {
+  body?: never
+  headers?: {
+    /**
+     * Optional exact public cache version; unchanged before and after the complete directory fill. Invalid, repeated or superseded tokens fail with 409 and no response body.
+     */
+    'X-Comfy-Catalog-Authority'?: string
+  }
+  path?: never
+  query?: {
+    locale?: 'en' | 'zh-CN'
+  }
+  url: '/api/v1/catalog/model-directory'
+}
+
+export type ListCccWebsiteModelDirectoryErrors = {
+  /**
+   * Invalid, repeated or unsupported query parameter
+   */
+  400: unknown
+  /**
+   * Public cache version changed; restart from current authority
+   */
+  409: unknown
+  /**
+   * Catalog unavailable or directory budget exceeded
+   */
+  503: unknown
+}
+
+export type ListCccWebsiteModelDirectoryResponses = {
+  /**
+   * Complete eligible model directory, without Draft generation
+   */
+  200: CccWebsiteModelDirectory
+}
+
+export type ListCccWebsiteModelDirectoryResponse =
+  ListCccWebsiteModelDirectoryResponses[keyof ListCccWebsiteModelDirectoryResponses]
+
+export type GetCatalogOpenApiData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/openapi.json'
+}
+
+export type GetCatalogOpenApiErrors = {
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type GetCatalogOpenApiResponses = {
+  /**
+   * Catalog OpenAPI with contract fingerprint and environment
+   */
+  200: Cccjson
+}
+
+export type GetCatalogOpenApiResponse =
+  GetCatalogOpenApiResponses[keyof GetCatalogOpenApiResponses]
+
+export type GetCccPreviewMediaBytesData = {
+  body?: never
+  path: {
+    rev: number
+    uid: string
+    version: string
+  }
+  query?: never
+  url: '/api/v1/catalog/preview-media/{rev}/{uid}/{version}'
+}
+
+export type GetCccPreviewMediaBytesErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Unauthorized, unavailable, unselected, or query alias
+   */
+  404: unknown
+  /**
+   * Requested range is outside the file
+   */
+  416: unknown
+}
+
+export type GetCccPreviewMediaBytesError =
+  GetCccPreviewMediaBytesErrors[keyof GetCccPreviewMediaBytesErrors]
+
+export type GetCccPreviewMediaBytesResponses = {
+  /**
+   * Verified selected bytes; private no-store; no origin redirect
+   */
+  200: Blob | File
+  /**
+   * Requested byte range (Range header) of the same bytes, after the same checks
+   */
+  206: Blob | File
+}
+
+export type GetCccPreviewMediaBytesResponse =
+  GetCccPreviewMediaBytesResponses[keyof GetCccPreviewMediaBytesResponses]
+
+export type HeadCccPreviewMediaBytesData = {
+  body?: never
+  path: {
+    rev: number
+    uid: string
+    version: string
+  }
+  query?: never
+  url: '/api/v1/catalog/preview-media/{rev}/{uid}/{version}'
+}
+
+export type HeadCccPreviewMediaBytesErrors = {
+  /**
+   * Session workspace selector refused (workspace_id_invalid); no body on HEAD
+   */
+  400: unknown
+  /**
+   * No valid credential (see SessionUnauthorized); no body on HEAD
+   */
+  401: unknown
+  /**
+   * Refused (see SessionForbidden); no body on HEAD
+   */
+  403: unknown
+  /**
+   * Unauthorized, unavailable, unselected, or query alias; no body
+   */
+  404: unknown
+}
+
+export type HeadCccPreviewMediaBytesResponses = {
+  /**
+   * Headers of the selected bytes; private no-store; no body
+   */
+  200: unknown
+}
+
+export type GetCccPublicCacheAuthorityData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/public-authority'
+}
+
+export type GetCccPublicCacheAuthorityErrors = {
+  /**
+   * Current authority unavailable; do not reuse an earlier artifact
+   */
+  503: unknown
+}
+
+export type GetCccPublicCacheAuthorityResponses = {
+  /**
+   * Current public authority and its next time boundary; no private identifiers
+   */
+  200: {
+    as_of: string
+    /**
+     * Exact next scheduled public visibility boundary; null when none is pending. Not the one-minute observation validity.
+     */
+    next_visibility_at: string | null
+    /**
+     * Current numeric Live revision, matching card revision_id. A URL-plus-revision cache key must also validate the token stored with its value because rollback, profile edits and eligibility changes can invalidate the same revision number.
+     */
+    revision_id: number
+    token: string
+    valid_until: string
+  }
+}
+
+export type GetCccPublicCacheAuthorityResponse =
+  GetCccPublicCacheAuthorityResponses[keyof GetCccPublicCacheAuthorityResponses]
+
+export type GetCccRevisionItemData = {
+  body?: never
+  path: {
+    rev: number
+    uid: string
+  }
+  query?: never
+  url: '/api/v1/catalog/revisions/{rev}/items/{uid}'
+}
+
+export type GetCccRevisionItemErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Resource/revision not found in organization scope
+   */
+  404: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccRevisionItemError =
+  GetCccRevisionItemErrors[keyof GetCccRevisionItemErrors]
+
+export type GetCccRevisionItemResponses = {
+  /**
+   * Flat Content and exact edit/revision context
+   */
+  200: Cccjson
+}
+
+export type GetCccRevisionItemResponse =
+  GetCccRevisionItemResponses[keyof GetCccRevisionItemResponses]
+
+export type GetCccWebsiteRootPresentationData = {
+  body?: never
+  headers?: {
+    /**
+     * Exact token from the fresh page-entry public-authority selection. Required with revision_id for Redis eligibility; absent pins bypass Redis. Invalid or repeated pins return 409.
+     */
+    'X-Comfy-Catalog-Authority'?: string
+  }
+  path?: never
+  query: {
+    path: '/hub/models/' | '/hub/workflows/' | '/hub/apps/'
+    locale?: 'en' | 'zh-CN'
+    /**
+     * Live revision selected once at page entry. Redis requires both this revision and the selected authority pin. On an origin miss the revision must match current Live.
+     */
+    revision_id?: number
+  }
+  url: '/api/v1/catalog/root-presentation'
+}
+
+export type GetCccWebsiteRootPresentationErrors = {
+  /**
+   * Unsupported or repeated root path or locale
+   */
+  400: unknown
+  /**
+   * Public authority changed or the supplied pin is invalid
+   */
+  409: unknown
+  /**
+   * Current complete presentation unavailable or over budget
+   */
+  503: unknown
+}
+
+export type GetCccWebsiteRootPresentationResponses = {
+  /**
+   * Complete root metadata; no personal data or executable bodies
+   */
+  200: CccWebsiteRootPresentation
+}
+
+export type GetCccWebsiteRootPresentationResponse =
+  GetCccWebsiteRootPresentationResponses[keyof GetCccWebsiteRootPresentationResponses]
+
+export type GetCccTypeSchemaData = {
+  body?: never
+  path: {
+    type: 'model' | 'workflow' | 'app' | 'template_set' | 'media'
+    schema_version: number
+  }
+  query?: never
+  url: '/api/v1/catalog/schemas/{type}/{schema_version}'
+}
+
+export type GetCccTypeSchemaErrors = {
+  /**
+   * Unsupported type or schema version
+   */
+  404: unknown
+  /**
+   * Catalog disabled or unavailable
+   */
+  503: unknown
+}
+
+export type GetCccTypeSchemaResponses = {
+  /**
+   * Build-coupled OpenAPI 3.0 schema object, type, version and API environment
+   */
+  200: Cccjson
+}
+
+export type GetCccTypeSchemaResponse =
+  GetCccTypeSchemaResponses[keyof GetCccTypeSchemaResponses]
+
+export type GetCccStateData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/state'
+}
+
+export type GetCccStateErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Dedicated catalog unavailable; no legacy fallback
+   */
+  503: unknown
+}
+
+export type GetCccStateError = GetCccStateErrors[keyof GetCccStateErrors]
+
+export type GetCccStateResponses = {
+  /**
+   * Private state; never cacheable
+   */
+  200: Cccjson
+}
+
+export type GetCccStateResponse =
+  GetCccStateResponses[keyof GetCccStateResponses]
 
 export type GetLegacyUserdataV2Data = {
   body?: never
@@ -13631,7 +18603,7 @@ export type GetVhsQueryVideoErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -13729,7 +18701,7 @@ export type GetVhsViewAudioErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -13809,7 +18781,7 @@ export type GetVhsViewVideoErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -13904,7 +18876,7 @@ export type ViewFileErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -13990,7 +18962,7 @@ export type GetApiViewVideoAliasErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -14071,7 +19043,7 @@ export type ListWorkflowsErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -14109,7 +19081,7 @@ export type CreateWorkflowErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -14157,7 +19129,7 @@ export type DeleteWorkflowErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -14252,7 +19224,7 @@ export type UpdateWorkflowErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -14459,7 +19431,7 @@ export type GetPublishedWorkflowErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -14506,7 +19478,7 @@ export type CreateWorkflowUploadUrlErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -14886,7 +19858,7 @@ export type LeaveWorkspaceErrors = {
    */
   401: ErrorResponse
   /**
-   * Cannot leave as the only owner (`ONLY_OWNER`), cannot leave a personal workspace (`PERSONAL_WORKSPACE`), or `code` is `membership_managed_by_directory` with `message` "Your organization's admin manages membership" for an account the workspace's attached SSO organization holds.
+   * Cannot leave as the only owner (`ONLY_OWNER`), cannot leave a personal workspace (`PERSONAL_WORKSPACE`), cannot leave a team workspace the caller created (`CANNOT_LEAVE_AS_CREATOR`), or `code` is `membership_managed_by_directory` with `message` "Your organization's admin manages membership" for an account the workspace's attached SSO organization holds.
    */
   403: ErrorResponse
   /**
@@ -15038,7 +20010,7 @@ export type RemoveWorkspaceMemberErrors = {
    */
   401: ErrorResponse
   /**
-   * Owner role required or cannot remove yourself
+   * Owner role required, cannot remove yourself, the original owner of a personal workspace cannot be removed (`CANNOT_REMOVE_ORIGINAL_OWNER`), or the creator of a team workspace cannot be removed (`CANNOT_REMOVE_CREATOR`)
    */
   403: ErrorResponse
   /**
@@ -15086,7 +20058,7 @@ export type UpdateWorkspaceMemberRoleErrors = {
    */
   401: ErrorResponse
   /**
-   * Owner role required, the original owner cannot be demoted, or `DIRECTORY_MANAGED`: the member's role comes from their organization's directory (SSO) and is changed there
+   * Owner role required, the original owner of a personal workspace cannot be demoted (`CANNOT_DEMOTE_ORIGINAL_OWNER`), the creator of a team workspace cannot be demoted (`CANNOT_DEMOTE_CREATOR`), or `DIRECTORY_MANAGED`: the member's role comes from their organization's directory (SSO) and is changed there
    */
   403: ErrorResponse
   /**
@@ -15223,7 +20195,7 @@ export type ListWorkspacesErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -15266,7 +20238,7 @@ export type CreateWorkspaceErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
   /**
@@ -15318,7 +20290,7 @@ export type DeleteWorkspaceErrors = {
    */
   401: ErrorResponse
   /**
-   * Owner role required, cannot delete personal workspace, `SUBSCRIPTION_ACTIVE`, or `SSO_ATTACHED` (the workspace belongs to an SSO organization; an operator detaches it first).
+   * Owner role required, cannot delete personal workspace, `NOT_ORIGINAL_OWNER` when creator authority is enforced, `SUBSCRIPTION_ACTIVE`, or `SSO_ATTACHED` (the workspace belongs to an SSO organization; an operator detaches it first).
    */
   403: ErrorResponse
   /**
@@ -15366,7 +20338,7 @@ export type GetWorkspaceErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**
@@ -15656,7 +20628,7 @@ export type PickWorkspaceDeploymentResponses = {
 export type PickWorkspaceDeploymentResponse =
   PickWorkspaceDeploymentResponses[keyof PickWorkspaceDeploymentResponses]
 
-export type ListWorkspaceDeploymentsData = {
+export type GetWorkspaceDeploymentCpuServerData = {
   body?: never
   path: {
     /**
@@ -15665,6 +20637,63 @@ export type ListWorkspaceDeploymentsData = {
     id: string
   }
   query?: never
+  url: '/api/workspaces/{id}/deployment/cpu-server'
+}
+
+export type GetWorkspaceDeploymentCpuServerErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Workspace not found, or the caller is not a member
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `code` is `cpu_server_unknown`: the deployment or its Release's route list could not be read, the deployment's status is not one ingest knows (or is empty), or platform-gateway gave no answer ingest knows. Not an answer about the CPU server; ask again.
+   */
+  502: ErrorResponse
+}
+
+export type GetWorkspaceDeploymentCpuServerError =
+  GetWorkspaceDeploymentCpuServerErrors[keyof GetWorkspaceDeploymentCpuServerErrors]
+
+export type GetWorkspaceDeploymentCpuServerResponses = {
+  /**
+   * Which step the deployment's CPU server is on
+   */
+  200: WorkspaceDeploymentCpuServer
+}
+
+export type GetWorkspaceDeploymentCpuServerResponse =
+  GetWorkspaceDeploymentCpuServerResponses[keyof GetWorkspaceDeploymentCpuServerResponses]
+
+export type ListWorkspaceDeploymentsData = {
+  body?: never
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: {
+    /**
+     * The deployments this browser started (POST /api/workspaces/{id}/deployments/{deployment_id}/start answered 202), one parameter each. A cached listing that still offers Start (can_start) on any of them predates its start, so it is listed again; if comfy-deploy cannot be reached for that, the answer is the 503, never the listing from before the start. Send each on every listing until one asked for after its start offers Start on it again or no longer lists it: each ingest server keeps its own cache, so a later listing can reach one that cached the deployment as stopped. An id the listing does not offer Start on costs nothing.
+     */
+    started_deployment_id?: Array<string>
+  }
   url: '/api/workspaces/{id}/deployments'
 }
 
@@ -15708,21 +20737,25 @@ export type ListWorkspaceDeploymentsResponses = {
 export type ListWorkspaceDeploymentsResponse =
   ListWorkspaceDeploymentsResponses[keyof ListWorkspaceDeploymentsResponses]
 
-export type ResolveWorkspaceWorkflowPacksData = {
-  body: WorkflowPacksRequest
+export type StartWorkspaceDeploymentData = {
+  body?: never
   path: {
     /**
      * Workspace ID (w-{uuid} format)
      */
     id: string
+    /**
+     * The deployment to start (dep-{uuid} format)
+     */
+    deployment_id: string
   }
   query?: never
-  url: '/api/workspaces/{id}/workflow-packs'
+  url: '/api/workspaces/{id}/deployments/{deployment_id}/start'
 }
 
-export type ResolveWorkspaceWorkflowPacksErrors = {
+export type StartWorkspaceDeploymentErrors = {
   /**
-   * The workflow could not be read. `code` is comfy-builder's identifier, which a caller branches on: `INVALID_REQUEST` when no workflow was sent, `INVALID_WORKFLOW` when the payload is not a workflow or holds no nodes, `WORKFLOW_TOO_LARGE` when it names more node classes than one read may carry. While `web_session_enabled` is on, `code` may also be `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   * comfy-deploy refused the start (`code` `INVALID_REQUEST`, for example a stored GPU class the platform cannot schedule), or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid): the `X-Comfy-Workspace-ID` value is malformed or conflicts with the workspace the credential resolves to.
    */
   400: ErrorResponse
   /**
@@ -15730,43 +20763,99 @@ export type ResolveWorkspaceWorkflowPacksErrors = {
    */
   401: ErrorResponse
   /**
-   * The caller is not a member of the workspace, or is an API key: the read runs as the caller on a Cloud JWT minted here, which needs a signed-in session. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   * comfy-deploy refused the start on billing grounds (`code` `PAYMENT_REQUIRED`): no credit balance or subscription, or a spend block
+   */
+  402: ErrorResponse
+  /**
+   * An API key (starting needs a signed-in session), or the rollout flag is off for this account. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
    */
   403: ErrorResponse
   /**
-   * The rollout flag cloud_on_customer_build_enabled is off for the caller.
+   * Workspace not found, the caller is not a member, or the deployment is not one of the workspace's
    */
   404: ErrorResponse
   /**
-   * The workflow is larger than the 1 MiB one read may carry.
+   * comfy-deploy refused the start because of the deployment's state, for example a deleted deployment, or one whose Release was deleted
    */
-  413: ErrorResponse
+  409: ErrorResponse
+  /**
+   * comfy-deploy refused the start because the workspace is at its concurrency cap (`code` `CONCURRENCY_LIMIT`)
+   */
+  429: ErrorResponse
   /**
    * Internal server error
    */
   500: ErrorResponse
   /**
-   * comfy-builder could not be reached, failed, or refused the token minted here; nothing is known about the workflow, so try again.
-   */
-  502: ErrorResponse
-  /**
-   * Reading workflows is not configured in this environment (BUILDER_SERVICE_URL is unset).
+   * comfy-deploy could not be asked, or deployment picking is not configured in this environment
    */
   503: ErrorResponse
 }
 
-export type ResolveWorkspaceWorkflowPacksError =
-  ResolveWorkspaceWorkflowPacksErrors[keyof ResolveWorkspaceWorkflowPacksErrors]
+export type StartWorkspaceDeploymentError =
+  StartWorkspaceDeploymentErrors[keyof StartWorkspaceDeploymentErrors]
 
-export type ResolveWorkspaceWorkflowPacksResponses = {
+export type StartWorkspaceDeploymentResponses = {
   /**
-   * The workflow was read; what it needs, and what nothing provides
+   * Accepted; the deployment is starting, or already up
    */
-  200: WorkflowPacks
+  202: StartWorkspaceDeploymentResult
 }
 
-export type ResolveWorkspaceWorkflowPacksResponse =
-  ResolveWorkspaceWorkflowPacksResponses[keyof ResolveWorkspaceWorkflowPacksResponses]
+export type StartWorkspaceDeploymentResponse =
+  StartWorkspaceDeploymentResponses[keyof StartWorkspaceDeploymentResponses]
+
+export type CheckWorkspaceDeploymentCompatibilityData = {
+  body: DeploymentCompatibilityRequest
+  path: {
+    /**
+     * Workspace ID (w-{uuid} format)
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/workspaces/{id}/deployments/compatibility'
+}
+
+export type CheckWorkspaceDeploymentCompatibilityErrors = {
+  /**
+   * More than 2,000 distinct node types, or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid): the `X-Comfy-Workspace-ID` value is malformed or conflicts with the workspace the credential resolves to.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * An API key (the check needs a signed-in session), or the rollout flag is off for this account. For a web session, `code` may also be one of the SessionWriteForbidden refusals (`csrf_invalid`, `workspace_access_denied`, `origin_not_allowed`, `cross_site_request`).
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found, or the caller is not a member
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * The platform could not be asked for the workspace's deployments, deployment picking is not configured in this environment, or Comfy Cloud's node list is not loaded yet
+   */
+  503: ErrorResponse
+}
+
+export type CheckWorkspaceDeploymentCompatibilityError =
+  CheckWorkspaceDeploymentCompatibilityErrors[keyof CheckWorkspaceDeploymentCompatibilityErrors]
+
+export type CheckWorkspaceDeploymentCompatibilityResponses = {
+  /**
+   * The missing node types per deployment, newest first, and for Comfy Cloud
+   */
+  200: DeploymentCompatibility
+}
+
+export type CheckWorkspaceDeploymentCompatibilityResponse =
+  CheckWorkspaceDeploymentCompatibilityResponses[keyof CheckWorkspaceDeploymentCompatibilityResponses]
 
 export type GetCurrentWorkspaceData = {
   body?: never
@@ -16278,7 +21367,7 @@ export type GetViewCompatAliasErrors = {
    */
   401: ErrorResponse
   /**
-   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
    */
   403: ForbiddenError
   /**

@@ -4,12 +4,16 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import { TelemetryRegistry } from './TelemetryRegistry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditUsageExposureMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
@@ -19,10 +23,9 @@ import type {
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentStarterPromptClickedMetadata,
-  AgentStarterPromptExposureMetadata,
   AgentWorkflowAppliedMetadata,
   TelemetryProvider
-} from './types'
+} from '@comfyorg/telemetry/types'
 
 type AgentDispatchMethod = keyof TelemetryProvider & `trackAgent${string}`
 
@@ -330,13 +333,11 @@ describe('TelemetryRegistry', () => {
       prompt_index: 0,
       prompt_count: 5,
       prompt_text_hash: 'deadbeef',
+      visible_prompt_count: 5,
       locale: 'en',
       click_id: 'click-1',
       draft_was_empty: true
     } satisfies AgentStarterPromptClickedMetadata
-    const starterPromptExposureMetadata = {
-      '$feature/agent-starter-prompt-set': 'test'
-    } satisfies AgentStarterPromptExposureMetadata
     const consentShownMetadata = {
       trigger: 'button_click'
     } satisfies AgentConsentShownMetadata
@@ -370,11 +371,53 @@ describe('TelemetryRegistry', () => {
       turn_accepted: false,
       ui_treatment: 'inline_notice'
     } satisfies AgentErrorMetadata
+    const freeUseExposureMetadata = {
+      placement: 'above-input',
+      '$feature/agent-free-use-message-placement': 'above-input'
+    } satisfies AgentFreeUseExposureMetadata
+    const freeUseNoticeMetadata = {
+      action: 'shown',
+      placement: 'above-input'
+    } satisfies AgentFreeUseNoticeMetadata
+    const creditTransitionNoticeMetadata = {
+      action: 'shown'
+    } satisfies AgentCreditTransitionNoticeMetadata
+    const creditUsageExposureMetadata = {
+      variant: 'treatment',
+      '$feature/agent-credit-usage-summary': 'treatment'
+    } satisfies AgentCreditUsageExposureMetadata
+
     const cases = [
       {
         method: 'trackAgentError',
         expected: { ...errorMetadata },
         invoke: (registry) => registry.trackAgentError(errorMetadata)
+      },
+      {
+        method: 'trackAgentFreeUseExposure',
+        expected: { ...freeUseExposureMetadata },
+        invoke: (registry) =>
+          registry.trackAgentFreeUseExposure(freeUseExposureMetadata)
+      },
+      {
+        method: 'trackAgentFreeUseNotice',
+        expected: { ...freeUseNoticeMetadata },
+        invoke: (registry) =>
+          registry.trackAgentFreeUseNotice(freeUseNoticeMetadata)
+      },
+      {
+        method: 'trackAgentCreditTransitionNotice',
+        expected: { ...creditTransitionNoticeMetadata },
+        invoke: (registry) =>
+          registry.trackAgentCreditTransitionNotice(
+            creditTransitionNoticeMetadata
+          )
+      },
+      {
+        method: 'trackAgentCreditUsageExposure',
+        expected: { ...creditUsageExposureMetadata },
+        invoke: (registry) =>
+          registry.trackAgentCreditUsageExposure(creditUsageExposureMetadata)
       },
       {
         method: 'trackAgentMessageFeedback',
@@ -393,6 +436,12 @@ describe('TelemetryRegistry', () => {
         expected: { ...panelClosedMetadata },
         invoke: (registry) =>
           registry.trackAgentPanelClosed(panelClosedMetadata)
+      },
+      {
+        method: 'trackAgentPanelRenderStalled',
+        expected: { stage: 'root_unresolved' },
+        invoke: (registry) =>
+          registry.trackAgentPanelRenderStalled({ stage: 'root_unresolved' })
       },
       {
         method: 'trackAgentEntryButtonClicked',
@@ -416,14 +465,6 @@ describe('TelemetryRegistry', () => {
         expected: { ...starterPromptClickedMetadata },
         invoke: (registry) =>
           registry.trackAgentStarterPromptClicked(starterPromptClickedMetadata)
-      },
-      {
-        method: 'trackAgentStarterPromptExposure',
-        expected: { ...starterPromptExposureMetadata },
-        invoke: (registry) =>
-          registry.trackAgentStarterPromptExposure(
-            starterPromptExposureMetadata
-          )
       },
       {
         method: 'trackAgentConsentShown',
@@ -464,6 +505,28 @@ describe('TelemetryRegistry', () => {
         expected: { ...workflowAppliedMetadata },
         invoke: (registry) =>
           registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
+      },
+      {
+        method: 'trackAgentGraphProjection',
+        expected: {
+          op_id: 'op-1',
+          op_count: 2,
+          sequence: 7,
+          stage: 'applied',
+          added_count: 0,
+          removed_count: 2,
+          apply_failure_count: 0
+        },
+        invoke: (registry) =>
+          registry.trackAgentGraphProjection({
+            op_id: 'op-1',
+            op_count: 2,
+            sequence: 7,
+            stage: 'applied',
+            added_count: 0,
+            removed_count: 2,
+            apply_failure_count: 0
+          })
       },
       {
         method: 'trackAgentStopClicked',
@@ -533,13 +596,13 @@ describe('TelemetryRegistry', () => {
       {
         method: 'trackAgentConsentOfferExited',
         expected: {
-          exit: 'already_offered',
+          exit: 'card_already_seen',
           stage: 'offer',
           retry_armed: false
         },
         invoke: (registry) =>
           registry.trackAgentConsentOfferExited({
-            exit: 'already_offered',
+            exit: 'card_already_seen',
             stage: 'offer',
             retry_armed: false
           })
@@ -565,6 +628,26 @@ describe('TelemetryRegistry', () => {
         expected: { reason: 'app_mode' },
         invoke: (registry) =>
           registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
+      },
+      {
+        method: 'trackAgentSendGated',
+        expected: {
+          gate: 'coach',
+          outcome: 'held',
+          reason: null,
+          client_message_id: 'client-message-1',
+          held_ms: null,
+          thread_id: 'thread-1'
+        },
+        invoke: (registry) =>
+          registry.trackAgentSendGated({
+            gate: 'coach',
+            outcome: 'held',
+            reason: null,
+            client_message_id: 'client-message-1',
+            held_ms: null,
+            thread_id: 'thread-1'
+          })
       },
       {
         method: 'trackAgentPaywallShown',

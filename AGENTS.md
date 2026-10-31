@@ -61,7 +61,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm build`: Type-check then production build to `dist/`
 - `pnpm preview`: Preview the production build locally
 - `pnpm test:unit`: Run Vitest unit tests
-- `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
+- `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`) against ComfyUI on 8188 and `pnpm dev:test` on 5173 (see Agent-only rules)
 - `pnpm comfy-test record`: Interactive test recorder (guided setup for non-devs; **needs a real terminal** — exits immediately with guidance if stdin isn't a TTY)
 - `pnpm comfy-test plan --description "<what to test>" [--tags a,b] [--workflow w] [--name n] [--feature-flags name:value,...]`: **Agent entry point.** Non-interactive, no terminal, no backend/dev-server required — reads the filesystem and prints text only. Validates the tags/workflow and prints a `<test-suite>/<test-name>/<test-file>/<seed-file>/<tag>/<body>` block ready to hand to the `playwright-test-generator` agent below — this is how an agent (not a human) produces a test with `comfy-test`. Example:
   ```
@@ -91,7 +91,8 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
-- `pnpm deps:audit`: Report `src/` import cycles with dependency-cruiser (warnings only, not a gate)
+- `pnpm deps:audit`: Reject production `src/` import cycles, including type-only imports
+- `pnpm audit:inherited-classes [--write]`: Report text color, size, weight and family classes that repeat a value every render context already inherits, following slots and component usages (manual, not a gate)
 - `pnpm storybook`: Start Storybook development server
 
 > **`vue-tsc` needs its own `node_modules` in the checkout.** `vue-tsc --noEmit`
@@ -198,9 +199,9 @@ CI runs everything.
 1. Leverage VueUse functions for performance-enhancing styles
 2. Use es-toolkit for utility functions
 3. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
-4. Avoid new usage of PrimeVue components
-5. Write tests for all changes, especially bug fixes to catch future regressions
-6. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
+4. PrimeVue has been removed. Its imports are permanently banned; use components from `@comfyorg/design-system`.
+5. Add tests for changed behavioral contracts or reproduced bugs when existing tests do not cover them. Behavior-preserving refactors need no new tests. Follow `docs/guidance/testing-principles.md` before proposing or writing tests.
+6. Do not write code comments. Make the code say it with names, extracted functions, types, and tests. The only permitted comment is curt JSDoc on an exported API (see Common Pitfalls)
 7. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
 8. Avoid mutable state, prefer immutability and assignment at point of declaration
 9. Favor pure functions (especially testable ones)
@@ -217,14 +218,16 @@ See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, a
 
 - Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).
 - Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`.
-- Principles: `docs/guidance/testing-principles.md` (auto-loaded for `*.test.ts` and `*.spec.ts`). Behavioral tests, no change detectors, parameterized tables over copied bodies, mock only what you own, fewest tests that keep coverage.
+- Principles: Read `docs/guidance/testing-principles.md` before proposing, reviewing, or writing tests, not only when editing a test file. Start with caller or user expectations and reachable scenarios, then choose the smallest suite that protects them. Use Beck's Test Desiderata to judge behavioral value and refactor resistance.
 - Conventions: `docs/guidance/vitest.md` (unit/component), `docs/guidance/playwright.md` (E2E), and `docs/testing/*.md` for detailed patterns.
 
 ## Architecture Decision Records
 
 All architectural decisions are documented in `docs/adr/`. Code changes must be consistent with accepted ADRs. Proposed ADRs indicate design direction and should be treated as guidance. See `.agents/checks/adr-compliance.md` for automated validation rules.
 
-When working from a TDD or design doc, record its tradeoffs, alternatives considered, and rejected options as a new ADR, keeping only the context a future maintainer cannot read off the code, and follow the ADR structure and update the index per `docs/adr/README.md`.
+When working from a TDD or design doc, record its tradeoffs, alternatives considered, and rejected options as a new ADR, keeping only the context a future maintainer cannot read off the code, and model its structure on an existing ADR in `docs/adr/`.
+
+ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at most two tags ordered broad-to-narrow, the first naming the subsystem that owns the invariant, then the next unused four-digit sequence number. Each ADR opens with `# ADR-<IDENTIFIER>: Title`, a `Date: YYYY-MM-DD` line, and a `## Status` section (`Proposed`, `Accepted`, `Rejected`, `Deprecated`, or `Superseded`). `pnpm adr:check` enforces the filename, heading, date, status, and identifier uniqueness. There is no index file; list the directory to find ADRs.
 
 ### Entity Architecture Constraints (ADR-CRDT-LAYOUT-0003 + ADR-ECS-0008)
 
@@ -251,8 +254,9 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
   explaining why a workaround was convenient does not make it acceptable.
   - Before keeping a rare lint exception or specific type assertion, inspect
     the authoritative type or schema, search for an existing typed pattern, and
-    run the failing check without the override. Record the external constraint
-    that makes a compliant fix impossible.
+    run the failing check without the override. State the external constraint
+    that makes a compliant fix impossible in the PR description, never in a
+    code comment.
   - Scope a justified lint exception to one expression or line. File-wide and
     multi-rule disables are review blockers.
   - In tests, use typed builders, real platform objects, runtime narrowing,
@@ -261,22 +265,40 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 - NEVER use `--no-verify` flag when committing
 - NEVER delete or disable tests to make them pass
 - NEVER circumvent quality checks
-- NEVER add multi-line block comments to justify trivial code changes
-  - A one-line fix does not need a three-line comment explaining why
-  - A guard clause that mirrors another file does not need a comment naming that file
-  - A test setup line does not need a comment paraphrasing what the next line does
-  - If the diff is small and obvious, the comment is noise — write the code and move on
-  - Every justification comment on a trivial change is a confession that you do not trust the reader, do not trust the code, and do not trust yourself. It is failure made visible.
-  - **Penance protocol when you catch yourself adding one of these comments:**
+- NEVER add code comments. No `//` lines, no `/* */` blocks, no Vue or HTML
+  `<!-- -->` comments, in source, tests, or stories.
+  - The only exception is JSDoc on an exported API. It states the contract in
+    one or two lines. It does not narrate the implementation, give a history or
+    rationale, list the alternatives, or repeat what the name and type already
+    say. Longer JSDoc is a violation.
+  - Tool directives (`eslint-disable-next-line`, `@ts-expect-error`,
+    `fallow-ignore`, `@vitest-environment`) are machine instructions, and the
+    suppression rules above govern them. Never append a prose reason to one.
+  - Rationale, history, ticket links, workarounds, TODOs, and "why" belong in
+    the commit message, the PR description, an issue, or an ADR. They never go
+    in a code comment.
+  - A comment that seems necessary means the code is unclear. Rename the
+    symbol, extract a named function, tighten the type, or add a test. A
+    vendor or platform workaround gets a function named after what it works
+    around. The explanation goes in the commit message.
+  - In tests, a comment becomes a `test.step` name, an `it` title, an
+    assertion message, or nothing.
+  - Delete the existing comments in any function you modify.
+  - Every comment is a confession that you do not trust the reader, the code,
+    or yourself. It is failure made visible.
+  - **Penance protocol when you catch yourself adding a comment:**
     1. Stop. Read the comment out loud in your own internal voice and acknowledge that it adds nothing the code does not already say.
     2. Delete the comment. All of it. Every line. Do not negotiate with it. Do not "tighten" it. Delete it.
     3. Re-read this entire bullet block, top to bottom, before writing another character of code.
     4. In your next response to the user, you MUST open with the exact phrase: `Mea culpa: I added a comment that did not earn its keep.` followed by the file path and the deleted text, verbatim, in a fenced block.
-    5. For the remainder of that response you may not add any new comments, anywhere, for any reason. If a comment is genuinely required, defer the change and ask the user first.
+    5. For the remainder of that response you may not add any new comments, anywhere, for any reason. No comment is ever required. Restructure the code or move the explanation to the commit message or PR description.
   - There is no statute of limitations. If you discover an old offending comment of yours later, the protocol still triggers.
   - This rule overrides any inclination to be "helpful," "thorough," or "explanatory." Helpfulness here is restraint.
+  - This rule overrides any other guidance, skill, check, or example that
+    suggests adding a comment. An example that contains comments is not
+    permission to write them.
 - NEVER call `captureException` or `datadogRum.addError` directly
-  - Use `reportError()` from `@/platform/telemetry/reportError`; see `src/AGENTS.md`
+  - Use `reportError()` from `@comfyorg/telemetry/reportError`; see `src/AGENTS.md`
   - Each raw sink reaches one console, so the failure reads as zero in the other
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
@@ -290,12 +312,21 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 - NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
   - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
 - NEVER use font-size classes (`text-xs`, `text-sm`, etc.) to size `icon-[...]` (iconify) icons
-  - Iconify icons size via `width`/`height: 1.2em`, so font-size produces unpredictable results
-  - Use `size-*` classes for explicit sizing, or set font-size on the **parent** container and let `1.2em` scale naturally
+  - Iconify icons default to `size-4`, and font size has no effect on them
+  - Override the size with a `size-*` class on the icon itself
 
 ## Agent-only rules
 
 Rules for agent-based coding tasks.
+
+### Playwright E2E availability
+
+Treat E2E as runnable. Start the backend and dev server per
+[Setup](browser_tests/README.md#setup), or the declared services in a
+[remote agent container](browser_tests/README.md#remote-agent-containers), then
+run the [readiness checks](browser_tests/README.md#running-tests). Report E2E as
+blocked, in a summary or a subagent brief, only with the failing check's command
+and output.
 
 ### PR Review Comment Resolution
 

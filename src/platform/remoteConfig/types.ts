@@ -1,7 +1,7 @@
 import type { GetFeaturesResponses } from '@comfyorg/ingest-types'
 import type { PostHogConfig } from 'posthog-js'
 
-import type { TelemetryEventName } from '@/platform/telemetry/types'
+import type { TelemetryEventName } from '@comfyorg/telemetry/types'
 
 export type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 
@@ -105,39 +105,43 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
-  onboarding_tour_enabled?: boolean
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
   cancellation_survey_id?: string
-  linear_toggle_enabled?: boolean
   'agent-in-app-experience'?: boolean
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
   partner_run_gate_enabled?: boolean
   /** Local prompts carry a renewable partner-node token instead of the workspace token. */
   partner_node_token?: boolean
+  /** Offers Start on a stopped deployment in the Run bar's deployment menu. */
+  deployment_start_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
   free_tier_credits?: number
-  free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
+  /** The deployment switcher's marks of which deployments can run the open workflow; its own off switch, per workspace. */
+  deployment_compatibility_marks_enabled?: boolean
+  /** The editor opens after 2 s of custom node scripts and turns the late ones on when they arrive. */
+  late_custom_nodes_enabled?: boolean
+  /** Model dropdowns on a picked deployment also list the workspace's own library models. */
+  runtime_library_models_enabled?: boolean
   // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
   // funnel it through normalizeHostedBillingDestination before trusting it.
   hosted_billing_destination?: string
   unified_cloud_auth?: boolean
   unified_web_session?: boolean
   sso_enabled?: boolean
-  // Wire key carries the server's own spelling; see ServerFeatureFlag.
-  embedded_checked_enabled?: boolean
+  local_web_sso?: boolean
   billing_sdk_topup_enabled?: boolean
   billing_sdk_subscription_enabled?: boolean
   billing_control_enabled?: boolean
   member_credit_limits_enabled?: boolean
-  legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean
+  unified_billing_settings?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string
   /** Absent when the backend has no key configured, not an empty string; always sanitize with the reader before trusting it. */

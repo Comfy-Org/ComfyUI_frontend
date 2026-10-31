@@ -5,15 +5,18 @@
  * Includes workspaceId for validation to prevent cross-workspace contamination.
  */
 
-import type { ActivePathPointer, OpenPathsPointer } from '../base/draftTypes'
-import { getWorkspaceId } from '../base/storageKeys'
+import type {
+  ActivePathPointer,
+  OpenPathsPointer
+} from '@/platform/workflow/persistence/base/draftTypes'
+import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import {
   clearActivePath,
   readActivePath,
   readOpenPaths,
   writeActivePath,
   writeOpenPaths
-} from '../base/storageIO'
+} from '@/platform/workflow/persistence/base/storageIO'
 import { api } from '@/scripts/api'
 
 /**
@@ -35,7 +38,6 @@ export function useWorkflowTabState() {
   function getActivePath(): string | null {
     const clientId = getClientId()
     const workspaceId = getWorkspaceId()
-    if (!clientId) return null
 
     const pointer = readActivePath(clientId, workspaceId)
     return pointer?.path ?? null
@@ -71,7 +73,6 @@ export function useWorkflowTabState() {
   function getOpenPaths(): { paths: string[]; activeIndex: number } | null {
     const clientId = getClientId()
     const workspaceId = getWorkspaceId()
-    if (!clientId) return null
 
     const pointer = readOpenPaths(clientId, workspaceId)
     if (!pointer) return null

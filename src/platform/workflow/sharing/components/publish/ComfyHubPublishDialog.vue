@@ -1,9 +1,11 @@
 <template>
   <BaseModalLayout
+    :labels="modalLayoutLabels"
     :content-title="$t('comfyHubPublish.title')"
     content-padding="none"
     left-panel-width="16.5rem"
     size="md"
+    @close="onClose"
   >
     <template #leftPanelHeaderTitle>
       <h2 class="flex-1 text-base font-semibold select-none">
@@ -76,20 +78,12 @@
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
 import { useToast } from '@/components/ui/toast/toastStore'
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  provide,
-  ref,
-  watch
-} from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
 import ComfyHubPublishNav from '@/platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue'
 import ComfyHubPublishWizardContent from '@/platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue'
 import { useComfyHubPublishSubmission } from '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission'
@@ -103,9 +97,9 @@ import { useWorkflowShareService } from '@/platform/workflow/sharing/services/wo
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { OnCloseKey } from '@/types/widgetTypes'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 
 const { onClose } = defineProps<{
   onClose: () => void
@@ -291,5 +285,5 @@ onBeforeUnmount(() => {
   }
 })
 
-provide(OnCloseKey, onClose)
+const modalLayoutLabels = useModalLayoutLabels()
 </script>

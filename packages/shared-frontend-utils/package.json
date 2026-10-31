@@ -6,25 +6,83 @@
   "keywords": [],
   "type": "module",
   "exports": {
-    "./creditsUtil": "./src/creditsUtil.ts",
-    "./formatUtil": "./src/formatUtil.ts",
-    "./loadExternalScript": "./src/loadExternalScript.ts",
-    "./networkUtil": "./src/networkUtil.ts",
-    "./nodePricing": "./src/nodePricing.ts",
-    "./piiUtil": "./src/piiUtil.ts",
-    "./telemetry": "./src/telemetry.ts",
-    "./templateRanking": "./src/templateRanking.ts",
-    "./templateSearch": "./src/templateSearch.ts",
-    "./urlSafety": "./src/urlSafety.ts"
+    "./colorUtil": {
+      "@comfyorg/shared-frontend-utils": "./src/colorUtil.ts",
+      "types": "./dist-types/colorUtil.d.ts",
+      "default": "./src/colorUtil.ts"
+    },
+    "./creditsUtil": {
+      "@comfyorg/shared-frontend-utils": "./src/creditsUtil.ts",
+      "types": "./dist-types/creditsUtil.d.ts",
+      "default": "./src/creditsUtil.ts"
+    },
+    "./errorUtil": {
+      "@comfyorg/shared-frontend-utils": "./src/errorUtil.ts",
+      "types": "./dist-types/errorUtil.d.ts",
+      "default": "./src/errorUtil.ts"
+    },
+    "./formatUtil": {
+      "@comfyorg/shared-frontend-utils": "./src/formatUtil.ts",
+      "types": "./dist-types/formatUtil.d.ts",
+      "default": "./src/formatUtil.ts"
+    },
+    "./geometry": {
+      "@comfyorg/shared-frontend-utils": "./src/geometry.ts",
+      "types": "./dist-types/geometry.d.ts",
+      "default": "./src/geometry.ts"
+    },
+    "./loadExternalScript": {
+      "@comfyorg/shared-frontend-utils": "./src/loadExternalScript.ts",
+      "types": "./dist-types/loadExternalScript.d.ts",
+      "default": "./src/loadExternalScript.ts"
+    },
+    "./networkUtil": {
+      "@comfyorg/shared-frontend-utils": "./src/networkUtil.ts",
+      "types": "./dist-types/networkUtil.d.ts",
+      "default": "./src/networkUtil.ts"
+    },
+    "./nodePricing": {
+      "@comfyorg/shared-frontend-utils": "./src/nodePricing.ts",
+      "types": "./dist-types/nodePricing.d.ts",
+      "default": "./src/nodePricing.ts"
+    },
+    "./piiUtil": {
+      "@comfyorg/shared-frontend-utils": "./src/piiUtil.ts",
+      "types": "./dist-types/piiUtil.d.ts",
+      "default": "./src/piiUtil.ts"
+    },
+    "./telemetry": {
+      "@comfyorg/shared-frontend-utils": "./src/telemetry.ts",
+      "types": "./dist-types/telemetry.d.ts",
+      "default": "./src/telemetry.ts"
+    },
+    "./templateRanking": {
+      "@comfyorg/shared-frontend-utils": "./src/templateRanking.ts",
+      "types": "./dist-types/templateRanking.d.ts",
+      "default": "./src/templateRanking.ts"
+    },
+    "./templateSearch": {
+      "@comfyorg/shared-frontend-utils": "./src/templateSearch.ts",
+      "types": "./dist-types/templateSearch.d.ts",
+      "default": "./src/templateSearch.ts"
+    },
+    "./urlSafety": {
+      "@comfyorg/shared-frontend-utils": "./src/urlSafety.ts",
+      "types": "./dist-types/urlSafety.d.ts",
+      "default": "./src/urlSafety.ts"
+    }
   },
   "scripts": {
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
     "test": "vitest run",
-    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit",
+    "build": "tsc -b tsconfig.declarations.json",
+    "prepack": "pnpm build"
   },
   "dependencies": {
     "@comfyorg/object-info-parser": "workspace:*",
+    "@comfyorg/registry-types": "workspace:*",
     "axios": "catalog:",
     "es-toolkit": "^1.39.9",
     "jsonata": "catalog:",

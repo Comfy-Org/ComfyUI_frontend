@@ -3,15 +3,18 @@ import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
   INodeInputSlot,
-  Point,
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
-import type { Rect } from '@/lib/litegraph/src/interfaces'
+import type {
+  PointTuple as Point,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphCanvas,
+  LGraphEventMode,
   LGraphNode,
   LiteGraph,
   LGraph,
@@ -23,8 +26,8 @@ import {
 import { test } from './__fixtures__/testExtensions'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
@@ -71,6 +74,16 @@ describe('LGraphNode', () => {
 
   afterEach(() => {
     Object.assign(LiteGraph, origLiteGraph)
+  })
+
+  test.for([
+    LGraphEventMode.ALWAYS,
+    LGraphEventMode.ON_EVENT,
+    LGraphEventMode.NEVER,
+    LGraphEventMode.BYPASS
+  ])('accepts mode %s through changeMode', (mode) => {
+    expect(node.changeMode(mode)).toBe(true)
+    expect(node.mode).toBe(mode)
   })
 
   test('preserves null property values', () => {

@@ -1,18 +1,19 @@
 import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { assert } from '@/base/assert'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
+import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
@@ -44,6 +45,9 @@ const WORKFLOW_ID = 'wf-a'
 const CATALOG: WidgetCatalog = {
   types: { TestSource: { widget_order: ['steps', 'seed'] } }
 }
+
+type FrameClassification = Pick<ClassifiedDocUpdate, 'actor'> &
+  Partial<Pick<ClassifiedDocUpdate, 'catchUp'>>
 
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
   return {
@@ -112,35 +116,38 @@ function snapshot(graph: LGraph) {
   }
 }
 
-/**
- * Binds a fresh follower session to the doc minted from the graph's own
- * save and delivers the whole doc as the catch-up frame followed by the
- * full sync, the way a return to a previously bound workflow tab does.
- * Later host edits arrive as incremental frames only.
- */
 function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
   const host = mint(toWorkflowJson(saved), CATALOG)
   const follower = new FollowerDoc()
   const projection = new AgentCrdtProjection(() => graph)
   projection.bind(WORKFLOW_ID, follower)
   let seq = 0
-  const deliver = (update: Uint8Array) => {
+  const deliver = (update: Uint8Array, classification: FrameClassification) => {
     follower.applyRemoteUpdate(update)
     expect(
       projection.applyFrame({
         workflowId: WORKFLOW_ID,
         seq: ++seq,
         update,
-        actor: 'agent:comfy:host',
-        opIds: []
+        opIds: [],
+        ...classification
       })
     ).toMatchObject({ applied: true })
   }
-  deliver(Y.encodeStateAsUpdate(host))
-  const hostEdit = (edit: () => void) => {
+  deliver(Y.encodeStateAsUpdate(host), {
+    actor: 'agent:comfy:host',
+    catchUp: true
+  })
+  const hostEdit = (
+    edit: () => void,
+    classification: FrameClassification = {
+      actor: 'agent:comfy:host',
+      catchUp: false
+    }
+  ) => {
     const before = Y.encodeStateVector(host)
     host.transact(edit)
-    deliver(Y.encodeStateAsUpdate(host, before))
+    deliver(Y.encodeStateAsUpdate(host, before), classification)
   }
   const destroy = () => {
     projection.destroy()
@@ -156,6 +163,60 @@ beforeEach(() => {
 })
 
 describe('AgentCrdtProjection catch-up over a live graph', () => {
+  it.for([
+    {
+      name: 'live agent frame',
+      actor: 'agent:test:turn-1',
+      catchUp: false,
+      expected: [680, 20]
+    },
+    {
+      name: 'agent catch-up frame',
+      actor: 'agent:test:turn-1',
+      catchUp: true,
+      expected: [20, 30]
+    },
+    {
+      name: 'live human frame',
+      actor: 'human:test:tab-1',
+      catchUp: false,
+      expected: [20, 30]
+    },
+    {
+      name: 'unclassified agent frame',
+      actor: 'agent:test:turn-1',
+      catchUp: undefined,
+      expected: [20, 30]
+    }
+  ])(
+    'classifies an overlapping insertion from a $name',
+    ({ actor, catchUp, expected }) => {
+      const { graph, source, note } = buildLiveGraph()
+      source.setSize([200, 100])
+      note.setSize([200, 100])
+      const { host, hostEdit, destroy } = bindAndCatchUp(
+        graph,
+        structuredClone(graph.serialize())
+      )
+      onTestFinished(destroy)
+      const inserted = {
+        ...structuredClone(note.serialize()),
+        id: 3,
+        pos: [20, 30] as [number, number],
+        title: 'Inserted note'
+      }
+
+      hostEdit(
+        () => {
+          nodesMap(host).set('3', new Y.Map<unknown>(Object.entries(inserted)))
+        },
+        { actor, catchUp }
+      )
+
+      expect([...(graph.getNodeById(toNodeId(3))?.pos ?? [])]).toEqual(expected)
+    }
+  )
+
   it('leaves a saved workflow displayed as saved after the catch-up frame re-reconciles it', () => {
     const { graph, source, note } = buildLiveGraph()
     const saved = structuredClone(graph.serialize())
@@ -299,10 +360,42 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     ).toEqual({
       applied: true,
       nodes: { added: ['1'], removed: [] },
-      createdNodeIds: []
+      createdNodeIds: [],
+      failureCount: 0
     })
     expect(graph._nodes).toEqual([source])
     expect(source.title).toBe('Reminted')
     expect(graph.links.size).toBe(0)
+  })
+
+  it('keeps only the groups the document holds again when retrying', () => {
+    const { graph } = buildLiveGraph()
+    const restored = new LiteGraph.LGraphGroup('Prompt group')
+    const dropped = new LiteGraph.LGraphGroup('Output group')
+    graph.add(restored)
+    graph.add(dropped)
+    const { host, hostEdit, projection, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+    const [restoredGroup] = host.getMap('meta').get('groups') as unknown[]
+
+    function fail(): never {
+      throw new Error('remove failed')
+    }
+    vi.spyOn(graph, 'remove')
+      .mockImplementationOnce(fail)
+      .mockImplementationOnce(fail)
+    hostEdit(() => host.getMap('meta').set('groups', []))
+    expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(true)
+    expect(graph.groups).toEqual([restored, dropped])
+
+    hostEdit(() => host.getMap('meta').set('groups', [restoredGroup]))
+    expect(projection.retryFailed(WORKFLOW_ID)).toMatchObject({
+      failureCount: 0
+    })
+    expect(graph.groups).toEqual([restored])
+    expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(false)
   })
 })

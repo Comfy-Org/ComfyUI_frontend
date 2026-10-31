@@ -35,9 +35,6 @@
   "Comfy-Desktop_Restart": {
     "label": "راه‌اندازی مجدد"
   },
-  "Comfy_3DViewer_Open3DViewer": {
-    "label": "نمایشگر سه‌بعدی (بتا) را برای نود انتخاب‌شده باز کنید"
-  },
   "Comfy_BrowseModelAssets": {
     "label": "آزمایشی: مرور Model Assets"
   },
@@ -50,8 +47,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "حذف آیتم‌های انتخاب‌شده"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "حذف پیوندهای انتخاب‌شده"
+  },
   "Comfy_Canvas_FitView": {
     "label": "تنظیم نما بر اساس nodeهای انتخاب‌شده"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "پنهان کردن پیوندهای انتخاب‌شده"
   },
   "Comfy_Canvas_Lock": {
     "label": "قفل کردن بوم"
@@ -82,6 +85,9 @@
   },
   "Comfy_Canvas_SelectAll": {
     "label": "انتخاب همه"
+  },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "نمایش پیوندهای انتخاب‌شده"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "نمایش/مخفی‌سازی لینک‌ها در بوم"

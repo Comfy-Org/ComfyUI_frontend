@@ -1,48 +1,27 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { scanNodeMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 
-import { findNodesReferencingValues } from './clearNodePreviewCacheForValues'
+import {
+  createDeletedValueMatcher,
+  findNodesReferencingValues
+} from './clearNodePreviewCacheForValues'
 
-/**
- * After a successful asset deletion, surface the affected Load Image / Load
- * Video / Load Audio nodes through the missing-media store. Without this, UI
- * surfaces that filter against `missingMediaCandidates` (e.g. the Vue node
- * widget dropdown) keep listing the deleted asset because the verification
- * pipeline only runs on workflow load — there is no signal that the live
- * deletion just invalidated some references.
- *
- * Walks the full graph hierarchy (including subgraphs) and skips bypassed /
- * never-execute nodes, mirroring `scanAllMediaCandidates` so the live-delete
- * path stays in lockstep with the workflow-load verification.
- *
- * Comparison is full-string against the widget value, so two distinct assets
- * that share a basename across input/output sources do not cross-match.
- */
+/** Flags active media widgets referencing deleted assets as missing. */
 export function markDeletedAssetsAsMissingMedia(
   rootGraph: LGraph,
   deletedValues: ReadonlySet<string>
 ): void {
   if (deletedValues.size === 0) return
 
-  const matchedNodes = [
-    ...findNodesReferencingValues(rootGraph, deletedValues),
-    ...collectAllNodes(rootGraph).filter(
-      (node) =>
-        typeof node.isSubgraphNode === 'function' &&
-        node.isSubgraphNode() &&
-        Array.isArray(node.widgets) &&
-        node.widgets.some(
-          (widget) =>
-            typeof widget.value === 'string' && deletedValues.has(widget.value)
-        )
-    )
-  ]
+  const matchedNodes = findNodesReferencingValues(rootGraph, deletedValues, {
+    includeSubgraphNodes: true
+  })
   if (!matchedNodes.length) return
 
+  const isDeleted = createDeletedValueMatcher(deletedValues)
   const candidates: MissingMediaCandidate[] = []
   for (const node of matchedNodes) {
     if (
@@ -50,8 +29,10 @@ export function markDeletedAssetsAsMissingMedia(
       node.mode === LGraphEventMode.BYPASS
     )
       continue
-    for (const candidate of scanNodeMediaCandidates(rootGraph, node)) {
-      if (!deletedValues.has(candidate.name)) continue
+    for (const candidate of scanNodeMediaCandidates(rootGraph, node, {
+      includeTemp: true
+    })) {
+      if (!isDeleted(candidate.name)) continue
       candidates.push({ ...candidate, isMissing: true })
     }
   }

@@ -3,14 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import * as graphTraversalUtil from '@/utils/graphTraversalUtil'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
@@ -37,7 +39,8 @@ const createMockOutputs = (
 ): ExecutedWsMessage['output'] => ({ images })
 
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
+  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id),
+  getNodeByLocatorId: vi.fn(() => ({}))
 }))
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
@@ -145,6 +148,51 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     expect(previewUrl.searchParams.get('type')).toBe('output')
   })
 
+  it('skips null image entries when building view URLs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([node.id]),
+      createMockOutputs(
+        fromAny([null, { filename: 'kept.png', type: 'output' }, null])
+      )
+    )
+
+    const urls = store.getNodeImageUrls(node) ?? []
+
+    expect(urls).toHaveLength(1)
+    const viewUrl = new URL(urls[0], window.location.origin)
+    expect(viewUrl.searchParams.get('filename')).toBe('kept.png')
+  })
+
+  it('returns no view URLs when every image entry is null', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    const executionId = createNodeExecutionId([node.id])
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs(fromAny([null]))
+    )
+
+    expect(store.getNodeImageUrls(node)).toEqual([])
+    expect(store.getNodeImageUrlsByExecutionId(executionId, node)).toEqual([])
+  })
+
+  it('carries preview_id on the view URL', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([node.id]),
+      createMockOutputs([{ filename: 'render.exr', preview_id: 'preview-1' }])
+    )
+
+    const [url] = store.getNodeImageUrls(node) ?? []
+    const viewUrl = new URL(url, window.location.origin)
+    expect(viewUrl.pathname).toBe('/api/view')
+    expect(viewUrl.searchParams.get('preview_id')).toBe('preview-1')
+  })
+
   it('owns preview arrays after setting them', () => {
     const store = useNodeOutputStore()
     const executionId = createNodeExecutionId([toNodeId(11)])
@@ -232,6 +280,118 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     app.nodePreviewImages['5'] = ['blob:legacy']
 
     expect(store.getNodePreviews(node)).toEqual(['blob:canonical'])
+  })
+})
+
+describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved execution id', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+  })
+
+  it('reports the execution id and output filenames instead of dropping the output silently', () => {
+    vi.mocked(
+      graphTraversalUtil.executionIdToNodeLocatorId
+    ).mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+    const outputs = createMockOutputs([
+      { filename: 'contact_sheet_00001_.png' }
+    ])
+
+    store.setNodeOutputsByExecutionId(executionId, outputs)
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'No live node resolves the executed output'
+      }),
+      expect.objectContaining({
+        surface: 'graph',
+        errorType: 'failure_resolving_node_output_execution_id',
+        level: 'warning',
+        tags: { executionId },
+        context: { filenames: ['contact_sheet_00001_.png'] }
+      })
+    )
+  })
+
+  it('omits filenames when the output carries none', () => {
+    vi.mocked(
+      graphTraversalUtil.executionIdToNodeLocatorId
+    ).mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(executionId, createMockOutputs())
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: { executionId },
+        context: { filenames: undefined }
+      })
+    )
+  })
+
+  it('omits filenames when the output carries an empty image list', () => {
+    vi.mocked(
+      graphTraversalUtil.executionIdToNodeLocatorId
+    ).mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(executionId, createMockOutputs([]))
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: { executionId },
+        context: { filenames: undefined }
+      })
+    )
+  })
+
+  it('reports a top-level execution id whose node was deleted', () => {
+    vi.mocked(graphTraversalUtil.getNodeByLocatorId).mockReturnValueOnce(null)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'deleted-node.png' }])
+    )
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: { executionId },
+        context: { filenames: ['deleted-node.png'] }
+      })
+    )
+    expect(store.nodeOutputs[executionId]).toBeUndefined()
+  })
+
+  it('stores top-level output while the root graph is being initialized', () => {
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+    const outputs = createMockOutputs([{ filename: 'restored.png' }])
+
+    store.setNodeOutputsByExecutionId(executionId, outputs)
+
+    expect(reportError).not.toHaveBeenCalled()
+    expect(store.nodeOutputs[executionId]).toEqual(outputs)
+  })
+
+  it('does not report when the execution id resolves to a node', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'resolved.png' }])
+    )
+
+    expect(reportError).not.toHaveBeenCalled()
   })
 })
 

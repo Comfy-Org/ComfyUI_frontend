@@ -1,7 +1,6 @@
 import { assert, describe, expect, it } from 'vitest'
 
 import {
-  AGENT_WS_EVENT_TYPES,
   isAgentEvent,
   parseAgentWsEvent,
   zAgentCancelAccepted,
@@ -9,7 +8,8 @@ import {
   zAgentMessage,
   zAgentMessages,
   zAgentTurnAccepted,
-  zAgentWsEvent
+  zAgentWsEvent,
+  zPersistedToolCallSummary
 } from './agentApiSchema'
 import type { ZodTypeAny } from 'zod'
 
@@ -114,6 +114,80 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed).toMatchObject({ data: { skill: null } })
   })
 
+  it('keeps terminal document correlation fields for canvas-scoped release', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'add_node',
+        status: 'success',
+        workflow_id: 'wf-1',
+        op_ids: ['op-1', 'op-2'],
+        doc_seq: 8,
+        doc_lineage_seq: 3,
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    expect(parsed).toMatchObject({
+      data: {
+        workflow_id: 'wf-1',
+        op_ids: ['op-1', 'op-2'],
+        doc_seq: 8,
+        doc_lineage_seq: 3
+      }
+    })
+  })
+
+  it('drops malformed advisory correlation without dropping the terminal tool frame', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'add_node',
+        status: 'success',
+        workflow_id: '',
+        op_ids: [],
+        doc_seq: -1,
+        doc_lineage_seq: null,
+        job_id: 123,
+        job_workflow_id: null,
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    assert(parsed.type === 'agent_tool_call')
+    expect(parsed.data).toMatchObject({
+      tool_call_id: 'call-1',
+      status: 'success'
+    })
+    expect(parsed.data.workflow_id).toBeUndefined()
+    expect(parsed.data.op_ids).toBeUndefined()
+    expect(parsed.data.doc_seq).toBeUndefined()
+    expect(parsed.data.doc_lineage_seq).toBeUndefined()
+    expect(parsed.data.job_id).toBeUndefined()
+    expect(parsed.data.job_workflow_id).toBeUndefined()
+
+    const controlCharacterParsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-2',
+        tool_name: 'run',
+        status: 'success',
+        job_id: 'job\n2',
+        job_workflow_id: 'wf-1',
+        message_id: 'm2',
+        thread_id: 't1'
+      }
+    })
+
+    assert(controlCharacterParsed.type === 'agent_tool_call')
+    expect(controlCharacterParsed.data.job_id).toBeUndefined()
+    expect(controlCharacterParsed.data.job_workflow_id).toBe('wf-1')
+  })
+
   it('clamps an over-long skill instead of dropping the tool-call frame', () => {
     const parsed = zAgentWsEvent.parse({
       type: 'agent_tool_call',
@@ -148,7 +222,67 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.data.skill).toBe(`${'a'.repeat(255)}😀`)
   })
 
-  it('keeps a whole transcript readable when one persisted skill is over-long', () => {
+  it('clamps an over-long skill on a persisted tool-call row', () => {
+    const parsed = zPersistedToolCallSummary.parse({
+      id: 'audit-row-uuid-1',
+      tool_call_id: 'call-1',
+      tool_name: 'load_skill',
+      status: 'success',
+      skill: 'a'.repeat(300)
+    })
+
+    expect(parsed.skill).toBe('a'.repeat(256))
+  })
+
+  it('accepts an explicit null tool_call_id and duration_ms on a persisted tool-call row', () => {
+    const parsed = zPersistedToolCallSummary.safeParse({
+      id: 'audit-row-uuid-1',
+      tool_call_id: null,
+      tool_name: 'search_nodes',
+      status: 'success',
+      duration_ms: null
+    })
+
+    expect(parsed.success).toBe(true)
+  })
+
+  it('accepts a persisted tool-call row with no status key or an explicit null status', () => {
+    const noStatusKey = zPersistedToolCallSummary.safeParse({
+      id: 'audit-row-uuid-1',
+      tool_call_id: 'call-1',
+      tool_name: 'search_nodes'
+    })
+    const nullStatus = zPersistedToolCallSummary.safeParse({
+      id: 'audit-row-uuid-1',
+      tool_call_id: 'call-1',
+      tool_name: 'search_nodes',
+      status: null
+    })
+
+    expect(noStatusKey.success).toBe(true)
+    expect(nullStatus.success).toBe(true)
+  })
+
+  it.for([null, 'not-an-array', 42, {}])(
+    'does not throw zAgentMessages.parse() when content.tool_calls is %s instead of an array',
+    (toolCalls) => {
+      expect(() =>
+        zAgentMessages.parse([
+          {
+            id: 'row-1',
+            thread_id: 't1',
+            turn_id: 'turn-a',
+            seq: 1,
+            role: 'assistant',
+            status: 'complete',
+            content: { text: 'Done', tool_calls: toolCalls }
+          }
+        ])
+      ).not.toThrow()
+    }
+  )
+
+  it('keeps a whole transcript readable when a persisted tool-call row is malformed', () => {
     const parsed = zAgentMessages.parse([
       {
         id: 'row-1',
@@ -159,20 +293,12 @@ describe('agentApiSchema contract subtleties', () => {
         status: 'complete',
         content: {
           text: 'Done',
-          tool_calls: [
-            {
-              id: 'audit-row-uuid-1',
-              tool_call_id: 'call-1',
-              tool_name: 'load_skill',
-              status: 'success',
-              skill: 'a'.repeat(300)
-            }
-          ]
+          tool_calls: [{ unexpected: 'shape' }]
         }
       }
     ])
 
-    expect(parsed[0].content?.tool_calls?.[0].skill).toBe('a'.repeat(256))
+    expect(parsed[0].content?.tool_calls).toEqual([{ unexpected: 'shape' }])
   })
 
   it('accepts agent_message_done with usage null (cancelled turn)', () => {
@@ -184,40 +310,48 @@ describe('agentApiSchema contract subtleties', () => {
     ).toBe(true)
   })
 
-  it('accepts agent_message_done usage whether fully populated or partial', () => {
-    const usages = [
-      {
+  it.for([
+    {
+      name: 'fully populated',
+      usage: {
         input_tokens: 4493,
         output_tokens: 425,
         total_tokens: 4918,
         cache_read_input_tokens: 35596,
-        cache_creation_input_tokens: 0
-      },
-      { input_tokens: 1, output_tokens: 2 },
-      {}
-    ]
+        cache_creation_input_tokens: 0,
+        charge_micro_usd: 6038
+      }
+    },
+    {
+      name: 'partially populated',
+      usage: { input_tokens: 1, output_tokens: 2 }
+    },
+    { name: 'empty', usage: {} }
+  ])('accepts $name agent_message_done usage', ({ usage }) => {
+    const parsed = zAgentWsEvent.parse({
+      ...doneBase,
+      data: { ...doneBase.data, usage }
+    })
 
-    for (const usage of usages) {
-      const parsed = zAgentWsEvent.parse({
-        ...doneBase,
-        data: { ...doneBase.data, usage }
-      })
-
-      if (parsed.type !== 'agent_message_done') throw new Error('wrong variant')
-      expect(parsed.data.usage).toEqual(usage)
-    }
+    assert(parsed.type === 'agent_message_done')
+    expect(parsed.data.usage).toEqual(usage)
   })
 
-  it('degrades a malformed usage instead of failing the done frame', () => {
-    for (const usage of ['nope', 42, { input_tokens: '4493' }]) {
-      const parsed = zAgentWsEvent.parse({
-        ...doneBase,
-        data: { ...doneBase.data, usage }
-      })
+  it.for([
+    { name: 'string', usage: 'nope' },
+    { name: 'number', usage: 42 },
+    { name: 'string token count', usage: { input_tokens: '4493' } },
+    { name: 'negative charge', usage: { charge_micro_usd: -1 } },
+    { name: 'zero charge', usage: { charge_micro_usd: 0 } },
+    { name: 'fractional charge', usage: { charge_micro_usd: 1.5 } }
+  ])('degrades $name usage instead of failing the done frame', ({ usage }) => {
+    const parsed = zAgentWsEvent.parse({
+      ...doneBase,
+      data: { ...doneBase.data, usage }
+    })
 
-      if (parsed.type !== 'agent_message_done') throw new Error('wrong variant')
-      expect(parsed.data.usage).toBeUndefined()
-    }
+    assert(parsed.type === 'agent_message_done')
+    expect(parsed.data.usage).toBeUndefined()
   })
 
   it('keeps draft frames foreign to this union', () => {
@@ -294,20 +428,26 @@ describe('agentApiSchema contract subtleties', () => {
     ).toBe(false)
   })
 
-  it('exposes the Agent event types, including the ask lifecycle', () => {
-    expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual(
-      [
-        'agent_active_tab',
-        'agent_ask',
-        'agent_ask_resolved',
-        'agent_message_delta',
-        'agent_message_done',
-        'agent_message_draft',
-        'agent_thinking',
-        'agent_tool_call'
-      ].sort()
-    )
+  it.for([
+    'agent_active_tab',
+    'agent_ask',
+    'agent_ask_resolved',
+    'agent_message_delta',
+    'agent_message_done',
+    'agent_message_draft',
+    'agent_thinking',
+    'agent_thinking_draft',
+    'agent_tool_call'
+  ])('recognizes %s as an Agent event', (type) => {
+    expect(isAgentEvent(type)).toBe(true)
   })
+
+  it.for(['doc_update', 'doc_subscribed', 'status', 'executing', 'agent_'])(
+    'does not recognize %s as an Agent event',
+    (type) => {
+      expect(isAgentEvent(type)).toBe(false)
+    }
+  )
 
   it('parses an agent_message_draft frame, including the empty draft that withdraws one', () => {
     for (const text of ['Here is your video', '']) {

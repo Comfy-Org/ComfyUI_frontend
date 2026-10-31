@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-1">
     <Button
-      class="w-full border-0 bg-component-node-widget-background p-2 text-base-foreground"
+      class="w-full border-0 bg-input p-2 text-foreground"
       :aria-label="widget.label"
       size="sm"
       variant="textonly"
@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   BADGE_EXCLUDED_PROPS,

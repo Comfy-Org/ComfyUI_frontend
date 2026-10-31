@@ -4,12 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import WorkflowActionsDropdown from './WorkflowActionsDropdown.vue'
 
@@ -24,11 +24,10 @@ beforeEach(() => {
 })
 
 const spies = vi.hoisted(() => ({
-  action: vi.fn(),
-  markAsSeen: vi.fn()
+  action: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {
   const { ref } = await import('vue')
@@ -36,22 +35,12 @@ vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), async () => {
     useWorkflowActionsMenu: () => ({
       menuItems: ref([
         {
-          id: 'test-action',
+          id: 'test-action-id',
           label: 'Test action',
           badge: 'NEW',
           command: spies.action
         }
       ])
-    })
-  }
-})
-
-vi.mock<unknown>(import('@/composables/useNewMenuItemIndicator'), async () => {
-  const { ref } = await import('vue')
-  return {
-    useNewMenuItemIndicator: () => ({
-      hasUnseenItems: ref(true),
-      markAsSeen: spies.markAsSeen
     })
   }
 })
@@ -79,8 +68,7 @@ function renderDropdown() {
   const result = render(WorkflowActionsDropdown, {
     props: { source: 'test' },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: {} }
+      plugins: [i18n]
     }
   })
   return { ...result, user }
@@ -166,7 +154,6 @@ describe('WorkflowActionsDropdown', () => {
       screen.getByRole('button', { name: /workflow actions/ })
     ).toHaveAttribute('aria-expanded', 'false')
     expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
-    expect(spies.markAsSeen).not.toHaveBeenCalled()
   })
 
   it('opens the menu instead of toggling the mode when the active segment is clicked', async () => {
@@ -177,7 +164,6 @@ describe('WorkflowActionsDropdown', () => {
 
     expect(useCommandStore().execute).not.toHaveBeenCalled()
     expect(active).toHaveAttribute('aria-expanded', 'true')
-    expect(spies.markAsSeen).toHaveBeenCalled()
     expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'test',
       element_group: 'workflow_actions'
@@ -192,6 +178,17 @@ describe('WorkflowActionsDropdown', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Test action' }))
 
     expect(spies.action).toHaveBeenCalledOnce()
+    expect(vi.mocked(useTelemetry()?.trackUiButtonClicked)?.mock.calls).toEqual(
+      [
+        [{ button_id: 'test', element_group: 'workflow_actions' }],
+        [
+          {
+            button_id: 'workflow_actions_test_action_id_clicked',
+            element_group: 'workflow_actions'
+          }
+        ]
+      ]
+    )
   })
 
   it('closes the menu when the open trigger is clicked again', async () => {

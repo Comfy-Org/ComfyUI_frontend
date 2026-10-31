@@ -6,9 +6,9 @@ import {
   createPartnerNodeTokenSource
 } from '@/platform/auth/partnerNode/partnerNodeTokenSource'
 import type { PartnerNodeTokenTarget } from '@/platform/auth/partnerNode/partnerNodeTokenSource'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
@@ -24,6 +24,7 @@ function mintResponse(
   return Response.json({
     token,
     expires_at: new Date(NOW + lifetimeMs).toISOString(),
+    user_id: 'uid-1',
     workspace: { id: workspaceId, name: 'Team', type: 'team' },
     role: 'owner',
     permissions: []
@@ -216,7 +217,98 @@ describe('createPartnerNodeTokenSource', () => {
       surface: 'auth',
       errorType: 'failure_revoking_partner_node_sessions',
       level: 'warning',
-      tags: { status: 500 }
+      tags: { reason: 'http', status: 500 }
     })
+  })
+
+  describe('revokeLogin', () => {
+    const revokeBearers = () =>
+      fetchRequests(REVOKE_URL).map((r) => r.headers.get('Authorization'))
+
+    it('revokes once with the sign-in credential and forgets every token', async () => {
+      let minted = 0
+      respondToFetch(MINT_URL, () => mintResponse(`pn-${++minted}`))
+      respondToFetch(REVOKE_URL, () => new Response(null, { status: 204 }))
+      const { source } = setup()
+      await source.tokenFor(target())
+
+      await source.revokeLogin('firebase-id-token')
+
+      expect(revokeBearers()).toEqual(['Bearer firebase-id-token'])
+      expect(fetchRequests(REVOKE_URL)[0].method).toBe('POST')
+      await expect(source.tokenFor(target())).resolves.toBe('pn-2')
+    })
+
+    it.for([
+      {
+        name: 'an ingest that refuses the sign-in',
+        credential: 'firebase-id-token',
+        expected: ['Bearer firebase-id-token', 'Bearer pn-1']
+      },
+      {
+        name: 'no sign-in credential',
+        credential: undefined,
+        expected: ['Bearer pn-1']
+      }
+    ])(
+      'falls back to the held token with $name',
+      async ({ credential, expected }) => {
+        respondToFetch(MINT_URL, () => mintResponse('pn-1'))
+        respondToFetch(REVOKE_URL, (_input, init) =>
+          new Headers(init?.headers).get('Authorization') ===
+          'Bearer firebase-id-token'
+            ? Response.json(
+                { code: 'auth_type_not_allowed', message: 'no' },
+                { status: 403 }
+              )
+            : new Response(null, { status: 204 })
+        )
+        const { source } = setup()
+        await source.tokenFor(target())
+
+        await source.revokeLogin(credential)
+
+        expect(revokeBearers()).toEqual(expected)
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      {
+        name: 'a refusal',
+        respond: () =>
+          Response.json(
+            { code: 'csrf_invalid', message: 'no' },
+            { status: 403 }
+          ),
+        tags: { reason: 'http', status: 403 }
+      },
+      {
+        name: 'a network failure',
+        respond: () => Promise.reject(new TypeError('offline')),
+        tags: { reason: 'network' }
+      }
+    ])(
+      'reports $name once without throwing or falling back',
+      async ({ respond, tags }) => {
+        respondToFetch(MINT_URL, () => mintResponse('pn-1'))
+        respondToFetch(REVOKE_URL, respond)
+        const { source } = setup()
+        await source.tokenFor(target())
+
+        await expect(
+          source.revokeLogin('firebase-id-token')
+        ).resolves.toBeUndefined()
+
+        expect(revokeBearers()).toEqual(['Bearer firebase-id-token'])
+        expect(reportError).toHaveBeenCalledOnce()
+        expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+          surface: 'auth',
+          errorType: 'failure_revoking_partner_node_sessions',
+          level: 'warning',
+          tags
+        })
+      }
+    )
   })
 })

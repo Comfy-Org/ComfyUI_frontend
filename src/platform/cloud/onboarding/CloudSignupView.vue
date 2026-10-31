@@ -99,8 +99,8 @@ import { RouterLink, useRoute } from 'vue-router'
 import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
-import Message from '@/components/ui/message/Message.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Message from '@comfyorg/design-system/message/Message'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'
@@ -112,7 +112,7 @@ import {
   CLOUD_AUTH_FIELD_CLASS,
   CLOUD_AUTH_LINK_BUTTON_CLASS
 } from '@/platform/cloud/onboarding/constants/authClasses'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { SignUpData } from '@/schemas/signInSchema'
 
 const { t } = useI18n()
@@ -146,7 +146,7 @@ const signUpForm = ref<InstanceType<typeof SignUpForm> | null>(null)
 
 const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
   authError.value = ''
-  if (flags.ssoEnabled && (await trySso(values.email))) return
+  if (flags.ssoEnabled && (await trySso(values.email, 'email-sign-in'))) return
   if (
     await authActions.signUpWithEmail(
       values.email,

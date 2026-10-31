@@ -4,10 +4,8 @@
       <slot />
     </PopoverTrigger>
     <PopoverContent
-      side="bottom"
-      :side-offset="4"
-      :collision-padding="10"
-      class="z-1001 w-64 rounded-lg border border-border-default bg-base-background px-4 py-1 shadow-interface will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+      class="w-64 rounded-lg px-4 py-1"
+      data-testid="type-filter-popover"
       @open-auto-focus="onOpenAutoFocus"
       @close-auto-focus="onCloseAutoFocus"
       @escape-key-down.prevent
@@ -19,22 +17,18 @@
         :model-value="selectedValues"
         @update:model-value="onSelectionChange"
       >
-        <div
-          class="mt-2 flex h-8 items-center gap-2 rounded-sm border border-border-default px-2"
-        >
-          <i
-            class="icon-[lucide--search] size-4 shrink-0 text-muted-foreground"
-          />
+        <div class="mt-2 flex h-8 items-center gap-2 rounded-sm border px-2">
+          <i class="icon-[lucide--search] text-muted-foreground" />
           <ListboxFilter
             ref="searchFilterRef"
             v-model="searchQuery"
             :placeholder="t('g.search')"
-            class="size-full border-none bg-transparent font-inter text-sm text-base-foreground outline-none placeholder:text-muted-foreground"
+            class="size-full border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
         </div>
 
-        <div class="flex items-center justify-between py-3">
-          <span class="text-sm text-muted-foreground">
+        <div class="flex items-center justify-between py-3 text-sm">
+          <span class="text-muted-foreground">
             {{
               t(
                 'g.itemsSelected',
@@ -46,14 +40,14 @@
           <button
             v-if="selectedValues.length > 0"
             type="button"
-            class="cursor-pointer border-none bg-transparent font-inter text-sm text-base-foreground"
+            class="cursor-pointer border-none bg-transparent"
             @click="emit('clear')"
           >
             {{ t('g.clearAll') }}
           </button>
         </div>
 
-        <div class="h-px bg-border-default" />
+        <div class="h-px bg-border" />
 
         <ListboxContent class="max-h-64 overflow-y-auto py-3">
           <ListboxItem
@@ -61,14 +55,14 @@
             :key="option"
             :value="option"
             data-testid="filter-option"
-            class="flex cursor-pointer items-center gap-2 rounded-sm px-1 py-2 text-sm text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+            class="flex cursor-pointer items-center gap-2 rounded-sm px-1 py-2 text-sm outline-none data-highlighted:bg-accent"
           >
             <span
               :class="
                 cn(
-                  'flex size-4 shrink-0 items-center justify-center rounded-sm border border-border-default',
+                  'flex size-4 shrink-0 items-center justify-center rounded-sm border',
                   selectedSet.has(option) &&
-                    'border-primary-background bg-primary-background text-base-background'
+                    'border-primary bg-primary text-foreground'
                 )
               "
             >
@@ -101,17 +95,18 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { AcceptableValue } from 'reka-ui'
+
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   ListboxContent,
   ListboxFilter,
   ListboxItem,
   ListboxRoot,
-  PopoverContent,
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
 
-import type { FilterChip } from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
+import type { FilterChip } from '@/components/searchbox/v2/filterChip'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 

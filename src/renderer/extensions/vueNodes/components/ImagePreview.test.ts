@@ -7,11 +7,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { resolveNode } from '@/utils/litegraphUtil'
@@ -25,7 +26,7 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
   openHdrViewer: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
@@ -166,6 +167,21 @@ describe('ImagePreview', () => {
 
     expect(screen.getByTestId('hdr-open-button')).toBeInTheDocument()
     expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+  })
+
+  it('shows the server preview of an exr output and still offers the HDR viewer', async () => {
+    const exrUrl = '/api/view?filename=out.exr&type=output&preview_id=p1'
+    renderImagePreview({ imageUrls: [exrUrl] })
+    const user = userEvent.setup()
+
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'src',
+      '/api/assets/p1/content?disposition=inline'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Open in HDR Viewer' }))
+
+    expect(openHdrViewer).toHaveBeenCalledWith(exrUrl)
   })
 
   it('displays calculating dimensions text in gallery mode', async () => {

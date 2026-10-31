@@ -1,15 +1,22 @@
+import { TimeoutError } from 'es-toolkit/error'
+import { withTimeout } from 'es-toolkit/promise'
+
 import { i18n } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { hasAudioType, hasImageType, hasVideoType } from '@/utils/eventUtils'
 import { formatSize, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import {
   AgentApiError,
   AgentResponseUnreadableError
-} from '../../services/agent/agentRestClient'
-import type { ComposerAttachment } from '../../types/composerAttachment'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import { isAgentAttachable } from '@/workbench/extensions/agent/utils/attachableFiles'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
+
+export const MAX_TURN_ATTACHMENTS = 25
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
 const DEFERRED_FETCH_TIMEOUT_MS = 60 * 1000
@@ -18,32 +25,41 @@ const MAX_TELEMETRY_FILE_TYPE_LENGTH = 128
 const MIME_TYPE_PATTERN =
   /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+\/[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
 
-class DeadlineExceededError extends Error {
-  constructor(timeoutMs: number) {
-    super(`Timed out after ${timeoutMs}ms`)
-    this.name = 'DeadlineExceededError'
-  }
-}
-
 interface UploadResult {
   ref: string
   url?: string
 }
 
+type UploadFileResult = 'uploaded' | 'cancelled' | 'failed'
+
+type Admission = 'admitted' | 'duplicate' | 'too_many'
+
+type FileStaging =
+  | { file: File; outcome: 'upload'; id: string }
+  | {
+      file: File
+      outcome: 'staged' | 'skipped' | Exclude<Admission, 'admitted'>
+    }
+
 type DeferredFileResult =
-  | 'uploaded'
+  | UploadFileResult
+  | Exclude<Admission, 'admitted'>
   | 'unsupported'
-  | 'cancelled'
-  | 'failed'
-  | 'duplicate'
+  | 'fetch_failed'
 
 export interface UseAttachmentOptions {
   upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
+  resolveStoredPreview?: (
+    file: File,
+    ref: string
+  ) => Promise<string | undefined>
+  validate?: (file: File) => boolean | Promise<boolean>
   uploadTimeoutMs?: number
   maxBytes?: (file: File) => number
   onError?: (message: string) => void
   onUploaded?: () => void
   onDuplicate?: (names: string[]) => void
+  staged: () => readonly ComposerAttachment[]
   stage: (attachment: ComposerAttachment) => boolean
   update: (id: string, patch: Partial<ComposerAttachment>) => void
   remove: (id: string) => void
@@ -63,29 +79,14 @@ function telemetryFileType(type: string | undefined): string {
   return MIME_TYPE_PATTERN.test(type) ? type : 'unknown'
 }
 
-async function withDeadline<T>(
-  work: Promise<T>,
-  timeoutMs: number,
-  onExpire?: () => void
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const expiry = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => {
-      onExpire?.()
-      reject(new DeadlineExceededError(timeoutMs))
-    }, timeoutMs)
-  })
-  try {
-    return await Promise.race([work, expiry])
-  } finally {
-    clearTimeout(timer)
-  }
-}
-
 let stagedCount = 0
 
 function fileUploadKey(file: File): string {
   return `${file.name}:${file.size}:${file.lastModified}`
+}
+
+function fileSourceKey(file: File): string {
+  return `file:${JSON.stringify([file.name, file.size, file.lastModified, file.type])}`
 }
 
 async function fileContentHash(file: File): Promise<string> {
@@ -96,7 +97,7 @@ async function fileContentHash(file: File): Promise<string> {
 }
 
 function attachmentMediaKind(file: File): MediaKind {
-  if (hasImageType(file)) return 'image'
+  if (hasImageType(file) || isHdrImageFilename(file.name)) return 'image'
   if (hasVideoType(file)) return 'video'
   if (hasAudioType(file)) return 'audio'
   return getMediaTypeFromFilename(file.name)
@@ -106,6 +107,7 @@ function localPreview(
   file: File,
   kind: MediaKind
 ): Pick<ComposerAttachment, 'previewUrl' | 'mediaUrl'> {
+  if (isHdrImageFilename(file.name)) return {}
   const playable = kind === 'video' || kind === 'audio'
   const url =
     kind === 'image' || playable ? URL.createObjectURL(file) : undefined
@@ -151,6 +153,34 @@ export function useAttachment(options: UseAttachmentOptions) {
     return id
   }
 
+  function stageUnsupported(
+    name: string,
+    sourceKey: string
+  ): string | undefined {
+    const id = `upload-${++stagedCount}:${name}`
+    const staged = options.stage({
+      id,
+      name,
+      ref: '',
+      sourceKey,
+      validationError: 'unsupported-type'
+    })
+    return staged ? id : undefined
+  }
+
+  function admit(sourceKey: string | undefined): Admission {
+    const staged = options.staged()
+    if (staged.length < MAX_TURN_ATTACHMENTS) return 'admitted'
+    return sourceKey && staged.some((item) => item.sourceKey === sourceKey)
+      ? 'duplicate'
+      : 'too_many'
+  }
+
+  function reportAdmission(name: string, admission: Admission): void {
+    if (admission === 'duplicate') options.onDuplicate?.([name])
+    if (admission === 'too_many') reportTurnLimit()
+  }
+
   function settle(id: string): void {
     pending.delete(id)
     inFlight.delete(id)
@@ -170,26 +200,30 @@ export function useAttachment(options: UseAttachmentOptions) {
     return true
   }
 
-  // The file's declared size/type and the failure's shape (status code,
-  // timeout, abort) are safe, bounded context. The caught error's own
-  // message/stack are not reported: they can carry a local file path (e.g. a
-  // dropped file's full source path), which is why this always reports a
-  // fresh synthetic Error rather than the original cause.
   function uploadFailureCause(cause: unknown): string {
     if (cause instanceof AgentApiError) return `http_${cause.status}`
     if (cause instanceof AgentResponseUnreadableError)
       return 'unreadable_response'
-    if (cause instanceof DeadlineExceededError) return 'timeout'
+    if (cause instanceof TimeoutError) return 'timeout'
     if (cause instanceof DOMException && cause.name === 'AbortError')
       return 'aborted'
     return 'unknown'
+  }
+
+  function reportTurnLimit(): void {
+    options.onError?.(
+      i18n.global.t('agent.attachmentCountExceeded', {
+        count: MAX_TURN_ATTACHMENTS
+      })
+    )
   }
 
   function failAttachment(
     id: string,
     file: { name: string; size?: number; type?: string },
     errorType: string,
-    cause: unknown
+    cause: unknown,
+    notify = true
   ) {
     return (): undefined => {
       reportError(new Error('Agent attachment upload failed'), {
@@ -209,9 +243,10 @@ export function useAttachment(options: UseAttachmentOptions) {
           file_size_bytes: file.size ?? -1
         }
       })
-      options.onError?.(
-        i18n.global.t('agent.attachmentUploadFailed', { name: file.name })
-      )
+      if (notify)
+        options.onError?.(
+          i18n.global.t('agent.attachmentUploadFailed', { name: file.name })
+        )
       options.remove(id)
       return undefined
     }
@@ -229,12 +264,18 @@ export function useAttachment(options: UseAttachmentOptions) {
 
     const generation = uploadGeneration
     const controller = new AbortController()
+    const deadline = new AbortController()
     inFlight.set(id, controller)
-    const result = await withDeadline(
-      options.upload(file, controller.signal),
+    const result = await withTimeout(
+      () => options.upload(file, controller.signal),
       options.uploadTimeoutMs ?? uploadDeadlineMs(file),
-      () => controller.abort()
+      { signal: deadline.signal }
     )
+      .catch((error: unknown) => {
+        if (error instanceof TimeoutError) controller.abort()
+        throw error
+      })
+      .finally(() => deadline.abort())
     const hash = await contentHash
     if (cancelled.has(id)) throw new DOMException('Aborted', 'AbortError')
     if (generation === uploadGeneration) {
@@ -250,12 +291,27 @@ export function useAttachment(options: UseAttachmentOptions) {
     uploadGeneration += 1
   }
 
-  async function uploadStagedFile(id: string, file: File): Promise<boolean> {
+  async function uploadStagedFile(
+    id: string,
+    file: File
+  ): Promise<UploadFileResult> {
     if (activeUploads === MAX_CONCURRENT_UPLOADS)
       await new Promise<void>((resolve) => waiting.push(resolve))
     else activeUploads += 1
     try {
-      if (cancelled.has(id)) return false
+      if (cancelled.has(id)) return 'cancelled'
+      if (options.validate) {
+        const valid = await options.validate(file)
+        if (cancelled.has(id)) return 'cancelled'
+        if (!valid) {
+          options.update(id, {
+            name: file.name,
+            uploading: false,
+            validationError: 'invalid-video'
+          })
+          return 'failed'
+        }
+      }
       const mediaKind = attachmentMediaKind(file)
       options.update(id, {
         name: file.name,
@@ -268,17 +324,30 @@ export function useAttachment(options: UseAttachmentOptions) {
         ...uploadedPreview(mediaKind, result.url),
         uploading: false
       })
-      return true
+      void showStoredPreview(id, file, result.ref)
+      return 'uploaded'
     } catch (cause) {
-      if (!cancelled.has(id))
-        failAttachment(id, file, 'agent_attachment_upload_failed', cause)()
-      return false
+      if (cancelled.has(id)) return 'cancelled'
+      failAttachment(id, file, 'agent_attachment_upload_failed', cause)()
+      return 'failed'
     } finally {
       settle(id)
       const next = waiting.shift()
       if (next) next()
       else activeUploads -= 1
     }
+  }
+
+  async function showStoredPreview(
+    id: string,
+    file: File,
+    ref: string
+  ): Promise<void> {
+    if (!options.resolveStoredPreview) return
+    const previewUrl = await options
+      .resolveStoredPreview(file, ref)
+      .catch(() => undefined)
+    if (previewUrl) options.update(id, { previewUrl })
   }
 
   function cancelUpload(id: string): void {
@@ -295,26 +364,52 @@ export function useAttachment(options: UseAttachmentOptions) {
   async function uploadDeferredFile(
     id: string,
     name: string,
-    resolve: () => Promise<File | undefined>
+    resolve: (signal: AbortSignal) => Promise<File | undefined>
   ): Promise<DeferredFileResult> {
+    const controller = new AbortController()
+    const deadline = new AbortController()
+    inFlight.set(id, controller)
     try {
-      const file = await withDeadline(resolve(), DEFERRED_FETCH_TIMEOUT_MS)
+      const file = await withTimeout(
+        () => resolve(controller.signal),
+        DEFERRED_FETCH_TIMEOUT_MS,
+        { signal: deadline.signal }
+      )
+        .catch((error: unknown) => {
+          if (error instanceof TimeoutError) controller.abort()
+          throw error
+        })
+        .finally(() => deadline.abort())
       if (cancelled.has(id)) return 'cancelled'
       if (!file) {
         options.remove(id)
+        return 'fetch_failed'
+      }
+      if (!isAgentAttachable(file)) {
+        options.update(id, {
+          name: file.name,
+          uploading: false,
+          validationError: 'unsupported-type'
+        })
         return 'unsupported'
       }
       if (isTooLarge(file)) {
         options.remove(id)
         return 'failed'
       }
-      if (!(await uploadStagedFile(id, file))) return 'failed'
-      options.onUploaded?.()
-      return 'uploaded'
+      const result = await uploadStagedFile(id, file)
+      if (result === 'uploaded') options.onUploaded?.()
+      return result
     } catch (cause) {
       if (cancelled.has(id)) return 'cancelled'
-      failAttachment(id, { name }, 'agent_attachment_fetch_failed', cause)()
-      return 'failed'
+      failAttachment(
+        id,
+        { name },
+        'agent_attachment_fetch_failed',
+        cause,
+        false
+      )()
+      return 'fetch_failed'
     } finally {
       settle(id)
     }
@@ -322,9 +417,14 @@ export function useAttachment(options: UseAttachmentOptions) {
 
   async function addDeferredFile(
     name: string,
-    resolve: () => Promise<File | undefined>,
+    resolve: (signal: AbortSignal) => Promise<File | undefined>,
     sourceKey?: string
   ): Promise<DeferredFileResult> {
+    const admission = admit(sourceKey)
+    if (admission !== 'admitted') {
+      reportAdmission(name, admission)
+      return admission
+    }
     const id = stage(name, sourceKey)
     if (!id) {
       options.onDuplicate?.([name])
@@ -333,21 +433,48 @@ export function useAttachment(options: UseAttachmentOptions) {
     return uploadDeferredFile(id, name, resolve)
   }
 
+  function addUnsupportedAsset(
+    name: string,
+    sourceKey: string
+  ): Exclude<DeferredFileResult, UploadFileResult | 'fetch_failed'> {
+    const admission = admit(sourceKey)
+    if (admission !== 'admitted') {
+      reportAdmission(name, admission)
+      return admission
+    }
+    if (stageUnsupported(name, sourceKey)) return 'unsupported'
+    options.onDuplicate?.([name])
+    return 'duplicate'
+  }
+
+  function stageFile(file: File): FileStaging {
+    const supported = isAgentAttachable(file)
+    if (supported && isTooLarge(file)) return { file, outcome: 'skipped' }
+    const sourceKey = fileSourceKey(file)
+    const admission = admit(sourceKey)
+    if (admission !== 'admitted') return { file, outcome: admission }
+    if (!supported)
+      return {
+        file,
+        outcome: stageUnsupported(file.name, sourceKey) ? 'staged' : 'duplicate'
+      }
+    const id = stage(file.name, sourceKey)
+    return id ? { file, outcome: 'upload', id } : { file, outcome: 'duplicate' }
+  }
+
   async function addFiles(files: Iterable<File>): Promise<boolean> {
-    const duplicates: string[] = []
-    const staged = [...files]
-      .filter((file) => !isTooLarge(file))
-      .flatMap((file) => {
-        const sourceKey = `file:${JSON.stringify([file.name, file.size, file.lastModified, file.type])}`
-        const id = stage(file.name, sourceKey)
-        if (!id) duplicates.push(file.name)
-        return id ? [{ file, id }] : []
-      })
+    const staged = Array.from(files, stageFile)
+    const duplicates = staged.flatMap(({ file, outcome }) =>
+      outcome === 'duplicate' ? [file.name] : []
+    )
     if (duplicates.length) options.onDuplicate?.(duplicates)
+    if (staged.some(({ outcome }) => outcome === 'too_many')) reportTurnLimit()
     let uploaded = 0
     await Promise.all(
-      staged.map(async ({ id, file }) => {
-        if (await uploadStagedFile(id, file)) uploaded += 1
+      staged.map(async (item) => {
+        if (item.outcome !== 'upload') return
+        if ((await uploadStagedFile(item.id, item.file)) === 'uploaded')
+          uploaded += 1
       })
     )
     if (uploaded > 0) options.onUploaded?.()
@@ -357,6 +484,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   return {
     addDeferredFile,
     addFiles,
+    addUnsupportedAsset,
     cancelUpload,
     cancelAllUploads,
     forgetUploads

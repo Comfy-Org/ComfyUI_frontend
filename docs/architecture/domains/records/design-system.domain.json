@@ -1,0 +1,243 @@
+{
+  "id": "design-system",
+  "capability": "Shared UI component library",
+  "description": "The @comfyorg/design-system package (the Reka-based primitives, media, charts, color picker, tags, modal layout, navigation, and generic common/ widgets) with its color math from @comfyorg/shared-frontend-utils, and the app-owned pieces that still depend on app stores, i18n, or services: the toast queue store, the loader kit, the App-prefixed wrappers, lazy image, and the value editors for curves, ranges, and palette swatches with their pure interpolation math. Feature-owned files in the same directories stay with their features: settings form fields, system stats, node library tree explorers and bookmark customization, workflow actions, node-search filter chips, credit display, the team-plan credit slider, asset download progress toasts, subgraph breadcrumbs, the execution error overlay, workflow template dialogs, and the node widget adapters WidgetCurve, WidgetRange, and WidgetColors.",
+  "modules": [
+    {
+      "path": "src/components/common/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/curve/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/curve/CurveEditor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/loader/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/palette/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/range/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/range/RangeEditor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/ui/toast/toastStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/element/useOverflowObserver.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/palette/**",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/tree/**",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useCurveEditor.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useImageQuiet.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useIntersectionObserver.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useRangeEditor.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useTreeExpansion.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/mediaCacheService.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/types/toastId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/toastOptions.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/gridUtil.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/utils/histogramUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/treeUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/validationUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/zodTypedSchema.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/design-system/src/**",
+      "role": "presentation"
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/colorUtil.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [
+    "agent",
+    "billing",
+    "bounding-boxes",
+    "extension-manager",
+    "keybindings"
+  ],
+  "characterizationScenarios": [
+    {
+      "name": "Form controls preserve value binding, validation state, and accessible semantics",
+      "checks": [
+        "packages/design-system/src/components/button/Button.test.ts",
+        "packages/design-system/src/components/checkbox/Checkbox.test.ts",
+        "packages/design-system/src/components/number-field/NumberField.test.ts",
+        "packages/design-system/src/components/input/PasswordInput.test.ts",
+        "packages/design-system/src/components/switch/Switch.test.ts",
+        "packages/design-system/src/components/textarea/Textarea.test.ts",
+        "src/components/common/UrlInput.test.ts",
+        "packages/design-system/src/components/common/EditableText.test.ts"
+      ]
+    },
+    {
+      "name": "Selection and search controls preserve filtering, keyboard selection, and emitted values",
+      "checks": [
+        "packages/design-system/src/components/multi-select/MultiSelect.test.ts",
+        "packages/design-system/src/components/single-select/SingleSelect.test.ts",
+        "packages/design-system/src/components/select/useSelectSearch.test.ts",
+        "packages/design-system/src/components/search-input/SearchInput.test.ts",
+        "packages/design-system/src/components/search-input/AsyncSearchInput.test.ts",
+        "packages/design-system/src/components/search-input/SearchAutocomplete.test.ts",
+        "packages/design-system/src/components/tags-input/TagsInput.test.ts",
+        "packages/design-system/src/components/radio-group/RadioGroup.test.ts",
+        "packages/design-system/src/components/toggle-group/ToggleGroup.test.ts",
+        "src/components/common/FilterDropdown.test.ts"
+      ]
+    },
+    {
+      "name": "Floating layers stack above lifted modals and anchor to their triggers",
+      "checks": [
+        "packages/design-system/src/components/menu/Menu.test.ts",
+        "packages/design-system/src/components/menu/Menu.zindex.test.ts",
+        "packages/design-system/src/components/menu/menuAnchor.test.ts",
+        "packages/design-system/src/components/select/SelectContent.zindex.test.ts",
+        "packages/design-system/src/components/search-input/SearchAutocomplete.zindex.test.ts",
+        "packages/design-system/src/components/popover/PopoverContent.test.ts",
+        "packages/design-system/src/components/hover-card/HoverCard.test.ts",
+        "packages/design-system/src/components/tooltip/Tooltip.test.ts"
+      ]
+    },
+    {
+      "name": "Toast queue replaces entries by id and renders them in the dock",
+      "checks": [
+        "src/components/ui/toast/toastStore.test.ts",
+        "src/components/common/AppToaster.test.ts",
+        "packages/design-system/src/components/toast/ToastDock.test.ts",
+        "packages/design-system/src/components/toast/ToastPanel.test.ts"
+      ]
+    },
+    {
+      "name": "Data and media display primitives preserve sorting, paging, virtualization, and media fallbacks",
+      "checks": [
+        "packages/design-system/src/components/table/TableSortHead.test.ts",
+        "packages/design-system/src/components/table/tableUtils.test.ts",
+        "packages/design-system/src/components/pagination/Pagination.test.ts",
+        "packages/design-system/src/components/tree/Tree.test.ts",
+        "packages/design-system/src/components/chart/Chart.test.ts",
+        "packages/design-system/src/components/common/VirtualGrid.test.ts",
+        "packages/design-system/src/components/media/Video.test.ts",
+        "packages/design-system/src/components/common/VideoCompareSlider.test.ts",
+        "packages/design-system/src/components/media/ImageLightbox.test.ts",
+        "packages/design-system/src/components/common/SanitizedHtml.test.ts",
+        "packages/design-system/src/components/common/UserAvatar.test.ts"
+      ]
+    },
+    {
+      "name": "Value editors preserve curve interpolation, range clamping, gradient stops, and color selection",
+      "checks": [
+        "src/components/curve/curveUtils.test.ts",
+        "src/components/curve/CurveEditor.test.ts",
+        "src/components/range/rangeUtils.test.ts",
+        "src/components/range/RangeEditor.test.ts",
+        "packages/design-system/src/components/slider/GradientSlider.test.ts",
+        "src/components/palette/PaletteSwatchRow.test.ts",
+        "packages/design-system/src/components/color-picker/useColorPicker.test.ts",
+        "packages/design-system/src/components/color-picker/ColorPickerPanel.test.ts",
+        "packages/design-system/src/components/slider/Slider.test.ts",
+        "packages/shared-frontend-utils/src/colorUtil.test.ts"
+      ]
+    },
+    {
+      "name": "Modal layout, navigation items, and accordion items render feature-agnostic structure",
+      "checks": [
+        "packages/design-system/src/components/layout/BaseModalLayout.test.ts",
+        "packages/design-system/src/components/navigation/NavItem.test.ts",
+        "packages/design-system/src/components/accordion/PropertiesAccordionItem.test.ts"
+      ]
+    },
+    {
+      "name": "Media cache fetches, reuses, and evicts object URLs for lazy images",
+      "checks": ["src/services/mediaCacheService.test.ts"]
+    },
+    {
+      "name": "Curve, range, and palette swatch editors keep value shapes, drag behaviour, and histogram paths",
+      "checks": [
+        "src/composables/useCurveEditor.test.ts",
+        "src/composables/useRangeEditor.test.ts",
+        "src/composables/palette/usePaletteSwatchRow.test.ts",
+        "src/utils/histogramUtil.test.ts"
+      ]
+    },
+    {
+      "name": "Dialog portals preserve reopen ordering and native target forwarding",
+      "checks": [
+        "packages/design-system/src/components/dialog/DialogPortal.test.ts"
+      ]
+    },
+    {
+      "name": "Tree data helpers stay pure",
+      "checks": ["src/utils/treeUtil.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules until a tested public entry point and dependency approval exist.",
+    "Component file paths, props, emits, and slots stay stable because extensions, renderer widgets, platform features, and stories import them directly.",
+    "The toast store keeps its Pinia id and the add, update, and remove contract used by api, app, and service callers.",
+    "Curve and range value shapes stay compatible with the litegraph widget types and GLSL uniform consumers that read them.",
+    "No-test holes remain for dialog, field, input-group, label, the select primitives, skeleton, splitter, tabs, button-group, the tab, card, loader, and icon kits, ScrubableNumberInput, StatusBadge, LazyImage, LoadingOverlay, DraggableList, InputSlider, and the divider, spinner, and placeholder widgets; classification does not claim coverage for them."
+  ],
+  "deepImports": "inventory"
+}

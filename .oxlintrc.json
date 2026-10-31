@@ -5,7 +5,6 @@
     "**/vitest.config.*.timestamp*",
     ".agents/checks/eslint.strict.config.js",
     "ComfyUI/**",
-    "apps/*/.astro/**",
     "apps/*/coverage/**",
     "apps/*/dist/**",
     "apps/*/playwright-report/**",
@@ -13,8 +12,6 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
-    "apps/website/src/types/rate-card/types.gen.ts",
-    "apps/website/src/types/rate-card/zod.gen.ts",
     "packages/design-system/src/css/lucideStrokePlugin.js",
     "packages/ingest-types/src/*.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
@@ -35,13 +32,20 @@
     "vitest",
     "vue"
   ],
-  "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
-  "extends": ["./scripts/primevue-import-allowlist.json"],
+  "jsPlugins": ["./tools/oxlint-plugins/comfy.ts", "eslint-plugin-regexp"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
+    "regexp/no-dupe-characters-character-class": "error",
+    "regexp/no-dupe-disjunctions": "error",
+    "regexp/no-empty-alternative": "error",
+    "regexp/no-useless-assertions": "error",
+    "regexp/no-useless-lazy": "error",
+    "regexp/no-useless-quantifier": "error",
     "comfy/no-relative-packages": "error",
+    "comfy/no-js-extension-imports": "error",
     "comfy/no-js-private-class-members": "error",
     "comfy/no-vitest-mock-method-names": "error",
+    "comfy/no-primevue-imports": "error",
     "comfy/no-render-in-watch-effect": "error",
     "comfy/no-useless-path-segments": "error",
     "no-array-constructor": "error",
@@ -68,33 +72,6 @@
     "prefer-rest-params": "error",
     "prefer-spread": "error",
     "preserve-caught-error": "error",
-    "no-restricted-imports": [
-      "error",
-      {
-        "paths": [
-          {
-            "name": "primevue/calendar",
-            "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
-          },
-          {
-            "name": "primevue/dropdown",
-            "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
-          },
-          {
-            "name": "primevue/inputswitch",
-            "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
-          },
-          {
-            "name": "primevue/overlaypanel",
-            "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
-          },
-          {
-            "name": "primevue/sidebar",
-            "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-          }
-        ]
-      }
-    ],
     "no-unsafe-optional-chaining": "error",
     "no-self-assign": "allow",
     "no-unreachable": "error",
@@ -208,12 +185,14 @@
         "src/**/*.vue",
         "apps/*/src/**/*.ts",
         "apps/*/src/**/*.tsx",
-        "apps/*/src/**/*.vue"
+        "apps/*/src/**/*.vue",
+        "packages/api-client/src/**/*.ts",
+        "packages/settings-core/src/**/*.ts"
       ],
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+        "packages/api-client/src/jobTypes.ts"
       ],
       "rules": {
         "comfy/no-unsafe-error-assertion": "error"
@@ -305,15 +284,22 @@
       }
     },
     {
-      "files": ["src/**/*.{ts,tsx,vue}"],
+      "files": [
+        "src/**/*.{ts,tsx,vue}",
+        "packages/api-client/src/**/*.ts",
+        "packages/settings-core/src/**/*.ts"
+      ],
       "excludeFiles": [
         "src/**/*.d.ts",
         "src/**/*.{test,spec,stories}.{ts,tsx,vue}",
+        "packages/*/src/**/*.test.ts",
         "src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**",
         "src/**/{generated,vendor}/**"
       ],
       "rules": {
-        "comfy/no-new-error-throw": "error"
+        "comfy/no-new-error-throw": "error",
+        "comfy/no-positional-boolean-params": "error",
+        "comfy/no-reexports": "error"
       }
     },
     {
@@ -337,12 +323,19 @@
       }
     },
     {
-      "files": ["src/platform/remote/**/*.ts", "src/platform/remote/**/*.vue"],
+      "files": [
+        "src/platform/remote/**/*.ts",
+        "src/platform/remote/**/*.vue",
+        "packages/api-client/src/**/*.ts"
+      ],
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "src/platform/remote/comfyui/execution/types.ts",
-        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+        "packages/api-client/src/executionTypes.ts",
+        "packages/api-client/src/jobTypes.ts",
+        "packages/api-client/src/resultItemTypeSchema.ts",
+        "packages/api-client/src/taskSchema.ts",
+        "packages/api-client/src/templateSchema.ts"
       ],
       "rules": {
         "comfy/no-new-zod-for-remote-api-types": "error"
@@ -380,7 +373,6 @@
       "files": ["src/schemas/**/*.ts"],
       "excludeFiles": [
         "src/schemas/**/*.test.ts",
-        "src/schemas/colorPaletteSchema.ts",
         "src/schemas/signInSchema.ts"
       ],
       "rules": {
@@ -403,6 +395,7 @@
         "comfy/no-redundant-fetch-stub": "error",
         "comfy/no-redundant-litegraph-cleanup": "error",
         "comfy/no-redundant-vitest-cleanup": "error",
+        "comfy/no-unread-hoisted-mock-state": "error",
         "no-restricted-properties": [
           "error",
           {
@@ -414,14 +407,9 @@
       }
     },
     {
-      "files": ["**/*.astro"],
+      "files": ["**/*.{test,spec}.{ts,tsx}"],
       "rules": {
-        "no-empty": [
-          "error",
-          {
-            "allowEmptyCatch": true
-          }
-        ]
+        "comfy/prefer-array-containing": "error"
       }
     },
     {
@@ -493,32 +481,18 @@
       }
     },
     {
+      "files": ["packages/design-system/src/css/**", "tools/devtools/web/**"],
+      "rules": {
+        "comfy/no-js-extension-imports": "off"
+      }
+    },
+    {
       "files": ["**/*.vue"],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "paths": [
-              {
-                "name": "primevue/calendar",
-                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
-              },
-              {
-                "name": "primevue/dropdown",
-                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
-              },
-              {
-                "name": "primevue/inputswitch",
-                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
-              },
-              {
-                "name": "primevue/overlaypanel",
-                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
-              },
-              {
-                "name": "primevue/sidebar",
-                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-              },
               {
                 "name": "@/i18n",
                 "importNames": ["t", "d", "te"],
@@ -532,12 +506,12 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -546,32 +520,17 @@
     },
     {
       "files": ["**/*.ts"],
-      "excludeFiles": ["**/use[A-Z]*.ts", "**/*.test.ts", "src/i18n.ts"],
+      "excludeFiles": [
+        "**/use[A-Z]*.ts",
+        "**/*.test.ts",
+        "src/i18n.ts",
+        "src/platform/telemetry/initErrorReporter.ts"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "paths": [
-              {
-                "name": "primevue/calendar",
-                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
-              },
-              {
-                "name": "primevue/dropdown",
-                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
-              },
-              {
-                "name": "primevue/inputswitch",
-                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
-              },
-              {
-                "name": "primevue/overlaypanel",
-                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
-              },
-              {
-                "name": "primevue/sidebar",
-                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-              },
               {
                 "name": "vue-i18n",
                 "importNames": ["useI18n"],
@@ -585,12 +544,13 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "allowTypeImports": true,
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -605,26 +565,6 @@
           {
             "paths": [
               {
-                "name": "primevue/calendar",
-                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
-              },
-              {
-                "name": "primevue/dropdown",
-                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
-              },
-              {
-                "name": "primevue/inputswitch",
-                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
-              },
-              {
-                "name": "primevue/overlaypanel",
-                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
-              },
-              {
-                "name": "primevue/sidebar",
-                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-              },
-              {
                 "name": "@vueuse/core",
                 "importNames": ["useVirtualList"],
                 "message": "useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead."
@@ -632,12 +572,12 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -652,26 +592,6 @@
           {
             "paths": [
               {
-                "name": "primevue/calendar",
-                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
-              },
-              {
-                "name": "primevue/dropdown",
-                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
-              },
-              {
-                "name": "primevue/inputswitch",
-                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
-              },
-              {
-                "name": "primevue/overlaypanel",
-                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
-              },
-              {
-                "name": "primevue/sidebar",
-                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-              },
-              {
                 "name": "@vue/test-utils",
                 "message": "Use @testing-library/vue with @testing-library/user-event instead."
               }
@@ -681,77 +601,20 @@
       }
     },
     {
-      "files": ["apps/website/**"],
+      "files": ["src/**", "packages/*/src/**"],
+      "excludeFiles": [
+        "src/config/viteSeo.test.ts",
+        "src/stores/nodeDefStore.frequency.test.ts"
+      ],
       "rules": {
-        "comfy/no-relative-parent-paths": "error",
         "import/no-relative-parent-imports": "error"
       }
     },
     {
-      "files": ["apps/website/e2e/**/*.spec.ts"],
+      "files": ["packages/design-system/src/components/**"],
       "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "paths": [
-              {
-                "name": "primevue/calendar",
-                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
-              },
-              {
-                "name": "primevue/dropdown",
-                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
-              },
-              {
-                "name": "primevue/inputswitch",
-                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
-              },
-              {
-                "name": "primevue/overlaypanel",
-                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
-              },
-              {
-                "name": "primevue/sidebar",
-                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-              },
-              {
-                "name": "@playwright/test",
-                "importNames": [
-                  "test",
-                  "chromium",
-                  "firefox",
-                  "webkit",
-                  "request"
-                ],
-                "message": "Use the blockExternalMedia fixture so website tests cannot access external services."
-              },
-              {
-                "name": "playwright",
-                "message": "Use the blockExternalMedia fixture instead."
-              },
-              {
-                "name": "vue-i18n",
-                "importNames": ["useI18n"],
-                "message": "useI18n() requires Vue setup context."
-              },
-              {
-                "name": "@vueuse/core",
-                "importNames": ["useVirtualList"],
-                "message": "useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead."
-              },
-              {
-                "name": "@sentry/vue",
-                "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
-              },
-              {
-                "name": "@datadog/browser-rum",
-                "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
-              }
-            ]
-          }
-        ]
+        "comfy/no-relative-parent-paths": "error",
+        "import/no-relative-parent-imports": "error"
       }
     },
     {
@@ -818,6 +681,17 @@
                 "message": "browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead."
               }
             ]
+          }
+        ],
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "continue",
+            "message": "Use route.fallback() so requests pass through the network policy."
+          },
+          {
+            "property": "toHaveScreenshot",
+            "message": "Use expectElementScreenshot, expectRegionScreenshot, or screenshotRegion from @e2e/fixtures/utils/screenshotRegion so the screenshot covers only the area under test."
           }
         ]
       }
@@ -895,6 +769,12 @@
         "playwright/valid-expect": "error",
         "playwright/valid-expect-in-promise": "error",
         "playwright/valid-title": "error"
+      }
+    },
+    {
+      "files": ["browser_tests/**/*.ts", "apps/*/e2e/**/*.ts"],
+      "rules": {
+        "comfy/no-throw-in-expect-poll": "error"
       }
     }
   ]

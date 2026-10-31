@@ -1,5 +1,6 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/types/nodeId'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { resolveSubgraphInputLink } from './resolveSubgraphInputLink'
 

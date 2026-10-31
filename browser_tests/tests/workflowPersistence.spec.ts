@@ -7,7 +7,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const generateUniqueFilename = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -332,7 +332,7 @@ test.describe('Workflow Persistence', () => {
         })
         if (vueNodesEnabled) {
           await expect(comfyPage.vueNodes.getNodeInnerWrapper('1')).toHaveClass(
-            /ring-warning-background/
+            /ring-warning/
           )
         }
       }
@@ -1004,7 +1004,7 @@ test.describe('Workflow Persistence', () => {
 
     await comfyPage.menu.topbar.getWorkflowTab(workflowA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
 
     const restoredNode = await getRequiredFirstNodeRef(
       comfyPage,

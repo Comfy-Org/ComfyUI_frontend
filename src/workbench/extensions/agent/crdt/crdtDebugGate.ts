@@ -61,13 +61,10 @@ export function resolveDebugPanelEnabled(
  * Cached because {@link isLevelEnabled} runs on the CRDT hot path — once per
  * outbound frame, per applied frame and per minted op — and an uncached read
  * would put a synchronous `localStorage.getItem` on each of them, for
- * opted-out users most of all. Only the setters below change either value.
- *
- * Declared here, above `applyQueryOverride()`'s module-evaluation call, so the
- * setters it invokes are not reaching into a temporal dead zone.
+ * opted-out users most of all.
  */
 let cachedEnabled: boolean | null = null
-let cachedStoredEnabled: string | null = null
+let cachedStoredEnabled: string | null | undefined
 let cachedLevel: CrdtLogLevel | null = null
 
 function isLogLevel(value: unknown): value is CrdtLogLevel {
@@ -141,7 +138,30 @@ function consumeQueryParam(): void {
   }
 }
 
-applyQueryOverride()
+/**
+ * Applies a pending `?crdtDebug` link and follows cross-tab preference changes
+ * until the returned disposer runs.
+ */
+export function startCrdtDebugGate(): () => void {
+  clearCachedPreferences()
+  applyQueryOverride()
+  const onStorage = (event: StorageEvent) => {
+    if (
+      event.key === null ||
+      event.key === ENABLED_KEY ||
+      event.key === LEVEL_KEY
+    )
+      clearCachedPreferences()
+  }
+  window.addEventListener('storage', onStorage)
+  return () => window.removeEventListener('storage', onStorage)
+}
+
+function clearCachedPreferences(): void {
+  cachedEnabled = null
+  cachedStoredEnabled = undefined
+  cachedLevel = null
+}
 
 /**
  * Whether the CRDT debug instrument (panel + console tracing) is available.
@@ -165,7 +185,7 @@ export function isCrdtDebugEnabled(): boolean {
 }
 
 function readStoredEnabled(): string | null {
-  if (cachedStoredEnabled === null)
+  if (cachedStoredEnabled === undefined)
     cachedStoredEnabled = readStorage(ENABLED_KEY)
   return cachedStoredEnabled
 }

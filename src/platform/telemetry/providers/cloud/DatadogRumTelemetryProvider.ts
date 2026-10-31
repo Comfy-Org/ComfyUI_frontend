@@ -16,17 +16,24 @@ import type {
 import { datadogRum } from '@datadog/browser-rum'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import type {
+  AgentSendGatedMetadata,
   AuthMetadata,
+  BootstrapCompleteMetadata,
   ExecutionOutcomeMetadata,
+  FetchStatusRetryMetadata,
   FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
   TelemetryProvider,
   UnifiedAuthRefreshMetadata,
-  UnifiedAuthRetryMetadata
-} from '../../types'
-import { TelemetryEvents } from '../../types'
+  UnifiedAuthRetryMetadata,
+  WorkspaceScopeMismatchMetadata,
+  WorkspaceTelemetryContext
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
   private isWatchingLogout = false
@@ -52,6 +59,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
 
   trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
     datadogRum.addAction(TelemetryEvents.FETCH_TIMEOUT, metadata)
+  }
+
+  trackFetchStatusRetry(metadata: FetchStatusRetryMetadata): void {
+    datadogRum.addAction(TelemetryEvents.FETCH_STATUS_RETRY, metadata)
   }
 
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
@@ -80,8 +91,24 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     datadogRum.addAction(event.name, event.properties)
   }
 
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    datadogRum.addAction(TelemetryEvents.AGENT_SEND_GATED, metadata)
+  }
+
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
+  }
+
+  trackBootstrapComplete({ outcome }: BootstrapCompleteMetadata): void {
+    if (outcome !== 'completed') return
+
+    const { completedActivePalette, colorScheme } = useColorPaletteStore()
+    datadogRum.addAction(TelemetryEvents.THEME_LOADED, {
+      theme: Object.hasOwn(CORE_COLOR_PALETTES, completedActivePalette.id)
+        ? completedActivePalette.id
+        : 'custom',
+      color_scheme: colorScheme
+    })
   }
 
   trackFeatureFlagEvaluation(key: string, value: unknown): void {
@@ -96,6 +123,27 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
       getBillingTelemetryEventName(event),
       getCloudAppBillingTelemetryEventPayload(event)
     )
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  setWorkspaceContext(context: WorkspaceTelemetryContext | undefined): void {
+    if (!context) {
+      datadogRum.removeGlobalContextProperty('workspace')
+      datadogRum.removeGlobalContextProperty('auth')
+      return
+    }
+    datadogRum.setGlobalContextProperty('workspace', {
+      id: context.workspace_id,
+      type: context.workspace_type,
+      role: context.workspace_role,
+      tier: context.workspace_tier
+    })
+    datadogRum.setGlobalContextProperty('auth', { rail: context.auth_rail })
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackWorkspaceScopeMismatch(metadata: WorkspaceScopeMismatchMetadata): void {
+    datadogRum.addAction(TelemetryEvents.WORKSPACE_SCOPE_MISMATCH, metadata)
   }
 
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {

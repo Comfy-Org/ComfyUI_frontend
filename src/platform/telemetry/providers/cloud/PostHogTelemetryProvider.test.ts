@@ -9,8 +9,8 @@ import type { Ref } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type { SubscriptionInfo } from '@/composables/billing/types'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
@@ -18,8 +18,8 @@ import type {
   BootstrapCompleteMetadata,
   OnboardingTourStage,
   RunButtonProperties
-} from '../../types'
-import { TelemetryEvents } from '../../types'
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 const hoisted = vi.hoisted(() => {
   const mockCapture = vi.fn()
@@ -93,7 +93,7 @@ vi.mock(import('@/platform/telemetry/utils/getAgentPanelOpen'), () => ({
   getAgentPanelOpen: () => hoisted.agentPanelOpen
 }))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 
@@ -154,6 +154,14 @@ function mockPostHogPersistence(initial: Record<string, unknown> = {}) {
 
 function setLocation(search: string): void {
   window.history.replaceState({}, '', `/${search}`)
+}
+
+function surveyIds(count: number): string[] {
+  return Array.from({ length: count }, (_, index) => `survey-${index}`)
+}
+
+function trackSurveys(provider: PostHogTelemetryProvider, ids: string[]): void {
+  ids.forEach((surveyId) => provider.trackInAppSurvey('shown', { surveyId }))
 }
 
 describe('PostHogTelemetryProvider', () => {
@@ -536,6 +544,25 @@ describe('PostHogTelemetryProvider', () => {
   })
 
   describe('event tracking', () => {
+    it('bounds events queued before PostHog initializes', async () => {
+      const provider = createProvider()
+      const ids = surveyIds(102)
+
+      trackSurveys(provider, ids)
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockCapture).toHaveBeenCalledTimes(100)
+      expect(
+        hoisted.mockCapture.mock.calls.map(
+          ([, properties]) => properties?.$survey_id
+        )
+      ).toEqual(ids.slice(0, 100))
+      expect(console.warn).toHaveBeenCalledOnce()
+      expect(console.warn).toHaveBeenCalledWith(
+        'PostHog pre-initialization event queue is full; dropping events'
+      )
+    })
+
     it('captures events after initialization', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -650,6 +677,7 @@ describe('PostHogTelemetryProvider', () => {
         prompt_id: 'slot_3',
         prompt_index: 2,
         prompt_count: 5,
+        visible_prompt_count: 5,
         prompt_text_hash: 'deadbeef',
         locale: 'en',
         click_id: 'click-1',
@@ -662,6 +690,7 @@ describe('PostHogTelemetryProvider', () => {
           prompt_id: 'slot_3',
           prompt_index: 2,
           prompt_count: 5,
+          visible_prompt_count: 5,
           prompt_text_hash: 'deadbeef',
           locale: 'en',
           click_id: 'click-1',
@@ -670,17 +699,54 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('captures starter prompt exposure with its assignment', async () => {
+    it('captures free-use notice interactions with their placement', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
 
-      provider.trackAgentStarterPromptExposure({
-        '$feature/agent-starter-prompt-set': 'test'
+      provider.trackAgentFreeUseNotice({
+        action: 'dismissed',
+        placement: 'top-banner'
       })
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
-        TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE,
-        { '$feature/agent-starter-prompt-set': 'test' }
+        TelemetryEvents.AGENT_FREE_USE_NOTICE,
+        { action: 'dismissed', placement: 'top-banner' }
+      )
+    })
+
+    it('captures panel-open experiment exposure with the PostHog arm', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentFreeUseExposure({
+        placement: 'control',
+        '$feature/agent-free-use-message-placement': 'control'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_FREE_USE_EXPOSURE,
+        {
+          placement: 'control',
+          '$feature/agent-free-use-message-placement': 'control'
+        }
+      )
+    })
+
+    it('captures credit-usage experiment exposure with the PostHog arm', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentCreditUsageExposure({
+        variant: 'treatment',
+        '$feature/agent-credit-usage-summary': 'treatment'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE,
+        {
+          variant: 'treatment',
+          '$feature/agent-credit-usage-summary': 'treatment'
+        }
       )
     })
 
@@ -816,6 +882,7 @@ describe('PostHogTelemetryProvider', () => {
         total_ms: 5200,
         outcome: 'timed_out',
         phase_count: 1,
+        untraced_ms: 2700,
         phases: { 'auth-gate/user-store': 2500 },
         pending: ['bootstrap/object-info']
       } satisfies BootstrapCompleteMetadata
@@ -1050,6 +1117,12 @@ describe('PostHogTelemetryProvider', () => {
         properties: { reason: 'tour_active' }
       },
       {
+        event: TelemetryEvents.AGENT_PANEL_RENDER_STALLED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentPanelRenderStalled({ stage: 'dock_unresolved' }),
+        properties: { stage: 'dock_unresolved' }
+      },
+      {
         event: TelemetryEvents.AGENT_CONSENT_OFFER_EXITED,
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentConsentOfferExited({
@@ -1087,6 +1160,26 @@ describe('PostHogTelemetryProvider', () => {
             step: 2
           }),
         properties: { reason: 'target_missing', step: 2 }
+      },
+      {
+        event: TelemetryEvents.AGENT_SEND_GATED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentSendGated({
+            gate: 'consent',
+            outcome: 'dropped',
+            reason: 'dismissed',
+            client_message_id: 'client-message-1',
+            held_ms: 1200,
+            thread_id: null
+          }),
+        properties: {
+          gate: 'consent',
+          outcome: 'dropped',
+          reason: 'dismissed',
+          client_message_id: 'client-message-1',
+          held_ms: 1200,
+          thread_id: null
+        }
       }
     ])(
       'captures $event with its properties',
@@ -1121,6 +1214,12 @@ describe('PostHogTelemetryProvider', () => {
             surface: 'refused_send'
           }),
         properties: { cta: 'add_credits', surface: 'refused_send' }
+      },
+      {
+        event: TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentCreditTransitionNotice({ action: 'shown' }),
+        properties: { action: 'shown' }
       }
     ])('captures $event', async ({ event, track, properties }) => {
       const provider = createProvider()
@@ -2039,6 +2138,29 @@ describe('PostHogTelemetryProvider', () => {
       // event.$set_once — PII stripped, non-PII preserved
       expect(result.$set_once).not.toHaveProperty('email')
       expect(result.$set_once).toHaveProperty('plan', 'free')
+    })
+
+    it('strips the retired starter prompt flag while preserving other flags', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const result = runBeforeSend({
+        uuid: 'test',
+        event: TelemetryEvents.AGENT_MESSAGE_SENT,
+        properties: {
+          '$feature/agent-starter-prompt-set': 'test',
+          '$feature/another-experiment': 'control'
+        }
+      })
+      assert.exists(result)
+
+      expect(result.properties).not.toHaveProperty(
+        '$feature/agent-starter-prompt-set'
+      )
+      expect(result.properties).toHaveProperty(
+        '$feature/another-experiment',
+        'control'
+      )
     })
 
     it('remoteConfig.posthog_config cannot override before_send (PII stripping)', async () => {

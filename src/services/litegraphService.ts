@@ -28,16 +28,17 @@ import type {
   GraphAddOptions,
   IContextMenuValue,
   INodeInputSlot,
-  Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import type {
   ExportedSubgraphInstance,
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
   ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -62,6 +63,7 @@ import {
   zDynamicGroupInputSpec
 } from '@/schemas/nodeDefSchema'
 import { useApp } from '@/scripts/appInstance'
+import { provideLitegraphService } from '@/core/graph/litegraphServiceAccess'
 import {
   clipspace,
   copyToClipspace,
@@ -70,7 +72,7 @@ import {
 import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
@@ -79,12 +81,13 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { parseNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
-import { getErrorMessage } from '@/utils/errorUtil'
-import type { WidgetId } from '@/types/widgetId'
+import { getImageFileUrl } from '@/utils/hdrFormatUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
@@ -94,7 +97,7 @@ import {
 } from '@/utils/litegraphUtil'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
-import { useExtensionService } from './extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 
 async function reencodeAsPngBlob(
   blob: Blob,
@@ -138,9 +141,6 @@ async function reencodeAsPngBlob(
     }, 'image/png')
   })
 }
-
-export const CONFIG = Symbol()
-export const GET_CONFIG = Symbol()
 
 export function getExtraOptionsForWidget(
   node: LGraphNode,
@@ -373,15 +373,15 @@ export const useLitegraphService = () => {
    * @internal Add inputs to the node.
    */
   function addInputs(node: LGraphNode, inputs: Record<string, InputSpec>) {
-    // Use input_order if available to ensure consistent widget ordering
     const orderedInputSpecs = getOrderedInputSpecs(
       node.constructor.nodeData ?? {},
       inputs
     )
 
-    // Create sockets and widgets in the determined order
-    for (const inputSpec of orderedInputSpecs) addInputSocket(node, inputSpec)
-    for (const inputSpec of orderedInputSpecs) addInputWidget(node, inputSpec)
+    for (const inputSpec of orderedInputSpecs) {
+      addInputSocket(node, inputSpec)
+      addInputWidget(node, inputSpec)
+    }
   }
 
   /**
@@ -716,13 +716,10 @@ export const useLitegraphService = () => {
 
     node.prototype.getExtraMenuOptions = function (canvas, options) {
       if (this.imgs) {
-        // If this node has images then we add an open in new tab item
         let img
         if (this.imageIndex != null) {
-          // An image is selected so select that
           img = this.imgs[this.imageIndex]
         } else if (this.overIndex != null) {
-          // No image is selected but one is hovered
           img = this.imgs[this.overIndex]
         }
         if (img) {
@@ -730,8 +727,7 @@ export const useLitegraphService = () => {
             {
               content: 'Open Image',
               callback: markCoreMediaMenuCallback(() => {
-                const url = new URL(img.src)
-                url.searchParams.delete('preview')
+                const url = getImageFileUrl(img)
                 void openFileInNewTab(url.toString())
               }, 'preview')
             },
@@ -739,8 +735,7 @@ export const useLitegraphService = () => {
             {
               content: 'Save Image',
               callback: markCoreMediaMenuCallback(() => {
-                const url = new URL(img.src)
-                url.searchParams.delete('preview')
+                const url = getImageFileUrl(img)
                 const filename = new URLSearchParams(url.search).get('filename')
                 downloadFile(url.toString(), filename ?? undefined)
               }, 'preview')
@@ -757,7 +752,6 @@ export const useLitegraphService = () => {
         }
       })
 
-      // prevent conflict of clipspace content
       if (!clipspace.returnNode) {
         options.push({
           content: 'Copy (Clipspace)',
@@ -1027,3 +1021,5 @@ export const useLitegraphService = () => {
     updatePreviews
   }
 }
+
+provideLitegraphService(useLitegraphService)

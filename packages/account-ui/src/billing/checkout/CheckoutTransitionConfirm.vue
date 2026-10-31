@@ -1,6 +1,6 @@
 <template>
   <div
-    class="mx-auto flex h-full min-h-0 max-w-[400px] flex-col items-stretch justify-between overflow-y-auto text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
+    class="mx-auto flex h-full min-h-0 max-w-[400px] flex-col justify-between overflow-y-auto text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
   >
     <div>
       <div class="mb-8 flex items-center gap-3">
@@ -12,13 +12,13 @@
           :disabled="interactionLocked"
           @click="emit('back')"
         >
-          <i class="pi pi-arrow-left text-base" />
+          <i class="icon-[lucide--arrow-left]" />
         </CheckoutButton>
-        <h2
-          class="m-0 flex-1 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+        <CheckoutTitle
+          class="m-0 flex-1 text-center text-xl font-semibold text-foreground lg:text-2xl"
         >
           {{ confirmTitle }}
-        </h2>
+        </CheckoutTitle>
         <div class="size-8 shrink-0" aria-hidden="true" />
       </div>
       <CheckoutReactivationBanner
@@ -90,11 +90,7 @@
         >
           {{ copy.cancelPaymentAndRetry }}
         </CheckoutButton>
-        <p
-          v-if="cancelPaymentError"
-          role="alert"
-          class="m-0 text-sm text-destructive-background"
-        >
+        <p v-if="cancelPaymentError" role="alert" class="m-0 text-destructive">
           {{ cancelPaymentError }}
         </p>
       </template>
@@ -136,6 +132,7 @@ import CheckoutPaymentNotices from './CheckoutPaymentNotices.vue'
 import CheckoutPromotionCode from './CheckoutPromotionCode.vue'
 import CheckoutReactivationBanner from './CheckoutReactivationBanner.vue'
 import CheckoutTermsNote from './CheckoutTermsNote.vue'
+import CheckoutTitle from './CheckoutTitle.vue'
 import CheckoutTransitionSummary from './CheckoutTransitionSummary.vue'
 import CheckoutTransitionTotal from './CheckoutTransitionTotal.vue'
 import CheckoutVerificationPrompt from './CheckoutVerificationPrompt.vue'

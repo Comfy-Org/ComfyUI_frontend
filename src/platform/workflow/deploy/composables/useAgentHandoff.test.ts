@@ -4,11 +4,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { reportError } from '@/platform/telemetry/reportError'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => {
   const copyToClipboard = vi.fn(
@@ -22,7 +22,7 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 

@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
-import type { AppMode } from '@/utils/appMode'
+import { getWorkflowMode, isAppModeValue } from '@comfyorg/graph-model/appMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 
 const enableAppBuilder = ref(true)
 

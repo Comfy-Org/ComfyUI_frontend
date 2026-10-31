@@ -24,7 +24,7 @@
               :aria-label="$t('g.delete')"
               @click.stop="void subgraphStore.deleteBlueprint(node.data.name)"
             >
-              <i class="icon-[lucide--trash-2] size-4" />
+              <i class="icon-[lucide--trash-2]" />
             </Button>
             <Button
               variant="muted-textonly"
@@ -32,7 +32,7 @@
               :aria-label="$t('g.edit')"
               @click.stop="void subgraphStore.editBlueprint(node.data.name)"
             >
-              <i class="icon-[lucide--square-pen] size-4" />
+              <i class="icon-[lucide--square-pen]" />
             </Button>
           </template>
           <template v-else>
@@ -89,13 +89,13 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { renderNodePreview } from '@/components/node/renderNodePreview'
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type {
   RenderedTreeExplorerNode,
@@ -168,7 +168,7 @@ const extraMenuItems = (
 ) => [
   {
     label: t('g.customize'),
-    icon: 'pi pi-palette',
+    icon: 'icon-[lucide--palette]',
     command: () => {
       if (!menuTargetNode.data) return
 

@@ -1,13 +1,12 @@
 import { ref, shallowRef } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import type { LegacyWorkspaceTokenRailDeps } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
 import { createLegacyWorkspaceTokenRail } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 
-vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
-  useSessionCookie: () => ({ ensureSessionCookie: vi.fn() })
-}))
+provideEnsureSessionCookie(vi.fn(async () => {}))
 
 const workspace: WorkspaceIdentity = {
   id: 'workspace-123',
@@ -43,6 +42,7 @@ describe('createLegacyWorkspaceTokenRail', () => {
       Response.json({
         token: 'workspace-token-abc',
         expires_at: new Date(Date.now() + expiresInMs).toISOString(),
+        user_id: 'uid-1',
         workspace: { id: workspace.id, name: workspace.name, type: 'team' },
         role: 'owner',
         permissions: ['owner:*']

@@ -8,7 +8,7 @@ import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
 import { i18n } from '@/i18n'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
-import type { JobStatus } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobStatus } from '@comfyorg/api-client/jobTypes'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -98,9 +98,6 @@ function renderComponent(
         QueueOverlayExpanded: QueueOverlayExpandedStub,
         QueueOverlayActive: true,
         MediaLightbox: true
-      },
-      directives: {
-        tooltip: () => {}
       }
     }
   })

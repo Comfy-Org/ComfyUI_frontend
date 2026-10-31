@@ -6,12 +6,13 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type {
   AuthMetadata,
   ExecutionErrorMetadata,
+  FetchStatusRetryMetadata,
   ExecutionSuccessMetadata,
   NodeAddedMetadata,
   ShellLayoutMetadata,
   TelemetryProvider
-} from '../../types'
-import { getExecutionContext } from '../../utils/getExecutionContext'
+} from '@comfyorg/telemetry/types'
+import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
 export class SentryTelemetryProvider implements TelemetryProvider {
   private shellLayout: ShellLayoutMetadata | null = null
@@ -28,6 +29,15 @@ export class SentryTelemetryProvider implements TelemetryProvider {
   trackShellLayout(metadata: ShellLayoutMetadata): void {
     this.shellLayout = metadata
     this.updateAppContext()
+  }
+
+  trackFetchStatusRetry(metadata: FetchStatusRetryMetadata): void {
+    addBreadcrumb({
+      category: 'fetch.status_retry',
+      message: metadata.outcome,
+      level: metadata.outcome === 'recovered' ? 'info' : 'warning',
+      data: { ...metadata }
+    })
   }
 
   trackNodeAdded({ node_type, source }: NodeAddedMetadata): void {

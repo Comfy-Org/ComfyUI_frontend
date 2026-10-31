@@ -1,3 +1,4 @@
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator, Page } from '@playwright/test'
 
 /**
@@ -8,12 +9,8 @@ import type { Locator, Page } from '@playwright/test'
  * test.
  */
 
-interface NodeBox {
+interface NodeBox extends Bounds {
   id: string
-  x: number
-  y: number
-  width: number
-  height: number
   /**
    * False in the cases where `boundingBox()` would have returned null, plus
    * `visibility: hidden`, which reserves a box while drawing nothing.

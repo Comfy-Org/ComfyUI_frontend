@@ -1,60 +1,45 @@
 <template>
-  <div
-    class="flex w-full max-w-[360px] flex-col rounded-2xl border border-border-default bg-base-background"
-  >
-    <!-- Header -->
-    <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
-    >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
-        {{ $t('workspacePanel.revokeInviteDialog.title') }}
-      </h2>
-      <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
-        :aria-label="$t('g.close')"
-        @click="onCancel"
-      >
-        <i class="pi pi-times size-4" />
-      </button>
-    </div>
+  <AppDialogPanel size="compact" @close="onCancel">
+    <template #title>
+      {{ $t('workspacePanel.revokeInviteDialog.title') }}
+    </template>
 
-    <!-- Body -->
-    <div class="p-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.revokeInviteDialog.message') }}
-      </p>
-    </div>
+    <p class="m-0 text-sm text-muted-foreground">
+      {{ $t('workspacePanel.revokeInviteDialog.message') }}
+    </p>
 
-    <!-- Footer -->
-    <div class="flex items-center justify-end gap-4 p-4">
+    <template #footer>
       <Button variant="muted-textonly" @click="onCancel">
         {{ $t('g.cancel') }}
       </Button>
       <Button variant="destructive" size="lg" :loading @click="onRevoke">
         {{ $t('workspacePanel.revokeInviteDialog.revoke') }}
       </Button>
-    </div>
-  </div>
+    </template>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const { inviteId } = defineProps<{
   inviteId: string
 }>()
 
+const emit = defineEmits<{
+  revoked: []
+}>()
+
 const dialogStore = useDialogStore()
 const workspaceStore = useTeamWorkspaceStore()
-const { fetchStatus } = useBillingContext()
 const toast = useToast()
 const { t } = useI18n()
 const loading = ref(false)
@@ -67,7 +52,7 @@ async function onRevoke() {
   loading.value = true
   try {
     await workspaceStore.revokeInvite(inviteId)
-    void fetchStatus().catch(console.error)
+    emit('revoked')
     dialogStore.closeDialog({ key: 'revoke-invite' })
   } catch (error) {
     toast.error(t('g.error'), {

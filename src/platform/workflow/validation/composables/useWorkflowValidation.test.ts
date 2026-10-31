@@ -4,7 +4,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 
 import { useWorkflowValidation } from './useWorkflowValidation'
 

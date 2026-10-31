@@ -1,48 +1,229 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 import type { z } from 'zod'
 
+import { listDirectory, readJson } from './outcome'
+import type { Outcome } from './outcome'
 import { domainRecordSchema, exceptionLedgerSchema } from './schema'
 import type { ArchitectureException, DomainRecord } from './schema'
 
 const DOMAINS_DIRECTORY = 'docs/architecture/domains'
 const RECORDS_DIRECTORY = `${DOMAINS_DIRECTORY}/records`
 const LEDGER_PATH = `${DOMAINS_DIRECTORY}/exceptions.json`
+const PACKAGES_DIRECTORY = 'packages'
 const SOURCE_FILE = /\.(ts|tsx|vue)$/
+
+export interface ArchitectureWarning {
+  message: string
+  file: string
+}
 
 export interface ArchitectureConfiguration {
   exceptions: ArchitectureException[]
   records: DomainRecord[]
   sourceFiles: string[]
+  claims: Map<string, Claim>
+  unclassifiedFiles: string[]
+  warnings: ArchitectureWarning[]
 }
 
-function listSourceFiles(repositoryRoot: string): string[] {
-  return readdirSync(join(repositoryRoot, 'src'), { recursive: true })
-    .map((filename) => `src/${String(filename).replaceAll('\\', '/')}`)
-    .filter((filename) => SOURCE_FILE.test(filename))
-    .sort()
+function sourceRoots(repositoryRoot: string): Outcome<string[]> {
+  if (!existsSync(join(repositoryRoot, PACKAGES_DIRECTORY)))
+    return { ok: true, value: ['src'] }
+  const packages = listDirectory(repositoryRoot, PACKAGES_DIRECTORY, false)
+  if (!packages.ok) return packages
+  return {
+    ok: true,
+    value: [
+      'src',
+      ...packages.value
+        .map((name) => `${PACKAGES_DIRECTORY}/${name}/src`)
+        .filter((root) => existsSync(join(repositoryRoot, root)))
+    ]
+  }
 }
 
-export function matchesModulePath(filename: string, path: string): boolean {
+function listSourceFiles(repositoryRoot: string): Outcome<string[]> {
+  const roots = sourceRoots(repositoryRoot)
+  if (!roots.ok) return roots
+  const listed = roots.value.map((root) => ({
+    root,
+    entries: listDirectory(repositoryRoot, root, true)
+  }))
+  const errors = listed.flatMap(({ entries }) =>
+    entries.ok ? [] : entries.errors
+  )
+  if (errors.length) return { ok: false, errors }
+  return {
+    ok: true,
+    value: listed
+      .flatMap(({ root, entries }) =>
+        entries.ok ? entries.value.map((filename) => `${root}/${filename}`) : []
+      )
+      .filter((filename) => SOURCE_FILE.test(filename))
+      .sort()
+  }
+}
+
+function matchesModulePath(filename: string, path: string): boolean {
   return path.endsWith('/**')
     ? filename.startsWith(path.slice(0, -2))
     : filename === path
+}
+
+type Module = DomainRecord['modules'][number]
+
+export interface Claim {
+  record: DomainRecord
+  module: Module
+}
+
+const specificity = (path: string) =>
+  path.endsWith('/**') ? path.length : Number.MAX_SAFE_INTEGER
+
+/**
+ * Every module, most specific path first: a file path outranks any directory,
+ * and a deeper directory outranks a shallower one. A path only comes after
+ * the paths it contains.
+ */
+export const modulesBySpecificity = (records: DomainRecord[]): Claim[] =>
+  records
+    .flatMap((record) => record.modules.map((module) => ({ record, module })))
+    .toSorted((a, b) => specificity(b.module.path) - specificity(a.module.path))
+
+const TEST_FILE = /\.test\.tsx?$/
+
+function isFileModule({ module }: Claim) {
+  return !module.path.endsWith('/**') && !TEST_FILE.test(module.path)
+}
+
+function withoutExtension(path: string) {
+  return path.replace(/\.[^./]+$/, '')
+}
+
+function subjectOf(
+  test: string,
+  fileModules: Claim[],
+  sourceStems: Set<string>
+): Claim | undefined {
+  const stem = test.replace(TEST_FILE, '')
+  if (sourceStems.has(stem))
+    return fileModules.find(
+      ({ module }) => withoutExtension(module.path) === stem
+    )
+  return fileModules
+    .filter(({ module }) =>
+      test.startsWith(`${withoutExtension(module.path)}.`)
+    )
+    .toSorted((a, b) => b.module.path.length - a.module.path.length)[0]
+}
+
+function sourceStemsOf(sourceFiles: string[]) {
+  return new Set(
+    sourceFiles
+      .filter((file) => !TEST_FILE.test(file))
+      .map((file) => withoutExtension(file))
+  )
+}
+
+function withSubjectTests(
+  records: DomainRecord[],
+  sourceFiles: string[],
+  sourceStems: Set<string>
+): DomainRecord[] {
+  const named = new Set(
+    records.flatMap(({ modules }) => modules.map(({ path }) => path))
+  )
+  const fileModules = modulesBySpecificity(records).filter(isFileModule)
+  const implied = new Map<Module, Module[]>()
+  for (const test of sourceFiles) {
+    if (!TEST_FILE.test(test) || named.has(test)) continue
+    const subject = subjectOf(test, fileModules, sourceStems)
+    if (!subject) continue
+    implied.set(subject.module, [
+      ...(implied.get(subject.module) ?? []),
+      { path: test, role: subject.module.role }
+    ])
+  }
+  return records.map((record) => ({
+    ...record,
+    modules: record.modules.flatMap((module) => [
+      module,
+      ...(implied.get(module) ?? [])
+    ])
+  }))
+}
+
+export const contains = (outer: string, inner: string) =>
+  outer !== inner &&
+  outer.endsWith('/**') &&
+  inner.startsWith(outer.slice(0, -2))
+
+export const sameRole = (a: Claim, b: Claim) =>
+  a.record === b.record && a.module.role === b.module.role
+
+/**
+ * Maps each file to the most specific module path that matches it, so a
+ * directory can claim everything below it while nested paths override parts
+ * of it.
+ */
+export function claimFiles(
+  records: DomainRecord[],
+  files: string[]
+): Map<string, Claim> {
+  const modules = modulesBySpecificity(records)
+  const claims = new Map<string, Claim>()
+  for (const file of files) {
+    const claim = modules.find(({ module }) =>
+      matchesModulePath(file, module.path)
+    )
+    if (claim) claims.set(file, claim)
+  }
+  return claims
 }
 
 function parseFile<T>(
   repositoryRoot: string,
   filename: string,
   schema: z.ZodType<T>
-): T {
-  const result = schema.safeParse(
-    JSON.parse(readFileSync(join(repositoryRoot, filename), 'utf8'))
-  )
-  if (result.success) return result.data
+): Outcome<T> {
+  const json = readJson(repositoryRoot, filename)
+  if (!json.ok) return json
+  const result = schema.safeParse(json.value)
+  if (result.success) return { ok: true, value: result.data }
   const issues = result.error.issues.map(
     ({ path, message }) => `  ${path.join('.') || '(root)'}: ${message}`
   )
-  throw new Error(`${filename} is invalid:\n${issues.join('\n')}`)
+  return {
+    ok: false,
+    errors: [`${filename} is invalid:\n${issues.join('\n')}`]
+  }
+}
+
+function loadRecordFiles(
+  repositoryRoot: string
+): Outcome<{ filename: string; record: DomainRecord }[]> {
+  const entries = listDirectory(repositoryRoot, RECORDS_DIRECTORY, false)
+  if (!entries.ok) return entries
+  const parsed = entries.value
+    .filter((filename) => filename.endsWith('.domain.json'))
+    .sort()
+    .map((name) => `${RECORDS_DIRECTORY}/${name}`)
+    .map((filename) => ({
+      filename,
+      record: parseFile(repositoryRoot, filename, domainRecordSchema)
+    }))
+  const errors = parsed.flatMap(({ record }) =>
+    record.ok ? [] : record.errors
+  )
+  if (errors.length) return { ok: false, errors }
+  return {
+    ok: true,
+    value: parsed.flatMap(({ filename, record }) =>
+      record.ok ? [{ filename, record: record.value }] : []
+    )
+  }
 }
 
 function duplicates(values: string[]): string[] {
@@ -63,80 +244,180 @@ function referenceErrors(records: DomainRecord[]): string[] {
   ]
 }
 
-function moduleErrors(
-  records: DomainRecord[],
-  sourceFiles: string[]
-): string[] {
-  const modules = records.flatMap((record) =>
-    record.modules.map(({ path }) => ({ domain: record.id, path }))
+function stalePathWarnings(
+  records: { filename: string; record: DomainRecord }[],
+  sourceFiles: string[],
+  claims: Map<string, Claim>
+): ArchitectureWarning[] {
+  const claimed = new Set([...claims.values()].map(({ module }) => module))
+  return records.flatMap(({ filename, record }) =>
+    record.modules
+      .filter((module) => !claimed.has(module))
+      .map(({ path }) => ({
+        message: sourceFiles.some((f) => matchesModulePath(f, path))
+          ? `${record.id} path claims no source files because more specific paths claim all of them: ${path}. Remove it from ${filename}.`
+          : `${record.id} path matches no source files: ${path}. Remove or update it in ${filename}.`,
+        file: filename
+      }))
   )
-  const unmatched = modules
-    .filter(({ path }) => !sourceFiles.some((f) => matchesModulePath(f, path)))
+}
+
+/**
+ * A path is redundant when the nearest path enclosing it has the same domain
+ * and role: removing it hands its files to that path unchanged.
+ */
+function redundantPathWarnings(
+  records: { filename: string; record: DomainRecord }[],
+  sourceFiles: string[],
+  sourceStems: Set<string>
+): ArchitectureWarning[] {
+  const modules = modulesBySpecificity(records.map(({ record }) => record))
+  const fileModules = modules.filter(isFileModule)
+  const named = new Set(modules.map(({ module }) => module.path))
+  const prefixSubjects = new Set(
+    sourceFiles
+      .filter(
+        (test) =>
+          TEST_FILE.test(test) &&
+          !named.has(test) &&
+          !sourceStems.has(test.replace(TEST_FILE, ''))
+      )
+      .map((test) => subjectOf(test, fileModules, sourceStems)?.module)
+  )
+  return records.flatMap(({ filename, record }) =>
+    record.modules.flatMap((module) => {
+      const outer = modules.find((enclosing) =>
+        contains(enclosing.module.path, module.path)
+      )
+      const subject =
+        TEST_FILE.test(module.path) &&
+        subjectOf(module.path, fileModules, sourceStems)
+      return outer &&
+        !subject &&
+        !prefixSubjects.has(module) &&
+        sameRole(outer, { record, module })
+        ? [
+            {
+              message: `${record.id} path repeats the role of the enclosing ${outer.module.path}: ${module.path}. Remove it from ${filename}.`,
+              file: filename
+            }
+          ]
+        : []
+    })
+  )
+}
+
+function redundantTestWarnings(
+  records: { filename: string; record: DomainRecord }[],
+  sourceStems: Set<string>
+): ArchitectureWarning[] {
+  const fileModules = modulesBySpecificity(
+    records.map(({ record }) => record)
+  ).filter(isFileModule)
+  return records.flatMap(({ filename, record }) =>
+    record.modules
+      .filter(({ path }) => TEST_FILE.test(path))
+      .flatMap((module) => {
+        const subject = subjectOf(module.path, fileModules, sourceStems)
+        return subject && sameRole(subject, { record, module })
+          ? [
+              {
+                message: `${record.id} path repeats the role of its subject ${subject.module.path}: ${module.path}. Remove it from ${filename}.`,
+                file: filename
+              }
+            ]
+          : []
+      })
+  )
+}
+
+function overlapErrors(records: DomainRecord[]): string[] {
+  const claimants = new Map<string, string[]>()
+  for (const record of records) {
+    for (const { path } of record.modules) {
+      claimants.set(path, [...(claimants.get(path) ?? []), record.id])
+    }
+  }
+  return [...claimants]
+    .filter(([, domains]) => domains.length > 1)
     .map(
-      ({ domain, path }) => `${domain} path matches no source files: ${path}`
+      ([path, domains]) =>
+        `${path} is claimed by more than one module: ${domains.join(', ')}`
     )
-  const overlapping = sourceFiles.flatMap((file) => {
-    const owners = modules.filter(({ path }) => matchesModulePath(file, path))
-    return owners.length > 1
-      ? [
-          `${file} is claimed by more than one module: ${owners.map(({ domain, path }) => `${domain} ${path}`).join(', ')}`
-        ]
-      : []
-  })
-  return [...unmatched, ...overlapping]
 }
 
 function referencedFileErrors(
   repositoryRoot: string,
-  records: DomainRecord[]
+  records: DomainRecord[],
+  claims: Map<string, Claim>
 ): string[] {
-  return records.flatMap((record) => [
-    ...[
+  return records.flatMap((record) => {
+    const missing = [
       ...record.publicEntryPoints,
       ...record.characterizationScenarios.flatMap(({ checks }) => checks),
       ...record.adrs
+    ].filter((filename) => !existsSync(join(repositoryRoot, filename)))
+    return [
+      ...missing.map(
+        (filename) => `${record.id} references missing file ${filename}`
+      ),
+      ...record.publicEntryPoints
+        .filter(
+          (entry) =>
+            !missing.includes(entry) && claims.get(entry)?.record !== record
+        )
+        .map(
+          (entry) =>
+            `${record.id} public entry point is outside its modules: ${entry}`
+        )
     ]
-      .filter((filename) => !existsSync(join(repositoryRoot, filename)))
-      .map((filename) => `${record.id} references missing file ${filename}`),
-    ...record.publicEntryPoints
-      .filter(
-        (entry) =>
-          !record.modules.some(({ path }) => matchesModulePath(entry, path))
-      )
-      .map(
-        (entry) =>
-          `${record.id} public entry point is outside its modules: ${entry}`
-      )
-  ])
+  })
 }
 
 export function loadArchitectureConfiguration(
   repositoryRoot: string
-): ArchitectureConfiguration {
-  const records = readdirSync(join(repositoryRoot, RECORDS_DIRECTORY))
-    .filter((filename) => filename.endsWith('.domain.json'))
-    .sort()
-    .map((filename) =>
-      parseFile(
-        repositoryRoot,
-        `${RECORDS_DIRECTORY}/${filename}`,
-        domainRecordSchema
-      )
-    )
-  const { exceptions } = parseFile(
-    repositoryRoot,
-    LEDGER_PATH,
-    exceptionLedgerSchema
-  )
+): Outcome<ArchitectureConfiguration> {
+  const recordFiles = loadRecordFiles(repositoryRoot)
+  const ledger = parseFile(repositoryRoot, LEDGER_PATH, exceptionLedgerSchema)
   const sourceFiles = listSourceFiles(repositoryRoot)
+  if (!recordFiles.ok || !ledger.ok || !sourceFiles.ok)
+    return {
+      ok: false,
+      errors: [recordFiles, ledger, sourceFiles].flatMap((outcome) =>
+        outcome.ok ? [] : outcome.errors
+      )
+    }
+  const namedRecords = recordFiles.value.map(({ record }) => record)
+  const sourceStems = sourceStemsOf(sourceFiles.value)
+  const records = withSubjectTests(namedRecords, sourceFiles.value, sourceStems)
+  const { exceptions } = ledger.value
+  const claims = claimFiles(records, sourceFiles.value)
   const errors = [
-    ...referenceErrors(records),
-    ...moduleErrors(records, sourceFiles),
-    ...referencedFileErrors(repositoryRoot, records),
+    ...referenceErrors(namedRecords),
+    ...overlapErrors(namedRecords),
+    ...referencedFileErrors(repositoryRoot, records, claims),
     ...duplicates(exceptions.map(({ id }) => id)).map(
       (id) => `Exception id ${id} is declared more than once`
     )
   ]
-  if (errors.length) throw new Error(errors.join('\n'))
-  return { exceptions, records, sourceFiles }
+  if (errors.length) return { ok: false, errors }
+  return {
+    ok: true,
+    value: {
+      exceptions,
+      records,
+      sourceFiles: sourceFiles.value,
+      claims,
+      unclassifiedFiles: sourceFiles.value.filter((file) => !claims.has(file)),
+      warnings: [
+        ...stalePathWarnings(recordFiles.value, sourceFiles.value, claims),
+        ...redundantPathWarnings(
+          recordFiles.value,
+          sourceFiles.value,
+          sourceStems
+        ),
+        ...redundantTestWarnings(recordFiles.value, sourceStems)
+      ]
+    }
+  }
 }

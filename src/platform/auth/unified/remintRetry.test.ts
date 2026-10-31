@@ -4,8 +4,8 @@ import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -14,10 +14,10 @@ import {
   attachUnifiedRemintInterceptor,
   fetchWithUnifiedRemint
 } from '@/platform/auth/unified/remintRetry'
+import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
+import { NO_RETRY_POLICY } from '@comfyorg/api-client/retryPolicy'
 
-vi.mock(import('@/platform/telemetry'))
-
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('firebase/auth'))
 
@@ -117,6 +117,84 @@ describe('fetchWithUnifiedRemint', () => {
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackUnifiedAuthRetry).not.toHaveBeenCalled()
+  })
+
+  describe('with retryable server failures', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    const unavailable = () =>
+      new Response(null, { status: 503, headers: { 'Retry-After': '1' } })
+
+    it('retries a 503 without re-minting', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(unavailable())
+        .mockResolvedValueOnce(ok)
+
+      const pending = fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { headers: { Authorization: 'Bearer tokenA' as const } },
+        true
+      )
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(await pending).toBe(ok)
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
+    })
+
+    it('gives the re-minted request its own retry budget', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(unavailable())
+        .mockResolvedValueOnce(unavailable())
+        .mockResolvedValueOnce(unauthorized)
+        .mockResolvedValueOnce(unavailable())
+        .mockResolvedValueOnce(unavailable())
+        .mockResolvedValueOnce(ok)
+      vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+        'tokenB'
+      )
+
+      const pending = fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { headers: { Authorization: 'Bearer tokenA' as const } },
+        true
+      )
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(await pending).toBe(ok)
+      expect(fetch).toHaveBeenCalledTimes(6)
+      expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
+    })
+
+    it('sends once on a 503 under the no-retry policy', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(unavailable())
+
+      const result = await fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { headers: { Authorization: 'Bearer tokenA' as const } },
+        true,
+        undefined,
+        NO_RETRY_POLICY
+      )
+
+      expect(result.status).toBe(503)
+      expect(fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not retry a POST that got a 503', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(unavailable())
+
+      const result = await fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { method: 'POST', body: '{}' },
+        true
+      )
+
+      expect(result.status).toBe(503)
+      expect(fetch).toHaveBeenCalledTimes(1)
+    })
   })
 
   it('does not retry a non-401 response', async () => {
@@ -428,7 +506,7 @@ describe('attachUnifiedRemintInterceptor', () => {
   // A custom axios adapter is responsible for its own status handling (axios
   // only applies validateStatus inside its built-in adapters), so reject
   // non-2xx with a real AxiosError to mirror a live response.
-  function makeAdapter(statuses: number[]): ReturnType<typeof vi.fn> {
+  function makeAdapter(statuses: number[]) {
     let call = 0
     return vi.fn<AxiosAdapter>(async (config) => {
       const status = statuses[Math.min(call, statuses.length - 1)]
@@ -455,7 +533,7 @@ describe('attachUnifiedRemintInterceptor', () => {
 
   function makeClient(statuses: number[]) {
     const adapter = makeAdapter(statuses)
-    const client = axios.create({ adapter: adapter as unknown as AxiosAdapter })
+    const client = axios.create({ adapter })
     attachUnifiedRemintInterceptor(client)
     return { client, adapter }
   }
@@ -510,6 +588,24 @@ describe('attachUnifiedRemintInterceptor', () => {
       final_status: 401,
       failure_reason: 'retry_rejected'
     })
+  })
+
+  it('keeps the 503 retries and the 401 re-mint on separate budgets', async () => {
+    const adapter = makeAdapter([503, 503, 401, 503, 200])
+    const client = axios.create({ adapter })
+    attachRetryableStatusRetry(client, { sleep: async () => {} })
+    attachUnifiedRemintInterceptor(client)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+
+    const res = await client.get('https://cloud/x', {
+      headers: { Authorization: 'Bearer tokenA' as const }
+    })
+
+    expect(res.status).toBe(200)
+    expect(adapter).toHaveBeenCalledTimes(5)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
   })
 
   it('does not re-mint when the flag is OFF (AC3)', async () => {
@@ -613,7 +709,7 @@ describe('attachUnifiedRemintInterceptor', () => {
         response
       )
     })
-    const client = axios.create({ adapter: adapter as unknown as AxiosAdapter })
+    const client = axios.create({ adapter })
     attachUnifiedRemintInterceptor(client)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
       'tokenB'

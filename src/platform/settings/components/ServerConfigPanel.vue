@@ -30,7 +30,7 @@
           :aria-label="$t('g.copyToClipboard')"
           @click="copyCommandLineArgs"
         >
-          <i class="pi pi-clipboard" />
+          <i class="icon-[lucide--clipboard]" />
         </Button>
       </div>
     </Message>
@@ -38,7 +38,7 @@
       v-for="([label, items], i) in Object.entries(serverConfigsByCategory)"
       :key="label"
     >
-      <div v-if="i > 0" class="my-4 border-t border-interface-stroke" />
+      <div v-if="i > 0" class="my-4 border-t" />
       <h3>{{ $t(`serverConfigCategories.${label}`, label) }}</h3>
       <div v-for="item in items" :key="item.name" class="mb-4">
         <FormItem
@@ -46,7 +46,7 @@
           v-model:form-value="item.value"
           :item="translateItem(item)"
           :label-class="{
-            'text-highlight': item.initialValue !== item.value
+            'text-primary': item.initialValue !== item.value
           }"
         />
       </div>
@@ -60,12 +60,15 @@ import { onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
+import type { ServerConfig } from '@/constants/serverConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { FormItem as FormItemType } from '@/platform/settings/types'
+import type {
+  FormItem as FormItemType,
+  ServerConfigValue
+} from '@comfyorg/settings-core/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { electronAPI } from '@/utils/envUtil'

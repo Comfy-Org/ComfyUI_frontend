@@ -7,7 +7,7 @@ import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nextTick } from 'vue'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -15,7 +15,7 @@ import type {
   LGraphNode as LGLGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -89,10 +89,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     return render(LGraphNode, {
       props,
       global: {
-        plugins: [pinia, i18n],
-        mocks: {
-          $primevue: { config: {} }
-        }
+        plugins: [pinia, i18n]
       }
     })
   }

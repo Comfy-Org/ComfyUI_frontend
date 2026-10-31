@@ -40,32 +40,28 @@
         </TreeVirtualizer>
       </TreeRoot>
     </ContextMenuTrigger>
-    <ContextMenuPortal>
-      <ContextMenuContent :class="menuContentClass">
-        <MenuItems :items="menuItems" />
-      </ContextMenuContent>
-    </ContextMenuPortal>
+    <ContextMenuContent>
+      <MenuItems :items="menuItems" />
+    </ContextMenuContent>
   </ContextMenuRoot>
 </template>
 
 <script setup lang="ts">
-import type { FlattenedItem } from 'reka-ui'
 import {
   ContextMenuRoot,
   ContextMenuTrigger,
-  ContextMenuPortal,
-  ContextMenuContent,
   TreeRoot,
   TreeVirtualizer
 } from 'reka-ui'
+import type { FlattenedItem } from 'reka-ui'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MenuItems from '@/components/ui/menu/MenuItems.vue'
-import { menuContentClass } from '@/components/ui/menu/menuStyles'
-import type { MenuItem } from '@/components/ui/menu/types'
+import MenuItems from '@comfyorg/design-system/menu/MenuItems'
+import ContextMenuContent from '@comfyorg/design-system/menu/ContextMenuContent'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
@@ -121,7 +117,7 @@ const menuItems = computed<MenuItem[]>(() => [
     label: t('g.delete'),
     icon: 'icon-[lucide--trash-2]',
     visible: isCurrentNodeUserBlueprint.value,
-    class: 'text-destructive-background',
+    class: 'text-destructive',
     command: handleDeleteBlueprint
   }
 ])

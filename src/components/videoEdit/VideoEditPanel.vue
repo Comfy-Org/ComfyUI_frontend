@@ -3,22 +3,17 @@
     <div
       v-if="!hasSource"
       data-testid="video-edit-empty"
-      class="flex min-h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-node-stroke bg-node-component-surface p-4 text-center"
+      class="flex min-h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-node-border bg-node p-4 text-center text-muted-foreground"
     >
-      <i class="icon-[lucide--film] size-6 text-muted-foreground" />
-      <p class="m-0 text-sm text-muted-foreground">
+      <i class="icon-[lucide--film] size-6" />
+      <p class="m-0 text-sm">
         {{ t('videoEdit.noVideoSource') }}
       </p>
     </div>
     <div
       v-else
       data-testid="video-preview-container"
-      :class="
-        cn(
-          'overflow-hidden rounded-lg bg-node-component-surface',
-          hasCrop && 'p-1.5'
-        )
-      "
+      :class="cn('overflow-hidden rounded-lg bg-node', hasCrop && 'p-1.5')"
     >
       <div class="relative w-full" :style="videoAspectRatioStyle">
         <video
@@ -42,10 +37,11 @@
           :source-width="width"
           :source-height="height"
           :locked-ratio="lockedRatio"
+          @edit-end="emit('editEnd')"
         />
         <div
           v-if="loading"
-          class="absolute inset-0 flex flex-col items-center justify-center gap-0 bg-node-component-surface"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-0 bg-node"
           data-testid="video-preview-loading"
           :aria-busy="true"
           :aria-label="t('videoEdit.loadingVideo')"
@@ -57,12 +53,12 @@
         </div>
         <div
           v-else-if="error"
-          class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-node-component-surface"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-node text-muted-foreground"
           data-testid="video-preview-error"
           role="alert"
         >
-          <i class="icon-[lucide--video-off] size-6 text-muted-foreground" />
-          <p class="m-0 text-sm text-muted-foreground">
+          <i class="icon-[lucide--video-off] size-6" />
+          <p class="m-0 text-sm">
             {{
               error === 'canvas-unavailable'
                 ? t('videoEdit.canvasUnavailable')
@@ -72,7 +68,7 @@
           <button
             type="button"
             data-testid="video-preview-retry"
-            class="mt-1 cursor-pointer rounded-md border-none bg-component-node-widget-background px-3 py-1 text-sm text-base-foreground hover:bg-component-node-widget-background-hovered"
+            class="mt-1 cursor-pointer rounded-md border-none bg-input px-3 py-1 text-sm text-foreground hover:bg-muted"
             @click="emit('retry')"
           >
             {{ t('videoEdit.retry') }}
@@ -91,10 +87,10 @@
         data-testid="playback-toggle"
         :class="
           cn(
-            'flex size-6 shrink-0 items-center justify-center rounded-md border-none bg-transparent text-component-node-foreground',
+            'flex size-6 shrink-0 items-center justify-center rounded-md border-none bg-transparent text-foreground',
             loading
               ? 'cursor-default opacity-50'
-              : 'cursor-pointer hover:bg-component-node-widget-background-hovered'
+              : 'cursor-pointer hover:bg-muted'
           )
         "
         :disabled="loading"
@@ -102,17 +98,12 @@
         @click="isPlaying = !isPlaying"
       >
         <i
-          :class="
-            cn(
-              isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]',
-              'size-4'
-            )
-          "
+          :class="isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'"
         />
       </button>
       <span
         data-testid="playback-timecode"
-        class="shrink-0 text-component-node-foreground-secondary tabular-nums"
+        class="shrink-0 text-muted-foreground tabular-nums"
       >
         {{ timecodeLabel }}
       </span>
@@ -129,28 +120,26 @@
       <button
         type="button"
         data-testid="playback-fullscreen"
-        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-component-node-foreground-secondary hover:bg-component-node-widget-background-hovered"
+        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-muted-foreground hover:bg-muted"
         :aria-label="t('videoEdit.fullscreen')"
         @click="enterFullscreen"
       >
-        <i class="icon-[lucide--maximize] size-4" />
+        <i class="icon-[lucide--maximize]" />
       </button>
       <button
         type="button"
         data-testid="playback-mute"
-        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-component-node-foreground-secondary hover:bg-component-node-widget-background-hovered"
+        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-muted-foreground hover:bg-muted"
         :aria-label="isMuted ? t('videoEdit.unmute') : t('videoEdit.mute')"
         @click="isMuted = !isMuted"
       >
         <i
           :class="
-            cn(
-              isMuted ? 'icon-[lucide--volume-x]' : 'icon-[lucide--volume-2]',
-              'size-4'
-            )
+            isMuted ? 'icon-[lucide--volume-x]' : 'icon-[lucide--volume-2]'
           "
         />
       </button>
+      <slot name="history" />
     </div>
 
     <div
@@ -170,6 +159,7 @@
         "
         :loading="loading"
         @scrub="handleScrub"
+        @edit-end="emit('editEnd')"
       />
 
       <WidgetInputNumberInput
@@ -177,6 +167,7 @@
         v-model="startFrame"
         root-class="col-span-full grid grid-cols-subgrid items-center"
         :widget="startFrameWidget"
+        @update:model-value="emit('editEnd', 'trim:start')"
       />
 
       <WidgetInputNumberInput
@@ -184,10 +175,11 @@
         v-model="endFrame"
         root-class="col-span-full grid grid-cols-subgrid items-center"
         :widget="endFrameWidget"
+        @update:model-value="emit('editEnd', 'trim:end')"
       />
 
       <div v-if="hasCrop" class="col-span-full flex items-center gap-2">
-        <label :for="ratioSelectId" class="text-xs text-muted-foreground">
+        <label :for="ratioSelectId">
           {{ t('imageCrop.ratio') }}
         </label>
         <Select v-model="selectedRatio" :disabled="!canLockRatio">
@@ -227,20 +219,21 @@
         v-model="cropBounds"
         class="col-span-full"
         :disabled="loading || width <= 0"
+        @edit-end="(field) => emit('editEnd', `crop:${field}`)"
       />
 
       <div
-        class="col-span-full mt-2 grid grid-cols-subgrid gap-y-0.5 border-t border-node-stroke py-2"
+        class="col-span-full mt-2 grid grid-cols-subgrid gap-y-0.5 border-t border-node-border py-2"
       >
         <div
           v-for="row in metadataRows"
           :key="row.label"
           class="col-span-full grid grid-cols-subgrid py-0.5"
         >
-          <span class="truncate text-node-component-slot-text">
+          <span class="truncate">
             {{ row.label }}
           </span>
-          <span class="text-right text-component-node-foreground">
+          <span class="text-right text-foreground">
             {{ row.value }}
           </span>
         </div>
@@ -250,6 +243,8 @@
 </template>
 
 <script setup lang="ts">
+import type { Size2D, Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { useEventListener } from '@vueuse/core'
 import { computed, ref, toRef, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -258,13 +253,13 @@ import { clamp } from 'es-toolkit'
 
 import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
 import Loader from '@/components/loader/Loader.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
-import Slider from '@/components/ui/slider/Slider.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import VideoCropOverlay from '@/components/videoEdit/VideoCropOverlay.vue'
 import VideoFilmstripTrim from '@/components/videoEdit/VideoFilmstripTrim.vue'
 import { useCropRatioLock } from '@/composables/video/useCropRatioLock'
@@ -272,8 +267,7 @@ import { useTrimPlayback } from '@/composables/video/useTrimPlayback'
 import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
 import { DEFAULT_VIDEO_FPS } from '@/composables/video/useVideoFilmstrip'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
-import type { VideoEditFeature } from '@/lib/litegraph/src/types/widgets'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { VideoEditFeature } from '@comfyorg/graph-model/widgets'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
@@ -292,24 +286,25 @@ const {
   height,
   loading = false,
   error = null
-} = defineProps<{
-  features: VideoEditFeature[]
-  videoUrl?: string
-  hasSource?: boolean
-  thumbnail: string
-  totalFrames: number
-  duration: number
-  fps: number
-  fileSize?: number
-  width: number
-  height: number
-  loading?: boolean
-  error?: FilmstripError | null
-}>()
+} = defineProps<
+  Size2D & {
+    features: VideoEditFeature[]
+    videoUrl?: string
+    hasSource?: boolean
+    thumbnail: string
+    totalFrames: number
+    duration: number
+    fps: number
+    fileSize?: number
+    loading?: boolean
+    error?: FilmstripError | null
+  }
+>()
 
 const emit = defineEmits<{
   retry: []
   loadError: []
+  editEnd: [mergeKey?: string]
 }>()
 
 const startFrame = defineModel<number>('startFrame', { default: 0 })
@@ -323,7 +318,7 @@ const { t } = useI18n()
 const { formatDuration, formatFileSize, formatTimecode } = useVideoEditFormats()
 
 const videoRef = useTemplateRef<HTMLVideoElement>('videoRef')
-const videoIntrinsicSize = ref<{ width: number; height: number } | null>(null)
+const videoIntrinsicSize = ref<Size2D | null>(null)
 const isMuted = ref(false)
 const isFullscreen = ref(false)
 
@@ -374,7 +369,8 @@ function handleVideoTimeUpdate() {
 const { lockedRatio, ratioKeys, selectedRatio, isLockEnabled, canLockRatio } =
   useCropRatioLock(cropBounds, {
     sourceWidth: toRef(() => width),
-    sourceHeight: toRef(() => height)
+    sourceHeight: toRef(() => height),
+    onEditEnd: () => emit('editEnd')
   })
 
 const startFrameWidget = computed(

@@ -1,20 +1,15 @@
 <template>
   <div
-    class="flex w-56 min-w-56 flex-col overflow-y-auto border-l border-border-default bg-base-background"
+    class="flex w-56 min-w-56 flex-col overflow-y-auto border-l bg-background"
     data-testid="layer-properties-panel"
   >
-    <div
-      class="flex items-center gap-2 border-b border-border-default px-3 py-2"
-    >
+    <div class="flex items-center gap-2 border-b px-3 py-2">
       <i
         :class="
-          cn(
-            'size-4 shrink-0',
-            isLayerContext ? 'icon-[lucide--image]' : 'icon-[lucide--grid-2x2]'
-          )
+          isLayerContext ? 'icon-[lucide--image]' : 'icon-[lucide--grid-2x2]'
         "
       />
-      <span class="truncate text-xs font-semibold text-base-foreground">
+      <span class="truncate text-xs font-semibold text-foreground">
         {{ isLayerContext ? activeNode?.name : t('layerEditor.background') }}
       </span>
     </div>
@@ -59,16 +54,18 @@
       <div :class="sectionClass">
         <span :class="sectionLabelClass">{{ t('layerEditor.alignment') }}</span>
         <div class="flex gap-1">
-          <button
+          <Button
             v-for="item in alignItems"
             :key="item.op"
-            :class="iconButtonClass"
+            variant="textonly"
+            size="icon"
+            class="size-7 rounded-md"
             :title="item.label"
             :aria-label="item.label"
             @click="onAlign(item.op)"
           >
-            <i :class="cn('size-4', item.icon)" />
-          </button>
+            <i :class="item.icon" />
+          </Button>
         </div>
       </div>
 
@@ -87,22 +84,26 @@
           <div class="flex flex-col gap-2">
             <span :class="sectionLabelClass">{{ t('layerEditor.flip') }}</span>
             <div class="flex gap-1">
-              <button
-                :class="iconButtonClass"
+              <Button
+                variant="textonly"
+                size="icon"
+                class="size-7 rounded-md"
                 :title="t('layerEditor.flipHorizontal')"
                 :aria-label="t('layerEditor.flipHorizontal')"
                 @click="onFlip('h')"
               >
-                <i class="icon-[lucide--flip-horizontal-2] size-4" />
-              </button>
-              <button
-                :class="iconButtonClass"
+                <i class="icon-[lucide--flip-horizontal-2]" />
+              </Button>
+              <Button
+                variant="textonly"
+                size="icon"
+                class="size-7 rounded-md"
                 :title="t('layerEditor.flipVertical')"
                 :aria-label="t('layerEditor.flipVertical')"
                 @click="onFlip('v')"
               >
-                <i class="icon-[lucide--flip-vertical-2] size-4" />
-              </button>
+                <i class="icon-[lucide--flip-vertical-2]" />
+              </Button>
             </div>
           </div>
         </div>
@@ -179,7 +180,7 @@
       <div v-if="backgroundLayer" :class="sectionClass">
         <span :class="sectionLabelClass">{{ t('layerEditor.fill') }}</span>
         <div data-testid="background-color-swatch">
-          <ColorPicker v-model="backgroundColorModel" class="h-7" />
+          <AppColorPicker v-model="backgroundColorModel" class="h-7" />
         </div>
       </div>
     </template>
@@ -187,17 +188,18 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import type { AcceptableValue } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PropertyNumberField from '@/renderer/extensions/layerEditor/components/PropertyNumberField.vue'
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
+import PropertyNumberField from '@comfyorg/design-system/number-field/PropertyNumberField'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import type {
   LayerEditorAlignOp,
   LayerEditorSession
@@ -207,9 +209,8 @@ import {
   CANVAS_SIZE_MIN,
   DEFAULT_BACKGROUND_COLOR
 } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
-import { LAYER_MODES } from '@/renderer/extensions/layerEditor/engine/mode'
-import { cn } from '@comfyorg/tailwind-utils'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
 
@@ -226,10 +227,8 @@ const isLayerContext = computed(
   () => selectedContext.value === 'layer' && activeNode.value !== null
 )
 
-const sectionClass = 'flex flex-col gap-2 border-b border-border-default p-3'
+const sectionClass = 'flex flex-col gap-2 border-b border-border p-3'
 const sectionLabelClass = 'text-xs text-muted-foreground'
-const iconButtonClass =
-  'flex size-7 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-base-foreground transition-colors hover:bg-secondary-background-hover'
 
 const BLEND_KEYS: Record<BlendFn, string> = {
   normal: 'normal',

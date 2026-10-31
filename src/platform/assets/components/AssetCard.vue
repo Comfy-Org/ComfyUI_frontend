@@ -8,10 +8,10 @@
     :tabindex="interactive ? 0 : -1"
     :class="
       cn(
-        'flex h-full flex-col gap-2 overflow-hidden rounded-2xl bg-modal-card-background p-2 transition-all duration-200 select-none',
+        'flex h-full flex-col gap-2 overflow-hidden rounded-2xl bg-secondary p-2 transition-all duration-200 select-none',
         interactive &&
-          'group m-0 appearance-none border-none bg-transparent text-left outline-4 outline-base-foreground outline-none hover:bg-secondary-background focus:bg-secondary-background focus:outline-solid',
-        focused && 'bg-secondary-background outline-solid'
+          'group m-0 appearance-none border-none bg-transparent text-left outline-4 outline-foreground outline-none hover:bg-secondary focus:bg-secondary focus:outline-solid',
+        focused && 'bg-secondary outline-solid'
       )
     "
     @click.stop="interactive && $emit('focus', asset)"
@@ -74,7 +74,7 @@
             :class="
               cn(
                 'm-0 line-clamp-2 text-sm font-semibold wrap-anywhere',
-                'text-base-foreground'
+                'text-foreground'
               )
             "
           >
@@ -120,12 +120,13 @@
           v-if="interactive"
           variant="secondary"
           size="lg"
-          class="relative shrink-0"
+          class="shrink-0"
           @click.stop="handleSelect"
         >
           {{ $t('g.use') }}
-          <StatusBadge
+          <Badge
             v-if="isNewlyImported"
+            variant="dot"
             severity="contrast"
             class="absolute -top-0.5 -right-0.5"
           />
@@ -140,15 +141,15 @@ import { computed, ref, toValue, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useImageQuiet } from '@/composables/useImageQuiet'
-import IconGroup from '@/components/button/IconGroup.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -223,10 +224,11 @@ function confirmDeletion() {
       promptText
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
       // TODO: These need to be put into the new Button Variants once we have them.
       confirmClass: cn(
-        'bg-danger-200 text-base-foreground ring-base-foreground hover:bg-danger-200/80 focus:bg-danger-200/80 focus:ring'
+        'bg-destructive text-foreground ring-foreground hover:bg-destructive/80 focus:bg-destructive/80 focus:ring'
       ),
       optionsDisabled,
       onCancel: () => {
