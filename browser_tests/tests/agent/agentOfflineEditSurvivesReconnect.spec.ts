@@ -20,31 +20,40 @@ test.describe(
         ]
       },
       async ({ offlineEdit }) => {
-        await offlineEdit.buildAgentPromptNodes()
-        await expect
-          .poll(() => offlineEdit.canvasPromptValues())
-          .toEqual(offlineEdit.agentPrompts)
+        await test.step('the agent builds two prompt nodes', async () => {
+          await offlineEdit.buildAgentPromptNodes()
+          await expect
+            .poll(() => offlineEdit.canvasPromptValues())
+            .toEqual(offlineEdit.agentPrompts)
+        })
+
         const subscribesBeforeOutage = offlineEdit.subscribeCount()
 
-        await offlineEdit.beginOutageAndRetype()
-        await expect
-          .poll(() => offlineEdit.refusedConnectionCount(), { timeout: 90_000 })
-          .toBeGreaterThanOrEqual(4)
-        offlineEdit.agentRewritesFirstPrompt()
+        await test.step('the user retypes both prompts while the agent writes the first', async () => {
+          await offlineEdit.beginOutageAndRetype()
+          await expect
+            .poll(() => offlineEdit.refusedConnectionCount(), {
+              timeout: 90_000
+            })
+            .toBeGreaterThanOrEqual(4)
+          offlineEdit.agentRewritesFirstPrompt()
+        })
 
-        offlineEdit.restoreAgent()
-        await expect
-          .poll(() => offlineEdit.subscribeCount(), { timeout: 90_000 })
-          .toBeGreaterThan(subscribesBeforeOutage)
-        await expect
-          .poll(() => offlineEdit.documentPromptValues(), {
-            timeout: 60_000,
-            message: 'the held edit wins over the agent write it never saw'
-          })
-          .toEqual(offlineEdit.humanPrompts)
-        await expect
-          .poll(() => offlineEdit.canvasPromptValues())
-          .toEqual(offlineEdit.humanPrompts)
+        await test.step('the agent comes back and the held edit wins the register', async () => {
+          offlineEdit.restoreAgent()
+          await expect
+            .poll(() => offlineEdit.subscribeCount(), { timeout: 90_000 })
+            .toBeGreaterThan(subscribesBeforeOutage)
+          await expect
+            .poll(() => offlineEdit.documentPromptValues(), {
+              timeout: 60_000,
+              message: 'the held edit wins over the agent write it never saw'
+            })
+            .toEqual(offlineEdit.humanPrompts)
+          await expect
+            .poll(() => offlineEdit.canvasPromptValues())
+            .toEqual(offlineEdit.humanPrompts)
+        })
       }
     )
 
