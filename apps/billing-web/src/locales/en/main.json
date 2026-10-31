@@ -567,14 +567,8 @@
       "resubscribed": "Your subscription is active again."
     },
     "paymentMethods": {
-      "card": "{brand} •••• {last4}",
-      "default": "Default",
-      "empty": "No payment method is saved for this workspace.",
+      "opening": "Opening your payment methods…",
       "manage": "Manage payment methods"
-    },
-    "paymentMethodType": {
-      "unknown": "Saved payment method",
-      "card": "Card"
     },
     "invoices": {
       "body": "Invoices and receipts are kept by our payment provider. Open the billing portal to view and download them.",

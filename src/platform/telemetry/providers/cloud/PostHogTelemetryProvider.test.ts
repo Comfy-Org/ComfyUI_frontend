@@ -732,6 +732,24 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures credit-usage experiment exposure with the PostHog arm', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentCreditUsageExposure({
+        variant: 'treatment',
+        '$feature/agent-credit-usage-summary': 'treatment'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE,
+        {
+          variant: 'treatment',
+          '$feature/agent-credit-usage-summary': 'treatment'
+        }
+      )
+    })
+
     it('captures link dedup drop events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -1142,6 +1160,26 @@ describe('PostHogTelemetryProvider', () => {
             step: 2
           }),
         properties: { reason: 'target_missing', step: 2 }
+      },
+      {
+        event: TelemetryEvents.AGENT_SEND_GATED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentSendGated({
+            gate: 'consent',
+            outcome: 'dropped',
+            reason: 'dismissed',
+            client_message_id: 'client-message-1',
+            held_ms: 1200,
+            thread_id: null
+          }),
+        properties: {
+          gate: 'consent',
+          outcome: 'dropped',
+          reason: 'dismissed',
+          client_message_id: 'client-message-1',
+          held_ms: 1200,
+          thread_id: null
+        }
       }
     ])(
       'captures $event with its properties',

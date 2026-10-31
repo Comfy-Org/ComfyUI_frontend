@@ -762,6 +762,81 @@ export interface AgentConsentOfferExitedMetadata extends Record<
 export type AgentOnboardingNotShownMetadata =
   | { reason: 'app_mode' | 'tour_active' | 'dialog_open' }
   | { reason: 'target_missing'; step: number }
+export type AgentSendGate = 'composer' | 'consent' | 'coach'
+export type AgentComposerDropReason =
+  | 'cannot_submit'
+  | 'submission_pending'
+  | 'no_target'
+  | 'empty'
+  | 'attachment_uploading'
+/** `not_completed`: the consent flow ended without accept, decline or dismiss. */
+export type AgentConsentDropReason =
+  | 'declined'
+  | 'dismissed'
+  | 'not_completed'
+  | 'panel_closed'
+export type AgentCoachReleaseReason =
+  | 'finished'
+  | 'skipped'
+  | 'elsewhere'
+  | 'stalled'
+  | 'deferred_app_mode'
+  | 'deferred_tour_active'
+  | 'deferred_dialog_open'
+export type AgentCoachDropReason =
+  | 'panel_closed'
+  | 'consent_cleared'
+  | 'identity_changed'
+type AgentSendGateOutcome =
+  | {
+      gate: 'composer'
+      outcome: 'dropped'
+      reason: AgentComposerDropReason
+      client_message_id: null
+      held_ms: null
+    }
+  | {
+      gate: 'consent' | 'coach'
+      outcome: 'held'
+      reason: null
+      client_message_id: string
+      held_ms: null
+    }
+  | {
+      gate: 'consent'
+      outcome: 'released'
+      reason: 'accepted'
+      client_message_id: string
+      held_ms: number
+    }
+  | {
+      gate: 'consent'
+      outcome: 'dropped'
+      reason: AgentConsentDropReason
+      client_message_id: string
+      held_ms: number
+    }
+  | {
+      gate: 'coach'
+      outcome: 'released'
+      reason: AgentCoachReleaseReason
+      client_message_id: string
+      held_ms: number
+    }
+  | {
+      gate: 'coach'
+      outcome: 'dropped'
+      reason: AgentCoachDropReason
+      client_message_id: string
+      held_ms: number
+    }
+/**
+ * A first-send gate outcome, joinable to `app:agent_message_sent` by
+ * `client_message_id`.
+ */
+export type AgentSendGatedMetadata = AgentSendGateOutcome & {
+  thread_id: string | null
+}
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
@@ -897,6 +972,14 @@ export type AgentFreeUseVariant = 'control' | AgentFreeUsePlacement
 export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
   placement: AgentFreeUseVariant
   '$feature/agent-free-use-message-placement': AgentFreeUseVariant
+}
+export type AgentCreditUsageVariant = 'control' | 'treatment'
+export interface AgentCreditUsageExposureMetadata extends Record<
+  string,
+  unknown
+> {
+  variant: AgentCreditUsageVariant
+  '$feature/agent-credit-usage-summary': AgentCreditUsageVariant
 }
 /**
  * Interactions with the notice itself. This event adds what the existing
@@ -1580,6 +1663,9 @@ export interface TelemetryProvider {
   ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
+  trackAgentCreditUsageExposure?(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(
     metadata: AgentAttachButtonClickedMetadata
@@ -1598,6 +1684,7 @@ export interface TelemetryProvider {
   trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
   trackAgentConsentOfferExited?(metadata: AgentConsentOfferExitedMetadata): void
   trackAgentOnboardingNotShown?(metadata: AgentOnboardingNotShownMetadata): void
+  trackAgentSendGated?(metadata: AgentSendGatedMetadata): void
 
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
@@ -1769,6 +1856,7 @@ export const TelemetryEvents = {
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
+  AGENT_CREDIT_USAGE_EXPOSURE: 'app:agent_credit_usage_exposure',
   AGENT_CREDIT_TRANSITION_NOTICE: 'app:agent_credit_transition_notice',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
@@ -1784,6 +1872,7 @@ export const TelemetryEvents = {
   AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
   AGENT_CONSENT_OFFER_EXITED: 'app:agent_consent_offer_exited',
   AGENT_ONBOARDING_NOT_SHOWN: 'app:agent_onboarding_not_shown',
+  AGENT_SEND_GATED: 'app:agent_send_gated',
 
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',

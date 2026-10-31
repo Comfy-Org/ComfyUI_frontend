@@ -45,6 +45,7 @@ while [ $# -gt 0 ]; do
     *) endpoint="$1"; shift ;;
   esac
 done
+[ -z "\${FAKE_CALLS:-}" ] || echo "$method $endpoint" >> "$FAKE_CALLS"
 case "$method $endpoint" in
   POST\\ *)
     [ -z "\${FAKE_LOCKED:-}" ] || { echo 'Issue is locked' >&2; exit 1; }
@@ -81,6 +82,8 @@ function createPr({
   const directory = mkdtempSync(join(tmpdir(), 'backport-missing-trigger-'))
   onTestFinished(() => rmSync(directory, { recursive: true, force: true }))
   const comments = join(directory, 'comments')
+  const calls = join(directory, 'calls')
+  writeFileSync(calls, '')
   writeFileSync(join(directory, 'gh'), fakeGh)
   chmodSync(join(directory, 'gh'), 0o755)
   writeFileSync(
@@ -119,6 +122,7 @@ function createPr({
         env: {
           ...process.env,
           FAKE_BACKPORTS: join(directory, 'backports'),
+          FAKE_CALLS: calls,
           FAKE_COMMENTS: comments,
           FAKE_LABELS: join(directory, 'labels.json'),
           FAKE_LOCKED: locked ? '1' : '',
@@ -127,6 +131,7 @@ function createPr({
           PR_NUMBER: '21241'
         }
       }),
+    apiCalls: () => readFileSync(calls, 'utf8').split('\n').filter(Boolean),
     postedComments: botComments,
     setLabels: (next: string[]) =>
       writeFileSync(
@@ -243,6 +248,17 @@ describe('backport warning for release labels without needs-backport', () => {
 
     expect(result.status).toBe(0)
     expect(pr.postedComments()).toHaveLength(0)
+  })
+
+  it('reads only the labels when no label names a release, so unlabeled merges spend one API call', () => {
+    const pr = createPr({ labels: ['bug', 'risk:medium', 'core/1.57-rc'] })
+
+    const result = pr.runWarning()
+
+    expect(result.status).toBe(0)
+    expect(pr.apiCalls()).toEqual([
+      'GET repos/Comfy-Org/ComfyUI_frontend/issues/21241/labels'
+    ])
   })
 
   it('still warns when someone other than the workflow posted the marker', () => {

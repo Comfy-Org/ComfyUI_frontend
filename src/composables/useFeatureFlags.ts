@@ -245,6 +245,14 @@ export function useFeatureFlags() {
         false
       )
     },
+    /** The model folders an uploaded model file may go into; empty when uploads are off. */
+    get modelUploadFolders(): readonly string[] {
+      return resolveFlag<readonly string[]>(
+        ServerFeatureFlag.MODEL_UPLOAD_FOLDERS,
+        remoteConfig.value.model_upload_folders,
+        []
+      )
+    },
     get lateCustomNodesEnabled() {
       return resolveFlag(
         ServerFeatureFlag.LATE_CUSTOM_NODES_ENABLED,
@@ -340,14 +348,6 @@ export function useFeatureFlags() {
         remoteConfig.value.unified_billing_settings
       )
     },
-    get autoTopUpEnabled() {
-      if (!isCloud) return false
-
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.AUTO_TOP_UP_ENABLED,
-        remoteConfig.value.auto_top_up_enabled
-      )
-    },
     get v1PaymentRecovery() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.V1_PAYMENT_RECOVERY,
@@ -430,7 +430,6 @@ export function startFeatureFlagTelemetry() {
         flags.billingSdkSubscriptionEnabled,
       [ServerFeatureFlag.UNIFIED_BILLING_SETTINGS]:
         flags.unifiedBillingSettingsEnabled,
-      [ServerFeatureFlag.AUTO_TOP_UP_ENABLED]: flags.autoTopUpEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
