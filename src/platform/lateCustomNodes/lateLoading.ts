@@ -2,6 +2,7 @@ import { until, useEventListener } from '@vueuse/core'
 import { delay } from 'es-toolkit'
 import { effectScope, ref } from 'vue'
 
+import { combineAbortSignals } from '@/utils/abortSignal'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useUserBusy } from '@/platform/customNodes/useUserBusy'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -387,7 +388,7 @@ function startLateRun(
   const watching = new AbortController()
   const server = watchCpuServer(
     firstReading,
-    AbortSignal.any([run.signal, watching.signal])
+    combineAbortSignals([run.signal, watching.signal])
   )
   useExtensionStore().holdNewExtensions()
   void turnOnLateExtensions(
