@@ -1978,18 +1978,21 @@ function onCopyMarkdown(id: string): void {
 
 const coachSteps = computed<CoachStep[]>(() => [
   {
+    card: 'intro',
     target: '#agent-panel-root',
     placement: 'left-center',
     title: t('agent.coachTitle'),
     body: t('agent.coachBody')
   },
   {
+    card: 'workflow',
     target: '#agent-composer',
     placement: 'left-end',
     title: t('agent.coachWorkflowTitle'),
     body: t('agent.coachWorkflowBody')
   },
   {
+    card: 'history',
     target: '#agent-chat-history',
     placement: 'left-start',
     tooltip: t('agent.showChatHistory'),
