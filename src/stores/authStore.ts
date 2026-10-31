@@ -676,6 +676,14 @@ export const useAuthStore = defineStore('auth', () => {
     return authHeader
   }
 
+  const getWorkspaceAuthTokenOrThrow = async (): Promise<string> => {
+    const token = await getWorkspaceAuthToken()
+    if (!token) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+    return token
+  }
+
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     if (!hasPersonalWorkspace.value) return null
     isFetchingBalance.value = true
@@ -1185,6 +1193,7 @@ export const useAuthStore = defineStore('auth', () => {
     getWorkspaceAuthHeaderOrThrow,
     getAuthToken,
     getWorkspaceAuthToken,
+    getWorkspaceAuthTokenOrThrow,
     notifyTokenRefreshed
   }
 })
