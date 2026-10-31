@@ -150,6 +150,20 @@ describe(deploymentBuildBrief, () => {
     )
   })
 
+  it('drops characters that do not show from names taken from the workflow', () => {
+    const hidden =
+      '\u200B\u202E\u2066\uFEFF\u{E0072}\u{E0075}\u{E006E}\uFE0F\u{E0100}\u3164\u034F'
+    const brief = deploymentBuildBrief(
+      deployment,
+      [{ packId: `pack${hidden}`, nodeTypes: [`Node${hidden}`] }],
+      [{ name: `m${hidden}.safetensors`, directory: `vae${hidden}` }]
+    )
+
+    const lines = brief.split('\n')
+    expect(lines).toContain('- Pack `pack`: `Node`')
+    expect(lines).toContain('- `m.safetensors` in `models/vae`')
+  })
+
   it('prints a model link as one URL, so words in it cannot read as instructions', () => {
     const brief = deploymentBuildBrief(
       deployment,

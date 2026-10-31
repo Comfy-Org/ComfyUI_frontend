@@ -1,3 +1,4 @@
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBrief'
 
@@ -15,6 +16,12 @@ export interface CustomDeploymentPitch {
   platformLabel: string
   brief: string
   missing?: readonly MissingItemsRow[]
+  note?: string
+}
+
+/** Platform's Deploy page at its Builds, where a custom deployment starts. */
+export function customDeploymentCreateUrl(): string {
+  return `${getComfyPlatformBaseUrl()}/profile/builds`
 }
 
 /** The pitch Run on's Create a custom deployment item shows. */
