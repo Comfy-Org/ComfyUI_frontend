@@ -363,7 +363,17 @@ beforeEach(() => {
 })
 
 describe('LiveGraphApplier', () => {
-  it('rejects a positional alias on a node without a dynamic combo', () => {
+  /**
+   * PM-2354. `TestPlainWidgets` declares no dynamic combo, and the catalog
+   * names only its first widget — so the host stores `addedAfterCatalog`'s
+   * value under the positional alias `_extra_1`, exactly as it does for a
+   * custom node or a core node whose widgets grew since the pin. These two
+   * cases previously asserted the value was DROPPED and reported as a missing
+   * widget; that was the production defect, not a safeguard. The out-of-range
+   * and malformed cases below still report, which is what keeps the assertion
+   * honest.
+   */
+  it('applies a positional alias on a node without a dynamic combo', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [
         {
@@ -386,16 +396,11 @@ describe('LiveGraphApplier', () => {
 
     expect(
       graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
-    ).toEqual([11, 20])
-    expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
-      }),
-      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
-    )
+    ).toEqual([11, 99])
+    expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('rejects an initial positional alias on a node without a dynamic combo', () => {
+  it('applies an initial positional alias on a node without a dynamic combo', () => {
     const { graph, applyCollected } = setup({
       nodes: [
         {
@@ -413,10 +418,42 @@ describe('LiveGraphApplier', () => {
 
     expect(
       graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([11, 99])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  /**
+   * The position genuinely absent from the node is still refused loudly, on a
+   * node without a dynamic combo. This is the assertion PM-2354's fix must not
+   * weaken: widening which aliases RESOLVE must not widen which are TOLERATED.
+   */
+  it('still reports a positional alias past the end of a plain node', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('_extra_7', 99)
+    })
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
     ).toEqual([11, 20])
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
+        message: "Node 1 (TestPlainWidgets) has no widget '_extra_7'"
       }),
       expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
     )

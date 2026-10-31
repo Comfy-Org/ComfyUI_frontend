@@ -579,12 +579,31 @@ function documentWidget(
   )
 }
 
-/** The live widget an overflow alias addresses, if the node has that position. */
+/**
+ * The live widget an overflow alias addresses, if the node has that position.
+ *
+ * The alias is minted positionally for ANY `widgets_values` entry past the end
+ * of the pinned catalog's `widget_order` (the shared package's
+ * `overflowWidgetName`, BE-9176). That mint is value-blind: it cannot ask
+ * whether the class declares a dynamic combo, because the catalog it decomposes
+ * against does not say. So resolution here must not ask either — the two sides
+ * have to agree on what an alias means, and the mint's rule is "the position
+ * past the order".
+ *
+ * Gating this on `supportsDynamicWidgetOverflow` made the alias unreadable on
+ * every class whose catalog entry is merely SHORTER than its live widget list —
+ * a custom node, or a core node whose widgets grew since the pin. Those values
+ * were dropped and reported as a missing widget, which is the
+ * `agent_graph_widget_missing` family on PM-2354.
+ *
+ * A position the node does not actually have still resolves to `undefined`, and
+ * `reportMissingWidget` still reports it loudly: `.at()` only answers for a
+ * position that exists, so this widens what resolves, never what is tolerated.
+ */
 function overflowWidget(
   node: LGraphNode,
   name: string
 ): IBaseWidget | undefined {
-  if (!supportsDynamicWidgetOverflow(node)) return undefined
   const overflowIndex = overflowWidgetIndex(name)
   return overflowIndex === null
     ? undefined
