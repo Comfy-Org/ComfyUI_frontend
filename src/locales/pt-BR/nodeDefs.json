@@ -6750,11 +6750,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "Aumenta a resolução de um vídeo em 1,5 a 3 vezes com super-resolução FLUX, preservando precisamente a fonte ou aprimorando criativamente seus detalhes.",
-    "display_name": "Ampliação de Vídeo Flux",
+    "display_name": "Ampliação de Vídeo Flux (Legado)",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "Redimensiona automaticamente fontes com área superior a 3840x2160 pixels para caber no limite de entrada. A proporção é preservada; vídeos menores não são alterados."
+        "tooltip": "Reduz automaticamente a resolução de fontes maiores que 2560x1440 pixels em área para se ajustarem ao limite de entrada. A proporção é preservada; vídeos menores não são alterados."
       },
       "control_after_generate": {
         "name": "controle após gerar"
@@ -6782,6 +6782,48 @@
       "video": {
         "name": "video",
         "tooltip": "Clipe de origem de 1 a 20 segundos com proporção entre 1:4 e 4:1. A saída é renderizada a 24 fps e limitada a cerca de 14,4 megapixels por quadro."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "Amplia um vídeo para 1080p, 2K ou 4K, ou de 1,5 a 3 vezes, com super-resolução FLUX, preservando a fonte com precisão ou aprimorando criativamente seus detalhes.",
+    "display_name": "Ampliação de Vídeo Flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Reduz a resolução de fontes grandes demais em vez de rejeitá-las: acima de 2560x1440 pixels em área ou acima de dois terços da resolução de destino (o fator mínimo é 1,5x). A proporção é preservada."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "'creative' restaura e cria detalhes finos, ideal para filmagens geradas, texturas e cenários. 'precise' deixa a fonte mais nítida sem alterá-la, para rostos, produtos e filmagens reais."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição opcional do clipe que orienta os detalhes aprimorados. Deixe vazio para uma ampliação neutra."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolerância de moderação; 0 é a mais restrita."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; o FLUX escolhe sua própria seed, portanto os resultados reais não são determinísticos, independentemente deste valor."
+      },
+      "target_resolution": {
+        "name": "target_resolution",
+        "tooltip": "2K, 4K e 1080p ajustam a saída dentro de 2560x1440, 3840x2160 ou 1920x1080 (invertidos para clipes em retrato). Uma fonte pequena demais para preenchê-la no máximo de 3x é ampliada em 3x e resulta menor."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Clipe de origem de 1 a 20 segundos com uma proporção entre 1:4 e 4:1. A saída é renderizada a 24 fps e limitada a cerca de 14,4 megapixels por quadro."
       }
     },
     "outputs": {
@@ -9039,7 +9081,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Edita uma imagem guiado por um prompt de texto usando a edição precisa do Ideogram 4.5: somente o que o prompt solicita é alterado, os pixels não alterados permanecem idênticos e a saída mantém o tamanho da imagem 1 (imagens acima de cerca de 4 MP são reduzidas primeiro). Aceita até 4 imagens de referência.",
+    "description": "Edita uma imagem orientada por um prompt de texto usando a edição precisa do Ideogram 4.5: somente o que o prompt solicitar será alterado, os pixels não modificados permanecerão idênticos e a saída manterá o tamanho da imagem 1 (imagens acima de ~4 MP são reduzidas primeiro). Também pode editar uma única região, definida por uma mask ou caixas delimitadoras, e retornar a imagem em tamanho completo. Aceita até 4 imagens de referência (3 com context_window_mask).",
     "display_name": "Ideogram 4.5 Edição Precisa",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9090,9 @@
       "model": {
         "name": "modelo",
         "tooltip": "Modelo a ser usado."
+      },
+      "model_context_window": {
+        "name": "context_window"
       },
       "model_prompt": {
         "name": "prompt"
@@ -15062,6 +15107,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "Define janelas de contexto para o MiniMax H3. As janelas começam nos blocos de 17 quadros do modelo para manter o vídeo e o áudio sincronizados.",
+    "display_name": "Janelas de Contexto MiniMax H3",
+    "inputs": {
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "O comprimento da janela de contexto em quadros reais. Deve ser 17*n + 5."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "A sobreposição da janela de contexto em quadros reais. Deve ser 17*n + 5."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "Define se deve aplicar a reorganização de ruído FreeNoise, que melhora a mesclagem das janelas."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "O método a ser usado para combinar as janelas de contexto."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "O modelo ao qual aplicar janelas de contexto durante a amostragem."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Define se vários condicionamentos (criados por ConditionCombine) devem ser divididos entre cada janela com base no índice da região."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O modelo com janelas de contexto aplicadas durante a amostragem."
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "Aplique um MiniMax H3 Fun ControlNet a um modelo de texto para vídeo como um patch de modelo.",
     "display_name": "Aplicar MiniMax H3 Fun ControlNet",
@@ -15137,6 +15217,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "Redimensiona o vídeo de um latente MiniMax H3 com um modelo de ampliação de latente; o áudio passa sem alterações.",
+    "display_name": "Ampliação de Latente MiniMax H3 com Modelo",
+    "inputs": {
+      "height": {
+        "name": "altura"
+      },
+      "model": {
+        "name": "model"
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18928,6 +19031,288 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialExtractNode": {
+    "description": "Extraia um material PBR com repetição contínua (imagem de textura + mapas PBR) de uma região de uma imagem de entrada, orientado por um prompt.",
+    "display_name": "Extrair material de pátina",
+    "inputs": {
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "Gera o mapa de cor base (albedo)."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "height": {
+        "name": "altura",
+        "tooltip": "Gera o mapa de altura/deslocamento."
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Imagem da qual extrair uma textura."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "Tamanho da textura de saída. Escolha 'custom' para uma largura/altura entre 512 e 2048 (um resultado em 8K vem do aumento de escala de 4x dos mapas)."
+      },
+      "metalness": {
+        "name": "metalness",
+        "tooltip": "Gera o mapa de metalness."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Gera o mapa normal."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "Etapas de remoção de ruído para geração de textura."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descreva qual textura extrair da imagem (por exemplo, \"a parede\")."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "Expanda o prompt com um LLM para obter detalhes de textura mais ricos. Desativado por padrão: a expansão reformula o prompt como uma foto e tende a desbotar o mapa de metalness."
+      },
+      "roughness": {
+        "name": "rugosidade",
+        "tooltip": "Gera o mapa de rugosidade."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para geração reproduzível."
+      },
+      "strength": {
+        "name": "intensidade",
+        "tooltip": "Quanto transformar a imagem de entrada."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "Tamanho do bloco no espaço latent (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "Passo do bloco no espaço latent."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "Direção de repetição: omnidirecional, horizontal ou vertical."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "Aumento de escala contínuo com SeedVR dos mapas PBR (a textura base não recebe aumento de escala)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "textura",
+        "tooltip": null
+      },
+      "1": {
+        "name": "basecolor",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "rugosidade",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metalicidade",
+        "tooltip": null
+      },
+      "5": {
+        "name": "altura",
+        "tooltip": null
+      },
+      "6": {
+        "name": "prompt_expandido",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "Gere um material PBR completo com repetição contínua (imagem de textura + mapas PBR) a partir de um prompt de texto, de até 8K. Opcionalmente, use uma imagem de entrada (img2img) ou uma imagem + máscara (inpaint).",
+    "display_name": "Material Patina",
+    "inputs": {
+      "basecolor": {
+        "name": "cor_base",
+        "tooltip": "Gere o mapa de cor base (albedo)."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "height": {
+        "name": "altura",
+        "tooltip": "Gere o mapa de altura/deslocamento."
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Imagem de origem opcional. Fornecida sozinha = img2img; com máscara = inpaint."
+      },
+      "image_size": {
+        "name": "tamanho_da_imagem",
+        "tooltip": "Tamanho da textura de saída. Escolha \"personalizado\" para uma largura/altura entre 512 e 2048 (um resultado em 8K vem do upscaling de 4x dos mapas)."
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Máscara opcional de inpainting (requer imagem). Branco = regenerar, preto = manter."
+      },
+      "metalness": {
+        "name": "metalicidade",
+        "tooltip": "Gere o mapa de metalicidade."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Gere o mapa normal."
+      },
+      "num_inference_steps": {
+        "name": "número_de_etapas_de_inferência",
+        "tooltip": "Etapas de remoção de ruído para a geração de textura."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descreva o material/textura a ser gerado."
+      },
+      "prompt_expansion": {
+        "name": "expansão_do_prompt",
+        "tooltip": "Expanda o prompt com um LLM para obter detalhes de textura mais ricos. Desativado por padrão: a expansão reformula o prompt como uma foto e tende a atenuar o mapa de metalicidade."
+      },
+      "roughness": {
+        "name": "rugosidade",
+        "tooltip": "Gere o mapa de rugosidade."
+      },
+      "safety_checker": {
+        "name": "verificador_de_segurança"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para geração reproduzível."
+      },
+      "strength": {
+        "name": "intensidade",
+        "tooltip": "Quanto transformar a imagem de entrada. Usado apenas quando uma imagem é fornecida."
+      },
+      "tile_size": {
+        "name": "tamanho_do_bloco",
+        "tooltip": "Tamanho do bloco no espaço latent (64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "passo_do_bloco",
+        "tooltip": "Passo do bloco no espaço latent."
+      },
+      "tiling_mode": {
+        "name": "modo_de_repetição",
+        "tooltip": "Direção de repetição: omnidirecional, horizontal ou vertical."
+      },
+      "upscale_factor": {
+        "name": "fator_de_upscale",
+        "tooltip": "Upscaling contínuo SeedVR dos mapas PBR (a textura base não passa por upscaling)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "textura",
+        "tooltip": null
+      },
+      "1": {
+        "name": "cor base",
+        "tooltip": null
+      },
+      "2": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "3": {
+        "name": "rugosidade",
+        "tooltip": null
+      },
+      "4": {
+        "name": "metalicidade",
+        "tooltip": null
+      },
+      "5": {
+        "name": "altura",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "Gere mapas de material PBR (cor base, normal, rugosidade, metalicidade, altura) a partir de uma imagem de textura.",
+    "display_name": "Mapas de material PBR Patina",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Redimensiona automaticamente uma imagem de entrada cuja dimensão mais longa exceda 2048px (o limite de entrada do modelo), preservando a proporção; imagens menores são mantidas como estão. Desative para gerar um erro em imagens grandes demais."
+      },
+      "basecolor": {
+        "name": "cor base",
+        "tooltip": "Gere o mapa de cor base (albedo)."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "height": {
+        "name": "altura",
+        "tooltip": "Gere o mapa de altura/deslocamento."
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Fotografia ou renderização de entrada da qual derivar mapas PBR."
+      },
+      "metalness": {
+        "name": "metalicidade",
+        "tooltip": "Gere o mapa de metalicidade."
+      },
+      "normal": {
+        "name": "normal",
+        "tooltip": "Gere o mapa normal."
+      },
+      "roughness": {
+        "name": "rugosidade",
+        "tooltip": "Gere o mapa de rugosidade."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para remoção de ruído reproduzível."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "cor base",
+        "tooltip": null
+      },
+      "1": {
+        "name": "normal",
+        "tooltip": null
+      },
+      "2": {
+        "name": "rugosidade",
+        "tooltip": null
+      },
+      "3": {
+        "name": "metalicidade",
+        "tooltip": null
+      },
+      "4": {
+        "name": "altura",
         "tooltip": null
       }
     }
@@ -28537,6 +28922,33 @@
       "video": {
         "name": "vídeo",
         "tooltip": "Vídeo com uma faixa de áudio de fala, com menos de 30 minutos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "Traduza a fala de um vídeo para outro idioma com o VEED. A voz de cada falante é clonada e seus lábios são sincronizados com a tradução.",
+    "display_name": "Dublagem VEED",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "standard: preço menor, áudio mono; o espanhol é latino-americano e o português é brasileiro. pro: sotaques regionais e áudio estéreo."
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_source_language": {
+        "name": "idioma_de_origem"
+      },
+      "model_target_language": {
+        "name": "idioma_de_destino"
       }
     },
     "outputs": {
