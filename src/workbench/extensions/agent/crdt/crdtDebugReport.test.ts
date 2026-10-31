@@ -499,11 +499,10 @@ describe('collectCrdtDebugReport', () => {
       ]
     })
 
-    const [calls] = toolSectionJson(report) as { startedAtMs: unknown }[][]
-    expect(calls.map(({ startedAtMs }) => startedAtMs)).toEqual([
-      1000,
-      2000,
-      null
+    expect(toolSectionJson(report)[0]).toEqual([
+      expect.objectContaining({ startedAtMs: 1000 }),
+      expect.objectContaining({ startedAtMs: 2000 }),
+      expect.objectContaining({ startedAtMs: null })
     ])
     expect(report).toContain("startedAtMs is this tab's clock")
   })
@@ -772,6 +771,9 @@ describe('collectCrdtDebugReport', () => {
     )
     expect(kept).toBeGreaterThan(0)
     expect(kept).toBeLessThan(20_000)
+    const [, thinkingJson] = [...section.matchAll(/```json\n([\s\S]*?)\n```/g)]
+    assert.exists(thinkingJson)
+    expect(thinkingJson[1].length).toBeLessThanOrEqual(10_000)
     const [, thinking] = toolSectionJson(report)
     expect(thinking).toEqual([
       {

@@ -2157,37 +2157,50 @@ describe('useAgentConversationStore', () => {
     ])
   })
 
-  it('keeps a live tool start time when recovery settles persisted parts', () => {
-    const now = vi.spyOn(Date, 'now').mockReturnValue(1_234)
-    try {
-      const store = useAgentConversationStore()
-      store.setThreadId('th')
-      store.startTurn(T1)
-      store.ingest(toolCall('t1', 'add_node', 'running'))
+  it('keeps each live tool start time when recovery reorders persisted parts', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    vi.setSystemTime(1_234)
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+    vi.setSystemTime(5_678)
+    store.ingest(toolCall('t1', 'run_workflow', 'running'))
 
-      store.settleTurn({ threadId: 'th', messageId: T1 }, [
-        {
-          type: 'tool',
-          callId: 'call-add_node',
-          name: 'add_node',
-          state: 'done',
-          ok: true
-        }
-      ])
+    store.settleTurn({ threadId: 'th', messageId: T1 }, [
+      {
+        type: 'tool',
+        callId: 'call-run_workflow',
+        name: 'run_workflow',
+        state: 'done',
+        ok: true
+      },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      }
+    ])
 
-      expect(store.messages[0].parts).toEqual([
-        {
-          type: 'tool',
-          callId: 'call-add_node',
-          name: 'add_node',
-          state: 'done',
-          ok: true,
-          startedAtMs: 1_234
-        }
-      ])
-    } finally {
-      now.mockRestore()
-    }
+    expect(store.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-run_workflow',
+        name: 'run_workflow',
+        state: 'done',
+        ok: true,
+        startedAtMs: 5_678
+      },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true,
+        startedAtMs: 1_234
+      }
+    ])
   })
 
   it('finalizes locally streaming parts when an empty successful row settles the turn', () => {

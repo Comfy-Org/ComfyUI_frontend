@@ -628,23 +628,17 @@ describe('agentEventTransport text and tool parts', () => {
   )
 
   it('stamps a tool part with the client clock of its first frame only', () => {
-    vi.useFakeTimers()
-    try {
-      const message = createAssistantMessage(T)
-      const transport = createAgentEventTransport(message, vi.fn())
+    const message = createAssistantMessage(T)
+    const transport = createAgentEventTransport(message, vi.fn())
 
-      vi.setSystemTime(1_000)
-      transport.ingest(toolCall('run', 'running', 'call-1'))
-      vi.setSystemTime(5_000)
-      transport.ingest(toolCall('run', 'success', 'call-1'))
+    vi.setSystemTime(1_000)
+    transport.ingest(toolCall('run', 'running', 'call-1'))
+    vi.setSystemTime(3_000)
+    transport.ingest(toolCall('run', 'running', 'call-1'))
+    vi.setSystemTime(5_000)
+    transport.ingest(toolCall('run', 'success', 'call-1'))
 
-      expect(toolParts(message)[0]).toMatchObject({
-        state: 'done',
-        startedAtMs: 1_000
-      })
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(toolParts(message)[0]).toMatchObject({ startedAtMs: 1_000 })
   })
 
   it('leaves the start time unset when the first frame seen is terminal', () => {
