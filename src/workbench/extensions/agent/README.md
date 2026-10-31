@@ -72,10 +72,11 @@ new scope. Desktop/Local sign-in continuation authenticates before saving.
 
 ## First-use tour
 
-After consent succeeds, the first Agent open starts a four-card tour of the
-panel, composer, graph and chat history. **Next** advances through the cards;
-**Done** on the last card, **Skip** on any card and Escape once a card is on
-screen all dismiss the tour and mark it complete.
+After consent succeeds, the first Agent open starts a three-card tour of the
+panel, composer and chat history, all inside the Agent panel. **Next** advances
+through the cards; **Done** on the last card, **Skip** on any earlier card and
+Escape once a card is on screen all dismiss the tour and mark it complete. The
+last card has no **Skip**: there is nothing left to skip.
 
 A card placed beside its target carries an arrow pointing at it; cards placed
 anywhere else never do. The arrow is also hidden when it would not actually
