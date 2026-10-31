@@ -3496,4 +3496,68 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     expect(project(doc, catalog).nodes).toEqual([])
     doc.destroy()
   })
+
+  it('applies an uncatalogued node whose hook replaced the positional array', () => {
+    useNodeDefStore().addNodeDef(nodeDef('PackPrivate', {}))
+    const graph = new LGraph()
+    const node = nodeWith('PackPrivate', (n) => {
+      n.addWidget('text', 'prompt', 'kept', () => {})
+      n.onSerialize = (data: ISerialisedNode) => {
+        data.widgets_values = ['kept', 'pack private state']
+      }
+    })
+    graph.add(node)
+    const catalog: WidgetCatalog = { types: {} }
+    const snapshot = wireNodeSnapshot(node)
+    assert.exists(snapshot)
+    expect(snapshot).toMatchObject({
+      widgets_values: { prompt: 'kept' },
+      widgets_values_form: { order: ['prompt'] }
+    })
+    const { widgets_values_form: _form, ...undeclared } = snapshot
+    const addNode = (payload: typeof snapshot): GraphOperation => ({
+      op: 'add_node',
+      node_id: node.id,
+      class_type: 'PackPrivate',
+      pos: [0, 0],
+      node: payload
+    })
+    const declaredDoc = mint({ nodes: [], links: [] }, catalog)
+    const undeclaredDoc = mint({ nodes: [], links: [] }, catalog)
+
+    expect(applyMinted(declaredDoc, [addNode(snapshot)], catalog)).toEqual([
+      'applied'
+    ])
+    expect(
+      applyOutcomes(undeclaredDoc, [addNode(undeclared)], catalog)
+    ).toEqual([
+      expect.objectContaining({
+        reason: expect.objectContaining({ code: 'uncatalogued_widget_write' })
+      })
+    ])
+    declaredDoc.destroy()
+    undeclaredDoc.destroy()
+  })
+
+  it('sends a subgraph host positionally, without reaching the form proof', () => {
+    LiteGraph.registerNodeType('TestPrompt', TestPrompt)
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const host = createTestSubgraphNode(subgraph)
+    graph.add(host)
+    const interior = LiteGraph.createNode('TestPrompt')
+    assert.exists(interior)
+    subgraph.add(interior)
+    subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
+
+    const snapshot = wireNodeSnapshot(host)
+
+    expect(host.serialize().widgets_values_named).toBeUndefined()
+    expect(snapshot?.widgets_values).toEqual(['an interior default'])
+    expect(snapshot).not.toHaveProperty('widgets_values_form')
+  })
 })
