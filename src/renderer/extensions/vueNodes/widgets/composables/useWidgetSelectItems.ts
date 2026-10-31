@@ -25,6 +25,7 @@ import type {
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
@@ -50,6 +51,15 @@ function getDisplayLabel(
 
 function assetKindToMediaType(kind: AssetKind): string {
   return kind === 'mesh' ? '3D' : kind
+}
+
+type ResolvedJobOutputs = {
+  outputCount: number
+  items: AssetItem[]
+}
+
+function groupedOutputCount(meta: OutputAssetMetadata): number {
+  return meta.outputCount ?? meta.allOutputs?.length ?? 0
 }
 
 function getMediaUrl(
@@ -134,7 +144,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     return availableBaseModels.value
   })
 
-  const resolvedByJobId = shallowRef(new Map<string, AssetItem[]>())
+  const resolvedByJobId = shallowRef(new Map<string, ResolvedJobOutputs>())
 
   watch(
     () => toValue(toValue(outputMediaAssets).items),
@@ -147,24 +157,22 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       const seenJobIds = new Set<string>()
       const jobsToResolve: Array<{
         jobId: string
-        meta: ReturnType<typeof getOutputAssetMetadata>
+        meta: OutputAssetMetadata
         createdAt?: string
+        outputCount: number
       }> = []
 
       for (const asset of assets) {
-        // Hash-keyed assets are leaf rows from the cloud `/assets` API and
-        // already carry their own URL-resolvable filename. Expanding them via
-        // resolveOutputAssetItems would synthesize sibling AssetItems without
-        // a hash and reintroduce the FE-227 hash→name fallback bug.
         if (asset.hash) continue
 
         const meta = getOutputAssetMetadata(asset.user_metadata)
         if (!meta) continue
 
-        const outputCount = meta.outputCount ?? meta.allOutputs?.length ?? 0
+        const outputCount = groupedOutputCount(meta)
+        const cached = resolvedByJobId.value.get(meta.jobId)
         if (
           outputCount <= 1 ||
-          resolvedByJobId.value.has(meta.jobId) ||
+          cached?.outputCount === outputCount ||
           seenJobIds.has(meta.jobId)
         )
           continue
@@ -173,19 +181,21 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         jobsToResolve.push({
           jobId: meta.jobId,
           meta,
-          createdAt: asset.created_at
+          createdAt: asset.created_at,
+          outputCount
         })
       }
 
       if (jobsToResolve.length === 0) return
 
       void Promise.all(
-        jobsToResolve.map(({ jobId, meta, createdAt }) =>
-          resolveOutputAssetItems(meta!, { createdAt })
-            .then((resolved) => ({ jobId, resolved }))
+        jobsToResolve.map(({ jobId, meta, createdAt, outputCount }) =>
+          resolveOutputAssetItems(meta, { createdAt })
+            .then((resolved) => ({ jobId, resolved, outputCount }))
             .catch((error) => {
               console.warn('Failed to resolve multi-output job', jobId, error)
-              return { jobId, resolved: [] as AssetItem[] }
+              const resolved: AssetItem[] = []
+              return { jobId, resolved, outputCount }
             })
         )
       ).then((results) => {
@@ -193,9 +203,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
         const next = new Map(resolvedByJobId.value)
         let changed = false
-        for (const { jobId, resolved } of results) {
+        for (const { jobId, resolved, outputCount } of results) {
           if (!resolved.length) continue
-          next.set(jobId, resolved)
+          next.set(jobId, { outputCount, items: resolved })
           changed = true
         }
         if (changed) resolvedByJobId.value = next
@@ -234,7 +244,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       (asset) => {
         const meta = getOutputAssetMetadata(asset.user_metadata)
         const resolved = meta
-          ? resolvedByJobId.value.get(meta.jobId)
+          ? resolvedByJobId.value.get(meta.jobId)?.items
           : undefined
         return resolved ?? [asset]
       }
