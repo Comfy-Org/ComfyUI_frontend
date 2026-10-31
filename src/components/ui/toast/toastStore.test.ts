@@ -63,6 +63,22 @@ describe('useToast', () => {
     expect(toast.dismiss(id)).toBe(false)
   })
 
+  it('records only an explicit close as closed by the user', () => {
+    const toast = useToast()
+    const closed = toast.info('Closed')
+    const dismissed = toast.info('Dismissed')
+    const cleared = toast.info('Cleared')
+
+    toast.close(closed)
+    toast.dismiss(dismissed)
+    toast.dismissAll()
+
+    expect(toast.takeClosedByUser(closed)).toBe(true)
+    expect(toast.takeClosedByUser(closed)).toBe(false)
+    expect(toast.takeClosedByUser(dismissed)).toBe(false)
+    expect(toast.takeClosedByUser(cleared)).toBe(false)
+  })
+
   it('dismisses every notification at once', () => {
     const toast = useToast()
     toast.info('Saved')

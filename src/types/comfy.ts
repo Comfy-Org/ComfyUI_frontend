@@ -202,7 +202,7 @@ export interface ComfyApp {
       deferWarnings?: boolean
       onNodeCreated?: (node: LGraphNode) => void
     }
-  ): Promise<void>
+  ): Promise<void | false>
   handleFileList(fileList: File[]): Promise<void>
   handleAudioFileList(fileList: File[]): Promise<void>
   handleVideoFileList(fileList: File[]): Promise<void>
@@ -213,7 +213,7 @@ export interface ComfyApp {
     apiData: ComfyApiWorkflow,
     fileName: string,
     options?: { deferWarnings?: boolean }
-  ): Promise<void>
+  ): Promise<void | false>
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]
   collectNodeMenuItems(node: LGraphNode): IContextMenuValue[]
