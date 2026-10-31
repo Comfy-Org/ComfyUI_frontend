@@ -1180,6 +1180,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function refusesTarget(
+    text: string,
+    originContext: WorkflowTurnContext | undefined,
+    wfContext: WorkflowTurnContext | undefined,
+    origin: TurnOrigin
+  ): boolean {
+    const refused =
+      workflowTargetChanged(originContext, wfContext) ||
+      lacksCanvasForRemint(wfContext, origin)
+    if (refused) recordUnavailableTarget(text)
+    return refused
+  }
+
   function postTurn(
     threadId: string,
     input: PostMessageInput,
@@ -1548,13 +1561,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
-      if (
-        workflowTargetChanged(originContext, wfContext) ||
-        lacksCanvasForRemint(wfContext, origin)
-      ) {
-        recordUnavailableTarget(text)
-        return false
-      }
+      if (refusesTarget(text, originContext, wfContext, origin)) return false
       sentContext = wfContext
       const input = buildPostInput(
         threadAtSend,
