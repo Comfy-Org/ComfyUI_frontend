@@ -217,6 +217,35 @@ describe('useOnboarding', () => {
     setOnboardingScopeOwner(null)
   })
 
+  it('queues a completion again after losing it to an owner change', async () => {
+    const { promise: storedRead, resolve: settleRead } = pendingResponse()
+    setOnboardingScopeOwner(KEY)
+    vi.spyOn(api, 'fetchApi').mockReturnValueOnce(storedRead)
+
+    useOnboarding(STEPS, KEY).finish()
+    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
+    useOnboarding(STEPS, KEY)
+
+    // The scope flickers away and back while the read is out, so both queued
+    // writes are retired without saving anything.
+    setOnboardingScopeOwner(null)
+    setOnboardingScopeOwner(KEY)
+    settleRead(new Response(JSON.stringify([])))
+    await vi.waitFor(() => expect(onboardedScopes()).toEqual([]))
+    expect(api.storeSetting).not.toHaveBeenCalled()
+
+    useOnboarding(STEPS, KEY)
+
+    await vi.waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        AGENT_ONBOARDED_SCOPES_SETTING_ID,
+        [KEY]
+      )
+    )
+
+    setOnboardingScopeOwner(null)
+  })
+
   it('honours a replay requested while no tour is mounted', async () => {
     // The take-the-tour button stays clickable while the coach is deferred by
     // App Mode, so there is no instance to take restart(). Clearing the flag

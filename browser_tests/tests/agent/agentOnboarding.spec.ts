@@ -175,9 +175,16 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
 
     await page.reload()
     await waitForCloudApp(page)
-    await expect(page.locator('#agent-panel-root')).toBeVisible()
-    await expect(
-      page.getByRole('dialog', { name: enMessages.agent.coachTitle })
-    ).toHaveCount(0)
+    // The composer only renders behind consent, the same gate as the coach,
+    // and a card shows within a frame of it. Checking before that would pass
+    // whether or not the setting was read.
+    await expect(page.locator('#agent-composer')).toBeVisible()
+    await page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        )
+    )
+    await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 })

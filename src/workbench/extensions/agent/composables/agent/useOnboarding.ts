@@ -107,12 +107,21 @@ export function setOnboardingScopeOwner(scopedKey: string | null): void {
 
 function ownedScopeChanges(): Map<string, boolean> {
   const owned = new Map<string, boolean>()
+  const retired: string[] = []
   for (const [scope, change] of pendingScopeChanges) {
-    // A change left over from another account cannot be written under this one
-    // and is dropped; its local completion flag re-queues it on a later mount.
-    if (change.generation !== scopeOwnerGeneration)
-      pendingScopeChanges.delete(scope)
-    else owned.set(scope, change.seen)
+    if (change.generation === scopeOwnerGeneration) {
+      owned.set(scope, change.seen)
+      continue
+    }
+    // A change left over from another owner cannot be written under this one.
+    // Its optimistic cache entry goes with it, or the next mount would read the
+    // scope as saved and its local completion flag would never re-queue it.
+    pendingScopeChanges.delete(scope)
+    if (change.seen) retired.push(scope)
+  }
+  if (retired.length > 0) {
+    useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID] =
+      onboardedScopes().filter((scope) => !retired.includes(scope))
   }
   return owned
 }
