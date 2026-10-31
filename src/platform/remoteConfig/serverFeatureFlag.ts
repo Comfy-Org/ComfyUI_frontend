@@ -35,7 +35,6 @@ export enum ServerFeatureFlag {
   BILLING_SDK_SUBSCRIPTION_ENABLED = 'billing_sdk_subscription_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   UNIFIED_BILLING_SETTINGS = 'unified_billing_settings',
-  AUTO_TOP_UP_ENABLED = 'auto_top_up_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',

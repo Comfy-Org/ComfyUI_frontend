@@ -34,6 +34,8 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
 
   test('dismisses without consent and persists acceptance before reopening', async ({
     comfyPage,
+    agentBilling,
+    agentPanel,
     agentConsentSave,
     agentConsentWrites
   }) => {
@@ -81,6 +83,14 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     })
 
     await test.step('Accept saves consent before opening Agent', async () => {
+      await agentBilling.waitForInitialStatusResponse()
+      const billingRequestsBeforeAccept = agentBilling.statusRequestCount
+      agentBilling.setFundingState('exhausted')
+      const billingRefresh = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'GET' &&
+          new URL(response.url()).pathname === '/api/billing/status'
+      )
       let releaseSave = () => {}
       agentConsentSave.pending = new Promise<void>((resolve) => {
         releaseSave = resolve
@@ -95,11 +105,25 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         await expect(dialog).toBeVisible()
         await expect(accept).toBeDisabled()
         await expect(panel).toHaveCount(0)
+        expect(agentBilling.statusRequestCount).toBe(
+          billingRequestsBeforeAccept
+        )
       } finally {
         releaseSave()
       }
+      await billingRefresh
+      expect(agentBilling.statusRequestCount).toBe(
+        billingRequestsBeforeAccept + 1
+      )
       await expect(dialog).toHaveCount(0)
       await expect(panel).toBeVisible()
+
+      await agentPanel.selectWorkflow()
+      await agentPanel.sendMessage('Build a workflow after accepting consent')
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        'Build a workflow after accepting consent'
+      ])
+      await expect(agentPanel.creditsExhaustedPaywall).toBeVisible()
     })
 
     await test.step('Agent button closes and reopens the panel without another consent prompt', async () => {

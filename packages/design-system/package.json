@@ -50,18 +50,22 @@
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
     "./button.variants": {
+      "@comfyorg/design-system": "./src/button.variants.ts",
       "types": "./dist-types/button.variants.d.ts",
       "default": "./src/button.variants.ts"
     },
     "./select.variants": {
+      "@comfyorg/design-system": "./src/select.variants.ts",
       "types": "./dist-types/select.variants.d.ts",
       "default": "./src/select.variants.ts"
     },
     "./tag.variants": {
+      "@comfyorg/design-system": "./src/tag.variants.ts",
       "types": "./dist-types/tag.variants.d.ts",
       "default": "./src/tag.variants.ts"
     },
     "./workspaceAvatar": {
+      "@comfyorg/design-system": "./src/workspaceAvatar.ts",
       "types": "./dist-types/workspaceAvatar.d.ts",
       "default": "./src/workspaceAvatar.ts"
     }
