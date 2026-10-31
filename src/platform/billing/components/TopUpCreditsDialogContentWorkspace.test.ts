@@ -1756,6 +1756,40 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     open.mockRestore()
   })
 
+  it('says when to verify by while the top-up serves its authentication deadline', () => {
+    setTopupActionOperation({
+      opId: 'op-deadline',
+      status: 'pending',
+      actionUrl: 'https://verify.example/token',
+      authenticationDeadline: '2026-10-30T15:40:00Z'
+    })
+
+    renderDialog()
+
+    expect(
+      screen.getByText(
+        'Your bank is waiting for you to confirm it. Verify it by October 30, 3:40 PM to finish this top-up.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the open-ended verification copy when no deadline is served', () => {
+    setTopupActionOperation({
+      opId: 'op-no-deadline',
+      status: 'pending',
+      actionUrl: 'https://verify.example/token'
+    })
+
+    renderDialog()
+
+    expect(
+      screen.getByText(
+        'Your bank requires additional verification to complete this payment.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Verify by/)).not.toBeInTheDocument()
+  })
+
   it('reopens in verification while the action URL is loading', () => {
     setIsAddingCredits(true)
     setTopupActionOperation({
