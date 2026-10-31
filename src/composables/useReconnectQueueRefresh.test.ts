@@ -212,13 +212,13 @@ describe('useReconnectQueueRefresh', () => {
       followRun('job-1')
       vi.mocked(api.getJobDetail).mockResolvedValue({
         ...makeJob('job-1', 'completed'),
-        outputs: { '15.0.0.3': child, '15': own },
+        outputs: { '17:15.0.0.3': child, '17:15': own },
         execution_meta: {
-          '15': { node_id: '15', display_node: '15' },
-          '15.0.0.3': {
-            node_id: '15.0.0.3',
-            display_node: '15',
-            parent_node: '15'
+          '17:15': { node_id: '17:15', display_node: '17:15' },
+          '17:15.0.0.3': {
+            node_id: '17:15.0.0.3',
+            display_node: '17:15',
+            parent_node: '17:15'
           }
         }
       })
@@ -229,16 +229,16 @@ describe('useReconnectQueueRefresh', () => {
         [
           'executed',
           expect.objectContaining({
-            node: '15',
-            display_node: '15',
+            node: '17:15',
+            display_node: '17:15',
             output: own
           })
         ],
         [
           'executed',
           expect.objectContaining({
-            node: '15.0.0.3',
-            display_node: '15',
+            node: '17:15.0.0.3',
+            display_node: '17:15',
             output: child
           })
         ]
@@ -251,6 +251,21 @@ describe('useReconnectQueueRefresh', () => {
         ...makeJob('job-1', 'completed'),
         outputs: { '7': { images: [image] } },
         execution_meta: { '7': { node_id: '4', display_node: '4' } }
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ node: '7', display_node: '7' })]
+      ])
+    })
+
+    it('falls back to the output key when the display node is not a node id', async () => {
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...makeJob('job-1', 'completed'),
+        outputs: { '7': { images: [image] } },
+        execution_meta: { '7': { node_id: '7', display_node: ':' } }
       })
 
       await useReconnectQueueRefresh()()

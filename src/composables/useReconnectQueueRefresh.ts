@@ -1,3 +1,4 @@
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { Semaphore, delay, partition, withTimeout } from 'es-toolkit'
 
 import { t } from '@/i18n'
@@ -43,17 +44,16 @@ function unknownExecutionError(): ExecutionError {
   }
 }
 
+function ownDisplayNode(node: string, metaEntry: unknown) {
+  const entry = zJobExecutionMetaEntry.safeParse(metaEntry)
+  if (!entry.success || !entry.data.display_node) return null
+  const { node_id: metaNode = node, display_node: displayNode } = entry.data
+  return metaNode === node ? tryNormalizeNodeExecutionId(displayNode) : null
+}
+
 /**
  * Returns the handler for the `reconnected` api event.
  */
-function ownDisplayNode(node: string, metaEntry: unknown) {
-  const entry = zJobExecutionMetaEntry.safeParse(metaEntry)
-  if (!entry.success) return undefined
-  const { node_id: metaNode = node, display_node: displayNode } = entry.data
-  // A cached output can carry the metadata of the node that first ran it.
-  return metaNode === node ? displayNode : undefined
-}
-
 export function useReconnectQueueRefresh() {
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
@@ -171,8 +171,6 @@ export function useReconnectQueueRefresh() {
       output,
       displayNode: displayNodes?.get(node) ?? node
     }))
-    // Frames on one display node replace each other. ComfyUI sends a node's
-    // own output before the nodes it expanded into, so those replay last.
     const [own, expanded] = partition(
       frames,
       ({ node, displayNode }) => node === displayNode
