@@ -9,6 +9,7 @@ export const assetService: Partial<typeof RealAssetService> = {
   getAssetsPageByTag: vi.fn(),
   getAssetsPageForNodeType: vi.fn(),
   getExportDownloadUrl: vi.fn(),
+  invalidateModelBuckets: vi.fn(),
   removeAssetTags: vi.fn(),
   updateAsset: vi.fn()
 }
