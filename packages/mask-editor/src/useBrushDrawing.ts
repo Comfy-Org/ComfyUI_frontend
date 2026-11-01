@@ -267,6 +267,7 @@ export function useBrushDrawing(initialSettings?: {
     lineStartPoint.value = coords_canvas
     initialDraw.value = true
 
+    const completedStroke = strokeProcessor
     if (strokeProcessor) {
       const finalPoints = strokeProcessor.endStroke()
       if (finalPoints.length > 0) {
@@ -277,7 +278,6 @@ export function useBrushDrawing(initialSettings?: {
           for (const p of finalPoints) drawShape(p)
         }
       }
-      strokeProcessor = null
     }
 
     const isRgb = store.activeLayer === 'rgb'
@@ -308,6 +308,8 @@ export function useBrushDrawing(initialSettings?: {
       gpu.isSavingHistory.value = false
     }
 
+    if (strokeProcessor !== completedStroke) return
+    strokeProcessor = null
     gpu.clearPreview()
 
     if (isRgb && store.rgbCanvas) {
