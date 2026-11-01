@@ -6748,6 +6748,7 @@ describe('useAgentSession (v1 composition root)', () => {
     draft: () => DraftSnapshot | undefined
     tabs?: () => OpenTabsSnapshot | undefined
     adoptIntoStore?: boolean
+    currentTabPath?: () => string
   }) {
     const postMessage = vi.fn<AgentRestClient['postMessage']>()
     options.acks.forEach((workflowId, index) =>
@@ -6759,12 +6760,13 @@ describe('useAgentSession (v1 composition root)', () => {
     )
     const bindingStore = useAgentWorkflowTabBindingStore()
     bindingStore.bind('wf-other-tab', 'workflows/other.json')
-    const tabPath = 'workflows/Unsaved Workflow.json'
+    const defaultTabPath = 'workflows/Unsaved Workflow.json'
     const session = useAgentSession({
       rest: fakeRest({ postMessage }),
       events: fakeEvents().source,
       workflow: {
         current: () => {
+          const tabPath = options.currentTabPath?.() ?? defaultTabPath
           const id = bindingStore.workflowIdFor(tabPath)
           return id === undefined ? { tabPath } : { id, tabPath }
         },
@@ -6876,16 +6878,19 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h10e2b) a tab holding only a group is not blank', async () => {
+    let currentTabPath = 'workflows/other.json'
     const draftSnapshot = {
       content: { nodes: [], links: [], groups: [{ id: 1 }] }
     }
     const { session, postMessage, bindingStore } = unboundTabSession({
       acks: ['wf-other-tab', 'wf-minted'],
       draft: () => draftSnapshot,
-      tabs: () => ({ open_tabs: [] })
+      tabs: () => ({ open_tabs: [] }),
+      currentTabPath: () => currentTabPath
     })
 
     await session.sendMessage('build a workflow')
+    currentTabPath = 'workflows/Unsaved Workflow.json'
     bindingStore.unbindWorkflow('wf-other-tab')
     await session.sendMessage('what is in the group?')
 
