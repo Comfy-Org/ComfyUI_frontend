@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import type { BillingPlansResponse } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -18,11 +19,9 @@ import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 // clicking the agent panel paywall's "Subscribe" action must always open the
 // pricing dialog (or at least report a failure), never silently no-op.
 // The unit test (useBillingDialogs.subscriptionRequired.test.ts) pins the
-// bounded /features retry when the config snapshot is still `unloaded` at click
-// time. That is a guard, not a confirmed cause of the production dead click.
+// bounded config retry; it is a guard, not a confirmed production cause.
 // This file drives the real chat panel end to end, through a real no-funds
-// turn rejection surfacing the paywall card, a real click, and the pricing
-// content the dialog renders.
+// turn rejection surfacing the paywall card, and a real click.
 
 const NO_FUNDS_ERROR = zAgentAdmissionError.parse({
   error: {
@@ -35,12 +34,27 @@ const NO_FUNDS_ERROR = zAgentAdmissionError.parse({
 
 const DIALOG_SELECTOR = '[data-dialog-key="subscription-required"]'
 
+const CREATOR_YEARLY_PLAN = createPlan({
+  slug: 'creator-annual',
+  tier: 'CREATOR',
+  duration: 'ANNUAL',
+  priceCents: 33_600,
+  monthlyCredits: 7_400
+})
+
+const CREATOR_YEARLY_SUBSCRIBE = enMessages.subscription.subscribeTo.replace(
+  '{plan}',
+  enMessages.subscription.tierNameYearly.replace(
+    '{name}',
+    enMessages.subscription.tiers.creator.name
+  )
+)
+
 /**
- * Re-mocks `/features` (the subscription gate), `/billing/capabilities`
+ * Re-mocks `/features` (the subscription gate) and `/billing/capabilities`
  * (what makes the agent paywall card render a "subscriptionRequired"
- * presentation, independent of the gate above) and `/billing/plans` (so the
- * pricing dialog has a real plan to render) and reloads so the fresh values
- * apply from a clean boot - the same "remock then reload" pattern
+ * presentation, independent of the gate above) and reloads so the fresh
+ * values apply from a clean boot - the same "remock then reload" pattern
  * `subscription.spec.ts` uses for `window.__CONFIG__`-driven surfaces.
  */
 async function reconfigureBilling(
@@ -62,21 +76,6 @@ async function reconfigureBilling(
       jsonRoute(createBillingCapabilities('ws-personal', { can_top_up: false }))
     )
   })
-  await page.route('**/api/billing/plans', (route) =>
-    route.fulfill(
-      jsonRoute({
-        plans: [
-          createPlan({
-            slug: 'creator-monthly',
-            tier: 'CREATOR',
-            duration: 'MONTHLY',
-            priceCents: 3_500,
-            monthlyCredits: 7_400
-          })
-        ]
-      })
-    )
-  )
   await page.reload()
   await waitForCloudApp(page)
 }
@@ -126,6 +125,16 @@ agentTest.describe(
   'Agent paywall Subscribe action',
   { tag: ['@cloud', '@ui'] },
   () => {
+    agentTest.beforeEach(async ({ page }) => {
+      await page.route('**/api/billing/plans', (route) =>
+        route.fulfill(
+          jsonRoute({
+            plans: [CREATOR_YEARLY_PLAN]
+          } satisfies BillingPlansResponse)
+        )
+      )
+    })
+
     agentTest(
       'opens the subscription dialog once the config gate is open',
       async ({ page, agentPanel }, testInfo) => {
@@ -144,11 +153,10 @@ agentTest.describe(
 
         const dialog = page.locator(DIALOG_SELECTOR)
         await expect(dialog).toBeVisible()
-        // An open but empty shell would still pass the check above; the
-        // pricing table must actually render the plan the user can pick.
         await expect(
-          dialog.getByText(enMessages.subscription.tiers.creator.name).first()
-        ).toBeVisible()
+          dialog.getByRole('button', { name: CREATOR_YEARLY_SUBSCRIBE }),
+          'the pricing table offers the plan served by /billing/plans'
+        ).toBeEnabled()
 
         await testInfo.attach('subscription-dialog-opened', {
           body: await page.screenshot({ animations: 'disabled' }),
