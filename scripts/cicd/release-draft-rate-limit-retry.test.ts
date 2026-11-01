@@ -48,6 +48,8 @@ const writeStub = (dir: string, name: string, body: string) => {
   chmodSync(path, 0o755)
 }
 
+const coreQuotaFilter = String.raw`.resources.core | "\(.remaining) \(.reset)"`
+
 const runWaitStep = (remaining: number, secondsUntilReset: number) => {
   const binDir = mkdtempSync(join(tmpdir(), 'release-wait-'))
   try {
@@ -58,14 +60,7 @@ const runWaitStep = (remaining: number, secondsUntilReset: number) => {
     writeStub(
       binDir,
       'gh',
-      `[[ "$1 $2 $3" == "api rate_limit --jq" ]] || exit 1\njq -r "$4" <<<'${JSON.stringify(
-        {
-          resources: {
-            core: { remaining, reset: now + secondsUntilReset },
-            search: { remaining: 0, reset: now + 3600 }
-          }
-        }
-      )}'`
+      `[[ "$1 $2 $3" == "api rate_limit --jq" && "$4" == '${coreQuotaFilter}' ]] || exit 1\necho ${remaining} ${now + secondsUntilReset}`
     )
     execFileSync('bash', ['-e', '-c', waitStep.run ?? ''], {
       env: { PATH: `${binDir}:${process.env.PATH}` }
