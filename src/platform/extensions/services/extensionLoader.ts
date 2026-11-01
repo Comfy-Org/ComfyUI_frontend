@@ -1,10 +1,10 @@
 import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
 import {
   getExtensionPath,
-  isSafeExtensionBootActive,
   loadCustomNodeScripts,
   shouldLoadCustomNodeScript
 } from '@/platform/customNodes/customNodeScripts'
+import { isSafeExtensionBootActive } from '@/platform/customNodes/safeExtensionBoot'
 import { askCpuServer } from '@/platform/customNodes/lateLoading/cpuServerStep'
 import { lateLoadingApplies } from '@/platform/customNodes/lateLoading/lateLoading'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'

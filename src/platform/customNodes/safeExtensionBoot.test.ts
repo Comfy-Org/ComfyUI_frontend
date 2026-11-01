@@ -1,19 +1,32 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-async function freshModule() {
-  vi.resetModules()
-  return import('./customNodeScripts')
-}
+import {
+  captureSafeExtensionBoot,
+  isSafeExtensionBoot,
+  isSafeExtensionBootActive
+} from './safeExtensionBoot'
 
-describe('captureSafeExtensionBoot', { timeout: 30_000 }, () => {
+describe('isSafeExtensionBoot', () => {
+  it.for([
+    { search: '?safe', expected: true },
+    { search: '?safe=1', expected: true },
+    { search: '?safe=true', expected: true },
+    { search: '?safe=0', expected: false },
+    { search: '?safe=false', expected: false },
+    { search: '', expected: false }
+  ])('reads $search as $expected', ({ search, expected }) => {
+    expect(isSafeExtensionBoot(search)).toBe(expected)
+  })
+})
+
+describe('captureSafeExtensionBoot', () => {
   beforeEach(() => {
     window.history.replaceState(null, '', '/')
+    captureSafeExtensionBoot()
   })
 
-  it('keeps safe mode for this load and drops the flag from the URL', async () => {
+  it('keeps safe mode for this load and drops the flag from the URL', () => {
     window.history.replaceState({ kept: true }, '', '/?safe&workflow=a#graph')
-    const { captureSafeExtensionBoot, isSafeExtensionBootActive } =
-      await freshModule()
 
     captureSafeExtensionBoot()
 
@@ -23,10 +36,8 @@ describe('captureSafeExtensionBoot', { timeout: 30_000 }, () => {
     expect(isSafeExtensionBootActive()).toBe(true)
   })
 
-  it('leaves a URL without the flag untouched', async () => {
+  it('leaves a URL without the flag untouched', () => {
     window.history.replaceState(null, '', '/?safe=0&workflow=a')
-    const { captureSafeExtensionBoot, isSafeExtensionBootActive } =
-      await freshModule()
 
     captureSafeExtensionBoot()
 
@@ -34,10 +45,9 @@ describe('captureSafeExtensionBoot', { timeout: 30_000 }, () => {
     expect(isSafeExtensionBootActive()).toBe(false)
   })
 
-  it('reads the flag from the URL when nothing captured it first', async () => {
+  it('ignores a flag that reaches the URL after startup', () => {
     window.history.replaceState(null, '', '/?safe=1')
-    const { isSafeExtensionBootActive } = await freshModule()
 
-    expect(isSafeExtensionBootActive()).toBe(true)
+    expect(isSafeExtensionBootActive()).toBe(false)
   })
 })
