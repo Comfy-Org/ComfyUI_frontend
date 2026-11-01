@@ -194,6 +194,12 @@ export class ContextMenu {
       .click()
   }
 
+  litegraphMenuContaining(name: string): Locator {
+    return this.litegraphContextMenu.filter({
+      has: this.page.getByRole('menuitem', { name, exact: true })
+    })
+  }
+
   async isVisible(): Promise<boolean> {
     return await this.anyMenu.isVisible()
   }

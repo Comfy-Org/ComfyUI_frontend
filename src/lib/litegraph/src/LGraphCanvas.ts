@@ -6,6 +6,7 @@ import type {
   Subgraph
 } from '@comfyorg/graph-model/entityRegistry'
 import { default as DOMPurify } from 'dompurify'
+import { partition } from 'es-toolkit'
 import { cloneDeep, toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 import { provideCanvasClass } from './canvas/canvasClassAccess'
@@ -1564,7 +1565,26 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { graph } = canvas
     if (!graph) return
 
-    inner_onMenuAdded('', prev_menu)
+    const filter = canvas.filter || graph.filter
+    const listedTypes = Object.values(LiteGraph.registered_node_types).filter(
+      (type) => type.filter == filter && !type.skip_list
+    )
+    const [coreTypes, customTypes] = partition(
+      listedTypes,
+      (type) => !!type.nodeData?.isCoreNode
+    )
+    const coreEntries = buildEntries('', coreTypes)
+    const customEntries = buildEntries('', customTypes)
+    const entries =
+      coreEntries.length && customEntries.length
+        ? [...coreEntries, null, ...customEntries]
+        : [...coreEntries, ...customEntries]
+
+    new LiteGraph.ContextMenu(entries, {
+      event: e,
+      parentMenu: prev_menu,
+      autoopen: true
+    })
     return false
 
     type AddNodeMenu = Omit<IContextMenuValue<string>, 'callback'> & {
@@ -1576,65 +1596,46 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ) => void
     }
 
-    function inner_onMenuAdded(
+    function buildEntries(
       base_category: string,
-      prev_menu?: ContextMenu<string>
-    ): void {
-      if (!graph) return
-
-      const categories = LiteGraph.getNodeTypesCategories(
-        canvas.filter || graph.filter
-      ).filter((category) => category.startsWith(base_category))
+      types: (typeof LGraphNode)[]
+    ): AddNodeMenu[] {
       const categoryEntries: AddNodeMenu[] = []
 
-      for (const category of categories) {
-        if (!category) continue
+      for (const type of types) {
+        if (!type.category?.startsWith(base_category)) continue
 
-        const base_category_regex = new RegExp(`^(${base_category})`)
-        const category_name = category
-          .replace(base_category_regex, '')
+        const category_name = type.category
+          .slice(base_category.length)
           .split('/', 1)[0]
-        const category_path =
-          base_category === ''
-            ? `${category_name}/`
-            : `${base_category}${category_name}/`
+        if (!category_name) continue
 
-        let name = category_name
-        // in case it has a namespace like "shader::math/rand" it hides the namespace
-        if (name.includes('::')) name = name.split('::', 2)[1]
+        const category_path = `${base_category}${category_name}/`
+        if (categoryEntries.some((entry) => entry.value === category_path))
+          continue
 
-        const index = categoryEntries.findIndex(
-          (entry) => entry.value === category_path
-        )
-        if (index === -1) {
-          categoryEntries.push({
-            value: category_path,
-            content: name,
-            has_submenu: true,
-            callback: function (value, _event, _mouseEvent, contextMenu) {
-              inner_onMenuAdded(value.value, contextMenu)
-            }
-          })
-        }
+        categoryEntries.push({
+          value: category_path,
+          content: category_name.includes('::')
+            ? category_name.split('::', 2)[1]
+            : category_name,
+          has_submenu: true,
+          callback: function (value, _event, mouseEvent, contextMenu) {
+            new LiteGraph.ContextMenu(buildEntries(value.value, types), {
+              event: mouseEvent,
+              parentMenu: contextMenu,
+              autoopen: true
+            })
+          }
+        })
       }
 
-      const compareByContent = (a: AddNodeMenu, b: AddNodeMenu) =>
-        (a.content ?? '').localeCompare(b.content ?? '', undefined, {
-          numeric: true,
-          sensitivity: 'base'
-        })
-      categoryEntries.sort(compareByContent)
-
-      const nodes = LiteGraph.getNodeTypesInCategory(
-        base_category.slice(0, -1),
-        canvas.filter || graph.filter
-      )
-
-      const nodeEntries: AddNodeMenu[] = []
-      for (const node of nodes) {
-        if (node.skip_list) continue
-
-        const entry: AddNodeMenu = {
+      const category = base_category.slice(0, -1)
+      const nodeEntries: AddNodeMenu[] = types
+        .filter((type) =>
+          category === '' ? type.category == null : type.category === category
+        )
+        .map((node) => ({
           value: node.type,
           content: node.title,
           has_submenu: false,
@@ -1658,16 +1659,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             callback?.(node)
             canvas.graph.afterChange()
           }
-        }
+        }))
 
-        nodeEntries.push(entry)
-      }
-
-      nodeEntries.sort(compareByContent)
-
-      const entries: AddNodeMenu[] = [...categoryEntries, ...nodeEntries]
-
-      new LiteGraph.ContextMenu(entries, { event: e, parentMenu: prev_menu })
+      const compareByContent = (a: AddNodeMenu, b: AddNodeMenu) =>
+        (a.content ?? '').localeCompare(b.content ?? '', undefined, {
+          numeric: true,
+          sensitivity: 'base'
+        })
+      return [
+        ...categoryEntries.sort(compareByContent),
+        ...nodeEntries.sort(compareByContent)
+      ]
     }
   }
 
