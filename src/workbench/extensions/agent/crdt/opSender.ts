@@ -99,9 +99,10 @@ export interface OpSenderDeps {
    * 'unconfirmed' means the transport carried it at least once but its doc
    * was unbound before any result arrived, so the host may or may not have
    * applied it; 'undeliverable' means the transport never carried it within
-   * the retry budget or no doc was bound.
+   * the retry budget or no doc was bound. `workflowId` is the batch's
+   * admission-time target, null when no doc was bound.
    */
-  onBatchSettled(outcome: BatchOutcome): void
+  onBatchSettled(outcome: BatchOutcome, workflowId: string | null): void
 }
 
 export type BatchOutcome =
@@ -304,7 +305,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           { shouldReport: mayReportLostEdit() }
         )
       try {
-        deps.onBatchSettled(outcome)
+        deps.onBatchSettled(outcome, workflowId)
       } catch (cause) {
         if (reportedFailure || !mayReportSettlementFailure()) return
         reportedFailure = true

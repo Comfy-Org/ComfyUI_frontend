@@ -29,6 +29,7 @@ import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
+import { hasUnsyncedHumanOps } from './unsyncedHumanOps'
 
 const bridgeState = (() => {
   const liveSubscriptions = new Map<object, Set<string>>()
@@ -3106,6 +3107,23 @@ describe('useAgentCrdtFollower', () => {
 
     expect(clientState.sendOps).toHaveBeenCalledOnce()
     unmount()
+  })
+
+  it('marks the workflow unsynced when counter exhaustion refuses an edit during admission', async () => {
+    const workflowId = 'wf-counter-exhausted'
+    const { enqueue, unmount } = mountFollower(workflowId)
+    bridge().subscribedWorkflowId = workflowId
+    bridge().lastSequence = Number.MAX_SAFE_INTEGER
+
+    enqueue([
+      { op: 'set_widget', node_id: '1', widget: 'cfg', value: 4.5 },
+      { op: 'set_widget', node_id: '2', widget: 'cfg', value: 5.5 }
+    ])
+    await Promise.resolve()
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+    unmount()
+    expect(hasUnsyncedHumanOps(workflowId)).toBe(true)
   })
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {

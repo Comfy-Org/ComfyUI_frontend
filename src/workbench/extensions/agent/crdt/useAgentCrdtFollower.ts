@@ -546,25 +546,22 @@ function startAgentCrdtFollower(
       ])
   }
 
-  const workflowByUnsettledOpId = new Map<string, string>()
   const workflowsWithLostOps = new Set<string>()
   const recordUnsynced = (): void => {
     const unsynced = new Set(workflowsWithLostOps)
-    for (const { workflowId, ops } of sender.pendingOps()) {
-      unsynced.add(workflowId)
-      for (const op of ops) workflowByUnsettledOpId.set(op.op_id, workflowId)
-    }
+    for (const { workflowId } of sender.pendingOps()) unsynced.add(workflowId)
     recordUnsyncedHumanOps(tabId, unsynced)
   }
-  const noteSettledHumanOps = (outcome: BatchOutcome): void => {
-    const workflowId = workflowByUnsettledOpId.get(outcome.ops[0]?.op_id ?? '')
-    for (const op of outcome.ops) workflowByUnsettledOpId.delete(op.op_id)
-    if (workflowId !== undefined && outcome.state !== 'acknowledged')
+  const noteSettledHumanOps = (
+    outcome: BatchOutcome,
+    workflowId: string | null
+  ): void => {
+    if (workflowId !== null && outcome.state !== 'acknowledged')
       workflowsWithLostOps.add(workflowId)
     recordUnsynced()
   }
 
-  const settleHumanOps = (outcome: BatchOutcome) => {
+  const settleHumanOps = (outcome: BatchOutcome, workflowId: string | null) => {
     if (outcome.state === 'acknowledged') {
       trackAcknowledgedDeletes(outcome)
       recordDevEvent('human_ops_settled', outcome)
@@ -572,7 +569,7 @@ function startAgentCrdtFollower(
     projection.settleLocalWrites(outcome.ops)
     if (outcome.state === 'acknowledged' && !outcome.result.ok)
       revertRejectedOps(outcome)
-    noteSettledHumanOps(outcome)
+    noteSettledHumanOps(outcome, workflowId)
   }
 
   let counterReadFailureReported = false
