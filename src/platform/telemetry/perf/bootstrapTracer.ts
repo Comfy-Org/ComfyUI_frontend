@@ -127,7 +127,6 @@ function untracedMs(rows: BootstrapPhaseTiming[], totalMs: number): number {
   return totalMs - tracedMs
 }
 
-// Chromium throttles hidden tabs, so a slow start may have had no one waiting.
 class HiddenTimeMeter {
   private _hiddenMs = 0
   private _hiddenSince: number | undefined

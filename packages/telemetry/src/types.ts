@@ -160,10 +160,7 @@ export interface BootstrapCompleteMetadata {
   phase_count: number
   /** Wall-clock ms not covered by any recorded phase. */
   untraced_ms: number
-  /**
-   * Wall-clock ms the tab was hidden during startup. Chromium throttles
-   * hidden tabs, so a large share means no one was waiting for most of it.
-   */
+  /** Wall-clock ms the tab was hidden during startup. */
   hidden_ms: number
   /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
