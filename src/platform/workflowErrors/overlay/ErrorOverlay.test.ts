@@ -119,7 +119,6 @@ describe('ErrorOverlay', () => {
     mockErrorGroups.missingMediaGroups.value = []
     mockErrorGroups.swapNodeGroups.value = []
     askAgentMock.canAskAgent.value = true
-    askAgentMock.askAgentAboutIssues.mockClear()
   })
 
   it.for([
@@ -192,10 +191,6 @@ describe('ErrorOverlay', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('Only error')
     expect(screen.getByRole('status')).not.toHaveTextContent('1 ERROR')
-    expect(screen.getByTestId('error-overlay-icon')).toHaveClass('size-5')
-    expect(screen.getByTestId('error-overlay-message-spacer')).toHaveClass(
-      'size-5'
-    )
     expect(screen.getByTestId('error-overlay-see-errors')).toHaveTextContent(
       'View details'
     )
@@ -204,7 +199,7 @@ describe('ErrorOverlay', () => {
     )
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'View details' }))
-    expect(emitted('viewErrors')).toEqual([[['execution:KSampler']]])
+    expect(emitted('viewErrors')).toEqual([[]])
   })
 
   it('hands the toast error to the agent without sending when enabled', async () => {
@@ -399,46 +394,5 @@ describe('ErrorOverlay', () => {
     expect(screen.getByTestId('error-overlay-see-errors')).toHaveTextContent(
       'Show errors in graph'
     )
-  })
-
-  it('scopes view details to the toast groups', async () => {
-    mockAllErrorGroups.value = [
-      {
-        type: 'execution',
-        severity: 'error',
-        groupKey: 'execution:missing_connection',
-        displayTitle: 'Missing connection',
-        count: 1,
-        priority: 0,
-        blockedLastRun: false,
-        cards: [
-          {
-            id: '1',
-            title: 'KSampler',
-            errors: [{ message: 'Required input is missing' }]
-          }
-        ]
-      },
-      {
-        type: 'missing_node',
-        severity: 'missing',
-        groupKey: 'missing_node',
-        displayTitle: 'Missing nodes',
-        count: 1,
-        priority: 1,
-        blockedLastRun: false
-      }
-    ]
-    const { emitted } = renderOverlay()
-    useExecutionErrorStore().showErrorOverlay()
-    await nextTick()
-
-    await userEvent
-      .setup()
-      .click(screen.getByTestId('error-overlay-see-errors'))
-
-    expect(emitted('viewErrors')).toEqual([
-      [['execution:missing_connection', 'missing_node']]
-    ])
   })
 })

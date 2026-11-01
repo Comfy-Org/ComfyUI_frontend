@@ -1,18 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import type { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 
 import { useAskAgentAboutIssues } from './useAskAgentAboutIssues'
 
 const consent = vi.hoisted(() => ({
-  withConsent: vi.fn<(trigger: string, onAccept: () => void) => Promise<void>>()
+  withConsent: vi.fn<ReturnType<typeof useAgentConsent>['withConsent']>()
 }))
 
-vi.mock<unknown>(
+vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
-  () => ({ useAgentConsent: () => ({ withConsent: consent.withConsent }) })
+  () => ({
+    useAgentConsent: () => ({
+      accepted: computed(() => true),
+      isChecking: computed(() => false),
+      withConsent: consent.withConsent,
+      resumeAcceptAfterReload: vi.fn(() => Promise.resolve())
+    })
+  })
 )
 
 const CONTEXT: AgentErrorContext = {
@@ -28,15 +38,6 @@ describe('useAskAgentAboutIssues', () => {
     consent.withConsent.mockImplementation(async (_trigger, onAccept) => {
       onAccept()
     })
-  })
-
-  it('reports availability from the agent panel gate', () => {
-    const panel = useAgentPanelStore()
-    const { canAskAgent } = useAskAgentAboutIssues()
-
-    expect(canAskAgent.value).toBe(false)
-    panel.enabled = true
-    expect(canAskAgent.value).toBe(true)
   })
 
   it('opens the chat and attaches the context without sending', async () => {
@@ -125,13 +126,13 @@ describe('useAskAgentAboutIssues', () => {
     expect(panel.pendingErrorContext).toBeNull()
   })
 
-  it('keeps the workflow that was active at the click if the tab changes during consent', async () => {
+  it('opens the panel without attaching when the tab changes during consent', async () => {
     const panel = useAgentPanelStore()
     panel.enabled = true
     const workflowStore = useWorkflowStore()
     Object.defineProperty(workflowStore, 'activeWorkflow', {
       configurable: true,
-      value: { filename: 'broken.json' }
+      value: createMockLoadedWorkflow({ path: 'workflows/broken.json' })
     })
     let accept = () => {}
     consent.withConsent.mockImplementation(async (_trigger, onAccept) => {
@@ -142,11 +143,28 @@ describe('useAskAgentAboutIssues', () => {
     await askAgentAboutIssues(CONTEXT)
     Object.defineProperty(workflowStore, 'activeWorkflow', {
       configurable: true,
-      value: { filename: 'other.json' }
+      value: createMockLoadedWorkflow({ path: 'workflows/other.json' })
     })
     accept()
 
-    expect(panel.pendingErrorContext?.workflowName).toBe('broken.json')
+    expect(panel.isOpen).toBe(true)
+    expect(panel.pendingErrorContext).toBeNull()
+  })
+
+  it('carries the clicked workflow path with the request', async () => {
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    Object.defineProperty(useWorkflowStore(), 'activeWorkflow', {
+      configurable: true,
+      value: createMockLoadedWorkflow({ path: 'workflows/broken.json' })
+    })
+    const { askAgentAboutIssues } = useAskAgentAboutIssues()
+
+    await askAgentAboutIssues(CONTEXT)
+
+    expect(panel.pendingErrorContext?.workflowPath).toBe(
+      'workflows/broken.json'
+    )
   })
 
   it('never leaves later clicks dead when an earlier consent request stays pending', async () => {

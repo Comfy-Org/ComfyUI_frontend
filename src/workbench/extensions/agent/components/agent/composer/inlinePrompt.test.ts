@@ -14,6 +14,8 @@ import {
   promptDocument,
   promptDocumentPosition,
   promptDraft,
+  promptInsertionPoint,
+  promptInsertionPosition,
   promptTextOffset
 } from './inlinePrompt'
 
@@ -46,6 +48,32 @@ describe('inline prompt', () => {
       expect(pastedSkillCommand(doc, position, '/portrait next')).toEqual(
         expected
       )
+    }
+  )
+
+  it.for([
+    { textOffset: 0, referenceIndex: 0, position: 0 },
+    { textOffset: 0, referenceIndex: 1, position: 1 },
+    { textOffset: 1, referenceIndex: 1, position: 2 },
+    { textOffset: 1, referenceIndex: 2, position: 3 }
+  ])(
+    'maps the caret $textOffset/$referenceIndex beside adjacent chips to position $position',
+    ({ textOffset, referenceIndex, position }) => {
+      const doc = promptDocument({
+        text: ' ',
+        references: [
+          { kind: 'workflow', id: 'a', name: 'A', textOffset: 0 },
+          { kind: 'workflow', id: 'b', name: 'B', textOffset: 1 }
+        ]
+      })
+
+      expect(promptInsertionPosition(doc, { textOffset, referenceIndex })).toBe(
+        position
+      )
+      expect(promptInsertionPoint(doc, position)).toEqual({
+        textOffset,
+        referenceIndex
+      })
     }
   )
 

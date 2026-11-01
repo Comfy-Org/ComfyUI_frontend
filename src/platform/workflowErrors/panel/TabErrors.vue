@@ -10,7 +10,6 @@
 
     <ErrorPanelSurveyCta v-if="ErrorPanelSurveyCta" />
 
-    <!-- Fixed Footer: bulk Ask agent + Help Links -->
     <div class="min-w-0 shrink-0 border-t bg-background p-4">
       <Button
         v-if="canAskAgent && issueCount > 0"

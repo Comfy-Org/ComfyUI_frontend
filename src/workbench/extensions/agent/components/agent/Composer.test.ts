@@ -4,7 +4,6 @@ import type {
   WorkflowReferenceOption
 } from '@/workbench/extensions/agent/types/workflowReference'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import {
@@ -34,15 +33,6 @@ import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
-
-vi.mock<unknown>(
-  import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
-  () => ({
-    useAgentConsent: () => ({
-      withConsent: async (_trigger: string, onAccept: () => void) => onAccept()
-    })
-  })
-)
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
@@ -235,46 +225,14 @@ describe('Composer', () => {
     render(Harness, { global: { plugins: [i18n] } })
   }
 
-  it.for([
-    {
-      entry: 'toast',
-      panel: 'closed',
-      context: { scope: 'single', label: 'SaveImage failed' }
-    },
-    {
-      entry: 'card header',
-      panel: 'closed',
-      context: { scope: 'card', label: 'Missing Inputs' }
-    },
-    {
-      entry: 'footer',
-      panel: 'closed',
-      context: { scope: 'all', label: 'All issues' }
-    },
-    {
-      entry: 'toast',
-      panel: 'open',
-      context: { scope: 'single', label: 'SaveImage failed' }
-    },
-    {
-      entry: 'card header',
-      panel: 'open',
-      context: { scope: 'card', label: 'Missing Inputs' }
-    },
-    {
-      entry: 'footer',
-      panel: 'open',
-      context: { scope: 'all', label: 'All issues' }
-    }
-  ] as const)(
-    'Ask agent from the $entry focuses the $panel composer after the chip',
-    async ({ context, panel: panelState }) => {
+  it.for(['closed', 'open'] as const)(
+    'an error attachment focuses the %s composer after the chip',
+    async (panelState) => {
       const panel = useAgentPanelStore()
-      panel.enabled = true
       if (panelState === 'open') panel.open('topbar_button')
-      const { askAgentAboutIssues } = useAskAgentAboutIssues()
       const issue: AgentErrorContext = {
-        ...context,
+        scope: 'single',
+        label: 'SaveImage failed',
         count: 1,
         severity: 'error',
         problems: [{ category: 'execution_failure', message: 'boom' }]
@@ -283,8 +241,8 @@ describe('Composer', () => {
       await nextTick()
       await userEvent.click(screen.getByRole('button', { name: 'Elsewhere' }))
 
-      await askAgentAboutIssues(issue)
-      useAgentComposerStore().setErrorContext(panel.pendingErrorContext!)
+      useAgentComposerStore().setErrorContext(issue)
+      if (panelState === 'closed') panel.open('error_context')
       await nextTick()
 
       const textbox = screen.getByRole('textbox')
@@ -296,6 +254,7 @@ describe('Composer', () => {
         kind: 'error',
         textOffset: 0
       })
+      expect(useAgentComposerStore().pendingCaret).toBeNull()
     }
   )
 

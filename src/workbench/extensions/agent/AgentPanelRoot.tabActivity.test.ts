@@ -25,6 +25,7 @@ import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
+import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
@@ -41,6 +42,7 @@ import { registerWorkflowTabActivityTracker } from './services/agent/workflowTab
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -421,6 +423,53 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     expect(useAgentPanelStore().pendingErrorContext).toBeNull()
   })
 
+  it('keeps a draft and does not attach when the chat it belongs to is for another workflow', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+    useAgentComposerStore().setText('keep this draft')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: otherTab
+    }
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'Send or clear your current message first, then ask the agent about these errors.'
+      )
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
+    expect(useAgentComposerStore().draft).toBe('keep this draft')
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('does not attach diagnostics from a workflow that is no longer active', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: runningTab
+    }
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'The workflow with these errors is no longer open, so nothing was attached.'
+      )
+    )
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
   it('starts a new chat on the errored workflow when it has none', async () => {
     const other = addBoundTab(otherTab, 'wf-other')
     respondWithChats([
@@ -784,7 +833,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
 
     emitAskUser()
     await nextTick()
-    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(true)
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
 
     agentSocket.receive('agent_ask_resolved', {
       thread_id: 'th-1',
@@ -794,14 +843,36 @@ describe('AgentPanelRoot tab activity across chats', () => {
       selected: ['allow']
     })
     await nextTick()
-    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(false)
+    expect(useBrowserTabTitleStore().prefix).toBe('')
 
     emitRunApproval()
     await nextTick()
-    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(true)
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
 
     unmount()
-    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(false)
+    expect(useBrowserTabTitleStore().prefix).toBe('')
+  })
+
+  it('re-translates the page-wide prefix when the locale changes while an answer is pending', async () => {
+    const locale = i18n.global.locale.value
+    i18n.global.mergeLocaleMessage('x-test', {
+      g: { agentInputNeededShort: 'Answer needed' }
+    })
+    try {
+      i18n.global.locale.value = 'en'
+      renderPanel()
+      await send('install the video nodes')
+
+      emitAskUser()
+      await nextTick()
+      expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+      i18n.global.locale.value = 'x-test' as typeof locale
+      await nextTick()
+      expect(useBrowserTabTitleStore().prefix).toBe('[Answer needed] ')
+    } finally {
+      i18n.global.locale.value = locale
+    }
   })
 
   it('keeps the page-wide approval flag when the asking turn has no open tab', async () => {
@@ -815,7 +886,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
     await nextTick()
 
     expect(useWorkflowTabActivityStore().awaitingApprovalPaths.size).toBe(0)
-    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(true)
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
   })
 
   it('follows the tab when it is renamed mid-turn', async () => {

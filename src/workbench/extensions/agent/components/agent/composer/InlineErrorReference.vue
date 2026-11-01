@@ -21,10 +21,17 @@ const { context, removeLabel, countLabel } = defineProps<{
 const emit = defineEmits<{ remove: [] }>()
 
 const isError = computed(() => context.severity === 'error')
+const problemList = computed(() =>
+  context.problems.map((problem) => problem.message).join('\n')
+)
 </script>
 
 <template>
-  <span data-testid="error-reference-chip" :class="inlineReferenceChipClass">
+  <span
+    data-testid="error-reference-chip"
+    :class="inlineReferenceChipClass"
+    :title="problemList"
+  >
     <i
       aria-hidden="true"
       data-testid="error-reference-icon"

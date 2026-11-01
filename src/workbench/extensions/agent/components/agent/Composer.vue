@@ -669,10 +669,12 @@ defineExpose({
               :active-descendant="activeMentionDescendant"
               :search-hint="skillSearchHint"
               :history-epoch="composer.promptEpoch.value"
+              :caret-request="composer.pendingCaret.value"
               :editable-workflow-id
               :skill-scope="skills.scope"
               @keydown="onComposerKeydown"
               @update:model-value="composer.applyEditorPrompt"
+              @caret-request-handled="composer.clearPendingCaret"
               @resolve-skill-metadata="composer.resolveSkillMetadata"
               @keyup="onComposerKeyup"
               @input="onEditorInput"

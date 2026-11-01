@@ -17,7 +17,6 @@ import type { MissingModelCandidate } from '@/platform/workflowErrors/missingMod
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -47,14 +46,7 @@ const askAgentMock = {
   askAgentAboutIssues: vi.fn<AskAgentPort['askAgentAboutIssues']>()
 }
 
-// RightSidePanel, rendered here, provides the Ask agent port, which reads the user.
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    isLoggedIn: ref(false),
-    isAuthInitialized: ref(false),
-    resolvedUserInfo: ref(null)
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/scripts/app'))
 
@@ -98,7 +90,6 @@ describe('TabErrors.vue', () => {
 
   beforeEach(() => {
     askAgentMock.canAskAgent.value = true
-    askAgentMock.askAgentAboutIssues.mockClear()
     selectedItems.value = []
     i18n = createI18n({
       legacy: false,
@@ -141,7 +132,7 @@ describe('TabErrors.vue', () => {
             collapse: 'Collapse',
             errorHelp: 'Error help',
             askAgent: 'Ask agent',
-            askAgentAbout: 'Ask the agent about {title}',
+            askAgentAbout: 'Ask agent about {title}',
             askAgentAboutAll:
               'Ask agent about {count} issue | Ask agent about all {count} issues',
             errorLog: 'Error log',
@@ -406,10 +397,7 @@ describe('TabErrors.vue', () => {
   it('inserts a card chip and an all-issues chip from the panel buttons', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
-      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        id: '10',
-        title: 'KSampler'
-      })
+      Object.assign(new LGraphNode('KSampler'), { id: toNodeId(10) })
     )
 
     const { user } = renderComponent((pinia) => {
@@ -450,10 +438,10 @@ describe('TabErrors.vue', () => {
   it('keeps the footer on every issue while search narrows the list', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        id: nodeId,
-        title: nodeId === '1' ? 'KSampler' : 'CLIPTextEncode'
-      })
+      Object.assign(
+        new LGraphNode(nodeId === '1' ? 'KSampler' : 'CLIPTextEncode'),
+        { id: toNodeId(Number(nodeId)) }
+      )
     )
 
     const { user } = renderComponent((pinia) => {
@@ -509,11 +497,7 @@ describe('TabErrors.vue', () => {
 
   it('renders runtime execution errors from WebSocket', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
-    vi.mocked(getNodeByExecutionId).mockReturnValue(
-      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        title: 'KSampler'
-      })
-    )
+    vi.mocked(getNodeByExecutionId).mockReturnValue(new LGraphNode('KSampler'))
 
     const { user } = renderComponent((pinia) => {
       useExecutionErrorStore(pinia).recordExecutionError({
@@ -539,90 +523,6 @@ describe('TabErrors.vue', () => {
     await user.click(screen.getByRole('button', { name: 'Details' }))
 
     expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
-  })
-
-  it('opens a closed runtime error log when view details is requested', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
-    vi.mocked(getNodeByExecutionId).mockReturnValue(
-      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        title: 'KSampler'
-      })
-    )
-
-    const { user } = renderComponent((pinia) => {
-      useExecutionErrorStore(pinia).recordExecutionError({
-        prompt_id: 'abc',
-        node_id: '10',
-        node_type: 'KSampler',
-        executed: [],
-        exception_message: 'Out of memory',
-        exception_type: 'RuntimeError',
-        traceback: ['Line 1', 'Line 2'],
-        timestamp: Date.now()
-      })
-    })
-
-    await user.click(screen.getByRole('button', { name: 'Details' }))
-    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
-
-    const groupKey = screen
-      .getByTestId('error-group-execution')
-      .getAttribute('data-group-key')
-    if (!groupKey) throw new Error('missing group key')
-    useRightSidePanelStore().requestErrorDetails(['execution:unrelated'])
-    await nextTick()
-    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
-
-    useRightSidePanelStore().requestErrorDetails([groupKey])
-    await nextTick()
-
-    expect(screen.getByText(/Line 1/)).toBeInTheDocument()
-    expect(useRightSidePanelStore().errorDetailsRequest).toBe(0)
-  })
-
-  it('opens closed issue details when view details is requested', async () => {
-    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
-    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
-      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        title: nodeId === '1' ? 'KSampler' : 'CLIP Text Encode'
-      })
-    )
-
-    const { user } = renderComponent((pinia) => {
-      useExecutionErrorStore(pinia).recordNodeErrors({
-        '1': nodeError(
-          [
-            validationError(
-              'required_input_missing',
-              'positive',
-              {},
-              'Required input is missing',
-              'Input: positive'
-            )
-          ],
-          'KSampler'
-        )
-      })
-    })
-
-    expect(
-      screen.queryByText('KSampler is missing a required input: positive')
-    ).not.toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Collapse' }))
-    expect(screen.queryByText('KSampler - positive')).not.toBeInTheDocument()
-
-    const groupKey = screen
-      .getByTestId('error-group-execution')
-      .getAttribute('data-group-key')
-    if (!groupKey) throw new Error('missing group key')
-    useRightSidePanelStore().requestErrorDetails([groupKey])
-    await nextTick()
-
-    expect(screen.getByText('KSampler - positive')).toBeInTheDocument()
-    expect(
-      screen.getByText('KSampler is missing a required input: positive')
-    ).toBeInTheDocument()
   })
 
   it('filters errors based on search query', async () => {

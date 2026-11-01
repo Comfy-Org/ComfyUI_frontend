@@ -1,15 +1,12 @@
 import { computed } from 'vue'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 
-/**
- * Opens the agent panel and hands it the problems; the panel moves to the
- * workflow's chat and attaches them as an editable chip. Never sends. Opening a
- * closed panel asks for consent the same way the Agent button does.
- */
 export function useAskAgentAboutIssues() {
   const panelStore = useAgentPanelStore()
   const workflowStore = useWorkflowStore()
@@ -21,14 +18,19 @@ export function useAskAgentAboutIssues() {
     context: AgentErrorContext
   ): Promise<void> {
     if (!panelStore.enabled) return
-    const workflowName =
-      context.workflowName ?? workflowStore.activeWorkflow?.filename
+    const origin = workflowStore.activeWorkflow
+    const request: AgentErrorContext = {
+      ...context,
+      workflowName: context.workflowName ?? origin?.filename,
+      workflowPath: origin?.path
+    }
 
     const attach = (): void => {
       if (!panelStore.enabled) return
       panelStore.view = { screen: 'chat' }
       panelStore.open('error_context')
-      panelStore.pendingErrorContext = { ...context, workflowName }
+      if (workflowStore.activeWorkflow?.path !== origin?.path) return
+      panelStore.pendingErrorContext = request
     }
 
     if (panelStore.isVisible) {
@@ -37,7 +39,14 @@ export function useAskAgentAboutIssues() {
     }
 
     panelStore.suppressRestoredOpen()
-    await withConsent('button_click', attach)
+    try {
+      await withConsent('button_click', attach)
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_consent_setting_load_failure'
+      })
+    }
   }
 
   return { canAskAgent, askAgentAboutIssues }

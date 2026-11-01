@@ -104,7 +104,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     textOffset: 0,
     referenceIndex: 0
   })
-  const pendingErrorCaret = ref(false)
+  const pendingCaret = shallowRef<ComposerInsertionPoint | null>(null)
   const retiredAssets = new Set<string>()
   const thumbnailJobs = new Map<
     string,
@@ -283,23 +283,21 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       { kind: 'error', id: uuidv4(), context, textOffset: 0 },
       {
         textOffset: insertionPoint.value.textOffset,
-        referenceIndex: references.filter(
-          (item) => item.textOffset <= insertionPoint.value.textOffset
-        ).length
+        referenceIndex: prompt.value.references
+          .slice(0, insertionPoint.value.referenceIndex)
+          .filter((item) => item.kind !== 'error').length
       }
     )
     insertionPoint.value = inserted.insertion
     promptOrigin.value = 'error_context'
     starterPrompt.value = null
     resetPromptHistory()
-    pendingErrorCaret.value = true
+    pendingCaret.value = inserted.insertion
     updateDraft(inserted.prompt)
   }
 
-  function takePendingErrorCaret(): boolean {
-    if (!pendingErrorCaret.value) return false
-    pendingErrorCaret.value = false
-    return true
+  function clearPendingCaret(): void {
+    pendingCaret.value = null
   }
 
   function clearErrorContext(): void {
@@ -656,7 +654,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     errorContext,
     insertionPoint,
     submission,
-    takePendingErrorCaret,
+    pendingCaret,
+    clearPendingCaret,
     rejectedDraftUnchanged,
     markRejectedDraft,
     setText,

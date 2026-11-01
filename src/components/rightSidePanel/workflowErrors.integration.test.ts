@@ -4,8 +4,8 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, nextTick, provide } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import { defineComponent, provide } from 'vue'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -19,7 +19,6 @@ import {
 } from '@/utils/__tests__/canvasTestUtils'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -242,39 +241,6 @@ describe('ErrorGroupList selection emphasis', () => {
       callback(0)
       return 0
     })
-  })
-
-  it('opens only the group named by view details', async () => {
-    const pinia = getActivePinia()!
-    seedTwoErrorGroups(pinia)
-    const { user } = renderList(pinia)
-
-    const samplerSection = getSectionByTitle('Missing connection')
-    const loaderSection = getSectionByTitle('Validation failed')
-    await user.click(
-      within(samplerSection).getByRole('button', { name: 'Collapse' })
-    )
-    await user.click(
-      within(loaderSection).getByRole('button', { name: 'Collapse' })
-    )
-    expect(isSectionExpanded(samplerSection)).toBe(false)
-    expect(isSectionExpanded(loaderSection)).toBe(false)
-
-    const groupKey = samplerSection.getAttribute('data-group-key')
-    if (!groupKey) throw new Error('missing group key')
-    useRightSidePanelStore(pinia).requestErrorDetails([groupKey])
-    await nextTick()
-
-    expect(isSectionExpanded(samplerSection)).toBe(true)
-    expect(isSectionExpanded(loaderSection)).toBe(false)
-    expect(
-      within(samplerSection).getByText(
-        'SamplerNode is missing a required input: clip'
-      )
-    ).toBeInTheDocument()
-    expect(
-      within(loaderSection).queryByText('Something odd happened')
-    ).not.toBeInTheDocument()
   })
 
   it('expands matched groups, collapses others, and restores on deselect', async () => {

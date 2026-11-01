@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 
@@ -171,6 +173,114 @@ describe('buildGroupErrorContext', () => {
   })
 })
 
+describe('buildGroupErrorContext identity and count', () => {
+  it('keeps the execution path of a node inside a subgraph', () => {
+    const group = executionGroup()
+    if (group.type !== 'execution') throw new Error('expected execution group')
+    group.cards[0] = {
+      ...group.cards[0],
+      nodeId: createNodeExecutionId([17, 3]),
+      graphNodeId: '3'
+    }
+
+    const context = buildGroupErrorContext(group, EMPTY_CONTEXT)
+
+    expect(context.problems[0].nodeId).toBe('17:3')
+  })
+
+  it('lists a model used by two node types once, without guessing its type', () => {
+    const group = missingModelGroup()
+    group.models[0].referencingNodes = [
+      { nodeId: '4', widgetName: 'ckpt_name' },
+      { nodeId: '9', widgetName: 'ckpt_name' }
+    ]
+
+    const context = buildGroupErrorContext(missingModelErrorGroup(), {
+      ...EMPTY_CONTEXT,
+      missingModelGroups: [group]
+    })
+
+    expect(context.count).toBe(1)
+    expect(context.problems).toEqual([
+      {
+        category: 'missing_model',
+        message:
+          'Missing model "sd_xl.safetensors" in checkpoints (used by node #4 widget ckpt_name, node #9 widget ckpt_name)'
+      }
+    ])
+  })
+
+  it('counts one shared model and one media file as two problems', () => {
+    const models = missingModelGroup()
+    models.models[0].referencingNodes = [
+      { nodeId: '4', widgetName: 'ckpt_name' },
+      { nodeId: '9', widgetName: 'ckpt_name' }
+    ]
+
+    const context = buildAllErrorContext(
+      [missingModelErrorGroup(), missingMediaErrorGroup()],
+      {
+        ...EMPTY_CONTEXT,
+        missingModelGroups: [models],
+        missingMediaGroups: [missingMediaGroup()]
+      },
+      { label: 'All issues' }
+    )
+
+    expect(context.count).toBe(2)
+    expect(context.problems).toHaveLength(2)
+  })
+
+  it.for([
+    {
+      type: 'missing_node' as const,
+      suffix: ' is not installed'
+    },
+    {
+      type: 'swap_nodes' as const,
+      suffix: ' (a replacement is available)'
+    }
+  ])('reads both $type payload shapes', ({ type, suffix }) => {
+    const nodeTypes = ['UnknownLoader', { type: 'UnknownSampler', nodeId: 12 }]
+    const group: ErrorGroup = {
+      type,
+      severity: 'missing',
+      groupKey: type,
+      displayTitle: 'Missing nodes',
+      count: 2,
+      priority: 0,
+      blockedLastRun: false
+    }
+
+    const context = buildGroupErrorContext(group, {
+      ...EMPTY_CONTEXT,
+      missingPackGroups:
+        type === 'missing_node'
+          ? [{ packId: null, nodeTypes, isResolving: false }]
+          : [],
+      swapNodeGroups:
+        type === 'swap_nodes'
+          ? [{ type: 'UnknownSampler', newNodeId: undefined, nodeTypes }]
+          : []
+    })
+
+    expect(context.problems).toEqual([
+      {
+        category: 'missing_node',
+        message: `Missing node type "UnknownLoader"${suffix}`,
+        nodeId: undefined,
+        nodeType: 'UnknownLoader'
+      },
+      {
+        category: 'missing_node',
+        message: `Missing node type "UnknownSampler"${suffix}`,
+        nodeId: '12',
+        nodeType: 'UnknownSampler'
+      }
+    ])
+  })
+})
+
 describe('buildAllErrorContext', () => {
   it('aggregates every group, escalating severity to error when any error exists', () => {
     const context = buildAllErrorContext(
@@ -183,7 +293,24 @@ describe('buildAllErrorContext', () => {
       scope: 'all',
       count: 2,
       severity: 'error',
-      label: 'All issues'
+      label: 'All issues',
+      problems: [
+        {
+          category: 'execution_failure',
+          message: 'RuntimeError: tensor mismatch',
+          details: 'Traceback line 1\nline 2',
+          nodeId: '5',
+          nodeType: 'KSampler',
+          nodeTitle: 'Sampler'
+        },
+        {
+          category: 'missing_model',
+          message:
+            'Missing model "sd_xl.safetensors" in checkpoints (widget ckpt_name)',
+          nodeId: '4',
+          nodeType: 'CheckpointLoaderSimple'
+        }
+      ]
     })
   })
 
