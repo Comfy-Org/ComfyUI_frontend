@@ -486,6 +486,9 @@ describe('useBillingContext', () => {
       await context.fetchBalance()
 
       expect(context.type.value).toBe('unknown')
+      expect(context.subscription.value).toBeNull()
+      expect(context.balance.value).toBeNull()
+      expect(context.canAccessSubscriptionFeatures.value).toBe(false)
       expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
       expect(billingApi.getBillingBalance).not.toHaveBeenCalled()
       expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()

@@ -113,8 +113,8 @@ function useBillingContextInternal(): BillingContext {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // While routing is `unknown` the adapter holds no data, and every read or
-  // action below is guarded so it makes no call.
+  // While routing is `unknown` reads return empty values; fetches and actions
+  // below are guarded so they make no call.
   const activeContext = computed(() => getWorkspaceBilling())
 
   // Proxy state from active context
@@ -307,8 +307,8 @@ function useBillingContextInternal(): BillingContext {
     )
   }
 
-  // For actions whose caller shows no outcome: reports a timeout once, as
-  // legacy actions did on failure, and resolves false so the caller stops.
+  // For actions whose caller shows no outcome: reports a timeout once and
+  // resolves false so the caller stops.
   async function whenRoutingKnown(): Promise<boolean> {
     try {
       return await waitForRouting()
