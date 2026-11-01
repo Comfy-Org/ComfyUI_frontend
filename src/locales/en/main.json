@@ -2369,6 +2369,11 @@
       "playbackSpeed": "Playback speed",
       "animationClip": "Animation clip"
     },
+    "stats": {
+      "vertices": "Vertices",
+      "edges": "Edges",
+      "triangles": "Triangles"
+    },
     "materialModes": {
       "normal": "Normal",
       "wireframe": "Wireframe",
@@ -3043,6 +3048,10 @@
       "verifyTitle": "Verify your payment",
       "startOver": "Start over",
       "viewPricing": "View pricing details",
+      "autoTopUp": {
+        "prompt": "Running low on credits? Turn on auto top-up.",
+        "setUp": "Set up"
+      },
       "youPay": "Amount (USD)",
       "youGet": "Credits",
       "buyCredits": "Continue to payment",
@@ -5581,10 +5590,10 @@
       },
       "timeout": {
         "title": "Generation timed out",
-        "message": "This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.",
+        "message": "This workflow reached your plan's maximum run time (@:subscription.maxDuration.free on Free, @:subscription.maxDuration.pro on Pro, @:subscription.maxDuration.standard on all other plans). Try reducing image resolution, batch size, or workflow length and run again.",
         "itemLabel": "{nodeName}",
         "toastTitle": "Generation timed out",
-        "toastMessage": "This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again."
+        "toastMessage": "This workflow reached your plan's maximum run time (@:subscription.maxDuration.free on Free, @:subscription.maxDuration.pro on Pro, @:subscription.maxDuration.standard on all other plans). Try reducing image resolution, batch size, or workflow length and run again."
       },
       "generation_stalled": {
         "title": "Generation stalled",
