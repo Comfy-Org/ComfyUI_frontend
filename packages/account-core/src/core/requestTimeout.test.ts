@@ -14,7 +14,6 @@ describe('timedSignal', () => {
   })
 
   it('aborts when the timeout passes', () => {
-    vi.useFakeTimers()
     const { signal } = timedSignal(undefined, 100)
 
     vi.advanceTimersByTime(99)
@@ -47,7 +46,6 @@ describe('timedSignal', () => {
   })
 
   it('stops the timer and detaches from the caller on release', () => {
-    vi.useFakeTimers()
     const caller = new AbortController()
     const { signal, release } = timedSignal(caller.signal, 100)
 
