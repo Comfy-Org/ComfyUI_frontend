@@ -9,7 +9,9 @@ describe('toolGlyph', () => {
     ['new_tab', 'icon-[lucide--plus]'],
     ['switch_tab', 'icon-[lucide--arrow-left-right]'],
     ['remember', 'icon-[lucide--save]'],
-    ['forget', 'icon-[lucide--circle-question-mark]']
+    ['forget', 'icon-[lucide--circle-question-mark]'],
+    ['set_extension_enabled', 'icon-[lucide--toggle-left]'],
+    ['remove_extension', 'icon-[lucide--package-minus]']
   ])('gives %s its dedicated icon', ([name, icon]) => {
     expect(toolGlyph(name, 'done', { ok: true })).toBe(icon)
   })
@@ -34,16 +36,20 @@ describe('toolGlyph', () => {
 })
 
 describe('toolLabel', () => {
-  it.for(['new_tab', 'switch_tab', 'remember', 'forget'])(
-    'gives %s a key for both the running and the finished state',
-    (name) => {
-      expect(toolLabel(name, 'streaming', asKey)).toMatch(/^agent\./)
-      expect(toolLabel(name, 'done', asKey)).toMatch(/^agent\./)
-      expect(toolLabel(name, 'streaming', asKey)).not.toBe(
-        toolLabel(name, 'done', asKey)
-      )
-    }
-  )
+  it.for([
+    'new_tab',
+    'switch_tab',
+    'remember',
+    'forget',
+    'set_extension_enabled',
+    'remove_extension'
+  ])('gives %s a key for both the running and the finished state', (name) => {
+    expect(toolLabel(name, 'streaming', asKey)).toMatch(/^agent\./)
+    expect(toolLabel(name, 'done', asKey)).toMatch(/^agent\./)
+    expect(toolLabel(name, 'streaming', asKey)).not.toBe(
+      toolLabel(name, 'done', asKey)
+    )
+  })
 
   it('humanizes an unknown tool name', () => {
     expect(toolLabel('resize_image_node', 'done', asKey)).toBe(

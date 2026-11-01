@@ -75,6 +75,15 @@ export interface TabLinkPart {
   name?: string
 }
 
+/** A node pack the agent turned off, on, or removed during this turn. */
+export interface ExtensionChangePart {
+  type: 'extensionChange'
+  action: 'enabled' | 'disabled' | 'removed'
+  pack: string
+  agentCreated: boolean
+  restartRequired: boolean
+}
+
 export interface RunApprovalPart {
   type: 'runApproval'
   askId: string
@@ -388,6 +397,7 @@ export type MessagePart =
   | NoticePart
   | AskUnavailablePart
   | TabLinkPart
+  | ExtensionChangePart
   | RunApprovalPart
   | AskUserPart
   | DeleteApprovalPart

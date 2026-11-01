@@ -37,6 +37,7 @@ export type AgentChatEvent = Extract<
       | 'agent_active_tab'
       | 'agent_ask'
       | 'agent_ask_resolved'
+      | 'agent_extension_changed'
   }
 >
 type AgentNonTerminalEvent = Exclude<
@@ -47,6 +48,10 @@ type AgentNonTerminalEvent = Exclude<
 type AgentToolCallEvent = Extract<AgentChatEvent, { type: 'agent_tool_call' }>
 type AgentActiveTabEvent = Extract<AgentChatEvent, { type: 'agent_active_tab' }>
 type AgentAskEvent = Extract<AgentChatEvent, { type: 'agent_ask' }>
+type AgentExtensionChangedEvent = Extract<
+  AgentChatEvent,
+  { type: 'agent_extension_changed' }
+>
 type AgentThinkingEvent = Extract<AgentChatEvent, { type: 'agent_thinking' }>
 type AgentAskResolvedEvent = Extract<
   AgentChatEvent,
@@ -344,6 +349,21 @@ export function createAgentEventTransport(
     return true
   }
 
+  function handleExtensionChangedEvent(
+    data: AgentExtensionChangedEvent['data']
+  ): void {
+    dropThinkingDraft()
+    closeOpenText()
+    closeOpenThinking()
+    message.parts.push({
+      type: 'extensionChange',
+      action: data.action,
+      pack: data.pack,
+      agentCreated: data.agent_created,
+      restartRequired: data.restart_required
+    })
+  }
+
   function reportUnrenderedAsk(data: AgentAskEvent['data']): void {
     reportUndeliverableAsk(
       data,
@@ -526,6 +546,9 @@ export function createAgentEventTransport(
         return handleAskEvent(event.data)
       case 'agent_ask_resolved':
         return handleAskResolvedEvent(event.data)
+      case 'agent_extension_changed':
+        handleExtensionChangedEvent(event.data)
+        return true
       case 'agent_message_delta':
         handleMessageDeltaEvent(event.data)
         return true
