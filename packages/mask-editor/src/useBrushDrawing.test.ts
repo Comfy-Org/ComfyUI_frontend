@@ -38,7 +38,6 @@ vi.mock(import('./useGPUResources'), () => {
       compositeStroke,
       copyGpuToCanvas,
       gpuRender: vi.fn(),
-      gpuDrawPoint: vi.fn(),
       clearGPU: vi.fn(),
       destroy: vi.fn(),
       initGPUResources: vi.fn().mockResolvedValue(undefined),
@@ -66,12 +65,12 @@ import { useBrushDrawing } from './useBrushDrawing'
 function makePointerEvent(
   x: number,
   y: number,
-  opts: { buttons?: number; shiftKey?: boolean } = {}
+  opts: { buttons?: number; shiftKey?: boolean; pointerId?: number } = {}
 ): PointerEvent {
   return fromPartial<PointerEvent>({
     offsetX: x,
     offsetY: y,
-    pointerId: 1,
+    pointerId: opts.pointerId ?? 1,
     buttons: opts.buttons ?? 1,
     shiftKey: opts.shiftKey ?? false,
     preventDefault: vi.fn()
@@ -200,19 +199,67 @@ describe('startDrawing shift+click', () => {
 })
 
 describe('handleDrawing', () => {
-  it('updates smoothingLastDrawTime after each move event', async () => {
-    const rafSpy = vi
-      .spyOn(window, 'requestAnimationFrame')
-      .mockImplementation((cb) => {
-        cb(0)
-        return 0
-      })
+  it('ignores another pointer without changing the active stroke', async () => {
     const { startDrawing, handleDrawing } = setup()
-    await startDrawing(makePointerEvent(50, 50))
-    await handleDrawing(makePointerEvent(55, 55))
-    expect(rafSpy).toHaveBeenCalled()
-    rafSpy.mockRestore()
+    await startDrawing(makePointerEvent(40, 60, { pointerId: 11 }))
+    await handleDrawing(makePointerEvent(50, 65, { pointerId: 11 }))
+    vi.advanceTimersToNextFrame()
+    const fill = vi.mocked(mockStoreDef.maskCtx!.fill)
+    fill.mockClear()
+
+    await handleDrawing(
+      makePointerEvent(110, 85, {
+        pointerId: 22,
+        buttons: 2
+      })
+    )
+    vi.advanceTimersToNextFrame()
+
+    expect(fill).not.toHaveBeenCalled()
+    expect(mockStoreDef.maskCtx!.globalCompositeOperation).toBe('source-over')
+
+    await handleDrawing(
+      makePointerEvent(110, 85, {
+        pointerId: 11,
+        buttons: 2
+      })
+    )
+    vi.advanceTimersToNextFrame()
+
+    expect(fill).toHaveBeenCalled()
+    expect(mockStoreDef.maskCtx!.globalCompositeOperation).toBe(
+      'destination-out'
+    )
   })
+
+  it.for([11, 22])(
+    'discards queued moves when a new stroke starts with pointer %s',
+    async (pointerId) => {
+      const { startDrawing, handleDrawing, drawEnd } = setup()
+      await startDrawing(makePointerEvent(40, 60, { pointerId: 11 }))
+      await handleDrawing(
+        makePointerEvent(110, 85, {
+          pointerId: 11,
+          buttons: 2
+        })
+      )
+      await handleDrawing(
+        makePointerEvent(140, 90, {
+          pointerId: 11,
+          buttons: 2
+        })
+      )
+      await drawEnd(new PointerEvent('pointerup', { pointerId: 11 }))
+      await startDrawing(makePointerEvent(30, 25, { pointerId }))
+      const fill = vi.mocked(mockStoreDef.maskCtx!.fill)
+      fill.mockClear()
+
+      vi.advanceTimersToNextFrame()
+
+      expect(fill).not.toHaveBeenCalled()
+      expect(mockStoreDef.maskCtx!.globalCompositeOperation).toBe('source-over')
+    }
+  )
 
   it('sets DestinationOut composition when tool is eraser during move', async () => {
     mockStoreDef.currentTool = Tools.Eraser

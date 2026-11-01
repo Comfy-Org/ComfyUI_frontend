@@ -544,62 +544,6 @@ export function useGPUResources() {
     /* c8 ignore stop */
   }
 
-  async function gpuDrawPoint(point: Point, opacity = 1): Promise<void> {
-    if (!renderer) return
-
-    /* c8 ignore start — requires live renderer */
-    const width = store.maskCanvas!.width
-    const height = store.maskCanvas!.height
-    const { size, hardness } = store.brushSettings
-    const effectiveSize = getEffectiveBrushSize(size, hardness)
-    const effectiveHardness = getEffectiveHardness(
-      size,
-      hardness,
-      effectiveSize
-    )
-    const brushShape = store.brushSettings.type === BrushShape.Rect ? 1 : 0
-
-    dirtyRect.value = updateDirtyRect(
-      dirtyRect.value,
-      point.x,
-      point.y,
-      effectiveSize
-    )
-
-    renderer.renderStrokeToAccumulator(
-      [{ x: point.x, y: point.y, pressure: opacity }],
-      {
-        size: effectiveSize,
-        coverage: 1,
-        hardness: effectiveHardness,
-        color: [1, 1, 1],
-        width,
-        height,
-        brushShape
-      }
-    )
-
-    if (maskTexture && previewContext) {
-      const isRgb = store.activeLayer === 'rgb'
-      const isErasing =
-        store.currentTool === 'eraser' ||
-        store.maskCtx?.globalCompositeOperation === 'destination-out'
-      renderer.blitToCanvas(
-        previewContext,
-        {
-          opacity: store.brushSettings.opacity,
-          color: resolveColor(isRgb),
-          hardness: effectiveHardness,
-          screenSize: [width, height],
-          brushShape,
-          isErasing
-        },
-        undefined
-      )
-    }
-    /* c8 ignore stop */
-  }
-
   // ── Private helpers ─────────────────────────────────────────────────────────
 
   /* c8 ignore start — only reachable after successful GPU init */
@@ -621,7 +565,6 @@ export function useGPUResources() {
     destroy,
     // Rendering — called internally by useBrushDrawing
     gpuRender,
-    gpuDrawPoint,
     copyGpuToCanvas,
     // Renderer wrappers — called internally by useBrushDrawing
     prepareStroke,
