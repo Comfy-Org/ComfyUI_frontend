@@ -288,6 +288,16 @@ export class WorkflowHelper {
     await this.waitForWorkflowIdle()
   }
 
+  /** A saved workflow's tab, opened and confirmed unmodified with no `*` title. */
+  async expectTabOpensAsSaved(tabName: string): Promise<void> {
+    await this.switchToTab(tabName)
+    await expect
+      .poll(() => this.comfyPage.menu.topbar.getActiveTabName())
+      .toBe(tabName)
+    await expect.poll(() => this.isCurrentWorkflowModified()).toBe(false)
+    await expect.poll(() => this.comfyPage.page.title()).not.toMatch(/^\*/)
+  }
+
   /** Node ids on the live graph, read from LiteGraph rather than the DOM. */
   getGraphNodeIds(): Promise<string[]> {
     return this.comfyPage.page.evaluate(() =>

@@ -1,11 +1,17 @@
 import type { BalanceInfo } from '@/platform/billing/composables/types'
 import type { AutoReloadSettings, BillingStatus } from '@comfyorg/billing-core'
-import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
+import type { PeriodCreditGrant } from '@comfyorg/ingest-types'
+import type {
+  PlanKind,
+  PlanRowState
+} from '@/platform/billing/components/billingTab/planRow'
 
 export interface CreditsCardFacts {
   balance: BalanceInfo | null
   planKind: PlanRowState['kind']
+  servedPlanKind: PlanKind | null
   billingStatus: BillingStatus | null
+  periodCreditGrant: PeriodCreditGrant | null
   planPoolCredits: number | null
   renewalDate: string | null
   endDate: string | null
@@ -46,7 +52,11 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
   }
   const availableCents = balance.effectiveBalanceMicros ?? balance.amountMicros
 
-  if (facts.planKind === 'noPlan' || facts.planKind === 'ended') {
+  if (
+    facts.planKind === 'noPlan' ||
+    facts.planKind === 'ended' ||
+    facts.periodCreditGrant?.state === 'none'
+  ) {
     return { kind: 'noPlan', availableCents }
   }
 
@@ -57,7 +67,7 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
     kind: 'plan',
     availableCents,
     planCents: facts.billingStatus === 'paused' ? 0 : planCents,
-    planPoolCredits: facts.planPoolCredits,
+    planPoolCredits: planPoolCreditsFor(facts),
     topUpCents,
     topUpInUse: planCents === 0 && topUpCents > 0,
     showUsage: facts.billingStatus
@@ -88,6 +98,12 @@ export function addCreditsEmphasis(
     : 'secondary'
 }
 
+function planPoolCreditsFor(facts: CreditsCardFacts): number | null {
+  const grant = facts.periodCreditGrant
+  if (!grant) return facts.planPoolCredits
+  return grant.state === 'amount' ? (grant.credits ?? null) : null
+}
+
 function planDateFor(facts: CreditsCardFacts): PlanCreditsState['planDate'] {
   switch (facts.planKind) {
     case 'paused':
@@ -95,6 +111,9 @@ function planDateFor(facts: CreditsCardFacts): PlanCreditsState['planDate'] {
     case 'ending':
       return { kind: 'availableUntil', date: facts.endDate }
     default:
-      return { kind: 'refills', date: facts.renewalDate }
+      return {
+        kind: 'refills',
+        date: facts.servedPlanKind === 'self_serve' ? facts.renewalDate : null
+      }
   }
 }

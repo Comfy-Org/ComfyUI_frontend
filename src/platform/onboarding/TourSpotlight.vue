@@ -242,7 +242,7 @@ async function focusPrimary() {
 }
 
 useEventListener(
-  document,
+  window,
   'keydown',
   (e: KeyboardEvent) => {
     if (e.key !== 'Escape') return

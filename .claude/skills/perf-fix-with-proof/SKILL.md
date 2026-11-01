@@ -118,11 +118,16 @@ Implement the fix. The `@perf` test from PR1 is now on main and will run automat
 The `ci-perf-report.yaml` posts a comment like:
 
 ```markdown
-## ⚡ Performance Report
+## ⚡ Performance: ✅ No regressions detected
+
+<details>
+<summary>Details</summary>
 
 | Metric                | Baseline | PR (n=3) | Δ    | Sig |
 | --------------------- | -------- | -------- | ---- | --- |
 | <name>: style recalcs | 450      | 12       | -97% | 🟢  |
+
+</details>
 ```
 
 If Δ is negative for the target metric, the fix is proven.

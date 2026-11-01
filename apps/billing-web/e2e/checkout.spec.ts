@@ -443,22 +443,30 @@ test.describe('a checkout link that names no plan goes back to the host to choos
     )
   })
 
-  test('never to the cloud for a platform link this deployment has no platform page for', async ({
+  test("to the platform's billing page, never the cloud, for a platform link whose return_to billing may not follow", async ({
     page,
     signIn
   }) => {
     await signIn(CHECKOUT)
-    const platformLink = entryPath('checkout', {
-      product: 'platform',
-      return_to: 'nowhere'
-    })
+    await page.route(
+      'https://testplatform.comfy.org/profile/billing',
+      (route) =>
+        route.fulfill({
+          contentType: 'text/html',
+          body: '<!doctype html><title>Platform</title><h1>Platform billing</h1>'
+        })
+    )
 
-    await page.goto(platformLink)
+    await page.goto(
+      entryPath('checkout', { product: 'platform', return_to: 'nowhere' })
+    )
 
+    await expect(page).toHaveURL(
+      'https://testplatform.comfy.org/profile/billing'
+    )
     await expect(
-      page.getByText("That link doesn't name a place we can send you back to.")
+      page.getByRole('heading', { name: 'Platform billing' })
     ).toBeVisible()
-    await expect(page).toHaveURL(platformLink)
   })
 
   test('for a signed-out visitor', async ({ page }) => {

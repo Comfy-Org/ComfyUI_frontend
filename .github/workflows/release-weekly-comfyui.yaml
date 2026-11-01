@@ -338,6 +338,14 @@ jobs:
           token: ${{ secrets.PR_GH_TOKEN }}
           path: comfyui
 
+      - name: Checkout bump guard
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            scripts/cicd/comfyui-bump-guard.sh
+          sparse-checkout-cone-mode: false
+          path: frontend-scripts
+
       - name: Sync with upstream
         working-directory: comfyui
         run: |
@@ -369,11 +377,11 @@ jobs:
           echo "Updating comfyui-frontend-package to ${TARGET_VERSION}"
 
           # Update the comfyui-frontend-package version (POSIX-compatible)
-          sed -i.bak "s/comfyui-frontend-package==[0-9.][0-9.]*/comfyui-frontend-package==${TARGET_VERSION}/" requirements.txt
+          sed -i.bak "s/^comfyui-frontend-package==[^[:space:]#;]*/comfyui-frontend-package==${TARGET_VERSION}/" requirements.txt
           rm requirements.txt.bak
 
           # Verify the change was made
-          if ! grep -q "comfyui-frontend-package==${TARGET_VERSION}" requirements.txt; then
+          if ! grep -qxF "comfyui-frontend-package==${TARGET_VERSION}" requirements.txt; then
             echo "Failed to update requirements.txt"
             exit 1
           fi
@@ -411,6 +419,7 @@ jobs:
           cat pr-body.txt
 
       - name: Create PR to ComfyUI
+        id: create-pr
         working-directory: comfyui
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
@@ -433,13 +442,51 @@ jobs:
           if [[ "$COMFYUI_FORK" != "Comfy-Org/ComfyUI" ]]; then
             HEAD_BRANCH="${FORK_OWNER}:${BRANCH}"
           fi
+
+          TARGET_VERSION="${{ needs.resolve-version.outputs.target_version }}"
+          git show HEAD:requirements.txt > ../master-requirements.txt
+          PINNED_FILES=(../master-requirements.txt)
+          OPEN_PR=""
+          OPEN_HEAD=$(gh api "repos/Comfy-Org/ComfyUI/pulls?state=open&head=${FORK_OWNER}:${BRANCH}" \
+            --jq '[.[] | select(.head.repo == null or .head.repo.full_name == env.COMFYUI_FORK)][0]
+              | select(. != null) | "\(.number) \(.head.repo.full_name) \(.head.sha)"')
+          if [ -n "$OPEN_HEAD" ]; then
+            read -r OPEN_PR OPEN_REPO OPEN_SHA <<< "$OPEN_HEAD"
+            if [ "$OPEN_REPO" = "null" ]; then
+              echo "::error title=ComfyUI bump PR is orphaned::Open PR #${OPEN_PR} has no head repository (its fork was deleted). Close it, then rerun."
+              exit 1
+            fi
+            gh api "repos/${OPEN_REPO}/contents/requirements.txt?ref=${OPEN_SHA}" --jq '.content' \
+              | base64 -d > ../pending-requirements.txt
+            PINNED_FILES+=(../pending-requirements.txt)
+          fi
+          DECISION=$(../frontend-scripts/scripts/cicd/comfyui-bump-guard.sh "$TARGET_VERSION" "${PINNED_FILES[@]}")
+          if [ "$DECISION" = "skip" ]; then
+            PINS=$(grep -h '^comfyui-frontend-package==' "${PINNED_FILES[@]}" | paste -sd ' ')
+            MSG="Not replacing the ComfyUI bump: ${TARGET_VERSION} is older than a current pin (master, then open PR ${OPEN_PR:-none}: ${PINS})."
+            echo "::warning title=ComfyUI bump not replaced::${MSG}"
+            echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           git checkout -B "$BRANCH"
           git add requirements.txt
 
           if ! git diff --cached --quiet; then
             git commit -m "Bump comfyui-frontend-package to ${{ needs.resolve-version.outputs.target_version }}"
           else
-            echo "No changes to commit"
+            echo "No changes to commit: master already pins ${TARGET_VERSION}"
+            if [ -n "$OPEN_PR" ]; then
+              # Its pin is not newer (the guard checked), so merging it would downgrade or do nothing.
+              MSG="Closed ComfyUI PR #${OPEN_PR}: master already pins ${TARGET_VERSION}."
+              gh api --silent --method POST "repos/Comfy-Org/ComfyUI/issues/${OPEN_PR}/comments" \
+                -f body="Closing: master already pins comfyui-frontend-package==${TARGET_VERSION}, so this older bump is no longer needed."
+              gh api --silent --method PATCH "repos/Comfy-Org/ComfyUI/pulls/${OPEN_PR}" -f state=closed
+              echo "::notice title=Stale ComfyUI bump closed::${MSG}"
+              echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -487,6 +534,7 @@ jobs:
           fi
 
       - name: Summary
+        if: steps.create-pr.outputs.skipped != 'true'
         run: |
           echo "## ComfyUI PR Created" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

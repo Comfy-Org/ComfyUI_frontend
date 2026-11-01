@@ -2,7 +2,6 @@ const recordingsWithActiveTab = [
   'agent-l4-zimage-string-node-prompt',
   'agent-rec-add-set-delete',
   'agent-rec-asset-url-reply',
-  'agent-rec-batched-ops',
   'agent-rec-cancelled-turn',
   'agent-rec-clarifying-question',
   'agent-rec-clear-workflow',
@@ -18,6 +17,7 @@ const recordingsWithActiveTab = [
 
 const everyRecording = [
   ...recordingsWithActiveTab,
+  'agent-rec-batched-ops',
   'agent-rec-core-only-standard-node'
 ] as const
 
@@ -108,6 +108,7 @@ export const agentConversationCapabilityMatrix: readonly AgentConversationCapabi
       recordings: [
         'agent-l4-zimage-string-node-prompt',
         'agent-rec-add-set-delete',
+        'agent-rec-batched-ops',
         'agent-rec-cancelled-turn',
         'agent-rec-clarifying-question',
         'agent-rec-core-only-standard-node',

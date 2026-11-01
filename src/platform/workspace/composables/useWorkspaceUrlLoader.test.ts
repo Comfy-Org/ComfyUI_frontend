@@ -6,6 +6,7 @@ import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { captureSafeExtensionBoot } from '@/platform/customNodes/safeExtensionBoot'
 
 import { useWorkspaceUrlLoader as createWorkspaceUrlLoader } from './useWorkspaceUrlLoader'
 
@@ -87,6 +88,8 @@ describe('useWorkspaceUrlLoader', () => {
       undefined
     )
     Object.assign(useTeamWorkspaceStore(), { activeWorkspace })
+    window.history.replaceState(null, '', '/')
+    captureSafeExtensionBoot()
   })
 
   it('does nothing when no workspace param present', async () => {
@@ -145,6 +148,33 @@ describe('useWorkspaceUrlLoader', () => {
     expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith(
       'workspace-2'
     )
+  })
+
+  it('carries safe mode into the reload when switching workspace', async () => {
+    window.history.replaceState(null, '', '/?safe')
+    captureSafeExtensionBoot()
+    mockRouteQuery.value = { workspace: 'workspace-2', other: 'param' }
+
+    const { loadWorkspaceFromUrl } = useWorkspaceUrlLoader()
+    await loadWorkspaceFromUrl()
+
+    expect(mockRouterReplace).toHaveBeenLastCalledWith({
+      query: { other: 'param', safe: '' }
+    })
+  })
+
+  it('drops the carried safe flag again when the switch is refused', async () => {
+    window.history.replaceState(null, '', '/?safe')
+    captureSafeExtensionBoot()
+    mockRouteQuery.value = { workspace: 'workspace-2' }
+    vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockRejectedValue(
+      new Error('Workspace not found or access denied')
+    )
+
+    const { loadWorkspaceFromUrl } = useWorkspaceUrlLoader()
+    await loadWorkspaceFromUrl()
+
+    expect(mockRouterReplace).toHaveBeenLastCalledWith({ query: {} })
   })
 
   it('stays on the active workspace and shows a toast when the switch is refused', async () => {

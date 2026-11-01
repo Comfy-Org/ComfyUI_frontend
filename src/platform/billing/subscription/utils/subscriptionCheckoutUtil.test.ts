@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import { webSessionResourceHeader } from '@comfyorg/api-client/webSessionFetch'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -74,7 +74,7 @@ vi.mock(import('./checkoutAttributionLoader'), () => ({
   loadCheckoutAttributionModule: mockLoadCheckoutAttributionModule
 }))
 
-vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
+vi.mock(import('@comfyorg/api-client/webSessionFetch'), { spy: true })
 
 type Distribution = 'desktop' | 'localhost' | 'cloud'
 

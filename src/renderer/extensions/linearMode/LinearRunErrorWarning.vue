@@ -9,7 +9,8 @@ import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/l
 
 const { t } = useI18n()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
-const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
+const { hasError, overlayMessage, overlayTitle, overlayGroupKeys } =
+  useErrorOverlayState()
 </script>
 
 <template>
@@ -68,7 +69,7 @@ const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
         size="unset"
         class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
         data-testid="linear-view-errors"
-        @click="viewErrorsInGraph"
+        @click="viewErrorsInGraph(overlayGroupKeys)"
       >
         {{ t('linearMode.error.goto') }}
       </Button>

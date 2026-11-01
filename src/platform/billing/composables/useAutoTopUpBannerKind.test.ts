@@ -3,7 +3,6 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, effectScope } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
 
@@ -20,7 +19,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('./useBillingCapabilities'))
 vi.mock(import('./usePausedBanner'))
 vi.mock(import('./useBillingAutoTopUpCard'))
@@ -31,13 +29,12 @@ interface Scenario {
   isActive?: boolean
   paused?: boolean
   owner?: boolean
-  flag?: boolean
+  enabled?: boolean
   settings?: Pick<AutoReloadSettings, 'status' | 'disabled_reason'>
 }
 
 function arrange(scenario: Scenario) {
   distribution.isCloud = scenario.isCloud ?? false
-  vi.mocked(useFeatureFlags().flags).autoTopUpEnabled = scenario.flag ?? true
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
       canAccessSubscriptionFeatures: computed(
@@ -49,6 +46,9 @@ function arrange(scenario: Scenario) {
         fromPartial({ isActive: scenario.isActive ?? true })
       )
     })
+  )
+  useBillingCapabilities().autoTopUpEnabled = computed(() =>
+    receiveServerFact('auto_top_up_enabled', scenario.enabled ?? true)
   )
   useBillingCapabilities().canManageAutoTopUp = computed(() =>
     receiveServerFact('can_manage_auto_top_up', scenario.owner ?? true)
@@ -120,8 +120,8 @@ describe('useAutoTopUpBannerKind', () => {
       kind: null
     },
     {
-      name: 'the flag off',
-      scenario: { flag: false, settings: failed },
+      name: 'auto top-up not served for the account',
+      scenario: { enabled: false, settings: failed },
       kind: null
     },
     { name: 'a read still loading', scenario: {}, kind: null }

@@ -112,6 +112,9 @@ function renderComponent(props: Record<string, unknown> = {}) {
     global: {
       plugins: [i18n],
       stubs: {
+        CreditsLockedNotice: {
+          template: '<div data-testid="credits-locked-notice" />'
+        },
         UnifiedPricingTable: UnifiedPricingTableStub,
         SubscriptionAddPaymentPreviewWorkspace: {
           name: 'SubscriptionAddPaymentPreviewWorkspace',
@@ -297,6 +300,20 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     await userEvent.keyboard('{Backspace}')
 
     expect(mockHandleBackToPricing).toHaveBeenCalledOnce()
+  })
+
+  it('explains locked credits only on the pricing step', async () => {
+    renderComponent({ creditsLocked: true })
+    expect(screen.getByTestId('credits-locked-notice')).toBeInTheDocument()
+
+    mockCheckoutStep.value = 'preview'
+    await nextTick()
+    expect(screen.queryByTestId('credits-locked-notice')).toBeNull()
+  })
+
+  it('shows no locked-credits line by default', () => {
+    renderComponent()
+    expect(screen.queryByTestId('credits-locked-notice')).toBeNull()
   })
 
   it('gives checkout the surface, not the copy reason', () => {

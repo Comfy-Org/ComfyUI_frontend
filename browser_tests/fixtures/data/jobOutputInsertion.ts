@@ -1,7 +1,7 @@
 import type { Asset } from '@comfyorg/ingest-types'
 
 import { createRouteMockJob } from '@e2e/fixtures/jobsRouteFixture'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 interface JobOutputInsertionCase {
   asset: Asset

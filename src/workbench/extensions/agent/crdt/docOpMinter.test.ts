@@ -2812,7 +2812,8 @@ describe('attachDocOpMinter', () => {
         errorType: 'agent_crdt_widget_owner_unresolved',
         context: expect.objectContaining({
           graphId: staleGraph.id,
-          nodeId: stale.id
+          nodeId: stale.id,
+          widget: stale.widgets![0].name
         })
       }),
       expect.objectContaining({
@@ -2973,6 +2974,23 @@ describe('attachDocOpMinter', () => {
         setWidget('loras.1.seed', 1),
         setWidget('loras.1.seed.0', 'randomize')
       ])
+    })
+
+    it('mints an added row default over a peer value the document holds at that index', async () => {
+      const { node, widget } = seedGroup()
+      docWidgetValue = (nodeId, name) =>
+        nodeId === node.id && name === 'loras.1.lora_name' ? 'B' : undefined
+
+      widget('loras.1').callback?.(undefined)
+      widget('loras.$add').callback?.(undefined)
+      await afterFlush()
+
+      expect(minted).toContainEqual({
+        op: 'set_widget',
+        node_id: node.id,
+        widget: 'loras.1.lora_name',
+        value: 'A'
+      })
     })
 
     function seedThreeRows() {
@@ -3477,5 +3495,93 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     ])
     expect(project(doc, catalog).nodes).toEqual([])
     doc.destroy()
+  })
+
+  it('applies an uncatalogued node whose hook replaced the positional array', () => {
+    useNodeDefStore().addNodeDef(nodeDef('PackPrivate', {}))
+    const graph = new LGraph()
+    const node = nodeWith('PackPrivate', (n) => {
+      n.addWidget('text', 'prompt', 'kept', () => {})
+      n.onSerialize = (data: ISerialisedNode) => {
+        data.widgets_values = ['kept', 'pack private state']
+      }
+    })
+    graph.add(node)
+    const catalog: WidgetCatalog = { types: {} }
+    const snapshot = wireNodeSnapshot(node)
+    assert.exists(snapshot)
+    expect(snapshot).toMatchObject({
+      widgets_values: { prompt: 'kept' },
+      widgets_values_form: { order: ['prompt'] }
+    })
+    const { widgets_values_form: _form, ...undeclared } = snapshot
+    const addNode = (payload: typeof snapshot): GraphOperation => ({
+      op: 'add_node',
+      node_id: node.id,
+      class_type: 'PackPrivate',
+      pos: [0, 0],
+      node: payload
+    })
+    const declaredDoc = mint({ nodes: [], links: [] }, catalog)
+    const undeclaredDoc = mint({ nodes: [], links: [] }, catalog)
+
+    expect(applyMinted(declaredDoc, [addNode(snapshot)], catalog)).toEqual([
+      'applied'
+    ])
+    expect(project(declaredDoc, catalog).nodes).toEqual([
+      expect.objectContaining({ widgets_values: { prompt: 'kept' } })
+    ])
+    expect(
+      applyOutcomes(undeclaredDoc, [addNode(undeclared)], catalog)
+    ).toEqual([
+      expect.objectContaining({
+        reason: expect.objectContaining({ code: 'uncatalogued_widget_write' })
+      })
+    ])
+    declaredDoc.destroy()
+    undeclaredDoc.destroy()
+  })
+
+  it('sends a subgraph host positionally, without reaching the form proof', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const host = createTestSubgraphNode(subgraph)
+    host.serialize_widgets = true
+    graph.add(host)
+    const interior = LiteGraph.createNode('TestPrompt')
+    assert.exists(interior)
+    subgraph.add(interior)
+    subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
+
+    const snapshot = wireNodeSnapshot(host)
+
+    expect(host.serialize().widgets_values_named).toEqual({
+      text: 'an interior default'
+    })
+    expect(snapshot?.widgets_values).toEqual(['an interior default'])
+    expect(snapshot).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('omits the form when a class rewrites the named keys after core', () => {
+    class RewritesAfterCore extends LGraphNode {
+      override serializeFromStoreState(
+        ...args: Parameters<LGraphNode['serializeFromStoreState']>
+      ): ISerialisedNode {
+        const serialized = super.serializeFromStoreState(...args)
+        serialized.widgets_values_named = { prompt: 'a' }
+        return serialized
+      }
+    }
+    const node = new RewritesAfterCore('LastWriter', 'LastWriter')
+    node.serialize_widgets = true
+    node.addWidget('text', 'prompt', 'a', () => {})
+    node.addWidget('text', 'extra', 'b', () => {})
+    new LGraph().add(node)
+
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
   })
 })

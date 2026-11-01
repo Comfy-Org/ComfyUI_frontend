@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 
 import type { AgentCancelAccepted } from '@comfyorg/ingest-types'
 
-import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail } from '@comfyorg/api-client/jobTypes'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'

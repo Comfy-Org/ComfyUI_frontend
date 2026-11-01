@@ -1,0 +1,35 @@
+{
+  "name": "@comfyorg/settings-core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": {
+      "@comfyorg/settings-core": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.declarations.json",
+    "typecheck": "tsc --noEmit",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "@comfyorg/graph-model": "workspace:*",
+    "@comfyorg/keybindings": "workspace:*",
+    "@comfyorg/object-info-parser": "workspace:*",
+    "@comfyorg/telemetry": "workspace:*",
+    "@vueuse/core": "catalog:",
+    "es-toolkit": "catalog:",
+    "semver": "^7.7.2",
+    "vue": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/semver": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -85,6 +85,11 @@ runs:
             ;;
         esac
 
+        if ! [[ "$INPUT_SLUG" =~ ^[a-z0-9-]+$ ]]; then
+          echo "::error::explain-check: slug '$INPUT_SLUG' must match ^[a-z0-9-]+$"
+          exit 1
+        fi
+
         # Must live inside the workspace: read-and-upsert-comment-section guards
         # on hashFiles(), which only resolves paths under GITHUB_WORKSPACE and
         # would silently no-op on a RUNNER_TEMP path.

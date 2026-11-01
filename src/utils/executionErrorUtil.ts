@@ -1,4 +1,4 @@
-import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
+import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 type RawPromptError =
