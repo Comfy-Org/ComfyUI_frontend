@@ -95,13 +95,9 @@ test.describe(
       expect(tabChats.transcriptReads).toEqual(tabActivationTranscriptReads)
     })
 
-    // The tour's workflow card (agent.coachWorkflowBody) promises both of
-    // these: the name sits at the top of the message box, and picking another
-    // name points the open chat at that workflow instead of starting a new one.
     test('the workflow name in the message box retargets the open chat', async ({
       tabChats
     }) => {
-      // The picker lists open tabs, so open the landscape tab first.
       await tabChats.openChatFromHistory('Landscape chat')
       await tabChats.openChatFromHistory('Portrait chat')
       const composer = tabChats.panel.root.getByTestId('agent-composer')
