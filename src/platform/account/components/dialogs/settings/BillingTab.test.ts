@@ -379,7 +379,7 @@ describe('BillingTab', () => {
     arrange({ isInitialized: false })
 
     const skeleton = screen.getByTestId('billing-plan-skeleton')
-    expect(skeleton).toHaveClass('rounded-xl', 'border-card', 'px-5', 'py-4')
+    expect(skeleton).toHaveClass('rounded-xl', 'border-border', 'px-5', 'py-4')
     expect(
       within(screen.getByTestId('billing-plan-section')).getByRole('heading', {
         name: 'Plan'
@@ -393,7 +393,7 @@ describe('BillingTab', () => {
 
     const alert = screen.getByRole('alert')
     expect(alert).toHaveTextContent("We couldn't load your plan.")
-    expect(alert).toHaveClass('rounded-xl', 'border-card', 'px-5', 'py-4')
+    expect(alert).toHaveClass('rounded-xl', 'border-border', 'px-5', 'py-4')
     expect(screen.queryByTestId('billing-plan-row')).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
@@ -434,7 +434,7 @@ describe('BillingTab', () => {
     )
     expect(within(plan).getByTestId('billing-plan-row')).toHaveClass(
       'rounded-xl',
-      'border-card',
+      'border-border',
       'px-5',
       'py-4'
     )
@@ -449,7 +449,12 @@ describe('BillingTab', () => {
       })
     ).toHaveClass('text-base', 'font-medium')
     const handoffCard = within(handoff).getByTestId('billing-handoff-card')
-    expect(handoffCard).toHaveClass('rounded-xl', 'border-card', 'px-5', 'py-4')
+    expect(handoffCard).toHaveClass(
+      'rounded-xl',
+      'border-border',
+      'px-5',
+      'py-4'
+    )
     expect(
       within(handoffCard).getByRole('link', { name: 'Open billing' })
     ).toContainHTML('icon-[lucide--arrow-up-right]')
@@ -610,7 +615,7 @@ describe('BillingTab', () => {
         /^https:\/\/platform\.test\/profile\/usage\?workspace=ws_1&correlation_id=.+$/
       )
     )
-    expect(usage).toContainHTML('icon-[lucide--external-link]')
+    expect(usage).toContainHTML('icon-[lucide--arrow-up-right]')
     expect(
       screen.queryByRole('link', { name: 'Open billing' })
     ).not.toBeInTheDocument()

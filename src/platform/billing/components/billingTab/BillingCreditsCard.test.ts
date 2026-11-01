@@ -330,7 +330,7 @@ describe('BillingCreditsCard', () => {
     )
     expect(screen.getByTestId('billing-credits-surface')).toHaveClass(
       'rounded-xl',
-      'border-card'
+      'border-border'
     )
     expect(screen.getByTestId('billing-credits-available')).toHaveClass(
       'text-2xl',
