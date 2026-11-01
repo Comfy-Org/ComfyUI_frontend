@@ -173,18 +173,23 @@ describe('backport workflow token scopes', () => {
     expect(step!.run).toContain('issues/${PR_NUM}/assignees')
   })
 
-  // The shared token's hourly quota is spent by every lane that uses it. When it
-  // ran out after a fully successful backport, this step failed with
-  // "API rate limit exceeded" and left needs-backport on the merged PR, which
-  // re-arms the labeled trigger. The job token has its own quota and the job
-  // already grants issues: write and pull-requests: write.
-  it('clears needs-backport with the job token, not the shared token', () => {
+  it('clears needs-backport with the job token, falling back to the shared token', () => {
     const workflow = readWorkflow(WORKFLOW)
     const step = workflow.jobs?.backport.steps?.find(
       (step) => step.name === 'Remove needs-backport label'
     )
+    const run = stripComments(step?.run ?? '')
 
     expect(step?.env?.GH_TOKEN).toBe('${{ github.token }}')
+    expect(step?.env?.FALLBACK_TOKEN).toBe(
+      '${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}'
+    )
+    expect(run).toMatch(
+      /LABELS=\$\(gh api[^\n]*\/labels"[^\n]*\|\| GH_TOKEN="\$\{FALLBACK_TOKEN\}" gh api[^\n]*\/labels"/
+    )
+    expect(run).toMatch(
+      /gh api --silent --method DELETE[^\n]*\|\| GH_TOKEN="\$\{FALLBACK_TOKEN\}" gh api --silent --method DELETE/
+    )
   })
 
   it('removes needs-backport through the REST labels endpoint, tolerating an already-absent label', () => {
