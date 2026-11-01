@@ -57,7 +57,11 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
   }
 
   const overdrawn = availableCents < 0
-  const planCents = overdrawn ? 0 : (balance.cloudCreditBalanceMicros ?? 0)
+  const planCents = overdrawn
+    ? 0
+    : (balance.cloudCreditDisplayBalanceCents ??
+      balance.cloudCreditBalanceMicros ??
+      0)
   const topUpCents = overdrawn ? 0 : (balance.prepaidBalanceMicros ?? 0)
   return {
     kind: 'plan',

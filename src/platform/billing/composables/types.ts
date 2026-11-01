@@ -107,6 +107,8 @@ export interface BalanceInfo {
   effectiveBalanceAuthoritative?: boolean
   prepaidBalanceMicros?: number
   cloudCreditBalanceMicros?: number
+  /** Served display-only plan remainder in cents; absent when omitted. */
+  cloudCreditDisplayBalanceCents?: number
   /** Server-suggested top-up that covers a negative balance; null otherwise. */
   suggestedTopupAmountCents?: number | null
   /** Served `low_balance`. Absent when the balance response omits it. */

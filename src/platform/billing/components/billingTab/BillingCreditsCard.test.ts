@@ -389,6 +389,60 @@ describe('BillingCreditsCard', () => {
     expect(screen.getByRole('button', { name: 'Add credits' })).toBeVisible()
   })
 
+  it.for<{
+    case: string
+    display: number | undefined
+    plan: number
+    planLine: string
+    inUse: boolean
+  }>([
+    {
+      case: 'a served display balance below the raw plan balance',
+      display: 200,
+      plan: 400,
+      planLine: '422 of 1,000',
+      inUse: false
+    },
+    {
+      case: 'a served zero display balance over a raw plan balance',
+      display: 0,
+      plan: 400,
+      planLine: '0 of 1,000',
+      inUse: true
+    },
+    {
+      case: 'an omitted display balance keeps the raw plan balance',
+      display: undefined,
+      plan: 400,
+      planLine: '844 of 1,000',
+      inUse: false
+    },
+    {
+      case: 'an omitted display balance keeps a raw plan balance above the grant',
+      display: undefined,
+      plan: 600,
+      planLine: '1,266 of 1,000',
+      inUse: false
+    }
+  ])(
+    'shows the plan amount for $case',
+    ({ display, plan, planLine, inUse }) => {
+      renderCard({
+        ...activeFacts,
+        planPoolCredits: 1000,
+        balance: {
+          ...balanceOf({ effective: plan + 300, plan, topUp: 300 }),
+          cloudCreditDisplayBalanceCents: display
+        }
+      })
+
+      expect(
+        screen.getByTestId('billing-credits-plan').textContent.trim()
+      ).toBe(planLine)
+      expect(screen.queryByText('In use now') !== null).toBe(inUse)
+    }
+  )
+
   it('shows nothing under the amount without a date or a total', () => {
     renderCard({ ...activeFacts, planPoolCredits: null })
 
