@@ -60,8 +60,6 @@ test.describe(
         }
       },
       async ({ page }) => {
-        test.slow()
-
         await bootAgentApp(page, true, {
           objectInfo: 'server',
           settings: { 'Comfy.TutorialCompleted': false },
@@ -89,6 +87,12 @@ test.describe(
           nudgeBox.x + nudgeBox.width,
           'the nudge must sit left of the docked Agent panel, not over its starter prompts and composer (PM-1872)'
         ).toBeLessThanOrEqual(panelBox.x)
+
+        // The graph behind the nudge comes from the server's template package,
+        // so hide it: the snapshot pins placement, not template content.
+        await page.addStyleTag({
+          content: `#graph-canvas, [data-testid="transform-pane"], [data-testid="minimap-container"] { visibility: hidden !important; }`
+        })
 
         await expectRegionScreenshot(
           page,
