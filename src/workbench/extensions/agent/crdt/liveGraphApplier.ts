@@ -1618,9 +1618,10 @@ export class LiveGraphApplier {
       ...createdGroups
     ]
     const offset = placementOffset({
-      existing: graph._nodes
-        .filter((node) => !createdSet.has(node.id))
-        .map(rect),
+      existing: [
+        ...graph._nodes.filter((node) => !createdSet.has(node.id)),
+        ...graph.groups.filter((group) => !createdGroups.includes(group))
+      ].map(rect),
       viewport: this.deps.viewportBounds?.() ?? null,
       incoming: incoming.map(rect),
       moveCollisions

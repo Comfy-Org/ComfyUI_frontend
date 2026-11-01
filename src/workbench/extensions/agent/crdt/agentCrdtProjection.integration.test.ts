@@ -520,4 +520,36 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     assert(group, 'the inserted group reached the canvas')
     expect([...group.pos]).toEqual([680, 20])
   })
+  it('places a group-only insertion clear of the groups already on the canvas', () => {
+    const graph = new LGraph()
+    const existing = new LiteGraph.LGraphGroup('Existing group')
+    existing.pos = [0, 10]
+    existing.size = [300, 200]
+    graph.add(existing)
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+
+    hostEdit(
+      () =>
+        applyHostOp(host, {
+          ...HOST_OP,
+          op_id: '1a61'.padEnd(32, '0'),
+          op: 'insert_workflow',
+          workflow: {
+            nodes: [],
+            groups: [
+              { id: 1, title: 'Inserted group', bounding: [0, 10, 300, 200] }
+            ]
+          }
+        }),
+      { actor: HOST_OP.actor, catchUp: false }
+    )
+
+    const group = graph.groups.find(({ title }) => title === 'Inserted group')
+    assert(group, 'the inserted group reached the canvas')
+    expect([...group.pos]).toEqual([380, 10])
+  })
 })
