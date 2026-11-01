@@ -4865,7 +4865,6 @@
     "cancelDialog": {
       "endOfBillingPeriod": "das Ende Ihres Abrechnungszeitraums",
       "failed": "Abonnement konnte nicht gekündigt werden",
-      "finishOnStripe": "Ihr Abonnement ist noch nicht gekündigt. Schließen Sie die Kündigung auf der gerade geöffneten Stripe-Seite ab. Bis dahin wird Ihr Plan wie gewohnt verlängert.",
       "workspaceChanged": "Ihr aktiver Workspace hat sich geändert. Wechseln Sie zurück und versuchen Sie es erneut."
     },
     "cancelFlow": {
