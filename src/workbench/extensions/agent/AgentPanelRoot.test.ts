@@ -7575,6 +7575,107 @@ describe('AgentPanelRoot history', () => {
     })
   })
 
+  describe("the local host's loopback-fence refusal (cloud#14874)", () => {
+    const refusal = {
+      error:
+        'The agent only works when ComfyUI is opened on the computer it runs on, by a local address. Open http://127.0.0.1:8188 in a browser on that computer to use the agent.',
+      code: 'agent_loopback_only'
+    }
+
+    it("shows the host's reason in the panel on open, not the run-error overlay", async () => {
+      executionErrors.showErrorOverlay.mockClear()
+      respondToFetch(threadListRoute, () => json(403, refusal))
+
+      const panel = renderWithSelectedTarget()
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
+      expect(screen.getByTestId('agent-panel-chat-controls')).toHaveAttribute(
+        'inert'
+      )
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+      expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+      expect(executionErrors.recordPromptError).not.toHaveBeenCalled()
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'thread_list_load_failed',
+          ui_treatment: 'inline_notice'
+        })
+      )
+
+      useAgentPanelStore().view = {
+        screen: 'history',
+        previousThreadId: null,
+        selection: { status: 'idle' }
+      }
+      expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
+
+      useAgentPanelStore().view = { screen: 'chat' }
+      respondToFetch(threadListRoute, () => json(200, agentThreadList([])))
+      panel.unmount()
+      renderWithSelectedTarget()
+
+      await vi.waitFor(() =>
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      )
+      expect(
+        screen.getByTestId('agent-panel-chat-controls')
+      ).not.toHaveAttribute('inert')
+    })
+
+    it('keeps a newer refusal when an older listing succeeds after it', async () => {
+      let listings = 0
+      let answerFirstListing: (() => void) | undefined
+      respondToFetch(threadListRoute, async () => {
+        listings += 1
+        if (listings > 1) return json(403, refusal)
+        await new Promise<void>((resolve) => {
+          answerFirstListing = resolve
+        })
+        return json(200, agentThreadList([]))
+      })
+
+      renderWithSelectedTarget()
+      await vi.waitFor(() => expect(answerFirstListing).toBeDefined())
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
+
+      expect(listings).toBe(2)
+      answerFirstListing?.()
+      await settleFollow()
+      await nextTick()
+
+      expect(screen.getByRole('alert')).toHaveTextContent(refusal.error)
+
+      useAgentPanelStore().view = { screen: 'chat' }
+      await nextTick()
+      expect(screen.getByRole('alert')).toHaveTextContent(refusal.error)
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+    })
+
+    it('leaves an ordinary auth refusal on the run-error overlay', async () => {
+      executionErrors.showErrorOverlay.mockClear()
+      respondToFetch(threadListRoute, () => json(403, { error: 'no access' }))
+
+      renderWithSelectedTarget()
+
+      await vi.waitFor(() =>
+        expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+      )
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(
+        screen.getByTestId('agent-panel-chat-controls')
+      ).not.toHaveAttribute('inert')
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
+    })
+  })
+
   it('records a thread-list request that never reached the server', async () => {
     telemetry.trackAgentError.mockClear()
     vi.mocked(reportError).mockClear()
