@@ -26,6 +26,7 @@ import { saveTextExtension } from './saveText'
 import { selectionBorderExtension } from './selectionBorder'
 import { simpleTouchSupportExtension } from './simpleTouchSupport'
 import { slotDefaultsExtension } from './slotDefaults'
+import { textOverlayExtension } from './textOverlay'
 import {
   audioWidgetExtension,
   recordAudioExtension,
@@ -60,6 +61,7 @@ const baseCoreExtensions: ComfyExtension[] = [
   selectionBorderExtension,
   simpleTouchSupportExtension,
   slotDefaultsExtension,
+  textOverlayExtension,
   audioWidgetExtension,
   uploadAudioExtension,
   recordAudioExtension,
