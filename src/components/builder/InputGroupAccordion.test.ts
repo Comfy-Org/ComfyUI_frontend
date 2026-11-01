@@ -41,13 +41,26 @@ function renderGroup(name?: string) {
           messages: { en: { g: { rename: 'Rename', more: 'More' } } }
         })
       ],
-      stubs: { InputGroupContent: true }
+      stubs: {
+        InputGroupContent: {
+          props: ['groupId'],
+          template: '<div data-testid="group-content" :data-group-id="groupId" />'
+        }
+      }
     }
   })
   return { group, store, stepsId: steps.widgetId, workflow }
 }
 
 describe('input group rename', () => {
+  it('passes its group ID to the nested drop-target content', () => {
+    const { group } = renderGroup('Sampling')
+    expect(screen.getByTestId('group-content')).toHaveAttribute(
+      'data-group-id',
+      group.id
+    )
+  })
+
   it('keeps an unchanged generated name dynamic without recording an undo entry', async () => {
     const { group, store, stepsId, workflow } = renderGroup()
     const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock
