@@ -150,10 +150,7 @@ export function useAgentWorkflowSelection({
         if (!(await refreshCloudWorkflowIds())) return fail()
         if (!isCurrent()) return
         if (!tab.isLoaded) {
-          if (!(await workflowService.openWorkflow(tab, { isCurrent }))) {
-            if (!isCurrent()) return
-            return fail(t('agent.targetNavigationUnavailable'))
-          }
+          await workflowService.loadWorkflowInBackground(tab)
           if (!isCurrent()) return
         }
         if (needsSave()) {

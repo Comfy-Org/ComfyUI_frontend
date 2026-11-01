@@ -925,7 +925,7 @@ describe('picking a target tab', () => {
     expect(toast.toasts).toHaveLength(0)
   })
 
-  it('does not save a second copy when opening the tab finds it already saved', async () => {
+  it('does not save a second copy when loading the tab finds it already saved', async () => {
     const { selection, workflows, panel, listCloudWorkflows } = setup()
     const restored = workflows.createTemporary('Restored.json', {
       ...blankGraph,
@@ -934,13 +934,13 @@ describe('picking a target tab', () => {
     workflows.openWorkflowsInBackground({ right: [restored.path] })
     let saved = false
     vi.spyOn(restored, 'isTemporary', 'get').mockImplementation(() => !saved)
-    vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(
-      async (workflow) => {
-        workflows.activeWorkflow = await workflow.load()
-        saved = true
-        return true
-      }
-    )
+    vi.mocked(
+      useWorkflowService().loadWorkflowInBackground
+    ).mockImplementationOnce(async (workflow) => {
+      const loaded = await workflow.load()
+      saved = true
+      return loaded
+    })
     listCloudWorkflows.mockImplementation(async () =>
       listing([
         { id: 'wf-current', name: 'current' },
@@ -952,5 +952,42 @@ describe('picking a target tab', () => {
 
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
     expect(panel.selectedWorkflow?.path).toBe(restored.path)
+  })
+
+  it('keeps the visible workflow when an unopened unsaved tab is picked as a reference', async () => {
+    const { selection, workflows, current, listCloudWorkflows } = setup()
+    const restored = workflows.createTemporary('Reference.json', {
+      ...blankGraph,
+      id: '4c6e8a0b-2d4f-4a6b-8c0d-1e2f3a4b5c6d'
+    })
+    workflows.openWorkflowsInBackground({ right: [restored.path] })
+    let saved = false
+    vi.spyOn(restored, 'isTemporary', 'get').mockImplementation(() => !saved)
+    vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
+      async (tab) => {
+        if (!tab.isLoaded)
+          throw new Error(
+            `Cannot save workflow '${tab.path}' before it is loaded`
+          )
+        saved = true
+        return true
+      }
+    )
+    listCloudWorkflows.mockImplementation(async () =>
+      listing([
+        { id: 'wf-current', name: 'current' },
+        ...(saved ? [{ id: 'wf-reference', name: 'Reference' }] : [])
+      ])
+    )
+
+    expect(
+      await selection.selectReference({
+        name: 'Reference',
+        tabPath: restored.path
+      })
+    ).toMatchObject({ id: 'wf-reference' })
+
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 })
