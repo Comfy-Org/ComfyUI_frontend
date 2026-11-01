@@ -141,6 +141,28 @@ describe('useToolManager', () => {
     })
   })
 
+  it.for([
+    { handler: 'handlePointerDown', type: 'pointerdown' },
+    { handler: 'handlePointerMove', type: 'pointermove' },
+    { handler: 'handlePointerUp', type: 'pointerup' }
+  ] as const)(
+    'keeps $type touch input out of an active extension',
+    async ({ handler, type }) => {
+      const handlePointer = vi.fn().mockResolvedValue(undefined)
+      const tm = setup({
+        isActive: () => true,
+        deactivate: vi.fn(),
+        handlePointer
+      })
+
+      await tm[handler](
+        pointerEvent({ type, pointerType: 'touch', buttons: 1 })
+      )
+
+      expect(handlePointer).not.toHaveBeenCalled()
+    }
+  )
+
   describe('switchTool', () => {
     it.for([Tools.MaskPen, Tools.MaskBucket])(
       'restores the native cursor after an external tool ends: %s',
