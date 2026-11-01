@@ -6,6 +6,7 @@ import type {
   MaskEditorTool,
   MaskEditorToolRegistration
 } from '@comfyorg/mask-editor/extensionTypes'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 const toolSchema = z.object({
   id: z.string().regex(/^[\w.-]+$/),
@@ -16,22 +17,33 @@ const toolSchema = z.object({
   )
 })
 
+function parseTool(tool: MaskEditorTool) {
+  try {
+    const result = toolSchema.safeParse(tool)
+    return result.success ? result.data : undefined
+  } catch (error) {
+    reportError(error, {
+      errorType: 'failure_registering_mask_editor_tool',
+      surface: 'workspace'
+    })
+    return undefined
+  }
+}
+
 export const useMaskEditorExtensionStore = defineStore(
   'maskEditorExtensions',
   () => {
     const tools = shallowRef<readonly MaskEditorTool[]>([])
 
     function registerTool(tool: MaskEditorTool): MaskEditorToolRegistration {
-      if (!toolSchema.safeParse(tool).success)
-        return { ok: false, reason: 'invalid-tool' }
-      if (tools.value.some((entry) => entry.id === tool.id)) {
+      const parsed = parseTool(tool)
+      if (!parsed) return { ok: false, reason: 'invalid-tool' }
+      if (tools.value.some((entry) => entry.id === parsed.id)) {
         return { ok: false, reason: 'duplicate-id' }
       }
       const registration = Object.freeze({
-        id: tool.id,
-        label: tool.label,
-        icon: tool.icon,
-        createSession: tool.createSession.bind(tool)
+        ...parsed,
+        createSession: parsed.createSession.bind(tool)
       })
       tools.value = [...tools.value, registration]
       return {
