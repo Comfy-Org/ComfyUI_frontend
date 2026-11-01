@@ -31,6 +31,15 @@ test.describe(
         '- Use `flux1-dev-Q4_K_M.gguf`.',
         '- Keep the `non-turbo` variant.'
       ].join('\n')
+      const renderedReplyText = [
+        'Run these on your own machine:',
+        'cd ~/ComfyUI/models',
+        'comfy node install x',
+        'huggingface-cli download black-forest-labs/FLUX.1-dev',
+        'Use flux-2-klein-9B.safetensors.',
+        'Use flux1-dev-Q4_K_M.gguf.',
+        'Keep the non-turbo variant.'
+      ].join(' ')
 
       await test.step('receive a reply with commands for the user machine', async () => {
         await agentPanel.open()
@@ -39,6 +48,9 @@ test.describe(
         workflowSelection.finishSave(true)
         await agentPanel.sendMessage('Show me the local setup commands.')
         await expect.poll(() => promptHistory.requests.length).toBe(1)
+        await agentPanel.expectUserMessages([
+          'Show me the local setup commands.'
+        ])
         await promptHistory.streamLatestTurn(replyText)
       })
 
@@ -47,6 +59,9 @@ test.describe(
         await expect(replies).toHaveCount(1)
         const reply = replies.first()
         await expect(reply).toBeVisible()
+        await expect(reply).toHaveText(renderedReplyText, {
+          useInnerText: true
+        })
         await expect(
           reply.getByText('cd ~/ComfyUI/models', { exact: true })
         ).toBeVisible()
@@ -90,6 +105,9 @@ test.describe(
         await expect(replies).toHaveCount(1)
         const reply = replies.first()
         await expect(reply).toBeVisible()
+        await expect(reply).toHaveText(renderedReplyText, {
+          useInnerText: true
+        })
         await expect(
           reply.getByText('cd ~/ComfyUI/models', { exact: true })
         ).toBeVisible()
