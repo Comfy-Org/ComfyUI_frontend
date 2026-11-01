@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   PROJECT_ROOT,
+  USAGE,
   parseOptions,
   splitCommandLine
 } from './dev-agent-options'
@@ -25,6 +26,40 @@ describe('parseOptions', () => {
         port
       ])
     ).toThrow(`collides with the ${what}`)
+  })
+
+  it('rejects record services colliding with Temporal or its UI', () => {
+    expect(() =>
+      parseOptions([
+        '--record',
+        '--catalog',
+        'seed.json',
+        '--engine',
+        'temporal',
+        '--temporal-port',
+        '7400',
+        '--pg-port',
+        '7400'
+      ])
+    ).toThrow('collides with the Postgres port 7400')
+    expect(() =>
+      parseOptions([
+        '--record',
+        '--catalog',
+        'seed.json',
+        '--engine',
+        'temporal',
+        '--temporal-port',
+        '7400',
+        '--redis-port',
+        '8400'
+      ])
+    ).toThrow('collides with the Redis port 8400')
+  })
+
+  it('documents that command overrides must target their configured ports', () => {
+    expect(USAGE).toContain('must target --pg-port')
+    expect(USAGE).toContain('targeting --redis-port')
   })
 
   it('returns safe defaults with derived companion ports', () => {

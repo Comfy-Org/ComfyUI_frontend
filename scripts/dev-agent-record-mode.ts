@@ -78,31 +78,57 @@ export interface ContainerService {
   port: number
 }
 
+function internalPortForHostMapping(
+  mapping: string,
+  portNumber: number
+): number | undefined {
+  const match = mapping.match(
+    /^(?:\[[^\]]+\]|[^:]+):(\d+)(?:-(\d+))?->(\d+)(?:-(\d+))?\/tcp$/
+  )
+  if (!match) return
+  const hostStart = Number(match.at(1))
+  const hostEnd = Number(match.at(2) ?? match.at(1))
+  const internalStart = Number(match.at(3))
+  const internalEnd = Number(match.at(4) ?? match.at(3))
+  if (portNumber < hostStart || portNumber > hostEnd) return
+  if (hostEnd - hostStart !== internalEnd - internalStart) {
+    throw new Error(`Unsupported Docker port range: ${mapping}`)
+  }
+  return internalStart + portNumber - hostStart
+}
+
 export function containerServiceFromDockerPs(
   stdout: string,
   portNumber: number,
   service: string,
   image: string
 ): ContainerService {
-  const containers = stdout
+  const byContainer = new Map<string, Set<number>>()
+  const services = stdout
     .split('\n')
-    .filter((line) => line !== '')
-    .map((line) => line.split(' '))
+    .filter((value) => value !== '')
+    .map((line) => line.trim().split(/\s+/))
     .filter(
       ([, imageName]) =>
         imageName.replace(/@.+$/, '').replace(/:[^/]+$/, '') === image
     )
-    .flatMap(([name, , ...ports]) => {
-      const internalPorts = new Set(
-        ports
-          .join(' ')
-          .split(/,\s*/)
-          .filter((mapping) => mapping.includes(`:${portNumber}->`))
-          .map((mapping) => mapping.match(/->(\d+)(?:\/|$)/)?.[1])
-          .filter((port): port is string => port !== undefined)
+  for (const [name, , ...ports] of services) {
+    for (const mapping of ports.join(' ').split(/,\s*/)) {
+      const internalPort = internalPortForHostMapping(mapping, portNumber)
+      if (internalPort === undefined) continue
+      const internalPorts = byContainer.get(name) ?? new Set<number>()
+      internalPorts.add(internalPort)
+      byContainer.set(name, internalPorts)
+    }
+  }
+  const containers = [...byContainer].map(([name, ports]) => {
+    if (ports.size !== 1) {
+      throw new Error(
+        `${name} maps ${service} ${portNumber} to multiple internal ports: ${[...ports].join(', ')}`
       )
-      return [...internalPorts].map((port) => ({ name, port: Number(port) }))
-    })
+    }
+    return { name, port: [...ports][0] }
+  })
   if (containers.length === 0) {
     throw new Error(`No ${image} container publishes ${service} ${portNumber}`)
   }
@@ -114,7 +140,6 @@ export function containerServiceFromDockerPs(
   return containers[0]
 }
 
-// Neither psql nor redis-cli is on PATH here, so each service is reached through its container.
 async function containerFor(
   portNumber: number,
   service: string,
@@ -136,18 +161,40 @@ export function redisContainerExecCommand({ name, port }: ContainerService) {
   return `docker exec -i ${name} redis-cli -p ${port}`
 }
 
-async function pgExecCommand(
+type ContainerLookup = typeof containerFor
+
+export async function pgExecCommand(
   override: string,
-  portNumber: number
+  portNumber: number,
+  lookup: ContainerLookup = containerFor
 ): Promise<string> {
   if (override) return override
-  const container = await containerFor(portNumber, 'Postgres', 'postgres')
+  const container = await lookup(portNumber, 'Postgres', 'postgres')
   return pgContainerExecCommand(container)
 }
 
-async function redisExecCommand(portNumber: number): Promise<string> {
-  const container = await containerFor(portNumber, 'Redis', 'redis')
+export async function redisExecCommand(
+  override: string,
+  portNumber: number,
+  lookup: ContainerLookup = containerFor
+): Promise<string> {
+  if (override) return override
+  const container = await lookup(portNumber, 'Redis', 'redis')
   return redisContainerExecCommand(container)
+}
+
+export async function recordServiceExecCommands(
+  options: Pick<Options, 'pgExec' | 'pgPort' | 'redisExec' | 'redisPort'>,
+  lookup: ContainerLookup = containerFor
+) {
+  return {
+    pgExec: await pgExecCommand(options.pgExec, options.pgPort, lookup),
+    redisExec: await redisExecCommand(
+      options.redisExec,
+      options.redisPort,
+      lookup
+    )
+  }
 }
 
 // Every value is a module constant, so the statement carries no caller input.
@@ -199,7 +246,7 @@ function recordEnv(options: Options, catalogPath: string, secret: string) {
     DB_CONNECTION_STRING: `postgresql://postgres:postgres@127.0.0.1:${options.pgPort}/postgres?sslmode=disable`,
     DOC_HOST_ENDPOINT: `http://127.0.0.1:${options.docHostPort}`,
     HEALTH_PORT: String(options.healthPort),
-    REDIS_URL: `redis://localhost:${options.redisPort}/1`,
+    REDIS_URL: `redis://127.0.0.1:${options.redisPort}/1`,
     // AGENT_TASK_QUEUE stays at its default so the agent's own worker serves it.
     ...(options.engine === 'temporal'
       ? {
@@ -228,8 +275,9 @@ export async function runRecord(options: Options): Promise<number> {
   let redisExec: string
   try {
     catalogPath = await writeCatalog(options.catalog, dataDir)
-    pgExec = await pgExecCommand(options.pgExec, options.pgPort)
-    redisExec = options.redisExec || (await redisExecCommand(options.redisPort))
+    const commands = await recordServiceExecCommands(options)
+    pgExec = commands.pgExec
+    redisExec = commands.redisExec
     await seedIdentity(pgExec)
   } catch (error) {
     await rm(dataDir, { force: true, recursive: true })

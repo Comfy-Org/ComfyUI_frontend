@@ -42,9 +42,9 @@ Options:
   --catalog PATH        Conversation fixture whose workflow.catalog the agent loads
   --doc-host-port PORT  Doc host port in record mode (default: 8096)
   --pg-exec CMD         Command taking one SQL string, ending in -c; quote
-                        an argument that contains a space
+                        an argument that contains a space; must target --pg-port
   --pg-port PORT        Record-mode Postgres port (default: 54331)
-  --redis-exec CMD      redis-cli-compatible command for recording
+  --redis-exec CMD      redis-cli-compatible command targeting --redis-port
   --redis-port PORT     Record-mode Redis port (default: 6379)
   --engine NAME         Record mode engine: inline or temporal (default: inline)
   --temporal-port PORT  Temporal gRPC port for --engine temporal (default: 7234)
@@ -248,7 +248,9 @@ export function parseOptions(args: string[]): Options {
       ['agent', options.agentPort],
       ['agent health', options.healthPort],
       ['frontend', options.frontendPort],
-      ['doc host', options.docHostPort]
+      ['doc host', options.docHostPort],
+      ['Postgres', options.pgPort],
+      ['Redis', options.redisPort]
     ]
     for (const [label, portNumber] of taken) {
       if (
