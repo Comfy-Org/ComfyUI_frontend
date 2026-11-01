@@ -7,6 +7,9 @@ import { computed, ref, toValue, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
+import InputGroupAccordion from '@/components/builder/InputGroupAccordion.vue'
+import { groupPosition, resolveGroupItems } from '@/components/builder/useInputGroups'
+import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
@@ -29,6 +32,7 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useInputGroupStore } from '@/stores/inputGroupStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
@@ -44,6 +48,13 @@ const showsCloudSubscribePrompt = computed(
 const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
+const inputGroupStore = useInputGroupStore()
+const resolvedInputs = useResolvedSelectedInputs()
+const visibleInputGroups = computed(() =>
+  inputGroupStore.inputGroups.filter(
+    (group) => resolveGroupItems(group, resolvedInputs.value).length > 0
+  )
+)
 const { hasOutputs } = storeToRefs(appModeStore)
 const { hasAnyError, hasMissingError } = storeToRefs(useExecutionErrorStore())
 const missingMediaStore = useMissingMediaStore()
@@ -186,6 +197,13 @@ function replayAppModeTour() {
         class="grow scroll-shadows-background overflow-y-auto contain-size"
       >
         <AppModeWidgetList ref="widgetListRef" :mobile />
+        <InputGroupAccordion
+          v-for="(group, index) in visibleInputGroups"
+          :key="group.id"
+          :group
+          :mobile
+          :position="groupPosition(index, visibleInputGroups.length)"
+        />
       </section>
       <Teleport
         v-if="!jobToastTimeout || pendingJobQueues > 0"
