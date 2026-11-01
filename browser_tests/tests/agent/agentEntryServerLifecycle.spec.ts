@@ -21,7 +21,13 @@ test.describe(
     test.use({
       agentFlagEnabled: false,
       connectWebSocketToServer: false,
-      initialLocalStorage: { 'Comfy.AgentPanel.activationVisits': '2' }
+      // A signed-out local user sees the "Meet Comfy Agent" introduction on
+      // first open. That flow has its own tests; mark it answered here so the
+      // ready step reaches the panel.
+      initialLocalStorage: {
+        'Comfy.AgentPanel.activationVisits': '2',
+        'Comfy.AgentConsent.IntroductionResponded.signed-out': 'true'
+      }
     })
 
     test('stays inert while the agent starts or fails, then opens once it is ready', async ({
