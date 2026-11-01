@@ -86,9 +86,9 @@ export type BillingSubscriptionStatus = NonNullable<
 export type { BillingStatus }
 export type BillingStatusResponse = Omit<
   GeneratedBillingStatusResponse,
-  'ended_at'
+  'ended_at' | 'next_charge'
 > &
-  Partial<Pick<GeneratedBillingStatusResponse, 'ended_at'>>
+  Partial<Pick<GeneratedBillingStatusResponse, 'ended_at' | 'next_charge'>>
 export type { RenewalInvoice }
 export type { ScheduledPlanChange }
 

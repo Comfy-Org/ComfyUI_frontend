@@ -50,6 +50,7 @@ const ACTIVE_BILLING_STATUS: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   plan_slug: 'pro-monthly',

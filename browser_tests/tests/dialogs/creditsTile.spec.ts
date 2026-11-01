@@ -68,6 +68,7 @@ const mockBillingStatus: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-02-20T12:00:00Z',
@@ -81,6 +82,7 @@ const freeBillingStatus: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'FREE',
   has_funds: true
 }
@@ -92,6 +94,7 @@ const endedPersonalBillingStatus: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_status: 'ended',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
