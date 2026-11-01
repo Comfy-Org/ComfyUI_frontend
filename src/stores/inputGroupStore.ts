@@ -78,7 +78,8 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
           items: group.items.map((item) => ({ ...item }))
         }))
       : undefined
-    if (capture) workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+    if (capture)
+      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   function reloadFromGraph() {
@@ -210,7 +211,11 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
     second.pairId = pairId
   }
 
-  function pairItemsInGroup(groupId: string, firstKey: WidgetId, secondKey: WidgetId) {
+  function pairItemsInGroup(
+    groupId: string,
+    firstKey: WidgetId,
+    secondKey: WidgetId
+  ) {
     const group = findGroup(groupId)
     if (!group) return
     const first = group.items.find((item) => item.key === firstKey)
@@ -220,13 +225,20 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
     persistGroups()
   }
 
-  function replaceInPair(groupId: string, targetKey: WidgetId, replacementKey: WidgetId) {
+  function replaceInPair(
+    groupId: string,
+    targetKey: WidgetId,
+    replacementKey: WidgetId
+  ) {
     const group = findGroup(groupId)
     if (!group) return
     const target = group.items.find((item) => item.key === targetKey)
     if (!target?.pairId || targetKey === replacementKey) return
-    const partnerIdx = group.items.findIndex((item) => item.key === replacementKey)
-    if (partnerIdx < 0 || group.items[partnerIdx].pairId === target.pairId) return
+    const partnerIdx = group.items.findIndex(
+      (item) => item.key === replacementKey
+    )
+    if (partnerIdx < 0 || group.items[partnerIdx].pairId === target.pairId)
+      return
     const [replacement] = group.items.splice(partnerIdx, 1)
     clearPair(group, replacement.pairId)
     const targetIdx = group.items.findIndex((item) => item.key === targetKey)
@@ -261,7 +273,9 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
     position: 'before' | 'after' = 'after'
   ) {
     const appModeStore = useAppModeStore()
-    const inputIndex = appModeStore.selectedInputs.findIndex(([id]) => id === itemKey)
+    const inputIndex = appModeStore.selectedInputs.findIndex(
+      ([id]) => id === itemKey
+    )
     if (inputIndex < 0 || itemKey === targetKey) return
     if (targetKey && isGrouped(targetKey)) return
 

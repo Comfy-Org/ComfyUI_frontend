@@ -49,7 +49,9 @@ describe('workflow ownership', () => {
   })
 
   it('rejects a drag if no workflow is active', () => {
-    expect(isCurrentWorkflowDrag({ workflow: undefined }, undefined)).toBe(false)
+    expect(isCurrentWorkflowDrag({ workflow: undefined }, undefined)).toBe(
+      false
+    )
   })
 })
 

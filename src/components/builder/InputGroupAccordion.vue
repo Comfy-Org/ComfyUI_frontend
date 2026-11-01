@@ -4,7 +4,7 @@ import {
   CollapsibleRoot,
   CollapsibleTrigger
 } from 'reka-ui'
-import type { MenuItem } from '@comfyorg/design-system/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -92,8 +92,7 @@ function handleDissolve() {
     :class="
       cn(
         'flex flex-col',
-        builderMode &&
-          'rounded-lg border border-dashed border-primary/40',
+        builderMode && 'rounded-lg border border-dashed border-primary/40',
         !builderMode && 'border-border/40',
         !builderMode &&
           position !== 'first' &&
@@ -137,7 +136,7 @@ function handleDissolve() {
           <i
             :class="
               cn(
-                'icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground transition-transform',
+                'icon-[lucide--chevron-down] text-muted-foreground transition-transform',
                 isOpen && 'rotate-180'
               )
             "
@@ -151,11 +150,7 @@ function handleDissolve() {
         @close-auto-focus="isRenaming && $event.preventDefault()"
       >
         <template #trigger>
-          <Button
-            variant="textonly"
-            size="icon"
-            :aria-label="t('g.more')"
-          >
+          <Button variant="textonly" size="icon" :aria-label="t('g.more')">
             <i class="icon-[lucide--ellipsis]" />
           </Button>
         </template>

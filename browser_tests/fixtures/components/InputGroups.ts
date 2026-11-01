@@ -95,7 +95,12 @@ export class InputGroups {
     return { x: box.x, y: box.y }
   }
 
-  private async dragWidget(widget: string, target: Locator, cancel = false, dropRatio = 0.5) {
+  private async dragWidget(
+    widget: string,
+    target: Locator,
+    cancel = false,
+    dropRatio = 0.5
+  ) {
     const source = this.widget(widget).getByTestId('builder-widget-label')
     await source.scrollIntoViewIfNeeded()
     await target.scrollIntoViewIfNeeded()
@@ -107,9 +112,13 @@ export class InputGroups {
       from.y + from.height / 2
     )
     await this.page.mouse.down()
-    await this.page.mouse.move(to.x + to.width / 2, to.y + to.height * dropRatio, {
-      steps: 20
-    })
+    await this.page.mouse.move(
+      to.x + to.width / 2,
+      to.y + to.height * dropRatio,
+      {
+        steps: 20
+      }
+    )
     if (cancel) await this.page.keyboard.press('Escape')
     await this.page.mouse.up()
   }

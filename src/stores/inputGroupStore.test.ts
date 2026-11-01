@@ -48,14 +48,17 @@ describe('inputGroupStore', () => {
   it('moves an input between groups with one history entry', () => {
     const first = store.createGroup('First', inputIds.a)
     const second = store.createGroup('Second', inputIds.b)
-    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock.calls.length
+    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock
+      .calls.length
     store.addItemToGroup(second, inputIds.a)
     expect(store.findGroup(first)).toBeUndefined()
     expect(store.findGroup(second)?.items).toEqual([
       { key: inputIds.b },
       { key: inputIds.a }
     ])
-    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(captures + 1)
+    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(
+      captures + 1
+    )
   })
 
   it('persists metadata while preserving selected inputs and outputs', () => {
@@ -75,13 +78,19 @@ describe('inputGroupStore', () => {
   it('clears persisted grouping after the last group is deleted', () => {
     const id = store.createGroup()
     store.deleteGroup(id)
-    expect((app.rootGraph.extra.linearData as LinearData).inputGroups).toBeUndefined()
+    expect(
+      (app.rootGraph.extra.linearData as LinearData).inputGroups
+    ).toBeUndefined()
   })
 
   it('restores imported groups and detaches mutable saved objects', async () => {
     await nextTick()
     const saved = [{ id: 'saved', name: 'Saved', items: [{ key: inputIds.a }] }]
-    app.rootGraph.extra.linearData = { inputs: [], outputs: [], inputGroups: saved }
+    app.rootGraph.extra.linearData = {
+      inputs: [],
+      outputs: [],
+      inputGroups: saved
+    }
     app.rootGraph.events.dispatch('configured')
     expect(store.inputGroups).toEqual(saved)
     store.addItemToGroup('saved', inputIds.b)
@@ -94,24 +103,30 @@ describe('inputGroupStore', () => {
       inputs: [],
       outputs: [],
       inputGroups: [
-        { id: 'one', name: null, items: [
-          { key: inputIds.a, pairId: 'orphan' },
-          { key: inputIds.a },
-          { key: inputIds.b }
-        ] },
+        {
+          id: 'one',
+          name: null,
+          items: [
+            { key: inputIds.a, pairId: 'orphan' },
+            { key: inputIds.a },
+            { key: inputIds.b }
+          ]
+        },
         { id: 'one', name: 'Repeated', items: [{ key: inputIds.c }] },
-        { id: 'two', name: 'Second', items: [
-          { key: inputIds.a },
-          { key: inputIds.c }
-        ] }
+        {
+          id: 'two',
+          name: 'Second',
+          items: [{ key: inputIds.a }, { key: inputIds.c }]
+        }
       ]
     }
     app.rootGraph.events.dispatch('configured')
     expect(store.inputGroups).toEqual([
-      { id: 'one', name: null, items: [
-        { key: inputIds.a },
-        { key: inputIds.b }
-      ] },
+      {
+        id: 'one',
+        name: null,
+        items: [{ key: inputIds.a }, { key: inputIds.b }]
+      },
       { id: 'two', name: 'Second', items: [{ key: inputIds.c }] }
     ])
   })
@@ -146,7 +161,8 @@ describe('inputGroupStore', () => {
     store.addItemToGroup(groupId, inputIds.b)
     store.addItemToGroup(groupId, inputIds.c)
     store.pairItemsInGroup(groupId, inputIds.a, inputIds.b)
-    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock.calls.length
+    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock
+      .calls.length
 
     store.reorderWithinGroup(groupId, inputIds.a, inputIds.c, 'after')
     expect(store.findGroup(groupId)?.items).toEqual([
@@ -154,7 +170,9 @@ describe('inputGroupStore', () => {
       { key: inputIds.c },
       { key: inputIds.a, pairId: undefined }
     ])
-    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(captures + 1)
+    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(
+      captures + 1
+    )
   })
 
   it('pairs inputs and replaces one member without an orphaned pair', () => {
@@ -169,7 +187,9 @@ describe('inputGroupStore', () => {
 
     store.replaceInPair(groupId, inputIds.b, inputIds.c)
     expect(
-      store.findGroup(groupId)?.items.filter((item) => item.pairId === pairId)
+      store
+        .findGroup(groupId)
+        ?.items.filter((item) => item.pairId === pairId)
         .map((item) => item.key)
     ).toEqual([inputIds.a, inputIds.c])
     expect(
@@ -181,7 +201,8 @@ describe('inputGroupStore', () => {
   it('moves an item into another group and pairs at the center drop zone', () => {
     const source = store.createGroup('Source', inputIds.a)
     const target = store.createGroup('Target', inputIds.b)
-    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock.calls.length
+    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock
+      .calls.length
 
     store.moveItemToGroupAt(target, inputIds.a, inputIds.b, 'center')
     expect(store.findGroup(source)).toBeUndefined()
@@ -192,7 +213,9 @@ describe('inputGroupStore', () => {
     const items = store.findGroup(target)?.items ?? []
     expect(items[0].pairId).toBeDefined()
     expect(items[0].pairId).toBe(items[1].pairId)
-    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(captures + 1)
+    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(
+      captures + 1
+    )
   })
 
   it('moves a grouped input into the ungrouped list in one history entry', async () => {
@@ -205,19 +228,24 @@ describe('inputGroupStore', () => {
     appModeStore.selectedInputs = selections
     await nextTick()
     const id = store.createGroup('A', inputIds.a)
-    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock.calls.length
+    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock
+      .calls.length
 
     store.moveToUngrouped(inputIds.a, inputIds.c, 'after')
     await nextTick()
 
     expect(store.findGroup(id)).toBeUndefined()
-    expect((app.rootGraph.extra.linearData as LinearData).inputGroups).toBeUndefined()
+    expect(
+      (app.rootGraph.extra.linearData as LinearData).inputGroups
+    ).toBeUndefined()
     expect(appModeStore.selectedInputs.map(([key]) => key)).toEqual([
       inputIds.b,
       inputIds.c,
       inputIds.a
     ])
-    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(captures + 1)
+    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(
+      captures + 1
+    )
   })
 
   it('reorders two ungrouped inputs without changing group metadata', async () => {
@@ -228,7 +256,8 @@ describe('inputGroupStore', () => {
       [inputIds.c, 'c']
     ]
     await nextTick()
-    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock.calls.length
+    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock
+      .calls.length
 
     store.moveToUngrouped(inputIds.c, inputIds.a, 'before')
     await nextTick()
@@ -238,7 +267,9 @@ describe('inputGroupStore', () => {
       inputIds.a,
       inputIds.b
     ])
-    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(captures + 1)
+    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(
+      captures + 1
+    )
   })
 
   it('ignores an ungrouped self-drop without adding history', async () => {

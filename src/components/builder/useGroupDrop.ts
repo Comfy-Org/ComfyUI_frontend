@@ -22,9 +22,18 @@ interface BindingState<T> {
 }
 
 const dragStates = new WeakMap<HTMLElement, BindingState<ItemDragBinding>>()
-const groupItemStates = new WeakMap<HTMLElement, BindingState<GroupItemBinding>>()
-const ungroupedItemStates = new WeakMap<HTMLElement, BindingState<UngroupedItemBinding>>()
-const groupDropStates = new WeakMap<HTMLElement, BindingState<GroupDropBinding>>()
+const groupItemStates = new WeakMap<
+  HTMLElement,
+  BindingState<GroupItemBinding>
+>()
+const ungroupedItemStates = new WeakMap<
+  HTMLElement,
+  BindingState<UngroupedItemBinding>
+>()
+const groupDropStates = new WeakMap<
+  HTMLElement,
+  BindingState<GroupDropBinding>
+>()
 const ungroupDropStates = new WeakMap<HTMLElement, BindingState<boolean>>()
 
 export function getDragItemKey(data: DragData): WidgetId | null {
@@ -46,10 +55,7 @@ function activeDragKey(data: DragData): WidgetId | null {
   return getDragItemKey(data)
 }
 
-export function getEdgeTriZone(
-  element: HTMLElement,
-  clientY: number
-): Zone {
+export function getEdgeTriZone(element: HTMLElement, clientY: number): Zone {
   const rect = element.getBoundingClientRect()
   const third = rect.height / 3
   if (clientY < rect.top + third) return 'before'
@@ -126,13 +132,22 @@ export const vGroupItemReorder: Directive<HTMLElement, GroupItemBinding> = {
       element,
       canDrop: ({ source }) => {
         const key = activeDragKey(source.data)
-        return key !== null && key !== state.value.itemKey &&
+        return (
+          key !== null &&
+          key !== state.value.itemKey &&
           !!store.findGroup(state.value.groupId)
+        )
       },
       onDrag: ({ location }) =>
-        setIndicator(element, getEdgeTriZone(element, location.current.input.clientY)),
+        setIndicator(
+          element,
+          getEdgeTriZone(element, location.current.input.clientY)
+        ),
       onDragEnter: ({ location }) =>
-        setIndicator(element, getEdgeTriZone(element, location.current.input.clientY)),
+        setIndicator(
+          element,
+          getEdgeTriZone(element, location.current.input.clientY)
+        ),
       onDragLeave: () => clearIndicator(element),
       onDrop: ({ source, location }) => {
         clearIndicator(element)
@@ -185,11 +200,17 @@ function registerUngroupedTarget(
         clearIndicator(element)
         return
       }
-      setIndicator(element, getUngroupedEdge(element, location.current.input.clientY))
+      setIndicator(
+        element,
+        getUngroupedEdge(element, location.current.input.clientY)
+      )
     },
     onDragEnter: ({ source, location }) => {
       if (activeDragKey(source.data) === state.value.itemKey) return
-      setIndicator(element, getUngroupedEdge(element, location.current.input.clientY))
+      setIndicator(
+        element,
+        getUngroupedEdge(element, location.current.input.clientY)
+      )
     },
     onDragLeave: () => clearIndicator(element),
     onDrop: ({ source, location }) => {

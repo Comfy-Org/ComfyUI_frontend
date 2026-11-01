@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, provide, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { MenuItem } from '@comfyorg/design-system/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 
 import WidgetDescription from '@/components/builder/WidgetDescription.vue'
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
@@ -19,7 +19,6 @@ import {
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
@@ -235,7 +234,9 @@ defineExpose({ handleDragDrop })
     } in mappedSelections"
     :key
     v-group-item-drag="isDraggable ? { itemKey: action.widgetId } : undefined"
-    v-ungrouped-item-reorder="isDraggable ? { itemKey: action.widgetId } : undefined"
+    v-ungrouped-item-reorder="
+      isDraggable ? { itemKey: action.widgetId } : undefined
+    "
     :class="cn(isDraggable && 'pointer-events-auto cursor-grab')"
     :aria-label="
       builderMode

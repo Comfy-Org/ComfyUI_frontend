@@ -44,7 +44,8 @@ function renderGroup(name?: string) {
       stubs: {
         InputGroupContent: {
           props: ['groupId'],
-          template: '<div data-testid="group-content" :data-group-id="groupId" />'
+          template:
+            '<div data-testid="group-content" :data-group-id="groupId" />'
         }
       }
     }
