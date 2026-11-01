@@ -61,7 +61,9 @@
       "path": "packages/telemetry/src/rumContext.ts"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "packages/telemetry/src/reportError.ts"
+  ],
   "characterizationScenarios": [
     {
       "name": "reportError routes each failure once to the sinks enabled for the distribution and host",
