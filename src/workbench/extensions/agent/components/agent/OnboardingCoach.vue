@@ -280,7 +280,7 @@ const spotlightStyle = computed(() => {
 })
 
 useEventListener(
-  document,
+  window,
   'keydown',
   (event) => {
     if (!active.value || !target.value || event.key !== 'Escape') return
