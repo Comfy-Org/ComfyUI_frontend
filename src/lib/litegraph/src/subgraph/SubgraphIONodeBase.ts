@@ -36,6 +36,8 @@ import type {
 } from '@comfyorg/graph-model/serialisation'
 
 import type { EmptySubgraphInput } from './EmptySubgraphInput'
+import { canBeList } from './listInputs'
+import { isSubgraphInput } from './subgraphTypeGuards'
 import type { EmptySubgraphOutput } from './EmptySubgraphOutput'
 
 export abstract class SubgraphIONodeBase<
@@ -250,6 +252,13 @@ export abstract class SubgraphIONodeBase<
       options.push({ content: 'Rename Slot', value: 'rename' })
     }
 
+    if (isSubgraphInput(slot) && slot !== this.emptySlot) {
+      if (slot.list)
+        options.push({ content: 'Expose as single input', value: 'list-off' })
+      else if (canBeList(this.subgraph, slot))
+        options.push({ content: 'Expose as list', value: 'list-on' })
+    }
+
     if (slot !== this.emptySlot) {
       options.push(null) // separator
       options.push({
@@ -291,6 +300,14 @@ export abstract class SubgraphIONodeBase<
         if (slot !== this.emptySlot) {
           this._promptForSlotRename(slot, event)
         }
+        break
+
+      case 'list-on':
+      case 'list-off':
+        if (isSubgraphInput(slot))
+          this.subgraph.setInputList(slot, {
+            list: selectedItem.value === 'list-on'
+          })
         break
     }
 

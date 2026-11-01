@@ -11,7 +11,10 @@ import {
   addWidgetPromotionOptions,
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
-import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
+import {
+  applyDynamicInputs,
+  syncListInputs
+} from '@/core/graph/widgets/dynamicWidgets'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,
@@ -450,12 +453,16 @@ export const useLitegraphService = () => {
         subgraph.events.addEventListener('widget-demoted', () => {
           invalidateSubgraphPseudoWidgetCache(this)
         })
+        subgraph.events.addEventListener('input-list-changed', () =>
+          syncListInputs(this)
+        )
 
         setupStrokeStyles(this)
         addInputs(this, ComfyNode.nodeData.inputs)
         addOutputs(this, ComfyNode.nodeData.outputs)
         setInitialSize(this)
         this.serialize_widgets = true
+        syncListInputs(this)
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
       }
 
@@ -530,6 +537,7 @@ export const useLitegraphService = () => {
         )
 
         super.configure(data)
+        syncListInputs(this)
       }
     }
 

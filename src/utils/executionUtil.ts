@@ -152,17 +152,21 @@ export const graphToPrompt = async (
 
     // Store all node links
     for (const [i, input] of node.inputs.entries()) {
-      const resolvedInput = node.resolveInput(i)
-      if (!resolvedInput) continue
+      const entries = node.resolveListInput(i) ?? [
+        { name: input.name, resolved: node.resolveInput(i) }
+      ]
+      for (const { name, resolved } of entries) {
+        if (!resolved) continue
 
-      // Resolved to an actual widget value rather than a node connection
-      if (resolvedInput.widgetInfo) {
-        const { value } = resolvedInput.widgetInfo
-        inputs[input.name] = Array.isArray(value) ? { __value__: value } : value
-        continue
+        // Resolved to an actual widget value rather than a node connection
+        if (resolved.widgetInfo) {
+          const { value } = resolved.widgetInfo
+          inputs[name] = Array.isArray(value) ? { __value__: value } : value
+          continue
+        }
+
+        inputs[name] = [resolved.origin_id, resolved.origin_slot]
       }
-
-      inputs[input.name] = [resolvedInput.origin_id, resolvedInput.origin_slot]
     }
 
     const cnrId = zNodePackMetadata.shape.cnr_id.safeParse(

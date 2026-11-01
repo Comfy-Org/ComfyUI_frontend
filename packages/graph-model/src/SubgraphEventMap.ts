@@ -22,6 +22,9 @@ export interface SubgraphEventMap extends LGraphEventMap {
   'input-added': {
     input: SubgraphInput
   }
+  'input-list-changed': {
+    input: SubgraphInput
+  }
   'output-added': {
     output: SubgraphOutput
   }

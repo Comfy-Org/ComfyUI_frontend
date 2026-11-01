@@ -265,8 +265,14 @@ export function groupResolvedByOutput(
   const groupedByOutput: ReturnType<typeof groupResolvedByOutput> = new Map()
 
   for (const resolved of resolvedConnections) {
-    // Force no group (unique object) if output is undefined; corruption or an error has occurred
-    const groupBy = resolved.subgraphInput ?? resolved.output ?? {}
+    const { inputNode, input } = resolved
+    // Force no group (unique object) if output is undefined; corruption or an error has occurred.
+    // A link into a dynamic group gets its own input, to merge into a list.
+    const dynamic =
+      input && inputNode?.getListSlotNames?.(inputNode.inputs.indexOf(input))
+    const groupBy = dynamic
+      ? {}
+      : (resolved.subgraphInput ?? resolved.output ?? {})
     const group = groupedByOutput.get(groupBy)
     if (group) {
       group.push(resolved)

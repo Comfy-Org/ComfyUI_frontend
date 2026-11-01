@@ -193,6 +193,12 @@ export interface SubgraphIO extends SubgraphIOShared {
   type: string
   /** Links connected to this slot, or `undefined` if not connected. An output slot should only ever have one link. */
   linkIds?: number[]
+  /**
+   * Subgraph inputs only. A list input feeds a whole dynamic input group (e.g.
+   * an autogrow input) through one link, and each subgraph node shows it as
+   * that group, growing one slot per item.
+   */
+  list?: boolean
 }
 
 /** A reference to a node widget shown in the parent graph */
