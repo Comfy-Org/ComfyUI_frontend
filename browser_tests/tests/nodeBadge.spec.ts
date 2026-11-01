@@ -297,15 +297,13 @@ for (const vueEnabled of [false, true] as const) {
               required?: Record<string, unknown>
               optional?: Record<string, unknown>
             }
-            inputs?: Array<{ name?: string }>
+            inputs?: Record<string, unknown>
           }
         }
         if (!registered.nodeData) throw new Error(`No nodeData for ${type}`)
         delete registered.nodeData.input?.required?.raw
         delete registered.nodeData.input?.optional?.raw
-        registered.nodeData.inputs = registered.nodeData.inputs?.filter(
-          ({ name }) => name !== 'raw'
-        )
+        delete registered.nodeData.inputs?.raw
         registered.nodeData.price_badge = {
           engine: 'jsonata',
           expr: "{'type': 'text', 'text': '99.9 credits/Run'}",
