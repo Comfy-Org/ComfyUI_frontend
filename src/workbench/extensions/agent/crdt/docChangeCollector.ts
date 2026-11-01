@@ -7,7 +7,7 @@ import * as Y from 'yjs'
 
 import { definitionsObserverRoot } from './agentSubgraphDefinitions'
 import type { FrameChanges, NodeChange } from './liveGraphApplier'
-import { SYNCED_NODE_FIELDS } from './liveGraphApplier'
+import { readDocGroups, SYNCED_NODE_FIELDS } from './liveGraphApplier'
 
 /**
  * Collects what the Y observers on one follower document report between two
@@ -27,7 +27,7 @@ export class DocChangeCollector {
     Map<string, Set<string> | 'all'>
   >()
   private readonly interiorDefinitions = new Set<string>()
-  private readonly removedGroups = new Set<string>()
+  private readonly groups = new Set<string>()
   private readonly nodesMap: Y.Map<Y.Map<unknown>>
   private readonly linksMap: Y.Map<unknown>
   private readonly definitionsMap: Y.Map<unknown>
@@ -37,7 +37,7 @@ export class DocChangeCollector {
     this.nodesMap = nodesMap(doc)
     this.linksMap = linksMap(doc)
     this.definitionsMap = definitionsObserverRoot(doc)
-    this.metaMap = doc.getMap('meta')
+    this.metaMap = doc.getMap<unknown>('meta')
     this.nodesMap.observeDeep(this.onNodesChanged)
     this.linksMap.observe(this.onLinksChanged)
     this.definitionsMap.observeDeep(this.onDefinitionsChanged)
@@ -60,7 +60,7 @@ export class DocChangeCollector {
         ])
       ),
       interiorDefinitions: new Set(this.interiorDefinitions),
-      removedGroups: new Set(this.removedGroups)
+      groups: new Set(this.groups)
     }
   }
 
@@ -78,7 +78,7 @@ export class DocChangeCollector {
     this.links.clear()
     this.interiors.clear()
     this.interiorDefinitions.clear()
-    this.removedGroups.clear()
+    this.groups.clear()
   }
 
   destroy(): void {
@@ -223,22 +223,9 @@ export class DocChangeCollector {
   private readonly onMetaChanged = (event: Y.YMapEvent<unknown>): void => {
     const change = event.changes.keys.get('groups')
     if (!change) return
-    const current = groupIds(this.metaMap.get('groups'))
-    for (const id of groupIds(change.oldValue))
-      if (!current.has(id)) this.removedGroups.add(id)
-    for (const id of current) this.removedGroups.delete(id)
+    const before = readDocGroups(change.oldValue)
+    const after = readDocGroups(this.metaMap.get('groups'))
+    for (const id of before.keys()) if (!after.has(id)) this.groups.add(id)
+    for (const id of after.keys()) if (!before.has(id)) this.groups.add(id)
   }
-}
-
-export function groupIds(groups: unknown): Set<string> {
-  const ids = new Set<string>()
-  if (!Array.isArray(groups)) return ids
-  for (const group of groups) {
-    const id: unknown =
-      typeof group === 'object' && group !== null
-        ? (group as { id?: unknown }).id
-        : undefined
-    if (typeof id === 'number' || typeof id === 'string') ids.add(String(id))
-  }
-  return ids
 }

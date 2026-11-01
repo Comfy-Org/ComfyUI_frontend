@@ -342,7 +342,7 @@ const zSubgraphInstance = z
   })
   .passthrough()
 
-const zGroup = z
+export const zGroup = z
   .object({
     id: z.number().optional(),
     title: z.string(),

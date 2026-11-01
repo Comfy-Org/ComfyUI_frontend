@@ -22,19 +22,24 @@ import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
+  ISerialisedGroup,
   ISerialisedNode
 } from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { zComfyNode } from '@comfyorg/graph-model/workflowSchema'
+import { zComfyNode, zGroup } from '@comfyorg/graph-model/workflowSchema'
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
@@ -77,8 +82,8 @@ export interface FrameChanges {
 
   interiorDefinitions?: ReadonlySet<string>
 
-  /** Root group ids the document's `meta.groups` held and no longer does. */
-  removedGroups?: ReadonlySet<string>
+  /** Root group ids that `meta.groups` gained or lost. */
+  groups?: ReadonlySet<string>
 }
 
 export interface RemoteApplyContext {
@@ -218,6 +223,19 @@ const zDocNodeFields = zComfyNode
     properties: z.record(z.string(), zNodeProperty.optional()).optional(),
     [OPAQUE_WIDGETS_KEY]: zWidgetRecord.optional()
   })
+
+const zDocGroup = zGroup.extend({ id: z.number() })
+
+/** The `meta.groups` records that configure a canvas group, keyed by id. */
+export function readDocGroups(groups: unknown): Map<string, ISerialisedGroup> {
+  const parsed = new Map<string, ISerialisedGroup>()
+  if (!Array.isArray(groups)) return parsed
+  for (const record of groups) {
+    const group = zDocGroup.safeParse(structuredClone(record))
+    if (group.success) parsed.set(String(group.data.id), group.data)
+  }
+  return parsed
+}
 
 /**
  * Only the actor's kind is reported: the segments after it in
@@ -763,6 +781,13 @@ function positionalWidgetValues(
   })
 }
 
+function addGroup(graph: LGraph, serialised: ISerialisedGroup): LGraphGroup {
+  const group = new LGraphGroup()
+  group.configure(serialised)
+  graph.add(group)
+  return group
+}
+
 function missingNode(docNode: DocNode): LGraphNode {
   const node = new LGraphNode(
     docNode.serialised.title || docNode.type || 'Missing Node',
@@ -845,8 +870,6 @@ export class LiveGraphApplier {
           })
         }
 
-        this.deleteGroups(graph, changes.removedGroups, context)
-
         for (const [id, keys] of changes.resyncNodes) {
           if (touchedNodes.has(id)) continue
           this.try(context, () => this.syncFields(graph, doc, id, keys))
@@ -860,8 +883,14 @@ export class LiveGraphApplier {
         this.applyInteriors(graph, doc, changes, context, mode)
 
         this.applyLinks(graph, doc, [...changes.links], context)
+        const createdGroups = this.applyGroups(
+          graph,
+          doc,
+          changes.groups,
+          context
+        )
         if (mode === 'merge')
-          this.placeBatch(graph, created, {
+          this.placeBatch(graph, created, createdGroups, {
             moveCollisions: context.liveAgentTurn === true
           })
         return {
@@ -890,6 +919,13 @@ export class LiveGraphApplier {
     for (const id of graph.links.keys()) {
       if (docLinks.has(String(id))) continue
       this.try(context, () => graph.removeLink(id))
+    }
+    const docGroups = readDocGroups(doc.getMap<unknown>('meta').get('groups'))
+    const absentGroups = graph.groups.filter(
+      (group) => !docGroups.has(String(group.id))
+    )
+    for (const group of absentGroups) {
+      this.try(context, () => graph.remove(group))
     }
   }
 
@@ -1010,17 +1046,24 @@ export class LiveGraphApplier {
     if (node) graph.remove(node)
   }
 
-  private deleteGroups(
+  private applyGroups(
     graph: LGraph,
+    doc: Y.Doc,
     ids: ReadonlySet<string> | undefined,
     context: RemoteApplyContext
-  ): void {
-    for (const id of ids ?? []) {
+  ): LGraphGroup[] {
+    if (!ids?.size) return []
+    const docGroups = readDocGroups(doc.getMap<unknown>('meta').get('groups'))
+    const created: LGraphGroup[] = []
+    for (const id of ids) {
       this.try(context, () => {
-        const group = graph.groups.find((group) => String(group.id) === id)
-        if (group) graph.remove(group)
+        const live = graph.groups.find((group) => String(group.id) === id)
+        const docGroup = docGroups.get(id)
+        if (live && !docGroup) graph.remove(live)
+        else if (!live && docGroup) created.push(addGroup(graph, docGroup))
       })
     }
+    return created
   }
 
   private upsertNode(
@@ -1746,28 +1789,32 @@ export class LiveGraphApplier {
   private placeBatch(
     graph: LGraph,
     created: readonly NodeId[],
+    createdGroups: readonly LGraphGroup[],
     { moveCollisions }: { moveCollisions: boolean }
   ): void {
-    if (created.length === 0) return
     const createdSet = new Set(created)
-    const rect = (node: LGraphNode): PlacementRect => ({
-      x: node.pos[0],
-      y: node.pos[1],
-      width: node.size[0],
-      height: node.size[1]
+    const rect = (item: LGraphNode | LGraphGroup): PlacementRect => ({
+      x: item.pos[0],
+      y: item.pos[1],
+      width: item.size[0],
+      height: item.size[1]
     })
-    const incoming = graph._nodes.filter((node) => createdSet.has(node.id))
+    const incoming = [
+      ...graph._nodes.filter((node) => createdSet.has(node.id)),
+      ...createdGroups
+    ]
     const offset = placementOffset({
-      existing: graph._nodes
-        .filter((node) => !createdSet.has(node.id))
-        .map(rect),
+      existing: [
+        ...graph._nodes.filter((node) => !createdSet.has(node.id)),
+        ...graph.groups.filter((group) => !createdGroups.includes(group))
+      ].map(rect),
       viewport: this.deps.viewportBounds?.() ?? null,
       incoming: incoming.map(rect),
       moveCollisions
     })
     if (!offset) return
-    for (const node of incoming) {
-      node.pos = [node.pos[0] + offset.dx, node.pos[1] + offset.dy]
+    for (const item of incoming) {
+      item.pos = [item.pos[0] + offset.dx, item.pos[1] + offset.dy]
     }
   }
 }
