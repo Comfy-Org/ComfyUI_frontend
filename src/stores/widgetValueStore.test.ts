@@ -8,6 +8,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 
 import { stripGraphPrefix, useWidgetValueStore } from './widgetValueStore'
@@ -444,6 +445,93 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)).toBe(seedState)
       expect(store.getWidgetRenderState(seedA)).toBe(seedRenderState)
       expect(store.getNodeWidgetIds(graphA, nodeId)).toEqual([seedA])
+    })
+  })
+
+  describe('converted restored values', () => {
+    const node = toNodeId('node-1')
+    const width = { name: 'width', type: 'number', options: {} }
+    const enabled = { name: 'enabled', type: 'toggle', options: {} }
+
+    function restore(positional: WidgetValue[]) {
+      const store = useWidgetValueStore()
+      store.setNodeWidgetRestoration(graphA, node, {
+        positional,
+        restoreNamed: false
+      })
+      return store
+    }
+
+    it('warns once per load, naming each node, input and stored value', async () => {
+      const store = restore(['1536', 'false'])
+
+      expect(store.getRestoredWidgetValue(graphA, node, width, 0)).toEqual({
+        value: 1536
+      })
+      store.getRestoredWidgetValue(graphA, node, width, 0)
+      store.getRestoredWidgetValue(graphA, node, enabled, 1)
+      await Promise.resolve()
+
+      expect(console.warn).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(console.warn).mock.calls[0][1]).toEqual([
+        { nodeId: node, input: 'width', stored: '1536' },
+        { nodeId: node, input: 'enabled', stored: 'false' }
+      ])
+    })
+
+    it('warns once per load for named restoration too', async () => {
+      const store = useWidgetValueStore()
+      store.setNodeWidgetRestoration(graphA, node, {
+        positional: [],
+        restoreNamed: true,
+        named: { width: '1536', enabled: 'false' }
+      })
+
+      expect(store.getRestoredWidgetValue(graphA, node, width, 0)).toEqual({
+        value: 1536
+      })
+      expect(store.getRestoredWidgetValue(graphA, node, enabled, 1)).toEqual({
+        value: false
+      })
+      await Promise.resolve()
+
+      expect(console.warn).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(console.warn).mock.calls[0][1]).toEqual([
+        { nodeId: node, input: 'width', stored: '1536' },
+        { nodeId: node, input: 'enabled', stored: 'false' }
+      ])
+    })
+
+    it('warns again on a later load', async () => {
+      const store = restore(['1536'])
+
+      store.getRestoredWidgetValue(graphA, node, width, 0)
+      await Promise.resolve()
+      store.getRestoredWidgetValue(graphA, node, width, 0)
+      await Promise.resolve()
+
+      expect(console.warn).toHaveBeenCalledTimes(2)
+    })
+
+    it('warns when restoreValue converts a value', async () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 0))
+
+      store.restoreValue(seedA, '42')
+      await Promise.resolve()
+
+      expect(vi.mocked(console.warn).mock.calls[0][1]).toEqual([
+        { nodeId: node, input: 'seed', stored: '42' }
+      ])
+    })
+
+    it('stays silent when the saved value already has the right type', async () => {
+      const store = restore([1536])
+
+      store.getRestoredWidgetValue(graphA, node, width, 0)
+      await Promise.resolve()
+
+      expect(console.warn).not.toHaveBeenCalled()
     })
   })
 

@@ -45,6 +45,9 @@ const PricingTableStub = {
 }
 
 const stubs = {
+  CreditsLockedNotice: {
+    template: '<div data-testid="credits-locked-notice" />'
+  },
   PricingTable: PricingTableStub,
   CloudBadge: { template: '<div />' },
   SubscribeButton: { template: '<div />' },
@@ -54,6 +57,7 @@ const stubs = {
 function renderComponent(props: {
   reason?: PaymentIntentSource
   paymentIntentSource: PaymentIntentSource | undefined
+  creditsLocked?: boolean
 }) {
   return render(SubscriptionRequiredDialogContent, {
     props: { onClose: vi.fn(), ...props },
@@ -84,6 +88,12 @@ describe('SubscriptionRequiredDialogContent', () => {
     expect(screen.getByTestId('pricing-table')).toHaveTextContent(
       'agent_paywall'
     )
+  })
+
+  it('explains locked credits above the pricing table', () => {
+    renderComponent({ paymentIntentSource: undefined, creditsLocked: true })
+
+    expect(screen.getByTestId('credits-locked-notice')).toBeInTheDocument()
   })
 
   it('names the legacy panel dialog by its reason-specific title', async () => {
