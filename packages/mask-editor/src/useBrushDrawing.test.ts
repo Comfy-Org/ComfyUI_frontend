@@ -1,5 +1,6 @@
 import { useMaskEditorStore } from './maskEditorStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
 import { BrushShape, Tools } from './types'
@@ -67,13 +68,14 @@ function makePointerEvent(
   y: number,
   opts: { buttons?: number; shiftKey?: boolean } = {}
 ): PointerEvent {
-  return {
+  return fromPartial<PointerEvent>({
     offsetX: x,
     offsetY: y,
+    pointerId: 1,
     buttons: opts.buttons ?? 1,
     shiftKey: opts.shiftKey ?? false,
     preventDefault: vi.fn()
-  } as unknown as PointerEvent
+  })
 }
 
 function makeMockCtx(): CanvasRenderingContext2D {
@@ -272,6 +274,37 @@ describe('drawEnd canvas visibility', () => {
 })
 
 describe('drawEnd', () => {
+  it.for(['pointerup', 'pointercancel'])(
+    'ignores %s from a pointer that no longer owns the stroke',
+    async (type) => {
+      const { startDrawing, drawEnd } = setup()
+      await startDrawing(
+        new PointerEvent('pointerdown', {
+          pointerType: 'pen',
+          pointerId: 11,
+          buttons: 1
+        })
+      )
+      await startDrawing(
+        new PointerEvent('pointerdown', {
+          pointerType: 'pen',
+          pointerId: 22,
+          buttons: 1
+        })
+      )
+
+      await drawEnd(
+        new PointerEvent(type, { pointerType: 'pen', pointerId: 11 })
+      )
+
+      expect(saveStateSpy).not.toHaveBeenCalled()
+      await drawEnd(
+        new PointerEvent(type, { pointerType: 'pen', pointerId: 22 })
+      )
+      expect(saveStateSpy).toHaveBeenCalledOnce()
+    }
+  )
+
   it('calls compositeStroke indicating the active layer and erasing state', async () => {
     const { startDrawing, drawEnd } = setup()
     await startDrawing(makePointerEvent(50, 50))
