@@ -503,71 +503,71 @@ describe('useWorkflowStore', () => {
       expect(workflow.isModified).toBe(true)
     })
 
-    it('does not mark a saved workflow modified when the draft a tab switch left matches the file', async () => {
-      enableWorkflowPersistence()
-      await syncRemoteWorkflowsWithMeta([
-        { path: 'a.json', modified: 100, size: 1 }
-      ])
-      const workflow = store.getWorkflowByPath('workflows/a.json')!
-      saveV2Draft(workflow.path, { data: defaultGraphJSON, name: 'a.json' })
-      vi.mocked(api.getUserData).mockResolvedValue(
-        new Response(defaultGraphJSON, { status: 200 })
-      )
-
-      await workflow.load()
-
-      expect(workflow.activeState).toEqual(defaultGraph)
-      expect(workflow.isModified).toBe(false)
-    })
-
-    it('keeps the draft viewport without marking the workflow modified', async () => {
-      enableWorkflowPersistence()
-      await syncRemoteWorkflowsWithMeta([
-        { path: 'a.json', modified: 100, size: 1 }
-      ])
-      const workflow = store.getWorkflowByPath('workflows/a.json')!
-      const draftGraph = JSON.parse(defaultGraphJSON)
-      draftGraph.extra = {
-        ...draftGraph.extra,
-        ds: { scale: 2.5, offset: [40, -80] }
+    describe('restoring a saved workflow over its draft', () => {
+      const loadWithDraft = async (
+        draftData: string,
+        fileData = defaultGraphJSON
+      ) => {
+        enableWorkflowPersistence()
+        await syncRemoteWorkflowsWithMeta([
+          { path: 'a.json', modified: 100, size: 1 }
+        ])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        saveV2Draft(workflow.path, { data: draftData, name: 'a.json' })
+        vi.mocked(api.getUserData).mockResolvedValue(
+          new Response(fileData, { status: 200 })
+        )
+        await workflow.load()
+        return workflow
       }
-      saveV2Draft(workflow.path, {
-        data: JSON.stringify(draftGraph),
-        name: 'a.json'
+
+      const draftWithExtra = (extra: Record<string, unknown>) => {
+        const draftGraph = JSON.parse(defaultGraphJSON)
+        draftGraph.extra = { ...draftGraph.extra, ...extra }
+        return JSON.stringify(draftGraph)
+      }
+
+      it('does not mark it modified when the draft a tab switch left matches the file', async () => {
+        const workflow = await loadWithDraft(defaultGraphJSON)
+
+        expect(workflow.activeState).toEqual(defaultGraph)
+        expect(workflow.isModified).toBe(false)
       })
-      vi.mocked(api.getUserData).mockResolvedValue(
-        new Response(defaultGraphJSON, { status: 200 })
-      )
 
-      await workflow.load()
+      it('keeps the draft viewport without marking it modified', async () => {
+        const workflow = await loadWithDraft(
+          draftWithExtra({ ds: { scale: 2.5, offset: [40, -80] } })
+        )
 
-      expect(workflow.activeState?.extra?.ds).toEqual({
-        scale: 2.5,
-        offset: [40, -80]
+        expect(workflow.activeState?.extra?.ds).toEqual({
+          scale: 2.5,
+          offset: [40, -80]
+        })
+        expect(workflow.isModified).toBe(false)
       })
-      expect(workflow.isModified).toBe(false)
-    })
 
-    it('marks a saved workflow modified when its draft only changes app mode', async () => {
-      enableWorkflowPersistence()
-      await syncRemoteWorkflowsWithMeta([
-        { path: 'a.json', modified: 100, size: 1 }
-      ])
-      const workflow = store.getWorkflowByPath('workflows/a.json')!
-      const draftGraph = JSON.parse(defaultGraphJSON)
-      draftGraph.extra = { ...draftGraph.extra, linearMode: true }
-      saveV2Draft(workflow.path, {
-        data: JSON.stringify(draftGraph),
-        name: 'a.json'
+      it('marks it modified when the draft only changes app mode', async () => {
+        const workflow = await loadWithDraft(
+          draftWithExtra({ linearMode: true })
+        )
+
+        expect(workflow.activeState?.extra?.linearMode).toBe(true)
+        expect(workflow.isModified).toBe(true)
       })
-      vi.mocked(api.getUserData).mockResolvedValue(
-        new Response(defaultGraphJSON, { status: 200 })
-      )
 
-      await workflow.load()
+      it('marks it modified when the draft has no node list to compare', async () => {
+        const workflow = await loadWithDraft('{"links":[]}')
 
-      expect(workflow.activeState?.extra?.linearMode).toBe(true)
-      expect(workflow.isModified).toBe(true)
+        expect(workflow.activeState).toEqual({ links: [] })
+        expect(workflow.isModified).toBe(true)
+      })
+
+      it('marks it modified when the saved file has no node list to compare', async () => {
+        const workflow = await loadWithDraft(defaultGraphJSON, '{"links":[]}')
+
+        expect(workflow.activeState).toEqual(defaultGraph)
+        expect(workflow.isModified).toBe(true)
+      })
     })
 
     it('should discard a stale V2 draft when the remote workflow is newer', async () => {

@@ -43,14 +43,6 @@ const waitForWorkflowTabState = async (comfyPage: ComfyPage, minPaths = 2) => {
   }, minPaths)
 }
 
-const expectTabOpensAsSaved = async (comfyPage: ComfyPage, name: string) => {
-  await comfyPage.menu.topbar.getWorkflowTab(name).click()
-  await comfyPage.workflow.waitForWorkflowIdle()
-  await expect.poll(() => comfyPage.menu.topbar.getActiveTabName()).toBe(name)
-  expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
-  expect(await comfyPage.page.title()).not.toMatch(/^\*/)
-}
-
 type NodeRef = NonNullable<
   Awaited<ReturnType<ComfyPage['nodeOps']['getFirstNodeRef']>>
 >
@@ -1051,9 +1043,9 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.menu.topbar.saveWorkflow(third)
 
     await test.step('visit every tab without editing, leaving drafts behind', async () => {
-      await expectTabOpensAsSaved(comfyPage, first)
-      await expectTabOpensAsSaved(comfyPage, second)
-      await expectTabOpensAsSaved(comfyPage, third)
+      await comfyPage.workflow.expectTabOpensAsSaved(first)
+      await comfyPage.workflow.expectTabOpensAsSaved(second)
+      await comfyPage.workflow.expectTabOpensAsSaved(third)
       await waitForWorkflowTabState(comfyPage, 3)
       await expect
         .poll(async () => (await comfyPage.workflow.getDraftWorkflows()).length)
@@ -1066,15 +1058,18 @@ test.describe('Workflow Persistence', () => {
       await expect
         .poll(() => comfyPage.menu.topbar.getActiveTabName())
         .toBe(third)
-      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
+      await expect
+        .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+        .toBe(false)
+      await expect.poll(() => comfyPage.page.title()).not.toMatch(/^\*/)
     })
 
     await test.step('the first restored tab reopens as saved', async () => {
-      await expectTabOpensAsSaved(comfyPage, first)
+      await comfyPage.workflow.expectTabOpensAsSaved(first)
     })
 
     await test.step('the second restored tab reopens as saved', async () => {
-      await expectTabOpensAsSaved(comfyPage, second)
+      await comfyPage.workflow.expectTabOpensAsSaved(second)
     })
   })
 

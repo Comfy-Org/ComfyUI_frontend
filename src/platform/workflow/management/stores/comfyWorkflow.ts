@@ -221,6 +221,18 @@ function readUsableDraft(
   }
 }
 
+function draftMatchesSavedFile(
+  runtime: WorkflowRuntime,
+  saved: ComfyWorkflowJSON,
+  draft: ComfyWorkflowJSON
+): boolean {
+  return (
+    Array.isArray(saved.nodes) &&
+    Array.isArray(draft.nodes) &&
+    runtime.graphEqual(saved, draft)
+  )
+}
+
 /**
  * The workflow object parsed from the stored text. Anything else (nothing
  * stored, empty text, JSON `null`, a number, an array) cannot back a change
@@ -367,7 +379,11 @@ export class ComfyWorkflow extends UserFile {
     if (draft?.state && draft.content) {
       this.changeTracker.activeState = draft.state
       this.content = draft.content
-      this._isModified = !runtime.graphEqual(initialState, draft.state)
+      this._isModified = !draftMatchesSavedFile(
+        runtime,
+        initialState,
+        draft.state
+      )
       runtime.markDraftUsed(this.path)
     }
     return this as this & LoadedComfyWorkflow
