@@ -26,6 +26,7 @@ export type Settings = {
   'Comfy.Workflow.ShowMissingMediaWarning': boolean
   'Comfy.Workflow.WarnBlueprintOverwrite': boolean
   'Comfy.Desktop.CloudNotificationShown': boolean
+  'Comfy.DeploymentSwitcher.Seen': boolean
   'Comfy.DisableFloatRounding': boolean
   'Comfy.DisableSliders': boolean
   'Comfy.DOMClippingEnabled': boolean

@@ -20,6 +20,7 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
@@ -27,6 +28,8 @@ import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
+import { api } from '@/scripts/api'
 
 import DeploymentSwitcher from './DeploymentSwitcher.vue'
 
@@ -71,6 +74,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/scripts/api'))
 vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
@@ -177,6 +181,9 @@ describe('DeploymentSwitcher', () => {
   beforeEach(() => {
     hoisted.rootGraph = undefined
     sessionStorage.clear()
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.DeploymentSwitcher.Seen': true }
+    })
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     Object.defineProperty(window, 'location', {
       value: { reload, origin: 'http://localhost' },
@@ -409,6 +416,36 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
   })
 
+  it('marks the engine button until its first open closes, and remembers it on every device as soon as it opens', async () => {
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    expect(screen.getByTestId('deployment-switcher-new')).toBeInTheDocument()
+    expect(trigger).toHaveAccessibleName(
+      'New. Running on Comfy Cloud. Choose where this editor runs'
+    )
+
+    await openList(user)
+    expect(api.storeSetting).toHaveBeenCalledWith(
+      'Comfy.DeploymentSwitcher.Seen',
+      true
+    )
+    expect(screen.getByTestId('deployment-switcher-new')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('deployment-switcher-new')
+      ).not.toBeInTheDocument()
+    )
+    expect(trigger).toHaveAccessibleName(
+      'Running on Comfy Cloud. Choose where this editor runs'
+    )
+  })
+
   it('switches only to a ready deployment, and a row that is not does nothing when chosen', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     mockWorkspaceApi.pickDeployment.mockReturnValue(new Promise(() => {}))
@@ -515,31 +552,21 @@ describe('DeploymentSwitcher', () => {
     expect(screen.getByTestId(`deployment-row-${D2}`)).toHaveFocus()
   })
 
-  it.for([
-    {
-      workspace: 'with deployments',
-      items: listing.items,
-      label: 'Manage deployments'
-    },
-    { workspace: 'with none', items: [], label: 'Create a custom deployment' }
-  ])(
-    'links a workspace $workspace to the Builds page on the Developer Platform, in a new tab, as $label',
-    async ({ items, label }) => {
-      mockWorkspaceApi.listDeployments.mockResolvedValue({ ...listing, items })
-      const user = renderSwitcher()
-      await openList(user)
+  it('links an existing deployment workspace to the Builds page on the Developer Platform in a new tab', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
 
-      const builds = screen.getByTestId('deployment-switcher-builds')
-      expect(builds).toHaveTextContent(label)
-      expect(builds).toHaveAttribute(
-        'href',
-        expect.stringMatching(/\/profile\/builds$/)
-      )
-      expect(builds).toHaveAttribute('target', '_blank')
-    }
-  )
+    const builds = screen.getByRole('menuitem', { name: 'Manage deployments' })
+    expect(builds).toHaveAttribute(
+      'href',
+      expect.stringMatching(/\/profile\/builds$/)
+    )
+    expect(builds).toHaveAttribute('target', '_blank')
+    expect(screen.queryByTestId('deployment-switcher-create')).toBeNull()
+  })
 
-  it('says a workspace with no deployments has none yet, and still offers to create one', async () => {
+  it('says a workspace with no deployments has none yet and opens the creation dialog', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue({
       ...listing,
       items: []
@@ -550,8 +577,18 @@ describe('DeploymentSwitcher', () => {
     expect(screen.getByTestId('deployment-switcher-empty')).toHaveTextContent(
       'This workspace has no deployments yet.'
     )
-    expect(screen.getByTestId('deployment-switcher-builds')).toBeVisible()
+    expect(screen.queryByTestId('deployment-switcher-builds')).toBeNull()
     expect(screen.queryByText(/Switching reloads the editor/)).toBeNull()
+
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+    )
+
+    await waitFor(() =>
+      expect(
+        useDialogStore().isDialogOpen('global-create-custom-deployment')
+      ).toBe(true)
+    )
   })
 
   const pickGone = 'The deployment you picked no longer exists.'
@@ -1050,7 +1087,7 @@ describe('DeploymentSwitcher', () => {
     it.for([
       {
         path: 'picking a deployment',
-        owner: false,
+        setup: () => {},
         boot: listing,
         next: listing,
         act: (user: ReturnType<typeof userEvent.setup>) =>
@@ -1059,7 +1096,7 @@ describe('DeploymentSwitcher', () => {
       },
       {
         path: 'picking Comfy Cloud',
-        owner: false,
+        setup: () => {},
         boot: { ...listing, picked_deployment_id: D2, pick_source: 'browser' },
         next: { ...listing, picked_deployment_id: D2, pick_source: 'browser' },
         act: (user: ReturnType<typeof userEvent.setup>) =>
@@ -1068,7 +1105,7 @@ describe('DeploymentSwitcher', () => {
       },
       {
         path: 'following the workspace default',
-        owner: false,
+        setup: () => {},
         boot: {
           ...listing,
           picked_deployment_id: D1,
@@ -1087,7 +1124,7 @@ describe('DeploymentSwitcher', () => {
       },
       {
         path: 'changing the default this browser follows',
-        owner: true,
+        setup: asOwner,
         boot: listing,
         next: listing,
         act: async (user: ReturnType<typeof userEvent.setup>) => {
@@ -1098,7 +1135,7 @@ describe('DeploymentSwitcher', () => {
       },
       {
         path: 'reloading after its deployment changed',
-        owner: false,
+        setup: () => {},
         boot: { ...listing, picked_deployment_id: D2, pick_source: 'browser' },
         next: {
           ...listing,
@@ -1115,15 +1152,15 @@ describe('DeploymentSwitcher', () => {
       }
     ] satisfies {
       path: string
-      owner: boolean
+      setup: () => void
       boot: WorkspaceDeploymentList
       next: WorkspaceDeploymentList
       act: (user: ReturnType<typeof userEvent.setup>) => Promise<void>
       target: string
     }[])(
       'asks to save them first when $path, and changes nothing on Cancel',
-      async ({ owner, boot, next, act, target }) => {
-        if (owner) asOwner()
+      async ({ setup, boot, next, act, target }) => {
+        setup()
         mockWorkspaceApi.listDeployments
           .mockResolvedValueOnce(boot)
           .mockResolvedValue(next)
@@ -1176,6 +1213,28 @@ describe('DeploymentSwitcher', () => {
         expect(takeLeavePromptSkip()).toBe(true)
       }
     )
+
+    it('drops the first-open mark when it closes its list to ask about them', async () => {
+      useSettingStore().$patch({
+        settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+      const user = renderSwitcher()
+      await openList(user)
+
+      await user.click(screen.getByTestId(`deployment-row-${D2}`))
+
+      await waitFor(() =>
+        expect(useDialogService().confirm).toHaveBeenCalledOnce()
+      )
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('deployment-switcher-new')
+        ).not.toBeInTheDocument()
+      )
+    })
 
     it('stays put when a save does not finish', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
@@ -1346,15 +1405,35 @@ describe('DeploymentSwitcher', () => {
     })
   })
 
-  it('opens its list when the missing-nodes message asks for the switcher', async () => {
+  it('opens its list and remembers the first open when the missing-nodes message asks for the switcher', async () => {
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
+    })
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-    renderSwitcher()
-    await screen.findByTestId('deployment-switcher-trigger')
+    const user = renderSwitcher()
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
     expect(screen.queryByRole('menu')).toBeNull()
 
     useDeploymentPickStore().requestSwitcherOpen()
 
     expect(await screen.findByRole('menu')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        'Comfy.DeploymentSwitcher.Seen',
+        true
+      )
+    )
+    expect(screen.getByTestId('deployment-switcher-new')).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('deployment-switcher-new')
+      ).not.toBeInTheDocument()
+    )
+    expect(trigger).toHaveAccessibleName(
+      'Running on Comfy Cloud. Choose where this editor runs'
+    )
   })
 
   it('does not open on its own later for an ask made before it could show', async () => {

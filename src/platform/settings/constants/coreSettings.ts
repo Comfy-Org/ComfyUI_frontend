@@ -311,6 +311,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.DeploymentSwitcher.Seen',
+    name: 'Running on button opened at least once',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.61.0'
+  },
+  {
     id: 'Comfy.Graph.ZoomSpeed',
     category: ['LiteGraph', 'Canvas', 'ZoomSpeed'],
     name: 'Canvas zoom speed',
