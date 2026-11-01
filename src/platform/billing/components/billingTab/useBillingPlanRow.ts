@@ -43,12 +43,24 @@ export function useBillingPlanRow() {
       : null
   )
 
-  const subscriptionFacts = computed(() => ({
-    duration: subscription.value?.duration ?? null,
-    planName: planNameFor(subscription.value?.tier ?? null),
-    renewalDate: subscription.value?.renewalDate ?? null,
-    endDate: subscription.value?.endDate ?? null
-  }))
+  const subscriptionFacts = computed(() => {
+    const current = subscription.value
+    if (!current) {
+      return {
+        duration: null,
+        planName: null,
+        renewalDate: null,
+        endDate: null
+      }
+    }
+    return {
+      duration: current.duration,
+      planName: planNameFor(current.tier),
+      renewalDate: current.renewalDate,
+      endDate: current.endDate,
+      endedAt: current.endedAt
+    }
+  })
 
   const state = computed(() =>
     derivePlanRow({
