@@ -213,6 +213,77 @@ describe('BillingAutoTopUpCard', () => {
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
+      status: 'paused_by_budget',
+      settings: { ...configured, cycle_resets_at: null },
+      label: 'Limit reached',
+      lines: [RULE, 'Monthly limit reached.'],
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
+    },
+    {
+      status: 'paused_by_budget',
+      settings: { ...configured, paused_by_budget_remainder: true },
+      label: 'Limit reached',
+      lines: [
+        RULE,
+        'Next top-up would go over your monthly limit. Resumes November 28.'
+      ],
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
+    },
+    {
+      status: 'paused_by_budget',
+      settings: {
+        ...configured,
+        paused_by_budget_remainder: true,
+        cycle_resets_at: null
+      },
+      label: 'Limit reached',
+      lines: [RULE, 'Next top-up would go over your monthly limit.'],
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
+    },
+    {
+      status: 'paused_by_budget',
+      settings: { ...configured, monthly_budget_is_default: true },
+      label: 'Maximum reached',
+      lines: [RULE, 'Monthly maximum reached. Resets November 28.'],
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
+    },
+    {
+      status: 'paused_by_budget',
+      settings: {
+        ...configured,
+        monthly_budget_is_default: true,
+        paused_by_budget_remainder: true
+      },
+      label: 'Maximum reached',
+      lines: [RULE, 'Monthly maximum reached. Resets November 28.'],
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
+    },
+    {
+      status: 'paused_by_budget',
+      settings: {
+        ...configured,
+        monthly_budget_is_default: true,
+        cycle_resets_at: null
+      },
+      label: 'Maximum reached',
+      lines: [RULE, 'Monthly maximum reached.'],
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
+    },
+    {
+      status: 'on',
+      settings: { ...configured, monthly_budget_is_default: true },
+      label: 'On',
+      lines: [RULE, 'Monthly limit: $50 of $200 used'],
+      action: 'Manage',
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
+    },
+    {
       status: 'on',
       label: 'On',
       lines: [RULE, 'Monthly limit: $50 of $200 used'],
@@ -346,13 +417,18 @@ describe('BillingAutoTopUpCard', () => {
     expect(screen.queryByText(FAILED)).not.toBeInTheDocument()
   })
 
-  it('renders an unknown served status as off', async () => {
-    renderCard(fromAny({ ...notConfigured, status: 'paused_by_admin' }))
+  it.for(['paused_by_admin', 'maximumReached', 'turnedOff'])(
+    'renders the unknown served status %s as off',
+    async (status) => {
+      renderCard(
+        fromAny({ ...configured, monthly_budget_is_default: true, status })
+      )
 
-    expect(
-      await screen.findByTestId('billing-auto-top-up-status')
-    ).toHaveTextContent('Off')
-  })
+      expect(
+        await screen.findByTestId('billing-auto-top-up-status')
+      ).toHaveTextContent(/^Off$/)
+    }
+  )
 
   it('renders nothing when the server marks setup unavailable', async () => {
     renderCard(configured, {

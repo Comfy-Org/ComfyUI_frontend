@@ -37,7 +37,12 @@ type RevertibleSettingId =
 type SettingWriteOutcome =
   | { status: 'saved' | 'unchanged' }
   | { status: 'refused'; statusCode: number; statusText: string }
+  | { status: 'indeterminate'; statusCode: number; statusText: string }
   | { status: 'unconfirmed'; cause: unknown }
+
+const PRE_STORAGE_REFUSAL_STATUSES = new Set([
+  400, 404, 405, 413, 414, 415, 422, 431
+])
 
 function resolveDefaultValue<T>(value: T | (() => T)): T {
   return typeof value === 'function' ? (value as () => T)() : value
@@ -260,12 +265,17 @@ export function settingStoreSetup(persistence: SettingPersistence) {
     }
 
     if (!response.ok) {
-      await revertSettingLocally(key, hadValue, applied)
-      return {
-        status: 'refused',
+      const outcome = {
+        status: PRE_STORAGE_REFUSAL_STATUSES.has(response.status)
+          ? ('refused' as const)
+          : ('indeterminate' as const),
         statusCode: response.status,
         statusText: response.statusText
       }
+      if (outcome.status === 'refused') {
+        await revertSettingLocally(key, hadValue, applied)
+      }
+      return outcome
     }
 
     const event = settingChangedEvent(settingsById.value[key], key, applied)

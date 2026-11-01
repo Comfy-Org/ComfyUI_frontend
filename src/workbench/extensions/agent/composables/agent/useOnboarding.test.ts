@@ -20,6 +20,7 @@ import {
 
 const KEY = 'test.onboarded'
 const STEPS: CoachStep[] = Array.from({ length: 4 }, (_, index) => ({
+  card: 'intro',
   target: `#target-${index}`,
   title: `Card ${index + 1}`,
   body: `Description ${index + 1}`,
