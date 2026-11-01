@@ -193,19 +193,20 @@ describe('backport workflow token scopes', () => {
   })
 
   it('defines every token a step swaps into GH_TOKEN', () => {
-    const undefinedTokens = Object.entries(readWorkflow(WORKFLOW).jobs ?? {})
-      .flatMap(([jobName, job]) =>
-        (job.steps ?? []).flatMap((step) =>
-          [
-            ...stripComments(step.run ?? '').matchAll(
-              /GH_TOKEN="\$\{([A-Za-z_]\w*)\}"/g
-            )
-          ]
-            .map((match) => match[1])
-            .filter((name) => !step.env?.[name] && !job.env?.[name])
-            .map((name) => `${jobName} / ${step.name}: ${name}`)
-        )
+    const undefinedTokens = Object.entries(
+      readWorkflow(WORKFLOW).jobs ?? {}
+    ).flatMap(([jobName, job]) =>
+      (job.steps ?? []).flatMap((step) =>
+        [
+          ...stripComments(step.run ?? '').matchAll(
+            /GH_TOKEN="\$\{([A-Za-z_]\w*)\}"/g
+          )
+        ]
+          .map((match) => match[1])
+          .filter((name) => !step.env?.[name] && !job.env?.[name])
+          .map((name) => `${jobName} / ${step.name}: ${name}`)
       )
+    )
 
     expect(undefinedTokens).toEqual([])
   })
