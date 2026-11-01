@@ -3511,6 +3511,7 @@
           "src/scripts/changeTracker.test.ts",
           "src/stores/workflowTabActivityStore.ts",
           "src/stores/workflowTabActivityStore.test.ts",
+          "src/platform/workflow/core/canvasTrackerOwnership.ts",
           "src/utils/syncUtil.ts"
         ]
       },
