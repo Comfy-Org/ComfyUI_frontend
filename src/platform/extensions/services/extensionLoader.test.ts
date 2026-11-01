@@ -1,6 +1,7 @@
-import { assert, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { captureSafeExtensionBoot } from '@/platform/customNodes/safeExtensionBoot'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -35,11 +36,17 @@ const beforeLoad = {
 }
 
 describe('extension loading', () => {
+  beforeEach(() => {
+    window.history.replaceState(null, '', '/')
+    captureSafeExtensionBoot()
+  })
+
   describe('loadExtensions', () => {
     it('keeps custom modules inert while core extensions register in safe mode', async () => {
       const customExtensionLoaded = vi.fn()
       vi.stubGlobal('customExtensionLoaded', customExtensionLoaded)
       window.history.replaceState(null, '', '/?safe')
+      captureSafeExtensionBoot()
       useSettingStore().$patch({
         settingValues: {
           'Comfy.Extension.DisabledPacks': ['/extensions/pack-a/']
@@ -55,6 +62,7 @@ describe('extension loading', () => {
 
       await loadExtensions()
 
+      expect(window.location.search).toBe('')
       expect(customExtensionLoaded).not.toHaveBeenCalled()
       expect(useExtensionStore().isCoreExtension('core.test')).toBe(true)
       expect(useExtensionStore().extensionPaths).toEqual([
@@ -65,6 +73,7 @@ describe('extension loading', () => {
 
     it('falls back safely when persisted disabled extension paths are malformed', async () => {
       window.history.replaceState(null, '', '/?safe')
+      captureSafeExtensionBoot()
       const settingStore = useSettingStore()
       vi.mocked(fetch).mockResolvedValueOnce(
         Response.json({ 'Comfy.Extension.DisabledPacks': {} })

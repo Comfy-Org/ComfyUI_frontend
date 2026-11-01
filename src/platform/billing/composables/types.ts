@@ -1,4 +1,7 @@
-import type { SubscriptionState } from '@comfyorg/ingest-types'
+import type {
+  PeriodCreditGrant,
+  SubscriptionState
+} from '@comfyorg/ingest-types'
 import type { ComputedRef, Ref } from 'vue'
 
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
@@ -80,6 +83,8 @@ export interface SubscriptionInfo {
   renewalDate: string | null
   /** ISO 8601; format at the display site. */
   endDate: string | null
+  /** Served `ended_at`; absent when the server omits the field. */
+  endedAt?: string | null
   isCancelled: boolean
   hasFunds: boolean
   /** Agent funds across shared credits and the Agent-scoped balance. */
@@ -194,6 +199,8 @@ export interface BillingState {
   renewalDate: ComputedRef<string | null>
   /** Open renewal invoice to pay; owners while payment_failed or paused. */
   renewalInvoice: ComputedRef<RenewalInvoice | null>
+  /** Served configured plan allowance; null when the server omits it. */
+  periodCreditGrant: ComputedRef<PeriodCreditGrant | null>
 }
 
 /** The rail a cancel actually ran on, fixed when the call was dispatched. */

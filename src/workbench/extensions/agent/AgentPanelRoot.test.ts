@@ -1026,9 +1026,9 @@ describe('AgentPanelRoot onboarding', () => {
           'Describe your ideas, ask it to build and run workflows. It sees your canvas and files.'
       },
       {
-        title: 'Each chat works on one workflow',
+        title: 'The agent edits one workflow at a time',
         description:
-          "The workflow it's editing is named above the message box. Switching tabs brings up that workflow's latest chat, if it has one."
+          'That workflow is named at the top of the message box. Click the name to pick another. Clicking a workflow tab can open its latest chat, unless the message box has a draft.'
       },
       {
         title: 'Pick up where you left off',
@@ -9199,7 +9199,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await user.click(
         within(
           await screen.findByRole('dialog', {
-            name: 'Each chat works on one workflow'
+            name: 'The agent edits one workflow at a time'
           })
         ).getByRole('button', { name: 'Next' })
       )
@@ -15411,6 +15411,32 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByTestId('node-reference-chip')).toHaveTextContent(
       'KSampler'
     )
+  })
+
+  it('reveals the selected-node prompt only after a node-selection-mode addition', async () => {
+    distribution.isCloud = false
+    makeTab('wf-42')
+    const state = setupNodeSelectionCanvas()
+    const view = renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+    const prompt = i18n.global.t('agent.suggestedPrompts.local.2')
+
+    expect(screen.queryByRole('button', { name: prompt })).toBeNull()
+    await enterNodeSelectionMode()
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    expect(canvasStore.isPickingNodes).toBe(true)
+    expect(screen.queryByRole('button', { name: prompt })).toBeNull()
+
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+
+    expect(await screen.findByRole('button', { name: prompt })).toBeVisible()
+
+    view.unmount()
+    renderWithSelectedTarget()
+    await nextTick()
+    expect(screen.getByRole('button', { name: prompt })).toBeVisible()
   })
 
   it('excludes referenced nodes from the mention picker', async () => {

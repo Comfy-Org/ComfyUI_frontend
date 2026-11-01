@@ -57,6 +57,7 @@ const {
   canOpenAssets = false,
   isMaximized = false,
   selectionTags = [],
+  hasNodeSelectionModeAddition = false,
   nodeReferenceDisabledReason,
   availableWorkflows = [],
   selectWorkflowReference,
@@ -93,6 +94,7 @@ const {
   canOpenAssets?: boolean
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
+  hasNodeSelectionModeAddition?: boolean
   nodeReferenceDisabledReason?: string
   availableWorkflows?: WorkflowReferenceOption[]
   selectWorkflowReference?: (
@@ -509,6 +511,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :aria-busy="openingChat"
           :inert="openingChat"
           :user-name
+          :has-selection="hasNodeSelectionModeAddition"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)

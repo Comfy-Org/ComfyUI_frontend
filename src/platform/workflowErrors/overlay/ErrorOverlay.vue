@@ -55,7 +55,7 @@
             size="unset"
             class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
             data-testid="error-overlay-see-errors"
-            @click="emit('viewErrors')"
+            @click="emit('viewErrors', overlayGroupKeys)"
           >
             {{
               appMode
@@ -91,13 +91,19 @@ import ErrorOverlayDeploymentOffer from '@/platform/workspace/components/ErrorOv
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
-const emit = defineEmits<{ viewErrors: [] }>()
+const emit = defineEmits<{ viewErrors: [groupKeys: readonly string[]] }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 
-const { hasError, hasMissingNodes, isVisible, overlayMessage, overlayTitle } =
-  useErrorOverlayState()
+const {
+  hasError,
+  hasMissingNodes,
+  isVisible,
+  overlayMessage,
+  overlayTitle,
+  overlayGroupKeys
+} = useErrorOverlayState()
 
 function dismiss() {
   executionErrorStore.dismissErrorOverlay()
