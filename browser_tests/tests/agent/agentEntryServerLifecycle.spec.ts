@@ -65,8 +65,6 @@ test.describe(
         await expect(failed).toHaveAttribute('aria-pressed', 'false')
       })
 
-      // A signed-out local user is asked to agree and sign in before the
-      // panel opens, so the click lands on that card, not the panel.
       await test.step('a ready agent offers itself to a signed-out user', async () => {
         const status: AgentServerFeature = { state: 'ready', reason: null }
         publish('agent_status', status)
