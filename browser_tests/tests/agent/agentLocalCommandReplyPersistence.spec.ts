@@ -87,9 +87,16 @@ test.describe(
 
       await test.step('persist and finish one copy of the reply', async () => {
         await promptHistory.persistAndFinishLatestTurn(replyText, 0)
+        await agentPanel.expectTurnSettled()
         await expect(
           agentPanel.root.getByTestId('markdown-stream')
         ).toHaveCount(1)
+        await expect(agentPanel.root.getByTestId('markdown-stream')).toHaveText(
+          renderedReplyText,
+          {
+            useInnerText: true
+          }
+        )
       })
 
       await test.step('reload the panel from persisted history', async () => {
