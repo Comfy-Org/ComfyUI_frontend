@@ -2,6 +2,7 @@ import type { ErrorEvent, EventHint } from '@sentry/vue'
 
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
+import { tagSentryEvaluatedCommandCaller } from './sentryEvaluatedCommandCaller'
 import {
   sentryThirdPartyErrorFilter,
   tagSentryNonFirstPartyOrigin
@@ -46,8 +47,10 @@ export function sentryBeforeSend(
   return (
     kept &&
     groupWorkspaceApiError(
-      tagSentryNonFirstPartyOrigin(
-        tagSentryStaleChunkCause(addVueDirectiveDiagnostics(kept, hint))
+      tagSentryEvaluatedCommandCaller(
+        tagSentryNonFirstPartyOrigin(
+          tagSentryStaleChunkCause(addVueDirectiveDiagnostics(kept, hint))
+        )
       ),
       hint
     )

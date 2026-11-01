@@ -273,6 +273,7 @@
       },
       "phase": {
         "challenge": "Nothing has been charged yet.",
+        "challengeVerifyBy": "Nothing has been charged yet. Verify by {date}, {time}.",
         "processing": "This payment is already processing and can't be canceled.",
         "redirecting": "Taking you to {method} to finish paying. Nothing has been charged yet.",
         "redirectingUnnamed": "Taking you to your payment provider to finish paying. Nothing has been charged yet.",
