@@ -14,7 +14,7 @@ import type {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
@@ -351,6 +351,7 @@ async function mockAgentBoot(
   page: Page,
   {
     agentConsentAccepted,
+    agentConsentLoadStatus,
     agentConsentReads,
     agentConsentSave,
     agentConsentWebSession,
@@ -566,6 +567,8 @@ async function mockAgentBoot(
         return route.fulfill({ status: 401 })
       }
       agentConsentReads.push(consentAccepted)
+      if (agentConsentLoadStatus >= 400)
+        return route.fulfill({ status: agentConsentLoadStatus })
       return route.fulfill(
         consentAccepted
           ? jsonRoute(storedConsent)
@@ -665,6 +668,7 @@ type AgentFixtures = {
   acceptedTurns: AgentTurnAccepted[]
   agentBilling: AgentBillingFixture
   agentConsentAccepted: boolean
+  agentConsentLoadStatus: number
   agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWebSession: boolean
@@ -688,6 +692,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use(new AgentBillingFixture())
   },
   agentConsentAccepted: [true, { option: true }],
+  agentConsentLoadStatus: [200, { option: true }],
   agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
@@ -710,6 +715,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   page: async (
     {
       agentConsentAccepted,
+      agentConsentLoadStatus,
       agentConsentReads,
       agentConsentSave,
       agentConsentWebSession,
@@ -732,6 +738,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   ) => {
     await mockAgentBoot(page, {
       agentConsentAccepted,
+      agentConsentLoadStatus,
       agentConsentReads,
       agentConsentSave,
       agentConsentWebSession,

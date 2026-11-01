@@ -7,7 +7,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { AuthUserInfo } from '@/types/authTypes'
+import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -232,6 +232,7 @@ describe('useAgentDockMount', () => {
       await nextTick()
 
       expect(fetchStatus).toHaveBeenCalledOnce()
+      expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
     })
 
     it('refreshes billing for an acceptance recorded before any host mounted', async () => {

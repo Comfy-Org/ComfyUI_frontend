@@ -64,7 +64,7 @@
       "role": "domain"
     },
     {
-      "path": "src/types/searchBoxTypes.ts",
+      "path": "packages/settings-core/src/searchBoxTypes.ts",
       "role": "domain"
     }
   ],
