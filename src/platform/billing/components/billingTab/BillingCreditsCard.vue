@@ -107,9 +107,13 @@
             <span v-if="state.topUpInUse" class="text-xs text-muted-foreground">
               {{ $t('workspacePanel.billingTab.credits.inUse') }}
             </span>
+            <p v-if="topUpPaused" class="m-0 text-sm text-muted-foreground">
+              {{ $t('workspacePanel.billingTab.credits.topUpPaused') }}
+            </p>
           </div>
           <Button
-            v-if="canTopUp"
+            v-if="canTopUp || topUpPaused"
+            :disabled="!canTopUp"
             :variant="addCreditsVariant"
             size="md"
             class="shrink-0"
@@ -140,11 +144,13 @@ import type { CreditsCardState } from '@/platform/billing/components/billingTab/
 const {
   state,
   canTopUp,
+  topUpPaused = false,
   planCreditNote,
   addCreditsVariant = 'secondary'
 } = defineProps<{
   state: CreditsCardState
   canTopUp: boolean
+  topUpPaused?: boolean
   planCreditNote: string | null
   addCreditsVariant?: 'secondary' | 'inverted'
 }>()

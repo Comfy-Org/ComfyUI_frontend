@@ -3693,6 +3693,7 @@
         "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
         "title": "Credits",
         "topUp": "Top-up",
+        "topUpPaused": "Buying credits isn't available right now. Try again later.",
         "topUpTooltip": "Credits you added. They're used once plan credits run out.",
         "unavailable": "Couldn't load your balance."
       },
@@ -3787,6 +3788,10 @@
         "pastDuePersonalBody": "You've used all your credits. Update your payment method to add more.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
+        "pausedBody": "Your team has used all its credits. Buying credits isn't available right now. Credits refill on {date}.",
+        "pausedBodyNoDate": "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+        "pausedPersonalBody": "You've used all your credits. Buying credits isn't available right now. Credits refill on {date}.",
+        "pausedPersonalBodyNoDate": "You've used all your credits. Buying credits isn't available right now. Try again later.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
@@ -3803,7 +3808,8 @@
         "localBody": "You have {credits} credit left. Add credits to keep running Partner Nodes. | You have {credits} credits left. Add credits to keep running Partner Nodes.",
         "personalBody": "You have {credits} credit left. Add credits before you run out. | You have {credits} credits left. Add credits before you run out.",
         "ownerBody": "This workspace has {credits} credit left. Add credits before you run out. | This workspace has {credits} credits left. Add credits before you run out.",
-        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out."
+        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out.",
+        "pausedBody": "You have {credits} credit left. Buying credits isn't available right now. | You have {credits} credits left. Buying credits isn't available right now."
       },
       "ending": {
         "title": "Your Team plan ends on {date}",

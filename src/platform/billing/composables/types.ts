@@ -113,6 +113,8 @@ export interface BalanceInfo {
   effectiveBalanceAuthoritative?: boolean
   prepaidBalanceMicros?: number
   cloudCreditBalanceMicros?: number
+  /** Served display-only plan remainder in cents; absent when omitted. */
+  cloudCreditDisplayBalanceCents?: number
   /** Server-suggested top-up that covers a negative balance; null otherwise. */
   suggestedTopupAmountCents?: number | null
   /** Served `low_balance`. Absent when the balance response omits it. */
@@ -201,6 +203,8 @@ export interface BillingState {
   renewalInvoice: ComputedRef<RenewalInvoice | null>
   /** Served configured plan allowance; null when the server omits it. */
   periodCreditGrant: ComputedRef<PeriodCreditGrant | null>
+  /** Served next credit refill; null when the server omits it. */
+  nextCreditRefillAt: ComputedRef<string | null>
 }
 
 /** The rail a cancel actually ran on, fixed when the call was dispatched. */

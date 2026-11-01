@@ -72,6 +72,9 @@
       <BillingCreditsCard
         :state="creditsCard"
         :can-top-up="capabilities.canTopUp.value"
+        :top-up-paused="
+          capabilities.topUpDenial.value === 'topup_purchases_paused'
+        "
         :add-credits-variant="addCreditsVariant"
         :plan-credit-note="planCreditNote"
         @retry="retryBalance"

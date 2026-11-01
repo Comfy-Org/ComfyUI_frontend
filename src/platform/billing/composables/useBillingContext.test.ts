@@ -370,6 +370,28 @@ describe('useBillingContext', () => {
     expect(periodCreditGrant.value).toEqual({ state: 'none' })
   })
 
+  it.for([
+    { rail: 'stripe', served: '2026-12-01T00:00:00Z' },
+    { rail: 'stripe', served: undefined },
+    { rail: 'legacy_stripe', served: '2026-12-01T00:00:00Z' },
+    { rail: 'legacy_stripe', served: undefined }
+  ] as const)(
+    'forwards the $rail next credit refill as served ($served)',
+    async ({ rail, served }) => {
+      mockBillingRail.value = rail
+      mockBillingStatus.value.next_credit_refill_at = served
+      useSubscription().subscriptionStatus.value = {
+        ...DEFAULT_BILLING_STATUS,
+        next_credit_refill_at: served
+      }
+
+      const context = useBillingContext()
+      await context.initialize()
+
+      expect(context.nextCreditRefillAt.value).toBe(served ?? null)
+    }
+  )
+
   it('exposes initialize action', async () => {
     const { initialize } = useBillingContext()
     await expect(initialize()).resolves.toBeUndefined()

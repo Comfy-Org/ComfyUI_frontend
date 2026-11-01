@@ -57,7 +57,7 @@ function arrange(options: {
   isTeamPlan?: boolean
   subscription?: SubscriptionInfo
   balance?: BalanceInfo | null
-  renewalDate?: string | null
+  nextCreditRefillAt?: string | null
   canTopUp?: boolean
   topUpDenial?: string
   canManageBilling?: boolean
@@ -83,7 +83,8 @@ function arrange(options: {
       subscription: computed(() => subscription.value),
       balance: computed(() => balance.value),
       isTeamPlan: computed(() => options.isTeamPlan ?? false),
-      renewalDate: computed(() => options.renewalDate ?? null),
+      renewalDate: computed(() => '2026-12-15T00:00:00Z'),
+      nextCreditRefillAt: computed(() => options.nextCreditRefillAt ?? null),
       billingStatus: computed(() => 'paid' as const)
     })
   )
@@ -151,7 +152,7 @@ describe('BillingLocalCreditBanner', () => {
     arrange({
       isCloud: true,
       subscription: { ...personalSubscription, hasFunds: false },
-      renewalDate: '2026-10-01T00:00:00Z'
+      nextCreditRefillAt: '2026-10-01T00:00:00Z'
     })
 
     expect(screen.getByTestId('billing-local-credit-banner')).toHaveTextContent(
@@ -174,14 +175,14 @@ describe('BillingLocalCreditBanner', () => {
     {
       name: 'a personal owner',
       isTeamPlan: false,
-      renewalDate: '2026-10-01T00:00:00Z',
+      nextCreditRefillAt: '2026-10-01T00:00:00Z',
       body: "You've used all your credits. Add more credits or wait until credits refill on October 1, 2026.",
       buttons: ['Dismiss', 'Add credits']
     },
     {
-      name: 'a team owner without a refill date',
+      name: 'a team owner without a served refill date',
       isTeamPlan: true,
-      renewalDate: null,
+      nextCreditRefillAt: null,
       body: 'Your team has used all its credits. Add more credits.',
       buttons: ['Dismiss', 'Add credits']
     },
@@ -189,16 +190,29 @@ describe('BillingLocalCreditBanner', () => {
       name: 'a team member',
       isTeamPlan: true,
       canManageSubscription: false,
-      renewalDate: '2026-10-01T00:00:00Z',
+      nextCreditRefillAt: '2026-10-01T00:00:00Z',
       body: 'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on October 1, 2026.',
       buttons: ['Dismiss']
+    },
+    {
+      name: 'a personal owner without a served refill date',
+      isTeamPlan: false,
+      nextCreditRefillAt: null,
+      body: "You've used all your credits. Add more credits.",
+      buttons: ['Dismiss', 'Add credits']
     }
   ])(
     'shows out of credits to $name',
-    ({ isTeamPlan, renewalDate, canManageSubscription, body, buttons }) => {
+    ({
+      isTeamPlan,
+      nextCreditRefillAt,
+      canManageSubscription,
+      body,
+      buttons
+    }) => {
       arrange({
         isTeamPlan,
-        renewalDate,
+        nextCreditRefillAt,
         canManageSubscription,
         subscription: { ...personalSubscription, hasFunds: false }
       })
@@ -261,6 +275,158 @@ describe('BillingLocalCreditBanner', () => {
       expect(screen.getByRole('button', { name: 'Dismiss' })).toHaveClass('h-8')
       expect(screen.getByRole('status')).toHaveClass('rounded-xl', 'p-3')
       expect(banner).not.toHaveTextContent('credits refill')
+    }
+  )
+
+  it.for<{
+    reason: 'topup_purchases_paused' | 'not_workspace_owner' | undefined
+    owner: boolean
+    isTeamPlan: boolean
+    nextCreditRefillAt: string | null
+    body: string
+    buttons: string[]
+  }>([
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      isTeamPlan: true,
+      nextCreditRefillAt: '2027-10-28T00:00:00Z',
+      body: "Your team has used all its credits. Buying credits isn't available right now. Credits refill on October 28, 2027.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      isTeamPlan: true,
+      nextCreditRefillAt: null,
+      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      isTeamPlan: false,
+      nextCreditRefillAt: '2027-10-28T00:00:00Z',
+      body: "You've used all your credits. Buying credits isn't available right now. Credits refill on October 28, 2027.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      isTeamPlan: false,
+      nextCreditRefillAt: null,
+      body: "You've used all your credits. Buying credits isn't available right now. Try again later.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'not_workspace_owner',
+      owner: false,
+      isTeamPlan: true,
+      nextCreditRefillAt: '2027-10-28T00:00:00Z',
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on October 28, 2027.',
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'not_workspace_owner',
+      owner: false,
+      isTeamPlan: true,
+      nextCreditRefillAt: null,
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits.',
+      buttons: ['Dismiss']
+    },
+    {
+      reason: undefined,
+      owner: true,
+      isTeamPlan: true,
+      nextCreditRefillAt: '2027-10-28T00:00:00Z',
+      body: 'Your team has used all its credits. Add more credits or wait until credits refill on October 28, 2027.',
+      buttons: ['Dismiss', 'Add credits']
+    },
+    {
+      reason: undefined,
+      owner: true,
+      isTeamPlan: false,
+      nextCreditRefillAt: null,
+      body: "You've used all your credits. Add more credits.",
+      buttons: ['Dismiss', 'Add credits']
+    }
+  ])(
+    'words out of credits for reason $reason, owner $owner, team $isTeamPlan, refill $nextCreditRefillAt',
+    ({ reason, owner, isTeamPlan, nextCreditRefillAt, body, buttons }) => {
+      arrange({
+        isCloud: true,
+        isTeamPlan,
+        nextCreditRefillAt,
+        canManageSubscription: owner,
+        canManageBilling: owner,
+        canTopUp: reason === undefined,
+        topUpDenial: reason,
+        subscription: { ...personalSubscription, hasFunds: false }
+      })
+
+      const banner = screen.getByTestId('billing-local-credit-banner')
+      expect(banner).toHaveTextContent('Out of credits')
+      expect(banner).toHaveTextContent(body)
+      expect(
+        screen.getAllByRole('button').map((button) => button.textContent.trim())
+      ).toEqual(buttons)
+    }
+  )
+
+  it.for<{
+    reason: 'topup_purchases_paused' | 'not_workspace_owner' | undefined
+    owner: boolean
+    workspaceType: 'team' | 'personal'
+    body: string
+    buttons: string[]
+  }>([
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      workspaceType: 'team',
+      body: "You have 1,055 credits left. Buying credits isn't available right now.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      workspaceType: 'personal',
+      body: "You have 1,055 credits left. Buying credits isn't available right now.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'not_workspace_owner',
+      owner: false,
+      workspaceType: 'team',
+      body: 'This workspace has 1,055 credits left. Ask the workspace owner to add credits before you run out.',
+      buttons: ['Dismiss']
+    },
+    {
+      reason: undefined,
+      owner: true,
+      workspaceType: 'personal',
+      body: 'You have 1,055 credits left. Add credits before you run out.',
+      buttons: ['Dismiss', 'Add credits']
+    }
+  ])(
+    'words low credits for reason $reason, owner $owner, $workspaceType',
+    ({ reason, owner, workspaceType, body, buttons }) => {
+      arrange({
+        isCloud: true,
+        workspaceType,
+        canManageBilling: owner,
+        canManageSubscription: owner,
+        canTopUp: reason === undefined,
+        topUpDenial: reason,
+        balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
+      })
+
+      const banner = screen.getByTestId('billing-local-credit-banner')
+      expect(banner).toHaveTextContent('Credits are low')
+      expect(banner).toHaveTextContent(body)
+      expect(
+        screen.getAllByRole('button').map((button) => button.textContent.trim())
+      ).toEqual(buttons)
     }
   )
 
