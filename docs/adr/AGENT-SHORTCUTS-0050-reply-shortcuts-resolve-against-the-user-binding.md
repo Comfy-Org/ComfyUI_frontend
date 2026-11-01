@@ -29,17 +29,17 @@ not supplied to the model. **The combo identifies the command; the surrounding
 prose is never consulted.**
 
 `canvasCommandForWrittenKeys` answers which command ships a given combo as its
-default, over every modifier-bearing entry in `CORE_KEYBINDINGS` rather than a
-hand-kept list of canvas actions. A curated list is the drift this decision
-argues against, and it had already drifted: it named two commands no reply could
-reach because their defaults carry no modifier, and omitted modifier-bearing
-ones such as paste-and-connect, folding the macOS spellings (`Cmd`, `Command`, `⌘`, `Option`,
-`Opt`, `⌥`, `⇧`, `Meta`), the named-key synonyms (`Return`, `Esc`, `Del`,
-`Spacebar`) and case onto the labels this app uses. `useCanvasActionShortcutKeys`
-closes over the keybinding store and reports every sequence that command is
-bound to now, not just the first. Both are public entry points of the
-keybindings domain; the agent domain declares `keybindings` as an allowed
-dependency, so the reply panel reaches no other keybindings module.
+default. It covers every modifier-bearing entry in `CORE_KEYBINDINGS`, not a
+hand-kept list of canvas actions. A curated list drifts from the defaults, which
+is the failure this decision avoids.
+
+The lookup folds the macOS spellings (`Cmd`, `Command`, `⌘`, `Option`, `Opt`,
+`⌥`, `⇧`, `Meta`), the named-key synonyms (`Return`, `Esc`, `Del`, `Spacebar`)
+and case onto the labels this app uses. `useCanvasActionShortcutKeys` closes
+over the keybinding store and reports every sequence that command is bound to
+now, not just the first. Both are public entry points of the keybindings domain;
+the agent domain declares `keybindings` as an allowed dependency, so the reply
+panel reaches no other keybindings module.
 
 `renderShortcutKeycaps` rewrites one block of rendered reply HTML. Matching runs
 over a _run_ of text nodes that read as one stretch of prose rather than over

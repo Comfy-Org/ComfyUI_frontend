@@ -199,11 +199,12 @@ function proseRuns(root: DocumentFragment): Text[][] {
 
   while (walker.nextNode()) {
     const node = walker.currentNode
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      if (!INLINE_ELEMENTS.has((node as Element).tagName)) endRun()
+    if (node instanceof Element) {
+      if (!INLINE_ELEMENTS.has(node.tagName)) endRun()
       continue
     }
-    const text = node as Text
+    if (!(node instanceof Text)) continue
+    const text = node
     const block = isProse(text) ? blockOf(text) : null
     if (!block || block !== currentBlock) {
       endRun()

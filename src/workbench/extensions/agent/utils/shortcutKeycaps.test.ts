@@ -146,9 +146,54 @@ describe('renderShortcutKeycaps', () => {
     expect(out).not.toContain('<kbd>C</kbd>+<kbd>Ctrl</kbd>')
   })
 
-  it('does not join text across a line break', () => {
-    const html = '<p>Ctrl<br>+B is not a shortcut.</p>'
-    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
+  it.for([
+    [
+      'a line break',
+      '<p>Ctrl<br>+B is not a shortcut.</p>',
+      '<p>Ctrl<br>+B is not a shortcut.</p>'
+    ],
+    [
+      'a block boundary',
+      '<li>Ends with Ctrl</li><li>+B starts the next</li>',
+      '<li>Ends with Ctrl</li><li>+B starts the next</li>'
+    ],
+    [
+      'a code span',
+      '<p>Ctrl<code>x</code>+B is not a shortcut.</p>',
+      '<p>Ctrl<code>x</code>+B is not a shortcut.</p>'
+    ],
+    [
+      'an alternation of different modifiers',
+      '<p>Ctrl/Alt+B is not one shortcut.</p>',
+      '<p>Ctrl/Alt+B is not one shortcut.</p>'
+    ],
+    [
+      'a word that begins with a key letter',
+      '<p>Ctrl+click a node to add it to the selection.</p>',
+      '<p>Ctrl+click a node to add it to the selection.</p>'
+    ],
+    [
+      'a modifier run followed by a word',
+      '<p>Ctrl+Shift+click to bypass several at once.</p>',
+      '<p>Ctrl+Shift+click to bypass several at once.</p>'
+    ],
+    [
+      'a drag gesture',
+      '<p>Shift+drag to move the group, or Alt+drag to copy it.</p>',
+      '<p>Shift+drag to move the group, or Alt+drag to copy it.</p>'
+    ],
+    [
+      'a modifier at the end of a longer word',
+      '<p>The salt+B variant is not a shortcut.</p>',
+      '<p>The salt+B variant is not a shortcut.</p>'
+    ],
+    [
+      'an action with no key',
+      '<p>Select the node and bypass it.</p>',
+      '<p>Select the node and bypass it.</p>'
+    ]
+  ])('leaves the HTML unchanged across %s', ([, html, expected]) => {
+    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(expected)
   })
 
   it('reads a combo the model wrote in capitals', () => {
@@ -167,27 +212,12 @@ describe('renderShortcutKeycaps', () => {
     expect(out).toContain('<kbd>Ctrl</kbd>+<kbd>Enter</kbd>')
   })
 
-  it('does not join text across a block boundary', () => {
-    const html = '<li>Ends with Ctrl</li><li>+B starts the next</li>'
-    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
-  })
-
-  it('does not join text across a code span', () => {
-    const html = '<p>Ctrl<code>x</code>+B is not a shortcut.</p>'
-    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
-  })
-
   it('keeps a plus that is the key rather than the separator', () => {
     const out = renderShortcutKeycaps(
       '<p>Press Alt+Shift++ to zoom in.</p>',
       resolveDefaults
     )
     expect(out).toContain('<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>+</kbd>')
-  })
-
-  it('leaves an alternation of different modifiers as prose', () => {
-    const html = '<p>Ctrl/Alt+B is not one shortcut.</p>'
-    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
   })
 
   it(
@@ -205,31 +235,6 @@ describe('renderShortcutKeycaps', () => {
       expect(elapsed).toBeLessThan(1000)
     }
   )
-
-  it('leaves a word that begins with a key letter alone', () => {
-    const html = '<p>Ctrl+click a node to add it to the selection.</p>'
-    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
-  })
-
-  it('leaves a modifier run followed by a word alone', () => {
-    const html = '<p>Ctrl+Shift+click to bypass several at once.</p>'
-    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
-  })
-
-  it('leaves a drag gesture alone rather than keycapping its first letter', () => {
-    const html = '<p>Shift+drag to move the group, or Alt+drag to copy it.</p>'
-    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
-  })
-
-  it('does not read a modifier out of the end of a longer word', () => {
-    const html = '<p>The salt+B variant is not a shortcut.</p>'
-    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
-  })
-
-  it('injects nothing into a sentence that named an action but no key', () => {
-    const html = '<p>Select the node and bypass it.</p>'
-    expect(renderShortcutKeycaps(html, resolveDefaults)).toBe(html)
-  })
 
   it('never rewrites inside code, a link, or an existing keycap', () => {
     const html =
