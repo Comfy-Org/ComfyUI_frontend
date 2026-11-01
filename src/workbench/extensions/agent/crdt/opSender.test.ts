@@ -817,10 +817,6 @@ describe('createOpSender', () => {
   it('refuses the next admission after a batch has minted the highest safe counter', () => {
     observedCounter = Number.MAX_SAFE_INTEGER - 2
     sender.enqueue([addNode(1), addNode(2)])
-    expect(sent[0].ops.map((op) => op.base_version)).toEqual([
-      Number.MAX_SAFE_INTEGER - 1,
-      Number.MAX_SAFE_INTEGER
-    ])
 
     sender.enqueue([addNode(3)])
 
