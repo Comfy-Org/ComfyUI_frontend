@@ -22,6 +22,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
+  AgentCoachReleaseReason,
   AgentErrorMetadata,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
@@ -143,12 +144,15 @@ import {
   useAgentSession
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
+import { useAgentSendGates } from './composables/agent/useAgentSendGates'
+import type { CoachHoldEnd } from './composables/agent/useAgentSendGates'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import {
   agentRequestFailureFingerprint,
   describeAgentRequestFailure
 } from './services/agent/agentRequestFailure'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import { setAgentTabTitlePrefix } from './services/agent/agentTabTitlePrefix'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import {
@@ -188,6 +192,7 @@ import {
   resolveDebugPanelEnabled,
   startCrdtDebugGate
 } from './crdt/crdtDebugGate'
+import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
@@ -695,24 +700,62 @@ const coachDeferredBy = computed(() =>
         ? 'dialog_open'
         : null
 )
+const sendGates = useAgentSendGates(
+  () => threadId.value,
+  (gate) => {
+    agentPanelStore.heldSendGate = gate
+  }
+)
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
-function releaseCoachCompletionWaiters(proceed = true): void {
+let coachReleaseRevoked = false
+function releaseCoachCompletionWaiters(
+  holdEnd: CoachHoldEnd,
+  proceed = true
+): void {
+  sendGates.end({ gate: 'coach', ...holdEnd })
   for (const resolve of coachCompletionWaiters) resolve(proceed)
   coachCompletionWaiters.clear()
+}
+const coachReleaseReasons = {
+  finish: 'finished',
+  skip: 'skipped',
+  elsewhere: 'elsewhere'
+} as const satisfies Record<string, AgentCoachReleaseReason>
+
+function onCoachFinished(action: keyof typeof coachReleaseReasons): void {
+  releaseCoachCompletionWaiters({
+    outcome: 'released',
+    reason: coachReleaseReasons[action]
+  })
 }
 watch(
   [consentAccepted, onboardingKey, coachDeferredBy, consentIdentity],
   ([accepted, key, reason, identity], previous) => {
     if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
-    if (!accepted || reason !== null || identity !== previous[3])
-      releaseCoachCompletionWaiters()
+    if (!accepted)
+      releaseCoachCompletionWaiters({
+        outcome: 'dropped',
+        reason: 'consent_cleared'
+      })
+    else if (identity !== previous[3])
+      releaseCoachCompletionWaiters({
+        outcome: 'dropped',
+        reason: 'identity_changed'
+      })
+    else if (reason !== null)
+      releaseCoachCompletionWaiters({
+        outcome: 'released',
+        reason: `deferred_${reason}`
+      })
   },
   { immediate: true }
 )
 const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
 const sendHeldByCoach = ref(false)
 
-async function waitForCoachCompletion(): Promise<boolean> {
+async function waitForCoachCompletion(
+  clientMessageId: string
+): Promise<boolean> {
   const key = onboardingKey.value
   if (!key || hasSeenCoach(key)) return true
   await nextTick()
@@ -724,10 +767,12 @@ async function waitForCoachCompletion(): Promise<boolean> {
   )
     return true
   sendHeldByCoach.value = true
+  sendGates.hold('coach', clientMessageId)
   try {
-    return await new Promise<boolean>((resolve) =>
+    const proceed = await new Promise<boolean>((resolve) =>
       coachCompletionWaiters.add(resolve)
     )
+    return proceed && !coachReleaseRevoked
   } finally {
     sendHeldByCoach.value = false
   }
@@ -1197,6 +1242,8 @@ const docOpMinter = attachDocOpMinter({
   docHasSubgraphDefinition,
   onWidgetWriteRefused: notifyWidgetWriteRefused
 })
+const isChangeTrackerRestoring = () =>
+  workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
@@ -1206,8 +1253,11 @@ const restoreOpMinter = attachRestoreOpMinter({
     const parsed = parseNodeId(nodeId)
     return parsed === null ? null : docInputNames(parsed)
   },
-  isRestoringState: () =>
-    workflowStore.activeWorkflow?.changeTracker?._restoringState === true
+  isRestoringState: isChangeTrackerRestoring
+})
+const agentWriteOverwriteWatch = attachAgentWriteOverwriteWatch({
+  isEnabled: () => agentPanelStore.enabled,
+  isRestoringState: isChangeTrackerRestoring
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
@@ -1291,8 +1341,9 @@ watch(
   { immediate: true, flush: 'sync' }
 )
 watch(
-  () => conversationStore.awaitingApproval,
-  (awaiting) => tabActivity.setAgentAwaitingApproval(awaiting),
+  () =>
+    conversationStore.awaitingApproval ? t('g.agentInputNeededShort') : null,
+  setAgentTabTitlePrefix,
   { immediate: true, flush: 'sync' }
 )
 
@@ -1646,23 +1697,42 @@ void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   runPanelTeardown({
     releaseCoachCompletionWaiters: () => {
-      releaseCoachCompletionWaiters(
-        coachDeferredBy.value !== null && agentPanelStore.isVisible
-      )
+      const deferredBy = coachDeferredBy.value
+      if (deferredBy !== null && agentPanelStore.isVisible)
+        releaseCoachCompletionWaiters({
+          outcome: 'released',
+          reason: `deferred_${deferredBy}`
+        })
+      else {
+        coachReleaseRevoked = true
+        releaseCoachCompletionWaiters(
+          { outcome: 'dropped', reason: 'panel_closed' },
+          false
+        )
+      }
     },
     invalidateConsentHeldSubmission: () => {
       if (
         !sendHeldByCoach.value &&
         (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
         composerStore.submission?.id === consentHeldSubmissionId
-      )
+      ) {
+        sendGates.end({
+          gate: 'consent',
+          outcome: 'dropped',
+          reason: 'panel_closed'
+        })
         composerStore.invalidateSubmission()
+      }
     },
     detachDocOpMinter: () => {
       docOpMinter.detach()
     },
     detachRestoreOpMinter: () => {
       restoreOpMinter.detach()
+    },
+    detachAgentWriteOverwriteWatch: () => {
+      agentWriteOverwriteWatch.detach()
     },
     exitNodeSelectionMode: canvasStore.stopNodePicking,
     stopSession: () => {
@@ -1673,7 +1743,7 @@ onBeforeUnmount(() => {
     },
     clearAgentTurnTabs: () => {
       tabActivity.setAgentTurnTabs([])
-      tabActivity.setAgentAwaitingApproval(false)
+      setAgentTabTitlePrefix(null)
     },
     resetTurnTabResolver: () => {
       conversationStore.setTurnTabResolver(() => ({ status: 'unknown' }))
@@ -1943,25 +2013,21 @@ function onCopyMarkdown(id: string): void {
 
 const coachSteps = computed<CoachStep[]>(() => [
   {
+    card: 'intro',
     target: '#agent-panel-root',
     placement: 'left-center',
     title: t('agent.coachTitle'),
     body: t('agent.coachBody')
   },
   {
+    card: 'workflow',
     target: '#agent-composer',
     placement: 'left-end',
     title: t('agent.coachWorkflowTitle'),
     body: t('agent.coachWorkflowBody')
   },
   {
-    target: '.graph-canvas-panel',
-    placement: 'graph-bottom',
-    toolbarTarget: '.graph-canvas-panel [role="toolbar"]',
-    title: t('agent.coachGraphTitle'),
-    body: t('agent.coachGraphBody')
-  },
-  {
+    card: 'history',
     target: '#agent-chat-history',
     placement: 'left-start',
     tooltip: t('agent.showChatHistory'),
@@ -1971,19 +2037,55 @@ const coachSteps = computed<CoachStep[]>(() => [
 ])
 
 let consentHeldSubmissionId: number | undefined
+async function holdSendForConsent(
+  clientMessageId: string,
+  onAccept: () => void
+): Promise<void> {
+  let accepted = false
+  let exit: 'declined' | 'dismissed' | undefined
+  sendGates.hold('consent', clientMessageId)
+  try {
+    await withConsent(
+      'first_message',
+      () => {
+        accepted = true
+        onAccept()
+      },
+      {
+        onExit: (consentExit) => {
+          exit = consentExit
+        }
+      }
+    )
+  } finally {
+    sendGates.end(
+      accepted
+        ? { gate: 'consent', outcome: 'released', reason: 'accepted' }
+        : {
+            gate: 'consent',
+            outcome: 'dropped',
+            reason: exit ?? 'not_completed'
+          },
+      clientMessageId
+    )
+  }
+}
+
 async function consentAllowsSubmission(
-  submissionId: number | undefined
+  submissionId: number | undefined,
+  clientMessageId: string
 ): Promise<boolean> {
   let hasConsent = false
   let coachReleased = false
   let acceptedIdentity: string | null = null
   consentHeldSubmissionId = submissionId
   try {
-    await withConsent('first_message', () => {
+    await holdSendForConsent(clientMessageId, () => {
       hasConsent = true
       acceptedIdentity = consentIdentity.value
     })
-    if (hasConsent) coachReleased = await waitForCoachCompletion()
+    if (hasConsent)
+      coachReleased = await waitForCoachCompletion(clientMessageId)
   } finally {
     if (consentHeldSubmissionId === submissionId)
       consentHeldSubmissionId = undefined
@@ -2000,6 +2102,7 @@ async function consentAllowsSubmission(
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
+  onRejected: sendGates.rejectDraft,
   target: () => selectedTarget.value,
   editableWorkflowId: () => editableWorkflowId.value,
   selection: {
@@ -2014,7 +2117,7 @@ const { submit: onSend } = useAgentDraftSubmission({
     const submissionId = composerStore.submission?.id
     if (
       !consentAccepted.value &&
-      !(await consentAllowsSubmission(submissionId))
+      !(await consentAllowsSubmission(submissionId, meta.clientMessageId))
     )
       return false
     if (!hasAgentCredential()) {
@@ -2524,8 +2627,13 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :steps="coachSteps"
       :storage-key="onboardingKey"
       :hold-notice="sendHeldByCoach ? t('agent.coachHoldNotice') : undefined"
-      @finished="releaseCoachCompletionWaiters"
-      @stalled="releaseCoachCompletionWaiters"
+      @finished="onCoachFinished"
+      @stalled="
+        releaseCoachCompletionWaiters({
+          outcome: 'released',
+          reason: 'stalled'
+        })
+      "
     />
   </div>
 </template>

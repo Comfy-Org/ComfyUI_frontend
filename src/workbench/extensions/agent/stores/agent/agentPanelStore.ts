@@ -32,6 +32,7 @@ import type {
   CreditTransitionNoticeState
 } from './creditTransitionNoticeState'
 import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
+import type { HeldGate } from '@/workbench/extensions/agent/composables/agent/useAgentSendGates'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
@@ -84,6 +85,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
+  const heldSendGate = ref<HeldGate | null>(null)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const { flags: featureFlags } = useFeatureFlags()
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
@@ -417,6 +419,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    heldSendGate,
     view,
     interruptHistorySelection,
     flagsSettled,

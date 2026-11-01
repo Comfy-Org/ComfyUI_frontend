@@ -139,9 +139,6 @@ export function reportCustomNodeLoadFailures(
 /**
  * Imports the custom node scripts among `servedScripts` in parallel and reports the failures.
  * With a CPU server reading, scripts that miss the deadline turn on late until `signal` aborts.
- *
- * Scripts under a disabled extension path, and every script during a safe boot, are dropped
- * here — before the import — so a disabled pack never executes.
  */
 export async function loadCustomNodeScripts(
   servedScripts: string[],

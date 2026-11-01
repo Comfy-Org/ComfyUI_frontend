@@ -14,7 +14,8 @@ import {
   CUSTOM_NODE_LOAD_ERROR_TYPE
 } from '@/platform/telemetry/customNodeLoadTelemetry'
 
-import { classifyRumErrorOrigin, rumBeforeSend } from './datadogRumBeforeSend'
+import { rumBeforeSend } from './datadogRumBeforeSend'
+import { classifyTelemetryErrorOrigin } from './errorOrigin'
 
 function createErrorEvent(
   message: string,
@@ -421,7 +422,7 @@ describe('rumBeforeSend', () => {
   })
 })
 
-describe('classifyRumErrorOrigin', () => {
+describe('classifyTelemetryErrorOrigin', () => {
   it('uses the first recognizable in-app stack frame', () => {
     const stack = [
       'at external (https://cdn.example.com/library.js:1:2)',
@@ -429,12 +430,16 @@ describe('classifyRumErrorOrigin', () => {
       'at custom (https://cloud.comfy.org/extensions/comfyui-foo/main.js:1:2)'
     ].join('\n')
 
-    expect(classifyRumErrorOrigin(stack)).toEqual({ origin: 'first_party' })
+    expect(classifyTelemetryErrorOrigin(stack)).toEqual({
+      origin: 'first_party'
+    })
   })
 
   it('classifies stacks without in-app frames as third party', () => {
     expect(
-      classifyRumErrorOrigin('at external (https://cdn.example.com/app.js:1:2)')
+      classifyTelemetryErrorOrigin(
+        'at external (https://cdn.example.com/app.js:1:2)'
+      )
     ).toEqual({ origin: 'third_party' })
   })
 })
