@@ -1,4 +1,4 @@
-import { afterEach, assert, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -190,29 +190,18 @@ describe('asset drag root for non-output assets tagged temp', () => {
 })
 
 describe('asset drag on browsers without URL.parse or URL.canParse', () => {
-  const nativeParse = Object.getOwnPropertyDescriptor(URL, 'parse')
-  const nativeCanParse = Object.getOwnPropertyDescriptor(URL, 'canParse')
-
-  afterEach(() => {
-    if (nativeParse) Object.defineProperty(URL, 'parse', nativeParse)
-    else Reflect.deleteProperty(URL, 'parse')
-    if (nativeCanParse) Object.defineProperty(URL, 'canParse', nativeCanParse)
-    else Reflect.deleteProperty(URL, 'canParse')
-  })
-
   it('still resolves the drag media sources', () => {
     vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     vi.mocked(api.apiURL).mockImplementation(
       (path) => `http://localhost:8188/api${path}`
     )
-    Object.defineProperty(URL, 'parse', {
-      configurable: true,
-      value: undefined
-    })
-    Object.defineProperty(URL, 'canParse', {
-      configurable: true,
-      value: undefined
-    })
+    vi.stubGlobal(
+      'URL',
+      Object.assign(class extends URL {}, {
+        parse: undefined,
+        canParse: undefined
+      })
+    )
 
     expect(
       drag({
