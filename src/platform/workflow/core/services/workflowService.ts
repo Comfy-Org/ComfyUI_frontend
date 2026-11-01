@@ -752,6 +752,7 @@ export const useWorkflowService = () => {
     // Use workspaceStore here as it is patched in unit tests.
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
+    useApp().canvasOrUndefined?.cancelGhostPlacement()
     if (activeWorkflow) {
       // Typed as `ComfyWorkflow`: the active workflow's tracker can be absent
       // despite `LoadedComfyWorkflow`'s declared type.

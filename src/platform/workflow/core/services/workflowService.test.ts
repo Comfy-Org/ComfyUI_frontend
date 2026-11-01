@@ -328,6 +328,20 @@ describe('useWorkflowService', () => {
       ).toHaveBeenCalledWith(false)
     })
 
+    it('cancels a node still following the cursor before deactivating the outgoing tracker', () => {
+      const activeWorkflow = createModeTestWorkflow()
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      const { cancelGhostPlacement } = vi.mocked(app.canvas)
+      expect(cancelGhostPlacement).toHaveBeenCalledOnce()
+      expect(cancelGhostPlacement.mock.invocationCallOrder[0]).toBeLessThan(
+        vi.mocked(activeWorkflow.changeTracker.deactivate).mock
+          .invocationCallOrder[0]
+      )
+    })
+
     it('arms suppression by default for a clean workflow load', () => {
       workflowStore.activeWorkflow = createModeTestWorkflow()
 
