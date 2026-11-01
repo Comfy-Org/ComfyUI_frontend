@@ -39,5 +39,6 @@ describe('BillingAutoTopUpBanner', () => {
     const banner = screen.getByTestId('billing-auto-top-up-banner')
     expect(banner).toHaveTextContent(row.title)
     expect(banner).toHaveTextContent(row.body)
+    expect(screen.getByRole('status')).toHaveClass('rounded-xl', 'p-3')
   })
 })

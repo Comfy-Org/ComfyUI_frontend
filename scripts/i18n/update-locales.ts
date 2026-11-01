@@ -412,10 +412,8 @@ export function parseOptions(argv: readonly string[]) {
     }
   })
   const name = values.target
-  if (name !== 'app' && name !== 'website')
-    throw new Error(
-      `Unknown translation target "${name}"; expected app or website.`
-    )
+  if (name !== 'app')
+    throw new Error(`Unknown translation target "${name}"; expected app.`)
   return { config: translationTargets[name], check: values.check }
 }
 

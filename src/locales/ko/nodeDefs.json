@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "이름으로 연결된 입력 중에서 선택합니다. 입력은 두 번 클릭하여 이름을 변경할 수 있습니다.",
+    "display_name": "분기",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "Bria를 사용하여 일반 텍스트로 설명한 객체를 이미지에 삽입합니다. Bria는 전체 프레임을 약 100만 픽셀로 다시 렌더링하므로 결과가 입력과 픽셀 단위로 정렬되지 않습니다.",
     "display_name": "Bria 객체 추가",
@@ -9289,12 +9310,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB, 선형 Rec.709, HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ), HDR LogC3 및 HDR ACEScct를 변환합니다. LogC3는 Rec.709 원색과 [0, 1]로 제한된 코드를 사용하는 EI 800 곡선을 사용합니다. ACEScct는 AP1 원색과 D60 백색점을 사용하며, D65로 Bradford 적응을 적용합니다. EXR 저장을 위해 LogC3 또는 ACEScct를 선형으로 변환하세요. 선형 1.0은 sRGB와 동일한 203니트 기준 백색을 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 및 ACEScct 출력은 확장 값을 유지합니다. 선형에서 HDR로의 변환은 톤 매핑 없이 하이라이트를 유지하며, HLG 및 PQ 출력은 음수 채널을 클리핑합니다. SDR 출력 및 PQ에서 HLG로의 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖 색상을 압축합니다. 변환은 float32로 계산되며 중간 디바이스와 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
+    "description": "sRGB, 선형 Rec.709, HDR(Rec.2020 HLG), HDR PQ(Rec.2020 PQ), HDR LogC3, 선형 ACEScg 및 HDR ACEScct 간에 변환합니다. LogC3는 Rec.709 원색과 [0, 1]로 제한된 코드를 사용하는 EI 800 곡선을 사용합니다. ACEScg는 D60 백색점을 사용하는 장면 선형 AP1입니다. ACEScct는 ACEScg 로그 인코딩입니다. 둘 다 D65에 대한 Bradford 적응을 사용합니다. EXR을 저장하기 전에 LogC3 또는 ACEScct를 선형 ACEScg(AP1 장면 선형) 또는 선형(Rec.709)으로 변환하십시오. 선형 1.0 및 ACEScg 1.0은 sRGB와 동일한 203니트 기준 백색을 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형, ACEScg 및 ACEScct 출력은 확장 값을 보존합니다. 선형-HDR 변환은 톤 매핑 없이 하이라이트를 보존하며, HLG 및 PQ 출력은 음수 채널을 잘라냅니다. SDR 출력 및 PQ-HLG 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색 영역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 device와 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
     "display_name": "이미지 색 공간 변환",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드를 이와 동일한 색 공간으로 설정하세요. EXR로 저장하기 전에는 LogC3 또는 ACEScct를 선형으로 변환하고, 비디오로 저장하기 전에는 sRGB/HDR/HDR PQ로 변환하세요."
+        "tooltip": "출력 픽셀의 색 공간입니다. 저장 노드를 이와 동일한 색 공간으로 설정하십시오. ACEScg EXR의 경우 LogC3 또는 ACEScct를 선형 ACEScg로, Rec.709 EXR의 경우 선형으로 변환하십시오. 비디오를 저장하기 전에 sRGB/HDR/HDR PQ로 변환하십시오."
       },
       "image": {
         "name": "image"
@@ -16743,6 +16764,170 @@
       },
       "transformer_blocks_9_": {
         "name": "transformer_blocks.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "final_linear_video."
+      },
+      "final_norm_video_": {
+        "name": "final_norm_video."
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "layers.23."
+      },
+      "layers_24_": {
+        "name": "layers.24."
+      },
+      "layers_25_": {
+        "name": "layers.25."
+      },
+      "layers_26_": {
+        "name": "layers.26."
+      },
+      "layers_27_": {
+        "name": "layers.27."
+      },
+      "layers_28_": {
+        "name": "layers.28."
+      },
+      "layers_29_": {
+        "name": "layers.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "layers.30."
+      },
+      "layers_31_": {
+        "name": "layers.31."
+      },
+      "layers_32_": {
+        "name": "layers.32."
+      },
+      "layers_33_": {
+        "name": "layers.33."
+      },
+      "layers_34_": {
+        "name": "layers.34."
+      },
+      "layers_35_": {
+        "name": "layers.35."
+      },
+      "layers_36_": {
+        "name": "layers.36."
+      },
+      "layers_37_": {
+        "name": "layers.37."
+      },
+      "layers_38_": {
+        "name": "layers.38."
+      },
+      "layers_39_": {
+        "name": "layers.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "layers.40."
+      },
+      "layers_41_": {
+        "name": "layers.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "video_head_modulation."
       }
     }
   },
@@ -25262,7 +25447,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "MOSS-Image 편집 LoRA용 참조 이미지와 함께 편집 지침을 인코딩합니다. 부정 프롬프트에도 사용하세요. 참조 이미지는 입력된 크기로 사용되므로 먼저 크기를 조정하세요.",
+    "description": "MOSS-Image 편집 LoRA용 참조 이미지와 함께 편집 지시를 인코딩합니다. 네거티브 프롬프트에도 사용하세요. 참조 이미지는 입력된 크기 그대로 사용되므로 먼저 크기를 조정하세요. VAE가 없으면 이미지는 텍스트 인코더로만 전달됩니다.",
     "display_name": "MOSS-Image 편집 텍스트 인코딩",
     "inputs": {
       "clip": {
@@ -25272,6 +25457,10 @@
         "name": "edit_format",
         "tooltip": "편집 LoRA가 학습된 레이아웃입니다: ai-toolkit의 MOSS-Image Edit Training(kv_cache 옵션 켜기 또는 끄기) 또는 Moss-Image-Edit. kv_cache를 끄면 참조도 생성 중인 이미지에 attention을 적용하므로 매 단계마다 다시 계산됩니다."
       },
+      "image_strength": {
+        "name": "이미지 강도",
+        "tooltip": "모델이 텍스트 인코더가 처리하는 이미지에 얼마나 주의를 기울이는지 조절합니다(ai-toolkit 형식 또는 VAE 없음): 0은 무시하고, 1은 변경되지 않으며, 1보다 크면 더 강조합니다."
+      },
       "images": {
         "name": "이미지"
       },
@@ -25279,7 +25468,8 @@
         "name": "프롬프트"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "이미지를 편집 LoRA용 참조 latent로 인코딩합니다."
       }
     },
     "outputs": {

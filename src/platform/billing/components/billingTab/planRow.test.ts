@@ -20,7 +20,8 @@ const baseFacts: PlanRowFacts = {
   renewalDate: '2026-11-15T00:00:00Z',
   endDate: null,
   scheduledChange: null,
-  freeRuns: null
+  freeRuns: null,
+  planKind: 'self_serve'
 }
 
 describe('derivePlanRow', () => {
@@ -145,7 +146,7 @@ describe('derivePlanRow', () => {
     {
       case: 'a paused subscription',
       facts: { billingStatus: 'paused' },
-      expected: { kind: 'unknown' }
+      expected: { kind: 'paused', planName: 'Pro' }
     },
     {
       case: 'an active plan without a renewal date',
@@ -165,7 +166,132 @@ describe('derivePlanRow', () => {
     {
       case: 'an ended plan without an end date',
       facts: { subscriptionStatus: 'ended' },
+      expected: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: null
+      }
+    },
+    {
+      case: 'an ended plan with a served ended_at over cancel_at',
+      facts: {
+        subscriptionStatus: 'ended',
+        endedAt: '2026-08-20T00:00:00Z',
+        endDate: '2026-09-01T00:00:00Z'
+      },
+      expected: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: '2026-08-20T00:00:00Z'
+      }
+    },
+    {
+      case: 'an ended plan whose ended_at is served as null',
+      facts: {
+        subscriptionStatus: 'ended',
+        endedAt: null,
+        endDate: '2026-09-01T00:00:00Z'
+      },
+      expected: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: null
+      }
+    },
+    {
+      case: 'an ended subscription_state with no plan name',
+      facts: {
+        subscriptionState: 'ended',
+        subscriptionStatus: null,
+        planName: null
+      },
+      expected: {
+        kind: 'ended',
+        planName: null,
+        cadence: 'monthly',
+        endedAt: null
+      }
+    },
+    {
+      case: 'a served ended subscription_state',
+      facts: { subscriptionState: 'ended', subscriptionStatus: null },
+      expected: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: null
+      }
+    },
+    {
+      case: 'an active sales-managed plan with no served plan name',
+      facts: { planKind: 'sales_managed', planName: null, duration: null },
+      expected: {
+        kind: 'salesManaged',
+        planName: null,
+        cadence: null,
+        renewsAt: '2026-11-15T00:00:00Z'
+      }
+    },
+    {
+      case: 'an active sales-managed plan without a renewal date',
+      facts: { planKind: 'sales_managed', planName: null, renewalDate: null },
+      expected: {
+        kind: 'salesManaged',
+        planName: null,
+        cadence: 'monthly',
+        renewsAt: null
+      }
+    },
+    {
+      case: 'a paused sales-managed plan with no served plan name',
+      facts: {
+        planKind: 'sales_managed',
+        billingStatus: 'paused',
+        planName: null
+      },
       expected: { kind: 'unknown' }
+    },
+    {
+      case: 'a canceled sales-managed plan',
+      facts: {
+        planKind: 'sales_managed',
+        subscriptionStatus: 'canceled',
+        endDate: '2026-12-01T00:00:00Z'
+      },
+      expected: {
+        kind: 'ending',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endsAt: '2026-12-01T00:00:00Z'
+      }
+    },
+    {
+      case: 'an ended sales-managed plan with no served plan name',
+      facts: {
+        planKind: 'sales_managed',
+        subscriptionStatus: 'ended',
+        planName: null,
+        endDate: '2026-09-01T00:00:00Z'
+      },
+      expected: {
+        kind: 'ended',
+        planName: null,
+        cadence: 'monthly',
+        endedAt: '2026-09-01T00:00:00Z'
+      }
+    },
+    {
+      case: 'an ended subscription_status with no plan name',
+      facts: { subscriptionStatus: 'ended', planName: null, duration: null },
+      expected: {
+        kind: 'ended',
+        planName: null,
+        cadence: null,
+        endedAt: null
+      }
     }
   ])('maps $case', ({ facts, expected }) => {
     expect(derivePlanRow({ ...baseFacts, ...facts })).toEqual(expected)
@@ -195,24 +321,45 @@ describe('planRowAction', () => {
       endedAt: '2026-09-01T00:00:00Z'
     },
     noPlan: { kind: 'noPlan', freeRuns: null },
+    paused: { kind: 'paused', planName: 'Pro' },
     unknown: { kind: 'unknown' }
   }
 
   it.for([
     { state: 'activating', expected: 'manage' },
     { state: 'active', expected: 'manage' },
+    { state: 'paused', expected: 'manage' },
     { state: 'unknown', expected: 'manage' },
     { state: 'noPlan', expected: 'subscribe' },
     { state: 'ended', expected: 'choosePlan' },
-    { state: 'ending', expected: null }
+    { state: 'ending', expected: 'manage' }
   ])('offers $expected for $state when granted', ({ state, expected }) => {
-    expect(planRowAction(states[state], { canOpenPlans: true })).toBe(expected)
+    expect(
+      planRowAction(states[state], {
+        canOpenPlans: true,
+        planKind: 'self_serve'
+      })
+    ).toBe(expected)
   })
 
   it.for(Object.keys(states))(
     'offers nothing for %s when not granted',
     (key) => {
-      expect(planRowAction(states[key], { canOpenPlans: false })).toBeNull()
+      expect(
+        planRowAction(states[key], { canOpenPlans: false, planKind: null })
+      ).toBeNull()
+    }
+  )
+
+  it.for(Object.keys(states))(
+    'replaces the action with Contact sales for %s when plan_kind is sales_managed',
+    (key) => {
+      expect(
+        planRowAction(states[key], {
+          canOpenPlans: false,
+          planKind: 'sales_managed'
+        })
+      ).toBe('contactSales')
     }
   )
 })

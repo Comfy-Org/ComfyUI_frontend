@@ -1,8 +1,11 @@
 import { useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
-import type { Point, Size } from '@/renderer/core/layout/types'
+import type {
+  CompassCorners,
+  Point2D as Point,
+  Size2D as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -13,7 +16,7 @@ import {
   hasNorthEdge,
   hasWestEdge
 } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 export interface ResizeCallbackPayload {
   size: Size

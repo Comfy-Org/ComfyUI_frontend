@@ -1,5 +1,6 @@
 import { datadogRum } from '@datadog/browser-rum'
 
+import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 import type { BillingSession } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 import { disposeBillingClient } from '@comfyorg/account-ui/billing'
@@ -134,13 +135,14 @@ describe('createBillingWebClient', () => {
 
 const STATUS_BODY = {
   billing_rail: 'stripe',
+  ended_at: null,
   has_funds: true,
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
   scheduled_change: null,
   team_credit_stop: null
-}
+} satisfies BillingStatusResponse
 
 /** The network edge: the billing routes the lifecycle reads, answered by route. */
 function stubBillingRoutes(operation: Record<string, unknown>) {
@@ -179,6 +181,44 @@ function authenticatedSession(): BillingSession {
 
 const issueOperation = async () =>
   ({ status: 'ok', value: { operationId: 'op_1' } }) as const
+
+describe('billing status wire compatibility', () => {
+  it('reads older status without an end date through the authenticated billing web client', async () => {
+    const body = { ...STATUS_BODY, ended_at: undefined }
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify(body), { status: 200 })
+    )
+    const client = createBillingWebClient(authenticatedSession())
+
+    const result = await client.status.read()
+
+    expect(result).toMatchObject({
+      status: 'ok',
+      value: { status: { has_funds: true } }
+    })
+    expect(client.status.getSnapshot()?.status).not.toHaveProperty('ended_at')
+    disposeBillingClient(client)
+  })
+
+  it('rejects a malformed supplied end date through the authenticated billing web client', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ ...STATUS_BODY, ended_at: 'not-a-date' }), {
+        status: 200
+      })
+    )
+    const client = createBillingWebClient(authenticatedSession())
+
+    const result = await client.status.read()
+
+    expect(result).toEqual({
+      status: 'error',
+      code: 'MALFORMED_RESPONSE',
+      httpStatus: 200
+    })
+    expect(client.status.getSnapshot()).toBeUndefined()
+    disposeBillingClient(client)
+  })
+})
 
 describe('SDK operation telemetry', () => {
   beforeEach(() => {

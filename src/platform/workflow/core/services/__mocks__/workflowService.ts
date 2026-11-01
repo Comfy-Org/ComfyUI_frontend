@@ -25,6 +25,9 @@ const workflowService: ReturnType<typeof realUseWorkflowService> = {
 
 export const useWorkflowService = vi.fn(() => workflowService)
 
+export const readWorkflowDraftLineage = vi.fn(() => null)
+export const writeWorkflowDraftLineage = vi.fn()
+
 export const resetWorkflowLoadQueueForTests = vi.fn(() => ({
   pendingLoads: 0,
   closingCount: 0,

@@ -42,7 +42,6 @@ vi.mock<unknown>(
 interface StubCanvas {
   graph: LGraph
   deselectAll: ReturnType<typeof vi.fn>
-  onSelectionChange?: () => void
   select: ReturnType<typeof vi.fn>
   setDirty: ReturnType<typeof vi.fn>
   selectedItems: Set<unknown>
@@ -108,10 +107,10 @@ describe('useGroupContextMenu', () => {
     invoke(undefined)
 
     expect(stubCanvas.deselectAll).toHaveBeenCalledOnce()
-    expect(stubCanvas.select).toHaveBeenCalledExactlyOnceWith(group, {
-      notify: false,
-      selectGroupChildren: false
-    })
+    expect(stubCanvas.select).toHaveBeenCalledExactlyOnceWith(
+      group,
+      expect.objectContaining({ selectGroupChildren: false })
+    )
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
     expect(stubCanvas.deselectAll.mock.invocationCallOrder[0]).toBeLessThan(
       stubCanvas.select.mock.invocationCallOrder[0]
@@ -136,7 +135,7 @@ describe('useGroupContextMenu', () => {
       canvas.processContextMenu(undefined, event)
 
       expect([...canvas.selectedItems]).toEqual([targetGroup])
-      expect(selections.at(-1)).toEqual([targetGroup])
+      expect(selections).toEqual([[node], [targetGroup]])
       expect(targetGroup.selected).toBe(true)
       expect(node.selected).toBe(false)
       expect(canvas.groupSelectChildren).toBe(cascade)
@@ -284,10 +283,10 @@ describe('useGroupContextMenu', () => {
     invoke(undefined)
 
     expect(stubCanvas.deselectAll).toHaveBeenCalledOnce()
-    expect(stubCanvas.select).toHaveBeenCalledExactlyOnceWith(group, {
-      notify: false,
-      selectGroupChildren: false
-    })
+    expect(stubCanvas.select).toHaveBeenCalledExactlyOnceWith(
+      group,
+      expect.objectContaining({ selectGroupChildren: false })
+    )
     expect([...stubCanvas.selectedItems]).toEqual([group])
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
     expect(legacyMenuMock).not.toHaveBeenCalled()

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import WorkflowTemplateDownloadStatus from '@/platform/workflow/templates/components/WorkflowTemplateDownloadStatus.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import type { TemplateDetailRow } from '@/platform/workflow/templates/types/templateDetail'
 
 const { row } = defineProps<{ row: TemplateDetailRow }>()
@@ -31,10 +31,7 @@ const emit = defineEmits<{ download: [] }>()
     :title="row.status.label"
     class="col-start-3 row-start-1 flex size-8 shrink-0 items-center justify-center"
   >
-    <i
-      aria-hidden="true"
-      class="icon-[lucide--circle-check] size-4 text-success"
-    />
+    <i aria-hidden="true" class="icon-[lucide--circle-check] text-success" />
   </span>
   <span
     v-else-if="row.status"

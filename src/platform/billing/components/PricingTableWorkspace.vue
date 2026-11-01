@@ -78,7 +78,7 @@
           >
             <template v-if="maxMembersByTier[tier.key] > 1">
               <div class="flex items-center gap-2 text-emerald-400">
-                <i class="pi pi-users text-xs" aria-hidden="true" />
+                <i class="icon-[lucide--users] size-3" aria-hidden="true" />
                 <span class="text-sm">
                   {{ t('subscription.inviteUpTo') }}
                 </span>
@@ -99,7 +99,7 @@
                 {{ t(creditsPerMemberLabelKey) }}
               </span>
               <div class="flex items-center gap-1">
-                <i class="icon-[lucide--coins] size-4 text-credit" />
+                <i class="icon-[lucide--coins] text-credit" />
                 <span class="text-sm/normal font-bold">
                   {{ n(getCreditsPerMember(tier)) }}
                 </span>
@@ -128,14 +128,14 @@
               <span class="text-sm font-normal">
                 {{ t('subscription.gpuLabel') }}
               </span>
-              <i class="pi pi-check text-xs text-success" />
+              <i class="icon-[lucide--check] size-3 text-success" />
             </div>
 
             <div class="flex items-center justify-between">
               <span class="text-sm font-normal">
                 {{ t('subscription.addCreditsLabel') }}
               </span>
-              <i class="pi pi-check text-xs text-success" />
+              <i class="icon-[lucide--check] size-3 text-success" />
             </div>
 
             <div class="flex items-center justify-between">
@@ -144,9 +144,9 @@
               </span>
               <i
                 v-if="tier.customLoRAs"
-                class="pi pi-check text-xs text-success"
+                class="icon-[lucide--check] size-3 text-success"
               />
-              <i v-else class="pi pi-times text-xs" />
+              <i v-else class="icon-[lucide--x] size-3" />
             </div>
 
             <div class="flex flex-col gap-2">
@@ -159,39 +159,39 @@
                     class="group flex items-center gap-2 pt-2 text-muted-foreground"
                   >
                     <i
-                      class="pi pi-question-circle text-xs group-hover:text-foreground"
+                      class="icon-[lucide--circle-question-mark] size-3 group-hover:text-foreground"
                     />
-                    <Popover
-                      :show-arrow="false"
-                      align="start"
-                      :side-offset="4"
-                      :collision-padding="8"
-                      class="max-h-(--reka-popover-content-available-height) max-w-sm overflow-auto p-4 shadow-lg data-[state=open]:animate-none"
-                    >
-                      <template #button>
+                    <PopoverRoot>
+                      <PopoverTrigger as-child>
                         <button
                           class="cursor-pointer border-0 bg-transparent p-0 text-sm font-normal group-hover:text-foreground"
                         >
                           {{ t('subscription.videoEstimateHelp') }}
                         </button>
-                      </template>
-                      <div class="flex flex-col gap-2">
-                        <p class="text-sm/normal text-foreground">
-                          {{ t('subscription.videoEstimateExplanation') }}
-                        </p>
-                        <a
-                          href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="flex gap-1 text-sm text-primary no-underline hover:text-primary/80"
-                        >
-                          <span class="underline">{{
-                            t('subscription.videoEstimateTryTemplate')
-                          }}</span>
-                          <span class="no-underline">→</span>
-                        </a>
-                      </div>
-                    </Popover>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="start"
+                        dismiss-on-viewport-change
+                        class="w-auto max-w-sm rounded-lg border-border/50 shadow-lg data-[state=open]:animate-none"
+                      >
+                        <div class="flex flex-col gap-2">
+                          <p class="text-sm/normal text-foreground">
+                            {{ t('subscription.videoEstimateExplanation') }}
+                          </p>
+                          <a
+                            href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="flex gap-1 text-sm text-primary no-underline hover:text-primary/80"
+                          >
+                            <span class="underline">{{
+                              t('subscription.videoEstimateTryTemplate')
+                            }}</span>
+                            <span class="no-underline">→</span>
+                          </a>
+                        </div>
+                      </PopoverContent>
+                    </PopoverRoot>
                   </div>
                 </div>
                 <span class="text-sm/normal font-bold">
@@ -236,7 +236,7 @@
           @click="handleContactUs"
         >
           {{ $t('subscription.contactUs') }}
-          <i class="pi pi-comments" />
+          <i class="icon-[lucide--messages-square]" />
         </Button>
         <span class="text-sm text-muted-foreground">{{ $t('g.or') }}</span>
         <Button
@@ -245,7 +245,7 @@
           @click="handleViewEnterprise"
         >
           {{ $t('subscription.viewEnterprise') }}
-          <i class="pi pi-external-link" />
+          <i class="icon-[lucide--external-link]" />
         </Button>
       </div>
     </div>
@@ -256,12 +256,14 @@
 import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
 import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
-import Popover from '@/components/ui/Popover.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Button from '@comfyorg/design-system/button/Button'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import {
   TIER_PRICING,
@@ -275,8 +277,8 @@ import type {
   TierPricing
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
-import { useCommandStore } from '@/stores/commandStore'
+import type { Plan } from '@comfyorg/billing-core'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 

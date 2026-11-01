@@ -5,7 +5,6 @@
     "**/vitest.config.*.timestamp*",
     ".agents/checks/eslint.strict.config.js",
     "ComfyUI/**",
-    "apps/*/.astro/**",
     "apps/*/coverage/**",
     "apps/*/dist/**",
     "apps/*/playwright-report/**",
@@ -13,8 +12,6 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
-    "apps/website/src/types/rate-card/types.gen.ts",
-    "apps/website/src/types/rate-card/zod.gen.ts",
     "packages/design-system/src/css/lucideStrokePlugin.js",
     "packages/ingest-types/src/*.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
@@ -188,12 +185,14 @@
         "src/**/*.vue",
         "apps/*/src/**/*.ts",
         "apps/*/src/**/*.tsx",
-        "apps/*/src/**/*.vue"
+        "apps/*/src/**/*.vue",
+        "packages/api-client/src/**/*.ts",
+        "packages/settings-core/src/**/*.ts"
       ],
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+        "packages/api-client/src/jobTypes.ts"
       ],
       "rules": {
         "comfy/no-unsafe-error-assertion": "error"
@@ -285,10 +284,46 @@
       }
     },
     {
-      "files": ["src/**/*.{ts,tsx,vue}"],
+      "files": [
+        "apps/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
+        "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
+        "packages/**/*.{js,mjs,cjs,ts,mts,cts,vue}"
+      ],
+      "excludeFiles": [
+        "**/*.{test,spec}.{ts,tsx}",
+        "packages/api-client/src/abortSignal.ts"
+      ],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "AbortSignal",
+            "property": "any",
+            "message": "Crashes on Chrome < 116. Use combineAbortSignals from @comfyorg/api-client/abortSignal."
+          },
+          {
+            "object": "URL",
+            "property": "parse",
+            "message": "Crashes on Chrome < 126. Use parseUrl from @/utils/urlSafety, or try/catch around new URL() in packages."
+          },
+          {
+            "object": "URL",
+            "property": "canParse",
+            "message": "Crashes on Chrome < 120. Use parseUrl from @/utils/urlSafety, or try/catch around new URL() in packages."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/**/*.{ts,tsx,vue}",
+        "packages/api-client/src/**/*.ts",
+        "packages/settings-core/src/**/*.ts"
+      ],
       "excludeFiles": [
         "src/**/*.d.ts",
         "src/**/*.{test,spec,stories}.{ts,tsx,vue}",
+        "packages/*/src/**/*.test.ts",
         "src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**",
         "src/**/{generated,vendor}/**"
       ],
@@ -319,12 +354,19 @@
       }
     },
     {
-      "files": ["src/platform/remote/**/*.ts", "src/platform/remote/**/*.vue"],
+      "files": [
+        "src/platform/remote/**/*.ts",
+        "src/platform/remote/**/*.vue",
+        "packages/api-client/src/**/*.ts"
+      ],
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "src/platform/remote/comfyui/execution/types.ts",
-        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+        "packages/api-client/src/executionTypes.ts",
+        "packages/api-client/src/jobTypes.ts",
+        "packages/api-client/src/resultItemTypeSchema.ts",
+        "packages/api-client/src/taskSchema.ts",
+        "packages/api-client/src/templateSchema.ts"
       ],
       "rules": {
         "comfy/no-new-zod-for-remote-api-types": "error"
@@ -362,7 +404,6 @@
       "files": ["src/schemas/**/*.ts"],
       "excludeFiles": [
         "src/schemas/**/*.test.ts",
-        "src/schemas/colorPaletteSchema.ts",
         "src/schemas/signInSchema.ts"
       ],
       "rules": {
@@ -400,17 +441,6 @@
       "files": ["**/*.{test,spec}.{ts,tsx}"],
       "rules": {
         "comfy/prefer-array-containing": "error"
-      }
-    },
-    {
-      "files": ["**/*.astro"],
-      "rules": {
-        "no-empty": [
-          "error",
-          {
-            "allowEmptyCatch": true
-          }
-        ]
       }
     },
     {
@@ -507,12 +537,12 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -521,7 +551,12 @@
     },
     {
       "files": ["**/*.ts"],
-      "excludeFiles": ["**/use[A-Z]*.ts", "**/*.test.ts", "src/i18n.ts"],
+      "excludeFiles": [
+        "**/use[A-Z]*.ts",
+        "**/*.test.ts",
+        "src/i18n.ts",
+        "src/platform/telemetry/initErrorReporter.ts"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -540,12 +575,13 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "allowTypeImports": true,
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -567,12 +603,12 @@
               {
                 "name": "@sentry/vue",
                 "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
               },
               {
                 "name": "@datadog/browser-rum",
                 "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+                "message": "Use reportError() from '@comfyorg/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
               }
             ]
           }
@@ -606,57 +642,10 @@
       }
     },
     {
-      "files": ["apps/website/**"],
+      "files": ["packages/design-system/src/components/**"],
       "rules": {
         "comfy/no-relative-parent-paths": "error",
         "import/no-relative-parent-imports": "error"
-      }
-    },
-    {
-      "files": ["apps/website/e2e/**/*.spec.ts"],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "paths": [
-              {
-                "name": "@playwright/test",
-                "importNames": [
-                  "test",
-                  "chromium",
-                  "firefox",
-                  "webkit",
-                  "request"
-                ],
-                "message": "Use the blockExternalMedia fixture so website tests cannot access external services."
-              },
-              {
-                "name": "playwright",
-                "message": "Use the blockExternalMedia fixture instead."
-              },
-              {
-                "name": "vue-i18n",
-                "importNames": ["useI18n"],
-                "message": "useI18n() requires Vue setup context."
-              },
-              {
-                "name": "@vueuse/core",
-                "importNames": ["useVirtualList"],
-                "message": "useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead."
-              },
-              {
-                "name": "@sentry/vue",
-                "importNames": ["captureException"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
-              },
-              {
-                "name": "@datadog/browser-rum",
-                "importNames": ["datadogRum"],
-                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
-              }
-            ]
-          }
-        ]
       }
     },
     {

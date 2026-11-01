@@ -58,10 +58,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
-import type { LogoInfo } from '@/platform/workflow/templates/types/template'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import type { LogoInfo } from '@comfyorg/api-client/templateTypes'
 import type { ProviderBadge } from '@/platform/workflow/templates/utils/templateDisplay'
 import { getProviderBadges } from '@/platform/workflow/templates/utils/templateDisplay'
 import { cn } from '@comfyorg/tailwind-utils'

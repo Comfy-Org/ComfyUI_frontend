@@ -18,11 +18,11 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
 import { app } from '@/scripts/app'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import type { ComfyExtension } from '@/types/comfy'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 function applyResultToLoad3d(

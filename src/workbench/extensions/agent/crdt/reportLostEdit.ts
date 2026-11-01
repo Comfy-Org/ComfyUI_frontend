@@ -1,6 +1,6 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import { recordDevEvent } from './devPanelLog'
@@ -22,6 +22,7 @@ export function reportLostEdit(
     graphId?: string
     nodeId?: string | number
     classType?: string
+    widget?: string
     message?: string
     failedIndex?: number
   },

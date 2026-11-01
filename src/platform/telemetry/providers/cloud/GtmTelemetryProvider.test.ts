@@ -84,6 +84,17 @@ describe('GtmTelemetryProvider', () => {
       expect(lastDataLayerEntry()).toMatchObject({ event: 'view_promotion' })
     })
 
+    it('forwards the refusal type with the subscription modal push', () => {
+      const provider = createInitializedProvider()
+      provider.trackSubscription('modal_opened', {
+        reason: 'subscription_required',
+        refusal_type: 'CLOUD_SUBSCRIPTION_REQUIRED'
+      })
+      expect(lastDataLayerEntry()).toMatchObject({
+        refusal_type: 'CLOUD_SUBSCRIPTION_REQUIRED'
+      })
+    })
+
     it('keeps the selected workspace out of the subscription modal push', () => {
       const provider = createInitializedProvider()
       provider.trackSubscription('modal_opened', {

@@ -9,7 +9,7 @@
       :aria-label="$t('load3d.showGrid')"
       @click="toggleGrid"
     >
-      <i class="pi pi-table text-lg text-foreground" />
+      <i class="icon-[lucide--table] size-4.5 text-foreground" />
     </Button>
 
     <template v-if="!hdriActive">
@@ -23,7 +23,7 @@
           :aria-label="$t('load3d.backgroundColor')"
           @click="openColorPicker"
         >
-          <i class="pi pi-palette text-lg text-foreground" />
+          <i class="icon-[lucide--palette] size-4.5 text-foreground" />
           <input
             ref="colorPickerRef"
             type="color"
@@ -46,7 +46,7 @@
           :aria-label="$t('load3d.uploadBackgroundImage')"
           @click="openImagePicker"
         >
-          <i class="pi pi-image text-lg text-foreground" />
+          <i class="icon-[lucide--image] size-4.5 text-foreground" />
           <input
             ref="imagePickerRef"
             type="file"
@@ -73,7 +73,7 @@
         :aria-label="$t('load3d.panoramaMode')"
         @click="toggleBackgroundRenderMode"
       >
-        <i class="pi pi-globe text-lg text-foreground" />
+        <i class="icon-[lucide--globe] size-4.5 text-foreground" />
       </Button>
     </div>
 
@@ -97,7 +97,7 @@
         :aria-label="$t('load3d.removeBackgroundImage')"
         @click="removeBackgroundImage"
       >
-        <i class="pi pi-times text-lg text-foreground" />
+        <i class="icon-[lucide--x] size-4.5 text-foreground" />
       </Button>
     </div>
   </div>
@@ -107,7 +107,7 @@
 import { computed, ref } from 'vue'
 
 import PopupSlider from '@/extensions/core/load3d/components/controls/PopupSlider.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { BackgroundRenderModeType } from '@comfyorg/viewport3d/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 

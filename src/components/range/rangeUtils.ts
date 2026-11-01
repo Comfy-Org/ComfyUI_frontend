@@ -1,6 +1,6 @@
 import { clamp } from 'es-toolkit'
 
-import type { RangeValue } from '@/lib/litegraph/src/types/widgets'
+import type { RangeValue } from '@comfyorg/graph-model/widgets'
 
 export function positionToGamma(position: number): number {
   // Avoid log2(0) = -Infinity and log2(1) = 0 (division by zero in gamma)

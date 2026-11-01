@@ -11,7 +11,7 @@ import { t } from '@/i18n'
 import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { isCloud } from '@/platform/distribution/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
-import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
 import {
   MAX_SCHEDULED_REFRESH_RETRIES,
@@ -19,7 +19,7 @@ import {
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 
 // Picked off the generated schema: a hand-written enum that lags the spec would
 // reject a valid persisted identity and silently clear the session.
@@ -375,7 +375,7 @@ export function createLegacyWorkspaceTokenRail({
     const firebaseToken = await getIdToken()
     if (!firebaseToken) throw notAuthenticatedError()
 
-    const response = await fetch(workspaceApiUrl('/auth/token'), {
+    const response = await fetch(ingestApiUrl('/auth/token'), {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${firebaseToken}`,

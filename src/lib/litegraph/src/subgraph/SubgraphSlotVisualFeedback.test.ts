@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { DefaultConnectionColors } from '@/lib/litegraph/src/interfaces'
+import type { DefaultConnectionColors } from '@comfyorg/graph-model/interfaces'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import {

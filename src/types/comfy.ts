@@ -1,6 +1,6 @@
 import type { ShallowRef } from 'vue'
 
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type {
   LGraph,
@@ -10,38 +10,42 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { Keybinding } from '@/platform/keybindings/types'
+} from '@comfyorg/graph-model/workflowSchema'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput,
   ProgressWsMessage
-} from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+} from '@comfyorg/api-client/executionTypes'
+import type { NodeError } from '@comfyorg/api-client/types'
 import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import type { ComfyUI } from '@/scripts/ui'
 import type { ComfyAppMenu } from '@/scripts/ui/menu/index'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ComfyCommand } from '@/stores/commandStore'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type { AuthUserInfo } from '@/types/authTypes'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 import type {
   BottomPanelExtension,
-  ExtensionManager
+  ExtensionManager,
+  ExtensionProvenance
 } from '@/types/extensionTypes'
 
 export type ComfyWidgetConstructor = (
@@ -90,6 +94,11 @@ export interface LoadGraphDataOptions {
  * instance through `useApp()` from `@/scripts/appInstance`; only the
  * composition root imports the class.
  */
+/** The node definitions, or the HTTP status of the server's refusal. */
+export type NodeDefsFetch =
+  | { ok: true; defs: Record<string, ComfyNodeDef> }
+  | { ok: false; status: number }
+
 export interface ComfyApp {
   vueAppReady: boolean
   readonly api: ComfyApi
@@ -153,6 +162,7 @@ export interface ComfyApp {
 
   setup(canvasEl: HTMLCanvasElement): Promise<void>
   getNodeDefs(): Promise<Record<string, ComfyNodeDef>>
+  fetchNodeDefs(): Promise<NodeDefsFetch>
   registerNodes(): Promise<void>
   registerNodeDef(nodeId: string, nodeDef: ComfyNodeDef): Promise<void>
   registerNodesFromDefs(defs: Record<string, ComfyNodeDef>): Promise<void>
@@ -191,7 +201,7 @@ export interface ComfyApp {
       deferWarnings?: boolean
       onNodeCreated?: (node: LGraphNode) => void
     }
-  ): Promise<void>
+  ): Promise<void | false>
   handleFileList(fileList: File[]): Promise<void>
   handleAudioFileList(fileList: File[]): Promise<void>
   handleVideoFileList(fileList: File[]): Promise<void>
@@ -202,11 +212,11 @@ export interface ComfyApp {
     apiData: ComfyApiWorkflow,
     fileName: string,
     options?: { deferWarnings?: boolean }
-  ): Promise<void>
+  ): Promise<void | false>
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]
   collectNodeMenuItems(node: LGraphNode): IContextMenuValue[]
-  reloadNodeDefs(): Promise<void>
+  reloadNodeDefs(defs?: Record<string, ComfyNodeDef>): Promise<boolean>
   refreshComboInNodes(): Promise<void>
   clean(): void
   clientPosToCanvasPos(pos: Vector2): Vector2
@@ -287,6 +297,7 @@ export interface ComfyExtension {
    * The name of the extension
    */
   name: string
+  provenance?: ExtensionProvenance
   /**
    * The commands defined by the extension
    */

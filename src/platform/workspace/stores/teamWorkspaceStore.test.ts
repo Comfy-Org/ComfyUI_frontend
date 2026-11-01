@@ -4,7 +4,8 @@ import type {
 } from '@comfyorg/ingest-types'
 import { computed, nextTick } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -24,8 +25,11 @@ import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { trackSsoSignInCompleted } from '@/platform/auth/sso/ssoTelemetry'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
-import { useTelemetry } from '@/platform/telemetry'
-import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import {
+  NoWorkspaceAccessError,
+  WorkspaceApiError as mockWorkspaceApiError
+} from '@/platform/remote/ingest/ingestApiError'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
@@ -70,26 +74,11 @@ const mockWorkspaceApi = vi.hoisted(() => ({
   accessBillingPortal: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
-vi.mock(import('@/platform/telemetry'))
-
-const mockWorkspaceApiError = vi.hoisted(
-  () =>
-    class WorkspaceApiError extends Error {
-      constructor(
-        message: string,
-        public readonly status?: number,
-        public readonly code?: string
-      ) {
-        super(message)
-        this.name = 'WorkspaceApiError'
-      }
-    }
-)
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: mockWorkspaceApi,
-  WorkspaceApiError: mockWorkspaceApiError
+  workspaceApi: mockWorkspaceApi
 }))
 
 // Mock localStorage
@@ -250,7 +239,9 @@ describe('useTeamWorkspaceStore', () => {
 
       await store.initialize()
 
-      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
+      expect(mockWorkspaceApi.list).toHaveBeenCalledExactlyOnceWith({
+        skipStatusRetry: true
+      })
       expect(store.initState).toBe('ready')
       expect(store.workspaces).toHaveLength(2)
       expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
@@ -645,15 +636,18 @@ describe('useTeamWorkspaceStore', () => {
 
     it('clears cached billing rails when identity state is reset', async () => {
       const store = useTeamWorkspaceStore()
+      const billing = useWorkspaceBillingStateStore()
       await store.initialize()
-      store.setWorkspaceBillingRail(mockPersonalWorkspace.id, 'legacy_stripe')
-      expect(store.activeWorkspaceBillingRail).toBe('legacy_stripe')
+      billing.setWorkspaceBillingRail(mockPersonalWorkspace.id, 'legacy_stripe')
+      expect(billing.activeWorkspaceBillingRail).toBe('legacy_stripe')
+      expect(store.identityGeneration).toBe(0)
 
       store.resetForIdentityChange()
       await store.initialize()
 
       expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
-      expect(store.activeWorkspaceBillingRail).toBeNull()
+      expect(billing.activeWorkspaceBillingRail).toBeNull()
+      expect(store.identityGeneration).toBe(1)
     })
 
     it('does not let a previous user initialization overwrite the next user', async () => {
@@ -870,9 +864,10 @@ describe('useTeamWorkspaceStore', () => {
         }
       )
       const store = useTeamWorkspaceStore()
+      const billing = useWorkspaceBillingStateStore()
       await store.initialize()
-      store.setWorkspaceBillingRail(mockPersonalWorkspace.id, 'legacy_stripe')
-      expect(store.activeWorkspaceBillingRail).toBe('legacy_stripe')
+      billing.setWorkspaceBillingRail(mockPersonalWorkspace.id, 'legacy_stripe')
+      expect(billing.activeWorkspaceBillingRail).toBe('legacy_stripe')
 
       await store.switchWorkspace(mockTeamWorkspace.id)
 
@@ -886,11 +881,12 @@ describe('useTeamWorkspaceStore', () => {
       ).not.toHaveBeenCalled()
       expect(mockReload).not.toHaveBeenCalled()
       expect(store.isSwitching).toBe(false)
-      expect(store.activeWorkspaceBillingRail).toBeNull()
+      expect(billing.activeWorkspaceBillingRail).toBeNull()
       expect(store.workspaceTransitionGeneration).toBe(1)
+      expect(store.identityGeneration).toBe(0)
 
-      store.setWorkspaceBillingRail(mockTeamWorkspace.id, 'metronome')
-      expect(store.activeWorkspaceBillingRail).toBe('metronome')
+      billing.setWorkspaceBillingRail(mockTeamWorkspace.id, 'metronome')
+      expect(billing.activeWorkspaceBillingRail).toBe('metronome')
     })
 
     it('ignores an overlapping local switch', async () => {
@@ -1517,7 +1513,54 @@ describe('useTeamWorkspaceStore', () => {
         await store.initialize()
 
         expect(store.canCreateWorkspace).toBe(expected)
-        expect(store.workspacesManagedByOrganization).toBe(!expected)
+      }
+    )
+
+    function ownedTeams(count: number) {
+      return Array.from({ length: count }, (_, i) => ({
+        ...mockTeamWorkspace,
+        id: `ws-owned-${i}`,
+        name: `Owned ${i}`
+      }))
+    }
+
+    it.for([
+      {
+        reason: 'organization',
+        response: {
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+          default_workspace_id: mockTeamWorkspace.id,
+          can_create_workspace: false
+        }
+      },
+      {
+        reason: 'unknown',
+        response: {
+          workspaces: [mockPersonalWorkspace, ...ownedTeams(9)],
+          can_create_workspace: false
+        }
+      },
+      {
+        reason: 'unknown',
+        response: {
+          workspaces: [mockPersonalWorkspace],
+          can_create_workspace: false
+        }
+      },
+      {
+        reason: 'limit',
+        response: { workspaces: [mockPersonalWorkspace, ...ownedTeams(9)] }
+      }
+    ])(
+      'names the $reason refusal from the workspace list',
+      async ({ reason, response }) => {
+        mockWorkspaceApi.list.mockResolvedValue(response)
+
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
+
+        expect(store.canCreateWorkspace).toBe(false)
+        expect(store.createWorkspaceRefusal).toBe(reason)
       }
     )
 
@@ -2601,6 +2644,104 @@ describe('useTeamWorkspaceStore', () => {
       const store = useTeamWorkspaceStore()
 
       await expect(store.initialize()).rejects.toThrow()
+      expect(store.initState).toBe('error')
+    })
+
+    it('initializes again when the host session is announced after a failed start', async () => {
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace]
+      })
+      const store = useTeamWorkspaceStore()
+      await expect(store.initialize()).rejects.toThrow()
+      expect(store.initState).toBe('error')
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+      })
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+
+      await vi.waitFor(() => expect(store.initState).toBe('ready'))
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('initializes again when the host session is announced while a start that then fails is loading', async () => {
+      let resolveList: (value: unknown) => void = () => {}
+      mockWorkspaceApi.list
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveList = resolve
+          })
+        )
+        .mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+        })
+      const store = useTeamWorkspaceStore()
+      const starting = store.initialize().catch((e: unknown) => e)
+      await vi.waitFor(() => expect(mockWorkspaceApi.list).toHaveBeenCalled())
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+      resolveList({ workspaces: [mockPersonalWorkspace] })
+
+      expect(await starting).toBeInstanceOf(Error)
+      await vi.waitFor(() => expect(store.initState).toBe('ready'))
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('keeps the host change for a restarted start when the start it replaced settles first', async () => {
+      const pending = () => {
+        let resolve: (value: unknown) => void = () => {}
+        const promise = new Promise((r) => {
+          resolve = r
+        })
+        return { promise, resolve }
+      }
+      const replaced = pending()
+      const restarted = pending()
+      mockWorkspaceApi.list
+        .mockReturnValueOnce(replaced.promise)
+        .mockReturnValueOnce(restarted.promise)
+        .mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+        })
+      const store = useTeamWorkspaceStore()
+      void store.initialize().catch(() => undefined)
+      await vi.waitFor(() =>
+        expect(mockWorkspaceApi.list).toHaveBeenCalledOnce()
+      )
+      store.resetForIdentityChange()
+      const restarting = store.initialize().catch((e: unknown) => e)
+      await vi.waitFor(() =>
+        expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
+      )
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+      replaced.resolve({ workspaces: [mockPersonalWorkspace] })
+      await Promise.resolve()
+      restarted.resolve({ workspaces: [mockPersonalWorkspace] })
+
+      expect(await restarting).toBeInstanceOf(Error)
+      await vi.waitFor(() => expect(store.initState).toBe('ready'))
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('reports an automatic retry that fails again', async () => {
+      vi.mocked(reportError).mockImplementation(() => undefined)
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace]
+      })
+      const store = useTeamWorkspaceStore()
+      await expect(store.initialize()).rejects.toThrow()
+
+      pushHostState(hostOn(mockTeamWorkspace.id))
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(NoWorkspaceAccessError),
+          expect.objectContaining({
+            errorType: 'error_reinitializing_workspaces_for_desktop_host'
+          })
+        )
+      )
       expect(store.initState).toBe('error')
     })
 

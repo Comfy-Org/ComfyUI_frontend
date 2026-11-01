@@ -1,10 +1,13 @@
-import type { SubscriptionState } from '@comfyorg/ingest-types'
+import type {
+  PeriodCreditGrant,
+  SubscriptionState
+} from '@comfyorg/ingest-types'
 import type { ComputedRef, Ref } from 'vue'
 
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
 import type {
   BillingStatus,
@@ -21,7 +24,7 @@ import type {
   SubscriptionTier,
   TeamCreditStops,
   TeamCreditStopSummary
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 /** `unknown` until the active workspace has loaded; no billing call may be made yet. */
 export type BillingType = 'legacy' | 'workspace' | 'unknown'
@@ -52,6 +55,10 @@ export interface SubscriptionDialogOptions {
   planMode?: 'personal' | 'team'
   /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
   initialCheckout?: SubscriptionCheckoutSelection
+  /** The refused account holds credits, so the dialog says why they did not help. */
+  creditsLocked?: boolean
+  /** Server `error.type` of the refused run, reported with the paywall opening. */
+  refusalType?: string
 }
 
 // A type alias, not an interface: `showDialog`'s props are index-signature
@@ -76,6 +83,8 @@ export interface SubscriptionInfo {
   renewalDate: string | null
   /** ISO 8601; format at the display site. */
   endDate: string | null
+  /** Served `ended_at`; absent when the server omits the field. */
+  endedAt?: string | null
   isCancelled: boolean
   hasFunds: boolean
   /** Agent funds across shared credits and the Agent-scoped balance. */
@@ -86,6 +95,8 @@ export interface SubscriptionInfo {
    * disabled, absent when the server does not report it.
    */
   agentScopedHasFunds?: boolean
+  /** True only when the billing status names the rail that supplied the grant. */
+  agentScopedHasFundsAuthoritative?: boolean
 }
 
 /**
@@ -116,9 +127,14 @@ export type BillingPortalOutcome =
       reason: 'routing_unavailable' | 'blocked' | 'missing_url' | 'failed'
     }
 
+export interface BillingStatusReadOptions {
+  /** Read after any read already in flight, instead of joining it. */
+  fresh?: boolean
+}
+
 export interface BillingActions {
   initialize: () => Promise<void>
-  fetchStatus: () => Promise<void>
+  fetchStatus: (options?: BillingStatusReadOptions) => Promise<void>
   fetchBalance: () => Promise<void>
   subscribe: (
     planSlug: string,
@@ -183,6 +199,8 @@ export interface BillingState {
   renewalDate: ComputedRef<string | null>
   /** Open renewal invoice to pay; owners while payment_failed or paused. */
   renewalInvoice: ComputedRef<RenewalInvoice | null>
+  /** Served configured plan allowance; null when the server omits it. */
+  periodCreditGrant: ComputedRef<PeriodCreditGrant | null>
 }
 
 /** The rail a cancel actually ran on, fixed when the call was dispatched. */

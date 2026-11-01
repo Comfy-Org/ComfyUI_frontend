@@ -27,6 +27,32 @@ describe('parseOptions', () => {
     ).toThrow(`collides with the ${what}`)
   })
 
+  it.for([
+    {
+      name: 'Postgres port equal to the Temporal port',
+      args: ['--pg-port', '7400'],
+      message: 'collides with the Postgres port 7400'
+    },
+    {
+      name: 'Redis port equal to the Temporal UI port',
+      args: ['--redis-port', '8400'],
+      message: 'collides with the Redis port 8400'
+    }
+  ])('rejects a $name', ({ args, message }) => {
+    expect(() =>
+      parseOptions([
+        '--record',
+        '--catalog',
+        'seed.json',
+        '--engine',
+        'temporal',
+        '--temporal-port',
+        '7400',
+        ...args
+      ])
+    ).toThrow(message)
+  })
+
   it('returns safe defaults with derived companion ports', () => {
     expect(parseOptions([])).toEqual({
       agentPort: 6286,
@@ -40,7 +66,11 @@ describe('parseOptions', () => {
       healthPort: 6287,
       help: false,
       pgExec: '',
+      pgPort: 54331,
       record: false,
+      redisExec: '',
+      redisPort: 6379,
+      target: 'local',
       temporalPort: 7234,
       temporalUiPort: 8234
     })
@@ -50,6 +80,8 @@ describe('parseOptions', () => {
     expect(
       parseOptions([
         '--record',
+        '--target',
+        'cloud',
         '--catalog',
         'fixtures/conversation.json',
         '--cloud-repo',
@@ -69,10 +101,17 @@ describe('parseOptions', () => {
         '--temporal-port',
         '7400',
         '--pg-exec',
-        'psql -At -c'
+        'psql -At -c',
+        '--pg-port',
+        '55431',
+        '--redis-exec',
+        'redis-cli -p 6389',
+        '--redis-port',
+        '6389'
       ])
     ).toMatchObject({
       record: true,
+      target: 'cloud',
       catalog: resolve('fixtures/conversation.json'),
       cloudRepo: resolve('../cloud-dev'),
       airBin: resolve('bin/air'),
@@ -84,7 +123,10 @@ describe('parseOptions', () => {
       engine: 'temporal',
       temporalPort: 7400,
       temporalUiPort: 8400,
-      pgExec: 'psql -At -c'
+      pgExec: 'psql -At -c',
+      pgPort: 55431,
+      redisExec: 'redis-cli -p 6389',
+      redisPort: 6389
     })
   })
 
@@ -99,8 +141,24 @@ describe('parseOptions', () => {
       message: '--engine must be inline or temporal'
     },
     {
+      args: ['--target', 'remote'],
+      message: '--target must be local or cloud'
+    },
+    {
+      args: ['--target', 'cloud'],
+      message: '--target cloud applies to --record only'
+    },
+    {
       args: ['--frontend-port', '0'],
       message: '--frontend-port must be an integer'
+    },
+    {
+      args: ['--pg-port', '0'],
+      message: '--pg-port must be an integer'
+    },
+    {
+      args: ['--redis-port', '65536'],
+      message: '--redis-port must be an integer'
     },
     {
       args: ['--agent-port', '6207'],

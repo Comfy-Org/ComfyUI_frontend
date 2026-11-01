@@ -32,9 +32,7 @@ test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
     await workflowsTab.tabButton.click()
     await workflowsTab.root.waitFor({ state: 'hidden' })
     await comfyPage.setFocusMode(true)
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(INSERTED_NODE_COUNT)
+    await comfyPage.expectNodeCount(INSERTED_NODE_COUNT)
 
     await expectRegionScreenshot(
       comfyPage.page,
@@ -75,7 +73,7 @@ test.describe(
       )[0]
 
       const slot1 = await loadCheckpointNode.getOutput(1)
-      const slot2 = await clipEncodeNode.getInput(0)
+      const slot2 = await clipEncodeNode.getInputByName('clip')
       const middlePoint = getMiddlePoint(
         await slot1.getPosition(),
         await slot2.getPosition()
@@ -103,7 +101,7 @@ test.describe(
       )[0]
 
       const slot1 = await loadCheckpointNode.getOutput(1)
-      const slot2 = await clipEncodeNode.getInput(0)
+      const slot2 = await clipEncodeNode.getInputByName('clip')
       const middlePoint = getMiddlePoint(
         await slot1.getPosition(),
         await slot2.getPosition()
@@ -134,8 +132,8 @@ test.describe(
       const negativeClipNode = await comfyPage.nodeOps.getNodeRefById(7)
 
       const checkpointClipOutput = await checkpointNode.getOutput(1)
-      const positiveClipInput = await positiveClipNode.getInput(0)
-      const negativeClipInput = await negativeClipNode.getInput(0)
+      const positiveClipInput = await positiveClipNode.getInputByName('clip')
+      const negativeClipInput = await negativeClipNode.getInputByName('clip')
 
       // Dynamically read the rendered link marker position from the canvas,
       // targeting link 5 (CLIP from CheckpointLoaderSimple to negative CLIPTextEncode).

@@ -8,24 +8,12 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/navigation/preservedQueryManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/navigation/preservedQueryManager.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/navigation/preservedQueryTracker.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/platform/navigation/preservedQueryTracker.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/platform/navigation/unmatchedRoute.test.ts",
-      "role": "application"
     },
     {
       "path": "src/platform/navigation/unmatchedRoute.ts",

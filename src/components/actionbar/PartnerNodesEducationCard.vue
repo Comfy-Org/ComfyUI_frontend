@@ -10,7 +10,7 @@
     >
       <div
         v-if="isVisible"
-        class="pointer-events-none fixed right-0 bottom-0 z-1500"
+        class="pointer-events-none fixed right-0 bottom-0 z-education"
       >
         <div
           role="dialog"
@@ -30,48 +30,20 @@
               class="relative z-2 -mb-5 flex-1 rounded-t-xl"
             >
               <Button
+                v-for="control in audioControls"
+                :key="control.side"
                 variant="textonly"
                 size="icon"
-                class="absolute bottom-2 left-2 size-7 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white"
-                :aria-label="
-                  audibleSide === 'open'
-                    ? t('partnerNodesEducation.muteOpen')
-                    : t('partnerNodesEducation.unmuteOpen')
+                :class="
+                  cn(
+                    'absolute bottom-2 size-7 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white',
+                    control.position
+                  )
                 "
-                @click="toggleAudio('open')"
+                :aria-label="control.label"
+                @click="toggleAudio(control.side)"
               >
-                <i
-                  :class="
-                    cn(
-                      'size-4',
-                      audibleSide === 'open'
-                        ? 'icon-[lucide--volume-2]'
-                        : 'icon-[lucide--volume-x]'
-                    )
-                  "
-                />
-              </Button>
-              <Button
-                variant="textonly"
-                size="icon"
-                class="absolute right-2 bottom-2 size-7 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white"
-                :aria-label="
-                  audibleSide === 'partner'
-                    ? t('partnerNodesEducation.mutePartner')
-                    : t('partnerNodesEducation.unmutePartner')
-                "
-                @click="toggleAudio('partner')"
-              >
-                <i
-                  :class="
-                    cn(
-                      'size-4',
-                      audibleSide === 'partner'
-                        ? 'icon-[lucide--volume-2]'
-                        : 'icon-[lucide--volume-x]'
-                    )
-                  "
-                />
+                <i :class="control.icon" />
               </Button>
 
               <Button
@@ -82,7 +54,7 @@
                 :aria-label="t('g.close')"
                 @click="educationStore.dismissCard"
               >
-                <i class="icon-[lucide--x] size-4" />
+                <i class="icon-[lucide--x]" />
               </Button>
             </VideoCompareSlider>
 
@@ -90,7 +62,7 @@
               <div
                 class="flex h-14 flex-1 items-center justify-center gap-1.5 bg-secondary px-3 pt-7 pb-1.5 text-white opacity-60 backdrop-blur-md"
               >
-                <i class="icon-[lucide--boxes] size-4" />
+                <i class="icon-[lucide--boxes]" />
                 <span class="text-xs font-semibold">
                   {{ t('partnerNodesEducation.openTab') }}
                 </span>
@@ -98,9 +70,7 @@
               <div
                 class="flex h-14 flex-1 items-center justify-center gap-1.5 bg-accent px-3 pt-7 pb-1.5 backdrop-blur-md"
               >
-                <i
-                  class="icon-[tabler--crown-filled] size-4 text-brand-yellow"
-                />
+                <i class="icon-[tabler--crown-filled] text-brand-yellow" />
                 <span class="text-xs font-semibold text-white">
                   {{ t('partnerNodesEducation.partnerTab') }}
                 </span>
@@ -155,31 +125,24 @@
                   v-for="column in [
                     {
                       label: t('partnerNodesEducation.openHeader'),
-                      included: row.open
+                      status: row.open
                     },
                     {
                       label: t('partnerNodesEducation.partnerHeader'),
-                      included: row.partner
+                      status: row.partner
                     }
                   ]"
                   :key="column.label"
                   class="flex w-15 justify-center"
                 >
                   <i
-                    :class="
-                      cn(
-                        'size-4',
-                        column.included
-                          ? 'icon-[lucide--check] text-brand-yellow'
-                          : 'icon-[lucide--minus] text-muted-foreground'
-                      )
-                    "
+                    :class="comparisonStatusClasses[column.status]"
                     aria-hidden="true"
                   />
                   <span class="sr-only">
                     {{ column.label }}:
                     {{
-                      column.included
+                      column.status === 'included'
                         ? t('partnerNodesEducation.included')
                         : t('partnerNodesEducation.notIncluded')
                     }}
@@ -210,11 +173,11 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import VideoCompareSlider from '@comfyorg/design-system/common/VideoCompareSlider'
+import Button from '@comfyorg/design-system/button/Button'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { usePartnerNodesRunGate } from '@/platform/billing/composables/usePartnerNodesRunGate'
 import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
@@ -224,8 +187,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 interface ComparisonRow {
   key: string
-  open: boolean
-  partner: boolean
+  open: 'included' | 'notIncluded'
+  partner: 'included' | 'notIncluded'
 }
 
 const OPEN_SOURCE_MODEL_VIDEO =
@@ -234,17 +197,49 @@ const PARTNER_MODEL_VIDEO =
   'https://media.comfy.org/website/partner-nodes/ltx-partner-1280.webm'
 
 const comparisonRows: ComparisonRow[] = [
-  { key: 'noDownload', open: false, partner: true },
-  { key: 'noVram', open: false, partner: true },
-  { key: 'offline', open: true, partner: false },
-  { key: 'free', open: true, partner: false }
+  { key: 'noDownload', open: 'notIncluded', partner: 'included' },
+  { key: 'noVram', open: 'notIncluded', partner: 'included' },
+  { key: 'offline', open: 'included', partner: 'notIncluded' },
+  { key: 'free', open: 'included', partner: 'notIncluded' }
 ]
+
+const comparisonStatusClasses = {
+  included: 'icon-[lucide--check] text-brand-yellow',
+  notIncluded: 'icon-[lucide--minus] text-muted-foreground'
+}
 
 const { t } = useI18n()
 const pitchId = useId()
 
 const slider = useTemplateRef<InstanceType<typeof VideoCompareSlider>>('slider')
 const audibleSide = ref<'open' | 'partner' | null>(null)
+
+const audioControls = computed(() =>
+  [
+    {
+      side: 'open' as const,
+      position: 'left-2',
+      muteLabel: t('partnerNodesEducation.muteOpen'),
+      unmuteLabel: t('partnerNodesEducation.unmuteOpen')
+    },
+    {
+      side: 'partner' as const,
+      position: 'right-2',
+      muteLabel: t('partnerNodesEducation.mutePartner'),
+      unmuteLabel: t('partnerNodesEducation.unmutePartner')
+    }
+  ].map((control) => ({
+    ...control,
+    label:
+      audibleSide.value === control.side
+        ? control.muteLabel
+        : control.unmuteLabel,
+    icon:
+      audibleSide.value === control.side
+        ? 'icon-[lucide--volume-2]'
+        : 'icon-[lucide--volume-x]'
+  }))
+)
 
 function toggleAudio(side: 'open' | 'partner') {
   audibleSide.value = audibleSide.value === side ? null : side

@@ -14,7 +14,11 @@ export interface Options {
   healthPort: number
   help: boolean
   pgExec: string
+  pgPort: number
   record: boolean
+  redisExec: string
+  redisPort: number
+  target: 'cloud' | 'local'
   temporalPort: number
   temporalUiPort: number
 }
@@ -34,10 +38,14 @@ Options:
   --agent-port PORT     Standalone agent port (default: 6286)
   --air-bin PATH        Air executable (default: $AIR_BIN or ~/go/bin/air)
   --record              Record mode: the cloud stack's agent plus the doc host
+  --target NAME         Record mode execution target: local or cloud (default: local)
   --catalog PATH        Conversation fixture whose workflow.catalog the agent loads
   --doc-host-port PORT  Doc host port in record mode (default: 8096)
   --pg-exec CMD         Command taking one SQL string, ending in -c; quote
-                        an argument that contains a space
+                        an argument that contains a space; must target --pg-port
+  --pg-port PORT        Record-mode Postgres port (default: 54331)
+  --redis-exec CMD      redis-cli-compatible command targeting --redis-port
+  --redis-port PORT     Record-mode Redis port (default: 6379)
   --engine NAME         Record mode engine: inline or temporal (default: inline)
   --temporal-port PORT  Temporal gRPC port for --engine temporal (default: 7234)
   --help                Show this help
@@ -101,7 +109,11 @@ export function parseOptions(args: string[]): Options {
     healthPort: 0,
     help: false,
     pgExec: '',
+    pgPort: 54331,
     record: false,
+    redisExec: '',
+    redisPort: 6379,
+    target: 'local',
     temporalPort: 7234,
     temporalUiPort: 0
   }
@@ -149,9 +161,30 @@ export function parseOptions(args: string[]): Options {
         options.pgExec = optionValue(args, index, arg)
         index++
         break
+      case '--pg-port':
+        options.pgPort = port(optionValue(args, index, arg), arg)
+        index++
+        break
+      case '--redis-exec':
+        options.redisExec = optionValue(args, index, arg)
+        index++
+        break
+      case '--redis-port':
+        options.redisPort = port(optionValue(args, index, arg), arg)
+        index++
+        break
       case '--record':
         options.record = true
         break
+      case '--target': {
+        const target = optionValue(args, index, arg)
+        if (target !== 'cloud' && target !== 'local') {
+          throw new Error('--target must be local or cloud')
+        }
+        options.target = target
+        index++
+        break
+      }
       case '--cloud-repo':
         options.cloudRepo = resolve(optionValue(args, index, arg))
         index++
@@ -179,6 +212,9 @@ export function parseOptions(args: string[]): Options {
   }
   if (options.engine === 'temporal' && !options.record) {
     throw new Error('--engine temporal applies to --record only')
+  }
+  if (options.target !== 'local' && !options.record) {
+    throw new Error('--target cloud applies to --record only')
   }
   options.temporalUiPort = options.temporalPort + TEMPORAL_UI_OFFSET
   if (options.temporalUiPort > 65535) {
@@ -212,7 +248,9 @@ export function parseOptions(args: string[]): Options {
       ['agent', options.agentPort],
       ['agent health', options.healthPort],
       ['frontend', options.frontendPort],
-      ['doc host', options.docHostPort]
+      ['doc host', options.docHostPort],
+      ['Postgres', options.pgPort],
+      ['Redis', options.redisPort]
     ]
     for (const [label, portNumber] of taken) {
       if (

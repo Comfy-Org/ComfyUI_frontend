@@ -11,7 +11,7 @@
         {{ $t('comfyHubProfile.createProfileTitle') }}
       </h2>
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
-        <i class="icon-[lucide--x] size-4" />
+        <i class="icon-[lucide--x]" />
       </Button>
     </header>
     <h2 v-else class="px-6 pt-6 text-base font-normal text-foreground">
@@ -138,16 +138,16 @@ import { useI18n } from 'vue-i18n'
 import { useObjectUrl } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import {
   isFileTooLarge,
   MAX_IMAGE_SIZE_MB
 } from '@/platform/workflow/sharing/utils/validateFileSize'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const {
   onProfileCreated,

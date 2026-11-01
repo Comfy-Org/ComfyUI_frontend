@@ -2,7 +2,7 @@
   <div
     ref="containerRef"
     data-testid="mask-editor-root"
-    class="relative flex size-full flex-col overflow-hidden"
+    class="relative isolate flex size-full flex-col overflow-hidden"
     @contextmenu.prevent
     @dragstart="handleDragStart"
     @keydown.stop
@@ -10,12 +10,12 @@
     <div
       id="maskEditorCanvasContainer"
       ref="canvasContainerRef"
-      class="absolute inset-0 z-0"
+      class="absolute inset-0 isolate"
       @contextmenu.prevent
     >
       <canvas
         ref="imgCanvasRef"
-        class="absolute top-0 left-0 z-0 size-full"
+        class="absolute top-0 left-0 size-full"
         @contextmenu.prevent
       />
       <canvas
@@ -43,7 +43,7 @@
 
     <div
       data-testid="mask-editor-ui"
-      class="relative z-1 flex min-h-0 flex-1 flex-col"
+      class="relative isolate flex min-h-0 flex-1 flex-col"
     >
       <div class="flex min-h-0 flex-1 overflow-hidden">
         <ToolPanel
@@ -85,7 +85,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
-import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
 
 import BrushCursor from './BrushCursor.vue'
 import PointerZone from './PointerZone.vue'

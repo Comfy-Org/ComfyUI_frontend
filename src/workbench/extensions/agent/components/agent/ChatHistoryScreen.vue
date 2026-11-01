@@ -3,10 +3,10 @@ import { computed, nextTick, ref } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 
 import ChatHistorySelectButton from './ChatHistorySelectButton.vue'
 
@@ -148,7 +148,7 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
         class="size-6 shrink-0"
         @click="emit('back')"
       >
-        <span class="icon-[lucide--chevron-left] size-4 shrink-0" />
+        <i aria-hidden="true" class="icon-[lucide--chevron-left]" />
       </Button>
       <h2 class="m-0 text-xs font-normal text-muted-foreground">
         {{ t('agent.history') }}
@@ -176,8 +176,9 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
             v-if="renamingId === session.id"
             class="flex min-w-0 flex-1 items-center"
           >
-            <span
-              class="icon-[lucide--circle-check] size-4 shrink-0 text-muted-foreground"
+            <i
+              aria-hidden="true"
+              class="icon-[lucide--circle-check] text-muted-foreground"
             />
             <Input
               :ref="focusInput"
@@ -207,7 +208,7 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
               :disabled="loadingId === session.id"
               @click="emit('copyMarkdown', session.id)"
             >
-              <span class="icon-[lucide--copy] size-3.5" />
+              <i aria-hidden="true" class="icon-[lucide--copy] size-3.5" />
             </Button>
             <Menu
               :items="getSessionMenuItems(session)"
@@ -225,7 +226,10 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
                   :aria-label="t('agent.chatOptions')"
                   :disabled="loadingId === session.id"
                 >
-                  <span class="icon-[lucide--chevron-down] size-3" />
+                  <i
+                    aria-hidden="true"
+                    class="icon-[lucide--chevron-down] size-3"
+                  />
                 </Button>
               </template>
             </Menu>

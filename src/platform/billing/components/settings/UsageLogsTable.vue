@@ -63,12 +63,12 @@
             <TableCell>
               <Button
                 v-if="customerEventService.hasAdditionalInfo(event)"
-                :tooltip="additionalInfoTooltip(event)"
+                :tooltip="customerEventService.getTooltipContent(event)"
                 variant="textonly"
                 size="icon-sm"
                 :aria-label="$t('credits.additionalInfo')"
               >
-                <i class="pi pi-info-circle" />
+                <i class="icon-[lucide--info]" />
               </Button>
             </TableCell>
           </TableRow>
@@ -90,32 +90,32 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Message from '@comfyorg/design-system/message/Message'
 import AppPagination from '@/components/common/AppPagination.vue'
 import AppSpinner from '@/components/common/AppSpinner.vue'
-import Table from '@/components/ui/table/Table.vue'
-import TableBody from '@/components/ui/table/TableBody.vue'
-import TableCell from '@/components/ui/table/TableCell.vue'
-import TableHead from '@/components/ui/table/TableHead.vue'
-import TableHeader from '@/components/ui/table/TableHeader.vue'
-import TableRow from '@/components/ui/table/TableRow.vue'
-import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
+import Table from '@comfyorg/design-system/table/Table'
+import TableBody from '@comfyorg/design-system/table/TableBody'
+import TableCell from '@comfyorg/design-system/table/TableCell'
+import TableHead from '@comfyorg/design-system/table/TableHead'
+import TableHeader from '@comfyorg/design-system/table/TableHeader'
+import TableRow from '@comfyorg/design-system/table/TableRow'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useTelemetry } from '@/platform/telemetry'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
+import { toFiniteNumber } from '@/services/customerEventParams'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const events = ref<AuditLog[]>([])
 const loading = ref(true)
@@ -131,37 +131,8 @@ const pagination = ref({
   total: 0
 })
 
-function toFiniteNumber(raw: unknown) {
-  const value = typeof raw === 'string' && raw.trim() ? Number(raw) : raw
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
-}
-
 function eventAmount(event: AuditLog) {
   return toFiniteNumber(event.params?.amount)
-}
-
-function formatChargeCredits(microUsd: number) {
-  const amount = formatCreditsFromUsd({
-    usd: microUsd / 1_000_000,
-    locale: locale.value,
-    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
-  })
-  return `${amount} ${t('credits.credits')}`
-}
-
-function formatParam(key: string, value: unknown) {
-  const microUsd =
-    key === 'charge_micro_usd' ? toFiniteNumber(value) : undefined
-  if (microUsd !== undefined) {
-    return `${t('credits.charge')}: ${formatChargeCredits(microUsd)}`
-  }
-  return `${customerEventService.formatJsonKey(key)}: ${customerEventService.formatJsonValue(value)}`
-}
-
-function additionalInfoTooltip(event: AuditLog) {
-  return Object.entries(event.params ?? {})
-    .map(([key, value]) => formatParam(key, value))
-    .join('\n')
 }
 
 // A billing-route flip can overlap two loads against different backends; only
@@ -171,7 +142,7 @@ let latestLoadToken = 0
 const readWorkspaceEvents = (params: { page: number; limit: number }) => {
   const rail = useBillingReadRail()
   return rail === null
-    ? workspaceApi.getBillingEvents(params)
+    ? billingApi.getBillingEvents(params)
     : readOnRail(() => rail.readEvents(params), 'getBillingEvents')
 }
 
@@ -271,7 +242,7 @@ const refresh = async () => {
   await loadEvents()
 }
 
-const workspaceStore = useTeamWorkspaceStore()
+const workspaceStore = useWorkspaceIdentity()
 
 // The active workspace is watched alongside the billing mode: a switch between
 // two workspaces on the same mode leaves this table mounted, and without this

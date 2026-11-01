@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 
 import { useSettingStore } from '@/platform/settings/settingStore'

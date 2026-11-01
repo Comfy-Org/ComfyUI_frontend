@@ -23,7 +23,6 @@ test.describe(
   { tag: ['@ui', '@vue-nodes'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.appMode.enableLinearMode()
       await comfyPage.menu.topbar.setVueNodesEnabled(false)
     })
 

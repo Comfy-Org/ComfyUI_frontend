@@ -253,6 +253,15 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
   test('Server features are immutable when accessed via getServerFeatures', async ({
     comfyPage
   }) => {
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(
+          () =>
+            window.app!.api.getServerFeatures().supports_preview_metadata !==
+            undefined
+        )
+      )
+      .toBe(true)
     const immutabilityTest = await comfyPage.page.evaluate(() => {
       // Get a copy of server features
       const features1 = window.app!.api.getServerFeatures()

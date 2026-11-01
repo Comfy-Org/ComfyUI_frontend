@@ -1,37 +1,55 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { isCloud } from '@/platform/distribution/types'
 import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 type RowOperation = 'add_row' | 'remove_row' | 'remote_apply'
 
-const controllers = new WeakSet<IBaseWidget>()
+export const MAX_DYNAMIC_GROUP_ROW_RESOURCES = 4096
+export const MAX_DYNAMIC_GROUP_ROWS = 256
+
+const rowFieldCounts = new WeakMap<IBaseWidget, number>()
 const reported = new Set<string>()
 let remoteRowCountNode: LGraphNode | undefined
 
-export function markDynamicGroupController(widget: IBaseWidget): void {
-  controllers.add(widget)
+export function markDynamicGroupController(
+  widget: IBaseWidget,
+  rowFields: number
+): void {
+  rowFieldCounts.set(widget, rowFields)
 }
 
 /** True for the hidden widget whose value is a DynamicGroup's row count. */
 export function isDynamicGroupController(widget: IBaseWidget): boolean {
-  return controllers.has(widget)
+  return rowFieldCounts.has(widget)
 }
 
-/**
- * Runs a remote row count write to `node`. A refusal on that node inside it is
- * reported once, as the remote mismatch, not also as a local row change.
- */
-export function applyRemoteDynamicGroupRowCount(
+/** Rows `widget`'s group may hold before its row widgets exceed the budget. */
+export function dynamicGroupRowAllocationBound(widget: IBaseWidget): number {
+  const fields = rowFieldCounts.get(widget)
+  if (fields === undefined) return 0
+  return Math.min(
+    MAX_DYNAMIC_GROUP_ROWS,
+    Math.floor(MAX_DYNAMIC_GROUP_ROW_RESOURCES / (fields * 3 + 1))
+  )
+}
+
+/** True while a document row count is being written to `node`. */
+export function isRemoteDynamicGroupRowWrite(node: LGraphNode): boolean {
+  return remoteRowCountNode === node
+}
+
+/** Runs a document row-count write with node-scoped provenance. */
+export function applyRemoteDynamicGroupRowCount<T>(
   node: LGraphNode,
-  write: () => void
-): void {
+  write: () => T
+): T {
   const previous = remoteRowCountNode
   remoteRowCountNode = node
   try {
-    write()
+    return write()
   } finally {
     remoteRowCountNode = previous
   }
@@ -82,7 +100,7 @@ export function reportDynamicGroupRowRefusal(
   requested: number,
   actual: number
 ): void {
-  if (remoteRowCountNode === node) return
+  if (isRemoteDynamicGroupRowWrite(node)) return
   reportRowCount(
     node,
     operation,

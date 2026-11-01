@@ -39,6 +39,7 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentCreditTransitionNoticeMetadata,
+  AgentCreditUsageExposureMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
@@ -50,6 +51,7 @@ import type {
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentSendGatedMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -58,7 +60,6 @@ import type {
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
-  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -117,15 +118,16 @@ import type {
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import {
   CANCELLATION_STAGE_EVENTS,
   OnboardingTourEvents,
   TelemetryEvents
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 const EXECUTION_EVENT_SOURCE = 'web-sdk'
+const MAX_PRE_INIT_QUEUED_EVENTS = 100
 
 const IN_APP_SURVEY_EVENTS: Record<InAppSurveyStage, TelemetryEventName> = {
   shown: TelemetryEvents.IN_APP_SURVEY_SHOWN,
@@ -172,6 +174,14 @@ function stampPlatformAxes(event: CaptureResult | null): CaptureResult | null {
   return event
 }
 
+function stripRetiredStarterPromptFlag(
+  event: CaptureResult | null
+): CaptureResult | null {
+  if (!event) return null
+  delete event.properties['$feature/agent-starter-prompt-set']
+  return event
+}
+
 function readDesktopEntryAttribution(
   posthog: PostHog
 ): DesktopEntryAttribution | null {
@@ -203,6 +213,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isEnabled = true
   private posthog: PostHog | null = null
   private eventQueue: QueuedEvent[] = []
+  private didWarnEventQueueFull = false
   private pendingFirstAuthAt = new Map<string, string>()
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
@@ -239,7 +250,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               // automatically when persistence includes 'cookie' (the default).
               // Explicit override interacts badly with posthog-js#3578 where reset() fails
               // to clear localStorage on other subdomains, causing identity bleed on logout.
-              before_send: [stampPlatformAxes, createPostHogBeforeSend()]
+              before_send: [
+                stampPlatformAxes,
+                stripRetiredStarterPromptFlag,
+                createPostHogBeforeSend()
+              ]
             })
             this.isInitialized = true
             this.desktopEntryAttribution = readDesktopEntryAttribution(
@@ -300,6 +315,20 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     }
   }
 
+  private enqueueEvent(event: QueuedEvent): void {
+    if (this.eventQueue.length >= MAX_PRE_INIT_QUEUED_EVENTS) {
+      if (!this.didWarnEventQueueFull) {
+        console.warn(
+          'PostHog pre-initialization event queue is full; dropping events'
+        )
+        this.didWarnEventQueueFull = true
+      }
+      return
+    }
+
+    this.eventQueue.push(event)
+  }
+
   private flushPendingFirstAuthAt(): void {
     for (const [userId, firstAuthAt] of this.pendingFirstAuthAt) {
       this.setFirstAuthAt(userId, firstAuthAt)
@@ -343,7 +372,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         console.error('Failed to track PostHog event:', error)
       }
     } else {
-      this.eventQueue.push(event)
+      this.enqueueEvent(event)
     }
   }
 
@@ -361,7 +390,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         console.error('Failed to track PostHog event:', error)
       }
     } else {
-      this.eventQueue.push({
+      this.enqueueEvent({
         eventName,
         properties
       })
@@ -868,18 +897,18 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
   }
 
-  trackAgentStarterPromptExposure(
-    metadata: AgentStarterPromptExposureMetadata
-  ): void {
-    this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE, metadata)
-  }
-
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
   }
 
   trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
+  }
+
+  trackAgentCreditUsageExposure(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE, metadata)
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
@@ -946,6 +975,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     metadata: AgentOnboardingNotShownMetadata
   ): void {
     this.trackEvent(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
+  }
+
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_SEND_GATED, metadata)
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {

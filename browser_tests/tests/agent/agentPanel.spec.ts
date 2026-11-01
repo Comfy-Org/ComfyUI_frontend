@@ -26,6 +26,7 @@ import {
   THINKING_EVENT,
   THINKING_TEXT,
   TOOL_CALL_EVENT,
+  agentMessageDeltaEvent,
   agentTest
 } from '@e2e/tests/agent/agentPanelMocks'
 
@@ -140,7 +141,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.selectWorkflow()
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
-    const firstPrompt = enMessages.agent.suggestedPrompts.cloud[0]
+    const firstPrompt = enMessages.agent.suggestedPrompts.treatment.cloud[0]
     const promptChip = panel.getByRole('button', { name: firstPrompt })
     await expect(promptChip).toBeVisible()
 
@@ -246,6 +247,133 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText('Opened a new tab')).toBeVisible()
     await expect(panel.getByText('Resize image node')).toBeVisible()
+  })
+
+  test(
+    'shows a rebound canvas shortcut as semantic keycaps in a reply',
+    { tag: '@keyboard' },
+    async ({ agentPanel, comfyPage, getAgentSocket, postedMessages }) => {
+      const commandId = 'Comfy.Canvas.ToggleSelectedNodes.Bypass'
+      const keybindingPanel = comfyPage.settingDialog.keybindingPanel
+
+      await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.category('Keybinding').click()
+      await keybindingPanel.search(commandId)
+      await keybindingPanel.commandLabel(commandId).dblclick()
+      await keybindingPanel.pressCombo('Alt+q')
+      await keybindingPanel.saveKeybinding()
+      await comfyPage.settingDialog.close()
+
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      const ws = await getAgentSocket()
+      await agentPanel.sendMessage('How do I bypass the selected node?')
+      await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
+
+      pushEvent(
+        ws,
+        agentMessageDeltaEvent('Select it and press Ctrl+B to bypass the node.')
+      )
+      pushEvent(ws, MESSAGE_DONE_EVENT)
+
+      const reply = agentPanel.root
+        .getByTestId('markdown-stream')
+        .filter({ hasText: 'Select it and press' })
+      await expect(reply).toBeVisible()
+      await expect(reply.locator('kbd')).toHaveText(['Alt', 'Q'])
+      await expect(reply).toContainText('Alt+Q')
+      await expect(reply).not.toContainText('Ctrl+B')
+    }
+  )
+
+  test('identifies a generated video and honors its play affordance', async ({
+    agentPanel,
+    comfyPage,
+    getAgentSocket,
+    postedMessages
+  }) => {
+    await comfyPage.page.mouse.move(0, 0)
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+
+    await test.step('Receive a reply with an image and a video', async () => {
+      await agentPanel.sendMessage('Generate a short video')
+      await expect.poll(() => postedMessages.length).toBe(1)
+
+      const ws = await getAgentSocket()
+      pushEvent(
+        ws,
+        agentMessageDeltaEvent(
+          '![generated_still.png](https://media.comfy.org/website/comfy-agent/generated_still.png)\n\n' +
+            '[generated_clip.mp4](https://media.comfy.org/website/comfy-agent/generated_clip.mp4)'
+        )
+      )
+    })
+
+    await test.step('Image-open navigation leaves video paused', async () => {
+      await agentPanel.root
+        .getByRole('button', { name: 'generated_still.png', exact: true })
+        .click()
+      const imageOpenedGallery = comfyPage.page.getByRole('dialog', {
+        name: enMessages.g.gallery
+      })
+      await imageOpenedGallery
+        .getByRole('button', { name: enMessages.g.next })
+        .click()
+      const navigatedVideo = imageOpenedGallery.locator('video')
+      await expect(navigatedVideo).toBeVisible()
+      await expect
+        .poll(() =>
+          navigatedVideo.evaluate(
+            (video: HTMLVideoElement) =>
+              video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA
+          )
+        )
+        .toBe(true)
+      await expect
+        .poll(() =>
+          navigatedVideo.evaluate(
+            (video: HTMLVideoElement) => video.paused && video.currentTime === 0
+          )
+        )
+        .toBe(true)
+      await comfyPage.mediaLightbox.closeButton.click()
+    })
+
+    const videoTile = agentPanel.root.getByRole('button', {
+      name: enMessages.agent.openVideo.replace('{name}', 'generated_clip.mp4'),
+      exact: true
+    })
+    const preview = videoTile.getByTestId('reply-video-preview')
+
+    await test.step('Hover preview hides the play badge', async () => {
+      await expect(videoTile).toBeVisible()
+
+      const affordance = videoTile.getByTestId('reply-video-affordance')
+      await expect(affordance).toBeVisible()
+      await expect(affordance).toHaveCSS('opacity', '1')
+
+      await preview.hover()
+      await expect
+        .poll(() =>
+          preview.evaluate((video: HTMLVideoElement) => video.currentTime)
+        )
+        .toBeGreaterThan(0)
+      await expect(affordance).toHaveCount(0)
+    })
+
+    await test.step('Clicking the video tile opens a playing player', async () => {
+      await preview.click()
+      const player = comfyPage.page
+        .getByRole('dialog', { name: enMessages.g.gallery })
+        .locator('video')
+      await expect(player).toBeVisible()
+      await expect
+        .poll(() =>
+          player.evaluate((video: HTMLVideoElement) => video.currentTime)
+        )
+        .toBeGreaterThan(0)
+    })
   })
 
   test('shows an admission paywall without losing the rejected prompt', async ({
@@ -653,7 +781,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const longestItem = menu.getByRole('menuitem', {
       name: enMessages.agent.addFromAssets
     })
-    const icon = longestItem.locator('span').first()
+    const icon = longestItem.locator('[class*="icon-["]')
     const label = longestItem.getByText(enMessages.agent.addFromAssets, {
       exact: true
     })

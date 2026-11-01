@@ -10,6 +10,7 @@ export const AGENT_SUBGRAPH_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 export const AGENT_SUBGRAPH_DRIFT_WORKFLOW_ID =
   'b92718a4-02ae-41e6-ae85-c33b7bb880f7'
 export const AGENT_SUBGRAPH_HOST_ID = 11
+export const AGENT_SUBGRAPH_REUSED_HOST_ID = 5_123_456_789_012
 export const AGENT_SUBGRAPH_LINK_ID = 21
 export const AGENT_SUBGRAPH_INITIAL_TEXT = 'a photo of a pier'
 export const AGENT_SUBGRAPH_INITIAL_SEED = 0
@@ -176,6 +177,36 @@ export function agentSubgraphFrames(): {
   const initial = host.initialSync()
   const followUp = host.apply([followUpOp])
   return { initial, followUp }
+}
+
+export function agentSubgraphReuseFrames(): {
+  initial: HostFrame[]
+  reuse: HostFrame
+} {
+  const workflow = structuredClone(subgraphWorkflow)
+  const original = workflow.nodes.find(
+    ({ id }) => id === AGENT_SUBGRAPH_HOST_ID
+  )
+  if (!original) throw new Error('Agent subgraph host fixture is missing')
+  Object.assign(original, {
+    widgets_values_form: { order: ['text', 'seed'] }
+  })
+  const host = new HostDoc(AGENT_SUBGRAPH_WORKFLOW_ID, workflow, catalog)
+  const initial = host.initialSync()
+  const reused = structuredClone(original)
+  reused.id = AGENT_SUBGRAPH_REUSED_HOST_ID
+  reused.pos = [720, 300]
+  for (const input of reused.inputs) input.link = null
+  const reuse = host.apply([
+    {
+      op: 'add_node',
+      node_id: AGENT_SUBGRAPH_REUSED_HOST_ID,
+      class_type: reused.type,
+      pos: reused.pos,
+      node: reused
+    }
+  ])
+  return { initial, reuse }
 }
 
 export function agentOutOfOrderSubgraphFrames(): HostFrame[] {

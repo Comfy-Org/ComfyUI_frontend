@@ -7,7 +7,7 @@ import { nextTick, ref } from 'vue'
 import type * as VueRouter from 'vue-router'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import {
@@ -76,8 +76,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     }
   }
 })
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/services/litegraphService'))
 

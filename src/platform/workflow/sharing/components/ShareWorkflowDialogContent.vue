@@ -22,7 +22,7 @@
           :class="tabButtonClass('publishToHub')"
           @click="handleDialogModeChange('publishToHub')"
         >
-          <i class="icon-[lucide--globe] size-4" aria-hidden="true" />
+          <i class="icon-[lucide--globe]" aria-hidden="true" />
           {{ $t('shareWorkflow.publishToHubTab') }}
         </Button>
       </div>
@@ -37,7 +37,7 @@
         {{ $t('shareWorkflow.shareLinkTab') }}
       </DialogTitle>
       <Button size="icon" :aria-label="$t('g.close')" @click="onClose">
-        <i class="icon-[lucide--x] size-4" />
+        <i class="icon-[lucide--x]" />
       </Button>
     </header>
 
@@ -189,7 +189,7 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import { useAsyncState } from '@vueuse/core'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -199,10 +199,10 @@ import { useI18n } from 'vue-i18n'
 import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/profile/ComfyHubPublishIntroPanel.vue'
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Input from '@comfyorg/design-system/input/Input'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
 import type {
   WorkflowPublishResult,
@@ -213,9 +213,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { onClose } = defineProps<{

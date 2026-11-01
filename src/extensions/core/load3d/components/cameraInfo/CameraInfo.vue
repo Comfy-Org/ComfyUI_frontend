@@ -19,12 +19,7 @@
         @click="toggleGizmos"
       >
         <i
-          :class="
-            cn(
-              'size-4',
-              gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'
-            )
-          "
+          :class="gizmosOn ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off]'"
         />
         <span v-if="!compact">{{ gizmosLabel }}</span>
       </Button>
@@ -49,7 +44,7 @@
         "
         @click="selectTransformGizmo(option.value)"
       >
-        <i :class="cn('size-4', option.icon)" />
+        <i :class="option.icon" />
         <span v-if="!compact">{{ $t(option.labelKey) }}</span>
       </Button>
     </template>
@@ -64,7 +59,7 @@
         :aria-label="lookThroughLabel"
         @click="toggleLookThrough"
       >
-        <i class="icon-[lucide--video] size-4" />
+        <i class="icon-[lucide--video]" />
       </Button>
     </template>
   </ViewportWidgetShell>
@@ -80,19 +75,18 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
-import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ViewportWidgetShell from '@/extensions/core/load3d/components/ViewportWidgetShell.vue'
+import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
 import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCameraInfo } from '@/extensions/core/load3d/composables/useCameraInfo'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { TransformGizmoMode } from '@comfyorg/viewport3d/cameraInfo/CameraInfoViewport'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComponentWidget } from '@/types/domWidget'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 
@@ -107,14 +101,10 @@ function isComponentWidget(
   return 'node' in w && w.node !== undefined
 }
 
-const node = ref<LGraphNode | null>(null)
-if (isComponentWidget(widget)) {
-  node.value = widget.node
-} else if (nodeId) {
-  onMounted(() => {
-    node.value = resolveNode(nodeId) ?? null
-  })
-}
+const node = useLiveGraphNode(() => {
+  if (isComponentWidget(widget)) return widget.node
+  return nodeId ? resolveNode(nodeId) : null
+})
 
 const { t } = useI18n()
 
@@ -138,7 +128,7 @@ const {
   setTransformGizmoMode,
   setLookThrough,
   mode
-} = useCameraInfo(node as Ref<LGraphNode | null>)
+} = useCameraInfo(node)
 
 const gizmosLabel = computed(() =>
   gizmosOn.value ? t('load3d.hideGizmos') : t('load3d.showGizmos')
@@ -199,9 +189,24 @@ watch(gizmosOn, (on) => setGizmosVisible(on))
 watch(effectiveTransformGizmoMode, (m) => setTransformGizmoMode(m))
 watch(lookingThrough, (on) => setLookThrough(on))
 
+function initializeViewport(container: HTMLElement) {
+  initialize(container)
+  setGizmosVisible(gizmosOn.value)
+  setTransformGizmoMode(effectiveTransformGizmoMode.value)
+  setLookThrough(lookingThrough.value)
+}
+
 onMounted(() => {
-  const container = shell.value?.container
-  if (container) initialize(container)
+  watch(
+    node,
+    (current) => {
+      const container = shell.value?.container
+      if (!container) return
+      if (current) initializeViewport(container)
+      else cleanup()
+    },
+    { immediate: true }
+  )
 })
 
 onUnmounted(() => {

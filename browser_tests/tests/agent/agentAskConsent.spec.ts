@@ -7,6 +7,7 @@ import {
   DELETE_APPROVAL_PROMPT,
   RUN_ASK_ID,
   answerPath,
+  askExpired,
   askResolved,
   askTurnIds,
   askIdFor,
@@ -128,6 +129,36 @@ test.describe(
       send({ type: 'agent_message_done', data: { ...askTurnIds, usage: null } })
       await expect(panel.getByText(done, { exact: true })).toBeVisible()
       expect(answers()).toHaveLength(1)
+    })
+
+    test('an expired card closes without answering', async ({
+      startAskTurn
+    }) => {
+      const { panel, send, answers } = await startAskTurn(
+        'Run it.',
+        'ask_approval'
+      )
+      const cardLead = panel.getByText(enMessages.agent.runApproval.leadBound)
+      const runButton = panel.getByRole('button', {
+        name: enMessages.agent.runApproval.run,
+        exact: true
+      })
+
+      send(runApprovalAsk())
+      await expect(cardLead).toBeVisible()
+      await expect(runButton).toBeEnabled()
+
+      send(askExpired())
+      await expect(cardLead).toHaveCount(0)
+      await expect(runButton).toHaveCount(0)
+
+      const draft = 'The approval expired.'
+      send({
+        type: 'agent_message_draft',
+        data: { text: draft, ...askTurnIds }
+      })
+      await expect(panel.getByText(draft, { exact: true })).toBeVisible()
+      expect(answers()).toHaveLength(0)
     })
 
     test('the panel never answers a run approval by itself, whatever the stored preference says', async ({

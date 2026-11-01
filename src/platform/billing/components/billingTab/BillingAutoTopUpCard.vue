@@ -4,10 +4,15 @@
     class="flex flex-col"
     data-testid="billing-auto-top-up-card"
   >
-    <Skeleton v-if="state.kind === 'loading'" class="h-16 w-full" />
+    <div
+      v-if="state.kind === 'loading'"
+      class="rounded-xl border border-card px-5 py-4"
+    >
+      <Skeleton class="h-16 w-full" />
+    </div>
     <p
       v-else-if="state.kind === 'unavailable'"
-      class="m-0 flex items-center gap-1 rounded-lg border border-border p-4 text-sm text-muted-foreground"
+      class="m-0 flex items-center gap-1 rounded-xl border border-card px-5 py-4 text-sm text-muted-foreground"
       role="alert"
     >
       {{ $t('workspacePanel.billingTab.autoTopUp.unavailable') }}
@@ -19,14 +24,14 @@
       v-else-if="view"
       :class="
         cn(
-          'flex items-start justify-between gap-4 rounded-lg border p-4',
+          'flex items-start justify-between gap-4 rounded-xl border px-5 py-4',
           view.status.border
         )
       "
     >
       <div class="flex min-w-0 flex-col gap-1">
         <h3
-          class="m-0 flex items-center gap-2 text-sm font-semibold text-foreground"
+          class="m-0 flex items-center gap-2 text-sm font-medium text-foreground"
         >
           {{ $t('workspacePanel.billingTab.autoTopUp.title') }}
           <span
@@ -39,7 +44,7 @@
             data-testid="billing-auto-top-up-status"
           >
             <span
-              :class="cn('size-1.5 rounded-full', view.status.dot)"
+              :class="cn('size-1.75 rounded-full', view.status.dot)"
               aria-hidden="true"
             />
             {{ $t(view.status.label) }}
@@ -59,7 +64,7 @@
             variant="muted-textonly"
             size="icon-sm"
           >
-            <i class="icon-[lucide--info] size-4" aria-hidden="true" />
+            <i class="icon-[lucide--info] size-3.5" aria-hidden="true" />
           </Button>
         </p>
       </div>
@@ -69,11 +74,12 @@
         target="_blank"
         rel="noopener"
         :variant="view.status.action.variant"
+        size="md"
         class="shrink-0"
         @click="track"
       >
         {{ $t(view.status.action.label) }}
-        <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
+        <i :class="view.status.action.icon" aria-hidden="true" />
       </Button>
     </div>
   </section>
@@ -86,17 +92,18 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCredits, formatUsdFromCents } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
+import Button from '@comfyorg/design-system/button/Button'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import type { AutoReloadSettings } from '@comfyorg/billing-core'
+import { zAutoReloadSettings } from '@comfyorg/ingest-types/zod'
 import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 
 type Status = AutoReloadSettings['status']
-type ViewKey = Status | 'turnedOff'
+type ViewKey = Status | 'turnedOff' | 'maximumReached'
 
 interface Line {
   text: string
@@ -104,32 +111,37 @@ interface Line {
 }
 
 const NEUTRAL = {
-  border: 'border-border',
+  border: 'border-card',
   text: 'text-muted-foreground'
 } as const
 
+const OPEN = 'icon-[lucide--arrow-up-right]'
+const EXTERNAL = 'icon-[lucide--external-link]'
+
 const DANGER = {
-  border: 'border-destructive-background',
-  text: 'text-destructive-background'
+  border: 'border-destructive',
+  text: 'text-destructive'
 } as const
 
 const MANAGE = {
   id: 'manage',
   label: 'workspacePanel.billingTab.autoTopUp.actions.manage',
-  variant: 'secondary'
+  variant: 'secondary',
+  icon: OPEN
 } as const
 
 const UPDATE_PAYMENT = {
   id: 'update_payment',
   label: 'workspacePanel.billingTab.autoTopUp.actions.updatePayment',
-  variant: 'inverted'
+  variant: 'inverted',
+  icon: EXTERNAL
 } as const
 
 const STATUS = {
   failed: {
     ...DANGER,
     label: 'workspacePanel.billingTab.autoTopUp.status.failed',
-    dot: 'bg-destructive-background',
+    dot: 'bg-destructive',
     action: UPDATE_PAYMENT
   },
   turnedOff: {
@@ -145,7 +157,8 @@ const STATUS = {
     action: {
       id: 'turn_on',
       label: 'workspacePanel.billingTab.autoTopUp.actions.turnOn',
-      variant: 'secondary'
+      variant: 'secondary',
+      icon: EXTERNAL
     }
   },
   on_hold: {
@@ -156,7 +169,13 @@ const STATUS = {
   },
   paused_by_budget: {
     ...NEUTRAL,
-    label: 'workspacePanel.billingTab.autoTopUp.status.paused',
+    label: 'workspacePanel.billingTab.autoTopUp.status.limitReached',
+    dot: 'bg-warning-background',
+    action: MANAGE
+  },
+  maximumReached: {
+    ...NEUTRAL,
+    label: 'workspacePanel.billingTab.autoTopUp.status.maximumReached',
     dot: 'bg-warning-background',
     action: MANAGE
   },
@@ -173,7 +192,12 @@ const STATUS = {
     dot: string
     border: string
     text: string
-    action: { id: AutoTopUpCardAction; label: string; variant: string }
+    action: {
+      id: AutoTopUpCardAction
+      label: string
+      variant: string
+      icon: string
+    }
   }
 >
 
@@ -224,18 +248,15 @@ function limitTooltip(resetsAt: string | null) {
 }
 
 function ruleLines({
-  reload_amount_cents: amountCents,
-  reload_credits: reloadCredits,
+  target_credits: targetCredits,
   threshold_credits: thresholdCredits
 }: AutoReloadSettings): Line[] {
-  if (amountCents === null) return []
-  if (reloadCredits === null) return []
+  if (targetCredits === null) return []
   if (thresholdCredits === null) return []
   return [
     {
       text: t('workspacePanel.billingTab.autoTopUp.rule', {
-        amount: usd(amountCents),
-        credits: credits(reloadCredits),
+        target: credits(targetCredits),
         threshold: credits(thresholdCredits)
       })
     }
@@ -255,15 +276,29 @@ function limitLines(settings: AutoReloadSettings): Line[] {
   ]
 }
 
-function pausedLine({ cycle_resets_at: resumesAt }: AutoReloadSettings): Line {
+const BUDGET_COPY = {
+  paused: {
+    dated: 'workspacePanel.billingTab.autoTopUp.paused',
+    undated: 'workspacePanel.billingTab.autoTopUp.pausedNoDate'
+  },
+  pausedByRemainder: {
+    dated: 'workspacePanel.billingTab.autoTopUp.pausedByRemainder',
+    undated: 'workspacePanel.billingTab.autoTopUp.pausedByRemainderNoDate'
+  },
+  maximumReached: {
+    dated: 'workspacePanel.billingTab.autoTopUp.maximumReached',
+    undated: 'workspacePanel.billingTab.autoTopUp.maximumReachedNoDate'
+  }
+} as const
+
+function budgetLine(
+  copy: keyof typeof BUDGET_COPY,
+  { cycle_resets_at: resetsAt }: AutoReloadSettings
+): Line {
+  const { dated, undated } = BUDGET_COPY[copy]
   return {
-    text:
-      resumesAt === null
-        ? t('workspacePanel.billingTab.autoTopUp.pausedNoDate')
-        : t('workspacePanel.billingTab.autoTopUp.paused', {
-            date: day(resumesAt)
-          }),
-    tooltip: limitTooltip(resumesAt)
+    text: resetsAt === null ? t(undated) : t(dated, { date: day(resetsAt) }),
+    tooltip: limitTooltip(resetsAt)
   }
 }
 
@@ -279,13 +314,20 @@ const LINES: Record<ViewKey, (settings: AutoReloadSettings) => Line[]> = {
   ],
   paused_by_budget: (settings) => [
     ...ruleLines(settings),
-    pausedLine(settings)
+    budgetLine(
+      settings.paused_by_budget_remainder ? 'pausedByRemainder' : 'paused',
+      settings
+    )
+  ],
+  maximumReached: (settings) => [
+    ...ruleLines(settings),
+    budgetLine('maximumReached', settings)
   ],
   on: (settings) => [...ruleLines(settings), ...limitLines(settings)]
 }
 
 function isStatus(status: string): status is Status {
-  return Object.hasOwn(STATUS, status)
+  return zAutoReloadSettings.shape.status.safeParse(status).success
 }
 
 function viewKey(settings: AutoReloadSettings): ViewKey {
@@ -295,6 +337,12 @@ function viewKey(settings: AutoReloadSettings): ViewKey {
     settings.disabled_reason === 'consecutive_declines'
   ) {
     return 'turnedOff'
+  }
+  if (
+    settings.status === 'paused_by_budget' &&
+    settings.monthly_budget_is_default
+  ) {
+    return 'maximumReached'
   }
   return settings.status
 }

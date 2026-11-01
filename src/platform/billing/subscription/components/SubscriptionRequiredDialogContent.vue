@@ -10,7 +10,7 @@
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
-      <i class="pi pi-times text-xl" aria-hidden="true" />
+      <i class="icon-[lucide--x] size-5" aria-hidden="true" />
     </Button>
     <div class="flex flex-col items-center gap-3">
       <div
@@ -31,6 +31,8 @@
       </DialogTitle>
     </div>
 
+    <CreditsLockedNotice v-if="creditsLocked" class="text-center" />
+
     <PricingTable
       :reason="paymentIntentSource"
       class="flex-1"
@@ -49,7 +51,7 @@
           @click="handleContactUs"
         >
           {{ $t('subscription.contactUs') }}
-          <i class="pi pi-comments" />
+          <i class="icon-[lucide--messages-square]" />
         </Button>
         <span class="text-sm text-muted-foreground">{{ $t('g.or') }}</span>
         <Button
@@ -58,7 +60,7 @@
           @click="handleViewEnterprise"
         >
           {{ $t('subscription.viewEnterprise') }}
-          <i class="pi pi-external-link" />
+          <i class="icon-[lucide--external-link]" />
         </Button>
       </div>
     </div>
@@ -75,7 +77,7 @@
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
-      <i class="pi pi-times" aria-hidden="true" />
+      <i class="icon-[lucide--x]" aria-hidden="true" />
     </Button>
 
     <div
@@ -115,6 +117,8 @@
             />
           </div>
 
+          <CreditsLockedNotice v-if="creditsLocked" />
+
           <p
             v-if="reason === 'out_of_credits'"
             class="m-0 text-sm text-muted-foreground"
@@ -153,24 +157,27 @@
 import { computed, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
-import Button from '@/components/ui/button/Button.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import CreditsLockedNotice from '@/platform/billing/components/CreditsLockedNotice.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/platform/billing/subscription/constants/subscriptionPricesConfig'
 import PricingTable from '@/platform/billing/subscription/components/PricingTable.vue'
 import SubscribeButton from '@/platform/billing/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/billing/subscription/components/SubscriptionBenefits.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 
-const { onClose, reason, paymentIntentSource, onChooseTeam } = defineProps<{
-  onClose: () => void
-  reason?: PaymentIntentSource
-  paymentIntentSource: PaymentIntentSource | undefined
-  onChooseTeam?: () => void
-}>()
+const { onClose, reason, paymentIntentSource, creditsLocked, onChooseTeam } =
+  defineProps<{
+    onClose: () => void
+    reason?: PaymentIntentSource
+    paymentIntentSource: PaymentIntentSource | undefined
+    creditsLocked?: boolean
+    onChooseTeam?: () => void
+  }>()
 
 const emit = defineEmits<{
   close: [subscribed: boolean]

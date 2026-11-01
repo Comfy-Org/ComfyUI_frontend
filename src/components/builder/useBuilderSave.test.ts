@@ -6,7 +6,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -26,7 +26,7 @@ vi.mock(import('@/composables/useAppMode'))
 
 vi.mock(import('@/composables/useErrorHandling'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
@@ -315,7 +315,6 @@ describe('useBuilderSave', () => {
       const onSave = openSaveDialog()
       await onSave('new-name', false)
       const [options] = vi.mocked(showConfirmDialog).mock.calls[0]
-      assert.exists(options?.footerProps)
       const { onConfirm, onCancel } = options.footerProps
       assert(typeof onConfirm === 'function')
       assert(typeof onCancel === 'function')

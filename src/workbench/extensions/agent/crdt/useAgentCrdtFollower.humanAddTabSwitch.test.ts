@@ -4,6 +4,7 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
 import { render } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,9 +12,9 @@ import { defineComponent, nextTick, ref } from 'vue'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { encodeBase64 } from './docFrameClient'
@@ -139,14 +140,21 @@ describe('a human-added node across a tab switch', () => {
   }
 
   function deliverCatchUp(host: Y.Doc, seq: number): void {
-    deliver('doc_subscribed', { v: 1, workflow_id: WORKFLOW_ID, ok: true, seq })
+    deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq,
+      lineage_seq: 1
+    } satisfies DocSubscribedData)
     deliver('doc_update', {
       v: 1,
       workflow_id: WORKFLOW_ID,
       seq,
+      lineage_seq: 1,
       actor: 'agent:comfy:host',
       update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-    })
+    } satisfies DocUpdateData)
   }
 
   function acknowledge(ops: Op[]): void {
@@ -164,10 +172,11 @@ describe('a human-added node across a tab switch', () => {
       v: 1,
       workflow_id: WORKFLOW_ID,
       seq,
+      lineage_seq: 1,
       actor: ops[0].actor,
       op_ids: ops.map((op) => op.op_id),
       update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-    })
+    } satisfies DocUpdateData)
   }
 
   it.for([

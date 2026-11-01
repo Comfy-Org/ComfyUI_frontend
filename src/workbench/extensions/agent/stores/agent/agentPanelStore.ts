@@ -16,14 +16,11 @@ import {
   SIDEBAR_MIN_WIDTH,
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
-import type { ServerFact } from '@/platform/serverFacts/serverFact'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentPanelCloseSource,
   AgentPanelOpenedMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -34,44 +31,13 @@ import type {
   CreditTransitionNoticeState
 } from './creditTransitionNoticeState'
 import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
+import type { HeldGate } from '@/workbench/extensions/agent/composables/agent/useAgentSendGates'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const FUNDS_RECHECK_TIMEOUT_MS = 10_000
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
-
-interface AgentOnboardingPolicy {
-  startup: 'activationVisits' | 'lockedUntilConsent'
-  offerMemory: 'shown' | 'answered'
-  agentButton: 'requestConsent' | 'togglePanel'
-  persistSkipAsRefusal: boolean
-  introduceBeforeSignIn: boolean
-}
-
-const DEFAULT_ONBOARDING: AgentOnboardingPolicy = {
-  startup: 'activationVisits',
-  offerMemory: 'shown',
-  agentButton: 'requestConsent',
-  persistSkipAsRefusal: true,
-  introduceBeforeSignIn: false
-}
-
-const DESKTOP_ONBOARDING: AgentOnboardingPolicy = {
-  startup: 'lockedUntilConsent',
-  offerMemory: 'answered',
-  agentButton: 'togglePanel',
-  persistSkipAsRefusal: false,
-  introduceBeforeSignIn: true
-}
-
-function isLocalDesktopApp(): boolean {
-  if (isCloud) return false
-  if (isDesktop) return true
-  const bridge = window.__comfyDesktop2
-  if (!bridge) return false
-  return !(bridge.isRemote?.() ?? window.__comfyDesktop2Remote ?? false)
-}
 
 type TargetTracking =
   | { mode: 'uninitialized' }
@@ -110,7 +76,6 @@ export type AgentPanelView =
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const consentAccepted = ref(false)
-  // writeDefaults false: no storage key planted for flag-off users.
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
     writeDefaults: false
   })
@@ -119,17 +84,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
+  const heldSendGate = ref<HeldGate | null>(null)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const { flags: featureFlags } = useFeatureFlags()
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
-  const onboarding = computed<
-    ServerFact<'agent.onboarding', AgentOnboardingPolicy>
-  >(() =>
-    pendingServerFact(
-      'BE-22051',
-      isLocalDesktopApp() ? DESKTOP_ONBOARDING : DEFAULT_ONBOARDING
-    )
-  )
   /** The server's `agent` feature; undefined unless its state is known. */
   const comfyAgent = computed(() => {
     if (import.meta.env.VITE_AGENT_STANDALONE === 'true') return undefined
@@ -142,15 +100,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
-  /**
-   * Width the workspace left of the panel needs: the side toolbar, plus the
-   * sidebar when one is open. The layout that owns those keeps it current, so
-   * the panel gives way the moment it would meet the sidebar.
-   */
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
+  const billingRefreshedAcceptances = ref(0)
   const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)
+  const reportedCreditUsageExposure = ref(false)
   const fundsRechecks = ref(new Map<number, string>())
   const fundsRecheckTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
   const fundsRecheckFinished = new Map<number, () => void>()
@@ -229,8 +184,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       : { mode: 'retained', workflow: null, closedPath: workflow.path }
   }
 
-  // Only a retained target can become detached. A following target belongs to
-  // the editor, including its replacement when the visible tab closes.
   watch(
     () => [targetTracking.value, ...workflowStore.openWorkflows],
     () => {
@@ -285,10 +238,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
 
   let openedAt: number | null = null
-  // Guards the pagehide teardown report below: true once this open epoch has
-  // reported a close, so a bfcache-frozen page that fires pagehide again
-  // (background/resume/close) can't emit a second overlapping duration for
-  // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
   let teardownReported = false
 
   function startOpenEpoch(): void {
@@ -296,6 +245,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     teardownReported = false
     reportedFreeUseExposure.value = false
     reportedFreeUseImpression.value = false
+    reportedCreditUsageExposure.value = false
   }
 
   const isVisible = computed(() => enabled.value && isOpen.value)
@@ -313,10 +263,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   const { width: windowWidth } = useWindowSize()
 
-  /**
-   * Falls below `PANEL_MIN_WIDTH` when the window leaves less room than that.
-   * A panel narrower than its minimum still beats one that leaves the window.
-   */
   const maxWidth = computed(() =>
     clamp(windowWidth.value - reservedWorkspaceWidth.value, 0, PANEL_MAX_WIDTH)
   )
@@ -367,11 +313,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     openedAt = null
   }
 
-  // pagehide is the reliable teardown signal on tab close/reload and even on
-  // some mobile Safari backgrounding, where nothing else is guaranteed to
-  // fire again. Reports the open duration without mutating isOpen/local
-  // storage, so the localStorage-backed restore-on-reload behaviour
-  // (FE-1284/PM-648) is untouched.
   useEventListener(window, 'pagehide', () => {
     if (!isVisible.value || openedAt === null || teardownReported) return
     teardownReported = true
@@ -381,11 +322,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     })
   })
 
-  // A bfcache restore resumes this same frozen interval rather than starting
-  // a new one, so the pagehide report above already closed it out. Starting
-  // a fresh interval here keeps a later close()/pagehide measuring only the
-  // time since resume, instead of re-including (and double counting) the
-  // span already reported.
   useEventListener(window, 'pageshow', (event: PageTransitionEvent) => {
     if (!event.persisted || !isVisible.value) return
     openedAt = Date.now()
@@ -480,14 +416,16 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    heldSendGate,
     view,
     interruptHistorySelection,
     flagsSettled,
     comfyAgent,
-    onboarding,
     reportedExhaustionIdentity,
+    billingRefreshedAcceptances,
     reportedFreeUseExposure,
     reportedFreeUseImpression,
+    reportedCreditUsageExposure,
     creditTransitionNotice: readonly(creditTransitionNotice),
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,

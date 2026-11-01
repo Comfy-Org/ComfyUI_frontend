@@ -19,9 +19,9 @@
  * degrade to a note in the log section rather than abort the whole bundle.
  */
 import { DISTRIBUTION } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
 import type {
   AssistantMessage,
@@ -41,6 +41,7 @@ const MAX_WORKFLOW_CHARS = 200_000
 const MAX_SECTION_CHARS = 60_000
 const MAX_REPORT_CHARS = 256_000
 const MAX_TOOL_CALLS = 50
+const MAX_THINKING_CHARS = 10_000
 const MAX_REDACTION_DEPTH = 12
 const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
 const SOURCE_TIMEOUT_MS = 5_000
@@ -506,50 +507,171 @@ type RetainedToolCall = Pick<
   'callId' | 'name' | 'state' | 'ok' | 'durationMs'
 > & {
   turnId: AssistantMessage['id']
+  startedAtMs: number | null
 }
 
-function fitToolCalls(calls: readonly RetainedToolCall[], context: string) {
-  let start = 0
-  let body = json(redactSecrets(calls))
-  let section = [context, fence('json', body)].join('\n\n')
-  while (section.length > MAX_SECTION_CHARS) {
-    start++
-    body = json(redactSecrets(calls.slice(start)))
-    section = [context, fence('json', body)].join('\n\n')
+interface RetainedTurnThinking {
+  turnId: AssistantMessage['id']
+  thinkingDurationsMs: (number | null)[]
+  thinkingTotalMs: number
+}
+
+function fitToolCalls(
+  calls: readonly RetainedToolCall[],
+  context: string,
+  trailerFor: (retained: readonly RetainedToolCall[]) => string
+) {
+  const redactedCalls = calls.map((call) => redactSecrets(call))
+  function render(start: number) {
+    return [
+      context,
+      fence('json', json(redactedCalls.slice(start))),
+      trailerFor(calls.slice(start))
+    ].join('\n\n')
   }
-  return { section, retained: calls.length - start }
+  let low = 0
+  let high = calls.length
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2)
+    if (render(mid).length > MAX_SECTION_CHARS) low = mid + 1
+    else high = mid
+  }
+  return { section: render(low), retained: calls.length - low }
+}
+
+function toRetainedToolCall(
+  turnId: AssistantMessage['id'],
+  part: ToolPart
+): RetainedToolCall {
+  return {
+    turnId,
+    callId: part.callId,
+    name: part.name,
+    state: part.state,
+    ok: part.ok,
+    durationMs: part.durationMs,
+    startedAtMs: part.startedAtMs ?? null
+  }
+}
+
+function toolPartsOf(message: AssistantMessage) {
+  return message.parts.filter((part): part is ToolPart => part.type === 'tool')
 }
 
 function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
-  const calls: RetainedToolCall[] = []
-  let total = 0
-  for (const message of [...messages].reverse()) {
-    for (const part of [...message.parts].reverse()) {
-      if (part.type !== 'tool') continue
-      total++
-      if (calls.length === MAX_TOOL_CALLS) continue
-      calls.push({
+  let latestIndex = messages.length - 1
+  while (latestIndex >= 0 && toolPartsOf(messages[latestIndex]).length === 0) {
+    latestIndex--
+  }
+  function callsOf(message: AssistantMessage) {
+    return toolPartsOf(message).map((part) =>
+      toRetainedToolCall(message.id, part)
+    )
+  }
+  const olderCalls = messages
+    .slice(0, Math.max(0, latestIndex))
+    .flatMap(callsOf)
+  const latestCalls = latestIndex === -1 ? [] : callsOf(messages[latestIndex])
+  const calls = [
+    ...olderCalls.slice(Math.max(0, olderCalls.length - MAX_TOOL_CALLS)),
+    ...latestCalls
+  ]
+  return { calls, total: olderCalls.length + latestCalls.length }
+}
+
+function collectTurnThinking(
+  messages: readonly AssistantMessage[],
+  calls: readonly RetainedToolCall[]
+): RetainedTurnThinking[] {
+  const retainedTurnIds = new Set(calls.map(({ turnId }) => turnId))
+  return messages
+    .filter(
+      (message, index) =>
+        index === messages.length - 1 || retainedTurnIds.has(message.id)
+    )
+    .map((message) => {
+      const durations = message.parts.flatMap((part) =>
+        part.type === 'thinking' ? [part.durationMs ?? null] : []
+      )
+      return {
         turnId: message.id,
-        callId: part.callId,
-        name: part.name,
-        state: part.state,
-        ok: part.ok,
-        durationMs: part.durationMs
-      })
+        thinkingDurationsMs: durations,
+        thinkingTotalMs: durations.reduce<number>(
+          (total, duration) => total + (duration ?? 0),
+          0
+        )
+      }
+    })
+}
+
+function fitTurnThinking(turns: readonly RetainedTurnThinking[]) {
+  function fits(candidate: readonly RetainedTurnThinking[]) {
+    return json(redactSecrets(candidate)).length <= MAX_THINKING_CHARS
+  }
+  if (fits(turns)) return { turns, omittedTurns: 0 }
+  const firstFittingTurn = turns.findIndex((_, index) =>
+    fits(turns.slice(index))
+  )
+  if (firstFittingTurn !== -1) {
+    return {
+      turns: turns.slice(firstFittingTurn),
+      omittedTurns: firstFittingTurn
     }
   }
-  return { calls: calls.reverse(), total }
+  const latest = turns[turns.length - 1]
+  if (!fits([{ ...latest, thinkingDurationsMs: [] }])) {
+    return { turns: [], omittedTurns: turns.length }
+  }
+  function withLastDurations(count: number) {
+    return {
+      ...latest,
+      thinkingDurationsMs: latest.thinkingDurationsMs.slice(
+        latest.thinkingDurationsMs.length - count
+      )
+    }
+  }
+  let low = 0
+  let high = latest.thinkingDurationsMs.length
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2)
+    if (fits([withLastDurations(mid)])) low = mid
+    else high = mid - 1
+  }
+  return {
+    turns: [withLastDurations(low)],
+    omittedTurns: turns.length - 1,
+    omittedDurations: latest.thinkingDurationsMs.length - low
+  }
+}
+
+function thinkingTrailer(
+  messages: readonly AssistantMessage[],
+  calls: readonly RetainedToolCall[]
+) {
+  const fitted = fitTurnThinking(collectTurnThinking(messages, calls))
+  const omissions = [
+    fitted.omittedTurns > 0 &&
+      `Turns omitted to fit the size limit: ${fitted.omittedTurns}.`,
+    fitted.omittedDurations !== undefined &&
+      `The latest turn keeps only its last ${fitted.turns[0].thinkingDurationsMs.length} durations; earlier durations omitted but still counted in thinkingTotalMs: ${fitted.omittedDurations}.`
+  ].filter((line) => line !== false)
+  return [
+    'Model thinking time per retained turn, measured in this tab: one entry per thinking part, null where no timing was observed.',
+    ...omissions,
+    fence('json', json(redactSecrets(fitted.turns)))
+  ].join('\n\n')
 }
 
 function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
-  const context =
-    'Current conversation metadata retained in this tab only. Restored history may omit tool calls. Durations are backend-reported; missing ok or durationMs means no outcome or timing was observed. State is the retained UI state, not proof a request is still running. No arguments, responses, prompts or reasoning are included.'
+  const context = `Current conversation metadata retained in this tab only. Restored history may omit tool calls. The latest turn with tool calls is exempt from the ${MAX_TOOL_CALLS}-call cap applied to older turns; if the section still exceeds its size limit, the oldest calls are dropped first. Tool durations are backend-reported; missing ok or durationMs means no outcome or timing was observed. startedAtMs is this tab's clock (epoch ms) when the call was first seen running; null for calls restored from history or first seen finished. State is the retained UI state, not proof a request is still running. No arguments, responses, prompts or reasoning are included.`
   if (messages === undefined) {
     return { section: context, status: 'unavailable' }
   }
 
   const { calls, total } = collectAgentToolCalls(messages)
-  const fitted = fitToolCalls(calls, context)
+  const fitted = fitToolCalls(calls, context, (retained) =>
+    thinkingTrailer(messages, retained)
+  )
   return {
     section: fitted.section,
     status:

@@ -1,7 +1,4 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe(
   'Copy and paste after selecting text outside the canvas',
@@ -20,9 +17,7 @@ test.describe(
       await comfyPage.clipboard.copy()
       await comfyPage.clipboard.paste()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(before + 1)
+      await comfyPage.expectNodeCount(before + 1)
     })
   }
 )

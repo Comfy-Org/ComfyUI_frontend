@@ -35,6 +35,11 @@ test.describe(
       await expect(runningOutline).toBeVisible()
       await expect(peer.runningOutline).toHaveCount(0)
 
+      const queuePanel = new QueuePanel(page)
+      await expect(
+        queuePanel.overlay.getByText(/^Current node:.*25%$/)
+      ).toBeVisible()
+
       await Promise.all([finishRunForUser(jobId), peer.finishRunForUser(jobId)])
       await peer.waitForQueueRemaining(0)
 
@@ -44,7 +49,6 @@ test.describe(
         new RegExp(outputFilename(jobId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
       )
 
-      const queuePanel = new QueuePanel(page)
       await queuePanel.open()
       await expect(queuePanel.jobRow(jobId)).toBeVisible()
 

@@ -17,14 +17,14 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
-import { useTelemetry } from '@/platform/telemetry'
-import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { reportError as reportErrorFn } from '@comfyorg/telemetry/reportError'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
-import type { DocFrameTransport } from './docFrameClient'
+import type { DocFrameTransport, DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
@@ -52,7 +52,7 @@ const bridgeState = (() => {
     unsubscribe = vi.fn(() => {
       liveSubscriptions.delete(this)
     })
-    resubscribe = vi.fn()
+    resubscribe = vi.fn(() => true)
     reconnect = vi.fn()
     reconcile = vi.fn()
     destroy = vi.fn(() => {
@@ -165,10 +165,10 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
 
 vi.mock(import('./devPanelLog'), { spy: true })
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: telemetryState.reportError
 }))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
@@ -229,24 +229,38 @@ function mountFollower(
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
   enqueue: (operations: GraphOperation[]) => void
+  retry: () => void
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
   let enqueue!: (operations: GraphOperation[]) => void
+  let retry!: () => void
   const host = defineComponent({
     setup() {
-      const { status, enqueueHumanOperations } = useAgentCrdtFollower(
-        workflowId,
-        { transport, isTargetActive, getGraph, events, canvasFor }
-      )
+      const { status, enqueueHumanOperations, retrySubscription } =
+        useAgentCrdtFollower(workflowId, {
+          transport,
+          isTargetActive,
+          getGraph,
+          events,
+          canvasFor
+        })
       exposedStatus = () => status.value as AgentCrdtStatus
       enqueue = enqueueHumanOperations
+      retry = retrySubscription
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus, enqueue }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    enqueue,
+    retry
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -533,6 +547,18 @@ describe('useAgentCrdtFollower', () => {
         workflow_id: 'wf-1',
         code: 'schema_version_mismatch'
       })
+    }
+
+    function spendRetryBudget(): void {
+      for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
+        refuse()
+        vi.advanceTimersByTime(delay)
+      }
+    }
+
+    function exhaustRetryBudget(): void {
+      spendRetryBudget()
+      refuse()
     }
 
     it('stays non-terminal while a refused subscribe still has a retry behind it', () => {
@@ -1064,18 +1090,41 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reports a refusal terminal once the retry budget is spent', () => {
-      const { unmount, status } = mountFollower('wf-1')
-      for (let attempt = 0; attempt < 6; attempt++) {
-        refuse()
-        vi.advanceTimersByTime(500 * 2 ** attempt)
-      }
+    it('reports exhausted retries as recoverable and retries on request', () => {
+      const { unmount, status, retry } = mountFollower('wf-1')
+      spendRetryBudget()
       expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
       expect(status().terminal).toBeNull()
 
       refuse()
 
+      expect(status().terminal).toBe('retry_exhausted')
+
+      bridge().resubscribe.mockReturnValueOnce(false)
+      retry()
+
+      expect(status().terminal).toBe('retry_exhausted')
+
+      retry()
+
+      expect(status().terminal).toBeNull()
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(8)
+      unmount()
+    })
+
+    it('does not retry a permanent refusal that supersedes exhaustion', () => {
+      const { unmount, status, retry } = mountFollower('wf-1')
+      exhaustRetryBudget()
+      expect(status().terminal).toBe('retry_exhausted')
+
+      refuseForGood()
       expect(status().terminal).toBe('refused')
+      const attempts = bridge().resubscribe.mock.calls.length
+
+      retry()
+
+      expect(status().terminal).toBe('refused')
+      expect(bridge().resubscribe).toHaveBeenCalledTimes(attempts)
       unmount()
     })
   })
@@ -2674,6 +2723,39 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it.fails('keeps ops the host skipped when it refuses another op in the batch', async () => {
+    const readyGraph = fromPartial<LGraph>({})
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => readyGraph)
+    enqueue([
+      { op: 'set_widget', node_id: '2', widget: 'steps', value: 3 },
+      { op: 'set_widget', node_id: '2', widget: 'cfg', value: 7 },
+      { op: 'delete_node', node_id: '1', removed_links: [] }
+    ])
+    await Promise.resolve()
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+
+    const result: DocOpsResult = {
+      workflowId: 'wf-1',
+      ok: false,
+      seq: 10,
+      applied: [ops[0].op_id],
+      skipped: [ops[1].op_id],
+      failed: {
+        index: 2,
+        op_id: ops[2].op_id,
+        code: 'unknown_node',
+        message: 'Unknown node'
+      }
+    }
+    dispatchFrame('doc_ops_result', result)
+
+    expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+      'wf-1',
+      [ops[2]]
+    )
+    unmount()
+  })
+
   it('reverts only the ops the host rejected from a human batch', async () => {
     const readyGraph = fromPartial<LGraph>({})
     const { unmount, enqueue } = mountFollower('wf-1', true, () => readyGraph)
@@ -2929,6 +3011,46 @@ describe('useAgentCrdtFollower', () => {
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as BatchOutcome).state)
     expect(settledStates).toEqual(['unconfirmed'])
+    unmount()
+  })
+
+  it('holds a widget edit made while the socket is down and resends it on the reconnect ack (PM-2392)', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const edit: GraphOperation = {
+      op: 'set_widget',
+      node_id: '1',
+      widget: 'image',
+      value: 'human-choice.png'
+    }
+    const { enqueue, unmount } = mountFollower('wf-1')
+    clientState.sendOps.mockClear()
+    clientState.sendOps.mockReturnValue(false)
+
+    enqueue([edit])
+    await Promise.resolve()
+    vi.advanceTimersByTime(10_000)
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(6)
+    expect(projectionState.noteLocalWrites).toHaveBeenCalledWith([edit])
+    expect(projectionState.settleLocalWrites).not.toHaveBeenCalled()
+    expect(
+      vi
+        .mocked(recordDevEvent)
+        .mock.calls.filter(([event]) => event === 'human_ops_settled')
+    ).toEqual([])
+
+    clientState.sendOps.mockReturnValue(true)
+    agentSocket.open()
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 0 })
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(7)
+    const [, , refused] = clientState.sendOps.mock.calls[0]
+    const [, , resent] = clientState.sendOps.mock.calls[6]
+    expect(resent).toHaveLength(1)
+    expect(resent[0]).toMatchObject({ op: 'set_widget', node_id: '1' })
+    expect(resent[0].op_id).toBe(refused[0].op_id)
+    expect(resent[0].base_version).toBe(refused[0].base_version)
     unmount()
   })
 

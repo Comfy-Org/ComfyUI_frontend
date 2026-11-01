@@ -8,7 +8,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 // LGraphNode import re-triggers the LGraph<->Subgraph cycle.
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { wasWidgetRefused } from '@/lib/litegraph/src/node/widgetsView'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'

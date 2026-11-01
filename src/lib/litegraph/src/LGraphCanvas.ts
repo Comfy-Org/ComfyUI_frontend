@@ -4,7 +4,7 @@ import type {
   SubgraphId,
   SlotTypeDefaultNodeOpts,
   Subgraph
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { default as DOMPurify } from 'dompurify'
 import { cloneDeep, toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
@@ -25,7 +25,7 @@ import {
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   applyCanvasSelection,
   applyClickSelection,
@@ -53,9 +53,9 @@ import {
   readBrowserDpr
 } from '@/renderer/core/canvas/canvasViewport'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toRerouteId } from '@/types/rerouteId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -90,16 +90,16 @@ import type { AnimationOptions } from './DragAndScale'
 import { LGraphGroup } from './LGraphGroup'
 
 import { LGraphNode } from './LGraphNode'
-import type { NodeProperty } from '@/types/nodeProperty'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { detachSerialisedLinks } from './linkDeduplication'
-import { parseNodeId, serializeNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId, serializeNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
 import { inputHasLink, nodeLinkIds, outputLinks } from './node/slotLinks'
-import type { LinkId } from '@/types/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { Reroute } from './Reroute'
-import type { RerouteId } from '@/types/rerouteId'
-import type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { CanvasInteractionModeReader } from '@comfyorg/graph-model/CanvasInteractionMode'
 import { LinkConnector } from './canvas/LinkConnector'
 import { findRerouteAtPoint } from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
@@ -151,24 +151,26 @@ import type {
   ColorOption,
   DefaultConnectionColors,
   Dictionary,
-  Direction,
   IColorable,
   INodeSlot,
   ISlotType,
   LinkSegment,
   NullableProperties,
-  Point,
-  Positionable,
+  Positionable
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  RectSide as Direction,
+  PointTuple as Point,
   ReadOnlyRect,
   Rect,
-  Size
-} from './interfaces'
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   ConnectingLink,
   INodeInputSlot,
   INodeOutputSlot,
   INodeSlotContextItem
-} from './types/slots'
+} from '@comfyorg/graph-model/slots'
 import type {
   ContextMenuDivElement,
   IContextMenuOptions,
@@ -203,7 +205,7 @@ import { isSubgraphInput, isSubgraphOutput } from './subgraph/subgraphUtils'
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions
-} from './types/events'
+} from '@comfyorg/graph-model/events'
 import {
   CanvasItem,
   LGraphEventMode,
@@ -212,14 +214,14 @@ import {
   LinkRenderType,
   RenderShape,
   TitleMode
-} from './types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import type {
   ClipboardItems,
   ISerialisedNode,
   SubgraphIO
-} from './types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import type { NeverNever, PickNevers } from './types/utility'
-import type { IBaseWidget, TWidgetValue } from './types/widgets'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getDraggedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
@@ -514,7 +516,7 @@ function connectSearchBoxNodeTo(
   )
 }
 
-type DeselectAllOptions = {
+interface DeselectAllOptions {
   keepSelected?: Positionable
   notify?: boolean
 }
@@ -1186,6 +1188,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
   }
 
+  private notifySelectionChange(): void {
+    if (this.selectionNotificationDepth === 0)
+      this.onSelectionChange?.(this.selectionView.selectedNodes)
+  }
+
   /** called when rendering a tooltip */
   onDrawLinkTooltip?: (
     ctx: CanvasRenderingContext2D,
@@ -1417,16 +1424,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     LGraphCanvas._measureText = (
       text: string,
       fontStyle = this.inner_text_font
-    ) => {
-      const { ctx } = this
-      const { font } = ctx
-      try {
-        ctx.font = fontStyle
-        return ctx.measureText(text).width
-      } finally {
-        ctx.font = font
-      }
-    }
+    ) => cachedMeasureText(this.ctx, text, fontStyle)
 
     if (!options.skip_render) {
       this.startRendering()
@@ -2191,7 +2189,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // this.offset = [0,0];
     this.dragging_rectangle = null
 
-    this.onSelectionChange?.(this.selectionView.selectedNodes)
+    this.notifySelectionChange()
 
     this.visible_nodes = []
     this.node_over = undefined
@@ -4119,7 +4117,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         newValue: false
       })
 
-      this.onSelectionChange?.(this.selectionView.selectedNodes)
+      this.notifySelectionChange()
     }
 
     this.dirty_canvas = true
@@ -4133,7 +4131,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * Called when a mouse up event has to be processed
    */
   processMouseUp(e: PointerEvent): void {
-    // early exit for extra pointer
     if (!e.isPrimary) return
 
     const { graph, pointer } = this
@@ -4148,19 +4145,37 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const now = LiteGraph.getTime()
     e.click_time = now - this.last_mouseclick
 
-    /** The mouseup event occurred near the mousedown event. */
-    /** Normal-looking click event - mouseUp occurred near mouseDown, without dragging. */
     const { eDown } = pointer
     const pressedBadge =
       eDown && queryLinkBadgeHitAtPoint(this, eDown.canvasX, eDown.canvasY)
+    const wasConnecting = this.linkConnector.isConnecting
     const isClick = pointer.up(e)
+    if (e.button === 0 && !wasConnecting) {
+      this.dirty_canvas = true
+      const x = e.canvasX
+      const y = e.canvasY
+
+      this.node_over?.onMouseUp?.(
+        e,
+        [x - this.node_over.pos[0], y - this.node_over.pos[1]],
+        this
+      )
+      if (this.node_capturing_input !== this.node_over)
+        this.node_capturing_input?.onMouseUp?.(
+          e,
+          [
+            x - this.node_capturing_input.pos[0],
+            y - this.node_capturing_input.pos[1]
+          ],
+          this
+        )
+    }
     if (isClick) {
       if (e.button === 0 && !pressedBadge && collapseLinkBadgeStacks(this)) {
         this.dirty_bgcanvas = true
       }
       pointer.isDown = false
       pointer.isDouble = false
-      // Required until all link behaviour is added to Pointer API
       this.connecting_links = null
       this.dragging_canvas = false
 
@@ -4174,41 +4189,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.last_mouse_dragging = false
     this.last_click_position = null
 
-    // used to avoid sending twice a click in an immediate button
     this.block_click &&= false
 
     if (e.button === 0) {
-      // left button
       this.selected_group = null
 
       this.isDragging = false
-
-      const x = e.canvasX
-      const y = e.canvasY
-
-      if (!this.linkConnector.isConnecting) {
-        this.dirty_canvas = true
-
-        this.node_over?.onMouseUp?.(
-          e,
-          [x - this.node_over.pos[0], y - this.node_over.pos[1]],
-          this
-        )
-        this.node_capturing_input?.onMouseUp?.(
-          e,
-          [
-            x - this.node_capturing_input.pos[0],
-            y - this.node_capturing_input.pos[1]
-          ],
-          this
-        )
-      }
     } else if (isMiddleButtonEvent(e)) {
-      // middle button
       this.dirty_canvas = true
       this.dragging_canvas = false
     } else if (e.button === 2) {
-      // right button
       this.dirty_canvas = true
     }
 
@@ -4732,7 +4722,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const unchanged =
       selectedItems.size === initialSelection.size &&
       [...selectedItems].every((item) => initialSelection.has(item))
-    if (!unchanged) this.onSelectionChange?.(this.selectionView.selectedNodes)
+    if (!unchanged) this.notifySelectionChange()
   }
 
   /**
@@ -4762,7 +4752,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       clearLinkSelection()
     }
     this.setDirty(true, true)
-    if (changed) this.onSelectionChange?.(this.selectionView.selectedNodes)
+    if (changed) this.notifySelectionChange()
   }
 
   /**
@@ -4792,14 +4782,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     )
     if (!changed) return
 
-    if (this.selectionNotificationDepth === 0)
-      this.onSelectionChange?.(this.selectionView.selectedNodes)
+    this.notifySelectionChange()
     this.setDirty(true)
   }
 
   /**
    * Selects a {@link Positionable} item.
    * @param item The canvas item to add to the selection.
+   * @param options.notify `false` skips the {@link onSelectionChange} report; selection hooks still run.
    */
   select<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable,
@@ -4812,13 +4802,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const changed = this.withSelectionNotificationsSuppressed(() =>
       changeCanvasSelection(this, [item], true, selectGroupChildren)
     )
-    if (changed && notify && this.selectionNotificationDepth === 0)
-      this.onSelectionChange?.(this.selectionView.selectedNodes)
+    if (changed && notify) this.notifySelectionChange()
   }
 
   /**
    * Deselects a {@link Positionable} item.
    * @param item The canvas item to remove from the selection.
+   * @param options.notify `false` skips the {@link onSelectionChange} report; selection hooks still run.
    */
   deselect<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable,
@@ -4827,8 +4817,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const changed = this.withSelectionNotificationsSuppressed(() =>
       changeCanvasSelection(this, [item], false)
     )
-    if (changed && notify && this.selectionNotificationDepth === 0)
-      this.onSelectionChange?.(this.selectionView.selectedNodes)
+    if (changed && notify) this.notifySelectionChange()
   }
 
   /** @deprecated See {@link LGraphCanvas.processSelect} */
@@ -4878,8 +4867,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (!add_to_current_selection) clearCanvasSelection(this)
       changeCanvasSelection(this, itemsToSelect, true)
     })
-    if (this.selectionNotificationDepth === 0)
-      this.reportSelectionChange(initialSelection)
+    this.reportSelectionChange(initialSelection)
     this.setDirty(true)
   }
 
@@ -4896,7 +4884,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.deselect(node)
   }
 
-  /** Deselects all items on the canvas. */
   deselectAll(options?: DeselectAllOptions): void
   /** @deprecated Pass `{ keepSelected }` instead. */
   deselectAll(keepSelected?: Positionable): void
@@ -4913,8 +4900,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     )
     if (!changed) return
 
-    if (notify && this.selectionNotificationDepth === 0)
-      this.onSelectionChange?.(this.selectionView.selectedNodes)
+    if (notify) this.notifySelectionChange()
     this.setDirty(true)
   }
 
@@ -4950,7 +4936,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     applyCanvasSelection(this, { type: 'selection.clear' })
     this.current_node = null
 
-    this.onSelectionChange?.(this.selectionView.selectedNodes)
+    this.notifySelectionChange()
     this.setDirty(true)
     graph.afterChange()
     this.emitAfterChange()
@@ -9322,6 +9308,6 @@ provideCanvasClass(LGraphCanvas)
 
 type RegisteredLGraphCanvas = LGraphCanvas
 
-declare module './types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface LGraphCanvas extends RegisteredLGraphCanvas {}
 }

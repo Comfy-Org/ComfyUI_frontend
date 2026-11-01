@@ -312,6 +312,37 @@ describe('DynamicGroup widgets', () => {
     expect(widget('rich.0.color').value).toBe('#123456')
   })
 
+  it('restores above-max rows whose fields serialize no values', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Transient fields')
+    node.serialize_widgets = true
+    graph.add(node)
+    useWidgetStore().registerCustomWidgets({
+      TEST_TRANSIENT_FIELD: (node, name) => {
+        const widget = node.addWidget('text', name, 'transient', () => {})
+        widget.serialize = false
+        return { widget }
+      }
+    })
+    useLitegraphService().addNodeInput(node, {
+      name: 'rows',
+      type: 'COMFY_DYNAMICGROUP_V3',
+      isOptional: false,
+      min: 0,
+      max: 3,
+      template: { required: { transient: ['TEST_TRANSIENT_FIELD', {}] } }
+    })
+    const rows = node.widgets?.find((widget) => widget.name === 'rows')
+    if (!rows) throw new Error('Missing DynamicGroup controller')
+    rows.value = 4
+    const saved = node.serialize()
+    rows.value = 0
+
+    node.configure(saved)
+
+    expect(rows.value).toBe(4)
+  })
+
   it('rejects socket-only templates before creating group widgets', () => {
     const { node } = setup()
     const before = node.serialize()
@@ -824,7 +855,7 @@ describe('DynamicGroup widgets', () => {
         throw new Error('Unexpected row allocation')
       })
       expect(() => node.configure(saved)).toThrow(
-        'Invalid saved row count for DynamicGroup'
+        'Row count exceeds the allocation bound'
       )
       expect(add).not.toHaveBeenCalled()
     }
@@ -857,7 +888,7 @@ describe('DynamicGroup widgets', () => {
     })
 
     expect(() => node.configure(saved)).toThrow(
-      'Invalid saved row count for DynamicGroup'
+      'Row count exceeds the allocation bound'
     )
   })
 

@@ -6,7 +6,7 @@ import type {
   SearchPacksOutcome
 } from '@/types/searchServiceTypes'
 import { paramsToCacheKey } from '@/utils/formatUtil'
-import { toError } from '@/utils/errorUtil'
+import { toError } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 interface ProviderState {
   provider: NodePackSearchProvider

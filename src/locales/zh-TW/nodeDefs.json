@@ -821,6 +821,27 @@
       }
     }
   },
+  "BranchNode": {
+    "description": "依名稱從已連接的輸入中選取。可透過連按兩下輸入來重新命名。",
+    "display_name": "分支",
+    "inputs": {
+      "autogrow": {
+        "name": "autogrow"
+      },
+      "branch": {
+        "name": "branch"
+      },
+      "branch_names": {
+        "name": "branch_names"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "output",
+        "tooltip": null
+      }
+    }
+  },
   "BriaAddObject": {
     "description": "使用 Bria 將以純文字描述的物件插入影像中。Bria 會以約 100 萬像素重新渲染整個畫面，因此結果不會與輸入影像的像素對齊。",
     "display_name": "Bria 新增物件",
@@ -9289,12 +9310,12 @@
     }
   },
   "ImageColorSpace": {
-    "description": "在 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3 與 HDR ACEScct 之間轉換。LogC3 使用 EI 800 曲線、Rec.709 原色，且編碼值會限制於 [0, 1]。ACEScct 使用 AP1 原色與 D60 白點，並透過 Bradford 適應轉換至 D65。儲存 EXR 時，請將 LogC3 或 ACEScct 轉換為線性。線性 1.0 使用與 sRGB 相同的 203 尼特參考白點；HLG 使用 1000 尼特參考顯示器。線性和 ACEScct 輸出會保留延伸值。線性轉 HDR 的轉換會在不進行色調映射的情況下保留高光；HLG 和 PQ 輸出會裁切負值色彩通道。SDR 輸出及 PQ 轉 HLG 會針對整個批次對超出範圍的亮度進行色調映射，並壓縮色域外色彩。轉換會以 float32 計算，並回傳中間結果的裝置與 dtype。未預乘 alpha 不會進行色彩轉換。",
+    "description": "在 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）、HDR LogC3、線性 ACEScg 與 HDR ACEScct 之間轉換。LogC3 使用 EI 800 曲線、Rec.709 原色，並將編碼值限制於 [0, 1]。ACEScg 是採用 D60 白點的場景線性 AP1。ACEScct 是 ACEScg 的對數編碼。兩者皆使用 Bradford 調適至 D65。儲存 EXR 前，請將 LogC3 或 ACEScct 轉換為線性 ACEScg（AP1 場景線性）或線性（Rec.709）。線性 1.0 與 ACEScg 1.0 使用與 sRGB 相同的 203 尼特參考白；HLG 使用 1000 尼特參考顯示器。線性、ACEScg 與 ACEScct 輸出會保留延伸值。線性轉 HDR 的轉換會在不進行色調對應的情況下保留高光；HLG 與 PQ 輸出會裁切負值通道。SDR 輸出及 PQ 轉 HLG 的轉換會對整個批次的過量亮度進行色調對應，並壓縮超出色域的色彩。轉換會以 float32 計算，並傳回中間裝置與 dtype。直通 alpha 不會進行色彩轉換。",
     "display_name": "轉換影像色彩空間",
     "inputs": {
       "destination": {
         "name": "destination",
-        "tooltip": "輸出像素的色彩空間。請將儲存節點設為相同的色彩空間。在儲存 EXR 前，請將 LogC3 或 ACEScct 轉換為線性；在儲存影片前，請轉換為 sRGB/HDR/HDR PQ。"
+        "tooltip": "輸出像素的色彩空間。請將儲存節點設為相同的色彩空間。若要使用 ACEScg EXR，請將 LogC3 或 ACEScct 轉換為線性 ACEScg；若要使用 Rec.709 EXR，則轉換為線性。儲存影片前，請轉換為 sRGB/HDR/HDR PQ。"
       },
       "image": {
         "name": "image"
@@ -16743,6 +16764,170 @@
       },
       "transformer_blocks_9_": {
         "name": "transformer_blocks.9."
+      }
+    }
+  },
+  "ModelMergeMOSSImage": {
+    "display_name": "ModelMergeMOSSImage",
+    "inputs": {
+      "final_linear_video_": {
+        "name": "最終視訊線性層"
+      },
+      "final_norm_video_": {
+        "name": "最終視訊正規化"
+      },
+      "layers_0_": {
+        "name": "layers.0."
+      },
+      "layers_10_": {
+        "name": "layers.10."
+      },
+      "layers_11_": {
+        "name": "layers.11."
+      },
+      "layers_12_": {
+        "name": "layers.12."
+      },
+      "layers_13_": {
+        "name": "layers.13."
+      },
+      "layers_14_": {
+        "name": "layers.14."
+      },
+      "layers_15_": {
+        "name": "layers.15."
+      },
+      "layers_16_": {
+        "name": "layers.16."
+      },
+      "layers_17_": {
+        "name": "layers.17."
+      },
+      "layers_18_": {
+        "name": "layers.18."
+      },
+      "layers_19_": {
+        "name": "layers.19."
+      },
+      "layers_1_": {
+        "name": "layers.1."
+      },
+      "layers_20_": {
+        "name": "layers.20."
+      },
+      "layers_21_": {
+        "name": "layers.21."
+      },
+      "layers_22_": {
+        "name": "layers.22."
+      },
+      "layers_23_": {
+        "name": "層.23."
+      },
+      "layers_24_": {
+        "name": "層.24."
+      },
+      "layers_25_": {
+        "name": "層.25."
+      },
+      "layers_26_": {
+        "name": "層.26."
+      },
+      "layers_27_": {
+        "name": "層.27."
+      },
+      "layers_28_": {
+        "name": "層.28."
+      },
+      "layers_29_": {
+        "name": "層.29."
+      },
+      "layers_2_": {
+        "name": "layers.2."
+      },
+      "layers_30_": {
+        "name": "層.30."
+      },
+      "layers_31_": {
+        "name": "層.31."
+      },
+      "layers_32_": {
+        "name": "層.32."
+      },
+      "layers_33_": {
+        "name": "層.33."
+      },
+      "layers_34_": {
+        "name": "層.34."
+      },
+      "layers_35_": {
+        "name": "層.35."
+      },
+      "layers_36_": {
+        "name": "層.36."
+      },
+      "layers_37_": {
+        "name": "層.37."
+      },
+      "layers_38_": {
+        "name": "層.38."
+      },
+      "layers_39_": {
+        "name": "層.39."
+      },
+      "layers_3_": {
+        "name": "layers.3."
+      },
+      "layers_40_": {
+        "name": "層.40."
+      },
+      "layers_41_": {
+        "name": "層.41."
+      },
+      "layers_4_": {
+        "name": "layers.4."
+      },
+      "layers_5_": {
+        "name": "layers.5."
+      },
+      "layers_6_": {
+        "name": "layers.6."
+      },
+      "layers_7_": {
+        "name": "layers.7."
+      },
+      "layers_8_": {
+        "name": "layers.8."
+      },
+      "layers_9_": {
+        "name": "layers.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "shared_block_modulation_": {
+        "name": "shared_block_modulation."
+      },
+      "text_embedder_blocks_0_": {
+        "name": "text_embedder.blocks.0."
+      },
+      "text_embedder_blocks_1_": {
+        "name": "text_embedder.blocks.1."
+      },
+      "text_embedder_proj_": {
+        "name": "text_embedder.proj."
+      },
+      "time_embedding_": {
+        "name": "time_embedding."
+      },
+      "video_embedder_": {
+        "name": "video_embedder."
+      },
+      "video_head_modulation_": {
+        "name": "視訊頭部調變"
       }
     }
   },
@@ -25262,7 +25447,7 @@
     }
   },
   "TextEncodeMOSSImageEdit": {
-    "description": "使用參考圖像為 MOSS-Image 編輯 LoRA 編碼編輯指令；負向提示詞也請使用此節點。參考圖像會依其原始尺寸使用，請先進行縮放。",
+    "description": "使用參考影像為 MOSS-Image 編輯 LoRA 編碼編輯指令，負面提示詞也請使用此功能。參考影像會以其輸入時的尺寸使用，請先調整其大小。若沒有 VAE，影像只會傳送至文字編碼器。",
     "display_name": "文字編碼 MOSS-Image 編輯",
     "inputs": {
       "clip": {
@@ -25272,6 +25457,10 @@
         "name": "編輯格式",
         "tooltip": "編輯 LoRA 訓練時使用的版面配置：ai-toolkit 的 MOSS-Image Edit Training（其 kv_cache 選項開啟或關閉），或 Moss-Image-Edit。kv_cache 關閉時，參考圖像也會關注正在生成的圖像，因此每一步都會重新計算。"
       },
+      "image_strength": {
+        "name": "影像強度",
+        "tooltip": "調整模型對文字編碼器所見影像的關注程度（ai-toolkit 格式，或無 VAE）：0 會忽略影像，1 維持不變，高於 1 則會加強影像。"
+      },
       "images": {
         "name": "圖像"
       },
@@ -25279,7 +25468,8 @@
         "name": "提示詞"
       },
       "vae": {
-        "name": "vae"
+        "name": "vae",
+        "tooltip": "將影像編碼為供編輯 LoRA 使用的參考 latent。"
       }
     },
     "outputs": {

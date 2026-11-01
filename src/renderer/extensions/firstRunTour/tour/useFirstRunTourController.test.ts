@@ -18,7 +18,7 @@ import type {
   CoachStep,
   SpotlightStep
 } from '@/platform/onboarding/onboardingTours'
-import type { OnboardingTourSkipReason } from '@/platform/telemetry/types'
+import type { OnboardingTourSkipReason } from '@comfyorg/telemetry/types'
 
 const TOUR_WORKFLOW = fromPartial<
   NonNullable<ReturnType<typeof useWorkflowStore>['activeWorkflow']>

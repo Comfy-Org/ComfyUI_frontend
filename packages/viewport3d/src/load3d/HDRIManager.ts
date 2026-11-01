@@ -22,6 +22,7 @@ export class HDRIManager {
   private eventManager: EventManagerInterface
 
   private hdriTexture: THREE.Texture | null = null
+  private _loadedUrl: string | null = null
   private envMapTarget: THREE.WebGLRenderTarget | null = null
 
   private _isEnabled: boolean = false
@@ -38,6 +39,10 @@ export class HDRIManager {
 
   get intensity() {
     return this._intensity
+  }
+
+  get loadedUrl() {
+    return this._loadedUrl
   }
 
   constructor(
@@ -75,6 +80,7 @@ export class HDRIManager {
     this.envMapTarget?.dispose()
     this.hdriTexture = newTexture
     this.envMapTarget = newEnvMapTarget
+    this._loadedUrl = url
 
     if (this._isEnabled) {
       this.applyToScene()
@@ -139,6 +145,7 @@ export class HDRIManager {
     this.envMapTarget?.dispose()
     this.hdriTexture = null
     this.envMapTarget = null
+    this._loadedUrl = null
   }
 
   clear(): void {

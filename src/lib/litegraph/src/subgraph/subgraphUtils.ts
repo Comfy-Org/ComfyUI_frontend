@@ -6,7 +6,7 @@ import type {
   Subgraph,
   SubgraphInput,
   SubgraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { isEqual } from 'es-toolkit'
 
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
@@ -20,23 +20,22 @@ import {
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { RerouteId } from '@/types/rerouteId'
-import { toRerouteId } from '@/types/rerouteId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import type { INodeOutputSlot } from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
 import { createUuidv4 } from '@/utils/uuid'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type {
   ISerialisedNode,
   SerialisableLLink,
   SubgraphIO
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 import { SubgraphInputNode } from './SubgraphInputNode'
 
@@ -226,24 +225,7 @@ export function getBoundaryLinks(
 }
 
 export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
-  const clonedNodes: ISerialisedNode[] = []
-
-  // Selectively clone - keep IDs & links
-  for (const node of nodes) {
-    const newNode = LiteGraph.createNode(node.type)
-    const data = structuredClone(node.serialize())
-    if (!newNode) {
-      console.warn('Failed to create node', node.type)
-      clonedNodes.push(data)
-      continue
-    }
-
-    // Must be cloned; litegraph "serialize" is mostly shallow clone
-    newNode.configure(data)
-    clonedNodes.push(newNode.serialize())
-  }
-
-  return clonedNodes
+  return Array.from(nodes, (node) => structuredClone(node.serialize()))
 }
 
 export function findUnresolvableSubgraphLink(
