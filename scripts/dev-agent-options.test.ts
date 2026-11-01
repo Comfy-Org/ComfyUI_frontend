@@ -28,7 +28,18 @@ describe('parseOptions', () => {
     ).toThrow(`collides with the ${what}`)
   })
 
-  it('rejects record services colliding with Temporal or its UI', () => {
+  it.for([
+    {
+      name: 'Postgres port equal to the Temporal port',
+      args: ['--pg-port', '7400'],
+      message: 'collides with the Postgres port 7400'
+    },
+    {
+      name: 'Redis port equal to the Temporal UI port',
+      args: ['--redis-port', '8400'],
+      message: 'collides with the Redis port 8400'
+    }
+  ])('rejects a $name', ({ args, message }) => {
     expect(() =>
       parseOptions([
         '--record',
@@ -38,23 +49,9 @@ describe('parseOptions', () => {
         'temporal',
         '--temporal-port',
         '7400',
-        '--pg-port',
-        '7400'
+        ...args
       ])
-    ).toThrow('collides with the Postgres port 7400')
-    expect(() =>
-      parseOptions([
-        '--record',
-        '--catalog',
-        'seed.json',
-        '--engine',
-        'temporal',
-        '--temporal-port',
-        '7400',
-        '--redis-port',
-        '8400'
-      ])
-    ).toThrow('collides with the Redis port 8400')
+    ).toThrow(message)
   })
 
   it('documents that command overrides must target their configured ports', () => {
