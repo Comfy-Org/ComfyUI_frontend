@@ -228,6 +228,13 @@ describe('where a checkout link that names no plan sends the customer to pick on
       to: 'platform_account'
     },
     {
+      name: 'a test-family platform link to its return_to',
+      env: 'test',
+      query: 'product=platform&return_to=platform_account',
+      destination: 'https://testplatform.comfy.org/',
+      to: 'platform_account'
+    },
+    {
       name: 'a platform link to a return_to in another product',
       env: 'production',
       query: 'product=platform&return_to=comfyui_credits',
@@ -264,23 +271,6 @@ describe('where a checkout link that names no plan sends the customer to pick on
     expect(h.track).toHaveBeenCalledExactlyOnceWith({
       ...PLANLESS_BOUNCE,
       to
-    })
-  })
-
-  it('explains a platform link where this deployment has no platform to send it to', async () => {
-    const { leave, entry, error } = await openPlanless(
-      SIGNED_OUT,
-      '/v1/checkout?product=platform&return_to=platform_account'
-    )
-
-    expect(leave).not.toHaveBeenCalled()
-    expect(entry.value).toBeUndefined()
-    expect(error.value).toBe('UNKNOWN_RETURN_TARGET')
-    expect(h.track).toHaveBeenCalledExactlyOnceWith({
-      operation: 'web_entry',
-      stage: 'rejected',
-      outcome: 'pending',
-      error_code: 'UNKNOWN_RETURN_TARGET'
     })
   })
 })

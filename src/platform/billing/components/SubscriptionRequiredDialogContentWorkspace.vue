@@ -44,6 +44,11 @@
       </DialogTitle>
     </div>
 
+    <CreditsLockedNotice
+      v-if="creditsLocked && checkoutStep === 'pricing'"
+      class="text-center"
+    />
+
     <div
       v-if="reason === 'out_of_credits'"
       class="text-center text-muted-foreground"
@@ -124,6 +129,7 @@ import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
 
+import CreditsLockedNotice from './CreditsLockedNotice.vue'
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
@@ -133,12 +139,14 @@ const {
   onClose,
   reason,
   paymentIntentSource,
+  creditsLocked,
   isPersonal = false,
   initialCheckout
 } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
   paymentIntentSource: PaymentIntentSource | undefined
+  creditsLocked?: boolean
   isPersonal?: boolean
   initialCheckout?: SubscriptionCheckoutSelection
 }>()

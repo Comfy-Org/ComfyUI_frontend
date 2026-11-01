@@ -117,7 +117,7 @@ jobs:
             echo "::group::PR #${pr}"
 
             info=$(GH_TOKEN="$READ_TOKEN" gh pr view "$pr" --repo "$GH_REPO" \
-              --json number,state,isDraft,labels,baseRefName,reviewDecision,mergeStateStatus 2>/dev/null || echo '')
+              --json number,state,isDraft,labels,baseRefName,reviewDecision,mergeStateStatus,headRefOid 2>/dev/null || echo '')
             if [ -z "$info" ]; then
               echo "Could not read PR #${pr} — skipping."; echo "::endgroup::"; continue
             fi
@@ -139,8 +139,8 @@ jobs:
               echo "::endgroup::"; continue
             fi
             case "$base" in
-              cloud/*|core/*) : ;;
-              *) echo "Base '$base' is not a release branch — skipping."; echo "::endgroup::"; continue ;;
+              cloud/1.56|core/1.56|cloud/1.57|core/1.57|cloud/1.58|core/1.58|cloud/1.59|core/1.59) : ;;
+              *) echo "Base '$base' is not an active release branch — skipping."; echo "::endgroup::"; continue ;;
             esac
 
             # Ready = approved AND GitHub says it's mergeable with required checks green.
@@ -157,6 +157,30 @@ jobs:
               echo "::endgroup::"; continue
             fi
 
+            head=$(echo "$info" | jq -r '.headRefOid')
+            if ! reviews=$(GH_TOKEN="$READ_TOKEN" gh api "repos/${GH_REPO}/pulls/${pr}/reviews" --paginate 2>&1); then
+              echo "Could not read reviews for PR #${pr}: ${reviews}"
+              echo "::endgroup::"; continue
+            fi
+            head_approvers=$(echo "$reviews" | jq -rs --arg head "$head" '
+              [.[][] | select(.state != "COMMENTED" and .state != "PENDING")]
+              | group_by(.user.login) | map(last)
+              | .[] | select(.state == "APPROVED" and .commit_id == $head) | .user.login' 2>/dev/null || true)
+            approved_at_head=false
+            for login in $head_approvers; do
+              if ! permission=$(GH_TOKEN="$READ_TOKEN" gh api "repos/${GH_REPO}/collaborators/${login}/permission" --jq '.permission' 2>&1); then
+                echo "Could not read permission for reviewer ${login} on PR #${pr}: ${permission}"
+                continue
+              fi
+              case "$permission" in
+                admin|maintain|write) approved_at_head=true; break ;;
+              esac
+            done
+            if [ "$approved_at_head" != "true" ]; then
+              echo "Approved, but no approval at head ${head} — waiting for a re-approval."
+              echo "::endgroup::"; continue
+            fi
+
             echo "PR #${pr} is ready — attempting squash merge."
             attempt=0
             max=3
@@ -165,7 +189,7 @@ jobs:
               attempt=$((attempt + 1))
               # A concurrent run (or a human) may have merged it already.
               if is_merged "$pr"; then merged=true; break; fi
-              if out=$(GH_TOKEN="$MERGE_TOKEN" gh pr merge "$pr" --repo "$GH_REPO" --squash 2>&1); then
+              if out=$(GH_TOKEN="$MERGE_TOKEN" gh pr merge "$pr" --repo "$GH_REPO" --squash --match-head-commit "$head" 2>&1); then
                 merged=true; break
               fi
               echo "Merge attempt ${attempt}/${max} failed: ${out}"

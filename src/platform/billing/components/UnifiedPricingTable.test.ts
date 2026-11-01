@@ -854,21 +854,30 @@ describe('UnifiedPricingTable outside Cloud', () => {
     expect(emitted().resubscribe).toBeTruthy()
   })
 
-  it('normalizes a member without the downgrade permission away from personal plans', () => {
+  it('withholds personal plans from a member the server denies the downgrade', () => {
     mockSubscription.value = { tier: 'TEAM', duration: 'ANNUAL' }
     mockCurrentTeamCreditStop.value = TEAM_STOP
     mockIsTeamPlan.value = true
-    mockPermissions.value = {
-      canManageSubscription: true,
-      canManageSubscriptionLifecycle: true,
-      canDowngradeToPersonal: false
-    }
+    mockApiPlans.value = standardYearlyCatalog({ action: 'downgrade' })
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
 
     renderComponent({ initialPlanMode: 'personal' })
 
     expect(
       screen.queryByRole('button', { name: 'Change to Standard Yearly' })
     ).toBeNull()
+  })
+
+  it('disables the team CTA when the server denies every write that reaches it', () => {
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+
+    renderComponent({ initialPlanMode: 'team' })
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    ).toBeDisabled()
   })
 })
 

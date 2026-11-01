@@ -173,7 +173,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, toRef } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Slider from '@comfyorg/design-system/slider/Slider'
@@ -220,6 +220,7 @@ const {
   handleWaveformClick
 } = useWaveAudioPlayer({
   src: mediaSrc,
+  logicalSrc: toRef(() => src),
   barCount
 })
 

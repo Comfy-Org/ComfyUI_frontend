@@ -64,11 +64,15 @@ export const useSubscriptionDialog = () => {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  function trackModalOpened(reason?: PaymentIntentSource) {
+  function trackModalOpened(
+    reason?: PaymentIntentSource,
+    refusalType?: string
+  ) {
     const { tier } = useBillingContext()
     useTelemetry()?.trackSubscription('modal_opened', {
       current_tier: tier.value?.toLowerCase(),
       reason,
+      ...(refusalType && { refusal_type: refusalType }),
       ...getWorkspaceTelemetryContext()
     })
   }
@@ -86,9 +90,10 @@ export const useSubscriptionDialog = () => {
 
   function trackPaywallEntry(
     reason?: PaymentIntentSource,
-    paymentIntentSource?: PaymentIntentSource
+    paymentIntentSource?: PaymentIntentSource,
+    refusalType?: string
   ) {
-    trackModalOpened(reason)
+    trackModalOpened(reason, refusalType)
     trackPaywallShown(paymentIntentSource)
   }
 
@@ -119,6 +124,16 @@ export const useSubscriptionDialog = () => {
       const paymentIntentSource = paymentIntentSourceOf(options)
       if (await showInactiveMemberDialog(paymentIntentSource)) return true
 
+      const { reason, creditsLocked, refusalType } = options ?? {}
+      const dialogProps = {
+        onClose: hide,
+        reason,
+        paymentIntentSource,
+        creditsLocked
+      }
+      const trackEntry = () =>
+        trackPaywallEntry(reason, paymentIntentSource, refusalType)
+
       const legacyPricingDialogProps = {
         dismissOnPointerDownOutside: false
       } as const
@@ -137,9 +152,7 @@ export const useSubscriptionDialog = () => {
               await import('@/platform/billing/components/SubscriptionRequiredDialogContentWorkspace.vue')
             ).default,
             props: {
-              onClose: hide,
-              reason: options?.reason,
-              paymentIntentSource,
+              ...dialogProps,
               ...(personalInitialCheckout
                 ? {
                     initialCheckout: personalInitialCheckout,
@@ -149,7 +162,7 @@ export const useSubscriptionDialog = () => {
             },
             dialogComponentProps: legacyPricingDialogProps
           })
-          trackPaywallEntry(options?.reason, paymentIntentSource)
+          trackEntry()
           return true
         }
 
@@ -159,9 +172,7 @@ export const useSubscriptionDialog = () => {
             await import('@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue')
           ).default,
           props: {
-            onClose: hide,
-            reason: options?.reason,
-            paymentIntentSource,
+            ...dialogProps,
             initialCheckout: options?.initialCheckout,
             initialPlanMode: getInitialPlanMode(
               options?.planMode,
@@ -174,7 +185,7 @@ export const useSubscriptionDialog = () => {
             dismissOnPointerDownOutside: false
           }
         })
-        trackPaywallEntry(options?.reason, paymentIntentSource)
+        trackEntry()
         return true
       }
 
@@ -184,14 +195,12 @@ export const useSubscriptionDialog = () => {
           await import('@/platform/billing/subscription/components/SubscriptionRequiredDialogContent.vue')
         ).default,
         props: {
-          onClose: hide,
-          reason: options?.reason,
-          paymentIntentSource,
+          ...dialogProps,
           onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
         },
         dialogComponentProps: legacyPricingDialogProps
       })
-      trackPaywallEntry(options?.reason, paymentIntentSource)
+      trackEntry()
       return true
     } catch (error) {
       reportError(error, {

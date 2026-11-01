@@ -22,6 +22,10 @@
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts",
       "role": "integration"
+    },
+    {
+      "path": "packages/viewport3d/src/lightInfo/**",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],

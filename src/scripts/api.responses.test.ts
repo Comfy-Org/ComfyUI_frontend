@@ -4,8 +4,9 @@ import type { WorkflowApiAssetsResponse } from '@comfyorg/ingest-types'
 import type {
   PromptFailureResponse,
   PromptResponse
-} from '@/platform/remote/comfyui/types'
-import { api, PromptExecutionError } from '@/scripts/api'
+} from '@comfyorg/api-client/types'
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
+import { api } from '@/scripts/api'
 
 describe('ComfyApi response boundaries', () => {
   it('models prompt success separately from prompt failure', () => {

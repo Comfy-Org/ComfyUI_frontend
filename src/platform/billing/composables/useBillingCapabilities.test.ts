@@ -430,6 +430,24 @@ describe('useBillingCapabilities', () => {
     }
   )
 
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false }
+  ])(
+    'renders auto_top_up_enabled $served as $expected',
+    async ({ served, expected }) => {
+      const response = capabilitiesResponse(true, 'workspace-1', true)
+      response.auto_top_up_enabled = served
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
+        response
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.autoTopUpEnabled.value).toBe(expected)
+    }
+  )
+
   it('offers workspace editing only when the server does', async () => {
     vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
       capabilitiesResponse(

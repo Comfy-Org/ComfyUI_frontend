@@ -48,9 +48,70 @@ describe('EmptyState', () => {
     distribution.isCloud = false
   })
 
+  it('hides the selected-node suggestion without a selection', () => {
+    render(EmptyState, {
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: LOCAL_PROMPTS[2].text })
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button')).toHaveLength(4)
+  })
+
+  it('shows the selected-node suggestion with a selection', () => {
+    render(EmptyState, {
+      props: { hasSelection: true },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: LOCAL_PROMPTS[2].text })
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole('button')).toHaveLength(5)
+  })
+
+  it('preserves prompt slot attribution when the selected-node suggestion is hidden', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(EmptyState, {
+      global: { plugins: [i18n] }
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: LOCAL_PROMPTS[3].text })
+    )
+
+    expect(emitted().insert).toEqual([
+      [
+        LOCAL_PROMPTS[3].text,
+        expect.objectContaining({
+          promptId: 'slot_4',
+          promptIndex: 3,
+          promptCount: 4,
+          visiblePromptCount: 4
+        })
+      ]
+    ])
+  })
+
+  it('keeps the winning Cloud prompt in the same slot without a selection', () => {
+    distribution.isCloud = true
+    render(EmptyState, {
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Explain how a ComfyUI workflow works'
+      })
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole('button')).toHaveLength(5)
+  })
+
   it('renders every local suggestion without truncating the inserted prompt', async () => {
     const user = userEvent.setup()
     const { emitted } = render(EmptyState, {
+      props: { hasSelection: true },
       global: { plugins: [i18n] }
     })
     const prompt = 'Fix the errors in this workflow'
@@ -81,8 +142,6 @@ describe('EmptyState', () => {
       global: { plugins: [i18n] }
     })
     const buttons = screen.getAllByRole('button')
-    // happy-dom does not evaluate container queries; hide the overflow as the
-    // compact breakpoint does.
     buttons.slice(3).forEach((button) => (button.style.display = 'none'))
 
     await user.click(buttons[0])
@@ -92,8 +151,7 @@ describe('EmptyState', () => {
         LOCAL_PROMPTS[0].text,
         expect.objectContaining({
           promptId: 'slot_1',
-          // The set did not shrink, so the set-size field must not move.
-          promptCount: 5,
+          promptCount: 4,
           visiblePromptCount: 3
         })
       ]
@@ -149,6 +207,7 @@ describe('EmptyState', () => {
       distribution.isCloud = promptDistribution === 'cloud'
       const user = userEvent.setup()
       const { emitted } = render(EmptyState, {
+        props: { hasSelection: true },
         global: { plugins: [i18n] }
       })
 

@@ -70,6 +70,10 @@
     {
       "path": "src/extensions/core/load3d/services/load3dService.ts",
       "role": "application"
+    },
+    {
+      "path": "packages/viewport3d/src/load3d/**",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],

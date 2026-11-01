@@ -118,6 +118,9 @@
         <NodeHeader
           :node-data
           :collapsed="isCollapsed"
+          :show-missing-warning="
+            errorSeverity === 'missing' && !showErrorsTabEnabled
+          "
           @collapse="handleCollapse"
           @update:title="handleHeaderTitleUpdate"
         />

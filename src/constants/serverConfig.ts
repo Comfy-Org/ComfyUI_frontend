@@ -1,4 +1,4 @@
-import type { FormItem, ServerConfigValue } from '@/platform/settings/types'
+import type { FormItem, ServerConfigValue } from '@comfyorg/settings-core/types'
 import {
   CrossAttentionMethod,
   CudaMalloc,

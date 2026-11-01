@@ -61,6 +61,7 @@ async function importLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
       cameraAngle.cameraAngleExtension,
       lightInfo.lightInfoExtension
     ]
+    useExtensionStore().markCoreExtensions(extensions)
     const { registerExtension } = useExtensionService()
     for (const extension of extensions)
       disposers.push(registerExtension(extension))

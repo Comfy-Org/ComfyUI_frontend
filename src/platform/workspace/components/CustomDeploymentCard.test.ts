@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
-import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBrief'
+import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 
 import CustomDeploymentCard from './CustomDeploymentCard.vue'
 
@@ -27,7 +27,10 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function renderCard() {
+function renderCard(
+  pitch: Partial<CustomDeploymentPitch> = {},
+  videoSources: { src: string; type: string }[] = []
+) {
   const user = userEvent.setup()
   const onDone = vi.fn()
   const onDismiss = vi.fn()
@@ -37,8 +40,11 @@ function renderCard() {
         title: 'Deploy Custom Nodes on Comfy Cloud',
         body: 'Create a custom deployment that runs your custom nodes.',
         points: ['Deploy your node packs', 'Work on the GPU you choose'],
-        platformLabel: 'Deploy on Platform'
+        platformLabel: 'Deploy on Platform',
+        brief: '# The brief for an agent',
+        ...pitch
       },
+      videoSources,
       onDone,
       onDismiss
     },
@@ -80,12 +86,44 @@ describe('CustomDeploymentCard', () => {
     expect(onDone).toHaveBeenCalledOnce()
   })
 
-  it('copies the custom deployment brief for an agent, then says so and stays open', async () => {
+  it.for([
+    {
+      video: 'has sources',
+      sources: [{ src: 'deploy.mp4', type: 'video/mp4' }],
+      shows: true
+    },
+    { video: 'has none', sources: [], shows: false }
+  ])('shows the video only when it $video', ({ sources, shows }) => {
+    renderCard({}, sources)
+
+    expect(screen.queryByTestId('custom-deployment-video') !== null).toBe(shows)
+  })
+
+  it('lists what the workflow lacks when the pitch names it', () => {
+    renderCard({
+      missing: [
+        {
+          label: '2 missing node packs',
+          names: 'comfyui-birefnet, comfyui-rmbg'
+        },
+        { label: '1 missing model', names: 'BiRefNet-general.safetensors' }
+      ]
+    })
+
+    const missing = screen.getByTestId('custom-deployment-missing')
+    expect(missing).toHaveTextContent(
+      '2 missing node packscomfyui-birefnet, comfyui-rmbg1 missing modelBiRefNet-general.safetensors'
+    )
+  })
+
+  it('copies the brief for an agent, then says so and stays open', async () => {
     const { onDone, user } = renderCard()
 
     await user.click(screen.getByTestId('custom-deployment-agent'))
 
-    expect(await navigator.clipboard.readText()).toBe(CUSTOM_DEPLOYMENT_BRIEF)
+    expect(await navigator.clipboard.readText()).toBe(
+      '# The brief for an agent'
+    )
     expect(screen.getByTestId('custom-deployment-agent')).toHaveTextContent(
       /^Copied/
     )

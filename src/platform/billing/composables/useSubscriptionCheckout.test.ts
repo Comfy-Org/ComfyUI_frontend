@@ -4458,8 +4458,7 @@ describe('useSubscriptionCheckout', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-blocked',
         'subscription',
-        expect.any(Object),
-        'https://stripe.com/pay'
+        expect.objectContaining({ paymentMethodUrl: 'https://stripe.com/pay' })
       )
 
       const onAction = latestPaymentRecoveryAction()
@@ -4869,9 +4868,9 @@ describe('useSubscriptionCheckout', () => {
           cycle: 'yearly',
           checkoutType: 'new',
           paymentIntentSource: undefined,
-          attemptStartedAt: expect.any(Number)
-        },
-        'https://stripe.com/pay'
+          attemptStartedAt: expect.any(Number),
+          paymentMethodUrl: 'https://stripe.com/pay'
+        }
       )
       expect(checkout.checkoutStep.value).toBe('success')
       openSpy.mockRestore()

@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
@@ -395,6 +395,51 @@ describe(assetService.deleteAsset, () => {
       expect.objectContaining({ method: 'DELETE' })
     )
   })
+})
+
+describe('asset tag changes', () => {
+  const tagChanges = [
+    {
+      name: 'addAssetTags',
+      change: assetService.addAssetTags,
+      tags: ['checkpoints'],
+      result: { total_tags: ['models', 'checkpoints'], added: ['checkpoints'] }
+    },
+    {
+      name: 'removeAssetTags',
+      change: assetService.removeAssetTags,
+      tags: ['loras'],
+      result: { total_tags: ['models'], removed: ['loras'] }
+    }
+  ]
+
+  it.for(tagChanges)(
+    '$name tells asset-change listeners once the server changed the tags',
+    async ({ change, tags, result }) => {
+      const listener = vi.fn()
+      onTestFinished(assetService.onAssetsChanged(listener))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(result))
+
+      await change('asset-1', tags)
+
+      expect(listener).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for(tagChanges)(
+    '$name leaves asset-change listeners alone when the server refuses',
+    async ({ change, tags }) => {
+      const listener = vi.fn()
+      onTestFinished(assetService.onAssetsChanged(listener))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        buildResponse(null, { ok: false, status: 500 })
+      )
+
+      await expect(change('asset-1', tags)).rejects.toThrow(/500/)
+
+      expect(listener).not.toHaveBeenCalled()
+    }
+  )
 })
 
 describe('assetResponseSchema accepts real API shapes', () => {
