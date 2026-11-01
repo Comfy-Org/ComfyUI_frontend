@@ -5473,6 +5473,11 @@
   "templates": {
     "logoProviderSeparator": " 与 "
   },
+  "textEditor": {
+    "characterCount": "{count} 个字符",
+    "expand": "放大",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "无法加载工作流，因为此 ComfyUI 安装缺少核心节点。请检查后端是否已正确启动。",
     "a1111EmbeddingsUnavailable": "无法从服务器加载嵌入。工作流已导入，但嵌入名称保留为纯文本。",

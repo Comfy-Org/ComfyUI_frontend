@@ -5473,6 +5473,11 @@
   "templates": {
     "logoProviderSeparator": " & "
   },
+  "textEditor": {
+    "characterCount": "{count}자",
+    "expand": "크게 보기",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "이 ComfyUI 설치에 핵심 노드가 없어서 워크플로우를 불러올 수 없습니다. 백엔드가 올바르게 시작되었는지 확인하세요.",
     "a1111EmbeddingsUnavailable": "서버에서 임베딩을 불러올 수 없습니다. 워크플로는 가져왔지만 임베딩 이름은 일반 텍스트로 유지되었습니다.",

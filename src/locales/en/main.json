@@ -4293,6 +4293,11 @@
       "editSettings": "Edit control settings"
     }
   },
+  "textEditor": {
+    "characterCount": "{count} char | {count} chars",
+    "expand": "Expand",
+    "title": "{widget} · {node}"
+  },
   "widgetFileUpload": {
     "dropPrompt": "Drop your file or",
     "browseFiles": "Browse Files"
