@@ -159,11 +159,34 @@ describe('redactTelemetryUrls', () => {
       kind: 'digit-led root segment before more path',
       input: 'GET /1/x?token=SECRET',
       expected: 'GET /1/x'
+    },
+    {
+      kind: 'query value containing an apostrophe',
+      input: "https://h/api/search?q=o'brien&token=SECRET",
+      expected: 'https://h/api/search'
+    },
+    {
+      kind: 'bare query with no URL-shaped prefix',
+      input: '?token=secret',
+      expected: ''
+    },
+    {
+      kind: 'bare fragment with no URL-shaped prefix',
+      input: '#access_token=x',
+      expected: ''
     }
   ])('$kind', ({ input, expected }) => {
     it('redacts URL metadata', () => {
       expect(redactTelemetryUrls(input)).toBe(expected)
     })
+  })
+
+  it('redacts a query value containing an apostrophe without leaking the rest of the query', () => {
+    const redacted = redactTelemetryUrls(
+      "https://h/api/search?q=o'brien&token=SECRET"
+    )
+    expect(redacted).not.toContain('SECRET')
+    expect(redacted).toBe('https://h/api/search')
   })
 
   describe.for([
@@ -178,7 +201,15 @@ describe('redactTelemetryUrls', () => {
     { kind: 'an absolute file path', text: '/home/u/models/x.safetensors' },
     { kind: 'a Windows file path', text: 'C:\\Users\\u\\workflow.json' },
     { kind: 'a version string', text: 'comfyui 1.2.3 ready' },
-    { kind: 'a bare question', text: 'Can this work?' }
+    { kind: 'a bare question', text: 'Can this work?' },
+    {
+      kind: 'a CSS selector with ids',
+      text: 'body > div#graph-canvas-container.absolute > canvas#graph-canvas'
+    },
+    {
+      kind: 'a click-event invoker string',
+      text: 'BUTTON#run.onclick'
+    }
   ])('$kind', ({ text }) => {
     it('survives redaction unchanged', () => {
       expect(redactTelemetryUrls(text)).toBe(text)
@@ -206,6 +237,22 @@ describe('redactTelemetryUrls', () => {
         )
       ).toBe(`https://a.test/x${expected}https://b.test/y`)
     })
+  })
+
+  it('strips userinfo from a second URL glued on by a comma with an uppercase scheme', () => {
+    const redacted = redactTelemetryUrls(
+      'https://a.test/x,HTTPS://user:pw@b.test/y'
+    )
+    expect(redacted).not.toContain('user:pw@')
+    expect(redacted).toBe('https://a.test/x,HTTPS://b.test/y')
+  })
+
+  it('strips userinfo from a second URL glued on by punctuation with no recognized boundary', () => {
+    const redacted = redactTelemetryUrls(
+      'https://a.test/x|https://user:pw@b.test/y'
+    )
+    expect(redacted).not.toContain('user:pw@')
+    expect(redacted).toBe('https://a.test/x|https://b.test/y')
   })
 
   it('redacts proxy-like paths without changing ordinary question text', () => {
@@ -245,6 +292,15 @@ describe('redactTelemetryUrls', () => {
   it('handles a long dotted non-URL run without pathological rescanning', () => {
     const text = 'a.'.repeat(20_000)
     expect(redactTelemetryUrls(text)).toBe('[Redacted]')
+  })
+
+  it('handles a short dotted non-URL run within a bounded time', () => {
+    // Below MAX_REDACTABLE_TEXT_LENGTH, so this exercises the regex engine
+    // directly rather than the length-cap short-circuit above.
+    const text = 'a' + '.'.repeat(70) + '!'
+    const start = Date.now()
+    expect(redactTelemetryUrls(text)).toBe(text)
+    expect(Date.now() - start).toBeLessThan(500)
   })
 })
 
@@ -402,6 +458,18 @@ describe('redactTelemetryValues', () => {
     expect(Object.getPrototypeOf(redacted)).toBeNull()
   })
 
+  it('disambiguates distinct keys that redact to the same string instead of dropping one', () => {
+    const redacted = redactTelemetryValues({
+      'https://h/x?job=1': 'ok',
+      'https://h/x?job=2': 'timeout'
+    })
+
+    expect(redacted).toEqual({
+      'https://h/x': 'ok',
+      'https://h/x~2': 'timeout'
+    })
+  })
+
   it('preserves inherited Error names and empty messages', () => {
     const error = new TypeError()
     Object.defineProperty(error, 'stack', {
@@ -414,5 +482,18 @@ describe('redactTelemetryValues', () => {
     assert.instanceOf(redacted, Error)
     expect(redacted.name).toBe('TypeError')
     expect(redacted.message).toBe('')
+    expect(redacted.stack).toBeUndefined()
+  })
+
+  it('clears the auto-captured stack when the source error had no real stack', () => {
+    const error = new Error('plain message')
+    Object.defineProperty(error, 'stack', {
+      value: undefined,
+      enumerable: true
+    })
+
+    const redacted = redactTelemetryError(error)
+
+    expect(redacted.stack).toBeUndefined()
   })
 })
