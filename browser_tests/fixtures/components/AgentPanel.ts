@@ -288,6 +288,27 @@ export class AgentPanel {
     )
   }
 
+  /** Drops a file on the panel without the canvas drag-and-drop harness. */
+  async dispatchFileDrop(file: {
+    name: string
+    type: string
+    contents: string
+  }): Promise<void> {
+    const dataTransfer = await this.page.evaluateHandle(
+      ({ name, type, contents }) => {
+        const transfer = new DataTransfer()
+        transfer.items.add(new File([contents], name, { type }))
+        return transfer
+      },
+      file
+    )
+    try {
+      await this.root.dispatchEvent('drop', { dataTransfer })
+    } finally {
+      await dataTransfer.dispose()
+    }
+  }
+
   async handOverAttachment(
     fileName: string,
     route: () => Promise<void>

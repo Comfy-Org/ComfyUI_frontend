@@ -7586,7 +7586,7 @@ describe('AgentPanelRoot history', () => {
       executionErrors.showErrorOverlay.mockClear()
       respondToFetch(threadListRoute, () => json(403, refusal))
 
-      renderWithSelectedTarget()
+      const panel = renderWithSelectedTarget()
 
       expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
       expect(screen.getByTestId('agent-panel-chat-controls')).toHaveAttribute(
@@ -7610,16 +7610,51 @@ describe('AgentPanelRoot history', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
 
       useAgentPanelStore().view = { screen: 'chat' }
-      await nextTick()
       respondToFetch(threadListRoute, () => json(200, agentThreadList([])))
+      panel.unmount()
+      renderWithSelectedTarget()
+
+      await vi.waitFor(() =>
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      )
+      expect(
+        screen.getByTestId('agent-panel-chat-controls')
+      ).not.toHaveAttribute('inert')
+    })
+
+    it('keeps a newer refusal when an older listing succeeds after it', async () => {
+      let listings = 0
+      let answerFirstListing: (() => void) | undefined
+      respondToFetch(threadListRoute, async () => {
+        listings += 1
+        if (listings > 1) return json(403, refusal)
+        await new Promise<void>((resolve) => {
+          answerFirstListing = resolve
+        })
+        return json(200, agentThreadList([]))
+      })
+
+      renderWithSelectedTarget()
+      await vi.waitFor(() => expect(answerFirstListing).toBeDefined())
+
       await userEvent.click(
         screen.getByRole('button', {
           name: i18n.global.t('agent.showChatHistory')
         })
       )
-      await vi.waitFor(() =>
-        expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-      )
+      expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
+
+      expect(listings).toBe(2)
+      answerFirstListing?.()
+      await settleFollow()
+      await nextTick()
+
+      expect(screen.getByRole('alert')).toHaveTextContent(refusal.error)
+
+      useAgentPanelStore().view = { screen: 'chat' }
+      await nextTick()
+      expect(screen.getByRole('alert')).toHaveTextContent(refusal.error)
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
     })
 
     it('leaves an ordinary auth refusal on the run-error overlay', async () => {

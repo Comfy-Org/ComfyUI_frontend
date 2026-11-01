@@ -1820,6 +1820,9 @@ function warnIncompleteHistory(reason: string, announce: boolean): void {
 }
 
 const hostFenceMessage = ref<string>()
+const hostFenced = computed(() => hostFenceMessage.value !== undefined)
+let startedRefreshes = 0
+let fencedAtRefresh = 0
 
 const { refreshHistory: runHistoryRefresh } = useAgentChatHistoryRefresh({
   listThreads: rest.listThreads,
@@ -1842,8 +1845,10 @@ const { refreshHistory: runHistoryRefresh } = useAgentChatHistoryRefresh({
       )
     })
     const loopbackOnly = isLoopbackOnlyRefusal(error)
-    if (loopbackOnly) hostFenceMessage.value = error.message
-    else if (uiTreatment === 'error_overlay')
+    if (loopbackOnly) {
+      hostFenceMessage.value = error.message
+      fencedAtRefresh = startedRefreshes
+    } else if (uiTreatment === 'error_overlay')
       surfaceAgentError(
         'agent_api_failed',
         error instanceof Error ? error.message : String(error)
@@ -1863,8 +1868,12 @@ const { refreshHistory: runHistoryRefresh } = useAgentChatHistoryRefresh({
 async function refreshHistory(
   ...args: Parameters<typeof runHistoryRefresh>
 ): ReturnType<typeof runHistoryRefresh> {
+  const refresh = ++startedRefreshes
   const outcome = await runHistoryRefresh(...args)
-  if (outcome === 'complete' || outcome === 'incomplete')
+  if (
+    (outcome === 'complete' || outcome === 'incomplete') &&
+    refresh >= fencedAtRefresh
+  )
     hostFenceMessage.value = undefined
   return outcome
 }
@@ -2393,6 +2402,7 @@ function clearAssetDrag(): void {
 }
 
 function onPanelDragEnter(event: DragEvent): void {
+  if (hostFenced.value) return
   if (!isAttachableDrag(event)) return
   assetDragDepth += 1
   assetDragActive.value = true
@@ -2468,11 +2478,13 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
 }
 
 function onPanelDragOver(event: DragEvent): void {
+  if (hostFenced.value) return
   if (isAttachableDrag(event)) event.preventDefault()
 }
 
 async function onPanelDrop(event: DragEvent): Promise<void> {
   clearAssetDrag()
+  if (hostFenced.value) return
   if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
     event.preventDefault()
     void attachDroppedAsset(event).then((attached) => {
@@ -2550,7 +2562,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
-      :blocked="hostFenceMessage !== undefined"
+      :blocked="hostFenced"
       :sync-retry-available="
         crdtStatus.terminal === 'retry_exhausted' ||
         crdtStatus.terminal === 'timeout'

@@ -11,8 +11,12 @@ const LOOPBACK_ONLY_BODY = JSON.stringify({
     'The agent only works when ComfyUI is opened on the computer it runs on, by a local address. Open http://127.0.0.1:8188 in a browser on that computer to use the agent.',
   code: 'agent_loopback_only'
 })
-const LOOPBACK_ONLY_MESSAGE =
-  'The agent only works when ComfyUI is opened on the computer it runs on, by a local address. Open http://127.0.0.1:8188 in a browser on that computer to use the agent.'
+
+const REFUSED_FILE = {
+  name: 'doc.pdf',
+  type: 'application/pdf',
+  contents: '%PDF'
+}
 
 const FENCED_ROUTES = [
   '**/api/agent/threads?*',
@@ -41,10 +45,16 @@ test.describe(
       await agentPanel.open()
 
       await expect(agentPanel.hostFenceNotice).toBeVisible()
-      await expect(agentPanel.hostFenceNotice).toHaveText(LOOPBACK_ONLY_MESSAGE)
+      await expect(agentPanel.hostFenceNotice).toHaveText(
+        'The agent only works when ComfyUI is opened on the computer it runs on, by a local address. Open http://127.0.0.1:8188 in a browser on that computer to use the agent.'
+      )
       await expect(agentPanel.hostFenceNotice).toHaveAttribute('role', 'alert')
       await expect(agentPanel.chatControls).toHaveAttribute('inert', '')
       await expect(agentPanel.footer).toHaveAttribute('inert', '')
+
+      await agentPanel.dispatchFileDrop(REFUSED_FILE)
+      await expect(agentPanel.attachmentChips).toHaveCount(0)
+      await expect(agentPanel.hostFenceNotice).toBeVisible()
 
       await expect
         .poll(() =>
@@ -82,6 +92,9 @@ test.describe(
       await expect(agentPanel.hostFenceNotice).toHaveCount(0)
       await expect(agentPanel.chatControls).not.toHaveAttribute('inert')
       await expect(agentPanel.footer).not.toHaveAttribute('inert')
+
+      await agentPanel.dispatchFileDrop(REFUSED_FILE)
+      await expect(agentPanel.attachmentChips).toHaveCount(1)
       await expect
         .poll(() =>
           hostErrorReports.find(
