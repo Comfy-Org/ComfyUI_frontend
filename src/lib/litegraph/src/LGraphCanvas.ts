@@ -505,6 +505,8 @@ function marqueeSelectsLinks(
   )
 }
 
+const MAX_FAILED_FRAMES = 60
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -2453,20 +2455,63 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.is_rendering) return
 
     this.is_rendering = true
-    try {
-      renderFrame.call(this)
-    } catch (cause) {
-      this.is_rendering = false
+    let isFirstFrame = true
+    let failedFrames = 0
+    const reportedFailures = new Set<unknown>()
+
+    function reportFrameFailure(cause: unknown) {
+      const key =
+        cause instanceof Error
+          ? `error:${cause.name}:${cause.message}`
+          : typeof cause === 'string'
+            ? `string:${cause}`
+            : cause
+      if (reportedFailures.has(key)) return
+      reportedFailures.add(key)
       reportError(cause, {
-        errorType: 'error_rendering_canvas_initial_frame',
+        errorType: isFirstFrame
+          ? 'error_rendering_canvas_initial_frame'
+          : 'error_rendering_canvas_frame',
         surface: 'graph',
         tags: { feature_area: 'litegraph', operation: 'start_rendering' }
       })
     }
 
+    const recoverFromFailedFrame = (cause: unknown) => {
+      failedFrames++
+      reportFrameFailure(cause)
+      const { dpr, overlayCanvas } = this
+      for (const canvas of new Set([
+        this.canvas,
+        this.bgcanvas,
+        overlayCanvas
+      ])) {
+        if (!canvas) continue
+        const { width } = canvas
+        canvas.width = width
+        const scale = canvas === overlayCanvas ? 1 : dpr
+        canvas.getContext('2d')?.setTransform(scale, 0, 0, scale, 0, 0)
+      }
+      this.setDirty(true, true)
+      if (failedFrames < MAX_FAILED_FRAMES) return
+      this.is_rendering = false
+      reportError(cause, {
+        errorType: 'error_rendering_canvas_stopped',
+        surface: 'graph',
+        tags: { feature_area: 'litegraph', operation: 'start_rendering' },
+        context: { failedFrames }
+      })
+    }
+
     function renderFrame(this: LGraphCanvas) {
       if (!this.pause_rendering) {
-        this.draw()
+        const drawsSomething = this.dirty_canvas || this.dirty_bgcanvas
+        try {
+          this.draw()
+          if (drawsSomething) failedFrames = 0
+        } catch (cause) {
+          recoverFromFailedFrame(cause)
+        }
       }
 
       const window = this.getCanvasWindow()
@@ -2479,6 +2524,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           window.requestAnimationFrame(renderFrame.bind(this))
         }
       }
+      isFirstFrame = false
+    }
+
+    try {
+      renderFrame.call(this)
+    } catch (cause) {
+      this.is_rendering = false
+      reportFrameFailure(cause)
     }
   }
 
