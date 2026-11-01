@@ -2341,22 +2341,40 @@ describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
     node.properties.cfg = 5
     node.onWidgetChanged = onWidgetChanged
 
-    writeDocWidget('cfg', 99)
+    writeDocWidget('cfg', '7')
 
     expect(callback).toHaveBeenCalledExactlyOnceWith(
-      10,
+      7,
       canvas,
       node,
       [3, 4],
       undefined
     )
-    expect(onWidgetChanged).toHaveBeenCalledExactlyOnceWith(
-      'cfg',
-      10,
-      5,
-      widget
-    )
-    expect(node.properties.cfg).toBe(10)
+    expect(onWidgetChanged).toHaveBeenCalledExactlyOnceWith('cfg', 7, 5, widget)
+    expect(node.properties.cfg).toBe(7)
+  })
+
+  it('skips the widget callback when a numeric string equals the live value', () => {
+    const { node, writeDocWidget } = rangedSetup()
+    const widget = node.widgets?.find(({ name }) => name === 'cfg')
+    assert.exists(widget)
+    const callback = vi.fn()
+    widget.callback = callback
+
+    writeDocWidget('cfg', '5')
+
+    expect(callback).not.toHaveBeenCalled()
+  })
+
+  it('mints a document write for the same edit made outside the applier', async () => {
+    const { node, enqueue } = rangedSetup()
+    const widget = node.widgets?.find(({ name }) => name === 'cfg')
+    assert.exists(widget)
+
+    widget.value = 8
+    await Promise.resolve()
+
+    expect(enqueue).toHaveBeenCalled()
   })
 })
 

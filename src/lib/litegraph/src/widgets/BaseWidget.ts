@@ -745,10 +745,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     { e, node, canvas }: WidgetValueOptions = { node: this.node }
   ): void {
     const oldValue = this.value
-    if (value === this.value) return
+    const isNumber = this.type === 'number'
+    const v = isNumber ? Number(value) : value
+    if (v === oldValue || (isNumber && Number.isNaN(v))) return
 
-    const v = this.type === 'number' ? Number(value) : value
-    if (Number.isNaN(v)) return
     this.value = v
     const property = extensionValue(this.options)?.property
     if (property && node.properties[property] !== undefined) {
