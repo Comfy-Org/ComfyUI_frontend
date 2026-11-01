@@ -239,6 +239,7 @@ interface MalformedDocNode {
 
 const MAX_SHAPED_ELEMENTS = 16
 const MAX_DIAGNOSTIC_CHARS = 1024
+const MAX_REPORTED_OP_IDS = 4
 const OMISSION_MARKER_CHARS = 8
 const MAX_DIAGNOSTIC_LIST_CHARS = 320
 
@@ -380,6 +381,31 @@ function issueShapes(fields: unknown, error: z.ZodError): string {
 function actorKind(actor: unknown): ActorKind {
   const kind = typeof actor === 'string' ? actor.split(':', 1)[0] : ''
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
+}
+
+function diagnosticActor(actor: string): string {
+  const kind = actorKind(actor)
+  return kind !== 'unknown' && actor.split(':').length === 3 ? kind : actor
+}
+
+function diagnosticApplyContext(context: RemoteApplyContext) {
+  const opIds = context.opIds.slice(0, MAX_REPORTED_OP_IDS)
+  return boundedContext({
+    actor: diagnosticActor(context.actor),
+    opIds,
+    omittedOpIdCount: context.opIds.length - opIds.length
+  })
+}
+
+function diagnosticNodeOwner(graph: LGraph, nodeId: NodeId) {
+  const owner = [graph.rootGraph, ...graph.rootGraph.subgraphs.values()].find(
+    (candidate) => candidate.getNodeById(nodeId) !== null
+  )
+  if (owner === undefined) return { existingOwnerKind: 'unknown' }
+  return {
+    existingOwnerKind: owner === graph.rootGraph ? 'root' : 'subgraph',
+    existingOwnerGraphId: owner.id
+  }
 }
 
 function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
@@ -809,7 +835,7 @@ export class LiveGraphApplier {
           }
           touchedNodes.add(id)
           this.try(context, () => {
-            const result = this.upsertNode(graph, doc, id, mode)
+            const result = this.upsertNode(graph, doc, id, mode, context)
             if (result === 'created') created.push(toNodeId(id))
             if (result === 'created' || result === 'recreated') {
               for (const link of docLinksIncident(doc, id)) {
@@ -892,7 +918,7 @@ export class LiveGraphApplier {
         surface: 'agent',
         errorType: 'agent_graph_apply_failed',
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-        context: { actor: context.actor, opIds: [...context.opIds] }
+        context: diagnosticApplyContext(context)
       })
     }
   }
@@ -1001,7 +1027,8 @@ export class LiveGraphApplier {
     graph: LGraph,
     doc: Y.Doc,
     id: string,
-    mode: ApplyMode
+    mode: ApplyMode,
+    context: RemoteApplyContext
   ): 'created' | 'recreated' | 'updated' | 'skipped' {
     const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
@@ -1013,14 +1040,15 @@ export class LiveGraphApplier {
       return 'updated'
     }
     if (live) graph.remove(live)
-    this.createNode(graph, docNode, mode)
+    this.createNode(graph, docNode, mode, context)
     return live ? 'recreated' : 'created'
   }
 
   private createNode(
     graph: LGraph,
     docNode: DocNode,
-    mode: ApplyMode
+    mode: ApplyMode,
+    context: RemoteApplyContext
   ): LGraphNode {
     const node =
       LiteGraph.createNode(docNode.type, docNode.serialised.title) ??
@@ -1041,11 +1069,20 @@ export class LiveGraphApplier {
     node.pos = [info.pos[0], info.pos[1]]
     graph.add(node)
     if (node.id !== toNodeId(docNode.id)) {
+      const existingOwner = diagnosticNodeOwner(graph, toNodeId(docNode.id))
       this.reportOnce(
         `node-id:${docNode.id}`,
         `Live graph reminted node ${docNode.id} as ${String(node.id)}`,
         'agent_graph_node_id_reminted',
-        { nodeId: docNode.id, liveId: node.id }
+        {
+          nodeId: docNode.id,
+          liveId: node.id,
+          nodeType: docNode.type,
+          mode,
+          ...existingOwner,
+          ...diagnosticApplyContext(context),
+          liveAgentTurn: context.liveAgentTurn === true
+        }
       )
     }
     if (node.has_errors) {
