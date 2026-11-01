@@ -118,9 +118,7 @@ runs:
               printf '\n%s\n' "$INPUT_HEADLINE"
             fi
             if [ -n "$has_findings" ]; then
-              printf '\n'
-              cat "$INPUT_DETAILS_FILE"
-              printf '\n'
+              printf '\n%s\n' "$(cat "$INPUT_DETAILS_FILE")"
             fi
             if [ -n "$INPUT_DOCS" ]; then
               printf '\nFull docs: %s\n' "$INPUT_DOCS"
