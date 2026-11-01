@@ -49,7 +49,7 @@ export function usePanAndZoom() {
 
   const image = ref<HTMLImageElement | null>(null)
   const imageRootWidth = ref(0)
-  const imageRootHeight = ref(0)
+  let needsFit = false
 
   const cursorPoint = ref<Point>({ x: 0, y: 0 })
   const penPointerIdList = ref<number[]>([])
@@ -65,11 +65,13 @@ export function usePanAndZoom() {
   }
 
   const invalidatePanZoom = async (): Promise<void> => {
-    const currentImage = image.value
+    const currentImage = store.maskCanvas ?? image.value
     if (!currentImage?.width || !currentImage.height || !zoom_ratio.value) {
       console.warn('Missing required properties for pan/zoom')
       return
     }
+
+    if (needsFit) fitCanvasToViewport(currentImage.width, currentImage.height)
 
     const styles = calculatePanZoomStyles(
       currentImage.width,
@@ -192,7 +194,6 @@ export function usePanAndZoom() {
       const pinchFactor = newDistance / lastTouchZoomDistance.value
       const midpoint = getMidpoint(p0, p1)
 
-      // Apply midpoint drag
       const draggedPan: Offset = {
         x: pan_offset.value.x + midpoint.x - lastTouchMidPoint.value.x,
         y: pan_offset.value.y + midpoint.y - lastTouchMidPoint.value.y
@@ -245,6 +246,9 @@ export function usePanAndZoom() {
     }
     if (!maskCanvas.value) return
 
+    if (needsFit) await invalidatePanZoom()
+    if (!imageRootWidth.value) return
+
     const rect = maskCanvas.value.getBoundingClientRect()
     const focalX = cursorPosition.x - rect.left
     const focalY = cursorPosition.y - rect.top
@@ -284,7 +288,8 @@ export function usePanAndZoom() {
   }
 
   const smoothResetView = async (duration: number = 500): Promise<void> => {
-    if (!image.value || !rootElement.value) return
+    const currentImage = store.maskCanvas ?? image.value
+    if (!currentImage || !rootElement.value) return
 
     const startZoom = zoom_ratio.value
     const startPan = { ...pan_offset.value }
@@ -294,8 +299,8 @@ export function usePanAndZoom() {
     const fitResult = calculateFitView({
       rootWidth: rootElement.value.clientWidth,
       rootHeight: rootElement.value.clientHeight,
-      imageWidth: image.value.width,
-      imageHeight: image.value.height,
+      imageWidth: currentImage.width,
+      imageHeight: currentImage.height,
       toolPanelWidth,
       sidePanelWidth
     })
@@ -331,6 +336,35 @@ export function usePanAndZoom() {
     interpolatedZoomRatio.value = 1.0
   }
 
+  function fitCanvasToViewport(width: number, height: number): void {
+    needsFit = true
+    const root = rootElement.value
+    if (!root) return
+    const { sidePanelWidth, toolPanelWidth } = getPanelDimensions()
+    const availableWidth = root.clientWidth - sidePanelWidth - toolPanelWidth
+    if (
+      availableWidth <= 0 ||
+      root.clientHeight <= 0 ||
+      width <= 0 ||
+      height <= 0
+    )
+      return
+    const fitResult = calculateFitView({
+      rootWidth: root.clientWidth,
+      rootHeight: root.clientHeight,
+      imageWidth: width,
+      imageHeight: height,
+      toolPanelWidth,
+      sidePanelWidth
+    })
+    imageRootWidth.value = fitResult.fittedWidth
+    zoom_ratio.value = fitResult.zoomRatio
+    pan_offset.value = fitResult.panOffset
+    interpolatedZoomRatio.value = 1
+    store.displayZoomRatio = 1
+    needsFit = false
+  }
+
   const initializeCanvasPanZoom = async (
     img: HTMLImageElement,
     root: HTMLElement,
@@ -341,31 +375,29 @@ export function usePanAndZoom() {
     toolPanelElement.value = toolPanel || null
     sidePanelElement.value = sidePanel || null
 
-    const { sidePanelWidth, toolPanelWidth } = getPanelDimensions()
-
-    const fitResult = calculateFitView({
-      rootWidth: root.clientWidth,
-      rootHeight: root.clientHeight,
-      imageWidth: img.width,
-      imageHeight: img.height,
-      toolPanelWidth,
-      sidePanelWidth
-    })
-
     if (image.value === null) {
       image.value = img
     }
 
-    imageRootWidth.value = fitResult.fittedWidth
-    imageRootHeight.value = fitResult.fittedHeight
-
-    zoom_ratio.value = fitResult.zoomRatio
-    pan_offset.value = fitResult.panOffset
+    fitCanvasToViewport(img.width, img.height)
 
     penPointerIdList.value = []
 
     await invalidatePanZoom()
   }
+
+  watch(
+    [
+      () => store.canvasHistory.dimensions?.width,
+      () => store.canvasHistory.dimensions?.height
+    ],
+    async () => {
+      const currentImage = store.maskCanvas ?? image.value
+      if (!currentImage?.width || !currentImage.height) return
+      fitCanvasToViewport(currentImage.width, currentImage.height)
+      await invalidatePanZoom()
+    }
+  )
 
   watch(
     () => store.resetZoomTrigger,

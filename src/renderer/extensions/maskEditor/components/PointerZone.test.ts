@@ -54,17 +54,20 @@ describe('PointerZone', () => {
     it.for([
       ['pointerdown', 'handlePointerDown'],
       ['pointermove', 'handlePointerMove'],
-      ['pointerup', 'handlePointerUp']
+      ['pointerup', 'handlePointerUp'],
+      ['pointercancel', 'handlePointerUp']
     ] as const)(
       'should forward %s to toolManager.%s',
       async ([eventName, handlerName]) => {
         renderZone()
         const zone = getZone()
 
-        zone.dispatchEvent(new Event(eventName, { bubbles: true }))
+        const event = new PointerEvent(eventName, { bubbles: true })
+        zone.dispatchEvent(event)
         await nextTick()
 
         expect(mockToolManager[handlerName]).toHaveBeenCalledTimes(1)
+        expect(mockToolManager[handlerName]).toHaveBeenCalledWith(event)
       }
     )
 

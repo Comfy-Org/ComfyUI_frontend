@@ -53,7 +53,7 @@ export function useGPUResources() {
   )
 
   watch(
-    () => store.canvasHistory.currentStateIndex,
+    () => store.canvasHistory.revision,
     async () => {
       if (isSavingHistory.value) return
       await updateGPUFromCanvas()
@@ -79,23 +79,17 @@ export function useGPUResources() {
       const height = store.gpuTextureHeight
 
       try {
-        maskTexture?.destroy()
-        maskTexture = null
-        rgbTexture?.destroy()
-        rgbTexture = null
-
-        maskTexture = createTexture(device, width, height)
-        rgbTexture = createTexture(device, width, height)
+        const textures = recreateTextures(device, width, height)
 
         if (store.pendingGPUMaskData && store.pendingGPURgbData) {
           device.queue.writeTexture(
-            { texture: maskTexture },
+            { texture: textures.mask },
             store.pendingGPUMaskData,
             { bytesPerRow: width * 4 },
             { width, height }
           )
           device.queue.writeTexture(
-            { texture: rgbTexture },
+            { texture: textures.rgb },
             store.pendingGPURgbData,
             { bytesPerRow: width * 4 },
             { width, height }
@@ -103,13 +97,6 @@ export function useGPUResources() {
         } else {
           await updateGPUFromCanvas()
         }
-
-        if (previewCanvas.value && renderer) {
-          previewCanvas.value.width = width
-          previewCanvas.value.height = height
-        }
-
-        resizeReadbackBuffers(device, width, height)
       } catch (error) {
         console.error(
           '[useGPUResources] Failed to recreate GPU textures:',
@@ -169,6 +156,25 @@ export function useGPUResources() {
         GPUTextureUsage.COPY_DST |
         GPUTextureUsage.COPY_SRC
     })
+  }
+
+  function recreateTextures(
+    gpuDevice: GPUDevice,
+    width: number,
+    height: number
+  ) {
+    maskTexture?.destroy()
+    maskTexture = null
+    rgbTexture?.destroy()
+    rgbTexture = null
+    maskTexture = createTexture(gpuDevice, width, height)
+    rgbTexture = createTexture(gpuDevice, width, height)
+    if (previewCanvas.value && renderer) {
+      previewCanvas.value.width = width
+      previewCanvas.value.height = height
+    }
+    resizeReadbackBuffers(gpuDevice, width, height)
+    return { mask: maskTexture, rgb: rgbTexture }
   }
 
   function resizeReadbackBuffers(
@@ -241,6 +247,10 @@ export function useGPUResources() {
     /* c8 ignore start — requires live GPU device and textures */
     const w = store.maskCanvas.width
     const h = store.maskCanvas.height
+
+    if (maskTexture.width !== w || maskTexture.height !== h) {
+      recreateTextures(device, w, h)
+    }
 
     const maskData = store.maskCtx.getImageData(0, 0, w, h)
     premultiplyData(maskData.data)
@@ -534,62 +544,6 @@ export function useGPUResources() {
     /* c8 ignore stop */
   }
 
-  async function gpuDrawPoint(point: Point, opacity = 1): Promise<void> {
-    if (!renderer) return
-
-    /* c8 ignore start — requires live renderer */
-    const width = store.maskCanvas!.width
-    const height = store.maskCanvas!.height
-    const { size, hardness } = store.brushSettings
-    const effectiveSize = getEffectiveBrushSize(size, hardness)
-    const effectiveHardness = getEffectiveHardness(
-      size,
-      hardness,
-      effectiveSize
-    )
-    const brushShape = store.brushSettings.type === BrushShape.Rect ? 1 : 0
-
-    dirtyRect.value = updateDirtyRect(
-      dirtyRect.value,
-      point.x,
-      point.y,
-      effectiveSize
-    )
-
-    renderer.renderStrokeToAccumulator(
-      [{ x: point.x, y: point.y, pressure: opacity }],
-      {
-        size: effectiveSize,
-        coverage: 1,
-        hardness: effectiveHardness,
-        color: [1, 1, 1],
-        width,
-        height,
-        brushShape
-      }
-    )
-
-    if (maskTexture && previewContext) {
-      const isRgb = store.activeLayer === 'rgb'
-      const isErasing =
-        store.currentTool === 'eraser' ||
-        store.maskCtx?.globalCompositeOperation === 'destination-out'
-      renderer.blitToCanvas(
-        previewContext,
-        {
-          opacity: store.brushSettings.opacity,
-          color: resolveColor(isRgb),
-          hardness: effectiveHardness,
-          screenSize: [width, height],
-          brushShape,
-          isErasing
-        },
-        undefined
-      )
-    }
-    /* c8 ignore stop */
-  }
-
   // ── Private helpers ─────────────────────────────────────────────────────────
 
   /* c8 ignore start — only reachable after successful GPU init */
@@ -611,7 +565,6 @@ export function useGPUResources() {
     destroy,
     // Rendering — called internally by useBrushDrawing
     gpuRender,
-    gpuDrawPoint,
     copyGpuToCanvas,
     // Renderer wrappers — called internally by useBrushDrawing
     prepareStroke,

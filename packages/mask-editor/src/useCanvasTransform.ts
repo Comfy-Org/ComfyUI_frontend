@@ -114,10 +114,6 @@ export function useCanvasTransform() {
     }
   }
 
-  /**
-   * Recreates and updates GPU textures after transformation
-   * This is required because GPU textures have immutable dimensions
-   */
   const recreateGPUTextures = async (
     width: number,
     height: number
@@ -132,48 +128,19 @@ export function useCanvasTransform() {
       return
     }
 
-    // Get references to GPU resources from useBrushDrawing
-    // These are stored as module-level variables in useBrushDrawing
-    // We need to trigger a reinitialization through the store
-
-    // Signal to useBrushDrawing that textures need recreation
     store.gpuTexturesNeedRecreation = true
     store.gpuTextureWidth = width
     store.gpuTextureHeight = height
 
-    // Get current canvas data
     const maskImageData = store.maskCtx.getImageData(0, 0, width, height)
     const rgbImageData = store.rgbCtx.getImageData(0, 0, width, height)
 
-    // Create new Uint8ClampedArray with ArrayBuffer (not SharedArrayBuffer)
-    // This ensures compatibility with WebGPU writeTexture
-    const maskData = new Uint8ClampedArray(
-      new ArrayBuffer(maskImageData.data.length)
-    )
-    const rgbData = new Uint8ClampedArray(
-      new ArrayBuffer(rgbImageData.data.length)
-    )
+    const maskData = new Uint8ClampedArray(maskImageData.data)
+    const rgbData = new Uint8ClampedArray(rgbImageData.data)
 
-    // Copy data
-    maskData.set(maskImageData.data)
-    rgbData.set(rgbImageData.data)
-
-    // Runtime check to ensure we have ArrayBuffer backing
-    if (
-      maskData.buffer instanceof SharedArrayBuffer ||
-      rgbData.buffer instanceof SharedArrayBuffer
-    ) {
-      console.error(
-        '[useCanvasTransform] SharedArrayBuffer detected, WebGPU writeTexture will fail'
-      )
-      return
-    }
-
-    // Premultiply alpha for GPU
     premultiplyData(maskData)
     premultiplyData(rgbData)
 
-    // Store the premultiplied data for useBrushDrawing to pick up
     store.pendingGPUMaskData = maskData
     store.pendingGPURgbData = rgbData
   }
