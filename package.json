@@ -12,6 +12,7 @@
     "architecture:check": "tsx tools/architecture/src/cli.ts --check",
     "architecture:update": "tsx tools/architecture/src/cli.ts --update",
     "adr:check": "tsx scripts/check-adrs.ts",
+    "command-locales:check": "tsx scripts/check-command-locales.ts",
     "follower-invariants:check": "tsx scripts/check-follower-invariants.ts",
     "audit:inherited-classes": "tsx tools/design-system-audits/src/cli.ts",
     "follower-document-mutations:check": "tsx scripts/check-follower-document-mutations.ts",

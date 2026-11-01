@@ -1016,19 +1016,8 @@ describe('AgentPanelRoot onboarding', () => {
     expect(useTelemetry()!.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
   })
 
-  it('walks through the four cards and leaves the composer usable after Done', async () => {
-    render(
-      defineComponent({
-        setup: () => () =>
-          h('div', [
-            h('section', { class: 'graph-canvas-panel' }, [
-              h('div', { role: 'toolbar' })
-            ]),
-            h(AgentPanelRoot)
-          ])
-      }),
-      { global: { plugins: [i18n] } }
-    )
+  it('walks through the three cards and leaves the composer usable after Done', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     for (const [index, { title, description }] of [
       {
@@ -1037,14 +1026,9 @@ describe('AgentPanelRoot onboarding', () => {
           'Describe your ideas, ask it to build and run workflows. It sees your canvas and files.'
       },
       {
-        title: "Your agent edits the workflow you're viewing",
+        title: 'The agent edits one workflow at a time',
         description:
-          'It switches with your tabs until you send a message, choose a workflow, or add a node reference.'
-      },
-      {
-        title: 'Let the agent run while you edit',
-        description:
-          'You can still edit the graph or switch tabs while the agent is working.'
+          'That workflow is named at the top of the message box. Click the name to pick another. Clicking a workflow tab can open its latest chat, unless the message box has a draft.'
       },
       {
         title: 'Pick up where you left off',
@@ -1055,11 +1039,11 @@ describe('AgentPanelRoot onboarding', () => {
       const dialog = await screen.findByRole('dialog', { name: title })
       expect(dialog).toHaveAccessibleDescription(description)
       await waitFor(() =>
-        expect(within(dialog).getByText(`${index + 1} of 4`)).toBeVisible()
+        expect(within(dialog).getByText(`${index + 1} of 3`)).toBeVisible()
       )
       await userEvent.click(
         within(dialog).getByRole('button', {
-          name: index === 3 ? 'Done' : 'Next'
+          name: index === 2 ? 'Done' : 'Next'
         })
       )
     }
@@ -8738,7 +8722,8 @@ describe('AgentPanelRoot workflow binding', () => {
           reason: null,
           client_message_id: 'client-message-1',
           held_ms: null,
-          thread_id: null
+          thread_id: null,
+          client_session_id: expect.any(String)
         }
       ],
       [
@@ -8748,7 +8733,8 @@ describe('AgentPanelRoot workflow binding', () => {
           reason: 'accepted',
           client_message_id: 'client-message-1',
           held_ms: expect.any(Number),
-          thread_id: null
+          thread_id: null,
+          client_session_id: expect.any(String)
         }
       ]
     ])
@@ -8779,7 +8765,8 @@ describe('AgentPanelRoot workflow binding', () => {
         reason: exit,
         client_message_id: 'client-message-1',
         held_ms: expect.any(Number),
-        thread_id: null
+        thread_id: null,
+        client_session_id: expect.any(String)
       })
       expect(telemetry.trackAgentSendGated).toHaveBeenCalledTimes(2)
       expect(bodies).toHaveLength(0)
@@ -9121,7 +9108,8 @@ describe('AgentPanelRoot workflow binding', () => {
         reason: null,
         client_message_id: 'client-message-1',
         held_ms: null,
-        thread_id: null
+        thread_id: null,
+        client_session_id: expect.any(String)
       })
 
       await userEvent.click(within(coach).getByRole('button', { name: 'Skip' }))
@@ -9133,7 +9121,8 @@ describe('AgentPanelRoot workflow binding', () => {
         reason: 'skipped',
         client_message_id: 'client-message-1',
         held_ms: expect.any(Number),
-        thread_id: null
+        thread_id: null,
+        client_session_id: expect.any(String)
       })
     })
 
@@ -9178,7 +9167,8 @@ describe('AgentPanelRoot workflow binding', () => {
         reason: 'elsewhere',
         client_message_id: 'client-message-1',
         held_ms: expect.any(Number),
-        thread_id: null
+        thread_id: null,
+        client_session_id: expect.any(String)
       })
       const coachOutcomes = telemetry.trackAgentSendGated.mock.calls
         .map(([metadata]) => metadata)
@@ -9198,6 +9188,9 @@ describe('AgentPanelRoot workflow binding', () => {
       renderWithSelectedTarget()
 
       await sendHeldByCoach('build me a workflow')
+      screen
+        .getByRole('button', { name: 'Show chat history', hidden: true })
+        .removeAttribute('id')
       await user.click(
         within(
           await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
@@ -9206,10 +9199,13 @@ describe('AgentPanelRoot workflow binding', () => {
       await user.click(
         within(
           await screen.findByRole('dialog', {
-            name: "Your agent edits the workflow you're viewing"
+            name: 'The agent edits one workflow at a time'
           })
         ).getByRole('button', { name: 'Next' })
       )
+      expect(
+        screen.queryByRole('dialog', { name: 'Pick up where you left off' })
+      ).not.toBeInTheDocument()
       expect(bodies).toHaveLength(0)
 
       await vi.advanceTimersByTimeAsync(8_000)
@@ -9251,6 +9247,45 @@ describe('AgentPanelRoot workflow binding', () => {
       }
     )
 
+    it('puts the draft back when App Mode releases the hold in the update that closes the panel', async () => {
+      Object.assign(useAgentPanelStore(), { enabled: true, isOpen: true })
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      const settleSubmission = vi.spyOn(
+        useAgentComposerStore(),
+        'settleSubmission'
+      )
+      const { unmount } = renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+      const stopCloseOnAppMode = watch(
+        () => canvasStore.linearMode,
+        () => {
+          useAgentPanelStore().close('close_button')
+          unmount()
+        },
+        { flush: 'post' }
+      )
+
+      try {
+        canvasStore.linearMode = true
+
+        await waitFor(() =>
+          expect(settleSubmission).toHaveBeenCalledWith(
+            expect.any(Number),
+            false
+          )
+        )
+      } finally {
+        stopCloseOnAppMode()
+      }
+      expect(bodies).toHaveLength(0)
+      renderWithSelectedTarget()
+      expect(await screen.findByRole('textbox')).toHaveTextContent(
+        'build me a workflow'
+      )
+      expect(bodies).toHaveLength(0)
+    })
+
     it('puts the draft back when consent is cleared before App Mode releases the hold', async () => {
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
@@ -9268,6 +9303,20 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
       )
       expect(bodies).toHaveLength(0)
+    })
+
+    it('shows the feedback form which gate holds the send until the panel closes', async () => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      const { unmount } = renderWithSelectedTarget()
+
+      await sendHeldByCoach('build me a workflow')
+      expect(useAgentPanelStore().heldSendGate).toBe('coach')
+
+      useAgentPanelStore().close('close_button')
+      unmount()
+
+      expect(useAgentPanelStore().heldSendGate).toBeNull()
     })
 
     it('puts the draft back instead of sending when the panel closes', async () => {
@@ -15362,6 +15411,32 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByTestId('node-reference-chip')).toHaveTextContent(
       'KSampler'
     )
+  })
+
+  it('reveals the selected-node prompt only after a node-selection-mode addition', async () => {
+    distribution.isCloud = false
+    makeTab('wf-42')
+    const state = setupNodeSelectionCanvas()
+    const view = renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+    const prompt = i18n.global.t('agent.suggestedPrompts.local.2')
+
+    expect(screen.queryByRole('button', { name: prompt })).toBeNull()
+    await enterNodeSelectionMode()
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    expect(canvasStore.isPickingNodes).toBe(true)
+    expect(screen.queryByRole('button', { name: prompt })).toBeNull()
+
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+
+    expect(await screen.findByRole('button', { name: prompt })).toBeVisible()
+
+    view.unmount()
+    renderWithSelectedTarget()
+    await nextTick()
+    expect(screen.getByRole('button', { name: prompt })).toBeVisible()
   })
 
   it('excludes referenced nodes from the mention picker', async () => {

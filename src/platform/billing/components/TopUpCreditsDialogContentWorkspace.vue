@@ -295,6 +295,10 @@
             {{ $t('credits.topUp.paymentProcessingBody') }}
           </p>
         </div>
+        <TopUpAutoTopUpCard
+          v-if="step === 'amount' && !processingPayment"
+          class="mb-2"
+        />
         <Button
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
@@ -381,6 +385,7 @@ import {
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import TopUpAmountFields from './TopUpAmountFields.vue'
+import TopUpAutoTopUpCard from './TopUpAutoTopUpCard.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -426,7 +431,7 @@ const { isInsufficientCredits = false, source } = defineProps<{
   source?: PaymentIntentSource
 }>()
 
-const { locale, n, t } = useI18n()
+const { d, locale, n, t } = useI18n()
 const { payment: processingPayment } = useProcessingTopupPayment()
 const processingNoticeTitle = computed(() => {
   const cents = processingPayment.value?.paymentAmountCents
@@ -526,7 +531,12 @@ const verifyingBody = computed(() => {
   if (topupIsParkedWithoutLink.value) {
     return t('credits.topUp.awaitingBankApprovalBody')
   }
-  return t('credits.topUp.verifyBody')
+  const deadline = new Date(topupOperation.value?.authenticationDeadline ?? '')
+  if (Number.isNaN(deadline.getTime())) return t('credits.topUp.verifyBody')
+  return t('credits.topUp.verifyByBody', {
+    date: d(deadline, { month: 'long', day: 'numeric' }),
+    time: d(deadline, { hour: 'numeric', minute: '2-digit' })
+  })
 })
 
 // Constants

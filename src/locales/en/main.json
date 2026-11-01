@@ -2369,6 +2369,11 @@
       "playbackSpeed": "Playback speed",
       "animationClip": "Animation clip"
     },
+    "stats": {
+      "vertices": "Vertices",
+      "edges": "Edges",
+      "triangles": "Triangles"
+    },
     "materialModes": {
       "normal": "Normal",
       "wireframe": "Wireframe",
@@ -3038,11 +3043,16 @@
       "payAmount": "Pay {amount}",
       "unknownError": "An unknown error occurred",
       "verifyBody": "Your bank requires additional verification to complete this payment.",
+      "verifyByBody": "Your bank is waiting for you to confirm it. Verify it by {date}, {time} to finish this top-up.",
       "awaitingBankApprovalBody": "Your bank needs to approve this payment before your credits are added. You can finish it from your bank's app or the payment link for this purchase. A new top-up can't be started until this one completes or expires.",
       "changeInProgressError": "Another credit purchase is still open. Wait for it to complete or expire before starting a new one.",
       "verifyTitle": "Verify your payment",
       "startOver": "Start over",
       "viewPricing": "View pricing details",
+      "autoTopUp": {
+        "prompt": "Running low on credits? Turn on auto top-up.",
+        "setUp": "Set up"
+      },
       "youPay": "Amount (USD)",
       "youGet": "Credits",
       "buyCredits": "Continue to payment",
@@ -3069,6 +3079,7 @@
     "time": "Time",
     "additionalInfo": "Additional Info",
     "charge": "Charge",
+    "lessThanOne": "<1",
     "model": "Model",
     "api": "API",
     "added": "Added",
@@ -3717,6 +3728,7 @@
           "yearly": "Billed yearly. Next invoice {date}."
         },
         "ended": "Ended {date}.",
+        "endedNoDate": "This plan has ended.",
         "ending": "Ends {date}. You won't be charged again.",
         "lifecycleRefused": "We couldn't make this change. Try again.",
         "managedByOwner": "Managed by the workspace owner.",
@@ -4159,6 +4171,20 @@
       "body": "Create a custom deployment that runs your custom nodes and models on Comfy Cloud, and appears under Run on for your workspace.",
       "pointNodes": "Deploy the custom or private node packs your workflows need"
     },
+    "workflowNeedsDeployment": {
+      "title": "Run this workflow on a custom deployment",
+      "missingPacks": "{count} missing node pack | {count} missing node packs",
+      "missingNodes": "{count} missing node | {count} missing nodes",
+      "missingModels": "{count} missing model | {count} missing models",
+      "andMore": "{names}, and {count} more",
+      "titleNoneRunIt": "Create a deployment to run this workflow on Comfy Cloud",
+      "noneRunIt": "No deployment in this workspace has all of these nodes.",
+      "switchBody": "Comfy Cloud is missing these. Switch to a deployment that has them and keep working from there.",
+      "switch": "Switch"
+    },
+    "runsThisWorkflow": "Runs this workflow",
+    "missingNodes": "Missing {count} node | Missing {count} nodes",
+    "notChecked": "Not checked",
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
     "reload": "Reload",
@@ -5230,6 +5256,8 @@
     "runsOn": "Runs on {deployment}",
     "switchDeployment": "Switch",
     "moreDeployments": "{count} more",
+    "runOnCustomDeployment": "Run it on a custom deployment",
+    "setUpCustomDeployment": "Set up",
     "missingNodes": "Some nodes are missing and need to be installed",
     "missingModels": "{count} required model is missing | {count} required models are missing",
     "missingMedia": "Some nodes are missing required inputs"
@@ -5564,10 +5592,10 @@
       },
       "timeout": {
         "title": "Generation timed out",
-        "message": "This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.",
+        "message": "This workflow reached your plan's maximum run time (@:subscription.maxDuration.free on Free, @:subscription.maxDuration.pro on Pro, @:subscription.maxDuration.standard on all other plans). Try reducing image resolution, batch size, or workflow length and run again.",
         "itemLabel": "{nodeName}",
         "toastTitle": "Generation timed out",
-        "toastMessage": "This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again."
+        "toastMessage": "This workflow reached your plan's maximum run time (@:subscription.maxDuration.free on Free, @:subscription.maxDuration.pro on Pro, @:subscription.maxDuration.standard on all other plans). Try reducing image resolution, batch size, or workflow length and run again."
       },
       "generation_stalled": {
         "title": "Generation stalled",
@@ -6225,10 +6253,8 @@
     "coachProgress": "{current} of {total}",
     "coachTitle": "Meet your Comfy Agent",
     "coachBody": "Describe your ideas, ask it to build and run workflows. It sees your canvas and files.",
-    "coachWorkflowTitle": "Your agent edits the workflow you're viewing",
-    "coachWorkflowBody": "It switches with your tabs until you send a message, choose a workflow, or add a node reference.",
-    "coachGraphTitle": "Let the agent run while you edit",
-    "coachGraphBody": "You can still edit the graph or switch tabs while the agent is working.",
+    "coachWorkflowTitle": "The agent edits one workflow at a time",
+    "coachWorkflowBody": "That workflow is named at the top of the message box. Click the name to pick another. Clicking a workflow tab can open its latest chat, unless the message box has a draft.",
     "coachHistoryTitle": "Pick up where you left off",
     "coachHistoryBody": "Previous chats are saved here. Open one to review it or continue working with the agent.",
     "coachHoldNotice": "Your message will send when you finish or skip the tour.",

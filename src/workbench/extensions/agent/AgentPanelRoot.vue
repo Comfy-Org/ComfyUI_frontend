@@ -151,6 +151,7 @@ import {
   describeAgentRequestFailure
 } from './services/agent/agentRequestFailure'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import { setAgentTabTitlePrefix } from './services/agent/agentTabTitlePrefix'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import {
@@ -190,6 +191,7 @@ import {
   resolveDebugPanelEnabled,
   startCrdtDebugGate
 } from './crdt/crdtDebugGate'
+import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
@@ -697,8 +699,14 @@ const coachDeferredBy = computed(() =>
         ? 'dialog_open'
         : null
 )
-const sendGates = useAgentSendGates(() => threadId.value)
+const sendGates = useAgentSendGates(
+  () => threadId.value,
+  (gate) => {
+    agentPanelStore.heldSendGate = gate
+  }
+)
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
+let coachReleaseRevoked = false
 function releaseCoachCompletionWaiters(
   holdEnd: CoachHoldEnd,
   proceed = true
@@ -760,9 +768,10 @@ async function waitForCoachCompletion(
   sendHeldByCoach.value = true
   sendGates.hold('coach', clientMessageId)
   try {
-    return await new Promise<boolean>((resolve) =>
+    const proceed = await new Promise<boolean>((resolve) =>
       coachCompletionWaiters.add(resolve)
     )
+    return proceed && !coachReleaseRevoked
   } finally {
     sendHeldByCoach.value = false
   }
@@ -831,6 +840,33 @@ const {
     return locator.subgraphUuid !== viewedSubgraphUuid
   }
 })
+
+watch(
+  selectionTags,
+  (tags, previousTags) => {
+    const stagedKeys = new Set(tags.map(selectedNodeKey))
+    const nextKeys = new Set(
+      [...composerStore.selectionModeNodeKeys].filter((key) =>
+        stagedKeys.has(key)
+      )
+    )
+    if (canvasStore.isPickingNodes) {
+      const previousKeys = new Set(previousTags.map(selectedNodeKey))
+      const selectedKeys = new Set(selectedNodes.value.map(selectedNodeKey))
+      for (const tag of tags) {
+        const key = selectedNodeKey(tag)
+        if (!previousKeys.has(key) && selectedKeys.has(key)) nextKeys.add(key)
+      }
+    }
+    composerStore.setSelectionModeNodeKeys(nextKeys)
+  },
+  { deep: true, flush: 'sync' }
+)
+const hasNodeSelectionModeAddition = computed(() =>
+  selectionTags.value.some((tag) =>
+    composerStore.selectionModeNodeKeys.has(selectedNodeKey(tag))
+  )
+)
 
 let nodeReferenceWorkflow = selectionTags.value.length
   ? selectedTarget.value
@@ -1232,6 +1268,8 @@ const docOpMinter = attachDocOpMinter({
   docHasSubgraphDefinition,
   onWidgetWriteRefused: notifyWidgetWriteRefused
 })
+const isChangeTrackerRestoring = () =>
+  workflowStore.activeWorkflow?.changeTracker?._restoringState === true
 const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
@@ -1241,8 +1279,11 @@ const restoreOpMinter = attachRestoreOpMinter({
     const parsed = parseNodeId(nodeId)
     return parsed === null ? null : docInputNames(parsed)
   },
-  isRestoringState: () =>
-    workflowStore.activeWorkflow?.changeTracker?._restoringState === true
+  isRestoringState: isChangeTrackerRestoring
+})
+const agentWriteOverwriteWatch = attachAgentWriteOverwriteWatch({
+  isEnabled: () => agentPanelStore.enabled,
+  isRestoringState: isChangeTrackerRestoring
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
@@ -1326,8 +1367,9 @@ watch(
   { immediate: true, flush: 'sync' }
 )
 watch(
-  () => conversationStore.awaitingApproval,
-  (awaiting) => tabActivity.setAgentAwaitingApproval(awaiting),
+  () =>
+    conversationStore.awaitingApproval ? t('g.agentInputNeededShort') : null,
+  setAgentTabTitlePrefix,
   { immediate: true, flush: 'sync' }
 )
 
@@ -1687,11 +1729,13 @@ onBeforeUnmount(() => {
           outcome: 'released',
           reason: `deferred_${deferredBy}`
         })
-      else
+      else {
+        coachReleaseRevoked = true
         releaseCoachCompletionWaiters(
           { outcome: 'dropped', reason: 'panel_closed' },
           false
         )
+      }
     },
     invalidateConsentHeldSubmission: () => {
       if (
@@ -1713,6 +1757,9 @@ onBeforeUnmount(() => {
     detachRestoreOpMinter: () => {
       restoreOpMinter.detach()
     },
+    detachAgentWriteOverwriteWatch: () => {
+      agentWriteOverwriteWatch.detach()
+    },
     exitNodeSelectionMode: canvasStore.stopNodePicking,
     stopSession: () => {
       stop()
@@ -1722,7 +1769,7 @@ onBeforeUnmount(() => {
     },
     clearAgentTurnTabs: () => {
       tabActivity.setAgentTurnTabs([])
-      tabActivity.setAgentAwaitingApproval(false)
+      setAgentTabTitlePrefix(null)
     },
     resetTurnTabResolver: () => {
       conversationStore.setTurnTabResolver(() => ({ status: 'unknown' }))
@@ -1967,25 +2014,21 @@ function onCopyMarkdown(id: string): void {
 
 const coachSteps = computed<CoachStep[]>(() => [
   {
+    card: 'intro',
     target: '#agent-panel-root',
     placement: 'left-center',
     title: t('agent.coachTitle'),
     body: t('agent.coachBody')
   },
   {
+    card: 'workflow',
     target: '#agent-composer',
     placement: 'left-end',
     title: t('agent.coachWorkflowTitle'),
     body: t('agent.coachWorkflowBody')
   },
   {
-    target: '.graph-canvas-panel',
-    placement: 'graph-bottom',
-    toolbarTarget: '.graph-canvas-panel [role="toolbar"]',
-    title: t('agent.coachGraphTitle'),
-    body: t('agent.coachGraphBody')
-  },
-  {
+    card: 'history',
     target: '#agent-chat-history',
     placement: 'left-start',
     tooltip: t('agent.showChatHistory'),
@@ -2495,6 +2538,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         provisionalTitle
       "
       :selection-tags="selectionTags"
+      :has-node-selection-mode-addition="hasNodeSelectionModeAddition"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
       :select-workflow-reference="onSelectWorkflowReference"
       :saving-reference="savingReference"

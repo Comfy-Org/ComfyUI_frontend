@@ -5,7 +5,17 @@ import { ref } from 'vue'
 import { webSessionResourceHeader } from '@comfyorg/api-client/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
-import { d, t } from '@/i18n'
+import {
+  formatCredits,
+  isSubCreditCharge,
+  microUsdToCredits
+} from '@/base/credits/comfyCredits'
+import {
+  hasParamsBeyondDetailsColumn,
+  presentTooltipParamKeys,
+  toFiniteNumber
+} from '@/services/customerEventParams'
+import { d, i18n, t } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -151,9 +161,33 @@ export const useCustomerEventsService = () => {
     }
   }
 
-  function hasAdditionalInfo(event: AuditLog) {
-    const { amount, api_name, model, ...otherParams } = event.params || {}
-    return Object.keys(otherParams).length > 0
+  function formatChargeCredits(microUsd: number) {
+    const credits = microUsdToCredits(microUsd)
+    const amount = isSubCreditCharge(credits)
+      ? t('credits.lessThanOne')
+      : formatCredits({
+          value: credits,
+          locale: i18n.global.locale.value,
+          numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+        })
+    return `${amount} ${t('credits.credits')}`
+  }
+
+  function formatTooltipParam(key: string, value: unknown) {
+    const microUsd =
+      key === 'charge_micro_usd' ? toFiniteNumber(value) : undefined
+    if (microUsd !== undefined) {
+      return `${t('credits.charge')}: ${formatChargeCredits(microUsd)}`
+    }
+    return `${formatJsonKey(key)}: ${formatJsonValue(value)}`
+  }
+
+  function getTooltipContent(event: AuditLog) {
+    const params = event.params || {}
+
+    return presentTooltipParamKeys(params)
+      .map((key) => formatTooltipParam(key, params[key]))
+      .join('\n')
   }
 
   function formatAmount(amountMicros?: number) {
@@ -235,9 +269,10 @@ export const useCustomerEventsService = () => {
     formatEventType,
     getEventSeverity,
     formatAmount,
-    hasAdditionalInfo,
+    hasAdditionalInfo: hasParamsBeyondDetailsColumn,
     formatDate,
     formatJsonKey,
-    formatJsonValue
+    formatJsonValue,
+    getTooltipContent
   }
 }

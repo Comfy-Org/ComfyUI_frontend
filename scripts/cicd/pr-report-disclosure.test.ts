@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import {
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync
@@ -25,6 +26,51 @@ function fixture() {
   }
 }
 
+function runExplainCheck(
+  workspace: string,
+  inputs: {
+    slug: string
+    status: string
+    detailsFile?: string
+    reproduce?: string
+    docs?: string
+  }
+) {
+  const actionFile = parseDocument(
+    readFileSync(
+      join(ROOT, '.github/actions/explain-check/action.yaml'),
+      'utf8'
+    )
+  )
+  const script = actionFile.getIn(['runs', 'steps', 0, 'run'])
+  expect(typeof script).toBe('string')
+  const details = join(workspace, 'findings.md')
+  writeFileSync(
+    details,
+    '| Finding | Remedy |\n| --- | --- |\n| Clone | Extract |'
+  )
+  return spawnSync('bash', ['-c', String(script)], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      INPUT_SLUG: inputs.slug,
+      INPUT_TITLE: 'Test check',
+      INPUT_ICON: '',
+      INPUT_STATUS: inputs.status,
+      INPUT_HEADLINE: 'Check summary.',
+      INPUT_DETAILS_FILE: inputs.detailsFile ?? details,
+      INPUT_REPRODUCE: inputs.reproduce ?? 'pnpm check',
+      INPUT_DOCS: inputs.docs ?? 'docs/check.md',
+      GITHUB_WORKSPACE: workspace,
+      GITHUB_OUTPUT: join(workspace, 'output'),
+      GITHUB_STEP_SUMMARY: join(workspace, 'summary'),
+      GITHUB_SERVER_URL: 'https://github.com',
+      GITHUB_REPOSITORY: 'owner/repo',
+      GITHUB_RUN_ID: '123'
+    }
+  })
+}
+
 describe('shared PR report disclosure', () => {
   it.for([
     ['pass', ''],
@@ -36,39 +82,7 @@ describe('shared PR report disclosure', () => {
     'collapses check details for %s with a visible action when needed',
     ([status, action]) => {
       using dir = fixture()
-      const actionFile = parseDocument(
-        readFileSync(
-          join(ROOT, '.github/actions/explain-check/action.yaml'),
-          'utf8'
-        )
-      )
-      const script = actionFile.getIn(['runs', 'steps', 0, 'run'])
-      expect(typeof script).toBe('string')
-      const details = join(dir.root, 'findings.md')
-      writeFileSync(
-        details,
-        '| Finding | Remedy |\n| --- | --- |\n| Clone | Extract |'
-      )
-      const result = spawnSync('bash', ['-c', String(script)], {
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          INPUT_SLUG: 'test',
-          INPUT_TITLE: 'Test check',
-          INPUT_ICON: '',
-          INPUT_STATUS: status,
-          INPUT_HEADLINE: 'Check summary.',
-          INPUT_DETAILS_FILE: details,
-          INPUT_REPRODUCE: 'pnpm check',
-          INPUT_DOCS: 'docs/check.md',
-          GITHUB_WORKSPACE: dir.root,
-          GITHUB_OUTPUT: join(dir.root, 'output'),
-          GITHUB_STEP_SUMMARY: join(dir.root, 'summary'),
-          GITHUB_SERVER_URL: 'https://github.com',
-          GITHUB_REPOSITORY: 'owner/repo',
-          GITHUB_RUN_ID: '123'
-        }
-      })
+      const result = runExplainCheck(dir.root, { slug: 'test', status })
       expect(result.status).toBe(0)
       const output = readFileSync(join(dir.root, 'summary'), 'utf8')
       const visible = output.split('<details>')[0]
@@ -85,40 +99,49 @@ describe('shared PR report disclosure', () => {
 
   it('collapses a headline when the check has no findings', () => {
     using dir = fixture()
-    const actionFile = parseDocument(
-      readFileSync(
-        join(ROOT, '.github/actions/explain-check/action.yaml'),
-        'utf8'
-      )
-    )
-    const result = spawnSync(
-      'bash',
-      ['-c', String(actionFile.getIn(['runs', 'steps', 0, 'run']))],
-      {
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          INPUT_SLUG: 'test',
-          INPUT_TITLE: 'Test check',
-          INPUT_ICON: '',
-          INPUT_STATUS: 'pass',
-          INPUT_HEADLINE: 'Check summary.',
-          INPUT_DETAILS_FILE: '',
-          INPUT_REPRODUCE: '',
-          INPUT_DOCS: '',
-          GITHUB_WORKSPACE: dir.root,
-          GITHUB_OUTPUT: join(dir.root, 'output'),
-          GITHUB_STEP_SUMMARY: join(dir.root, 'summary'),
-          GITHUB_SERVER_URL: 'https://github.com',
-          GITHUB_REPOSITORY: 'owner/repo',
-          GITHUB_RUN_ID: '123'
-        }
-      }
-    )
+    const result = runExplainCheck(dir.root, {
+      slug: 'test',
+      status: 'pass',
+      detailsFile: '',
+      reproduce: '',
+      docs: ''
+    })
 
     expect(result.status).toBe(0)
     expect(readFileSync(join(dir.root, 'summary'), 'utf8')).toBe(
       '##  Test check: ✅ Passed\n\n<details>\n<summary>Findings and check details</summary>\n\nCheck summary.\n\n</details>\n'
+    )
+  })
+
+  it.for(['../escape', 'Upper', 'a/b', '', 'a;b', 'a\nb'])(
+    'rejects slug %j before writing any report file',
+    (slug) => {
+      using dir = fixture()
+      const workspace = join(dir.root, 'workspace')
+      mkdirSync(workspace)
+      const result = runExplainCheck(workspace, { slug, status: 'pass' })
+
+      expect(result.status).not.toBe(0)
+      expect(result.stdout).toContain('explain-check: slug')
+      expect(readdirSync(workspace)).toEqual(['findings.md'])
+      expect(readdirSync(dir.root)).toEqual(['workspace'])
+    }
+  )
+
+  it('accepts a slug with hyphens and digits and writes its section file', () => {
+    using dir = fixture()
+    const result = runExplainCheck(dir.root, {
+      slug: 'custom-nodes-2',
+      status: 'pass'
+    })
+
+    expect(result.status).toBe(0)
+    const sectionFile = join(dir.root, '.explain-check-custom-nodes-2.md')
+    expect(readFileSync(join(dir.root, 'output'), 'utf8')).toBe(
+      `file=${sectionFile}\n`
+    )
+    expect(readFileSync(sectionFile, 'utf8')).toMatch(
+      /^## {2}Test check: ✅ Passed\n/
     )
   })
 

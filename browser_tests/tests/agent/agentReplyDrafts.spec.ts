@@ -18,12 +18,18 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
+  askIdFor,
+  askResolved,
+  askUserQuestionFrame
+} from '@e2e/fixtures/data/agent/agentAskFrames'
+import {
   thinkingDraftFrame,
   thinkingFrame
 } from '@e2e/fixtures/data/agent/agentThinkingFrames'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const WORKFLOW_ID = 'b4d7e1f2-8a3c-4d5e-9f60-7a1b2c3d4e5f'
 const THREAD_ID = 'd8c7b6a5-9e1f-4a2b-8c3d-4e5f6a7b8c9d'
@@ -184,6 +190,47 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       panel.getByText('The user wants a fox video', { exact: true })
     ).toHaveCount(0)
   })
+
+  test(
+    'the answer stays above the card while a remember call waits on its approval',
+    { tag: '@screenshot' },
+    async ({ page }) => {
+      test.setTimeout(60_000)
+      await page.setViewportSize({ width: 1280, height: 1000 })
+      const { panel, send } = await startTurn(page, 'Set my usual strength.')
+      const answer = 'ControlNet strength works best around 0.7 for your style.'
+      const askId = askIdFor('call-remember')
+
+      send(draft(answer))
+      await expect(panel.getByText(answer, { exact: true })).toBeVisible()
+
+      send(toolCall('remember', 'running'))
+      send(
+        askUserQuestionFrame(askId, {
+          prompt: 'Keep this note for every chat?',
+          options: [
+            { id: 'allow', label: 'Allow' },
+            { id: 'deny', label: 'Deny' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        })
+      )
+      await expect(
+        panel.getByText('Keep this note for every chat?')
+      ).toBeVisible()
+      await expect(panel.getByText(answer, { exact: true })).toBeVisible()
+      await expectElementScreenshot(
+        panel,
+        'agent-answer-above-memory-approval-card.png'
+      )
+
+      send(askResolved(['deny'], askId))
+      send(toolCall('remember', 'success'))
+      await expect(panel.getByText(answer, { exact: true })).toBeVisible()
+    }
+  )
 
   test('a retried round takes back what the failed attempt was thinking', async ({
     page

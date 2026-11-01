@@ -12,10 +12,14 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import {
   attachUnifiedRemintInterceptor,
+  cloudRetryPolicy,
   fetchWithUnifiedRemint
 } from '@/platform/auth/unified/remintRetry'
 import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
-import { NO_RETRY_POLICY } from '@comfyorg/api-client/retryPolicy'
+import {
+  DEFAULT_RETRY_POLICY,
+  NO_RETRY_POLICY
+} from '@comfyorg/api-client/retryPolicy'
 
 vi.mock(import('@comfyorg/telemetry'))
 
@@ -31,6 +35,22 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 beforeEach(() => {
   stubAccountIdentityPort()
+})
+
+describe('cloudRetryPolicy', () => {
+  it('opts a cloud request into the sign-in refusal resend', () => {
+    expect(cloudRetryPolicy()).toEqual({
+      ...DEFAULT_RETRY_POLICY,
+      retrySignInRefusal: true
+    })
+  })
+
+  it('keeps the attempts of the policy it was given', () => {
+    expect(cloudRetryPolicy(NO_RETRY_POLICY)).toEqual({
+      ...NO_RETRY_POLICY,
+      retrySignInRefusal: true
+    })
+  })
 })
 
 describe('fetchWithUnifiedRemint', () => {
@@ -194,6 +214,67 @@ describe('fetchWithUnifiedRemint', () => {
 
       expect(result.status).toBe(503)
       expect(fetch).toHaveBeenCalledTimes(1)
+    })
+
+    const signInRefused = () =>
+      new Response(
+        JSON.stringify({
+          code: 'unavailable',
+          message: 'authentication service unavailable'
+        }),
+        { status: 503, headers: { 'Retry-After': '1' } }
+      )
+
+    it('sends a POST once more when the sign-in check answers 503', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(signInRefused())
+        .mockResolvedValueOnce(ok)
+
+      const pending = fetchWithUnifiedRemint(
+        'https://cloud/x',
+        {
+          method: 'POST',
+          body: '{}',
+          headers: { Authorization: 'Bearer tokenA' as const }
+        },
+        true
+      )
+      await vi.advanceTimersByTimeAsync(1_250)
+
+      expect(await pending).toBe(ok)
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
+    })
+
+    it('still re-mints a POST whose resend answers 401', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(signInRefused())
+        .mockResolvedValueOnce(unauthorized)
+        .mockResolvedValueOnce(ok)
+      vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+        'tokenB'
+      )
+
+      const pending = fetchWithUnifiedRemint(
+        'https://cloud/x',
+        {
+          method: 'POST',
+          body: '{}',
+          headers: { Authorization: 'Bearer tokenA' as const }
+        },
+        true
+      )
+      await vi.advanceTimersByTimeAsync(1_250)
+
+      expect(await pending).toBe(ok)
+      expect(fetch).toHaveBeenCalledTimes(3)
+      expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledWith(
+        'tokenA'
+      )
+      const retryHeaders = new Headers(
+        vi.mocked(fetch).mock.calls[2][1]?.headers
+      )
+      expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
     })
   })
 
