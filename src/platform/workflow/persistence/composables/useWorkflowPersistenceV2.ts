@@ -122,14 +122,13 @@ export function useWorkflowPersistenceV2() {
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson
 
-    const viewportMatchesSaved = isEqual(
-      graphData.extra?.ds,
-      activeWorkflow.initialState.extra?.ds
-    )
     if (
       !activeWorkflow.isTemporary &&
       !activeWorkflow.isModified &&
-      viewportMatchesSaved
+      isEqual(
+        graphData.extra?.ds,
+        (activeWorkflow as ComfyWorkflow).initialState?.extra?.ds
+      )
     ) {
       draftStore.removeDraft(workflowPath)
     }

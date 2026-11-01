@@ -9,6 +9,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { api } from '@/scripts/api'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import '@/scripts/changeTracker'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
@@ -741,6 +742,26 @@ describe('useWorkflowPersistenceV2', () => {
       scale: 1.55,
       offset: [10, 20]
     })
+  })
+
+  it('persists a saved active workflow without a change tracker on page unload', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = workflowStore.createTemporary('Untracked.json')
+    workflow.size = 100
+    workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = {
+      nodes: [],
+      extra: { ds: { scale: 1.55, offset: [10, 20] } }
+    }
+
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+
+    expect(
+      localStorage.getItem(StorageKeys.draftPayload(workflow.path, 'personal'))
+    ).not.toBeNull()
   })
 
   it.for([
