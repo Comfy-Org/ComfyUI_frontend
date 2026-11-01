@@ -639,6 +639,11 @@ jobs:
            steps.backport.outputs.failed == '' &&
            steps.create-prs.outputs.pr-create-failed == '')
         env:
+          # Job token, not the shared one: when the shared token ran out of
+          # hourly quota, this step failed after every backport had landed
+          # and left needs-backport on the PR. The job grants issues: write
+          # and pull-requests: write, which is all these two calls need.
+          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
         run: |
