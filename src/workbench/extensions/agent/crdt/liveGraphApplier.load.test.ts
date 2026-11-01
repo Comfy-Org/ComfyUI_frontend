@@ -6,7 +6,7 @@ import { withGraphConfiguring } from '@/core/graph/withGraphConfiguring'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { useApp } from '@/scripts/appInstance'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { followedDoc } from './__fixtures__/followedDoc'
