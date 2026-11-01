@@ -9,7 +9,7 @@ test.describe(
     test.beforeEach(
       async ({ comfyPage, comfyFiles, extensionTool, maskEditor }) => {
         await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-        await extensionTool.register({ alternateTool: true })
+        await extensionTool.register()
         const filename = await extensionTool.uploadAsymmetricImage(
           comfyPage.vueNodes
             .getNodeByTitle('Load Image')
@@ -74,6 +74,15 @@ test.describe(
       {
         name: 'switching tools',
         stop: async (comfyPage: ComfyPage) => {
+          const registered = await comfyPage.page.evaluate(
+            () =>
+              window.app!.extensionManager.maskEditor.registerTool({
+                id: 'test.mask-editor-alternate',
+                label: 'Alternate extension test tool',
+                createSession: () => ({})
+              }).ok
+          )
+          expect(registered).toBe(true)
           await comfyPage.page
             .getByRole('button', {
               name: 'Alternate extension test tool',

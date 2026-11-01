@@ -9,8 +9,8 @@ import type {
   MaskEditorPointerEvent
 } from '@comfyorg/mask-editor/extensionTypes'
 
-async function registerTestTool(page: Page, alternateTool: boolean) {
-  return page.evaluateHandle((alternateTool) => {
+async function registerTestTool(page: Page) {
+  return page.evaluateHandle(() => {
     const events: MaskEditorPointerEvent[] = []
     const delayedResults: MaskEditorCommitResult[] = []
     let releaseDelayed: (() => void) | undefined
@@ -102,16 +102,8 @@ async function registerTestTool(page: Page, alternateTool: boolean) {
         }
       }
     })
-    const alternateRegistration = alternateTool
-      ? window.app!.extensionManager.maskEditor.registerTool({
-          id: 'test.mask-editor-alternate',
-          label: 'Alternate extension test tool',
-          createSession: () => ({})
-        })
-      : undefined
     return {
       registration,
-      alternateRegistration,
       events,
       delayedResults,
       releaseDelayed: () => releaseDelayed?.(),
@@ -122,7 +114,7 @@ async function registerTestTool(page: Page, alternateTool: boolean) {
         return unmounted
       }
     }
-  }, alternateTool)
+  })
 }
 
 class MaskEditorExtensionHelper {
@@ -154,8 +146,8 @@ class MaskEditorExtensionHelper {
     this.pointerZone = page.getByTestId('pointer-zone')
   }
 
-  async register({ alternateTool = false } = {}) {
-    this.probe = await registerTestTool(this.page, alternateTool)
+  async register() {
+    this.probe = await registerTestTool(this.page)
     expect(await this.probe.evaluate((probe) => probe.registration.ok)).toBe(
       true
     )
@@ -426,8 +418,6 @@ class MaskEditorExtensionHelper {
     if (!this.probe) return
     await this.probe.evaluate((probe) => {
       if (probe.registration.ok) probe.registration.unregister()
-      if (probe.alternateRegistration?.ok)
-        probe.alternateRegistration.unregister()
     })
     await this.probe.dispose()
   }

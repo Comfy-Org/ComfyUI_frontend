@@ -148,7 +148,6 @@ export function createMaskEditorToolSession(
     session = created
     if (isDisposed()) void callAsync(() => session.dispose?.())
   } else if (!isDisposed()) {
-    dispose()
     fail(new Error('MaskEditor tool must return a synchronous session'))
   }
 
