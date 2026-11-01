@@ -22,22 +22,19 @@
     {
       "path": "packages/ingest-types/src/**",
       "role": "domain"
+    },
+    {
+      "path": "src/platform/remote/ingest/ingestTypesContract.test.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [
     "src/platform/remote/ingest/ingestApiError.ts",
     "src/platform/remote/ingest/ingestApiUrl.ts",
     "src/platform/remote/ingest/webSessionAdapter.ts",
-    "src/platform/remote/ingest/capabilityRevision.ts"
-  ],
-  "allowedDependencies": [],
-  "allowedConsumers": [
-    "account",
-    "authentication",
-    "billing",
-    "error-reporting",
-    "telemetry",
-    "workspace"
+    "src/platform/remote/ingest/capabilityRevision.ts",
+    "packages/ingest-types/src/index.ts",
+    "packages/ingest-types/src/zod.gen.ts"
   ],
   "characterizationScenarios": [
     {
@@ -55,6 +52,10 @@
     {
       "name": "Mutation responses publish capability revisions without publishing query revisions",
       "checks": ["src/platform/billing/api/capabilityRevision.test.ts"]
+    },
+    {
+      "name": "Generated ingest types and Zod schemas describe the same contract, and response schemas tolerate fields the server adds later",
+      "checks": ["src/platform/remote/ingest/ingestTypesContract.test.ts"]
     }
   ],
   "adrs": [
@@ -62,7 +63,7 @@
   ],
   "compatibilityPromises": [
     "WorkspaceApiError and NoWorkspaceAccessError retain shared runtime identity across billing and workspace clients.",
-    "Approved consumers import only the characterized public contracts; other ingest modules are not opened by this record."
+    "Other domains import only the characterized public contracts: the ingest error, URL, web-session, and capability-revision modules, and the @comfyorg/ingest-types type and Zod entries. Other ingest modules are not opened by this record."
   ],
   "deepImports": "enforced"
 }

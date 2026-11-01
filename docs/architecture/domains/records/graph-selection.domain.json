@@ -17,8 +17,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Selection keys and the ordered selection store stay the single source of selected items",

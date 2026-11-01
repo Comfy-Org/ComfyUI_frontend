@@ -21,8 +21,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Palettes validate, import, export, and apply colors to the canvas and CSS variables",

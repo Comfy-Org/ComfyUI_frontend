@@ -33,8 +33,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["extension-manager"],
   "characterizationScenarios": [
     {
       "name": "System stats panel renders system and device information",

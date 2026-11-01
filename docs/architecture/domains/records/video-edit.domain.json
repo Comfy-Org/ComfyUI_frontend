@@ -33,8 +33,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Video edit widget trims and crops video and writes the widget value",

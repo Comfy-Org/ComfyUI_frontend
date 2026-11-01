@@ -45,8 +45,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Camera state math converts orbit, roll, look-at, and look-through drags without drift",

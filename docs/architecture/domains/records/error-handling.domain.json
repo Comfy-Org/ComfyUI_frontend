@@ -21,8 +21,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["keybindings"],
   "characterizationScenarios": [
     {
       "name": "Error normalization and recovery preserves its existing behavior",

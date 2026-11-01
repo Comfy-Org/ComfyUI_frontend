@@ -1,9 +1,10 @@
 import { isDeepStrictEqual, parseArgs } from 'node:util'
 
 import { BOUNDARIES_PATH, buildBoundaries } from './boundaries'
-import { buildCatalog, parseCodeowners } from './catalog'
+import { buildCatalog, importEdges, parseCodeowners } from './catalog'
 import {
   attempt,
+  readImportGraph,
   readJson,
   readText,
   writeFormatted,
@@ -46,8 +47,16 @@ export function runArchitecture(
   if (mode === 'catalog') {
     const codeowners = readText(repositoryRoot, 'CODEOWNERS')
     if (!codeowners.ok) return failure(codeowners.errors)
+    const graph = readImportGraph(repositoryRoot)
+    if (!graph.ok) return failure(graph.errors)
     process.stdout.write(
-      json(buildCatalog(configuration, parseCodeowners(codeowners.value)))
+      json(
+        buildCatalog(
+          configuration,
+          parseCodeowners(codeowners.value),
+          importEdges(graph.value)
+        )
+      )
     )
     return { errors: [], warnings }
   }

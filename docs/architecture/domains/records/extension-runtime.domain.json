@@ -89,15 +89,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [
-    "error-reporting",
-    "extension-manager",
-    "keybindings",
-    "remote-config",
-    "telemetry",
-    "webcam-capture"
-  ],
-  "allowedConsumers": ["agent", "extension-manager"],
   "characterizationScenarios": [
     {
       "name": "Extension loader fetches, filters, imports, and reports failing extensions",

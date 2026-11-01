@@ -37,8 +37,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Share and ComfyHub payloads are validated at the API boundary",

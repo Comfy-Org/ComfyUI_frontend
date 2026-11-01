@@ -13,8 +13,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Graph mutations emit intents tagged with local, load, or agent-remote provenance",

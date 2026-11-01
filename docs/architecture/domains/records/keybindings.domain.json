@@ -49,32 +49,6 @@
     "src/platform/keybindings/composables/useShortcutsTab.ts",
     "src/platform/keybindings/commandStore.ts"
   ],
-  "allowedDependencies": ["design-system", "error-handling"],
-  "allowedConsumers": [
-    "agent",
-    "app-host",
-    "authentication",
-    "billing",
-    "bottom-panel",
-    "canvas-renderer",
-    "dialog-host",
-    "extension-manager",
-    "extension-runtime",
-    "first-run-tour",
-    "help-center",
-    "job-queue",
-    "linear-mode",
-    "minimap",
-    "node-library",
-    "release-notes",
-    "selection-toolbox",
-    "settings",
-    "subgraphs",
-    "workbench-shell",
-    "workflow-errors",
-    "workflow-management",
-    "workflow-persistence"
-  ],
   "characterizationScenarios": [
     {
       "name": "Key combos parse keyboard events and respect reserved keys",

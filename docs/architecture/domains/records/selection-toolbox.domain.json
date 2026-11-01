@@ -117,15 +117,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [
-    "app-host",
-    "canvas-renderer",
-    "keybindings",
-    "properties-panel",
-    "telemetry",
-    "test-support"
-  ],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Selection toolbox shows actions that apply to the current selection",

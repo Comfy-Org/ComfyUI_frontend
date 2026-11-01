@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 
-import { buildCatalog, parseCodeowners } from './catalog'
+import { buildCatalog, importEdges, parseCodeowners } from './catalog'
 import { formatReport, main, runArchitecture } from './cli'
 import { loadArchitectureConfiguration } from './records'
 
@@ -27,8 +27,6 @@ const record = {
     { path: 'src/imageView.vue', role: 'presentation' }
   ],
   publicEntryPoints: ['src/images/index.ts'],
-  allowedDependencies: [],
-  allowedConsumers: [],
   characterizationScenarios: [
     { name: 'keeps its contract', checks: ['src/images/index.test.ts'] }
   ],
@@ -87,11 +85,6 @@ describe('loadArchitectureConfiguration', () => {
         modules: [{ path: 'packages/widgets/vite.config.ts', role: 'domain' }]
       },
       error: 'must be a file or a directory ending in /** under src/'
-    },
-    {
-      name: 'an unknown domain reference',
-      overrides: { allowedDependencies: ['media'] },
-      error: 'images references unknown domain media'
     },
     {
       name: 'a module path claimed twice',
@@ -268,9 +261,11 @@ describe('runArchitecture', () => {
   })
 
   it('reports invalid records as errors instead of throwing', () => {
-    const root = createRepository({ allowedDependencies: ['media'] })
+    const root = createRepository({
+      characterizationScenarios: [{ name: 'x', checks: ['src/gone.test.ts'] }]
+    })
     expect(runArchitecture(root, 'check')).toEqual({
-      errors: ['images references unknown domain media'],
+      errors: ['images references missing file src/gone.test.ts'],
       warnings: []
     })
   })
@@ -366,14 +361,16 @@ describe('main', () => {
   })
 
   it('writes the errors to --report when the check fails', () => {
-    const root = createRepository({ allowedDependencies: ['media'] })
+    const root = createRepository({
+      characterizationScenarios: [{ name: 'x', checks: ['src/gone.test.ts'] }]
+    })
     const reportDirectory = mkdtempSync(join(tmpdir(), 'architecture-report-'))
     roots.push(reportDirectory)
     const reportFile = join(reportDirectory, 'report.md')
     const { exitCode } = runMain(['--check', '--report', reportFile], root)
     expect(exitCode).toBe(1)
     expect(readFileSync(reportFile, 'utf8')).toBe(
-      '### Errors (1)\n\n- images references unknown domain media\n'
+      '### Errors (1)\n\n- images references missing file src/gone.test.ts\n'
     )
   })
 
@@ -485,7 +482,8 @@ describe('buildCatalog', () => {
     const root = createRepository()
     const catalog = buildCatalog(
       loadValidConfiguration(root),
-      parseCodeowners('/src/ @fallback\n/src/images/ @images-team\n')
+      parseCodeowners('/src/ @fallback\n/src/images/ @images-team\n'),
+      []
     )
     expect(catalog.domains[0].modules).toEqual([
       { path: 'src/images/**', role: 'domain', owners: ['@images-team'] },
@@ -510,7 +508,8 @@ describe('buildCatalog', () => {
       loadValidConfiguration(root),
       parseCodeowners(
         '/src/images/ @images-team\n/src/images/viewer/ @viewer-team\n'
-      )
+      ),
+      []
     )
     expect(
       catalog.domains.map(({ id, sourceFileCount, modules }) => ({
@@ -521,6 +520,47 @@ describe('buildCatalog', () => {
     ).toEqual([
       { id: 'images', sourceFileCount: 3, owners: ['@images-team'] },
       { id: 'viewer', sourceFileCount: 1, owners: ['@viewer-team'] }
+    ])
+  })
+
+  it('reports the imports each domain makes into other domains from the Fallow module graph', () => {
+    const root = createRepository(
+      {},
+      {
+        'src/images/viewer/Viewer.vue': '<template />',
+        'src/zeta.ts': '',
+        'docs/architecture/domains/records/viewer.domain.json': JSON.stringify({
+          ...record,
+          id: 'viewer',
+          modules: [{ path: 'src/images/viewer/**', role: 'presentation' }],
+          publicEntryPoints: []
+        })
+      }
+    )
+    const dot = [
+      'digraph fallow {',
+      '  n0 [label="src/images/viewer/Viewer.vue", fillcolor="#30a46c"];',
+      '  n1 [label="src/images/index.ts", fillcolor="#30a46c"];',
+      '  n2 [label="src/imageView.vue", fillcolor="#30a46c"];',
+      '  n3 [label="src/zeta.ts", fillcolor="#30a46c"];',
+      '  n4 [label="src/images/index.test.ts", fillcolor="#30a46c"];',
+      '  n0 -> n1;',
+      '  n0 -> n2;',
+      '  n0 -> n3;',
+      '  n4 -> n1;',
+      '  n1 -> n0;',
+      '}'
+    ].join('\n')
+    const catalog = buildCatalog(
+      loadValidConfiguration(root),
+      [],
+      importEdges(dot)
+    )
+    expect(
+      catalog.domains.map(({ id, dependencies }) => ({ id, dependencies }))
+    ).toEqual([
+      { id: 'images', dependencies: [{ domain: 'viewer', imports: 1 }] },
+      { id: 'viewer', dependencies: [{ domain: 'images', imports: 2 }] }
     ])
   })
 
@@ -543,7 +583,7 @@ describe('buildCatalog', () => {
         'packages/widgets/vite.config.ts': ''
       }
     )
-    const catalog = buildCatalog(loadValidConfiguration(root), [])
+    const catalog = buildCatalog(loadValidConfiguration(root), [], [])
     expect(catalog.domains[0].sourceFileCount).toBe(5)
     expect(catalog.coverage).toEqual({
       total: 8,

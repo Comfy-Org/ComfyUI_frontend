@@ -61,8 +61,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["keybindings"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Run controls, progress, and run errors preserve app-mode execution",

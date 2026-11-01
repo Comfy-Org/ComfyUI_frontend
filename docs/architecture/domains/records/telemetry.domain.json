@@ -89,21 +89,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["ingest-api", "node-replacement", "remote-config"],
-  "allowedConsumers": [
-    "app-host",
-    "authentication",
-    "billing",
-    "cloud",
-    "error-reporting",
-    "extension-runtime",
-    "node-library",
-    "selection-toolbox",
-    "settings",
-    "workbench-shell",
-    "workflow-management",
-    "workflow-templates"
-  ],
   "characterizationScenarios": [
     {
       "name": "TelemetryRegistry fans each event out to every registered provider and useTelemetry exposes the active registry",
