@@ -1026,9 +1026,9 @@ describe('AgentPanelRoot onboarding', () => {
           'Describe your ideas, ask it to build and run workflows. It sees your canvas and files.'
       },
       {
-        title: 'Each chat works on one workflow',
+        title: 'The agent edits one workflow at a time',
         description:
-          "The workflow it's editing is named above the message box. Switching tabs brings up that workflow's latest chat, if it has one."
+          'That workflow is named at the top of the message box. Click the name to pick another. Clicking a workflow tab can open its latest chat, unless the message box has a draft.'
       },
       {
         title: 'Pick up where you left off',
@@ -9199,7 +9199,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await user.click(
         within(
           await screen.findByRole('dialog', {
-            name: 'Each chat works on one workflow'
+            name: 'The agent edits one workflow at a time'
           })
         ).getByRole('button', { name: 'Next' })
       )
