@@ -412,6 +412,23 @@ function startAgentCrdtFollower(
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
+  // FRONT-3581: a workflow becomes this follower's target as soon as it is
+  // bound, but the subscribe that target implies is not necessarily
+  // confirmed yet -- the tab may not be active, the agent identity may
+  // still be resolving, or the round trip simply hasn't completed. A host
+  // edit made in that window is never captured by the op coalescer below,
+  // since it only coalesces ops for the workflow it is actively subscribed
+  // to. Every workflow this follower has targeted but not yet gotten a
+  // confirmed `doc_subscribed` for (see `onSubscribed`, which is the only
+  // place an id leaves this set) is counted as possibly-unsynced: a reload,
+  // or opening another thread for the same workflow, before confirmation
+  // then leaves `hasUnsyncedHumanOps` true for it, so the restore-time
+  // catch-up merge does not run over an edit nothing here ever saw. This is
+  // deliberately a set the target merely passes through, not "whichever
+  // workflow is targeted right now" -- retargeting away from an unconfirmed
+  // workflow (every reload resets `workflowId` to `null` first) must not
+  // itself read as confirmation.
+  const unconfirmedTargets = new Set<string>()
   const outcomes = ref<AgentCrdtOutcomeCounters>({
     received: 0,
     applied: 0,
@@ -539,11 +556,19 @@ function startAgentCrdtFollower(
   const workflowsWithLostOps = new Set<string>()
   const recordUnsynced = (): void => {
     const unsynced = new Set(workflowsWithLostOps)
+    for (const id of unconfirmedTargets) unsynced.add(id)
     for (const { workflowId, ops } of sender.pendingOps()) {
       unsynced.add(workflowId)
       for (const op of ops) workflowByUnsettledOpId.set(op.op_id, workflowId)
     }
     recordUnsyncedHumanOps(tabId, unsynced)
+  }
+  // FRONT-3581: this id is confirmed synced now -- it no longer owes its
+  // place in `unconfirmedTargets` to a subscribe nothing has heard back
+  // from yet.
+  const confirmUnconfirmedTarget = (workflowId: string | null): void => {
+    if (workflowId !== null && unconfirmedTargets.delete(workflowId))
+      recordUnsynced()
   }
   const noteSettledHumanOps = (outcome: BatchOutcome): void => {
     const workflowId = workflowByUnsettledOpId.get(outcome.ops[0]?.op_id ?? '')
@@ -819,6 +844,7 @@ function startAgentCrdtFollower(
       terminal.value = null
       lifecycle.onSubscribeConfirmed()
       forgetUnsyncedAtLoad(subscribedWorkflowId.value)
+      confirmUnconfirmedTarget(workflowId)
       resumeHeldOpsIfSubscribed()
       sender.retryTransport()
     } else {
@@ -1168,6 +1194,16 @@ function startAgentCrdtFollower(
   watch(
     [workflowId, isTargetActive],
     ([next, active], previous: TargetSnapshot | undefined) => {
+      // FRONT-3581: every new target is possibly-unsynced until its
+      // subscribe is confirmed (see `onSubscribed`, the only place an id
+      // leaves `unconfirmedTargets`) -- recorded here, on the target
+      // itself changing, rather than on `active`, so a target bound while
+      // its tab isn't active yet (or the agent identity hasn't resolved)
+      // is still covered.
+      if (next !== null && !unconfirmedTargets.has(next)) {
+        unconfirmedTargets.add(next)
+        recordUnsynced()
+      }
       const justActivated = isActivationEdge(active, previous)
       if (acknowledgesFollowedDoc(next, active, justActivated)) return
       lifecycle.clearForRetarget()

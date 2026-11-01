@@ -10898,6 +10898,112 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   })
 
+  // FRONT-3581: a restore binds the session to its workflow immediately,
+  // before the follower's subscribe to that workflow is necessarily
+  // confirmed (the agent identity lookup pending here is one concrete way
+  // that window opens; a tab that hasn't been switched to yet is another).
+  // A host edit made in that window is never captured by the follower's op
+  // coalescer, since it only coalesces ops for the workflow it is actively
+  // subscribed to -- so nothing records it as unsynced the way a
+  // captured-then-lost op would. Opening a second old thread that targets
+  // the same workflow with no new turn in between (the ticket's own
+  // "reloads (or opens an old thread)" framing, and exactly what
+  // `loadThread` resets `boundWorkflowId`/`rememberedWorkflowId` for on
+  // every thread switch, matching what a real reload resets on a fresh
+  // page) must still leave the workflow unbound on that second restore,
+  // exactly as it already does when an op capture loses a batch outright
+  // -- otherwise the restore-time catch-up merge could run over an edit
+  // nothing here ever saw.
+  it('leaves a workflow unbound on a second restore when it was bound without its follower subscribe ever confirming', async () => {
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({ status: 'pending' }),
+      reset: vi.fn(),
+      stop: () => {}
+    })
+    makeTab('wf-42')
+    const target = addTab('workflows/target.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-target' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-target', target.path)
+    const messagesFor = (threadId: string, text: string): AgentMessages => [
+      {
+        id: `row-${threadId}`,
+        thread_id: threadId,
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: 'wf-target',
+        content: { text }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/th-first/messages'))
+        return json(200, messagesFor('th-first', 'First request'))
+      if (url.includes('/th-second/messages'))
+        return json(200, messagesFor('th-second', 'Second request'))
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [{ id: 'wf-target', name: 'target' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      return json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-first',
+            title: 'First chat',
+            last_message_at: '2026-09-01T00:00:00Z'
+          }),
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-08-01T00:00:00Z'
+          })
+        ])
+      )
+    })
+    renderWithSelectedTarget()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('First chat'))
+    await screen.findAllByText('First request')
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-first')
+    )
+    // Bound (the first-ever restore has nothing recorded against it yet),
+    // but never actively subscribed: the agent identity lookup never
+    // resolves, so the follower never confirms and never captures ops.
+    await vi.waitFor(() =>
+      expect(docOpMinterDeps.current?.boundRootGraphId()).not.toBeNull()
+    )
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+
+    // A second old thread for the same workflow, with no turn sent on the
+    // first one -- `loadThread` resets `boundWorkflowId` on every switch,
+    // so this re-enters the restore-and-bind guard exactly as a reload
+    // would.
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Second chat'))
+    await screen.findAllByText('Second request')
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-second')
+    )
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+  })
+
   it('binds the session to the workflow a history thread restored, not only a reload', async () => {
     makeTab('wf-42')
     const old = addTab('workflows/old.json', {
