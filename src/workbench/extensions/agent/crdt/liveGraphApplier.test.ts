@@ -1859,7 +1859,11 @@ describe('LiveGraphApplier', () => {
       expect.objectContaining({ message: 'extension hook exploded' }),
       expect.objectContaining({
         errorType: 'agent_graph_apply_failed',
-        context: { actor: 'agent:test', opIds: ['op-1'] }
+        context: {
+          actor: 'agent:test',
+          opIds: ['op-1'],
+          omittedOpIdCount: 0
+        }
       })
     )
   })
@@ -1975,6 +1979,59 @@ describe('LiveGraphApplier', () => {
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'extension hook exploded' }),
       expect.objectContaining({ errorType: 'agent_graph_apply_failed' })
+    )
+  })
+
+  it('reports bounded apply context and owner scope when a created node collides with an id in a sibling subgraph', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: graph, inputs: [] })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const interior = new LGraphNode('Interior')
+    subgraph.add(interior)
+    const host = createTestSubgraphNode(subgraph, { id: 501 })
+    graph.add(host)
+    const collidingId = Number(interior.id)
+
+    const { doc, collector } = followedDoc(
+      { nodes: [sourceNode(collidingId)], links: [] },
+      CATALOG
+    )
+
+    const firstOpId = 'a'.repeat(128)
+    const secondOpId = 'b'.repeat(128)
+    const thirdOpId = 'c'.repeat(128)
+    const fourthOpId = 'd'.repeat(128)
+    const omittedOpId = 'e'.repeat(128)
+    const opIds = [firstOpId, secondOpId, thirdOpId, fourthOpId, omittedOpId]
+    new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
+      doc,
+      collector.take(),
+      { actor: 'agent:private-thread:private-turn', opIds }
+    )
+
+    const created = graph._nodes.find((node) => node.type === 'TestSource')
+    expect(created).toBeDefined()
+    expect(created?.id).not.toBe(toNodeId(collidingId))
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining(
+          `Live graph reminted node ${collidingId} as`
+        )
+      }),
+      expect.objectContaining({
+        errorType: 'agent_graph_node_id_reminted',
+        context: expect.objectContaining({
+          nodeId: String(collidingId),
+          nodeType: 'TestSource',
+          mode: 'merge',
+          existingOwnerKind: 'subgraph',
+          existingOwnerGraphId: subgraph.id,
+          actor: 'agent',
+          opIds: [firstOpId, secondOpId, thirdOpId, fourthOpId],
+          omittedOpIdCount: 1,
+          liveAgentTurn: false
+        })
+      })
     )
   })
 
