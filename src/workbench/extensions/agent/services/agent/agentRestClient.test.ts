@@ -1455,10 +1455,6 @@ describe('error mapping', () => {
         .getRunMode()
         .catch((e: unknown) => e)
 
-      // No credential would have changed the answer, so counting it in
-      // `agent_api_auth_rejected` buries a configuration refusal in an auth
-      // signal. Left unreported here so the caller's own failure report -
-      // which says which load failed - is the one that fires.
       expect(reportError).not.toHaveBeenCalled()
       expect(markErrorReported).not.toHaveBeenCalled()
       expect(error).toBeInstanceOf(AgentApiError)

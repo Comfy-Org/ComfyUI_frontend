@@ -214,21 +214,8 @@ export const zAttachmentRejection = zAgentAttachmentRejected.pick({
   type: true
 })
 
-/**
- * The 403 body the *local* agent host puts on its loopback fence's refusal:
- * ComfyUI was reached by an address that is not a loopback name on the machine
- * the agent runs on, so no request from this page can be served however it
- * authenticates (`REFUSED_CODE` / `_refusal` in
- * `services/agent/packaging/comfy_agent/host.py`, Comfy-Org/cloud#14874).
- *
- * `code` is the discriminator. The agent service's own 403s - a disowned
- * workflow, a refused credential - carry no `code` at all, so its presence is
- * what separates "open ComfyUI on a local address" from an auth outcome.
- * `error` is the host's own complete user-facing sentence, naming the loopback
- * URL to open, and is what the panel shows.
- */
-export const zLoopbackOnlyRefusal = z
-  .object({
+export const zLoopbackOnlyRefusal = zGeneratedAgentError
+  .extend({
     error: z.string().trim().min(1),
     code: z.literal('agent_loopback_only')
   })

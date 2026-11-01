@@ -7588,12 +7588,38 @@ describe('AgentPanelRoot history', () => {
 
       renderWithSelectedTarget()
 
-      // The user's first sight of the panel is the only place this can land:
-      // the fence refuses before a turn exists, so a message gated on send is
-      // never reached.
       expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
+      expect(screen.getByTestId('agent-panel-chat-controls')).toHaveAttribute(
+        'inert'
+      )
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
       expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
       expect(executionErrors.recordPromptError).not.toHaveBeenCalled()
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'thread_list_load_failed',
+          ui_treatment: 'inline_notice'
+        })
+      )
+
+      useAgentPanelStore().view = {
+        screen: 'history',
+        previousThreadId: null,
+        selection: { status: 'idle' }
+      }
+      expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
+
+      useAgentPanelStore().view = { screen: 'chat' }
+      await nextTick()
+      respondToFetch(threadListRoute, () => json(200, agentThreadList([])))
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await vi.waitFor(() =>
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      )
     })
 
     it('leaves an ordinary auth refusal on the run-error overlay', async () => {
@@ -7606,6 +7632,12 @@ describe('AgentPanelRoot history', () => {
         expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
       )
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(
+        screen.getByTestId('agent-panel-chat-controls')
+      ).not.toHaveAttribute('inert')
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
     })
   })
 

@@ -1819,17 +1819,9 @@ function warnIncompleteHistory(reason: string, announce: boolean): void {
   )
 }
 
-/**
- * The local agent host's loopback-fence refusal, set from the panel's own
- * opening thread-list load - the first request the fence answers.
- *
- * Never cleared, because the fence's verdict cannot change under this page: it
- * is decided by the address the browser used, and reaching ComfyUI by a
- * different address is a different page load.
- */
 const hostFenceMessage = ref<string>()
 
-const { refreshHistory } = useAgentChatHistoryRefresh({
+const { refreshHistory: runHistoryRefresh } = useAgentChatHistoryRefresh({
   listThreads: rest.listThreads,
   history,
   untitledChat: () => t('agent.untitledChat'),
@@ -1849,21 +1841,33 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
         diagnostics
       )
     })
-    // The loopback fence refuses this page outright, so it is not one failed
-    // load to re-run: it gets the in-panel notice instead of the run-error
-    // overlay, which is keyed to a workflow run the user has not started.
-    if (isLoopbackOnlyRefusal(error)) hostFenceMessage.value = error.message
+    const loopbackOnly = isLoopbackOnlyRefusal(error)
+    if (loopbackOnly) hostFenceMessage.value = error.message
     else if (uiTreatment === 'error_overlay')
       surfaceAgentError(
         'agent_api_failed',
         error instanceof Error ? error.message : String(error)
       )
-    trackAgentError('thread_list_load_failed', 'pre_acceptance', uiTreatment, {
-      retryable: isRetryableRequestFailure(error, false),
-      diagnostics
-    })
+    trackAgentError(
+      'thread_list_load_failed',
+      'pre_acceptance',
+      loopbackOnly ? 'inline_notice' : uiTreatment,
+      {
+        retryable: isRetryableRequestFailure(error, false),
+        diagnostics
+      }
+    )
   }
 })
+
+async function refreshHistory(
+  ...args: Parameters<typeof runHistoryRefresh>
+): ReturnType<typeof runHistoryRefresh> {
+  const outcome = await runHistoryRefresh(...args)
+  if (outcome === 'complete' || outcome === 'incomplete')
+    hostFenceMessage.value = undefined
+  return outcome
+}
 
 const provisionalTitle = ref<string>()
 
@@ -2546,6 +2550,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"
+      :blocked="hostFenceMessage !== undefined"
       :sync-retry-available="
         crdtStatus.terminal === 'retry_exhausted' ||
         crdtStatus.terminal === 'timeout'
@@ -2582,14 +2587,17 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
     >
+      <template #panelNotice>
+        <AgentHostFenceNotice
+          v-if="hostFenceMessage"
+          :message="hostFenceMessage"
+          class="mx-4 mt-3"
+        />
+      </template>
       <template v-if="isCrdtDevPanelEnabled" #instrument>
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
       <template #composerNotice>
-        <AgentHostFenceNotice
-          v-if="hostFenceMessage"
-          :message="hostFenceMessage"
-        />
         <RunNoticeBanner
           v-if="followFailure"
           context="followFailed"

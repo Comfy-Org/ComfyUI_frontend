@@ -6,17 +6,6 @@ import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 
 const test = mergeTests(agentTest, hostTelemetryFixture)
 
-/**
- * The local agent host's loopback fence: ComfyUI was opened by an address that
- * is not on the machine the agent runs on, so every agent request is refused
- * with `{ error, code: "agent_loopback_only" }` (Comfy-Org/cloud#14874).
- *
- * The refusal lands on the panel's own opening reads, before any turn exists,
- * which is what made the defect invisible: with ComfyUI started `--listen` and
- * the panel opened by the machine's LAN address, the panel sat in its ordinary
- * empty state while threads, identity and run mode all came back 403, each
- * reported as an authentication rejection.
- */
 const LOOPBACK_ONLY_BODY = JSON.stringify({
   error:
     'The agent only works when ComfyUI is opened on the computer it runs on, by a local address. Open http://127.0.0.1:8188 in a browser on that computer to use the agent.',
@@ -25,7 +14,6 @@ const LOOPBACK_ONLY_BODY = JSON.stringify({
 const LOOPBACK_ONLY_MESSAGE =
   'The agent only works when ComfyUI is opened on the computer it runs on, by a local address. Open http://127.0.0.1:8188 in a browser on that computer to use the agent.'
 
-/** Everything the panel reads on open, all of which the fence answers. */
 const FENCED_ROUTES = [
   '**/api/agent/threads?*',
   '**/api/agent/run-mode',
@@ -55,11 +43,9 @@ test.describe(
       await expect(agentPanel.hostFenceNotice).toBeVisible()
       await expect(agentPanel.hostFenceNotice).toHaveText(LOOPBACK_ONLY_MESSAGE)
       await expect(agentPanel.hostFenceNotice).toHaveAttribute('role', 'alert')
+      await expect(agentPanel.chatControls).toHaveAttribute('inert', '')
+      await expect(agentPanel.footer).toHaveAttribute('inert', '')
 
-      // The refusal is not an auth outcome: no credential would have changed
-      // it, so it must not be counted as one. Waiting for the load's own
-      // report first is what makes the absence meaningful - a bare
-      // `toHaveLength(0)` passes before any report has been sent at all.
       await expect
         .poll(() =>
           hostErrorReports.find(
@@ -94,6 +80,8 @@ test.describe(
 
       await expect(agentPanel.composer).toBeVisible()
       await expect(agentPanel.hostFenceNotice).toHaveCount(0)
+      await expect(agentPanel.chatControls).not.toHaveAttribute('inert')
+      await expect(agentPanel.footer).not.toHaveAttribute('inert')
       await expect
         .poll(() =>
           hostErrorReports.find(
