@@ -12,6 +12,7 @@
         @loadedmetadata="handleLoadedMetadata"
         @timeupdate="handleTimeUpdate"
         @ended="handleEnded"
+        @play="handlePlay"
         @pause="handlePause"
         @error="handleError"
       />
@@ -259,6 +260,10 @@ const handleTimeUpdate = () => {
   }
 }
 
+const handlePlay = () => {
+  if (audioRef.value && !audioRef.value.paused) isPlaying.value = true
+}
+
 const handlePause = () => {
   if (audioRef.value?.paused) isPlaying.value = false
 }
@@ -336,10 +341,7 @@ watch(modelValue, (value) => {
   isPlaying.value = false
   toast.dismiss(playbackErrorToastId)
   audioRef.value?.pause()
-  if (value) {
-    audioRef.value?.load()
-    return
-  }
+  if (value) return
   currentTime.value = 0
   duration.value = 0
 })
