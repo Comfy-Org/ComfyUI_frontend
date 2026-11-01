@@ -137,20 +137,39 @@ describe('usePanAndZoom', () => {
     it.for([0, 1200])(
       'recovers a deferred fit after opening at viewport width %s',
       async (initialWidth) => {
+        const context = fromPartial<CanvasRenderingContext2D>({
+          getImageData: vi.fn(
+            (_x: number, _y: number, width: number, height: number) =>
+              fromPartial<ImageData>({ width, height })
+          )
+        })
         const pz = usePanAndZoom()
         const root = createMockElement(initialWidth, 800)
-        const canvas = createMockCanvas(800, 600)
+        const canvas = createMockCanvas(800, 600, context)
         mockStore.maskCanvas = canvas
+        mockStore.rgbCanvas = createMockCanvas(800, 600, context)
+        mockStore.imgCanvas = createMockCanvas(800, 600, context)
+        mockStore.maskCtx = context
+        mockStore.rgbCtx = context
+        mockStore.imgCtx = context
+        mockStore.canvasHistory = reactive(useCanvasHistory(mockStore))
         mockStore.canvasContainer = createMockElement()
         Object.defineProperty(canvas, 'clientWidth', {
           get: () => canvas.width * mockStore.zoomRatio
         })
         await pz.initializeCanvasPanZoom(createMockImage(800, 600), root)
+        mockStore.canvasHistory.saveInitialState()
+        await nextTick()
 
         Object.defineProperty(root, 'clientWidth', { value: 0 })
         canvas.width = 600
         canvas.height = 800
-        await pz.initializeCanvasPanZoom(createMockImage(600, 800), root)
+        mockStore.rgbCanvas.width = 600
+        mockStore.rgbCanvas.height = 800
+        mockStore.imgCanvas.width = 600
+        mockStore.imgCanvas.height = 800
+        mockStore.canvasHistory.saveState()
+        await nextTick()
         const wheel = fromPartial<WheelEvent>({
           clientX: 400,
           clientY: 300,
