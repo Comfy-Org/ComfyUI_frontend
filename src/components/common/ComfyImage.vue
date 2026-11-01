@@ -1,4 +1,3 @@
-<!-- A image with placeholder fallback on error -->
 <template>
   <span v-if="!error" :class="cn('contents', contain && 'relative')">
     <img
@@ -10,6 +9,7 @@
       :alt="alt"
     />
     <img
+      ref="primaryImageRef"
       :src="src"
       :class="
         cn(
@@ -19,6 +19,8 @@
         )
       "
       :alt="alt"
+      @load="emit('load')"
+      @error="emit('error')"
     />
   </span>
   <div
@@ -31,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { useImageQuiet } from '@/composables/useImageQuiet'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -51,5 +53,17 @@ const {
   alt?: string
 }>()
 
+const emit = defineEmits<{
+  load: []
+  error: []
+}>()
+
+const primaryImageRef = ref<HTMLImageElement>()
+
 const { error } = useImageQuiet(computed(() => ({ src, alt })))
+
+onMounted(() => {
+  const image = primaryImageRef.value
+  if (image?.complete && image.naturalWidth > 0) emit('load')
+})
 </script>

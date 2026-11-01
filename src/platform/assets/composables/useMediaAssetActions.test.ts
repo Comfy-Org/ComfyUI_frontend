@@ -868,7 +868,9 @@ describe('useMediaAssetActions', () => {
 
       const { fetch: authedFetch } = mockDownloadFileAsBlob.mock.calls[0][1]
       await authedFetch(contentUrl)
-      expect(api.fetchApi).toHaveBeenCalledWith(contentUrl)
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/api/assets/team-owned/content'
+      )
     })
 
     it('preserves successful OSS downloads when another file fails', async () => {

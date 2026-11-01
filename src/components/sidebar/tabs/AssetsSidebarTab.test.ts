@@ -6,17 +6,21 @@ import {
   waitFor,
   within
 } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { toValue } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useAssetDownload } from '@/composables/useAssetDownload'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { api } from '@/scripts/api'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
 beforeEach(() => {
+  vi.mocked(useAssetDownload).mockReturnValue({ downloadFiles })
   const store = useAssetsStore()
   store.outputAssets = {
     items: [],
@@ -79,6 +83,10 @@ vi.mock<unknown>(
   }
 )
 
+const downloadFiles = vi.fn()
+
+vi.mock(import('@/composables/useAssetDownload'), { spy: true })
+
 vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
@@ -91,7 +99,14 @@ const i18n = createI18n({
   messages: {
     en: {
       assetBrowser: { jobId: 'Job ID' },
-      g: { copyJobId: 'Copy Job ID' },
+      g: {
+        copyJobId: 'Copy Job ID',
+        gallery: 'Gallery',
+        close: 'Close',
+        previous: 'Previous',
+        next: 'Next',
+        download: 'Download'
+      },
       sideToolbar: {
         backToAssets: 'Back to all assets',
         closeSidebar: 'Close sidebar',
@@ -124,7 +139,12 @@ const assetsGridStub = {
         @click="$emit('output-count-click', assets[0])"
         @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
       />
-      <button aria-label="Zoom" @click="$emit('zoom', assets[0])" />
+      <button
+        v-for="asset in assets"
+        :key="asset.id"
+        :aria-label="\`Preview \${asset.name}\`"
+        @click="$emit('zoom', asset)"
+      />
     </div>
   `
 }
@@ -134,7 +154,7 @@ const mediaLightboxStub = {
   template: `<div data-testid="lightbox-url">{{ allGalleryItems[activeIndex]?.url }}</div>`
 }
 
-function renderTab({ realTemplate = false } = {}) {
+function renderTab({ realTemplate = false, realLightbox = false } = {}) {
   return render(AssetsSidebarTab, {
     global: {
       plugins: [i18n],
@@ -144,7 +164,7 @@ function renderTab({ realTemplate = false } = {}) {
         AssetsSidebarListView: true,
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
-        MediaLightbox: mediaLightboxStub
+        ...(realLightbox ? {} : { MediaLightbox: mediaLightboxStub })
       }
     }
   })
@@ -202,7 +222,9 @@ it('gives the lightbox a playable URL for a video without a preview_url', async 
   ]
   renderTab()
 
-  await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Preview clip.mp4' })
+  )
 
   expect(screen.getByTestId('lightbox-url').textContent).toBeTruthy()
 })
@@ -334,4 +356,58 @@ describe('AssetsSidebarTab tab panel', () => {
       '0'
     )
   })
+})
+
+describe('AssetsSidebarTab gallery selection', () => {
+  const galleryAssetId = '9a7111df-ccba-4be6-8057-c673755d097c'
+
+  afterEach(() => {
+    api.serverFeatureFlags.value = {}
+  })
+
+  it.for([
+    {
+      assetsEnabled: false,
+      downloadUrl: '/api/assets/b-preview/content'
+    },
+    {
+      assetsEnabled: true,
+      downloadUrl: `/api/assets/${galleryAssetId}/content`
+    }
+  ])(
+    'downloads the file the viewer is showing with assetsEnabled=$assetsEnabled',
+    async ({ assetsEnabled, downloadUrl }) => {
+      const asset = {
+        ...folderAsset,
+        id: galleryAssetId,
+        name: 'b.png',
+        preview_url: 'http://localhost:8188/api/assets/b-preview/content',
+        user_metadata: {}
+      }
+      api.serverFeatureFlags.value = { assets: assetsEnabled }
+      vi.spyOn(api, 'fetchApi').mockImplementation(async () =>
+        Response.json({ assets: [asset], has_more: false, total: 1 })
+      )
+      useAssetsStore().outputAssets.items = [asset]
+
+      renderTab({ realLightbox: true })
+
+      await vi.waitFor(() =>
+        expect(toValue(useAssetsStore().outputAssets.items)).toEqual([
+          expect.objectContaining({ id: galleryAssetId })
+        ])
+      )
+      await vi.waitFor(() =>
+        expect(toValue(useAssetsStore().outputAssets.isLoading)).toBe(false)
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Preview b.png' })
+      )
+      await userEvent.click(await screen.findByLabelText('Download'))
+
+      const [downloads] = downloadFiles.mock.calls[0]
+      expect(downloads[0]).toMatchObject({ filename: 'b.png' })
+      expect(downloads[0].url).toContain(downloadUrl)
+    }
+  )
 })
