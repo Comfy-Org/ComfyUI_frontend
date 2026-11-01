@@ -40,6 +40,22 @@ describe('MaskEditor tool registration', () => {
     expect(registry.tools).toEqual([])
   })
 
+  it('rejects a JavaScript tool with a non-string icon without reserving its id', () => {
+    const registry = useMaskEditorExtensionStore()
+    registry.registerTool(tool)
+    const invalid = { ...tool, id: 'test.icon', icon: {} }
+
+    expect(Reflect.apply(registry.registerTool, registry, [invalid])).toEqual({
+      ok: false,
+      reason: 'invalid-tool'
+    })
+    expect(registry.tools.map((item) => item.id)).toEqual(['impact.sam'])
+
+    const icon = 'icon-[lucide--crosshair]'
+    expect(registry.registerTool({ ...invalid, icon }).ok).toBe(true)
+    expect(registry.tools.map((item) => item.icon)).toEqual([undefined, icon])
+  })
+
   it('activates a class-based tool with its original receiver', () => {
     class SelectionTool implements MaskEditorTool {
       id = 'test.class'
