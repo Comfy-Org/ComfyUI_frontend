@@ -1,0 +1,56 @@
+import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
+import { t } from '@/i18n'
+import type { InputGroup } from '@comfyorg/graph-model/workflowSchema'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+
+interface ResolvedGroupItem {
+  key: WidgetId
+  pairId?: string
+}
+
+type GroupRow =
+  | { type: 'single'; item: ResolvedGroupItem }
+  | { type: 'pair'; items: [ResolvedGroupItem, ResolvedGroupItem] }
+
+export function groupPosition(
+  index: number,
+  count: number
+): 'first' | 'middle' | 'last' | 'only' {
+  if (count === 1) return 'only'
+  if (index === 0) return 'first'
+  if (index === count - 1) return 'last'
+  return 'middle'
+}
+
+export function autoGroupName(
+  group: InputGroup,
+  selections: readonly ResolvedSelection[]
+): string {
+  const selectionsById = new Map(
+    selections.map((selection) => [selection.widgetId, selection])
+  )
+  const labels: string[] = []
+  for (const item of group.items) {
+    const selection = selectionsById.get(item.key)
+    if (!selection) continue
+    labels.push(
+      selection.status === 'resolved'
+        ? (selection.widget.label ?? selection.displayName)
+        : selection.displayName
+    )
+  }
+  return labels.join(', ') || t('linearMode.groups.untitled')
+}
+
+export function resolveGroupItems(
+  group: InputGroup,
+  selections: readonly ResolvedSelection[]
+): ResolvedGroupItem[] {
+  const selectedIds = new Set(
+    selections.flatMap((selection) =>
+      selection.status === 'resolved' ? [selection.widgetId] : []
+    )
+  )
+  return group.items.filter(({ key }) => selectedIds.has(key))
+}
+
