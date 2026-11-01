@@ -5,6 +5,8 @@ import { isEqual } from 'es-toolkit'
 import { getActivePinia } from 'pinia'
 import { ref, toRaw, watch } from 'vue'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
@@ -1210,7 +1212,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         modelStats.value = stats
       })
       .catch((error: unknown) => {
-        if (!controller.signal.aborted) throw error
+        if (controller.signal.aborted) return
+        reportError(error, {
+          errorType: 'error_computing_load3d_model_stats',
+          surface: 'graph'
+        })
       })
   }
 

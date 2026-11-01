@@ -2,6 +2,7 @@ import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, ref, shallowRef, effectScope } from 'vue'
 import type { EffectScope, ShallowRef } from 'vue'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import {
@@ -1446,6 +1447,31 @@ describe('useLoad3d', () => {
       await nextTick()
 
       expect(signals[0].aborted).toBe(true)
+      expect(composable.modelStats.value).toBeNull()
+    })
+
+    it('reports a stats count that fails without being cancelled', async () => {
+      let modelLoadingEndHandler: (() => void) | undefined
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'modelLoadingEnd') {
+            modelLoadingEndHandler = handler as () => void
+          }
+        }
+      )
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+      const failure = new Error('count failed')
+      vi.mocked(mockLoad3d.getModelStats!).mockRejectedValue(failure)
+
+      modelLoadingEndHandler?.()
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(failure, {
+          errorType: 'error_computing_load3d_model_stats',
+          surface: 'graph'
+        })
+      )
       expect(composable.modelStats.value).toBeNull()
     })
 
