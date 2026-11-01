@@ -4,9 +4,13 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { AgentOnboardingNotShownMetadata } from '@/platform/telemetry/types'
+import type {
+  AgentOnboardingCard,
+  AgentOnboardingNotShownMetadata
+} from '@/platform/telemetry/types'
 
 export interface CoachStep {
+  card: AgentOnboardingCard
   target: string
   title: string
   body: string
