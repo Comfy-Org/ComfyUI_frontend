@@ -125,10 +125,11 @@ export function useWorkflowPersistenceV2() {
     if (
       !activeWorkflow.isTemporary &&
       !activeWorkflow.isModified &&
-      isEqual(
-        graphData.extra?.ds,
-        (activeWorkflow as ComfyWorkflow).initialState?.extra?.ds
-      )
+      (!settingStore.get('Comfy.EnableWorkflowViewRestore') ||
+        isEqual(
+          graphData.extra?.ds,
+          (activeWorkflow as ComfyWorkflow).initialState?.extra?.ds
+        ))
     ) {
       draftStore.removeDraft(workflowPath)
     }

@@ -151,6 +151,7 @@ describe('useWorkflowPersistenceV2', () => {
 
   beforeEach(() => {
     useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
+    useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] = true
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
     api.clientId = 'test-client'
@@ -765,11 +766,14 @@ describe('useWorkflowPersistenceV2', () => {
   })
 
   it.for([
-    { viewport: 'moved', keepsDraft: true },
-    { viewport: 'saved', keepsDraft: false }
+    { viewport: 'moved', viewRestore: true, keepsDraft: true },
+    { viewport: 'saved', viewRestore: true, keepsDraft: false },
+    { viewport: 'moved', viewRestore: false, keepsDraft: false }
   ] as const)(
-    'keeps an unmodified saved workflow draft only when its viewport differs ($viewport)',
-    async ({ viewport, keepsDraft }) => {
+    'keeps an unmodified saved workflow draft only when its restorable viewport differs ($viewport, view restore $viewRestore)',
+    async ({ viewport, viewRestore, keepsDraft }) => {
+      useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+        viewRestore
       const workflowStore = useWorkflowStore()
       const workflow = await workflowStore.createTemporary('Saved.json').load()
       workflow.size = 100
