@@ -16,6 +16,7 @@ const MAX_DOC_OPS_PER_FRAME = 256
 const MAX_OP_ID_LENGTH = 128
 const MAX_ERROR_CODE_LENGTH = 128
 const MAX_ERROR_MESSAGE_LENGTH = 8 << 10
+const RESERVED_SYSTEM_ACTOR = 'system:mint'
 const BASE64_SINGLE_PADDING_END = /[AEIMQUYcgkosw048]=$/
 const BASE64_DOUBLE_PADDING_END = /[AQgw]==$/
 const utf8 = new TextEncoder()
@@ -203,9 +204,13 @@ function isValidActor(value: string): boolean {
     /[\0\n\r\t ]/.test(value)
   )
     return false
-  if (value === 'system:mint') return true
+  if (value === RESERVED_SYSTEM_ACTOR) return true
   const match = /^(?:agent|human):([^:]+):([^:]+)$/.exec(value)
   return match !== null
+}
+
+function isSendableActor(value: string): boolean {
+  return value !== RESERVED_SYSTEM_ACTOR && isValidActor(value)
 }
 
 /**
@@ -296,6 +301,43 @@ function encodedJsonSize(value: Record<string, unknown>): number | null {
     const encoded = JSON.stringify(value)
     if (encoded.length > MAX_AWARENESS_STATE_BYTES) return encoded.length
     return utf8.encode(encoded).length
+  } catch {
+    return null
+  }
+}
+
+function isPlainObject(value: object): boolean {
+  if (Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
+/**
+ * Go's `encoding/json` escapes `<`, `>`, `&`, U+2028 and U+2029 as six-byte
+ * sequences before the server checks the 8 KiB cap.
+ */
+function goEscapeOverhead(encoded: string): { chars: number; bytes: number } {
+  const ascii = encoded.match(/[<>&]/g)?.length ?? 0
+  const lineSeparators = encoded.match(/[\u2028\u2029]/g)?.length ?? 0
+  return {
+    chars: ascii * 5 + lineSeparators * 5,
+    bytes: ascii * 5 + lineSeparators * 3
+  }
+}
+
+function encodeAwarenessState(value: unknown): Record<string, unknown> | null {
+  try {
+    if (typeof value !== 'object' || value === null || !isPlainObject(value))
+      return null
+    const encoded = JSON.stringify(value)
+    const overhead = goEscapeOverhead(encoded)
+    if (encoded.length + overhead.chars > MAX_AWARENESS_STATE_BYTES) return null
+    if (
+      utf8.encode(encoded).length + overhead.bytes >
+      MAX_AWARENESS_STATE_BYTES
+    )
+      return null
+    return parseRecord(JSON.parse(encoded))
   } catch {
     return null
   }
@@ -503,6 +545,7 @@ function isServerFrameType(type: string): type is ServerDocFrame['type'] {
 
 export class DocFrameClient extends EventTarget {
   private readonly listeners = new Map<string, EventListener>()
+  private readonly reportedAwarenessRejections = new Set<string>()
 
   constructor(private readonly transport: DocFrameTransport) {
     super()
@@ -574,6 +617,38 @@ export class DocFrameClient extends EventTarget {
       tab,
       ops
     })
+  }
+
+  /** @returns whether the awareness frame actually left the transport. */
+  sendAwareness(workflowId: string, actor: string, state?: unknown): boolean {
+    if (!isValidWorkflowId(workflowId))
+      return this.rejectAwareness('workflow_id')
+    if (!isSendableActor(actor)) return this.rejectAwareness('actor')
+
+    const encodedState = isAbsent(state)
+      ? undefined
+      : encodeAwarenessState(state)
+    if (encodedState === null) return this.rejectAwareness('state')
+
+    return this.send('awareness', {
+      v: DOC_PROTOCOL_VERSION,
+      workflow_id: workflowId,
+      actor,
+      ...(encodedState !== undefined && { state: encodedState })
+    })
+  }
+
+  private rejectAwareness(reason: string): false {
+    if (!this.reportedAwarenessRejections.has(reason)) {
+      this.reportedAwarenessRejections.add(reason)
+      reportError(new Error('Discarded invalid outgoing awareness frame'), {
+        surface: 'agent',
+        errorType: 'agent_crdt_invalid_outgoing_frame',
+        tags: { reason },
+        level: 'warning'
+      })
+    }
+    return false
   }
 
   destroy(): void {
