@@ -75,7 +75,6 @@ function mount(steps = STEPS) {
 
 beforeEach(() => {
   localStorage.clear()
-  // The tour reads and writes its completion list through the settings API.
   vi.mocked(fetch).mockImplementation(async () => Response.json([]))
   telemetry().trackAgentOnboardingShown.mockClear()
   telemetry().trackAgentOnboardingStep.mockClear()

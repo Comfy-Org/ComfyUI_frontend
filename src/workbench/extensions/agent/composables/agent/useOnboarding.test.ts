@@ -1,19 +1,20 @@
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
+import type { reportError } from '@comfyorg/telemetry/reportError'
 
 import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 
 import type { CoachStep } from './useOnboarding'
+import type * as OnboardingModule from './useOnboarding'
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
   resetCoach,
   scopedOnboardingKey,
-  setOnboardingScopeOwner,
   useOnboarding
 } from './useOnboarding'
 
@@ -25,75 +26,10 @@ const STEPS: CoachStep[] = Array.from({ length: 4 }, (_, index) => ({
   placement: 'left-center'
 }))
 
-function pendingResponse() {
-  let resolve: (response: Response) => void = () => {}
-  const promise = new Promise<Response>((settle) => {
-    resolve = settle
-  })
-  return { promise, resolve }
-}
-
-function onboardedScopes(): string[] | undefined {
-  return useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID]
-}
-
 describe('useOnboarding', () => {
   beforeEach(() => {
     window.localStorage.clear()
     vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
-    storedScopes([])
-  })
-
-  function storedScopes(scopes: unknown, status = 200) {
-    vi.spyOn(api, 'fetchApi').mockImplementation(
-      async () => new Response(JSON.stringify(scopes), { status })
-    )
-  }
-
-  it('does not overwrite the stored list when reading it fails', async () => {
-    storedScopes({ error: 'unavailable' }, 503)
-
-    useOnboarding(STEPS, KEY).finish()
-
-    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
-    await nextTick()
-    expect(api.storeSetting).not.toHaveBeenCalled()
-
-    storedScopes(['other.onboarded'])
-    useOnboarding(STEPS, KEY)
-
-    await vi.waitFor(() =>
-      expect(api.storeSetting).toHaveBeenCalledWith(
-        AGENT_ONBOARDED_SCOPES_SETTING_ID,
-        ['other.onboarded', KEY]
-      )
-    )
-  })
-
-  it('treats a setting that was never stored as an empty list', async () => {
-    storedScopes(null, 404)
-
-    useOnboarding(STEPS, KEY).finish()
-
-    await vi.waitFor(() =>
-      expect(api.storeSetting).toHaveBeenCalledWith(
-        AGENT_ONBOARDED_SCOPES_SETTING_ID,
-        [KEY]
-      )
-    )
-  })
-
-  it('clears a stored scope on restart even when this tab never loaded it', async () => {
-    storedScopes(['other.onboarded', KEY])
-
-    useOnboarding(STEPS, KEY).restart()
-
-    await vi.waitFor(() =>
-      expect(api.storeSetting).toHaveBeenCalledWith(
-        AGENT_ONBOARDED_SCOPES_SETTING_ID,
-        ['other.onboarded']
-      )
-    )
   })
 
   it('ignores a settings value that is not a list', () => {
@@ -103,22 +39,6 @@ describe('useOnboarding', () => {
 
     expect(hasSeenCoach(KEY)).toBe(false)
     expect(useOnboarding(STEPS, KEY).active.value).toBe(true)
-  })
-
-  it('keeps a scope another tab finished when this tab finishes its own', async () => {
-    storedScopes(['other.onboarded'])
-
-    useOnboarding(STEPS, KEY).finish()
-
-    await vi.waitFor(() =>
-      expect(api.storeSetting).toHaveBeenCalledWith(
-        AGENT_ONBOARDED_SCOPES_SETTING_ID,
-        ['other.onboarded', KEY]
-      )
-    )
-    await vi.waitFor(() =>
-      expect(onboardedScopes()).toEqual(['other.onboarded', KEY])
-    )
   })
 
   it('stays finished on an origin whose localStorage never saw the tour', async () => {
@@ -135,6 +55,37 @@ describe('useOnboarding', () => {
         [KEY]
       )
     )
+    expect(api.storeSetting).toHaveBeenCalledTimes(1)
+  })
+
+  it('adds the scope to the scopes already loaded', async () => {
+    Object.assign(useSettingStore().settingValues, {
+      [AGENT_ONBOARDED_SCOPES_SETTING_ID]: ['other.onboarded']
+    })
+
+    useOnboarding(STEPS, KEY).finish()
+
+    await vi.waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        AGENT_ONBOARDED_SCOPES_SETTING_ID,
+        ['other.onboarded', KEY]
+      )
+    )
+  })
+
+  it('removes only this scope on restart', async () => {
+    Object.assign(useSettingStore().settingValues, {
+      [AGENT_ONBOARDED_SCOPES_SETTING_ID]: ['other.onboarded', KEY]
+    })
+
+    useOnboarding(STEPS, KEY).restart()
+
+    await vi.waitFor(() =>
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        AGENT_ONBOARDED_SCOPES_SETTING_ID,
+        ['other.onboarded']
+      )
+    )
   })
 
   it('copies a completion recorded only in localStorage into settings', async () => {
@@ -148,102 +99,6 @@ describe('useOnboarding', () => {
         [KEY]
       )
     )
-  })
-
-  it('retries a completion whose settings write failed on the next mount', async () => {
-    vi.mocked(api.storeSetting).mockRejectedValueOnce(new Error('offline'))
-    useOnboarding(STEPS, KEY).finish()
-    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(1))
-    await nextTick()
-    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-      surface: 'agent',
-      errorType: 'failure_persisting_agent_onboarding_completion',
-      level: 'warning'
-    })
-
-    useOnboarding(STEPS, KEY)
-
-    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
-    expect(api.storeSetting).toHaveBeenLastCalledWith(
-      AGENT_ONBOARDED_SCOPES_SETTING_ID,
-      [KEY]
-    )
-  })
-
-  it('sends a restart only after the finish write settles', async () => {
-    const { promise: finishWrite, resolve: settleFinish } = pendingResponse()
-    vi.mocked(api.storeSetting).mockReturnValueOnce(finishWrite)
-    const tour = useOnboarding(STEPS, KEY)
-
-    tour.finish()
-    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(1))
-    tour.restart()
-    await nextTick()
-    expect(api.storeSetting).toHaveBeenCalledTimes(1)
-
-    settleFinish(new Response())
-
-    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(2))
-    expect(api.storeSetting).toHaveBeenLastCalledWith(
-      AGENT_ONBOARDED_SCOPES_SETTING_ID,
-      []
-    )
-  })
-
-  it('leaves another account out of a write queued before the switch', async () => {
-    const scopeA = scopedOnboardingKey('user-a', 'workspace-a')!
-    const scopeB = scopedOnboardingKey('user-b', 'workspace-a')!
-    const { promise: storedRead, resolve: settleRead } = pendingResponse()
-    setOnboardingScopeOwner(scopeA)
-    vi.spyOn(api, 'fetchApi').mockReturnValueOnce(storedRead)
-
-    useOnboarding(STEPS, scopeA).finish()
-    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
-
-    // user-b owns the session before user-a's read comes back, so user-a's
-    // snapshot must neither be sent under user-b's credentials nor replace
-    // what user-b has read.
-    setOnboardingScopeOwner(scopeB)
-    settleRead(new Response(JSON.stringify([])))
-    useOnboarding(STEPS, scopeB).finish()
-
-    await vi.waitFor(() => expect(api.storeSetting).toHaveBeenCalledTimes(1))
-    expect(api.storeSetting).toHaveBeenCalledWith(
-      AGENT_ONBOARDED_SCOPES_SETTING_ID,
-      [scopeB]
-    )
-    await vi.waitFor(() => expect(onboardedScopes()).toEqual([scopeB]))
-
-    setOnboardingScopeOwner(null)
-  })
-
-  it('queues a completion again after losing it to an owner change', async () => {
-    const { promise: storedRead, resolve: settleRead } = pendingResponse()
-    setOnboardingScopeOwner(KEY)
-    vi.spyOn(api, 'fetchApi').mockReturnValueOnce(storedRead)
-
-    useOnboarding(STEPS, KEY).finish()
-    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
-    useOnboarding(STEPS, KEY)
-
-    // The scope flickers away and back while the read is out, so both queued
-    // writes are retired without saving anything.
-    setOnboardingScopeOwner(null)
-    setOnboardingScopeOwner(KEY)
-    settleRead(new Response(JSON.stringify([])))
-    await vi.waitFor(() => expect(onboardedScopes()).toEqual([]))
-    expect(api.storeSetting).not.toHaveBeenCalled()
-
-    useOnboarding(STEPS, KEY)
-
-    await vi.waitFor(() =>
-      expect(api.storeSetting).toHaveBeenCalledWith(
-        AGENT_ONBOARDED_SCOPES_SETTING_ID,
-        [KEY]
-      )
-    )
-
-    setOnboardingScopeOwner(null)
   })
 
   it('honours a replay requested while no tour is mounted', async () => {
@@ -402,5 +257,154 @@ describe('useOnboarding', () => {
     tour.next()
     expect(tour.active.value).toBe(false)
     expect(localStorage.getItem(KEY)).toBe('false')
+  })
+})
+
+describe('useOnboarding settings write failures', () => {
+  let onboarding: typeof OnboardingModule
+  let storeSetting: MockInstance<typeof api.storeSetting>
+  let reportFailure: typeof reportError
+  let settingValues: () => Record<string, unknown>
+
+  beforeEach(async () => {
+    window.localStorage.clear()
+    vi.resetModules()
+    const { api: freshApi } = await import('@/scripts/api')
+    storeSetting = vi
+      .spyOn(freshApi, 'storeSetting')
+      .mockResolvedValue(new Response())
+    onboarding = await import('./useOnboarding')
+    reportFailure = (await import('@comfyorg/telemetry/reportError'))
+      .reportError
+    const settings = await import('@/platform/settings/settingStore')
+    settingValues = () => settings.useSettingStore().settingValues
+  })
+
+  it('retries a refused completion on the next mount and reports the failure once', async () => {
+    storeSetting.mockResolvedValue(new Response(null, { status: 503 }))
+
+    onboarding.useOnboarding(STEPS, KEY).finish()
+    await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() =>
+      expect(settingValues()[AGENT_ONBOARDED_SCOPES_SETTING_ID]).toBeUndefined()
+    )
+
+    onboarding.useOnboarding(STEPS, KEY)
+    await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() =>
+      expect(settingValues()[AGENT_ONBOARDED_SCOPES_SETTING_ID]).toBeUndefined()
+    )
+    expect(storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      [KEY]
+    )
+    expect(reportFailure).toHaveBeenCalledTimes(1)
+    expect(reportFailure).toHaveBeenCalledWith(
+      'Failed to store onboarded scopes (503)',
+      {
+        surface: 'agent',
+        errorType: 'failure_persisting_agent_onboarding_completion',
+        level: 'warning'
+      }
+    )
+  })
+
+  it('sends a completion again on the next mount when its write threw', async () => {
+    storeSetting.mockRejectedValueOnce(new Error('offline'))
+
+    onboarding.useOnboarding(STEPS, KEY).finish()
+    await vi.waitFor(() => expect(reportFailure).toHaveBeenCalledTimes(1))
+    expect(settingValues()[AGENT_ONBOARDED_SCOPES_SETTING_ID]).toEqual([KEY])
+
+    onboarding.useOnboarding(STEPS, KEY)
+    await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(2))
+    expect(storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      [KEY]
+    )
+
+    onboarding.useOnboarding(STEPS, KEY)
+    await nextTick()
+    expect(storeSetting).toHaveBeenCalledTimes(2)
+  })
+
+  it('sends a replay clear again on the next mount when its write threw', async () => {
+    Object.assign(settingValues(), {
+      [AGENT_ONBOARDED_SCOPES_SETTING_ID]: [KEY]
+    })
+    storeSetting.mockRejectedValueOnce(new Error('offline'))
+
+    onboarding.resetCoach(KEY)
+    await vi.waitFor(() => expect(reportFailure).toHaveBeenCalledTimes(1))
+
+    onboarding.useOnboarding(STEPS, KEY)
+    await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(2))
+    expect(storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      []
+    )
+  })
+
+  it('drops an unsaved replay clear once a later completion is saved', async () => {
+    Object.assign(settingValues(), {
+      [AGENT_ONBOARDED_SCOPES_SETTING_ID]: [KEY]
+    })
+    storeSetting.mockRejectedValueOnce(new Error('offline'))
+    const tour = onboarding.useOnboarding(STEPS, KEY)
+
+    tour.restart()
+    await vi.waitFor(() => expect(reportFailure).toHaveBeenCalledTimes(1))
+    tour.finish()
+    await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(2))
+
+    window.localStorage.clear()
+    expect(onboarding.useOnboarding(STEPS, KEY).active.value).toBe(false)
+    await nextTick()
+    expect(storeSetting).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps a replay running when the server refuses to clear the completion', async () => {
+    Object.assign(settingValues(), {
+      [AGENT_ONBOARDED_SCOPES_SETTING_ID]: [KEY]
+    })
+    storeSetting.mockResolvedValue(new Response(null, { status: 503 }))
+    const tour = onboarding.useOnboarding(STEPS, KEY)
+    expect(tour.active.value).toBe(false)
+
+    tour.restart()
+
+    await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() =>
+      expect(settingValues()[AGENT_ONBOARDED_SCOPES_SETTING_ID]).toEqual([KEY])
+    )
+    expect(tour.active.value).toBe(true)
+    expect(onboarding.hasSeenCoach(KEY)).toBe(false)
+  })
+
+  it('sends a replay only after the finish before it settles', async () => {
+    let settleFinish: (response: Response) => void = () => {}
+    storeSetting.mockReturnValueOnce(
+      new Promise<Response>((resolve) => {
+        settleFinish = resolve
+      })
+    )
+    const tour = onboarding.useOnboarding(STEPS, KEY)
+
+    tour.finish()
+    await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(1))
+    tour.restart()
+    await nextTick()
+    expect(storeSetting).toHaveBeenCalledTimes(1)
+
+    settleFinish(new Response())
+
+    await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(2))
+    expect(storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      []
+    )
+    await vi.waitFor(() =>
+      expect(settingValues()[AGENT_ONBOARDED_SCOPES_SETTING_ID]).toEqual([])
+    )
   })
 })

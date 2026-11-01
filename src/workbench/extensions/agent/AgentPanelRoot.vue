@@ -95,7 +95,6 @@ import {
   hasSeenCoach,
   resetCoach,
   scopedOnboardingKey,
-  setOnboardingScopeOwner,
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
@@ -678,9 +677,6 @@ const onboardingKey = computed(() =>
 watch(
   onboardingKey,
   (key) => {
-    // The stored completion list belongs to whoever is signed in, so the
-    // scope in front of the user is what owns a settings write in flight.
-    setOnboardingScopeOwner(key)
     // Only carry the pre-consent, device-wide flag into a scope that had
     // already accepted consent when it loaded. A newly consenting scope has
     // not seen this scoped tour yet and should receive it once.
@@ -688,7 +684,6 @@ watch(
   },
   { immediate: true }
 )
-onBeforeUnmount(() => setOnboardingScopeOwner(null))
 const { activeTour } = storeToRefs(useOnboardingTourStore())
 const coachDeferredBy = computed(() =>
   canvasStore.linearMode
