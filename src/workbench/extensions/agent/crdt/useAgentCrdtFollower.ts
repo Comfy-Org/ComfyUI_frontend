@@ -847,8 +847,13 @@ function startAgentCrdtFollower(
       const workflowId = subscribedWorkflowId.value
       const projectionIsClean =
         workflowId === null || retryFailedProjection(workflowId)
-      if (projectionIsClean && subscribeBaselineIsIntegrated(detail.seq))
-        clearCanvasStaleness()
+      if (subscribeBaselineIsIntegrated(detail.seq)) {
+        if (projectionIsClean) clearCanvasStaleness()
+        else {
+          clearSyncStaleness()
+          markProjectionStale(workflowId)
+        }
+      }
       terminal.value = null
       lifecycle.onSubscribeConfirmed()
       forgetUnsyncedAtLoad(subscribedWorkflowId.value)
