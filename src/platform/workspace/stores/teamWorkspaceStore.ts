@@ -32,6 +32,7 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { WorkspaceCreationDenials } from '@comfyorg/ingest-types'
 import {
   NoWorkspaceAccessError,
   WorkspaceApiError
@@ -185,6 +186,10 @@ type ListedWorkspaces = Omit<ListWorkspacesResponse, 'can_create_workspace'> &
     default_workspace_id?: string
   }
 
+type CreationDeniedReason = NonNullable<
+  WorkspaceCreationDenials['can_create_workspace']
+>
+
 function reportSsoLanding(
   { default_workspace_id }: ListedWorkspaces,
   workspaceId: string
@@ -194,7 +199,6 @@ function reportSsoLanding(
   )
 }
 
-const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 const INIT_READ_WITHOUT_STATUS_RETRY = { skipStatusRetry: true }
@@ -262,35 +266,27 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     workspaces.value.filter((w) => w.type !== 'personal')
   )
 
-  const ownedWorkspacesCount = computed(
-    () => workspaces.value.filter((w) => w.role === 'owner').length
-  )
-
   const serverRefusesCreation = ref(false)
+  const creationDeniedReason = ref<CreationDeniedReason>()
+  const maxOwnedWorkspaces = ref<number>()
 
-  const workspacesManagedByOrganization = ref(false)
-
-  const canCreateWorkspace = computed(
-    () =>
-      !serverRefusesCreation.value &&
-      ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
-  )
+  const canCreateWorkspace = computed(() => !serverRefusesCreation.value)
 
   const createWorkspaceRefusal = computed<
-    'organization' | 'limit' | 'unknown' | null
-  >(() => {
-    if (canCreateWorkspace.value) return null
-    if (workspacesManagedByOrganization.value) return 'organization'
-    if (serverRefusesCreation.value) return 'unknown'
-    return 'limit'
-  })
+    CreationDeniedReason | 'unknown' | null
+  >(() =>
+    serverRefusesCreation.value
+      ? (creationDeniedReason.value ?? 'unknown')
+      : null
+  )
 
   function applyWorkspaceList(response: ListedWorkspaces): void {
     workspaces.value = sortWorkspaces(
       response.workspaces.map(createWorkspaceState)
     )
     serverRefusesCreation.value = response.can_create_workspace === false
-    workspacesManagedByOrganization.value = !!response.default_workspace_id
+    creationDeniedReason.value = response.denied_reasons?.can_create_workspace
+    maxOwnedWorkspaces.value = response.max_owned_workspaces
   }
 
   const members = computed<WorkspaceMember[]>(
@@ -1160,7 +1156,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     initState.value = 'uninitialized'
     workspaces.value = []
     serverRefusesCreation.value = false
-    workspacesManagedByOrganization.value = false
+    creationDeniedReason.value = undefined
+    maxOwnedWorkspaces.value = undefined
     mutableActiveWorkspaceId.value = null
     error.value = null
     isCreating.value = false
@@ -1190,10 +1187,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     personalWorkspace,
     isInPersonalWorkspace,
     sharedWorkspaces,
-    ownedWorkspacesCount,
     canCreateWorkspace,
     serverRefusesCreation,
-    workspacesManagedByOrganization,
+    creationDeniedReason,
+    maxOwnedWorkspaces,
     createWorkspaceRefusal,
     members,
     membersLoaded,

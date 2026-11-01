@@ -226,7 +226,6 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.personalWorkspace).toBeNull()
       expect(store.isInPersonalWorkspace).toBe(false)
       expect(store.sharedWorkspaces).toEqual([])
-      expect(store.ownedWorkspacesCount).toBe(0)
       expect(store.canCreateWorkspace).toBe(true)
       expect(store.members).toEqual([])
       expect(store.pendingInvites).toEqual([])
@@ -1482,21 +1481,6 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.sharedWorkspaces[0].id).toBe(mockTeamWorkspace.id)
     })
 
-    it('ownedWorkspacesCount counts owned workspaces', async () => {
-      mockWorkspaceApi.list.mockResolvedValue({
-        workspaces: [
-          mockPersonalWorkspace,
-          mockTeamWorkspace,
-          mockMemberWorkspace
-        ]
-      })
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-
-      expect(store.ownedWorkspacesCount).toBe(2)
-    })
-
     it.for([
       { canCreate: false, expected: false },
       { canCreate: true, expected: true },
@@ -1526,33 +1510,34 @@ describe('useTeamWorkspaceStore', () => {
 
     it.for([
       {
-        reason: 'organization',
+        reason: 'organization_managed',
+        response: {
+          workspaces: [mockTeamWorkspace],
+          can_create_workspace: false,
+          max_owned_workspaces: 10,
+          denied_reasons: { can_create_workspace: 'organization_managed' }
+        }
+      },
+      {
+        reason: 'owned_workspace_limit',
+        response: {
+          workspaces: [mockPersonalWorkspace],
+          can_create_workspace: false,
+          max_owned_workspaces: 10,
+          denied_reasons: { can_create_workspace: 'owned_workspace_limit' }
+        }
+      },
+      {
+        reason: 'unknown',
         response: {
           workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
           default_workspace_id: mockTeamWorkspace.id,
-          can_create_workspace: false
+          can_create_workspace: false,
+          max_owned_workspaces: 10
         }
-      },
-      {
-        reason: 'unknown',
-        response: {
-          workspaces: [mockPersonalWorkspace, ...ownedTeams(9)],
-          can_create_workspace: false
-        }
-      },
-      {
-        reason: 'unknown',
-        response: {
-          workspaces: [mockPersonalWorkspace],
-          can_create_workspace: false
-        }
-      },
-      {
-        reason: 'limit',
-        response: { workspaces: [mockPersonalWorkspace, ...ownedTeams(9)] }
       }
-    ])(
-      'names the $reason refusal from the workspace list',
+    ] as const)(
+      'names the served $reason refusal',
       async ({ reason, response }) => {
         mockWorkspaceApi.list.mockResolvedValue(response)
 
@@ -1564,26 +1549,36 @@ describe('useTeamWorkspaceStore', () => {
       }
     )
 
-    it('canCreateWorkspace respects limit', async () => {
-      const manyWorkspaces = Array.from({ length: 10 }, (_, i) => ({
-        id: `ws-owned-${i}`,
-        name: `Owned ${i}`,
-        type: 'team' as const,
-        role: 'owner' as const,
-        created_at: `2026-${String(i + 1).padStart(2, '0')}-01T00:00:00Z`,
-        joined_at: `2026-${String(i + 1).padStart(2, '0')}-01T00:00:00Z`
-      }))
+    it.for([
+      {
+        name: 'a denial reason beside can_create_workspace true',
+        response: {
+          workspaces: [mockPersonalWorkspace],
+          can_create_workspace: true,
+          max_owned_workspaces: 10,
+          denied_reasons: { can_create_workspace: 'owned_workspace_limit' }
+        }
+      },
+      {
+        name: 'an owned count past the served limit',
+        response: {
+          workspaces: [mockPersonalWorkspace, ...ownedTeams(11)],
+          can_create_workspace: true,
+          max_owned_workspaces: 10
+        }
+      }
+    ] as const)(
+      'offers creation when the server allows it despite $name',
+      async ({ response }) => {
+        mockWorkspaceApi.list.mockResolvedValue(response)
 
-      mockWorkspaceApi.list.mockResolvedValue({
-        workspaces: [mockPersonalWorkspace, ...manyWorkspaces]
-      })
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
 
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-
-      expect(store.ownedWorkspacesCount).toBe(11)
-      expect(store.canCreateWorkspace).toBe(false)
-    })
+        expect(store.canCreateWorkspace).toBe(true)
+        expect(store.createWorkspaceRefusal).toBeNull()
+      }
+    )
   })
 
   describe('overlapping member and invite reads', () => {
