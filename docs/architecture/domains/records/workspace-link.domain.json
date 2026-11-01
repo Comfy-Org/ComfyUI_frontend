@@ -1,0 +1,37 @@
+{
+  "id": "workspace-link",
+  "capability": "Shared workspace URL contract",
+  "description": "The existing published account-core/workspaceLink package subpath: framework-free workspace URL parameter validation, parsing and construction shared by account, workspace, billing and navigation consumers. This domain exposes only that pure published leaf, not workspace services or package internals.",
+  "modules": [
+    {
+      "path": "packages/account-core/src/workspaceLink.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": ["packages/account-core/src/workspaceLink.ts"],
+  "allowedDependencies": [],
+  "allowedConsumers": ["account", "workspace", "billing", "navigation"],
+  "characterizationScenarios": [
+    {
+      "name": "The published workspace URL contract keeps its shared identifier charset and absent, invalid and repeated query handling",
+      "checks": ["packages/account-core/src/workspaceLink.test.ts"]
+    },
+    {
+      "name": "Saved-file URL validation reuses the published workspace target contract",
+      "checks": ["src/platform/navigation/savedWorkflowLink.test.ts"]
+    },
+    {
+      "name": "Only approved consumers can import the exact published leaf without access to workspace internals",
+      "checks": ["tools/architecture/src/boundaries.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/AUTH-WORKSPACE-0036-workspace-deep-link-contract.md",
+    "docs/adr/WORKFLOW-LINKS-0049-authenticated-saved-document-handoff.md"
+  ],
+  "compatibilityPromises": [
+    "The published package subpath and all parser, validator and URL-builder exports remain unchanged; this record moves ownership only.",
+    "Account and workspace consumers retain the shared URL contract; navigation and existing classified billing contract tests consume only its exact public leaf."
+  ],
+  "deepImports": "enforced"
+}

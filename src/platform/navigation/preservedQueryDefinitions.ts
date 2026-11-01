@@ -65,5 +65,26 @@ export const PRESERVED_QUERY_DEFINITIONS: PreservedQueryDefinition[] = [
     namespace: PRESERVED_QUERY_NAMESPACES.WORKFLOWS,
     keys: ['workflows'],
     rejectRepeated: true
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.WORKFLOW,
+    keys: ['savedFile', 'workflow', 'workspace', 'deployment', 'environment'],
+    requiredKey: ['savedFile', 'workflow'],
+    replaceOnChange: {
+      key: ['savedFile', 'workflow'],
+      targetKeys: ['workspace', 'deployment', 'environment'],
+      namespaces: [
+        PRESERVED_QUERY_NAMESPACES.WORKSPACE,
+        PRESERVED_QUERY_NAMESPACES.DEPLOYMENT,
+        PRESERVED_QUERY_NAMESPACES.ENVIRONMENT
+      ]
+    },
+    stripAfterCapture: true,
+    rejectRepeated: true
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.ENVIRONMENT,
+    keys: ['environment'],
+    rejectRepeated: true
   }
 ]

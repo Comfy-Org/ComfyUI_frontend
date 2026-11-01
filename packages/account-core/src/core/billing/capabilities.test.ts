@@ -532,8 +532,6 @@ describe('createCapabilitiesReader', () => {
           scopeSource
         }).read()
 
-        // The point of the lenient decode: a reason this client predates must
-        // not cost the caller the capability set that gates its UI.
         expect(result.status).toBe('ok')
         if (result.status !== 'ok') return
         expect(result.value.capabilities.can_top_up).toBe(true)

@@ -86,6 +86,7 @@ export interface LoadGraphDataOptions {
   skipAssetScans?: boolean
   silentAssetErrors?: boolean
   workflowNavigationId?: number
+  isCurrent?: () => boolean
 }
 
 /**

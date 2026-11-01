@@ -197,7 +197,8 @@ export const workspaceApi = {
   },
   async clearDeployment(
     workspaceId: WorkspaceId,
-    options: { follow?: 'workspace' } = {}
+    options: { follow?: 'workspace' } = {},
+    signal?: AbortSignal
   ): Promise<void> {
     const auth = await requestAuth()
     try {
@@ -205,6 +206,7 @@ export const workspaceApi = {
         ingestApiUrl(`/workspaces/${workspaceId}/deployment`),
         {
           ...auth,
+          ...(signal ? { signal } : {}),
           params: options.follow ? { follow: options.follow } : undefined
         }
       )

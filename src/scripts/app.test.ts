@@ -570,6 +570,219 @@ describe('ComfyApp', () => {
       )
     })
 
+    it.for([
+      { hook: 'beforeLoadGraph', change: 'sign-out' },
+      { hook: 'beforeConfigureGraph', change: 'workspace switch' }
+    ] as const)(
+      'retains the dirty saved canvas after $change during $hook',
+      async ({ hook, change }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        graph.add(new LGraphNode('Keep my edits'))
+        graph.extra = { marker: 'dirty current canvas' }
+        Reflect.set(app, 'rootGraphInternal', graph)
+        vi.spyOn(singletonApp, 'loadGraphData').mockImplementation(
+          app.loadGraphData.bind(app)
+        )
+        const workflowService = await useRealWorkflowService()
+        vi.mocked(
+          useSubgraphNavigationStore().endWorkflowNavigation
+        ).mockImplementation(() => {})
+        const retained = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/retained.json',
+            modified: 1,
+            size: 1
+          })
+        )
+        retained.changeTracker.activeState = {
+          ...createWorkflowGraphData(),
+          extra: { marker: 'dirty current canvas' }
+        }
+        retained.isModified = true
+        useWorkflowStore().activeWorkflow = retained
+        const retainedDocument = useWorkflowStore().activeWorkflow
+        const incoming = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/private.json',
+            modified: 1,
+            size: 1
+          })
+        )
+        const context = ref({ userId: 'user-a', workspaceId: 'workspace-a' })
+        let releaseHook = () => {}
+        const paused = new Promise<void>((resolve) => {
+          releaseHook = resolve
+        })
+        let hookEntered = () => {}
+        const entered = new Promise<void>((resolve) => {
+          hookEntered = resolve
+        })
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (name) => {
+            if (name === hook) {
+              hookEntered()
+              await paused
+            }
+          }
+        )
+        const options = {
+          isCurrent: () =>
+            context.value.userId === 'user-a' &&
+            context.value.workspaceId === 'workspace-a'
+        }
+        const loading = workflowService.openWorkflow(incoming, options)
+        await entered
+        context.value = {
+          userId: change === 'sign-out' ? '' : 'user-a',
+          workspaceId:
+            change === 'workspace switch' ? 'workspace-b' : 'workspace-a'
+        }
+        releaseHook()
+
+        await expect(loading).resolves.toBe(false)
+        expect(graph.nodes.map((node) => node.title)).toEqual(['Keep my edits'])
+        expect(graph.extra).toEqual({ marker: 'dirty current canvas' })
+        expect(useWorkflowStore().activeWorkflow).toBe(retainedDocument)
+        expect(retained.isModified).toBe(true)
+        expect(retained.activeState.extra).toEqual({
+          marker: 'dirty current canvas'
+        })
+        expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'onGraphLoadError',
+          expect.objectContaining({ name: 'AbortError' })
+        )
+      }
+    )
+
+    it.for([
+      {
+        boundary: 'new graph',
+        replace: (graph: LGraph, _next: LoadedComfyWorkflow) => {
+          graph.configure({
+            ...graph.serialize(),
+            extra: { marker: 'newer graph' }
+          })
+        },
+        expectedMarker: 'newer graph',
+        expectedPath: 'workflows/retained.json'
+      },
+      {
+        boundary: 'new selection',
+        replace: (_graph: LGraph, next: LoadedComfyWorkflow) => {
+          useWorkflowStore().activeWorkflow = next
+        },
+        expectedMarker: 'incoming graph',
+        expectedPath: 'workflows/newer.json'
+      }
+    ])(
+      'does not clear a $boundary when a configured load is cancelled',
+      async ({ replace, expectedMarker, expectedPath }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        useWorkflowStore().activeWorkflow = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/retained.json',
+            modified: 1,
+            size: 1
+          })
+        )
+        const next = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/newer.json',
+            modified: 1,
+            size: 1
+          })
+        )
+        let current = true
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (hook) => {
+            if (hook === 'afterConfigureGraph') {
+              replace(graph, next)
+              current = false
+            }
+          }
+        )
+
+        await expect(
+          app.loadGraphData(
+            {
+              ...createWorkflowGraphData(),
+              extra: { marker: 'incoming graph' }
+            },
+            true,
+            true,
+            null,
+            { isCurrent: () => current }
+          )
+        ).resolves.toBe(false)
+
+        expect(graph.extra.marker).toBe(expectedMarker)
+        expect(useWorkflowStore().activeWorkflow?.path).toBe(expectedPath)
+      }
+    )
+
+    it('does not activate a guarded load cancelled after configuration', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let current = true
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'afterConfigureGraph') current = false
+        }
+      )
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), true, true, null, {
+          isCurrent: () => current
+        })
+      ).resolves.toBe(false)
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+    })
+
+    it('drops a stale guarded load while it waits in the graph queue', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      let releaseFirst = () => {}
+      const paused = new Promise<void>((resolve) => {
+        releaseFirst = resolve
+      })
+      let firstEntered = () => {}
+      const entered = new Promise<void>((resolve) => {
+        firstEntered = resolve
+      })
+      mockExtensionService.invokeExtensionsAsync.mockImplementationOnce(
+        async () => {
+          firstEntered()
+          await paused
+        }
+      )
+      const first = app.loadGraphData({
+        ...createWorkflowGraphData(),
+        extra: { marker: 'current' }
+      })
+      await entered
+      let current = true
+      const stale = app.loadGraphData(
+        createWorkflowGraphData(),
+        true,
+        true,
+        null,
+        {
+          isCurrent: () => current
+        }
+      )
+      current = false
+      releaseFirst()
+
+      await first
+      await expect(stale).resolves.toBeUndefined()
+      expect(graph.extra).toEqual({ marker: 'current' })
+    })
+
     it('resolves false, not rejects, when graph configure fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
@@ -656,30 +869,37 @@ describe('ComfyApp', () => {
       ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
     })
 
-    it('resolves false and notifies onGraphLoadError when the outgoing preflight throws', async () => {
-      app.canvasElRef.value = document.createElement('canvas')
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
-      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
-      mockWorkflowService.beforeLoadNewGraph.mockImplementationOnce(() => {
-        throw new Error('outgoing serializer blew up')
-      })
-
-      await expect(
-        app.loadGraphData(createWorkflowGraphData(), false, true, null, {
-          workflowNavigationId: 21
+    it.for([
+      { kind: 'ordinary', options: {} },
+      { kind: 'guarded', options: { isCurrent: () => true } }
+    ])(
+      'closes the $kind load when the outgoing preflight throws',
+      async ({ options }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+        mockWorkflowService.beforeLoadNewGraph.mockImplementationOnce(() => {
+          throw new Error('outgoing serializer blew up')
         })
-      ).resolves.toBe(false)
 
-      expect(showDialog).toHaveBeenCalledOnce()
-      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
-        'onGraphLoadError',
-        expect.objectContaining({ message: 'outgoing serializer blew up' })
-      )
-      expect(ChangeTracker.isLoadingGraph).toBe(false)
-      expect(
-        mockExtensionService.invokeExtensionsAsync
-      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
-    })
+        await expect(
+          app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+            workflowNavigationId: 21,
+            ...options
+          })
+        ).resolves.toBe(false)
+
+        expect(showDialog).toHaveBeenCalledOnce()
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'onGraphLoadError',
+          expect.objectContaining({ message: 'outgoing serializer blew up' })
+        )
+        expect(ChangeTracker.isLoadingGraph).toBe(false)
+        expect(
+          mockExtensionService.invokeExtensionsAsync
+        ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+      }
+    )
 
     it('resolves false and notifies onGraphLoadError when workflow validation rejects', async () => {
       // A failure inside `validateWorkflow` - called well before
@@ -1325,6 +1545,17 @@ describe('ComfyApp', () => {
     )
 
     it.for([
+      {
+        path: 'ordinary workflow',
+        load: () => app.loadGraphData(createWorkflowGraphData())
+      },
+      {
+        path: 'guarded workflow',
+        load: () =>
+          app.loadGraphData(createWorkflowGraphData(), true, true, null, {
+            isCurrent: () => true
+          })
+      },
       {
         path: 'API JSON',
         load: () => app.loadApiJson({}, 'empty.json')

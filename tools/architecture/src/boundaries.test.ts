@@ -1,9 +1,11 @@
+import { readFileSync } from 'node:fs'
 import { matchesGlob } from 'node:path'
 
 import { assert, describe, expect, it } from 'vitest'
 
 import { buildBoundaries } from './boundaries'
 import { claimFiles } from './records'
+import { domainRecordSchema } from './schema'
 import type { DomainRecord } from './schema'
 
 function domain(
@@ -199,6 +201,133 @@ describe('buildBoundaries', () => {
       allowed: false
     }
   ])('$name', ({ records, from, to, allowed }) => {
+    expect(fallowAllows(records, from, to)).toBe(allowed)
+  })
+})
+
+describe('saved-file identity public boundary', () => {
+  const records = [
+    'workflow-file-identity',
+    'workflow-management',
+    'workflow-persistence',
+    'comfyui-api'
+  ].map((name) =>
+    domainRecordSchema.parse(
+      JSON.parse(
+        readFileSync(
+          new URL(
+            `../../../docs/architecture/domains/records/${name}.domain.json`,
+            import.meta.url
+          ),
+          'utf8'
+        )
+      )
+    )
+  )
+  it.for([
+    {
+      from: 'src/platform/workflow/management/stores/workflowStore.ts',
+      to: 'src/platform/workflow/core/utils/userFileIdentity.ts',
+      allowed: true
+    },
+    {
+      from: 'src/platform/workflow/management/stores/workflowStore.ts',
+      to: 'src/platform/workflow/core/services/userFileContext.ts',
+      allowed: true
+    },
+    {
+      from: 'src/platform/workflow/core/utils/userFileIdentity.ts',
+      to: 'src/platform/workflow/core/services/userFileContext.ts',
+      allowed: false
+    },
+    {
+      from: 'src/platform/workflow/persistence/base/draftTypes.ts',
+      to: 'src/platform/workflow/core/utils/userFileIdentity.ts',
+      allowed: true
+    },
+    {
+      from: 'src/platform/workflow/persistence/base/draftTypes.ts',
+      to: 'src/platform/workflow/core/services/userFileContext.ts',
+      allowed: false
+    },
+    {
+      from: 'src/platform/workflow/persistence/stores/workflowDraftStoreV2.ts',
+      to: 'src/platform/workflow/core/services/userFileContext.ts',
+      allowed: true
+    },
+    {
+      from: 'src/platform/workflow/persistence/stores/workflowDraftStoreV2.ts',
+      to: 'src/platform/workflow/management/stores/workflowStore.ts',
+      allowed: false
+    },
+    {
+      from: 'packages/api-client/src/types.ts',
+      to: 'src/platform/workflow/core/utils/userFileIdentity.ts',
+      allowed: false
+    }
+  ])('enforces $from → $to: $allowed', ({ from, to, allowed }) => {
+    expect(fallowAllows(records, from, to)).toBe(allowed)
+  })
+})
+
+describe('published workspace-link boundary', () => {
+  const records = [
+    'workspace-link',
+    'workspace',
+    'account',
+    'billing',
+    'navigation',
+    'comfyui-api'
+  ].map((name) =>
+    domainRecordSchema.parse(
+      JSON.parse(
+        readFileSync(
+          new URL(
+            `../../../docs/architecture/domains/records/${name}.domain.json`,
+            import.meta.url
+          ),
+          'utf8'
+        )
+      )
+    )
+  )
+  it.for([
+    {
+      from: 'src/platform/navigation/savedWorkflowLink.ts',
+      to: 'packages/account-core/src/workspaceLink.ts',
+      allowed: true
+    },
+    {
+      from: 'src/platform/workspace/composables/useWorkspaceUrlLoader.ts',
+      to: 'packages/account-core/src/workspaceLink.ts',
+      allowed: true
+    },
+    {
+      from: 'src/platform/account/auth/WorkspaceAuthGate.vue',
+      to: 'packages/account-core/src/workspaceLink.ts',
+      allowed: true
+    },
+    {
+      from: 'packages/billing-contract/src/billingEntry.test.ts',
+      to: 'packages/account-core/src/workspaceLink.ts',
+      allowed: true
+    },
+    {
+      from: 'src/platform/navigation/savedWorkflowLink.ts',
+      to: 'src/platform/workspace/api/workspaceApi.ts',
+      allowed: false
+    },
+    {
+      from: 'packages/api-client/src/types.ts',
+      to: 'packages/account-core/src/workspaceLink.ts',
+      allowed: false
+    },
+    {
+      from: 'packages/account-core/src/workspaceLink.ts',
+      to: 'src/platform/workspace/api/workspaceApi.ts',
+      allowed: false
+    }
+  ])('enforces $from → $to: $allowed', ({ from, to, allowed }) => {
     expect(fallowAllows(records, from, to)).toBe(allowed)
   })
 })

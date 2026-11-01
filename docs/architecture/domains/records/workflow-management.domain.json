@@ -93,7 +93,12 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["error-reporting", "keybindings", "telemetry"],
+  "allowedDependencies": [
+    "error-reporting",
+    "keybindings",
+    "telemetry",
+    "workflow-file-identity"
+  ],
   "allowedConsumers": ["agent", "execution"],
   "characterizationScenarios": [
     {

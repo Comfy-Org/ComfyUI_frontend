@@ -10,7 +10,10 @@
  * Metadata for a single draft entry stored in the index.
  * The actual workflow data is stored separately in a Draft payload key.
  */
+import type { UserFileIdentity } from '@/platform/workflow/core/utils/userFileIdentity'
+
 export interface DraftEntryMeta {
+  savedFileIdentity?: UserFileIdentity
   /** Workflow path (e.g., "workflows/Untitled.json") */
   path: string
   /** Display name of the workflow */

@@ -101,13 +101,6 @@ vi.mock<unknown>(import('@/platform/navigation/preservedQueryManager'), () => ({
   )
 }))
 
-vi.mock<unknown>(
-  import('@/platform/navigation/preservedQueryNamespaces'),
-  () => ({
-    PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template', SHARE: 'share' }
-  })
-)
-
 const distributionMocks = vi.hoisted(() => ({ isCloud: false }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -442,7 +435,9 @@ describe('useWorkflowPersistenceV2', () => {
       gate.resolve()
       await pending
 
-      expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+      expect(openWorkflowMock).toHaveBeenCalledWith(workflowB, {
+        isCurrent: expect.any(Function)
+      })
       expect(workflowStore.tabsRestored).toBe(true)
     })
 
@@ -521,7 +516,9 @@ describe('useWorkflowPersistenceV2', () => {
       const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
-      expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+      expect(openWorkflowMock).toHaveBeenCalledWith(workflowB, {
+        isCurrent: expect.any(Function)
+      })
     })
 
     it('activates first tab when storedActiveIndex is 0', async () => {
@@ -546,7 +543,9 @@ describe('useWorkflowPersistenceV2', () => {
       const { restoreWorkflowTabsState } = mountWorkflowPersistence()
       await restoreWorkflowTabsState()
 
-      expect(openWorkflowMock).toHaveBeenCalledWith(workflowA)
+      expect(openWorkflowMock).toHaveBeenCalledWith(workflowA, {
+        isCurrent: expect.any(Function)
+      })
     })
 
     it('does not call openWorkflow when no restorable state', async () => {
@@ -729,6 +728,14 @@ describe('useWorkflowPersistenceV2', () => {
       [
         'template intent preserved across /user-select redirect',
         () => (preservedQueryMocks.payloads.template = { template: 'id' })
+      ],
+      [
+        'private workflow param in URL',
+        () => (routeMocks.query = { workflow: 'id' })
+      ],
+      [
+        'private workflow intent preserved across sign-in',
+        () => (preservedQueryMocks.payloads.workflow = { workflow: 'id' })
       ]
     ] as const)(
       'reports url-intent, not fresh, with %s',

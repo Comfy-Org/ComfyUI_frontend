@@ -1,7 +1,7 @@
 import { union } from 'es-toolkit/compat'
 import { createEventHook, until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, shallowRef, watch } from 'vue'
+import { computed, markRaw, ref, shallowRef, toRaw, watch } from 'vue'
 import type { Raw } from 'vue'
 
 import { t } from '@/i18n'
@@ -20,6 +20,19 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
+import type {
+  UserFileIdentity,
+  UserFileScope
+} from '@/platform/workflow/core/utils/userFileIdentity'
+import {
+  sameUserFileIdentity,
+  sameUserFileScope
+} from '@/platform/workflow/core/utils/userFileIdentity'
+import {
+  currentUserFileScope,
+  receivedUserFileIdentity
+} from '@/platform/workflow/core/services/userFileContext'
+import type { SavedFileSnapshot } from '@/services/savedWorkflowService'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
@@ -122,7 +135,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    */
   const activeWorkflow = ref<LoadedComfyWorkflow | null>(null)
   const isActive = (workflow: ComfyWorkflow) =>
-    activeWorkflow.value?.path === workflow.path
+    toRaw(activeWorkflow.value) === toRaw(workflow)
   /**
    * All workflows.
    */
@@ -188,13 +201,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param workflow The workflow to open.
    */
   const openWorkflow = async (
-    workflow: ComfyWorkflow
+    workflow: ComfyWorkflow,
+    options: { isCurrent?: () => boolean } = {}
   ): Promise<LoadedComfyWorkflow> => {
+    assertCurrentContext(options.isCurrent)
+    workflow.assertIdentityScope()
     if (isActive(workflow)) {
       if (workflow.isLoaded) return workflow as LoadedComfyWorkflow
-      // `isActive` matches by path, so a workflow can be "active" while this
-      // instance never loaded (or has since unloaded) its change tracker.
-      // Returning it as loaded would hand callers a null `initialState`.
       reportWorkflowStateAnomaly(
         'openWorkflow called on an active workflow that is not loaded',
         'workflowStore.openWorkflow',
@@ -203,29 +216,108 @@ export const useWorkflowStore = defineStore('workflow', () => {
       )
     }
 
-    if (!openWorkflowPaths.value.includes(workflow.path)) {
+    if (
+      !options.isCurrent &&
+      !openWorkflowPaths.value.includes(workflow.path)
+    ) {
       openWorkflowPaths.value.push(workflow.path)
     }
     const graphState = useApp().rootGraphOrUndefined?.state
     const loadedWorkflow = await workflow.load()
+    assertCurrentContext(options.isCurrent)
     if (graphState !== useApp().rootGraphOrUndefined?.state) {
       throw new DOMException('Workflow load was replaced', 'AbortError')
     }
-    activeWorkflow.value = loadedWorkflow
-    useApp().canvas.bg_tint = loadedWorkflow.tintCanvasBg
+    activateLoadedWorkflow(loadedWorkflow)
+    return loadedWorkflow
+  }
 
-    // Track activation in history (move to end if already present)
+  function assertCurrentContext(isCurrent?: () => boolean) {
+    if (isCurrent?.() === false)
+      throw new DOMException('Workflow load was replaced', 'AbortError')
+  }
+
+  function activateLoadedWorkflow(workflow: LoadedComfyWorkflow) {
+    if (!openWorkflowPaths.value.includes(workflow.path)) {
+      openWorkflowPaths.value.push(workflow.path)
+    }
+    activeWorkflow.value = workflow
+    useApp().canvas.bg_tint = workflow.tintCanvasBg
     const historyIndex = tabActivationHistory.value.indexOf(workflow.path)
     if (historyIndex !== -1) {
       tabActivationHistory.value.splice(historyIndex, 1)
     }
     tabActivationHistory.value.push(workflow.path)
-    // Trim history if too large
     if (tabActivationHistory.value.length > MAX_HISTORY_SIZE) {
       tabActivationHistory.value.shift()
     }
+  }
 
-    return loadedWorkflow
+  function hasSavedFileDestinationConflict(
+    path: string,
+    identity: UserFileIdentity,
+    existing: ComfyWorkflow | undefined
+  ) {
+    const draft = useWorkflowDraftStoreV2().getDraft(path)
+    if (draft && !sameUserFileIdentity(draft.savedFileIdentity, identity))
+      return true
+    const destination = getWorkflowByPath(path)
+    return (
+      !!destination &&
+      destination !== existing &&
+      (destination.isLoaded || destination.isModified || isOpen(destination))
+    )
+  }
+
+  function moveSavedFileDraft(identity: UserFileIdentity, path: string) {
+    const drafts = useWorkflowDraftStoreV2()
+    const oldPath = drafts.findDraftPath(identity)
+    return (
+      !oldPath ||
+      oldPath === path ||
+      drafts.moveDraft(oldPath, path, path.slice(ComfyWorkflow.basePath.length))
+    )
+  }
+
+  function moveSavedFileDocument(workflow: ComfyWorkflow, path: string) {
+    if (workflow.path === path) return
+    const oldPath = workflow.path
+    if (workflowLookup.value[oldPath] === workflow)
+      delete workflowLookup.value[oldPath]
+    workflow.updatePath(path)
+    openWorkflowPaths.value = openWorkflowPaths.value.map((opened) =>
+      opened === oldPath ? path : opened
+    )
+    tabActivationHistory.value = tabActivationHistory.value.map((opened) =>
+      opened === oldPath ? path : opened
+    )
+  }
+
+  const hydrateSavedFile = (
+    snapshot: SavedFileSnapshot,
+    scope: UserFileScope
+  ): ComfyWorkflow | null => {
+    if (!sameUserFileScope(scope, currentUserFileScope())) return null
+    const identity = receivedUserFileIdentity(snapshot.id, scope)
+    if (!identity) return null
+    const existing = workflows.value.find((workflow) =>
+      sameUserFileIdentity(workflow.savedFileIdentity, identity)
+    )
+    if (hasSavedFileDestinationConflict(snapshot.path, identity, existing))
+      return null
+    if (!moveSavedFileDraft(identity, snapshot.path)) return null
+    const workflow =
+      existing ??
+      new ComfyWorkflow({ ...snapshot, savedFileIdentity: identity })
+    moveSavedFileDocument(workflow, snapshot.path)
+    if (!workflow.isLoaded) {
+      workflow.content = snapshot.content
+      workflow.originalContent = snapshot.content
+      workflow.lastModified = snapshot.modified
+      workflow.size = snapshot.size
+    }
+    workflowLookup.value[snapshot.path] = workflow
+    return workflowLookup.value[snapshot.path]
   }
 
   const getUnconflictedPath = (basePath: string): string => {
@@ -238,11 +330,22 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
     return newPath
   }
+  const discardTemporaryWorkflow = (workflow: ComfyWorkflow): void => {
+    if (
+      !workflow.isTemporary ||
+      toRaw(getWorkflowByPath(workflow.path)) !== toRaw(workflow)
+    )
+      return
+    if (isActive(workflow)) activeWorkflow.value = null
+    detachWorkflow(workflow)
+    workflow.unload()
+  }
+
   const saveAs = (
     existingWorkflow: ComfyWorkflow,
     path: string
   ): ComfyWorkflow => {
-    // Generate new id when saving existing workflow as a new file
+    existingWorkflow.assertIdentityScope()
     const id = generateUUID()
     const state = JSON.parse(
       JSON.stringify(existingWorkflow.activeState)
@@ -417,12 +520,62 @@ export const useWorkflowStore = defineStore('workflow', () => {
     )
   )
 
+  function updateSyncedWorkflow(
+    existingWorkflow: ComfyWorkflow,
+    file: Awaited<ReturnType<typeof api.listUserDataFullInfo>>[number]
+  ) {
+    const identity = receivedUserFileIdentity(file.id)
+    if (existingWorkflow.savedFileIdentity && !identity) return
+    if (!reconcileSyncedIdentity(existingWorkflow, identity)) return
+    updateSyncedMetadata(existingWorkflow, file)
+  }
+
+  function updateSyncedMetadata(
+    existingWorkflow: ComfyWorkflow,
+    file: Awaited<ReturnType<typeof api.listUserDataFullInfo>>[number]
+  ) {
+    const nextLastModified = Math.max(
+      existingWorkflow.lastModified,
+      file.modified
+    )
+    const isMetadataUnchanged =
+      nextLastModified === existingWorkflow.lastModified &&
+      file.size === existingWorkflow.size
+    if (!isMetadataUnchanged) {
+      existingWorkflow.lastModified = nextLastModified
+      existingWorkflow.size = file.size
+    }
+    if (
+      activeWorkflow.value?.path === existingWorkflow.path ||
+      existingWorkflow.isModified ||
+      isMetadataUnchanged
+    )
+      return
+    existingWorkflow.unload()
+  }
+
+  function reconcileSyncedIdentity(
+    workflow: ComfyWorkflow,
+    identity: UserFileIdentity | undefined
+  ) {
+    const changed =
+      !sameUserFileIdentity(workflow.savedFileIdentity, identity) &&
+      !!(workflow.savedFileIdentity || identity)
+    if (!changed) return true
+    if (workflow.isLoaded || workflow.isModified || isOpen(workflow))
+      return false
+    workflow.savedFileIdentity = identity
+    workflow.unload()
+    return true
+  }
+
   const {
     isReady: isSyncReady,
     isLoading: isSyncLoading,
     execute: executeSyncWorkflows
   } = useAsyncState(
     async (dir: string = '') => {
+      const scope = currentUserFileScope()
       await syncEntities(
         dir ? 'workflows/' + dir : 'workflows',
         workflowLookup.value,
@@ -430,47 +583,28 @@ export const useWorkflowStore = defineStore('workflow', () => {
           new ComfyWorkflow({
             path: file.path,
             modified: file.modified,
-            size: file.size
+            size: file.size,
+            id: file.id
           }),
-        (existingWorkflow, file) => {
-          const isActiveWorkflow =
-            activeWorkflow.value?.path === existingWorkflow.path
-
-          const nextLastModified = Math.max(
-            existingWorkflow.lastModified,
-            file.modified
+        updateSyncedWorkflow,
+        (workflow) => workflow.isTemporary,
+        (workflow, path) => {
+          if (
+            isActive(workflow) ||
+            workflow.isModified ||
+            (workflow.savedFileIdentity && isOpen(workflow))
           )
-
-          const isMetadataUnchanged =
-            nextLastModified === existingWorkflow.lastModified &&
-            file.size === existingWorkflow.size
-
-          if (!isMetadataUnchanged) {
-            existingWorkflow.lastModified = nextLastModified
-            existingWorkflow.size = file.size
-          }
-
-          // Never unload the active workflow - it may contain unsaved in-memory edits.
-          if (isActiveWorkflow) {
-            return
-          }
-
-          // If nothing changed, keep any loaded content cached.
-          if (isMetadataUnchanged) {
-            return
-          }
-
-          existingWorkflow.unload()
-        },
-        /* exclude */ (workflow) => workflow.isTemporary,
-        /* beforeDelete */ (workflow, path) => {
-          if (isActive(workflow)) return false
+            return false
           openWorkflowPaths.value = openWorkflowPaths.value.filter(
             (openPath) => openPath !== path
           )
           forgetNodeHistories(workflow)
           return true
-        }
+        },
+        () =>
+          scope === null
+            ? currentUserFileScope() === null
+            : sameUserFileScope(scope, currentUserFileScope())
       )
     },
     undefined,
@@ -551,15 +685,21 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
-  const deleteWorkflow = async (workflow: ComfyWorkflow) => {
+  const deleteWorkflow = async (
+    workflow: ComfyWorkflow,
+    options: { signal?: AbortSignal } = {}
+  ) => {
     isBusy.value = true
     try {
-      await workflow.delete()
+      options.signal?.throwIfAborted()
+      await (options.signal
+        ? workflow.delete({ signal: options.signal })
+        : workflow.delete())
+      options.signal?.throwIfAborted()
       useWorkflowDraftStoreV2().removeDraft(workflow.path)
       if (bookmarkStore.isBookmarked(workflow.path)) {
         await bookmarkStore.setBookmarked(workflow.path, false)
       }
-      // Clear thumbnail when workflow is deleted
       clearThumbnail(workflow.key)
       detachWorkflow(workflow)
     } finally {
@@ -571,12 +711,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * Save a workflow.
    * @param workflow The workflow to save.
    */
-  const saveWorkflow = async (workflow: ComfyWorkflow) => {
+  const saveWorkflow = async (
+    workflow: ComfyWorkflow,
+    options: { signal?: AbortSignal } = {}
+  ) => {
     isBusy.value = true
     try {
-      await workflow.save()
-      // Synchronously detach and re-attach to force refresh the tree objects
-      // without an async gap that would cause the tab to disappear.
+      options.signal?.throwIfAborted()
+      await (options.signal
+        ? workflow.save({ signal: options.signal })
+        : workflow.save())
+      options.signal?.throwIfAborted()
       const openIndex = detachWorkflow(workflow)
       attachWorkflow(workflow, openIndex)
     } finally {
@@ -781,6 +926,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       void userActivation.trigger(workflow),
     deleteWorkflow,
     saveAs,
+    discardTemporaryWorkflow,
     saveWorkflow,
     reorderWorkflows,
 
@@ -789,6 +935,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     persistedWorkflows,
     modifiedWorkflows,
     getWorkflowByPath,
+    hydrateSavedFile,
     syncWorkflows,
     isSyncLoading,
     loadWorkflows,

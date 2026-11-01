@@ -42,7 +42,11 @@ import {
   writePayload
 } from '@/platform/workflow/persistence/base/storageIO'
 
+import type { UserFileIdentity } from '@/platform/workflow/core/utils/userFileIdentity'
+import { sameUserFileIdentity } from '@/platform/workflow/core/utils/userFileIdentity'
+
 interface DraftMeta {
+  savedFileIdentity?: UserFileIdentity
   name: string
   isTemporary: boolean
 }
@@ -59,6 +63,27 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   const indexCacheByWorkspace = ref<Record<string, DraftIndexV2>>({})
   const lineageByDraft = new Map<string, DraftLineage>()
   const authSubject = ref<string | null | undefined>(undefined)
+  let unidentifiedDraftGuard: (path: string) => boolean = () => true
+
+  function setUnidentifiedDraftGuard(guard: (path: string) => boolean): void {
+    unidentifiedDraftGuard = guard
+  }
+
+  let savedDraftLoader:
+    | ((
+        identity: UserFileIdentity,
+        isCurrent?: () => boolean
+      ) => Promise<boolean>)
+    | undefined
+
+  function setSavedDraftLoader(
+    loader: (
+      identity: UserFileIdentity,
+      isCurrent?: () => boolean
+    ) => Promise<boolean>
+  ): void {
+    savedDraftLoader = loader
+  }
 
   /**
    * Gets the current workspace ID fresh (not cached).
@@ -143,11 +168,21 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    */
   function saveDraft(path: string, data: string, meta: DraftMeta): boolean {
     if (!isStorageAvailable()) return false
-
+    const existing = getEntryByPath(loadIndex(), path)
+    if (
+      existing &&
+      (existing.savedFileIdentity || meta.savedFileIdentity) &&
+      !sameUserFileIdentity(existing.savedFileIdentity, meta.savedFileIdentity)
+    )
+      return false
+    const oldAlias = meta.savedFileIdentity
+      ? findDraftPath(meta.savedFileIdentity)
+      : undefined
+    if (oldAlias && oldAlias !== path && !moveDraft(oldAlias, path, meta.name))
+      return false
     const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
     const now = Date.now()
-
     const index = loadIndex()
 
     const payloadWritten = writePayload(
@@ -313,31 +348,27 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   /**
    * Moves a draft from one path to another (rename).
    */
-  function moveDraft(oldPath: string, newPath: string, name: string): void {
+  function moveDraft(oldPath: string, newPath: string, name: string): boolean {
+    if (oldPath === newPath) return true
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const result = moveEntry(index, oldPath, newPath, name)
-
-    if (result) {
-      const oldPayload = readPayload(workspaceId, result.oldKey)
-      if (oldPayload) {
-        const written = writePayload(workspaceId, result.newKey, oldPayload)
-        if (!written) return
-
-        if (!persistIndex(result.index)) {
-          deletePayload(workspaceId, result.newKey)
-          return
-        }
-        deletePayload(workspaceId, result.oldKey)
-        const lineage = lineageByDraft.get(
-          lineageKey(workspaceId, result.oldKey)
-        )
-        if (lineage) {
-          lineageByDraft.set(lineageKey(workspaceId, result.newKey), lineage)
-          lineageByDraft.delete(lineageKey(workspaceId, result.oldKey))
-        }
-      }
+    if (!result) return getEntryByPath(index, oldPath) === null
+    const oldPayload = readPayload(workspaceId, result.oldKey)
+    if (!oldPayload) return false
+    if (!writePayload(workspaceId, result.newKey, oldPayload)) return false
+    if (!persistIndex(result.index)) {
+      deletePayload(workspaceId, result.newKey)
+      persistIndex(index)
+      return false
     }
+    deletePayload(workspaceId, result.oldKey)
+    const lineage = lineageByDraft.get(lineageKey(workspaceId, result.oldKey))
+    if (lineage) {
+      lineageByDraft.set(lineageKey(workspaceId, result.newKey), lineage)
+      lineageByDraft.delete(lineageKey(workspaceId, result.oldKey))
+    }
+    return true
   }
 
   /**
@@ -349,6 +380,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     isTemporary: boolean
     updatedAt: number
     lineage?: DraftLineage
+    savedFileIdentity?: UserFileIdentity
   } | null {
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
@@ -369,8 +401,15 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       name: entry.name,
       isTemporary: entry.isTemporary,
       updatedAt: payload.updatedAt,
-      lineage: payload.lineage
+      lineage: payload.lineage,
+      savedFileIdentity: entry.savedFileIdentity
     }
+  }
+
+  function findDraftPath(identity: UserFileIdentity): string | undefined {
+    return Object.values(loadIndex().entries).find((entry) =>
+      sameUserFileIdentity(entry.savedFileIdentity, identity)
+    )?.path
   }
 
   function setLineage(path: string, lineage: DraftLineage): void {
@@ -438,6 +477,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   ): Promise<boolean> {
     const draft = getDraft(path)
     if (!draft) return false
+    if (!draft.savedFileIdentity && !unidentifiedDraftGuard(path)) return false
+    if (draft.savedFileIdentity)
+      return savedDraftLoader?.(draft.savedFileIdentity, isCurrent) ?? false
 
     const loaded = await tryLoadGraph(draft.data, draft.name, isCurrent, () => {
       removeDraft(path)
@@ -481,11 +523,14 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   return {
     setAuthSubject,
+    setSavedDraftLoader,
+    setUnidentifiedDraftGuard,
     saveDraft,
     removeDraft,
     moveDraft,
     markDraftUsed,
     getDraft,
+    findDraftPath,
     setLineage,
     getMostRecentPath,
     loadPersistedWorkflow,

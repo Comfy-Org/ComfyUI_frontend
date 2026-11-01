@@ -90,14 +90,10 @@
     {
       "path": "src/storybook/mocks/useWorkspaceUI.ts",
       "role": "application"
-    },
-    {
-      "path": "packages/account-core/src/workspaceLink.ts",
-      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["ingest-api", "server-facts"],
+  "allowedDependencies": ["ingest-api", "server-facts", "workspace-link"],
   "allowedConsumers": ["account"],
   "characterizationScenarios": [
     {

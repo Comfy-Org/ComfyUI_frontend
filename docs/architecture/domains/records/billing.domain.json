@@ -390,7 +390,8 @@
     "ingest-api",
     "keybindings",
     "server-facts",
-    "telemetry"
+    "telemetry",
+    "workspace-link"
   ],
   "allowedConsumers": ["account"],
   "characterizationScenarios": [

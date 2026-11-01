@@ -1728,8 +1728,16 @@ export class ComfyApi extends EventTarget {
   /**
    * Gets a user data file for the current user
    */
-  async getUserData(file: string, options?: RequestInit) {
-    return this.fetchApi(`/userdata/${encodeURIComponent(file)}`, options)
+  async getUserData(
+    file: string,
+    options?: RequestInit & { expected_id?: string }
+  ) {
+    const { expected_id, ...requestOptions } = options ?? {}
+    const route =
+      expected_id !== undefined
+        ? `/userdata-files/${encodeURIComponent(expected_id)}/path/${encodeURIComponent(file)}`
+        : `/userdata/${encodeURIComponent(file)}`
+    return this.fetchApi(route, requestOptions)
   }
 
   /**
@@ -1743,6 +1751,7 @@ export class ComfyApi extends EventTarget {
     file: string,
     data: unknown,
     options: RequestInit & {
+      expected_id?: string
       overwrite?: boolean
       stringify?: boolean
       throwOnError?: boolean
@@ -1756,7 +1765,11 @@ export class ComfyApi extends EventTarget {
   ): Promise<Response> {
     const overwrite = options.overwrite ?? true
     const fullInfo = options.full_info ?? false
-    const route = `/userdata/${encodeURIComponent(file)}?overwrite=${overwrite}&full_info=${fullInfo}`
+    const base =
+      options.expected_id !== undefined
+        ? `/userdata-files/${encodeURIComponent(options.expected_id)}/path/${encodeURIComponent(file)}`
+        : `/userdata/${encodeURIComponent(file)}`
+    const route = `${base}?overwrite=${overwrite}&full_info=${fullInfo}`
     const resp = await this.fetchApi(route, {
       method: 'POST',
       body: options.stringify ? JSON.stringify(data) : (data as BodyInit),
@@ -1798,9 +1811,17 @@ export class ComfyApi extends EventTarget {
    * Deletes a user data file for the current user
    * @param { string } file The name of the userdata file to delete
    */
-  async deleteUserData(file: string) {
-    const resp = await this.fetchApi(`/userdata/${encodeURIComponent(file)}`, {
-      method: 'DELETE'
+  async deleteUserData(
+    file: string,
+    options: { expected_id?: string; signal?: AbortSignal } = {}
+  ) {
+    const route =
+      options.expected_id !== undefined
+        ? `/userdata-files/${encodeURIComponent(options.expected_id)}/path/${encodeURIComponent(file)}`
+        : `/userdata/${encodeURIComponent(file)}`
+    const resp = await this.fetchApi(route, {
+      method: 'DELETE',
+      ...(options.signal && { signal: options.signal })
     })
     return resp
   }
@@ -1813,10 +1834,16 @@ export class ComfyApi extends EventTarget {
   async moveUserData(
     source: string,
     dest: string,
-    options = { overwrite: false }
+    options: { overwrite?: boolean; expected_id?: string } = {
+      overwrite: false
+    }
   ) {
+    const base =
+      options.expected_id !== undefined
+        ? `/userdata-files/${encodeURIComponent(options.expected_id)}/path/${encodeURIComponent(source)}`
+        : `/userdata/${encodeURIComponent(source)}`
     const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?overwrite=${options.overwrite}`,
+      `${base}/move/${encodeURIComponent(dest)}?overwrite=${options.overwrite ?? false}`,
       {
         method: 'POST'
       }
