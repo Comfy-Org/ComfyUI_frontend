@@ -12,7 +12,7 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 import {
   EMPTY_BILLING_BALANCE,
   EMPTY_BILLING_PLANS,
-  LEGACY_PERSONAL_BILLING_STATUS
+  PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
@@ -704,7 +704,13 @@ export const comfyPageFixture = base.extend<{
           route.fulfill({ status: 204 })
         )
         await context.route('**/api/billing/status', (route) =>
-          route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
+          route.fulfill({
+            json: {
+              ...PERSONAL_BILLING_STATUS,
+              is_active: true,
+              subscription_status: undefined
+            }
+          })
         )
         await context.route('**/api/billing/capabilities', (route) =>
           route.fulfill({ json: createBillingCapabilities('ws-personal') })

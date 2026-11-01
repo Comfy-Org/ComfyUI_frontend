@@ -782,7 +782,6 @@ describe('CreditsTile', () => {
 
   it('uses the fail-open capability fallback before the billing type loads', () => {
     activeProSubscription()
-    state.type = 'unknown'
     renderTile()
     expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
@@ -801,7 +800,6 @@ describe('CreditsTile', () => {
 
   it('keeps refreshing on focus until a pending top-up is confirmed', async () => {
     activeProSubscription()
-    state.type = 'unknown'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
     renderTile()
 
@@ -820,7 +818,6 @@ describe('CreditsTile', () => {
 
   it('runs a trailing refresh when focus returns during an active refresh', async () => {
     activeProSubscription()
-    state.type = 'unknown'
     renderTile()
     await waitFor(() =>
       expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
@@ -857,7 +854,6 @@ describe('CreditsTile', () => {
 
   it('waits for a failed refresh to settle before its trailing refresh', async () => {
     activeProSubscription()
-    state.type = 'unknown'
     renderTile()
     await waitFor(() =>
       expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
@@ -893,7 +889,6 @@ describe('CreditsTile', () => {
 
   it('clears a confirmed top-up before the next focus', async () => {
     activeProSubscription()
-    state.type = 'unknown'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
     const events = [
       {
@@ -925,7 +920,6 @@ describe('CreditsTile', () => {
     const confirmedAtMs = Date.parse('2024-06-15T12:30:00Z')
     vi.spyOn(Date, 'now').mockReturnValue(confirmedAtMs)
     activeProSubscription()
-    state.type = 'unknown'
     localStorage.setItem(
       'pending_topup_timestamp',
       String(confirmedAtMs - 90_000)
@@ -960,7 +954,6 @@ describe('CreditsTile', () => {
 
   it('refreshes and reconciles a pending top-up when telemetry is unavailable', async () => {
     activeProSubscription()
-    state.type = 'unknown'
     const telemetry = useTelemetry()
     if (!telemetry) throw new Error('Expected telemetry mock')
     state.telemetryUnavailable = true
@@ -986,7 +979,6 @@ describe('CreditsTile', () => {
 
   it('retries completion reconciliation after a request failure', async () => {
     activeProSubscription()
-    state.type = 'unknown'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
     useCustomerEventsService().error.value = 'events unavailable'
     const retryEvents = [

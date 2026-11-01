@@ -5,6 +5,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
@@ -157,6 +158,21 @@ describe('showTopUpCreditsDialog', () => {
       )
       expect(storeDialogKeys).toEqual(storeDialogs)
       expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for(['subscription_ended', 'free_plan', 'no_subscription'])(
+    'shows no contact-admin notice to a personal owner denied as %s',
+    async (denial) => {
+      Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
+      useBillingCapabilities().canTopUp = computed(() => false)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+
+      await useBillingDialogs().showTopUpCreditsDialog({
+        isInsufficientCredits: true
+      })
+
+      expect(useDialogStore().showDialog).not.toHaveBeenCalled()
     }
   )
 

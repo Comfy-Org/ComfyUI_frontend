@@ -49,7 +49,12 @@ export function useBillingDialogs() {
       return usePaymentRecoveryDialog().showPaymentRecoveryDialog()
     }
 
-    if (!canTopUp.value && type.value === 'workspace') {
+    if (!canTopUp.value) {
+      // Personal owners have no admins to ask, so only team members get the notice.
+      const asksAdmins =
+        type.value === 'workspace' &&
+        !useWorkspaceIdentity().isInPersonalWorkspace
+      if (!asksAdmins) return
       return dialogStore.showDialog({
         key: 'insufficient-credits-member',
         component: InsufficientCreditsMemberDialog,
@@ -62,7 +67,6 @@ export function useBillingDialogs() {
         }
       })
     }
-    if (!canTopUp.value) return
 
     return dialogStore.showDialog({
       key: 'top-up-credits',

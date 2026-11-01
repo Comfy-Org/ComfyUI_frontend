@@ -429,9 +429,7 @@ describe('useBillingContext', () => {
       loaded.value = true
 
       await vi.waitFor(() => {
-        expect(
-          vi.mocked(billingApi.getBillingStatus).mock.calls.length
-        ).toBeGreaterThanOrEqual(2)
+        expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(2)
       })
     })
 
@@ -468,9 +466,7 @@ describe('useBillingContext', () => {
       loaded.value = true
 
       await vi.waitFor(() => {
-        expect(
-          vi.mocked(billingApi.getBillingStatus).mock.calls.length
-        ).toBeGreaterThanOrEqual(2)
+        expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(2)
       })
       expect(context.isInitialized.value).toBe(false)
     })
