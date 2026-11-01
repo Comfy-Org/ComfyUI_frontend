@@ -396,12 +396,33 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: /package.json
+          sparse-checkout: |
+            /package.json
+            /pnpm-lock.yaml
           sparse-checkout-cone-mode: false
           persist-credentials: false
 
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Read locked Playwright version
+        id: playwright-version
+        run: |
+          set -euo pipefail
+          version=$(awk '
+            in_entry && !/^        / { in_entry = 0 }
+            /^importers:/ { in_importers = 1; next }
+            in_importers && /^[^ ]/ { exit }
+            in_importers && /^  [^ ]/ { in_root = ($0 == "  .:"); next }
+            in_root && /^      .@playwright\/test.:$/ { in_entry = 1; next }
+            in_entry && /^        version: / { sub(/^        version: /, ""); sub(/\(.*/, ""); print; exit }
+          ' pnpm-lock.yaml)
+          if [[ -z "$version" ]]; then
+            echo "Could not read the @playwright/test version from pnpm-lock.yaml" >&2
+            exit 1
+          fi
+          echo "Using @playwright/test@$version from pnpm-lock.yaml"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Download blob reports
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -411,12 +432,14 @@ jobs:
           merge-multiple: true
 
       - name: Merge into HTML Report
+        env:
+          PLAYWRIGHT_VERSION: ${{ steps.playwright-version.outputs.version }}
         run: |
           # Generate HTML report
-          pnpm dlx @playwright/test merge-reports --reporter=html ./all-blob-reports
+          pnpm dlx "@playwright/test@$PLAYWRIGHT_VERSION" merge-reports --reporter=html ./all-blob-reports
           # Generate JSON report separately with explicit output path
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
-          pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports
+          pnpm dlx "@playwright/test@$PLAYWRIGHT_VERSION" merge-reports --reporter=json ./all-blob-reports
 
       - name: Upload HTML report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
