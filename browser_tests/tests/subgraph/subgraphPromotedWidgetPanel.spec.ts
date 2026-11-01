@@ -249,8 +249,6 @@ test.describe(
           await expect(hideInputButton).toBeVisible()
           await expect(hideInputButton).toHaveAccessibleName('Hide input')
 
-          // Button and menu trigger sit in the actions container; its parent
-          // is the row header (label, source node name, actions).
           const rowHeader = hideInputButton.locator('xpath=../..')
           await expectElementScreenshot(
             rowHeader,
