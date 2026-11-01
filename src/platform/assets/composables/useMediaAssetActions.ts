@@ -18,6 +18,8 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
+import type { WorkflowOpenResult } from '@/platform/workflow/core/services/workflowActionsService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -310,7 +312,7 @@ export function useMediaAssetActions() {
   const openApiPromptAsWorkflow = async (
     asset: AssetItem,
     filename: string
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<WorkflowOpenResult> => {
     try {
       const apiPrompt = await extractApiPromptFromAsset(asset)
       if (!app.isApiJson(apiPrompt)) return { success: false }
@@ -325,7 +327,10 @@ export function useMediaAssetActions() {
       })
       return {
         success: false,
-        error: error instanceof Error ? error.message : undefined
+        error: error instanceof Error ? error.message : undefined,
+        errorPresentation: isGraphLoadFailurePresented(error)
+          ? 'handled'
+          : undefined
       }
     }
   }
@@ -334,6 +339,9 @@ export function useMediaAssetActions() {
    * Open an asset's workflow in a new tab, falling back to the stored API
    * graph for assets whose job embeds no workflow (API submissions)
    */
+  const isAlreadyPresented = (result: WorkflowOpenResult) =>
+    result.errorPresentation === 'handled'
+
   const openAssetWorkflow = async (asset: AssetItem) => {
     const { workflow, filename } = await extractWorkflowFromAsset(asset)
 
@@ -352,17 +360,20 @@ export function useMediaAssetActions() {
 
     const result = await openAssetWorkflow(targetAsset)
 
-    if (!result.success) {
-      toast.warning(t('g.warning'), {
-        description: result.error || t('mediaAsset.noWorkflowDataFound'),
-        duration: 2000
-      })
-    } else {
+    if (result.success) {
       toast.success(t('g.success'), {
         description: t('mediaAsset.workflowOpenedInNewTab'),
         duration: 2000
       })
+      return
     }
+
+    if (isAlreadyPresented(result)) return
+
+    toast.warning(t('g.warning'), {
+      description: result.error || t('mediaAsset.noWorkflowDataFound'),
+      duration: 2000
+    })
   }
 
   /**
@@ -473,6 +484,7 @@ export function useMediaAssetActions() {
   const openMultipleWorkflows = async (assets: AssetItem[]) => {
     let succeeded = 0
     let failed = 0
+    let alreadyPresented = 0
 
     for (const asset of assets) {
       try {
@@ -482,6 +494,7 @@ export function useMediaAssetActions() {
           succeeded++
         } else {
           failed++
+          if (isAlreadyPresented(result)) alreadyPresented++
         }
       } catch {
         failed++
@@ -496,10 +509,12 @@ export function useMediaAssetActions() {
         duration: 2000
       })
     } else if (succeeded === 0) {
-      toast.warning(t('g.warning'), {
-        description: t('mediaAsset.selection.noWorkflowsFound'),
-        duration: 3000
-      })
+      const everyFailureAlreadyPresented = alreadyPresented === failed
+      if (!everyFailureAlreadyPresented)
+        toast.warning(t('g.warning'), {
+          description: t('mediaAsset.selection.noWorkflowsFound'),
+          duration: 3000
+        })
     } else {
       toast.warning(t('g.warning'), {
         description: t('mediaAsset.selection.partialWorkflowsOpened', {

@@ -164,7 +164,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       ga4EventName,
       metadata && {
         current_tier: metadata.current_tier,
-        reason: metadata.reason
+        reason: metadata.reason,
+        refusal_type: metadata.refusal_type
       }
     )
   }

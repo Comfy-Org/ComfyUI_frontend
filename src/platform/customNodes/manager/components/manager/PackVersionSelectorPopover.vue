@@ -114,7 +114,7 @@ import type { components } from '@/types/comfyRegistryTypes'
 import PackStatusMessage from '@/platform/customNodes/manager/components/manager/PackStatusMessage.vue'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
-import type { components as ManagerComponents } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import type { components as ManagerComponents } from '@comfyorg/api-client/generatedManagerTypes'
 import { getJoinedConflictMessages } from '@/platform/customNodes/manager/utils/conflictMessageUtil'
 import {
   getLatestVersion,

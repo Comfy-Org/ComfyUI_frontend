@@ -31,6 +31,11 @@ import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil
 import type { AssetKind } from '@/types/widgetTypes'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  hdrPreviewAssetUrl,
+  isHdrImageFilename,
+  isHdrImageUrl
+} from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import type { PagedList } from '@/utils/pagedList'
 
@@ -50,6 +55,21 @@ function getDisplayLabel(
 
 function assetKindToMediaType(kind: AssetKind): string {
   return kind === 'mesh' ? '3D' : kind
+}
+
+function getAssetMediaType(asset: AssetItem): string {
+  return isHdrImageFilename(asset.name)
+    ? 'image'
+    : getMediaTypeFromFilename(asset.name)
+}
+
+function getHdrOutputPreviewUrl(asset: AssetItem): string {
+  if (asset.preview_id) return hdrPreviewAssetUrl(asset.preview_id)
+  return (
+    [asset.thumbnail_url, asset.preview_url].find(
+      (url) => url && !isHdrImageUrl(url)
+    ) ?? ''
+  )
 }
 
 function getMediaUrl(
@@ -215,7 +235,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       .filter((value) => !missing.has(String(value)))
       .map((value, index) => ({
         id: `input-${index}`,
-        preview_url: getMediaUrl(String(value), 'input', kind),
+        preview_url: getAnnotatedValueMediaUrl(String(value), kind),
         name: String(value),
         label: getDisplayLabel(String(value), labelFn)
       }))
@@ -242,7 +262,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     const missing = missingMediaValues.value
     for (const asset of assets) {
-      if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
+      if (getAssetMediaType(asset) !== targetMediaType) continue
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const filenameForUrl = getAssetUrlFilename(asset)
@@ -259,7 +279,10 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         preview_url:
           kind === 'mesh'
             ? ''
-            : asset.preview_url || getMediaUrl(filenameForUrl, 'output', kind),
+            : isHdrImageFilename(asset.name)
+              ? getHdrOutputPreviewUrl(asset)
+              : asset.preview_url ||
+                getMediaUrl(filenameForUrl, rootFolder, kind, subfolder),
         name: annotatedPath,
         label: getDisplayLabel(displayLabel, labelFn)
       })

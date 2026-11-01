@@ -143,6 +143,8 @@ export type PendingBillingOperation = BillingOperationIdentity & {
   readonly actionUrl?: string
   readonly challenge?: EmbeddedChallenge
   readonly authenticationState?: BillingAuthenticationState
+  /** The server's deadline for the customer's authentication, as served; absent is no claim. */
+  readonly authenticationDeadline?: string
   readonly serverPhase?: BillingOperationServerPhase
   /** Set while the customer's last attempt was declined and they may try again. */
   readonly declineReason?: BillingDeclineReason
@@ -290,10 +292,10 @@ function nextChallenge(
   state: PendingBillingOperation,
   status: BillingOpStatus
 ): EmbeddedChallenge | undefined {
-  if (state.presentation !== 'embedded') return state.challenge
   const secret = status.payment_intent_client_secret
   if (secret === undefined) return state.challenge
   if (state.challenge?.clientSecret === secret) return state.challenge
+  if (state.presentation !== 'embedded') return undefined
   if (status.authentication_state !== 'requires_action') return state.challenge
   return { clientSecret: secret, status: 'required' }
 }
@@ -403,6 +405,19 @@ function nextDeclineReason(
   return 'generic'
 }
 
+function nextAuthenticationDeadline(
+  state: PendingBillingOperation,
+  status: BillingOpStatus
+): string | undefined {
+  if (
+    state.challenge?.status === 'completed' &&
+    echoesSettledChallenge(state, status)
+  ) {
+    return state.authenticationDeadline
+  }
+  return status.authentication_deadline
+}
+
 function reducePending(
   state: PendingBillingOperation,
   status: BillingOpStatus
@@ -411,9 +426,11 @@ function reducePending(
   const terminal = terminalFromStatus(state, status)
   if (terminal !== undefined) return terminal
 
-  const authenticationState = echoesSettledChallenge(state, status)
+  const echoed = echoesSettledChallenge(state, status)
+  const authenticationState = echoed
     ? state.authenticationState
     : status.authentication_state
+  const authenticationDeadline = nextAuthenticationDeadline(state, status)
   const actionUrl = nextActionUrl(state, status, authenticationState)
   const declineReason = nextDeclineReason(state, status, authenticationState)
   const { plan: _previousPlan, ...rest } = state
@@ -423,6 +440,7 @@ function reducePending(
     ...(status.plan === undefined ? {} : { plan: status.plan }),
     challenge: nextChallenge(state, status),
     authenticationState,
+    authenticationDeadline,
     actionUrl,
     serverPhase: status.phase,
     declineReason,
@@ -454,6 +472,7 @@ function settleChallenge(
     ...state,
     challenge,
     authenticationState: 'processing',
+    authenticationDeadline: undefined,
     actionUrl: undefined,
     declineReason: undefined
   }

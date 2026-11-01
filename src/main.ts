@@ -28,9 +28,11 @@ import { flushErrorReports } from '@comfyorg/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import '@/lib/litegraph/public/css/litegraph.css'
 import { createAppRouter } from '@/router'
+import { captureSafeExtensionBoot } from '@/platform/customNodes/safeExtensionBoot'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { createToastId } from '@/types/toastId'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { api } from '@/scripts/api'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -86,8 +88,16 @@ async function startLocalAuthSession(): Promise<boolean> {
     }
     const { startLocalWebSession } =
       await import('@/platform/auth/localWeb/localWebSession')
+    const signInNotice = createToastId()
     const started = await startLocalWebSession({
-      onPopupBlocked: () => useToast().error(t('auth.desktopHost.popupBlocked'))
+      onPopupBlocked: () =>
+        useToast().error(t('auth.desktopHost.popupBlocked'), {
+          id: signInNotice
+        }),
+      onSignInFailed: () =>
+        useToast().error(t('auth.desktopHost.signInFailed'), {
+          id: signInNotice
+        })
     })
     return started === 'sign-in-failed'
   })
@@ -150,6 +160,7 @@ function installSubgraphGraphHooks(): void {
 async function bootstrap(): Promise<void> {
   bootstrapTracer.recordSinceTimeOrigin('startup/entry-modules')
   api.captureLaunchContext()
+  captureSafeExtensionBoot()
 
   if (isCloud) {
     stripPaymentReturnParams()

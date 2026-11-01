@@ -1,5 +1,5 @@
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 
 const IMPLICIT_ASSET_ROOT = 'input'
 const ANNOTATION_SUFFIX = /\s*\[(input|output|temp)\]\s*$/i

@@ -696,7 +696,11 @@ jobs:
     steps:
       - name: Comment when release labels lack needs-backport
         env:
-          GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
+          # Reads use the job token so a busy hour on the shared token cannot
+          # fail the merge. Only the comment needs the shared token: the job
+          # token is refused with HTTP 403 when posting on this repo.
+          GH_TOKEN: ${{ github.token }}
+          POST_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
@@ -709,16 +713,25 @@ jobs:
             exit 0
           fi
 
+          RELEASE_LABEL='^(core|cloud)/[0-9]+\.[0-9]+$'
+
+          # Most merges carry no release label. Stop before the comment
+          # lookup so they cost one call against the shared token's limit.
+          if ! grep -qE -- "${RELEASE_LABEL}" <<<"${LABELS}"; then
+            echo "PR #${PR_NUMBER} has no release labels."
+            exit 0
+          fi
+
           WARNED=$(gh api --paginate \
             "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" --jq '.[]
-              | select(.user.login == "github-actions[bot]")
+              | select(.user.login == "comfy-pr-bot" or .user.login == "github-actions[bot]")
               | (.body // "")
               | capture("^<!-- pr-backport:missing-needs-backport (?<labels>[^>]*) -->").labels
               | split(" ")[]')
 
           PENDING=()
           while IFS= read -r label; do
-            if [[ ! "${label}" =~ ^(core|cloud)/[0-9]+\.[0-9]+$ ]] ||
+            if [[ ! "${label}" =~ ${RELEASE_LABEL} ]] ||
               grep -qxF -- "${label}" <<<"${WARNED}"; then
               continue
             fi
@@ -742,7 +755,7 @@ jobs:
 
           To backport, add the \`needs-backport\` label. If the backport is intentionally on hold, ignore this comment."
 
-          if ! gh api --silent --method POST \
+          if ! GH_TOKEN="${POST_TOKEN}" gh api --silent --method POST \
             "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" -f "body=${BODY}"; then
-            echo "::warning::Could not comment on PR #${PR_NUMBER} (it may be locked). Backport did not run for ${PENDING[*]}: add the needs-backport label to start it."
+            echo "::warning::Could not comment on PR #${PR_NUMBER} (it may be locked, or the token may be out of quota). Backport did not run for ${PENDING[*]}: add the needs-backport label to start it."
           fi
