@@ -49,7 +49,6 @@ export function usePanAndZoom() {
 
   const image = ref<HTMLImageElement | null>(null)
   const imageRootWidth = ref(0)
-  const imageRootHeight = ref(0)
 
   const cursorPoint = ref<Point>({ x: 0, y: 0 })
   const penPointerIdList = ref<number[]>([])
@@ -331,6 +330,25 @@ export function usePanAndZoom() {
     interpolatedZoomRatio.value = 1.0
   }
 
+  function fitCanvasToViewport(width: number, height: number): void {
+    const root = rootElement.value
+    if (!root) return
+    const { sidePanelWidth, toolPanelWidth } = getPanelDimensions()
+    const fitResult = calculateFitView({
+      rootWidth: root.clientWidth,
+      rootHeight: root.clientHeight,
+      imageWidth: width,
+      imageHeight: height,
+      toolPanelWidth,
+      sidePanelWidth
+    })
+    imageRootWidth.value = fitResult.fittedWidth
+    zoom_ratio.value = fitResult.zoomRatio
+    pan_offset.value = fitResult.panOffset
+    interpolatedZoomRatio.value = 1
+    store.displayZoomRatio = 1
+  }
+
   const initializeCanvasPanZoom = async (
     img: HTMLImageElement,
     root: HTMLElement,
@@ -341,26 +359,11 @@ export function usePanAndZoom() {
     toolPanelElement.value = toolPanel || null
     sidePanelElement.value = sidePanel || null
 
-    const { sidePanelWidth, toolPanelWidth } = getPanelDimensions()
-
-    const fitResult = calculateFitView({
-      rootWidth: root.clientWidth,
-      rootHeight: root.clientHeight,
-      imageWidth: img.width,
-      imageHeight: img.height,
-      toolPanelWidth,
-      sidePanelWidth
-    })
-
     if (image.value === null) {
       image.value = img
     }
 
-    imageRootWidth.value = fitResult.fittedWidth
-    imageRootHeight.value = fitResult.fittedHeight
-
-    zoom_ratio.value = fitResult.zoomRatio
-    pan_offset.value = fitResult.panOffset
+    fitCanvasToViewport(img.width, img.height)
 
     penPointerIdList.value = []
 
@@ -373,6 +376,9 @@ export function usePanAndZoom() {
       () => store.canvasHistory.dimensions?.height
     ],
     async () => {
+      const currentImage = store.maskCanvas ?? image.value
+      if (!currentImage?.width || !currentImage.height) return
+      fitCanvasToViewport(currentImage.width, currentImage.height)
       await invalidatePanZoom()
     }
   )
