@@ -1,7 +1,10 @@
 import { expect } from '@playwright/test'
 import type { Request } from '@playwright/test'
 
-import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
+import {
+  cloudAppFixture as test,
+  waitForCloudApp
+} from '@e2e/fixtures/cloudAppFixture'
 import { DEFAULT_TEAM_MEMBERS } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import {
@@ -10,7 +13,9 @@ import {
   fetchThroughApp,
   fulfillUnavailable,
   routeUnavailableGets
-} from '@e2e/fixtures/helpers/StatusRetryRouteHelper'
+} from '@e2e/fixtures/utils/statusRetryRoutes'
+
+const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 test.describe('Shared request status retry', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
@@ -40,16 +45,21 @@ test.describe('Shared request status retry', { tag: '@cloud' }, () => {
   test('keeps credits locked when the billing read stays unavailable', async ({
     page
   }) => {
-    const capabilityReads = await routeUnavailableGets(
+    await routeUnavailableGets(
       page,
       CAPABILITIES_ROUTE,
       Number.POSITIVE_INFINITY
     )
+    const finishedReads: Request[] = []
+    page.on('requestfinished', (request) => {
+      if (request.url().endsWith('/api/billing/capabilities'))
+        finishedReads.push(request)
+    })
 
     const content = await workspace.openPlanAndCreditsSettings()
 
     await expect(content.getByText('Total credits')).toBeVisible()
-    await expect.poll(() => capabilityReads.length).toBeGreaterThanOrEqual(3)
+    await expect.poll(() => finishedReads.length).toBeGreaterThanOrEqual(3)
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toHaveCount(0)
@@ -58,7 +68,8 @@ test.describe('Shared request status retry', { tag: '@cloud' }, () => {
   test('stops a read after three attempts and returns the last 503', async ({
     page
   }) => {
-    await workspace.openPlanAndCreditsSettings()
+    await page.goto(APP_URL)
+    await waitForCloudApp(page)
     const reads = await routeUnavailableGets(
       page,
       STATUS_RETRY_PROBE_ROUTE,
@@ -74,7 +85,8 @@ test.describe('Shared request status retry', { tag: '@cloud' }, () => {
   test('returns the answer of a read that recovered on retry', async ({
     page
   }) => {
-    await workspace.openPlanAndCreditsSettings()
+    await page.goto(APP_URL)
+    await waitForCloudApp(page)
     const reads = await routeUnavailableGets(
       page,
       STATUS_RETRY_PROBE_ROUTE,
@@ -89,7 +101,8 @@ test.describe('Shared request status retry', { tag: '@cloud' }, () => {
   })
 
   test('sends a write answered 503 once', async ({ page }) => {
-    await workspace.openPlanAndCreditsSettings()
+    await page.goto(APP_URL)
+    await waitForCloudApp(page)
     const writes: Request[] = []
     await page.route(STATUS_RETRY_PROBE_ROUTE, (route) => {
       writes.push(route.request())
