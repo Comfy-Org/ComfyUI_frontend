@@ -5,7 +5,7 @@ import {
   readStamps,
   WIDGET_FORM_KEY
 } from '@comfyorg/comfy-multi-player'
-import { isEqual, isPlainObject, omit } from 'es-toolkit'
+import { isEqual, isPlainObject, omit, partition } from 'es-toolkit'
 import * as Y from 'yjs'
 import { z } from 'zod'
 
@@ -16,14 +16,16 @@ import {
   reachesDynamicGroupRowCount,
   reportRemoteDynamicGroupRowMismatch
 } from '@/core/graph/widgets/dynamicGroupDiagnostics'
+import { loadSerialisedNode } from '@/core/graph/loadSerialisedNode'
 import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
+import { withGraphConfiguring } from '@/core/graph/withGraphConfiguring'
 import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -723,29 +725,6 @@ function positionalWidgetValues(
   })
 }
 
-function missingNode(docNode: DocNode): LGraphNode {
-  const node = new LGraphNode(
-    docNode.serialised.title || docNode.type || 'Missing Node',
-    docNode.type
-  )
-  node.has_errors = true
-  return node
-}
-
-/**
- * A document may carry a size smaller than the node's widgets need (or none
- * at all). Every human path — `loadGraphData`, which the undo stack restores
- * through, and interactive resize — floors the size at `computeSize()`, so a
- * node born below that floor snapshots at one size and restores at another,
- * which the change tracker then records as a fresh edit.
- */
-function floorSizeToContent(node: LGraphNode): void {
-  const [minWidth, minHeight] = node.computeSize()
-  const [width, height] = node.size
-  if (width >= minWidth && height >= minHeight) return
-  node.setSize([Math.max(width, minWidth), Math.max(height, minHeight)])
-}
-
 function configureRemoteNode(node: LGraphNode, info: ISerialisedNode): void {
   applyRemoteDynamicGroupRowCount(node, () => node.configure(info))
 }
@@ -785,6 +764,7 @@ export class LiveGraphApplier {
       return this.write(graph, context, () => {
         if (mode === 'replace') this.removeAbsent(graph, doc, context)
         const created: NodeId[] = []
+        const loaded: string[] = []
         const touchedNodes = new Set<string>()
         this.registerDefinitions(graph, doc)
 
@@ -797,13 +777,10 @@ export class LiveGraphApplier {
           this.try(context, () => {
             const result = this.upsertNode(graph, doc, id, mode)
             if (result === 'created') created.push(toNodeId(id))
-            if (result === 'created' || result === 'recreated') {
-              for (const link of docLinksIncident(doc, id)) {
-                this.connectLink(graph, doc, link)
-              }
-            }
+            if (result === 'created' || result === 'recreated') loaded.push(id)
           })
         }
+        this.connectLoadedLinks(graph, doc, loaded, context)
 
         this.deleteGroups(graph, changes.removedGroups, context)
 
@@ -820,6 +797,7 @@ export class LiveGraphApplier {
         this.applyInteriors(graph, doc, changes, context, mode)
 
         this.applyLinks(graph, doc, [...changes.links], context)
+        this.notifyGraphConfigured(graph, loaded, context)
         if (mode === 'merge')
           this.placeBatch(graph, created, {
             moveCollisions: context.liveAgentTurn === true
@@ -996,8 +974,41 @@ export class LiveGraphApplier {
       return 'updated'
     }
     if (live) graph.remove(live)
-    this.createNode(graph, docNode, mode)
+    withGraphConfiguring(() => this.createNode(graph, docNode, mode))
     return live ? 'recreated' : 'created'
+  }
+
+  private connectLoadedLinks(
+    graph: LGraph,
+    doc: Y.Doc,
+    ids: readonly string[],
+    context: RemoteApplyContext
+  ): void {
+    const loaded = new Set(ids)
+    for (const id of ids) {
+      this.try(context, () => {
+        const [amongLoaded, toExisting] = partition(
+          docLinksIncident(doc, id),
+          (link) => loaded.has(link.origin) && loaded.has(link.target)
+        )
+        withGraphConfiguring(() => {
+          for (const link of amongLoaded) this.connectLink(graph, doc, link)
+        })
+        for (const link of toExisting) this.connectLink(graph, doc, link)
+      })
+    }
+  }
+
+  private notifyGraphConfigured(
+    graph: LGraph,
+    ids: readonly string[],
+    context: RemoteApplyContext
+  ): void {
+    const nodes = ids.flatMap((id) => graph.getNodeById(toNodeId(id)) ?? [])
+    for (const node of nodes)
+      this.try(context, () => node.onGraphConfigured?.())
+    for (const node of nodes)
+      this.try(context, () => node.onAfterGraphConfigured?.())
   }
 
   private createNode(
@@ -1005,10 +1016,6 @@ export class LiveGraphApplier {
     docNode: DocNode,
     mode: ApplyMode
   ): LGraphNode {
-    const node =
-      LiteGraph.createNode(docNode.type, docNode.serialised.title) ??
-      missingNode(docNode)
-    node.id = toNodeId(docNode.id)
     const info: ISerialisedNode = {
       ...docNode.serialised,
       inputs: docNode.serialised.inputs?.map(
@@ -1021,8 +1028,10 @@ export class LiveGraphApplier {
     if (docNode.widgetRecord)
       info.widgets_values = docNode.widgetRecord as unknown as WidgetValue[]
     detachSerialisedLinks(info)
-    node.pos = [info.pos[0], info.pos[1]]
-    graph.add(node)
+    const node = loadSerialisedNode(graph, info, {
+      configure: (node, info) =>
+        this.configureFromDocument(node, info, docNode, mode)
+    })
     if (node.id !== toNodeId(docNode.id)) {
       this.reportOnce(
         `node-id:${docNode.id}`,
@@ -1031,48 +1040,52 @@ export class LiveGraphApplier {
         { nodeId: docNode.id, liveId: node.id }
       )
     }
-    if (node.has_errors) {
-      node.last_serialization = info
-      configureRemoteNode(node, info)
-    } else {
-      if (node.isSubgraphNode()) {
-        const beforeConfigurePromotedIds = promotedWidgetIds(node)
-        configureRemoteNode(node, info)
-        this.applyConfiguredHostWidgets(
-          node,
-          docNode.widgets,
-          beforeConfigurePromotedIds,
-          mode
-        )
-      } else {
-        const constructed = serializableWidgets(node)
-        const constructedNames = new Set(
-          node.widgets?.map((widget) => widget.name)
-        )
-        const deferred = deferredRowCounts(node, constructed, docNode.widgets)
-        configureRemoteNode(node, {
-          ...info,
-          widgets_values:
-            docNode.widgetRecord === undefined
-              ? positionalWidgetValues(node, docNode.widgets, deferred)
-              : info.widgets_values
-        })
-        const mounted = mountedWidgetValues(
-          node,
-          docNode.widgets,
-          constructed,
-          constructedNames,
-          deferred
-        )
-        if (mounted)
-          this.applyWidgets(node, mounted, mode, {
-            documentWidgets: docNode.widgets,
-            reportMissing: false
-          })
-      }
-    }
-    floorSizeToContent(node)
     return node
+  }
+
+  private configureFromDocument(
+    node: LGraphNode,
+    info: ISerialisedNode,
+    docNode: DocNode,
+    mode: ApplyMode
+  ): void {
+    if (node.has_errors) {
+      configureRemoteNode(node, info)
+      return
+    }
+    if (node.isSubgraphNode()) {
+      const beforeConfigurePromotedIds = promotedWidgetIds(node)
+      configureRemoteNode(node, info)
+      this.applyConfiguredHostWidgets(
+        node,
+        docNode.widgets,
+        beforeConfigurePromotedIds,
+        mode
+      )
+      return
+    }
+    const constructed = serializableWidgets(node)
+    const constructedNames = new Set(node.widgets?.map((widget) => widget.name))
+    const deferred = deferredRowCounts(node, constructed, docNode.widgets)
+    configureRemoteNode(node, {
+      ...info,
+      widgets_values:
+        docNode.widgetRecord === undefined
+          ? positionalWidgetValues(node, docNode.widgets, deferred)
+          : info.widgets_values
+    })
+    const mounted = mountedWidgetValues(
+      node,
+      docNode.widgets,
+      constructed,
+      constructedNames,
+      deferred
+    )
+    if (mounted)
+      this.applyWidgets(node, mounted, mode, {
+        documentWidgets: docNode.widgets,
+        reportMissing: false
+      })
   }
 
   private applyFields(

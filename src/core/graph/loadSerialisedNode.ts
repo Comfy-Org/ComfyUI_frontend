@@ -23,7 +23,9 @@ export function loadSerialisedNode(
   info: ISerialisedNode | { configuredNode: LGraphNode },
   {
     resetInvalidValues = false,
-    snapTo = LiteGraph.alwaysSnapToGrid ? graph.getSnapToGridSize() : 0
+    snapTo = LiteGraph.alwaysSnapToGrid ? graph.getSnapToGridSize() : 0,
+    configure = (node: LGraphNode, info: ISerialisedNode) =>
+      node.configure(info)
   } = {}
 ): LGraphNode {
   const node =
@@ -36,7 +38,7 @@ export function loadSerialisedNode(
     node.id = toNodeId(info.id)
     captureWidgetRestorationSlots(node)
     graph.add(node, true)
-    node.configure(info)
+    configure(node, info)
     if (LiteGraph.alwaysSnapToGrid) node.snapToGrid(snapTo)
   }
 
