@@ -14,7 +14,7 @@ test.describe(
     annotation: {
       type: 'issue',
       description:
-        'https://github.com/Comfy-Org/ComfyUI_frontend/pull/20971: the panel mounts from the agent feature ComfyUI publishes, and unit tests only cover that with a mocked store'
+        'https://github.com/Comfy-Org/ComfyUI_frontend/pull/20971: the entry button follows the agent feature ComfyUI publishes, and unit tests only cover that with a mocked store'
     }
   },
   () => {
