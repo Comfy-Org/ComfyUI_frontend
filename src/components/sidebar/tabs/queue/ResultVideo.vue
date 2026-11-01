@@ -17,6 +17,7 @@
 <script setup lang="ts">
 import { computed, onActivated, useTemplateRef } from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -44,12 +45,9 @@ onActivated(() => {
 const settingStore = useSettingStore()
 const { isExtensionInstalled, isExtensionEnabled } = useExtensionStore()
 
-/* VHS `/viewvideo` looks the file up by filename and subfolder. An item that
-   already carries a resolved `url` (an Assets panel item, whose filename is
-   only a display name) must play that url, as its grid card does. */
 const vhsAdvancedPreviews = computed(() => {
   return (
-    props.result.url === undefined &&
+    !(isCloud && props.result.url) &&
     isExtensionInstalled('VideoHelperSuite.Core') &&
     isExtensionEnabled('VideoHelperSuite.Core') &&
     settingStore.get('VHS.AdvancedPreviews') &&

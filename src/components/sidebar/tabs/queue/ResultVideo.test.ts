@@ -9,6 +9,9 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 
 import ResultVideo from './ResultVideo.vue'
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+
 function setVhsAdvancedPreviews(enabled: boolean) {
   const extensionStore = useExtensionStore()
   vi.mocked(extensionStore.isExtensionInstalled).mockReturnValue(enabled)
@@ -40,8 +43,6 @@ const jobOutput: AugmentedResultItem = {
   mediaType: 'video'
 }
 
-/* An Assets panel item: `filename` is the display name, and `url` is the
-   resolved file URL the grid card plays. */
 const assetItem: AugmentedResultItem = {
   ...jobOutput,
   filename: 'QATEST_c45_00002_.mp4',
@@ -50,6 +51,7 @@ const assetItem: AugmentedResultItem = {
 
 describe('ResultVideo', () => {
   beforeEach(() => {
+    distribution.isCloud = false
     setVhsAdvancedPreviews(false)
   })
 
@@ -57,7 +59,8 @@ describe('ResultVideo', () => {
     expect(renderVideo(assetItem).getAttribute('src')).toBe(assetItem.url)
   })
 
-  it('keeps the resolved url with VHS advanced previews on', () => {
+  it('plays the resolved url on Cloud with VHS advanced previews on', () => {
+    distribution.isCloud = true
     setVhsAdvancedPreviews(true)
 
     const source = renderVideo(assetItem)
@@ -66,7 +69,25 @@ describe('ResultVideo', () => {
     expect(source.getAttribute('type')).toBe('video/mp4')
   })
 
+  it('falls back to the VHS preview on Cloud when the url is empty', () => {
+    distribution.isCloud = true
+    setVhsAdvancedPreviews(true)
+
+    expect(renderVideo({ ...assetItem, url: '' }).getAttribute('src')).toMatch(
+      /^\/api\/viewvideo\?/
+    )
+  })
+
+  it('keeps the VHS preview off Cloud, where the filename is on disk', () => {
+    setVhsAdvancedPreviews(true)
+
+    expect(renderVideo(assetItem).getAttribute('src')).toMatch(
+      /^\/api\/viewvideo\?filename=QATEST_c45_00002_\.mp4&/
+    )
+  })
+
   it('uses the VHS advanced preview for a job output without a url', () => {
+    distribution.isCloud = true
     setVhsAdvancedPreviews(true)
 
     const source = renderVideo(jobOutput)
