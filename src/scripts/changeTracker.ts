@@ -327,11 +327,36 @@ function getExecutionGraphState(value: unknown): unknown {
 
 const reportedInactiveCalls = new Set<string>()
 
-function reportInactiveTrackerCall(method: string, workflowPath: string) {
-  const key = `${method}:${workflowPath}`
+function getCallerStack(): string | undefined {
+  const frames = new Error().stack
+    ?.split('\n')
+    .filter(
+      (line) =>
+        line.trim() !== '' &&
+        !line.startsWith('Error') &&
+        !line.includes('reportInactiveTrackerCall') &&
+        !line.includes('getCallerStack')
+    )
+  return frames?.length ? frames.slice(0, 10).join('\n') : undefined
+}
+
+function reportInactiveTrackerCall(
+  method: string,
+  tracker: ChangeTracker
+): void {
+  const key = `${method}:${tracker.workflow.path}`
   if (reportedInactiveCalls.has(key)) return
   reportedInactiveCalls.add(key)
-  assert(false, `ChangeTracker.${method}() called on inactive tracker`)
+  const activeWorkflow = useWorkflowStore().activeWorkflow
+  const hasActiveWorkflow = activeWorkflow != null
+  const sameWorkflow = activeWorkflow === tracker.workflow
+  assert(false, `ChangeTracker.${method}() called on inactive tracker`, {
+    method,
+    hasActiveWorkflow,
+    sameWorkflow,
+    changeCount: tracker.changeCount,
+    stack: getCallerStack()
+  })
 }
 
 export class ChangeTracker implements WorkflowChangeTracker {
@@ -411,10 +436,13 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   deactivate() {
     if (!isActiveTracker(this)) {
-      reportInactiveTrackerCall('deactivate', this.workflow.path)
+      reportInactiveTrackerCall('deactivate', this)
       return
     }
-    if (!this._restoringState) this.captureCanvasState()
+    if (!this._restoringState) {
+      if (this.changeCount > 0) this.commitCanvasState()
+      else this.captureCanvasState()
+    }
     this.store()
   }
 
@@ -514,13 +542,22 @@ export class ChangeTracker implements WorkflowChangeTracker {
       return
 
     if (!isActiveTracker(this)) {
-      reportInactiveTrackerCall('captureCanvasState', this.workflow.path)
+      reportInactiveTrackerCall('captureCanvasState', this)
       return
     }
 
-    const currentState = clone(
-      useApp().rootGraph.serialize()
-    ) as ComfyWorkflowJSON
+    this.commitCanvasState()
+  }
+
+  /**
+   * @internal Not part of the public extension API. Use
+   * {@link captureCanvasState}, which applies the guards.
+   */
+  commitCanvasState() {
+    const app = useApp()
+    if (!app.isGraphReady || ChangeTracker.isLoadingGraph) return
+
+    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
       const previousState = this.activeState
       const nodeHistoryWidgets = collectNodeHistoryWidgets(useApp().rootGraph)
@@ -665,7 +702,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   afterChange() {
-    if (!--this.changeCount) {
+    if (!--this.changeCount && isActiveTracker(this)) {
       this.captureCanvasState()
     }
   }
