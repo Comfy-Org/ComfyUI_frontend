@@ -147,7 +147,6 @@ describe('useAgentCrdtFollower over a live graph', () => {
   })
 
   it('sends a held edit once an empty reset is acknowledged while its projection still cannot retry', async () => {
-    vi.useFakeTimers()
     const failingGraph = new LGraph()
     vi.spyOn(failingGraph, 'add').mockImplementation(() => {
       throw new Error('custom node failed to construct')
@@ -238,7 +237,6 @@ describe('useAgentCrdtFollower over a live graph', () => {
       view.unmount()
       host.destroy()
       recoveredHost.destroy()
-      vi.useRealTimers()
     }
   })
 })
