@@ -9,6 +9,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { isWidgetId } from '@comfyorg/graph-model/widgetId'
+import { createUuidv4 } from '@/utils/uuid'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 export const useInputGroupStore = defineStore('inputGroup', () => {
@@ -108,7 +109,7 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
   }
 
   function createGroup(name?: string, itemKey?: WidgetId): string {
-    const id = crypto.randomUUID()
+    const id = createUuidv4()
     if (itemKey) removeItemFromAllGroups(itemKey)
     inputGroups.value.push({
       id,

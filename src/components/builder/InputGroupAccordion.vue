@@ -10,12 +10,18 @@ import { useI18n } from 'vue-i18n'
 
 import InputGroupContent from '@/components/builder/InputGroupContent.vue'
 import UngroupConfirmDialog from '@/components/builder/UngroupConfirmDialog.vue'
-import { autoGroupName, resolveGroupItems } from '@/components/builder/useInputGroups'
+import {
+  autoGroupName,
+  createInputLinkChecker,
+  isRenderableAppInput,
+  resolveGroupItems
+} from '@/components/builder/useInputGroups'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import EditableText from '@comfyorg/design-system/common/EditableText'
 import Button from '@comfyorg/design-system/button/Button'
 import type { InputGroup } from '@comfyorg/graph-model/workflowSchema'
 import { useInputGroupStore } from '@/stores/inputGroupStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -34,6 +40,7 @@ const {
 const { t } = useI18n()
 const inputGroupStore = useInputGroupStore()
 const resolvedSelections = useResolvedSelectedInputs()
+const isInputLinked = createInputLinkChecker(useLinkStore())
 
 const isOpen = ref(true)
 const isRenaming = ref(false)
@@ -43,7 +50,12 @@ const displayName = computed(
   () => group.name ?? autoGroupName(group, resolvedSelections.value)
 )
 const resolvedItems = computed(() =>
-  resolveGroupItems(group, resolvedSelections.value)
+  resolveGroupItems(
+    group,
+    resolvedSelections.value.filter((selection) =>
+      isRenderableAppInput(selection, isInputLinked)
+    )
+  )
 )
 const groupMenuEntries = computed<MenuItem[]>(() => [
   {
