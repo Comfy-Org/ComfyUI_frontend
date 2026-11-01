@@ -54,8 +54,6 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     page,
     agentFlagEnabled
   }) => {
-    // DES-1208's replay path. The header control is the only way back into the
-    // tour once it is done, and nothing else covers it end to end.
     await bootAgentApp(page, agentFlagEnabled, {
       onboardingCompleted: true
     })
@@ -70,7 +68,6 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       .getByRole('button', { name: enMessages.agent.takeTour, exact: true })
       .click()
 
-    // Replay starts at card one, not wherever the finished tour left off.
     await expect(firstCard).toBeVisible()
     await expect(
       firstCard.getByRole('button', {
@@ -78,8 +75,6 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       })
     ).toHaveCount(0)
 
-    // The persisted flag has to clear too, or a reload re-hides a tour the
-    // user just asked to see.
     await expect
       .poll(() => page.evaluate((key) => localStorage.getItem(key), SCOPE_KEY))
       .not.toBe('true')
@@ -236,17 +231,11 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       .poll(() => page.evaluate((key) => localStorage.getItem(key), SCOPE_KEY))
       .toBe('true')
 
-    // PM-2308: Desktop reaches the app on a new origin after a port change, so
-    // the completion has to come back from the user setting rather than from
-    // this origin's localStorage.
     await expect.poll(() => storedOnboardedScopes(page)).toContain(SCOPE_KEY)
     await page.evaluate((key) => localStorage.removeItem(key), SCOPE_KEY)
 
     await page.reload()
     await waitForCloudApp(page)
-    // The composer only renders behind consent, the same gate as the coach,
-    // and a card shows within a frame of it. Checking before that would pass
-    // whether or not the setting was read.
     await expect(page.locator('#agent-composer')).toBeVisible()
     await page.evaluate(
       () =>

@@ -282,7 +282,7 @@ describe('useOnboarding settings write failures', () => {
   })
 
   it('retries a refused completion on the next mount and reports the failure once', async () => {
-    storeSetting.mockResolvedValue(new Response(null, { status: 503 }))
+    storeSetting.mockResolvedValue(new Response(null, { status: 400 }))
 
     onboarding.useOnboarding(STEPS, KEY).finish()
     await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(1))
@@ -301,7 +301,7 @@ describe('useOnboarding settings write failures', () => {
     )
     expect(reportFailure).toHaveBeenCalledTimes(1)
     expect(reportFailure).toHaveBeenCalledWith(
-      'Failed to store onboarded scopes (503)',
+      'Failed to store onboarded scopes (400)',
       {
         surface: 'agent',
         errorType: 'failure_persisting_agent_onboarding_completion',
@@ -346,6 +346,26 @@ describe('useOnboarding settings write failures', () => {
     )
   })
 
+  it('sends a completion again on the next mount when the server answered 5xx', async () => {
+    storeSetting.mockResolvedValueOnce(new Response(null, { status: 503 }))
+
+    onboarding.useOnboarding(STEPS, KEY).finish()
+    await vi.waitFor(() =>
+      expect(reportFailure).toHaveBeenCalledWith(
+        'Failed to store onboarded scopes (503)',
+        expect.anything()
+      )
+    )
+    expect(settingValues()[AGENT_ONBOARDED_SCOPES_SETTING_ID]).toEqual([KEY])
+
+    onboarding.useOnboarding(STEPS, KEY)
+    await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(2))
+    expect(storeSetting).toHaveBeenLastCalledWith(
+      AGENT_ONBOARDED_SCOPES_SETTING_ID,
+      [KEY]
+    )
+  })
+
   it('drops an unsaved replay clear once a later completion is saved', async () => {
     Object.assign(settingValues(), {
       [AGENT_ONBOARDED_SCOPES_SETTING_ID]: [KEY]
@@ -368,7 +388,7 @@ describe('useOnboarding settings write failures', () => {
     Object.assign(settingValues(), {
       [AGENT_ONBOARDED_SCOPES_SETTING_ID]: [KEY]
     })
-    storeSetting.mockResolvedValue(new Response(null, { status: 503 }))
+    storeSetting.mockResolvedValue(new Response(null, { status: 400 }))
     const tour = onboarding.useOnboarding(STEPS, KEY)
     expect(tour.active.value).toBe(false)
 

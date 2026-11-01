@@ -116,16 +116,19 @@ async function writeSeen(scopedKey: string, seen: boolean): Promise<void> {
     AGENT_ONBOARDED_SCOPES_SETTING_ID,
     next
   )
-  if (outcome.status === 'refused') {
+  if (outcome.status === 'saved') {
+    unsavedScopes.delete(scopedKey)
+  } else if (outcome.status === 'unconfirmed') {
+    unsavedScopes.set(scopedKey, seen)
+    reportWriteFailure(outcome.cause)
+  } else if (
+    outcome.status === 'refused' ||
+    outcome.status === 'indeterminate'
+  ) {
     unsavedScopes.set(scopedKey, seen)
     reportWriteFailure(
       `Failed to store onboarded scopes (${outcome.statusCode})`
     )
-  } else if (outcome.status === 'unconfirmed') {
-    unsavedScopes.set(scopedKey, seen)
-    reportWriteFailure(outcome.cause)
-  } else if (outcome.status === 'saved') {
-    unsavedScopes.delete(scopedKey)
   }
 }
 

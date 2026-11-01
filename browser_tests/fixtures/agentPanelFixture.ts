@@ -39,11 +39,7 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 const onboardedScopesByPage = new WeakMap<Page, string[]>()
 
-/**
- * The tour completion list the stubbed user-settings endpoint holds for this
- * page. It survives a reload, like the real per-user setting, so a spec can
- * clear localStorage and still prove the tour stays dismissed.
- */
+/** The stubbed per-user tour completion list for this page; it survives a reload. */
 export function storedOnboardedScopes(page: Page): readonly string[] {
   return onboardedScopesByPage.get(page) ?? []
 }
@@ -97,8 +93,6 @@ async function mockAgentBoot(
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
-      // The same array the per-setting route below writes, so a reload boots
-      // from whatever the tour last saved.
       [AGENT_ONBOARDED_SCOPES_SETTING_ID]: onboardedScopes,
       ...settings,
       ...((vueNodes || cloudAppFixture.info().tags.includes('@vue-nodes')) && {
