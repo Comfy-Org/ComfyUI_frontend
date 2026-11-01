@@ -17,6 +17,7 @@ import type { MissingModelCandidate } from '@/platform/workflowErrors/missingMod
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -1501,6 +1502,84 @@ describe('TabErrors.vue', () => {
     expect(icon).toHaveAccessibleName('Blocking errors')
   })
 
+  it('opens a closed runtime error log when view details is requested', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(new LGraphNode('KSampler'))
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1', 'Line 2'],
+        timestamp: Date.now()
+      })
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Details' }))
+    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
+
+    const groupKey = screen
+      .getByTestId('error-group-execution')
+      .getAttribute('data-group-key')
+    if (!groupKey) throw new Error('missing group key')
+    useRightSidePanelStore().requestErrorDetails(['execution:unrelated'])
+    await nextTick()
+    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
+
+    useRightSidePanelStore().requestErrorDetails([groupKey])
+    await nextTick()
+
+    expect(screen.getByText(/Line 1/)).toBeInTheDocument()
+    expect(useRightSidePanelStore().errorDetailsRequest).toBeNull()
+  })
+
+  it('opens closed issue details when view details is requested', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation(
+      (_, nodeId) =>
+        new LGraphNode(nodeId === '1' ? 'KSampler' : 'CLIP Text Encode')
+    )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'positive',
+              {},
+              'Required input is missing',
+              'Input: positive'
+            )
+          ],
+          'KSampler'
+        )
+      })
+    })
+
+    expect(
+      screen.queryByText('KSampler is missing a required input: positive')
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Collapse' }))
+    expect(screen.queryByText('KSampler - positive')).not.toBeInTheDocument()
+
+    const groupKey = screen
+      .getByTestId('error-group-execution')
+      .getAttribute('data-group-key')
+    if (!groupKey) throw new Error('missing group key')
+    useRightSidePanelStore().requestErrorDetails([groupKey])
+    await nextTick()
+
+    expect(screen.getByText('KSampler - positive')).toBeInTheDocument()
+    expect(
+      screen.getByText('KSampler is missing a required input: positive')
+    ).toBeInTheDocument()
+  })
   it('uses error severity for a runtime error with an unnormalisable node id', () => {
     renderRightSidePanel((pinia) => {
       useExecutionErrorStore(pinia).recordExecutionError({

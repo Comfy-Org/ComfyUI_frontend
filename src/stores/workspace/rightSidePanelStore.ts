@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -39,6 +39,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
    * cleared by TabErrors after expanding the relevant error group.
    */
   const focusedErrorNodeId = ref<string | null>(null)
+  const errorDetailsRequest = shallowRef<readonly string[] | null>(null)
 
   // Auto-close panel when switching to legacy menu mode
   watch(isLegacyMenu, (legacy) => {
@@ -53,6 +54,11 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     if (tab) {
       activeTab.value = tab
     }
+  }
+
+  function requestErrorDetails(groupKeys: readonly string[] = []) {
+    if (isLegacyMenu.value) return
+    errorDetailsRequest.value = [...groupKeys]
   }
 
   function closePanel() {
@@ -86,7 +92,9 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     isEditingSubgraph,
     focusedSection,
     focusedErrorNodeId,
+    errorDetailsRequest,
     openPanel,
+    requestErrorDetails,
     closePanel,
     togglePanel,
     focusSection,
