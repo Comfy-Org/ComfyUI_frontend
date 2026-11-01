@@ -16,6 +16,14 @@ export const zSubscriptionTier = z.enum([
 ])
 
 /**
+ * Workspace-switcher display fact, not spend authorization or plan-action eligibility. Uses billing subscription-state precedence: ending, scheduled changes and activating display as active; renewal payment failures confirmed by the provider display as payment_due. Unknown or unavailable facts omit the entire summary; clients must not infer no_plan from omission.
+ */
+export const zWorkspacePlanSummary = z.object({
+  plan_name: z.string().nullable(),
+  status: z.enum(['active', 'no_plan', 'paused', 'payment_due', 'ended'])
+})
+
+/**
  * Workspace entity annotated with the requesting user's role.
  */
 export const zWorkspaceWithRole = z.object({
@@ -23,6 +31,7 @@ export const zWorkspaceWithRole = z.object({
   id: z.string(),
   joined_at: z.iso.datetime(),
   name: z.string(),
+  plan_summary: zWorkspacePlanSummary.optional(),
   role: z.enum(['owner', 'member']),
   subscription_tier: zSubscriptionTier.optional(),
   type: z.enum(['personal', 'team'])
@@ -97,6 +106,25 @@ export const zWorkspaceDeploymentCpuServer = z.object({
  */
 export const zWorkspaceDeletionDenialParams = z.object({
   effective_at: z.iso.datetime().optional()
+})
+
+/**
+ * Reasons creation is unavailable. Returned beside can_create_workspace false or on a creation refusal; first applicable reason wins.
+ */
+export const zWorkspaceCreationDenials = z.object({
+  can_create_workspace: z
+    .enum(['organization_managed', 'owned_workspace_limit'])
+    .optional()
+})
+
+/**
+ * Creation refused because the account has reached its live owner membership threshold for creation.
+ */
+export const zWorkspaceCreationLimitError = z.object({
+  code: z.enum(['OWNED_WORKSPACE_LIMIT']),
+  denied_reasons: zWorkspaceCreationDenials,
+  max_owned_workspaces: z.int(),
+  message: z.string()
 })
 
 /**
@@ -1035,7 +1063,10 @@ export const zScheduledPlanChange = z.object({
 })
 
 export const zSavedPaymentMethod = z.object({
+  bank_name: z.string().optional(),
   brand: z.string().optional(),
+  created_at: z.iso.datetime().optional(),
+  email: z.string().optional(),
   exp_month: z.int().gte(1).lte(12).optional(),
   exp_year: z.int().gte(1000).lte(9999).optional(),
   expired: z.boolean().optional(),
@@ -1770,6 +1801,7 @@ export const zOAuthRegisterError = z.object({
  */
 export const zErrorResponse = z.object({
   code: z.string(),
+  denied_reasons: zWorkspaceCreationDenials.optional(),
   details: z.record(z.string(), z.unknown()).optional(),
   message: z.string(),
   organization_id: z.string().optional()
@@ -1865,6 +1897,25 @@ export const zNodeInfo = z.object({
 })
 
 /**
+ * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
+ */
+export const zModelUploadStarted = z.object({
+  expires_at: z.iso.datetime(),
+  headers: z.record(z.string(), z.string()),
+  max_size_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  method: z.enum(['PUT']),
+  upload_id: z.uuid(),
+  upload_url: z.string()
+})
+
+/**
  * Represents a folder containing models
  */
 export const zModelFolder = z.object({
@@ -1936,6 +1987,8 @@ export const zMediaBadRequestError = z.union([zErrorResponse, zMediaQueryError])
 export const zListWorkspacesResponse = z.object({
   can_create_workspace: z.boolean(),
   default_workspace_id: z.string().optional(),
+  denied_reasons: zWorkspaceCreationDenials.optional(),
+  max_owned_workspaces: z.int(),
   workspaces: z.array(zWorkspaceWithRole)
 })
 
@@ -3435,6 +3488,7 @@ export const zBillingStatusResponse = z.object({
   is_active: z.boolean(),
   latest_subscription_op_id: z.string().optional(),
   max_seats: z.int(),
+  next_credit_refill_at: z.iso.datetime().optional(),
   occupied_seats: z.int(),
   payment_intent_client_secret: z.string().optional(),
   pending_billing_op_id: z.string().optional(),
@@ -4081,6 +4135,7 @@ export const zBillingBalanceResponse = z.object({
   amount_micros: z.number(),
   cloud_credit_balance_cents: z.number().optional(),
   cloud_credit_balance_micros: z.number().optional(),
+  cloud_credit_display_balance_cents: z.number().optional(),
   currency: z.string(),
   effective_balance_authoritative: z.boolean().optional(),
   effective_balance_cents: z.number().optional(),
@@ -4096,6 +4151,24 @@ export const zBillingBalanceResponse = z.object({
     })
     .optional(),
   max_topup_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  min_topup_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  min_topup_credits: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
       error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
@@ -4394,25 +4467,6 @@ export const zAssetMetadataResponse = z.object({
   preview_image: z.string().optional(),
   tags: z.array(z.string()).optional(),
   validation: zValidationResult.optional()
-})
-
-/**
- * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
- */
-export const zModelUploadStarted = z.object({
-  upload_id: z.uuid(),
-  upload_url: z.string(),
-  method: z.enum(['PUT']),
-  headers: z.record(z.string(), z.string()),
-  expires_at: z.iso.datetime(),
-  max_size_bytes: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
 })
 
 /**
@@ -5524,38 +5578,6 @@ export const zCreateAssetDownloadResponse = z.union([
   zAssetDownloadResponse
 ])
 
-export const zStartModelUploadBody = z.object({
-  filename: z.string(),
-  size_bytes: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
-  tags: z.array(z.string())
-})
-
-/**
- * Signed upload URL for one staged object
- */
-export const zStartModelUploadResponse = zModelUploadStarted
-
-export const zCompleteModelUploadBody = z.object({
-  filename: z.string(),
-  tags: z.array(z.string())
-})
-
-export const zCompleteModelUploadPath = z.object({
-  upload_id: z.string()
-})
-
-/**
- * Accepted; a task stores the file as an asset
- */
-export const zCompleteModelUploadResponse = zAssetDownloadResponse
-
 export const zCreateAssetExportBody = z.object({
   asset_ids: z.array(z.string()).optional(),
   include_previews: z.boolean().optional().default(false),
@@ -5672,6 +5694,38 @@ export const zGetAssetTagHistogramQuery = z.object({
  * Success - Tag histogram returned
  */
 export const zGetAssetTagHistogramResponse = zAssetTagHistogramResponse
+
+export const zStartModelUploadBody = z.object({
+  filename: z.string(),
+  size_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  tags: z.array(z.string())
+})
+
+/**
+ * Signed upload URL for one staged object
+ */
+export const zStartModelUploadResponse = zModelUploadStarted
+
+export const zCompleteModelUploadBody = z.object({
+  filename: z.string(),
+  tags: z.array(z.string())
+})
+
+export const zCompleteModelUploadPath = z.object({
+  upload_id: z.string()
+})
+
+/**
+ * Accepted; a task stores the file as an asset
+ */
+export const zCompleteModelUploadResponse = zAssetDownloadResponse
 
 export const zAuthenticateBody = zAuthenticateRequest
 
@@ -6067,6 +6121,10 @@ export const zGetFeaturesResponse = z.object({
       state: z.enum(['ready'])
     })
     .optional(),
+  'agent-credit-usage-summary': z
+    .enum(['control', 'treatment'])
+    .optional()
+    .default('control'),
   'agent-free-use-message-placement': z
     .enum([
       'control',
@@ -6075,10 +6133,6 @@ export const zGetFeaturesResponse = z.object({
       'above-input',
       'inside-input'
     ])
-    .optional()
-    .default('control'),
-  'agent-credit-usage-summary': z
-    .enum(['control', 'treatment'])
     .optional()
     .default('control'),
   'agent-starter-prompt-set': z

@@ -920,7 +920,8 @@ describe('cloud API requests on the shared web session', () => {
         { ...LISTED, id: 'ws-personal', name: 'Personal', type: 'personal' },
         { ...LISTED, id: 'ws-team', name: 'Team', type: 'team' }
       ],
-      can_create_workspace: true
+      can_create_workspace: true,
+      max_owned_workspaces: 10
     })
 
     await useTeamWorkspaceStore().initialize()

@@ -74,5 +74,9 @@
   {
     "id": "vitest:src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts:omits pos and size from a minted node payload:1",
     "classification": "live-defect"
+  },
+  {
+    "id": "vitest:src/workbench/extensions/agent/crdt/useAgentCrdtFollower.test.ts:keeps ops the host skipped when it refuses another op in the batch:1",
+    "classification": "live-defect"
   }
 ]

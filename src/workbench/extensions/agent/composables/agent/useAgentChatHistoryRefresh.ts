@@ -190,6 +190,7 @@ export function useAgentChatHistoryRefresh({
     const { signal } = controller
     const generation = ++latestStartedRefresh
     const owner = getStorageScope()
+    if (owner === null) return 'superseded'
     if (uiTreatment === 'error_overlay') latestSurfacedRefresh = generation
     const result = await listThreads({ signal, workflowId })
     if (signal.aborted) return 'aborted'

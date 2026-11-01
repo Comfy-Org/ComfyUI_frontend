@@ -160,6 +160,15 @@ describe('useAgentChatHistoryRefresh', () => {
     expect(onFailure).not.toHaveBeenCalled()
   })
 
+  it('does not list history without a resolved storage owner', async () => {
+    const { listThreads, refreshHistory } = setup()
+    vi.mocked(storageIO.getStorageScope).mockReturnValue(null)
+
+    await expect(refreshHistory()).resolves.toBe('superseded')
+
+    expect(listThreads).not.toHaveBeenCalled()
+  })
+
   it('applies an older successful refresh after a newer refresh fails', async () => {
     const { history, listThreads, onFailure, refreshHistory } = setup()
     const older = deferredListing()

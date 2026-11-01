@@ -391,8 +391,7 @@ describe('useFeatureFlags', () => {
     {
       flag: 'unifiedBillingSettingsEnabled' as const,
       offCloudTrue: true
-    },
-    { flag: 'autoTopUpEnabled' as const, offCloudTrue: false }
+    }
   ])('$flag', ({ flag, offCloudTrue }) => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
