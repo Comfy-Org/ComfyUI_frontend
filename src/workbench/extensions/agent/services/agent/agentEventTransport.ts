@@ -355,6 +355,8 @@ export function createAgentEventTransport(
     dropThinkingDraft()
     closeOpenText()
     closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
     message.parts.push({
       type: 'extensionChange',
       action: data.action,

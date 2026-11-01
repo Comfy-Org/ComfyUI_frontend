@@ -3,7 +3,6 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
-// Synthesized: see the fixture's `source.note`.
 const EXTENSION_CHANGE_CASE = 'repro/pm-2147-extension-change-card'
 
 test.describe(

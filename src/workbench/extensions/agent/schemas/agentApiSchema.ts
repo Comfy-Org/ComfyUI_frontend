@@ -375,14 +375,7 @@ const zAgentAskResolvedEvent = z.object({
   data: zAgentAskResolvedData
 })
 
-/**
- * Broadcast when the local agent turns a node pack off, on, or removes it
- * (`set_extension_enabled` / `remove_extension`, cloud
- * `services/agent/internal/loop/extensiontoggle.go`; wire shape
- * `$defs/agent_extension_changed` in `api/agent_events.schema.json`). Live
- * only: the change itself is on disk and in the tool result, so a lost frame
- * loses the card, never the change.
- */
+/** Local agent turned a node pack off, on, or removed it (live only). */
 const zAgentExtensionChangedEvent = z.object({
   type: z.literal('agent_extension_changed'),
   data: z

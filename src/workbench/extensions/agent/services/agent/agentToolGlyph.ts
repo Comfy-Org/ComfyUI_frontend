@@ -36,7 +36,7 @@ const KNOWN_TOOLS: Record<string, KnownTool> = {
   set_extension_enabled: {
     labelKey: 'agent.toolSwitchedNodePack',
     activeLabelKey: 'agent.toolSwitchingNodePack',
-    icon: 'icon-[lucide--toggle-left]'
+    icon: 'icon-[lucide--package]'
   },
   remove_extension: {
     labelKey: 'agent.toolRemovedNodePack',

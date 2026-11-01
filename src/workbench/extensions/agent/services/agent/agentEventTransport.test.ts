@@ -2420,6 +2420,21 @@ describe('agent_extension_changed', () => {
     })
   })
 
+  it('stops showing the agent as thinking once the card arrives', () => {
+    const message = drive([
+      thinking('Finding the pack.'),
+      extensionChanged({
+        action: 'enabled',
+        pack: 'comfy-cushions',
+        agent_created: false,
+        restart_required: true
+      })
+    ])
+
+    expect(message.thinking).toBe(false)
+    expect(message.thinkingText).toBeUndefined()
+  })
+
   it.for([
     { name: 'an unknown action', data: { action: 'paused' } },
     { name: 'an empty pack name', data: { pack: '' } },

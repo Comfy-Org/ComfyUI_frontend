@@ -10,7 +10,7 @@ describe('toolGlyph', () => {
     ['switch_tab', 'icon-[lucide--arrow-left-right]'],
     ['remember', 'icon-[lucide--save]'],
     ['forget', 'icon-[lucide--circle-question-mark]'],
-    ['set_extension_enabled', 'icon-[lucide--toggle-left]'],
+    ['set_extension_enabled', 'icon-[lucide--package]'],
     ['remove_extension', 'icon-[lucide--package-minus]']
   ])('gives %s its dedicated icon', ([name, icon]) => {
     expect(toolGlyph(name, 'done', { ok: true })).toBe(icon)
