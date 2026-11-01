@@ -1,6 +1,6 @@
 import { useMaskEditorStore } from './maskEditorStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useBrushDrawing } from './useBrushDrawing'
@@ -95,13 +95,20 @@ const pointerEvent = ({
 
 let scope: EffectScope | null = null
 
-const setup = (): ReturnType<typeof useToolManager> => {
+const setup = (
+  extensionTools?: Parameters<typeof useToolManager>[3]
+): ReturnType<typeof useToolManager> => {
   scope = effectScope()
   return scope.run(() =>
-    useToolManager(mockKeyboard, mockPanZoom, {
-      useDominantAxis: true,
-      brushAdjustmentSpeed: 2.5
-    })
+    useToolManager(
+      mockKeyboard,
+      mockPanZoom,
+      {
+        useDominantAxis: true,
+        brushAdjustmentSpeed: 2.5
+      },
+      extensionTools
+    )
   )!
 }
 
@@ -135,6 +142,29 @@ describe('useToolManager', () => {
   })
 
   describe('switchTool', () => {
+    it.for([Tools.MaskPen, Tools.MaskBucket])(
+      'restores the native cursor after an external tool ends: %s',
+      (nativeTool) => {
+        const active = ref(false)
+        const tm = setup({
+          isActive: () => active.value,
+          deactivate: () => {
+            active.value = false
+          },
+          handlePointer: async () => {}
+        })
+        tm.switchTool(nativeTool)
+        const cursor = mockStore.pointerZone!.style.cursor
+        const brushVisible = mockStore.brushVisible
+        active.value = true
+        expect(mockStore.pointerZone!.style.cursor).toBe('crosshair')
+        expect(mockStore.brushVisible).toBe(false)
+        active.value = false
+        expect(mockStore.pointerZone!.style.cursor).toBe(cursor)
+        expect(mockStore.brushVisible).toBe(brushVisible)
+      }
+    )
+
     it('should set the current tool on the store', () => {
       const tm = setup()
       tm.switchTool(Tools.Eraser)
