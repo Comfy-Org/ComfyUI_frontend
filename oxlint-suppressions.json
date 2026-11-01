@@ -863,7 +863,7 @@
   },
   "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 5
     }
   },
   "src/renderer/extensions/maskEditor/composables/useMaskEditorSaver.ts": {

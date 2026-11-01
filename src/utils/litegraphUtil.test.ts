@@ -5,6 +5,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
@@ -13,6 +14,8 @@ import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createNode } from './createNode'
 import {
   getWidgetIdForNode,
+  isAnimatedOutput,
+  isVideoOutput,
   mapLiveWidgetsById,
   migrateWidgetsValues,
   resolveNode
@@ -316,6 +319,62 @@ describe('getWidgetIdForNode', () => {
   it('returns undefined for placeholder node id (-1)', () => {
     const node = fakeNode(-1)
     expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()
+  })
+})
+
+describe('isAnimatedOutput', () => {
+  it.for([
+    { animated: [null, true], expected: true },
+    { animated: [false, {}, 'true', 1], expected: false }
+  ])(
+    'treats only a literal true marker as animated: $animated',
+    ({ animated, expected }) => {
+      const output = fromAny<ExecutedWsMessage['output'], unknown>({ animated })
+
+      expect(isAnimatedOutput(output)).toBe(expected)
+    }
+  )
+})
+
+describe('isVideoOutput', () => {
+  it('reads past degenerate entries to find the animated webp', () => {
+    const output = fromAny<ExecutedWsMessage['output'], unknown>({
+      animated: [null, true],
+      images: [
+        null,
+        { status: 'unavailable', reason: 'upload_failed' },
+        { filename: 'clip.webp', subfolder: '', type: 'output' }
+      ]
+    })
+
+    expect(isVideoOutput(output)).toBe(false)
+  })
+
+  it('reports video when no entry carries a usable filename', () => {
+    const output = fromAny<ExecutedWsMessage['output'], unknown>({
+      animated: [true],
+      images: [null, { status: 'unavailable', reason: 'upload_failed' }]
+    })
+
+    expect(isVideoOutput(output)).toBe(true)
+  })
+
+  it('treats a non-array images payload as carrying no filenames', () => {
+    const output = fromAny<ExecutedWsMessage['output'], unknown>({
+      animated: [true],
+      images: 'clip.webp'
+    })
+
+    expect(isVideoOutput(output)).toBe(true)
+  })
+
+  it('treats a non-array animated payload as not animated', () => {
+    const output = fromAny<ExecutedWsMessage['output'], unknown>({
+      animated: true,
+      images: [{ filename: 'clip.webp', subfolder: '', type: 'output' }]
+    })
+
+    expect(isVideoOutput(output)).toBe(false)
   })
 })
 

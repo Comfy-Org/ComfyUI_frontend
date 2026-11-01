@@ -136,26 +136,38 @@ describe('consoleErrorLedger', () => {
     expect(unallowlistedErrors('Some-Future-Pack', errors)).toEqual(errors)
   })
 
-  it('matches only the observed bare-backend resource requests', () => {
-    const cases = [
-      [
-        'ComfyUI-UltraShape1',
-        'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=%28upload+a+mesh+file%29&subfolder=&rand=0.5]'
-      ],
-      [
-        'WhatDreamsCost-ComfyUI',
-        'Failed to load resource: 404 [http://localhost:8188/api/view?filename=_cn&type=input]'
-      ],
-      [
-        'comfyui-impact-pack',
-        'Failed to load resource: 404 [http://localhost:8188/beach.jpg]'
-      ]
-    ] as const
-    for (const [pack, error] of cases) {
+  it.for([
+    [
+      'ComfyUI-UltraShape1',
+      'Failed to load resource: 404 [http://localhost:8188/api/view?filename=%28upload+a+mesh+file%29&subfolder=&type=input&rand=0.5]'
+    ],
+    [
+      'ComfyUI-UltraShape1',
+      'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=%28upload+a+mesh+file%29&subfolder=&rand=0.5]'
+    ],
+    [
+      'ComfyUI-KJNodes',
+      'Failed to load resource: 404 [http://localhost:8188/api/view?filename=undefined&subfolder=&type=input&rand=0.5]'
+    ],
+    [
+      'ComfyUI-KJNodes',
+      'Failed to load resource: 404 [http://localhost:8188/api/view?type=input&filename=undefined&subfolder=&rand=0.5]'
+    ],
+    [
+      'WhatDreamsCost-ComfyUI',
+      'Failed to load resource: 404 [http://localhost:8188/api/view?filename=_cn&type=input]'
+    ],
+    [
+      'comfyui-impact-pack',
+      'Failed to load resource: 404 [http://localhost:8188/beach.jpg]'
+    ]
+  ] as const)(
+    'matches only the observed %s bare-backend request %s',
+    ([pack, error]) => {
       expect(unallowlistedErrors(pack, [error])).toEqual([])
       expect(unallowlistedErrors('Some-Future-Pack', [error])).toEqual([error])
     }
-  })
+  )
 
   it('attributes iTools no-saved-drawing log only to an installed iTools pack', () => {
     const paintFileLog =

@@ -15,14 +15,20 @@ export const zResultItem = z.object({
   preview_id: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
+
+// Output arrays can contain a bare `null` or a filename-less
+// `{ status: 'unavailable', reason }` marker. Parsing each element
+// independently keeps one bad entry from discarding the whole array.
+const zResultItemEntry = z.union([zResultItem, z.null()]).catch(null)
+
 // Uses .passthrough() because custom nodes can output arbitrary keys.
 // See docs/adr/NODE-OUTPUTS-0007-output-passthrough-for-extensible-nodes.md
 const zOutputs = z
   .object({
-    audio: z.array(zResultItem).optional(),
-    images: z.array(zResultItem).optional(),
-    video: z.array(zResultItem).optional(),
-    animated: z.array(z.boolean()).optional(),
+    audio: z.array(zResultItemEntry).optional(),
+    images: z.array(zResultItemEntry).optional(),
+    video: z.array(zResultItemEntry).optional(),
+    animated: z.array(z.boolean().nullable().catch(null)).optional(),
     text: z.union([z.string(), z.array(z.string())]).optional()
   })
   .passthrough()

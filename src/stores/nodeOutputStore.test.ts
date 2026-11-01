@@ -174,8 +174,10 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
       createMockOutputs(fromAny([null]))
     )
 
-    expect(store.getNodeImageUrls(node)).toEqual([])
-    expect(store.getNodeImageUrlsByExecutionId(executionId, node)).toEqual([])
+    expect(store.getNodeImageUrls(node)).toBeUndefined()
+    expect(
+      store.getNodeImageUrlsByExecutionId(executionId, node)
+    ).toBeUndefined()
   })
 
   it('carries preview_id on the view URL', () => {
@@ -544,7 +546,29 @@ describe('nodeOutputStore input preview preservation', () => {
     store.setNodeOutputsByExecutionId(executionId, emptyExecutionOutput)
 
     expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
-    expect(store.nodeOutputs[executionId]?.images?.[0].filename).toBe(
+    expect(store.nodeOutputs[executionId]?.images?.[0]?.filename).toBe(
+      'example.png'
+    )
+  })
+
+  it('should preserve input preview when every execution image is degenerate', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(3)])
+
+    const inputPreview = createMockOutputs([
+      { filename: 'example.png', subfolder: '', type: 'input' }
+    ])
+    store.setNodeOutputsByExecutionId(executionId, inputPreview)
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs(
+        fromAny([null, { status: 'unavailable', reason: 'upload_failed' }])
+      )
+    )
+
+    expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
+    expect(store.nodeOutputs[executionId]?.images?.[0]?.filename).toBe(
       'example.png'
     )
   })
@@ -562,7 +586,7 @@ describe('nodeOutputStore input preview preservation', () => {
     store.setNodeOutputsByExecutionId(executionId, emptyImagesOutput)
 
     expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
-    expect(store.nodeOutputs[executionId]?.images?.[0].type).toBe('input')
+    expect(store.nodeOutputs[executionId]?.images?.[0]?.type).toBe('input')
   })
 
   it('should allow execution output with images to overwrite input preview', () => {
@@ -580,7 +604,7 @@ describe('nodeOutputStore input preview preservation', () => {
     store.setNodeOutputsByExecutionId(executionId, executionOutput)
 
     expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
-    expect(store.nodeOutputs[executionId]?.images?.[0].filename).toBe(
+    expect(store.nodeOutputs[executionId]?.images?.[0]?.filename).toBe(
       'output.png'
     )
   })
@@ -615,11 +639,11 @@ describe('nodeOutputStore input preview preservation', () => {
     store.setNodeOutputsByExecutionId(executionId, videoOutput)
 
     expect(store.nodeOutputs[executionId]?.images).toHaveLength(1)
-    expect(store.nodeOutputs[executionId]?.images?.[0].filename).toBe(
+    expect(store.nodeOutputs[executionId]?.images?.[0]?.filename).toBe(
       'example.png'
     )
     expect(store.nodeOutputs[executionId]?.video).toHaveLength(1)
-    expect(store.nodeOutputs[executionId]?.video?.[0].filename).toBe(
+    expect(store.nodeOutputs[executionId]?.video?.[0]?.filename).toBe(
       'output.mp4'
     )
   })
@@ -699,6 +723,35 @@ describe('nodeOutputStore getPreviewParam', () => {
     ])
     expect(store.getPreviewParam(node, outputs)).toBe('&format=test_webp')
     expect(app.getPreviewFormatParam).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('nodeOutputStore getNodeImageUrlsByExecutionId', () => {
+  beforeEach(() => {
+    vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
+    vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('builds no view request for null or filename-less entries', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode()
+    const executionId = createNodeExecutionId([toNodeId(1)])
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs(
+        fromAny([
+          null,
+          { status: 'unavailable', reason: 'upload_failed' },
+          { filename: 'good.png', subfolder: '', type: 'output' }
+        ])
+      )
+    )
+
+    const urls = store.getNodeImageUrlsByExecutionId(executionId, node)
+
+    expect(urls).toEqual([expect.stringContaining('filename=good.png')])
   })
 })
 
@@ -846,7 +899,7 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
     const snapshot = store.snapshotOutputs()
 
     // Mutate the snapshot
-    snapshot['1'].images![0].filename = 'mutated.png'
+    snapshot['1'].images![0]!.filename = 'mutated.png'
     snapshot['99'] = createMockOutputs([{ filename: 'new.png' }])
 
     // Store should be unchanged
@@ -986,34 +1039,35 @@ describe('nodeOutputStore merge mode interactions', () => {
     expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('result.png')
   })
 
-  it('should not duplicate when merge is called with empty images array', () => {
-    const store = useNodeOutputStore()
+  it.for([
+    { case: 'an empty images array', images: [] },
+    {
+      case: 'only degenerate images',
+      images: [null, { status: 'unavailable', reason: 'upload_failed' }]
+    }
+  ])(
+    'should not duplicate input preview images when merging $case',
+    ({ images }) => {
+      const store = useNodeOutputStore()
+      const executionId = createNodeExecutionId([toNodeId(3)])
+      store.setNodeOutputsByExecutionId(
+        executionId,
+        createMockOutputs([
+          { filename: 'uploaded.png', subfolder: '', type: 'input' }
+        ])
+      )
 
-    // Set initial input preview
-    const inputOutput = createMockOutputs([
-      { filename: 'uploaded.png', subfolder: '', type: 'input' }
-    ])
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(3)]),
-      inputOutput
-    )
+      store.setNodeOutputsByExecutionId(
+        executionId,
+        createMockOutputs(fromAny(images)),
+        { merge: true }
+      )
 
-    // Merge with empty images — the input-preview guard (lines 166-177)
-    // copies existing input images into the incoming outputs before the
-    // merge concat runs, resulting in duplication.
-    const emptyOutput = createMockOutputs([])
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(3)]),
-      emptyOutput,
-      {
-        merge: true
-      }
-    )
-
-    expect(store.nodeOutputs['3']?.images).toHaveLength(2)
-    expect(store.nodeOutputs['3']?.images?.[0]?.filename).toBe('uploaded.png')
-    expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('uploaded.png')
-  })
+      expect(store.nodeOutputs['3']?.images).toEqual([
+        { filename: 'uploaded.png', subfolder: '', type: 'input' }
+      ])
+    }
+  )
 })
 
 describe('nodeOutputStore setNodeOutputs (widget path)', () => {
