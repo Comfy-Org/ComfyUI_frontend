@@ -24,21 +24,18 @@ function billingOn(type: () => BillingType) {
 }
 
 describe('useSubscriptionPaywall', () => {
-  it.for([{ type: 'workspace' as const, pricing: [[options]], gated: [] }])(
-    'opens the $type paywall at once when the type is known',
-    ({ type, pricing, gated }) => {
-      billingOn(() => type)
+  it('opens the pricing dialog at once when the type is known', () => {
+    billingOn(() => 'workspace')
 
-      useSubscriptionPaywall().showSubscriptionDialog(options)
+    useSubscriptionPaywall().showSubscriptionDialog(options)
 
-      expect(vi.mocked(useSubscriptionDialog().show).mock.calls).toEqual(
-        pricing
-      )
-      expect(
-        vi.mocked(useBillingDialogs().showSubscriptionRequiredDialog).mock.calls
-      ).toEqual(gated)
-    }
-  )
+    expect(vi.mocked(useSubscriptionDialog().show).mock.calls).toEqual([
+      [options]
+    ])
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).not.toHaveBeenCalled()
+  })
 
   it('waits for the workspace type, then opens the paywall of the rail that loaded', async () => {
     const type = ref<BillingType>('unknown')

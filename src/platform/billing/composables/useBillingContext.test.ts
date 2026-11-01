@@ -471,6 +471,32 @@ describe('useBillingContext', () => {
       expect(context.isInitialized.value).toBe(false)
     })
 
+    it('makes no billing call while unknown, then routes to workspace billing for a personal workspace', async () => {
+      const loaded = holdWorkspaceUnloaded('personal')
+      mockBillingRail.value = 'stripe'
+      const context = useBillingContext()
+      vi.clearAllMocks()
+
+      const initializing = context.initialize()
+      await context.fetchStatus()
+      await context.fetchBalance()
+
+      expect(context.type.value).toBe('unknown')
+      expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(billingApi.getBillingBalance).not.toHaveBeenCalled()
+      expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
+      expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
+
+      loaded.value = true
+      await initializing
+
+      expect(context.type.value).toBe('workspace')
+      expect(context.isInitialized.value).toBe(true)
+      expect(billingApi.getBillingStatus).toHaveBeenCalled()
+      expect(billingApi.getBillingBalance).toHaveBeenCalled()
+      expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
+    })
+
     it('makes no billing call while unknown, then routes to workspace billing for a team', async () => {
       const loaded = holdWorkspaceUnloaded('team')
       const context = useBillingContext()

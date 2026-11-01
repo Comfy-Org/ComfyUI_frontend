@@ -780,7 +780,7 @@ describe('CreditsTile', () => {
     expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
 
-  it('uses the fail-open capability fallback on legacy billing', () => {
+  it('uses the fail-open capability fallback before the billing type loads', () => {
     activeProSubscription()
     state.type = 'unknown'
     renderTile()
@@ -891,7 +891,7 @@ describe('CreditsTile', () => {
     expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledOnce()
   })
 
-  it('clears a confirmed legacy top-up before the next focus', async () => {
+  it('clears a confirmed top-up before the next focus', async () => {
     activeProSubscription()
     state.type = 'unknown'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
@@ -921,7 +921,7 @@ describe('CreditsTile', () => {
     expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
   })
 
-  it('closes a confirmed legacy top-up with one succeeded event measured from its start', async () => {
+  it('closes a confirmed top-up with one succeeded event measured from its start', async () => {
     const confirmedAtMs = Date.parse('2024-06-15T12:30:00Z')
     vi.spyOn(Date, 'now').mockReturnValue(confirmedAtMs)
     activeProSubscription()
@@ -958,7 +958,7 @@ describe('CreditsTile', () => {
     ])
   })
 
-  it('refreshes and reconciles a pending legacy top-up when telemetry is unavailable', async () => {
+  it('refreshes and reconciles a pending top-up when telemetry is unavailable', async () => {
     activeProSubscription()
     state.type = 'unknown'
     const telemetry = useTelemetry()
@@ -984,7 +984,7 @@ describe('CreditsTile', () => {
     expect(telemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
   })
 
-  it('retries legacy completion reconciliation after a request failure', async () => {
+  it('retries completion reconciliation after a request failure', async () => {
     activeProSubscription()
     state.type = 'unknown'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())

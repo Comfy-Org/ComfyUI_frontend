@@ -141,7 +141,7 @@ describe('launchCancellationFlow', () => {
     }
   )
 
-  it('keeps legacy cancellation available while workspace state initializes', async () => {
+  it('keeps cancellation available while workspace state initializes', async () => {
     mocks.billingType.value = 'unknown'
     mocks.activeWorkspaceId = null
     const { shown, showFlow } = captureFlow()
