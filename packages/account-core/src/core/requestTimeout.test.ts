@@ -13,7 +13,9 @@ describe('timedSignal', () => {
     vi.useFakeTimers()
     const { signal } = timedSignal(undefined, 100)
 
-    vi.advanceTimersByTime(100)
+    vi.advanceTimersByTime(99)
+    expect(signal?.aborted).toBe(false)
+    vi.advanceTimersByTime(1)
 
     expect(signal?.aborted).toBe(true)
   })
