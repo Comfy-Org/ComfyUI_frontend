@@ -18,6 +18,8 @@ import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdenti
 import { reportWorkspaceScopeMismatch } from '@/platform/billing/telemetry/workspaceTelemetryContext'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 
 type CapabilityReadState =
   | { status: 'idle' }
@@ -80,6 +82,8 @@ function readCapabilitiesResponse(
 
 function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
+  const webSession = useCloudWebSessionStore()
+  const { flags } = useFeatureFlags()
   const apiKeyAuthStore = useApiKeyAuthStore()
   const workspaceStore = useWorkspaceIdentity()
   const actorId = computed(
@@ -553,6 +557,19 @@ function useBillingCapabilitiesInternal() {
       readFailures = 0
       resetRead()
       if (initialized) void fetchCapabilities()
+    }
+  )
+
+  watch(
+    () => webSession.state,
+    (state) => {
+      if (
+        state.phase === 'signed_in' &&
+        readState.value.status === 'denied' &&
+        flags.webSessionLapseRecoveryEnabled
+      ) {
+        void fetchCapabilities()
+      }
     }
   )
 

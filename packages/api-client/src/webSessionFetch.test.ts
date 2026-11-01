@@ -61,3 +61,75 @@ describe('web-session request credentials', () => {
     }
   )
 })
+
+describe('a request the server refuses because the session lapsed', () => {
+  const scopeFor = (csrfToken: string): WebSessionRequestScope => ({
+    epoch: 1,
+    session: {
+      user: { id: 'user', email: 'user@example.com', emailVerified: true },
+      csrfToken,
+      expiresAt: Number.MAX_SAFE_INTEGER,
+      absoluteExpiresAt: Number.MAX_SAFE_INTEGER
+    }
+  })
+
+  function sendLapsed(
+    retriesLapsedSession: boolean,
+    init: RequestInit = { method: 'POST', body: '{}' }
+  ) {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        Response.json(
+          { code: 'UNAUTHORIZED', message: 'authentication required' },
+          { status: 401 }
+        )
+      )
+      .mockResolvedValueOnce(new Response('restored'))
+    const refresh = vi.fn(async () => scopeFor('fresh-csrf'))
+    const ports = {
+      authorize: createRequestAuthorizer({
+        getWorkspaceToken: async () => 'unused'
+      }),
+      refresh,
+      workspaceDenied: vi.fn(),
+      ssoRequired: vi.fn(),
+      retriesLapsedSession
+    }
+    const response = fetchOnWebSession(
+      '/api/billing/capabilities',
+      init,
+      scopeFor('stale-csrf'),
+      ports
+    )
+    return { response, refresh }
+  }
+
+  it('returns the refusal without re-reading the session when recovery is off', async () => {
+    const { response, refresh } = sendLapsed(false)
+
+    expect((await response).status).toBe(401)
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
+  it('re-reads the session and retries once on the restored session', async () => {
+    const { response, refresh } = sendLapsed(true)
+
+    expect(await (await response).text()).toBe('restored')
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(
+      new Headers(vi.mocked(fetch).mock.lastCall?.[1]?.headers).get(
+        'X-CSRF-Token'
+      )
+    ).toBe('fresh-csrf')
+  })
+
+  it('returns the refusal for a streamed body it cannot replay', async () => {
+    const { response, refresh } = sendLapsed(true, {
+      method: 'POST',
+      body: new ReadableStream()
+    })
+
+    expect((await response).status).toBe(401)
+    expect(refresh).not.toHaveBeenCalled()
+  })
+})

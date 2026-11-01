@@ -35,6 +35,8 @@ export interface WebSessionFetchPorts {
   readonly workspaceDenied: (workspaceId: string) => void
   readonly ssoRequired: (scope: WebSessionRequestScope) => void
   readonly authorize: RequestAuthorizer
+  /** Re-read the session and replay once when the server refuses it with a 401. */
+  readonly retriesLapsedSession?: boolean
 }
 
 async function refusalCode(
@@ -49,10 +51,11 @@ async function refusalCode(
 }
 
 /**
- * Sends one ingest request on the session cookie. `csrf_invalid` is the one
- * refusal a fresh token can fix, so it is retried once for the same user and
- * workspace; `workspace_access_denied` drops that workspace and is returned
- * as is, never replayed elsewhere; `sso_required` is reported and returned.
+ * Sends one ingest request on the session cookie. `csrf_invalid`, and a 401
+ * when `retriesLapsedSession` is set, are retried once on a refreshed session
+ * for the same user and workspace; `workspace_access_denied` drops that
+ * workspace and is returned as is, never replayed elsewhere; `sso_required`
+ * is reported and returned.
  */
 export async function fetchOnWebSession(
   url: string,
@@ -87,7 +90,11 @@ export async function fetchOnWebSession(
     ports.workspaceDenied(scope.workspaceId)
   }
   if (code === 'SSO_REQUIRED') ports.ssoRequired(scope)
-  if (code !== 'CSRF_STALE' || init.body instanceof ReadableStream) {
+  const lapsed = response.status === 401 && ports.retriesLapsedSession === true
+  if (
+    (code !== 'CSRF_STALE' && !lapsed) ||
+    init.body instanceof ReadableStream
+  ) {
     return response
   }
   const fresh = await ports.refresh(scope)

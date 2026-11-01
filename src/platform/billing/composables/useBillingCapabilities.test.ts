@@ -1,7 +1,10 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { WebSession } from '@comfyorg/account-core/webSession'
 import { setTelemetryRegistry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
@@ -1140,6 +1143,51 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
+  })
+
+  describe('a read denied because the web session lapsed', () => {
+    const LAPSE_RECOVERY_FLAG = 'ff:web_session_lapse_recovery_enabled'
+    const sessionFor = (id: string) =>
+      fromPartial<WebSession>({ user: { id, email: `${id}@example.com` } })
+
+    async function denyThenRestoreSession() {
+      const webSession = useCloudWebSessionStore()
+      webSession.state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockRejectedValueOnce(
+          new WorkspaceApiError('authentication required', 401)
+        )
+        .mockResolvedValueOnce(capabilitiesResponse(true))
+      await billingCapabilities.initialize()
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+
+      webSession.state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      await vi.advanceTimersByTimeAsync(0)
+    }
+
+    afterEach(() => localStorage.removeItem(LAPSE_RECOVERY_FLAG))
+
+    it('stays denied after the session is restored with the flag off', async () => {
+      await denyThenRestoreSession()
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+    })
+
+    it('reads again once the session is restored with the flag on', async () => {
+      localStorage.setItem(LAPSE_RECOVERY_FLAG, 'true')
+
+      await denyThenRestoreSession()
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
   })
 
   it('paces the refresh on a fixed interval when the snapshot arrives expired', async () => {
