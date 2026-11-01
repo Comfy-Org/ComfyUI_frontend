@@ -1461,7 +1461,7 @@ describe('errorMessageResolver', () => {
   })
 
   it('follows the pricing-table durations when they change', () => {
-    const original = enMessages.subscription.maxDuration
+    const original = { ...enMessages.subscription.maxDuration }
     i18n.global.mergeLocaleMessage('en', {
       subscription: {
         maxDuration: { free: '7 min', pro: '2 hr', standard: '45 min' }
