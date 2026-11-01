@@ -769,6 +769,10 @@ export type AgentComposerDropReason =
   | 'no_target'
   | 'empty'
   | 'attachment_uploading'
+  /** The session refused the send because another one is still in flight. */
+  | 'send_busy'
+  /** The session refused the send because its workflow target changed or has no canvas. */
+  | 'target_unavailable'
 /** `not_completed`: the consent flow ended without accept, decline or dismiss. */
 export type AgentConsentDropReason =
   | 'declined'

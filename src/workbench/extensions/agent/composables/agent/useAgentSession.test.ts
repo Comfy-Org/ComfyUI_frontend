@@ -6878,6 +6878,15 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(sent).toBe(false)
     expect(postMessage).toHaveBeenCalledTimes(1)
+    expect(telemetry.trackAgentSendGated).toHaveBeenCalledWith({
+      gate: 'composer',
+      outcome: 'dropped',
+      reason: 'target_unavailable',
+      client_message_id: null,
+      held_ms: null,
+      thread_id: expect.any(String),
+      client_session_id: expect.any(String)
+    })
   })
 
   it('(h10c) once the re-flagged mint is adopted, the next turn names it instead of minting again', async () => {
@@ -8458,6 +8467,15 @@ describe('useAgentSession (v1 composition root)', () => {
         )
     )
     expect(busyNotice).toBeDefined()
+    expect(telemetry.trackAgentSendGated).toHaveBeenCalledWith({
+      gate: 'composer',
+      outcome: 'dropped',
+      reason: 'send_busy',
+      client_message_id: null,
+      held_ms: null,
+      thread_id: null,
+      client_session_id: expect.any(String)
+    })
 
     resolvePost?.({ thread_id: 'th-1', message_id: 'msg-1' })
     await first

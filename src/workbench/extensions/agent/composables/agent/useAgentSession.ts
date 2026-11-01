@@ -23,6 +23,7 @@ import {
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
 import { createUuidv4 } from '@/utils/uuid'
+import { agentClientSessionId } from '@/workbench/extensions/agent/agentClientSession'
 import type {
   AgentActiveTabData,
   AgentAnswerReceipt,
@@ -1173,7 +1174,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
     ])
   }
 
+  /** Reports a send the session refuses before its turn POST. */
+  function trackSendRefused(reason: 'send_busy' | 'target_unavailable'): void {
+    useTelemetry()?.trackAgentSendGated({
+      gate: 'composer',
+      outcome: 'dropped',
+      reason,
+      client_message_id: null,
+      held_ms: null,
+      thread_id: conversationStore.threadId,
+      client_session_id: agentClientSessionId()
+    })
+  }
+
   function recordUnavailableTarget(text: string): void {
+    trackSendRefused('target_unavailable')
     conversationStore.recordFailedSend(
       nextLocalErrorId(),
       text,
@@ -1660,6 +1675,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onAccepted?: () => void
   ): Promise<boolean> {
     if (sending.value) {
+      trackSendRefused('send_busy')
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
         text,
