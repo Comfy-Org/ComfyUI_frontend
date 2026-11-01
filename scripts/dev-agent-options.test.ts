@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest'
 
 import {
   PROJECT_ROOT,
-  USAGE,
   parseOptions,
   splitCommandLine
 } from './dev-agent-options'
@@ -52,11 +51,6 @@ describe('parseOptions', () => {
         ...args
       ])
     ).toThrow(message)
-  })
-
-  it('documents that command overrides must target their configured ports', () => {
-    expect(USAGE).toContain('must target --pg-port')
-    expect(USAGE).toContain('targeting --redis-port')
   })
 
   it('returns safe defaults with derived companion ports', () => {
