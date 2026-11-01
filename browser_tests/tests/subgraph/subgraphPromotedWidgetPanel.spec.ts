@@ -5,6 +5,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 async function ensurePropertiesPanel(comfyPage: ComfyPage) {
   const panel = comfyPage.menu.propertiesPanel.root
@@ -228,6 +229,35 @@ test.describe(
           .poll(() => moreButtons.count())
           .toBeLessThan(widgetCountBeforeHide)
       })
+
+      test(
+        'promoted widget row places the Hide input button before the menu',
+        { tag: '@screenshot' },
+        async ({ comfyPage }) => {
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/subgraph-nested-promotion'
+          )
+          const subgraphNodes =
+            await comfyPage.nodeOps.getNodeRefsByTitle('Sub 0')
+          expect(subgraphNodes.length).toBeGreaterThan(0)
+          await subgraphNodes[0].click('title')
+
+          const panel = await ensurePropertiesPanel(comfyPage)
+          const hideInputButton = panel
+            .getByTestId(TestIds.subgraphEditor.widgetActionsHideInputButton)
+            .first()
+          await expect(hideInputButton).toBeVisible()
+          await expect(hideInputButton).toHaveAccessibleName('Hide input')
+
+          // Button and menu trigger sit in the actions container; its parent
+          // is the row header (label, source node name, actions).
+          const rowHeader = hideInputButton.locator('xpath=../..')
+          await expectElementScreenshot(
+            rowHeader,
+            'promoted-widget-row-hide-input-button.png'
+          )
+        }
+      )
 
       test('a widget outside any subgraph never shows a Hide/Show input option', async ({
         comfyPage
