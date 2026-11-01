@@ -79,6 +79,7 @@ Four workflows carry it:
 | `publish-package.yaml`          | `workflow_dispatch` + `workflow_call`  | Validates, builds, smoke-tests, and publishes one package with provenance                                                            |
 | `publish-package-on-merge.yaml` | `pull_request: closed` on `main`       | On a merged `Release` PR, publishes every package whose version changed, writes the release links to an artifact, and posts to Slack |
 | `pr-publish-report.yaml`        | `workflow_run` of the on-merge publish | Posts the release links to the Release PR, the only job on this path with write permission on pull requests                          |
+| `sdk-release-pr.yaml`           | `push` to `main` on package sources    | Opens or refreshes one `Release`-labelled bump PR for every package whose published contents changed since its last release          |
 
 Pre-merge snapshot publishing is a deliberate follow-up, not part of this
 decision; the constraint that shapes it is recorded under Follow-ups.
@@ -243,6 +244,20 @@ carried while private — the protocol is invisible until the package packs,
 and an exact pin is the lockfile conflict this ADR rejects below.
 
 ### Follow-ups
+
+> **Amended (2026-10-31):** `sdk-release-pr.yaml` closes the regeneration gap
+> from this repository instead of the Cloud bot. On a push to `main` it runs
+> `scripts/sdk-release-plan.ts`, which compares each package with the commit
+> that set its current version. `ingest-types` is bumped (patch) only when a
+> schema an SDK package imports, or one it is built from, changed; endpoints
+> no SDK package reads ship nothing. The hand-written packages get an `alpha`
+> prerelease bump when their published source or dependencies changed. The
+> bumps land in one `Release`-labelled PR on `sdk-release/auto`, refreshed on
+> every push, so a release is still a reviewed merge. The on-merge publish now
+> runs its matrix one package at a time in dependency order (`ingest-types`
+> first) and stops at the first failure, so one PR can carry a package and a
+> dependent that needs it. Platform's own direct imports of `ingest-types`
+> are outside the gate.
 
 - **`ingest-types` regeneration does not bump the version.** The generator
   lives in the Cloud repository, not here; the bot opens
