@@ -283,9 +283,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       { kind: 'error', id: uuidv4(), context, textOffset: 0 },
       {
         textOffset: insertionPoint.value.textOffset,
-        referenceIndex: references.filter(
-          (item) => item.textOffset <= insertionPoint.value.textOffset
-        ).length
+        referenceIndex: prompt.value.references
+          .slice(0, insertionPoint.value.referenceIndex)
+          .filter((item) => item.kind !== 'error').length
       }
     )
     insertionPoint.value = inserted.insertion

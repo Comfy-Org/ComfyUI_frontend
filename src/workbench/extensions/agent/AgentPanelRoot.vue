@@ -1968,10 +1968,6 @@ if (
 )
   void followTab(mountedOn)
 
-/**
- * Attach only after moving to the errored workflow's chat: a chip counts as a
- * draft, which holds back every chat follow.
- */
 async function attachErrorContext(context: AgentErrorContext): Promise<void> {
   const workflow = workflowStore.activeWorkflow
   if (workflow) {

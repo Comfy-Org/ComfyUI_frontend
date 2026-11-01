@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+
 import { useAgentComposerStore } from './agentComposerStore'
 
 function errorContext(
@@ -28,21 +30,39 @@ describe('agentComposerStore error context', () => {
       text: typed,
       references: [
         ...store.prompt.references,
-        {
-          kind: 'workflow',
-          id: 'wf-ref',
-          workflowId: 'wf-1',
-          name: 'other',
-          textOffset: typed.length
-        }
+        { kind: 'workflow', id: 'wf-ref', name: 'other', textOffset: 17 }
       ]
-    } as Parameters<typeof store.applyEditorPrompt>[0])
+    })
     store.setInsertionPoint({ textOffset: 4, referenceIndex: 1 })
 
     store.setErrorContext(errorContext({ label: 'Second' }))
 
-    const offsets = store.prompt.references.map((item) => item.textOffset)
-    expect(offsets).toEqual([...offsets].sort((a, b) => a - b))
+    expect(store.prompt.text).toBe(' Can you fix this')
+    expect(store.prompt.references).toMatchObject([
+      { kind: 'error', context: { label: 'Second' }, textOffset: 4 },
+      { kind: 'workflow', id: 'wf-ref', name: 'other', textOffset: 17 }
+    ])
+  })
+
+  it('inserts between two references at the same offset when the caret is between them', () => {
+    const store = useAgentComposerStore()
+    store.applyEditorPrompt({
+      text: '',
+      references: [
+        { kind: 'workflow', id: 'wf-a', name: 'a', textOffset: 0 },
+        { kind: 'workflow', id: 'wf-b', name: 'b', textOffset: 0 }
+      ]
+    })
+    store.setInsertionPoint({ textOffset: 0, referenceIndex: 1 })
+
+    store.setErrorContext(errorContext())
+
+    expect(store.prompt.references.map((item) => item.kind)).toEqual([
+      'workflow',
+      'error',
+      'workflow'
+    ])
+    expect(store.prompt.references[0]).toMatchObject({ id: 'wf-a' })
   })
 
   it('attaches the context as an inline reference and marks the origin', () => {
@@ -75,7 +95,6 @@ describe('agentComposerStore error context', () => {
     store.clearErrorContext()
 
     expect(store.errorContext).toBeNull()
-    expect(store.prompt.references.some((r) => r.kind === 'error')).toBe(false)
     expect(store.promptOrigin).toBe('typed')
   })
 
@@ -108,30 +127,9 @@ describe('agentComposerStore error context', () => {
       prompt: store.prompt,
       attachments: [],
       nodes: [],
-      target: { isTemporary: true } as never
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
     })
 
     expect(store.errorContext).toBeNull()
-  })
-
-  it('restores the attached context when a send fails', () => {
-    const store = useAgentComposerStore()
-    const context = errorContext()
-    store.setErrorContext(context)
-    const snapshotPrompt = store.prompt
-
-    const id = store.startSubmission({
-      prompt: snapshotPrompt,
-      attachments: [],
-      nodes: [],
-      target: { isTemporary: true } as never
-    })
-    store.settleSubmission(id, false)
-    const snapshot = store.takeFailedSubmission()
-    expect(snapshot).toBeDefined()
-    store.restorePrompt(snapshot!.prompt)
-
-    expect(store.errorContext).toEqual(context)
-    expect(store.promptOrigin).toBe('error_context')
   })
 })

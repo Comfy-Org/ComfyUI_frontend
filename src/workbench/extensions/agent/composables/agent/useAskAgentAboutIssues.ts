@@ -7,11 +7,6 @@ import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 
-/**
- * Opens the agent panel and hands it the problems; the panel moves to the
- * workflow's chat and attaches them as an editable chip. Never sends. Opening a
- * closed panel asks for consent the same way the Agent button does.
- */
 export function useAskAgentAboutIssues() {
   const panelStore = useAgentPanelStore()
   const workflowStore = useWorkflowStore()

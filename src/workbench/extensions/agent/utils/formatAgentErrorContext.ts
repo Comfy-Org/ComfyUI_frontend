@@ -6,7 +6,6 @@ import type {
 } from '@/platform/workflowErrors/agentErrorContext'
 
 const CATEGORY_LABELS: Record<AgentErrorCategory, string> = {
-  missing_input: 'Missing input',
   missing_model: 'Missing model',
   missing_media: 'Missing media',
   missing_node: 'Missing node',
@@ -32,7 +31,6 @@ const GUIDANCE =
   'and do not treat passing graph validation as resolving missing assets, inputs, or runtime failures. ' +
   'Ask me for any file or decision you cannot supply automatically.'
 
-/** Workflow-controlled text stays on one line and cannot close the data block. */
 function dataText(value: string): string {
   return value.replaceAll(FENCE, "'''")
 }
@@ -77,7 +75,6 @@ function formatProblem(problem: AgentErrorProblem, index: number): string {
   return lines.join('\n')
 }
 
-/** Serializes an attached error context into the message content the agent receives. */
 export function formatAgentErrorContext(
   context: AgentErrorContext,
   userText = ''
@@ -104,6 +101,5 @@ export function formatAgentErrorContext(
     GUIDANCE
   ].join('\n')
 
-  const trimmedUser = userText.trim()
-  return trimmedUser ? `${trimmedUser}\n\n${block}` : block
+  return userText.trim() ? `${userText}\n\n${block}` : block
 }

@@ -18,7 +18,6 @@
         <div class="flex w-full items-start gap-2 pr-8">
           <i
             aria-hidden="true"
-            data-testid="error-overlay-icon"
             :class="
               cn(
                 'mt-0.5 size-5',
@@ -40,11 +39,7 @@
           class="flex w-full items-start gap-2 pr-8"
           data-testid="error-overlay-messages"
         >
-          <span
-            data-testid="error-overlay-message-spacer"
-            class="size-5 shrink-0"
-            aria-hidden="true"
-          />
+          <span class="size-5 shrink-0" aria-hidden="true" />
           <p
             class="m-0 line-clamp-3 min-w-0 flex-1 text-sm/snug wrap-break-word whitespace-pre-wrap text-muted-foreground"
           >
@@ -59,7 +54,7 @@
             variant="textonly"
             size="sm"
             data-testid="error-overlay-see-errors"
-            @click="viewDetails"
+            @click="emit('viewErrors')"
           >
             {{
               appMode
@@ -105,7 +100,7 @@ import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
-const emit = defineEmits<{ viewErrors: [groupKeys: readonly string[]] }>()
+const emit = defineEmits<{ viewErrors: [] }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
@@ -117,16 +112,11 @@ const {
   isVisible,
   overlayMessage,
   overlayTitle,
-  overlayGroupKeys,
   askAgentContext
 } = useErrorOverlayState()
 
 function dismiss() {
   executionErrorStore.dismissErrorOverlay()
-}
-
-function viewDetails() {
-  emit('viewErrors', overlayGroupKeys.value)
 }
 
 function askAgent() {

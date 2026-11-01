@@ -45,6 +45,12 @@ describe('formatAgentErrorContext', () => {
     expect(block.startsWith('Can you fix this for me?\n\n')).toBe(true)
   })
 
+  it('keeps the user text verbatim so reference offsets still point into it', () => {
+    const block = formatAgentErrorContext(context(), 'fix using ')
+
+    expect(block.startsWith('fix using \n\n')).toBe(true)
+  })
+
   it('omits the user request when it is blank', () => {
     const block = formatAgentErrorContext(context(), '   ')
 
@@ -92,12 +98,14 @@ describe('formatAgentErrorContext', () => {
           {
             category: 'execution_failure',
             message: 'RuntimeError: boom',
-            details: 'x'.repeat(5000)
+            details: `retained-prefix${'x'.repeat(5000)}OMITTED_DETAILS_SENTINEL`
           }
         ]
       })
     )
     expect(longDetails).toContain('… (truncated)')
+    expect(longDetails).toContain('Details: retained-prefix')
+    expect(longDetails).not.toContain('OMITTED_DETAILS_SENTINEL')
   })
 
   it('always carries the agent guidance about stale vs current state', () => {

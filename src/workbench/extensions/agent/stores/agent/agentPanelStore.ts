@@ -114,7 +114,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
   )
-  /** An Ask agent request waiting for the panel to open the workflow's chat. */
   const pendingErrorContext = shallowRef<AgentErrorContext | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()

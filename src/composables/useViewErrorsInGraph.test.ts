@@ -49,17 +49,13 @@ describe('useViewErrorsInGraph', () => {
     expect(canvasStore.selectedItems).toEqual([node])
     executionErrorStore.showErrorOverlay()
 
-    useViewErrorsInGraph().viewErrorsInGraph(['execution:out_of_memory'])
+    useViewErrorsInGraph().viewErrorsInGraph()
 
     expect(node.selected).toBe(false)
     expect(canvasStore.linearMode).toBe(false)
     expect(canvasStore.selectedItems).toEqual([])
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(rightSidePanelStore.isOpen).toBe(true)
-    expect(rightSidePanelStore.errorDetailsRequest).toBe(1)
-    expect(rightSidePanelStore.errorDetailsGroupKeys).toEqual([
-      'execution:out_of_memory'
-    ])
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
   })
 
@@ -74,8 +70,6 @@ describe('useViewErrorsInGraph', () => {
 
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(rightSidePanelStore.isOpen).toBe(true)
-    expect(rightSidePanelStore.errorDetailsRequest).toBe(1)
-    expect(rightSidePanelStore.errorDetailsGroupKeys).toEqual([])
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
   })
 })

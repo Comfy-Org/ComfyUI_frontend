@@ -1,3 +1,4 @@
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import type {
@@ -10,7 +11,6 @@ import type {
 import type { MissingPackGroup, SwapNodeGroup } from './useErrorGroups'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 
-/** Missing-resource sub-groups `useErrorGroups` derives alongside `ErrorGroup[]`. */
 export interface MissingGroupContext {
   missingPackGroups: MissingPackGroup[]
   swapNodeGroups: SwapNodeGroup[]
@@ -37,28 +37,59 @@ function executionProblems(cards: ErrorCardData[]): AgentErrorProblem[] {
         : ('validation' as const),
       message: problemMessage(error),
       details: error.details ?? error.displayDetails,
-      nodeId: card.graphNodeId ?? card.rawNodeId,
+      nodeId: card.nodeId ?? card.graphNodeId ?? card.rawNodeId,
       nodeType: card.title,
       nodeTitle: card.nodeTitle
     }))
   )
 }
 
+interface NodeUse {
+  nodeId: SerializedNodeId
+  widgetName: string
+}
+
+function usedBy(references: NodeUse[]): string {
+  if (references.length === 1) return ` (widget ${references[0].widgetName})`
+  const uses = references.map(
+    (reference) => `node #${reference.nodeId} widget ${reference.widgetName}`
+  )
+  return ` (used by ${uses.join(', ')})`
+}
+
+function resourceProblem(
+  category: 'missing_model' | 'missing_media',
+  message: string,
+  references: NodeUse[],
+  nodeType: string | undefined
+): AgentErrorProblem {
+  if (references.length === 0) return { category, message, nodeType }
+  const problem: AgentErrorProblem = {
+    category,
+    message: `${message}${usedBy(references)}`
+  }
+  if (references.length !== 1) return problem
+  return { ...problem, nodeId: String(references[0].nodeId), nodeType }
+}
+
 function missingModelProblems(
   groups: MissingModelGroup[]
 ): AgentErrorProblem[] {
   return groups.flatMap((group) =>
-    group.models.flatMap((model) => {
+    group.models.map((model) => {
       const directory = group.directory ? ` in ${group.directory}` : ''
-      const message = `Missing model "${model.name}"${directory}`
-      if (model.referencingNodes.length === 0)
-        return [{ category: 'missing_model' as const, message }]
-      return model.referencingNodes.map((reference) => ({
-        category: 'missing_model' as const,
-        message: `${message} (widget ${reference.widgetName})`,
-        nodeId: String(reference.nodeId),
-        nodeType: model.representative.nodeType
-      }))
+      const [only] = model.referencingNodes
+      const nodeType =
+        model.referencingNodes.length === 1 &&
+        String(only.nodeId) === String(model.representative.nodeId)
+          ? model.representative.nodeType
+          : undefined
+      return resourceProblem(
+        'missing_model',
+        `Missing model "${model.name}"${directory}`,
+        model.referencingNodes,
+        nodeType
+      )
     })
   )
 }
@@ -67,23 +98,14 @@ function missingMediaProblems(
   groups: MissingMediaGroup[]
 ): AgentErrorProblem[] {
   return groups.flatMap((group) =>
-    group.items.flatMap((item) => {
-      const message = `Missing ${group.mediaType} input "${item.name}"`
-      if (item.referencingNodes.length === 0)
-        return [
-          {
-            category: 'missing_media' as const,
-            message,
-            nodeType: item.representative.nodeType
-          }
-        ]
-      return item.referencingNodes.map((reference) => ({
-        category: 'missing_media' as const,
-        message: `${message} (widget ${reference.widgetName})`,
-        nodeId: String(reference.nodeId),
-        nodeType: reference.nodeType ?? item.representative.nodeType
-      }))
-    })
+    group.items.map((item) =>
+      resourceProblem(
+        'missing_media',
+        `Missing ${group.mediaType} input "${item.name}"`,
+        item.referencingNodes,
+        item.referencingNodes[0]?.nodeType ?? item.representative.nodeType
+      )
+    )
   )
 }
 
@@ -136,7 +158,6 @@ function severityFor(group: ErrorGroup): AgentErrorContextSeverity {
   return group.severity === 'error' ? 'error' : 'warning'
 }
 
-/** Context for a single issue card (one `ErrorGroup`). */
 export function buildGroupErrorContext(
   group: ErrorGroup,
   context: MissingGroupContext,
@@ -158,7 +179,6 @@ interface BuildAllOptions extends BuildOptions {
   scope?: AgentErrorContextScope
 }
 
-/** Context for every currently listed issue (overview footer action). */
 export function buildAllErrorContext(
   groups: ErrorGroup[],
   context: MissingGroupContext,
