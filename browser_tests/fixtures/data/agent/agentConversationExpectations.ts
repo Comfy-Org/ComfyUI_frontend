@@ -151,19 +151,9 @@ export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
   ],
   'agent-rec-batched-ops': [
     {
-      text: "Done — I'm now on your \"Text to image\" tab, and both new text prompt nodes are on the canvas with their CLIP inputs wired from the checkpoint loader. They're not connected to anything downstream yet, so tell me if you'd like one hooked up as a negative prompt.",
+      text: `I didn't need to switch tabs: you're already working in "Text to image." In one batched call I added two new CLIP Text Encode (Prompt) nodes (#2103823744920160 and #2869331123916993) and connected the CLIP output of Load Checkpoint (#4) to both of their CLIP inputs. Their prompt text is empty, and their outputs aren't connected to anything yet.`,
       groups: [
         [
-          {
-            label: 'Switched tabs',
-            count: 1,
-            failed: false
-          },
-          {
-            label: 'Print workflow',
-            count: 1,
-            failed: false
-          },
           {
             label: 'Apply ops',
             count: 1,

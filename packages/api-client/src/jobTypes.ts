@@ -6,11 +6,13 @@
  * Jobs API provides a memory-optimized alternative to history API.
  */
 
-import { zJobEntry } from '@comfyorg/ingest-types/zod'
+import { zJobEntry, zJobExecutionMetaEntry } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import { resultItemType } from './resultItemTypeSchema'
 import { zTaskOutput } from './executionTypes'
+
+export { zJobExecutionMetaEntry }
 
 const zJobStatus = z.enum([
   'pending',

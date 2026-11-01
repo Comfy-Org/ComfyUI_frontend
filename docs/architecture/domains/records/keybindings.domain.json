@@ -45,6 +45,7 @@
     }
   ],
   "publicEntryPoints": [
+    "src/platform/keybindings/canvasActionShortcuts.ts",
     "src/platform/keybindings/composables/useShortcutsTab.ts",
     "src/platform/keybindings/commandStore.ts"
   ],
@@ -91,6 +92,10 @@
         "src/platform/keybindings/commandStore.test.ts",
         "browser_tests/tests/commands.spec.ts"
       ]
+    },
+    {
+      "name": "Canvas action shortcuts stay bound, so a reply naming one resolves to a real key",
+      "checks": ["src/platform/keybindings/canvasActionShortcuts.test.ts"]
     }
   ],
   "adrs": [],

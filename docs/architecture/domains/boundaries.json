@@ -41,7 +41,10 @@
       },
       {
         "name": "keybindings/application/public",
-        "patterns": ["src/platform/keybindings/commandStore.ts"]
+        "patterns": [
+          "src/platform/keybindings/canvasActionShortcuts.ts",
+          "src/platform/keybindings/commandStore.ts"
+        ]
       },
       {
         "name": "keybindings/integration/public",
