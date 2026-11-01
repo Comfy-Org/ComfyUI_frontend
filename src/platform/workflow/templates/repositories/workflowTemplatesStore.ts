@@ -11,13 +11,13 @@ import type {
 import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import { zLogoIndex } from '@/platform/workflow/templates/schemas/templateSchema'
-import type { LogoIndex } from '@/platform/workflow/templates/schemas/templateSchema'
+import { zLogoIndex } from '@comfyorg/api-client/templateSchema'
+import type { LogoIndex } from '@comfyorg/api-client/templateSchema'
 import type {
   TemplateGroup,
   TemplateInfo,
   WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
+} from '@comfyorg/api-client/templateTypes'
 
 // Enhanced template interface for easier filtering
 interface EnhancedTemplate extends TemplateInfo {

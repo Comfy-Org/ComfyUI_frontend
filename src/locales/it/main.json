@@ -83,6 +83,7 @@
     "copyMarkdown": "Copia come markdown",
     "copyUnavailable": "In questa versione è possibile copiare solo la conversazione corrente",
     "creditTransitionNotice": "Hai usato i tuoi crediti gratuiti dell'agente. Le ulteriori attività dell'agente usano i crediti del tuo workspace, che potrebbero includere crediti a pagamento.",
+    "creditsUsed": "L’agente ha utilizzato {credits} credito | L’agente ha utilizzato {credits} crediti",
     "currentTab": "Scheda corrente",
     "delete": "Elimina",
     "deleteApproval": {
@@ -5471,6 +5472,11 @@
   },
   "templates": {
     "logoProviderSeparator": " & "
+  },
+  "textEditor": {
+    "characterCount": "{count} carattere | {count} caratteri",
+    "expand": "Ingrandisci",
+    "title": "{widget} · {node}"
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Impossibile caricare il workflow perché questa installazione di ComfyUI non ha i nodi core. Verifica che il backend sia stato avviato correttamente.",

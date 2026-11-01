@@ -4,8 +4,8 @@ import type { WebSession } from '@comfyorg/account-core/webSession'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
-} from '@/platform/auth/session/webSessionFetch'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'

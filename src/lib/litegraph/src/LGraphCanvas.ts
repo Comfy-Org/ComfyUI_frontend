@@ -547,6 +547,8 @@ interface SnappingLink {
   endDirection?: LinkDirection
 }
 
+const MAX_FAILED_FRAMES = 60
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -1424,16 +1426,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     LGraphCanvas._measureText = (
       text: string,
       fontStyle = this.inner_text_font
-    ) => {
-      const { ctx } = this
-      const { font } = ctx
-      try {
-        ctx.font = fontStyle
-        return ctx.measureText(text).width
-      } finally {
-        ctx.font = font
-      }
-    }
+    ) => cachedMeasureText(this.ctx, text, fontStyle)
 
     if (!options.skip_render) {
       this.startRendering()
@@ -2519,20 +2512,63 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.is_rendering) return
 
     this.is_rendering = true
-    try {
-      renderFrame.call(this)
-    } catch (cause) {
-      this.is_rendering = false
+    let isFirstFrame = true
+    let failedFrames = 0
+    const reportedFailures = new Set<unknown>()
+
+    function reportFrameFailure(cause: unknown) {
+      const key =
+        cause instanceof Error
+          ? `error:${cause.name}:${cause.message}`
+          : typeof cause === 'string'
+            ? `string:${cause}`
+            : cause
+      if (reportedFailures.has(key)) return
+      reportedFailures.add(key)
       reportError(cause, {
-        errorType: 'error_rendering_canvas_initial_frame',
+        errorType: isFirstFrame
+          ? 'error_rendering_canvas_initial_frame'
+          : 'error_rendering_canvas_frame',
         surface: 'graph',
         tags: { feature_area: 'litegraph', operation: 'start_rendering' }
       })
     }
 
+    const recoverFromFailedFrame = (cause: unknown) => {
+      failedFrames++
+      reportFrameFailure(cause)
+      const { dpr, overlayCanvas } = this
+      for (const canvas of new Set([
+        this.canvas,
+        this.bgcanvas,
+        overlayCanvas
+      ])) {
+        if (!canvas) continue
+        const { width } = canvas
+        canvas.width = width
+        const scale = canvas === overlayCanvas ? 1 : dpr
+        canvas.getContext('2d')?.setTransform(scale, 0, 0, scale, 0, 0)
+      }
+      this.setDirty(true, true)
+      if (failedFrames < MAX_FAILED_FRAMES) return
+      this.is_rendering = false
+      reportError(cause, {
+        errorType: 'error_rendering_canvas_stopped',
+        surface: 'graph',
+        tags: { feature_area: 'litegraph', operation: 'start_rendering' },
+        context: { failedFrames }
+      })
+    }
+
     function renderFrame(this: LGraphCanvas) {
       if (!this.pause_rendering) {
-        this.draw()
+        const drawsSomething = this.dirty_canvas || this.dirty_bgcanvas
+        try {
+          this.draw()
+          if (drawsSomething) failedFrames = 0
+        } catch (cause) {
+          recoverFromFailedFrame(cause)
+        }
       }
 
       const window = this.getCanvasWindow()
@@ -2545,6 +2581,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           window.requestAnimationFrame(renderFrame.bind(this))
         }
       }
+      isFirstFrame = false
+    }
+
+    try {
+      renderFrame.call(this)
+    } catch (cause) {
+      this.is_rendering = false
+      reportFrameFailure(cause)
     }
   }
 
@@ -4140,7 +4184,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * Called when a mouse up event has to be processed
    */
   processMouseUp(e: PointerEvent): void {
-    // early exit for extra pointer
     if (!e.isPrimary) return
 
     const { graph, pointer } = this
@@ -4155,19 +4198,37 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const now = LiteGraph.getTime()
     e.click_time = now - this.last_mouseclick
 
-    /** The mouseup event occurred near the mousedown event. */
-    /** Normal-looking click event - mouseUp occurred near mouseDown, without dragging. */
     const { eDown } = pointer
     const pressedBadge =
       eDown && queryLinkBadgeHitAtPoint(this, eDown.canvasX, eDown.canvasY)
+    const wasConnecting = this.linkConnector.isConnecting
     const isClick = pointer.up(e)
+    if (e.button === 0 && !wasConnecting) {
+      this.dirty_canvas = true
+      const x = e.canvasX
+      const y = e.canvasY
+
+      this.node_over?.onMouseUp?.(
+        e,
+        [x - this.node_over.pos[0], y - this.node_over.pos[1]],
+        this
+      )
+      if (this.node_capturing_input !== this.node_over)
+        this.node_capturing_input?.onMouseUp?.(
+          e,
+          [
+            x - this.node_capturing_input.pos[0],
+            y - this.node_capturing_input.pos[1]
+          ],
+          this
+        )
+    }
     if (isClick) {
       if (e.button === 0 && !pressedBadge && collapseLinkBadgeStacks(this)) {
         this.dirty_bgcanvas = true
       }
       pointer.isDown = false
       pointer.isDouble = false
-      // Required until all link behaviour is added to Pointer API
       this.connecting_links = null
       this.dragging_canvas = false
 
@@ -4181,41 +4242,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.last_mouse_dragging = false
     this.last_click_position = null
 
-    // used to avoid sending twice a click in an immediate button
     this.block_click &&= false
 
     if (e.button === 0) {
-      // left button
       this.selected_group = null
 
       this.isDragging = false
-
-      const x = e.canvasX
-      const y = e.canvasY
-
-      if (!this.linkConnector.isConnecting) {
-        this.dirty_canvas = true
-
-        this.node_over?.onMouseUp?.(
-          e,
-          [x - this.node_over.pos[0], y - this.node_over.pos[1]],
-          this
-        )
-        this.node_capturing_input?.onMouseUp?.(
-          e,
-          [
-            x - this.node_capturing_input.pos[0],
-            y - this.node_capturing_input.pos[1]
-          ],
-          this
-        )
-      }
     } else if (isMiddleButtonEvent(e)) {
-      // middle button
       this.dirty_canvas = true
       this.dragging_canvas = false
     } else if (e.button === 2) {
-      // right button
       this.dirty_canvas = true
     }
 

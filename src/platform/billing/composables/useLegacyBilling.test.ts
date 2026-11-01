@@ -99,6 +99,34 @@ describe('useLegacyBilling', () => {
       expect(useLegacyBilling().subscription.value).toBeNull()
     })
 
+    it('keeps a tierless ended status without an invoice as a subscription', () => {
+      useInactiveStatus(
+        statusWith({
+          is_active: false,
+          subscription_status: 'ended',
+          ended_at: '2026-08-20T00:00:00Z'
+        })
+      )
+
+      expect(useLegacyBilling().subscription.value?.endedAt).toBe(
+        '2026-08-20T00:00:00Z'
+      )
+    })
+
+    it('keeps a tierless ended subscription_state without an invoice as a subscription', () => {
+      useInactiveStatus(
+        statusWith({
+          is_active: false,
+          subscription_state: 'ended',
+          ended_at: '2026-08-20T00:00:00Z'
+        })
+      )
+
+      expect(useLegacyBilling().subscription.value?.endedAt).toBe(
+        '2026-08-20T00:00:00Z'
+      )
+    })
+
     it('is null when the billing status carries no renewal invoice', () => {
       useSubscription().subscriptionStatus.value = statusWith({})
 
@@ -210,6 +238,16 @@ describe('useLegacyBilling', () => {
         false
       )
       expect(billing.subscription.value?.agentScopedHasFunds).toBe(true)
+    })
+
+    it('passes a fresh request through to the shared status read', async () => {
+      const billing = useLegacyBilling()
+
+      await billing.fetchStatus({ fresh: true })
+
+      expect(useSubscription().fetchStatusDirect).toHaveBeenCalledWith({
+        fresh: true
+      })
     })
   })
 

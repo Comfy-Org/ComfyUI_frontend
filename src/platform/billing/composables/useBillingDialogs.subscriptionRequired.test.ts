@@ -1,11 +1,3 @@
-/**
- * showSubscriptionRequiredDialog is the seam every "Subscribe" CTA routes
- * through (topbar, paywall banners, and the in-app agent's paywall card via
- * useAccountPreconditionDialog). It must never resolve to a dead click: when
- * window.__CONFIG__ hasn't been populated yet it should retry a fetch before
- * giving up, and a gate that stays closed must be observable rather than a
- * silent no-op.
- */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
@@ -53,8 +45,9 @@ describe('showSubscriptionRequiredDialog', () => {
     mockIsCloud.value = false
     window.__CONFIG__ = { subscription_required: true }
 
-    await useBillingDialogs().showSubscriptionRequiredDialog()
+    const opened = await useBillingDialogs().showSubscriptionRequiredDialog()
 
+    expect(opened).toBe(false)
     expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
     expect(refreshRemoteConfig).not.toHaveBeenCalled()
   })
@@ -63,10 +56,11 @@ describe('showSubscriptionRequiredDialog', () => {
     remoteConfigState.value = 'authenticated'
     window.__CONFIG__ = { subscription_required: true }
 
-    await useBillingDialogs().showSubscriptionRequiredDialog({
+    const opened = await useBillingDialogs().showSubscriptionRequiredDialog({
       reason: 'subscribe_now_button'
     })
 
+    expect(opened).toBe(true)
     expect(refreshRemoteConfig).not.toHaveBeenCalled()
     expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
       reason: 'subscribe_now_button'
@@ -74,8 +68,6 @@ describe('showSubscriptionRequiredDialog', () => {
   })
 
   it('retries the /features fetch instead of trusting an unloaded config snapshot', async () => {
-    // A caller (e.g. the agent panel's paywall card) can fire before the
-    // bootstrap fetch resolves, so window.__CONFIG__ is still empty.
     remoteConfigState.value = 'unloaded'
     window.__CONFIG__ = {}
     refreshRemoteConfig.mockImplementation(() => {
@@ -83,19 +75,39 @@ describe('showSubscriptionRequiredDialog', () => {
       return Promise.resolve()
     })
 
-    await useBillingDialogs().showSubscriptionRequiredDialog()
+    const opened = await useBillingDialogs().showSubscriptionRequiredDialog()
 
+    expect(opened).toBe(true)
     expect(refreshRemoteConfig).toHaveBeenCalledOnce()
     expect(useSubscriptionDialog().show).toHaveBeenCalledWith(undefined)
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('resolves false instead of rejecting when the config refresh fails', async () => {
+    remoteConfigState.value = 'unloaded'
+    window.__CONFIG__ = {}
+    refreshRemoteConfig.mockRejectedValueOnce(new Error('offline'))
+
+    const opened = await useBillingDialogs().showSubscriptionRequiredDialog()
+
+    expect(opened).toBe(false)
+    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledOnce()
+    const [cause, options] = reportError.mock.calls[0]
+    expect(cause).toMatchObject({ message: 'offline' })
+    expect(options).toMatchObject({
+      surface: 'billing',
+      errorType: 'error_opening_subscription_dialog'
+    })
   })
 
   it('reports a closed gate instead of returning silently', async () => {
     remoteConfigState.value = 'authenticated'
     window.__CONFIG__ = { subscription_required: false }
 
-    await useBillingDialogs().showSubscriptionRequiredDialog()
+    const opened = await useBillingDialogs().showSubscriptionRequiredDialog()
 
+    expect(opened).toBe(false)
     expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledOnce()
     const [, options] = reportError.mock.calls[0]

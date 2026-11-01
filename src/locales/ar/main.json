@@ -83,6 +83,7 @@
     "copyMarkdown": "نسخ بصيغة markdown",
     "copyUnavailable": "لا يمكن نسخ سوى المحادثة الحالية في هذا الإصدار",
     "creditTransitionNotice": "لقد استخدمت أرصدة الوكيل المجانية. تستخدم أنشطة الوكيل اللاحقة أرصدة مساحة العمل الخاصة بك، والتي قد تتضمن أرصدة مدفوعة.",
+    "creditsUsed": "استخدم الوكيل {credits} رصيد | استخدم الوكيل {credits} من الأرصدة",
     "currentTab": "علامة التبويب الحالية",
     "delete": "حذف",
     "deleteApproval": {
@@ -5471,6 +5472,11 @@
   },
   "templates": {
     "logoProviderSeparator": " و "
+  },
+  "textEditor": {
+    "characterCount": "{count} حرف | {count} حرف",
+    "expand": "توسيع",
+    "title": "{widget} · {node}"
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "تعذر تحميل سير العمل لأن تثبيت ComfyUI هذا يفتقد إلى العقد الأساسية. تحقق من أن الواجهة الخلفية بدأت بشكل صحيح.",

@@ -222,6 +222,7 @@ const displayLabel = customRef((track, trigger) => {
       :widget="simplifiedWidget"
       :node-id="node.id"
       :node-type="node.type"
+      :node-title="displayNodeName ?? undefined"
       :class="
         cn(
           'col-span-1 text-xs text-node-foreground',

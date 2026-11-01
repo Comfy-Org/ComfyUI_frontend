@@ -92,6 +92,10 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
+/** A value write from code rather than a pointer event may lack the event and the canvas. */
+export type WidgetValueOptions = Pick<WidgetEventOptions, 'node'> &
+  Partial<Pick<WidgetEventOptions, 'e' | 'canvas'>>
+
 export function extensionValue<T>(value: T): T | null | undefined {
   return value
 }
@@ -738,19 +742,19 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   setValue(
     value: TWidget['value'],
-    { e, node, canvas }: WidgetEventOptions
+    { e, node, canvas }: WidgetValueOptions = { node: this.node }
   ): void {
     const oldValue = this.value
-    if (value === this.value) return
+    const isNumber = this.type === 'number'
+    const v = isNumber ? Number(value) : value
+    if (v === oldValue || (isNumber && Number.isNaN(v))) return
 
-    const v = this.type === 'number' ? Number(value) : value
     this.value = v
     const property = extensionValue(this.options)?.property
     if (property && node.properties[property] !== undefined) {
       node.setProperty(property, v)
     }
-    const pos = canvas.graph_mouse
-    this.callback?.(this.value, canvas, node, pos, e)
+    this.callback?.(this.value, canvas, node, canvas?.graph_mouse, e)
 
     node.onWidgetChanged?.(extensionValue(this.name) ?? '', v, oldValue, this)
     if (node.graph) node.graph.incrementVersion()

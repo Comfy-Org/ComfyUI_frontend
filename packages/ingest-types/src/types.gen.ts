@@ -18,6 +18,7 @@ export type WorkspaceWithRole = {
    */
   joined_at: string
   name: string
+  plan_summary?: WorkspacePlanSummary
   role: 'owner' | 'member'
   subscription_tier?: SubscriptionTier
   type: 'personal' | 'team'
@@ -34,6 +35,17 @@ export type SubscriptionTier =
   | 'FOUNDERS_EDITION'
   | 'TEAM'
   | 'ENTERPRISE'
+
+/**
+ * Workspace-switcher display fact, not spend authorization or plan-action eligibility. Uses billing subscription-state precedence: ending, scheduled changes and activating display as active; renewal payment failures confirmed by the provider display as payment_due. Unknown or unavailable facts omit the entire summary; clients must not infer no_plan from omission.
+ */
+export type WorkspacePlanSummary = {
+  /**
+   * User-facing plan name. Null for no_plan or when the exact current/ended plan identity is unavailable; never inferred from cached admission tier.
+   */
+  plan_name: string | null
+  status: 'active' | 'no_plan' | 'paused' | 'payment_due' | 'ended'
+}
 
 /**
  * Abbreviated workspace metadata used in list responses.
@@ -106,6 +118,10 @@ export type WorkspaceDeployment = {
    */
   build_name?: string
   /**
+   * Whether starting the deployment (POST /api/workspaces/{id}/deployments/{deployment_id}/start) brings it back: true while it is stopped or failed, the statuses comfy-deploy's start re-runs; for any other status the start answers it unchanged. Answers "may the switcher offer Start on this row", for any member. It does not say the start will be taken: credit, the concurrency cap and the deployment's own config are the start route's refusals.
+   */
+  can_start: boolean
+  /**
    * When the deployment was created.
    */
   created_at: string
@@ -126,9 +142,18 @@ export type WorkspaceDeployment = {
    */
   release_version?: number
   /**
-   * The deployment's status (ready, provisioning, stopped, ...). Any of them may be picked; a job is taken only while it is ready.
+   * The deployment's lifecycle status as comfy-deploy reports it; a job is taken only while it is ready.
    */
-  status: string
+  status:
+    | 'queued'
+    | 'provisioning'
+    | 'starting'
+    | 'ready'
+    | 'unhealthy'
+    | 'stopping'
+    | 'stop_failed'
+    | 'stopped'
+    | 'failed'
 }
 
 /**
@@ -153,6 +178,29 @@ export type WorkspaceDeletionDenialParams = {
    * Latest authoritative cancel_at across live subscription rows. Absent means no known boundary; never synthesize a date.
    */
   effective_at?: string
+}
+
+/**
+ * Creation refused because the account has reached its live owner membership threshold for creation.
+ */
+export type WorkspaceCreationLimitError = {
+  code: 'OWNED_WORKSPACE_LIMIT'
+  denied_reasons: WorkspaceCreationDenials
+  /**
+   * Owner membership threshold for new workspace creation, including the personal workspace. Other owner assignments can raise the actual count above it.
+   */
+  max_owned_workspaces: number
+  message: string
+}
+
+/**
+ * Reasons creation is unavailable. Returned beside can_create_workspace false or on a creation refusal; first applicable reason wins.
+ */
+export type WorkspaceCreationDenials = {
+  /**
+   * organization_managed: the SSO organization manages this account's workspaces. owned_workspace_limit: the caller owns at least max_owned_workspaces live workspaces. Reasons are evaluated in this order; an absent reason is no explanation, never permission.
+   */
+  can_create_workspace?: 'organization_managed' | 'owned_workspace_limit'
 }
 
 /**
@@ -531,9 +579,9 @@ export type UsageTimeSeries = {
   groups: Array<string>
   not_available?: UsageNotAvailable
   /**
-   * `ledger` when `groups` are the usage ledger's keys, which the `filter_*` parameters accept; absent for an invoice-served answer.
+   * `ledger` when `groups` are the usage ledger's keys, which the `filter_*` parameters accept. `invoice` when a range the ledger does not hold was read from Metronome's invoices narrowed by `filter_product_line` (alone, on `product_line` or `model`): its groups are the invoices' models and accept no further filter. Absent for any other invoice-served answer.
    */
-  served_from?: 'ledger'
+  served_from?: 'ledger' | 'invoice'
   starting_on: string
   summary: UsageSummary
 }
@@ -607,7 +655,7 @@ export type UsageGroupLabel = {
    */
   deployment_name?: string
   /**
-   * Human-readable name for the key: a person's name, a product line's label, a model's name (`Not specified` for `unspecified`), or the key's owner and prefix.
+   * Human-readable name for the key: a person's name, a product line's label, a model's name (`Not specified` for `unspecified`: charges that name no model, such as Agent rounds, partner calls that send none, and Comfy Cloud GPU time), or the key's owner and prefix.
    */
   display_name?: string
   /**
@@ -650,6 +698,14 @@ export type UsageGroupLabel = {
    * Only for `source`: the API key's owner when the key is known to this workspace, or the member who deployed a deployment when comfy-deploy names it.
    */
   owner_user_id?: string
+  /**
+   * Only for `model` on a ledger-served answer: the partner the model's charges came through, as the partner catalog's provider id (the id workspace provider policy uses). Absent for a model whose charges name no known partner, a deployment and `unspecified`.
+   */
+  provider?: string
+  /**
+   * With `provider`: the partner's name, e.g. `Black Forest Labs`. Render beside `display_name`; `display_name` stays the model's own name.
+   */
+  provider_display_name?: string
 }
 
 export type UsageBucket = {
@@ -1629,16 +1685,44 @@ export type ScheduledPlanChange = {
 
 export type SavedPaymentMethod = {
   /**
+   * Bank of a US bank account. Absent for other types.
+   */
+  bank_name?: string
+  /**
    * Card brand. Present only for card payment methods.
    */
   brand?: string
+  /**
+   * When the method was saved to the customer.
+   */
+  created_at?: string
+  /**
+   * Masked email of a Link payment method (first character and domain, such as `o***@example.com`). Absent for other types. Two methods from one Link account, or two addresses that mask alike, read the same; use `created_at` to tell them apart.
+   */
+  email?: string
+  /**
+   * Display-only card expiry month. Returned with exp_year only when both are known and valid; omitted otherwise, including non-card methods.
+   */
+  exp_month?: number
+  /**
+   * Display-only four-digit card expiry year. Returned with exp_month only when both are known and valid; omitted otherwise, including non-card methods.
+   */
+  exp_year?: number
+  /**
+   * Whether the card has expired, at 00:00 UTC on the first day after its expiry month. Omitted when expiry is unknown or invalid, including non-card methods. A display warning, not payment eligibility.
+   */
+  expired?: boolean
+  /**
+   * Whether the card expires within the next 30 days, including already expired cards, using the UTC expiry-month boundary. Omitted when expiry is unknown or invalid, including non-card methods. A display warning, not payment eligibility.
+   */
+  expiring_soon?: boolean
   id: string
   /**
    * Exactly one item is the default when the returned list is non-empty.
    */
   is_default: boolean
   /**
-   * Masked card suffix. Present only for card payment methods.
+   * Last four digits of a card, US bank account or SEPA debit account. Absent for other types, and when a SEPA account's last four characters are not all digits.
    */
   last4?: string
   type: string
@@ -2516,6 +2600,21 @@ export type PickWorkspaceDeploymentRequest = {
 }
 
 /**
+ * Configured credit allowance of the current plan, not remaining balance, an invoice or proof of live provider grants. Amount includes credits and period; none is a proven configured zero. Native-empty or incoherent Enterprise configuration remains unknown, never none. Missing data and unresolved, unsupported, ended or activating plans remain unknown. Unknown or missing means unavailable; clients must not render zero. Does not change eligibility.
+ */
+export type PeriodCreditGrant = {
+  /**
+   * Configured whole display credits. Present only for amount.
+   */
+  credits?: number
+  /**
+   * Grant cadence, which may differ from Enterprise invoice cadence. Present only for amount.
+   */
+  period?: SubscriptionDuration
+  state: 'amount' | 'none' | 'unknown'
+}
+
+/**
  * An outstanding workspace invitation that has not yet been accepted.
  */
 export type PendingInvite = {
@@ -2729,6 +2828,10 @@ export type OAuthRegisterBadRequestResponse = OAuthRegisterError | ErrorResponse
 export type ErrorResponse = {
   code: string
   /**
+   * Present only on an organization-managed POST /api/workspaces refusal; other errors omit it.
+   */
+  denied_reasons?: WorkspaceCreationDenials
+  /**
    * Optional open object carrying structured, machine-readable context about the error (e.g. offending field names, validation specifics). Absent for most errors; consumers must not assume any particular shape.
    */
   details?: {
@@ -2915,6 +3018,35 @@ export type NodeInfo = {
 }
 
 /**
+ * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
+ */
+export type ModelUploadStarted = {
+  /**
+   * When `upload_url` stops working (15 minutes after the answer).
+   */
+  expires_at: string
+  /**
+   * Every header the PUT must send, with exactly these values (`Content-Type`, `x-goog-content-length-range` and `x-goog-if-generation-match` set to `0`, which makes storage refuse a second write to the object).
+   */
+  headers: {
+    [key: string]: string
+  }
+  /**
+   * The largest file an upload accepts, 2147483648 (2 GiB).
+   */
+  max_size_bytes: number
+  method: 'PUT'
+  /**
+   * Names this upload in `POST /api/assets/uploads/{upload_id}/complete`.
+   */
+  upload_id: string
+  /**
+   * Signed URL for exactly one staged object; works until `expires_at`.
+   */
+  upload_url: string
+}
+
+/**
  * Represents a folder containing models
  */
 export type ModelFolder = {
@@ -2940,6 +3072,60 @@ export type ModelFile = {
    * Index of the path where this model is located
    */
   pathIndex: number
+}
+
+/**
+ * Server-to-client model_download frame on /ws. A Cloud job's model file download moved.
+ */
+export type ModelDownloadFrame = {
+  data: ModelDownloadData
+  type: 'model_download'
+}
+
+/**
+ * The `data` of a model_download WebSocket event: the latest state of one model file a Cloud job on a deployment downloads before ComfyUI starts it. Sent by the deployment's worker (services/comfy-deploy/containerruntime worker.py, _ModelNews) only when the job asked for live progress, for each file the job fetches and never for a file the release ships, all before the job's execution_start. A failed file ends the job: no other source is tried and the job is not retried, so its execution_error (or execution_interrupted, when a cancel was in flight) follows. New fields may be added; a client ignores the ones it does not read.
+ */
+export type ModelDownloadData = {
+  /**
+   * Bytes received so far. On done and cached, the file's size.
+   */
+  bytes_downloaded: number
+  /**
+   * The download's Content-Length, or null when the storage response sent none. On cached, the file's size; on done with no Content-Length, the bytes received.
+   */
+  bytes_total: number | null
+  /**
+   * How many files this job fetches; files the release ships are not counted.
+   */
+  count: number
+  /**
+   * The ComfyUI model folder the file goes in.
+   */
+  dir: string
+  /**
+   * The file's 1-based position among the files this job fetches.
+   */
+  index: number
+  /**
+   * The file name the workflow loads, as it appears in the model folder.
+   */
+  name: string
+  /**
+   * bytes_downloaded over bytes_total, from 0 to 1, rounded to four decimal places; null when bytes_total is null or 0. 1 on done and cached.
+   */
+  progress: number | null
+  /**
+   * The Cloud job id, stamped by platform-gateway on every frame it forwards.
+   */
+  prompt_id: string
+  /**
+   * Known values are downloading, done, cached and failed. downloading is sent as the download opens and then at most every 0.5 seconds while bytes arrive; done once the whole file arrived and matched its hash; cached once, instead of the others, when the worker already holds the file; failed when the download stopped. Treat it as an open string: a client shows the file as downloading only while the value is downloading, and reads any other value as the end of that file's download.
+   */
+  status: string
+  /**
+   * The job's workflow id, present when the job has one.
+   */
+  workflow_id?: string
 }
 
 /**
@@ -2997,7 +3183,7 @@ export type MediaBadRequestError = ErrorResponse | MediaQueryError
  */
 export type ListWorkspacesResponse = {
   /**
-   * Whether the client should offer creating another workspace. False for an account managed by an SSO organization or an actor with ten or more owner workspace memberships, including the personal workspace. This is guidance only: POST /api/workspaces does not enforce this ten-membership limit. It is not write authorization.
+   * Whether the client should offer creating another workspace. False for an account managed by an SSO organization or an actor at the served max_owned_workspaces limit. Counts live owner memberships, including the personal workspace and retained memberships hidden from the list; ordinary memberships and deleted workspaces do not count. True means these checks allow creation. POST /api/workspaces rechecks the limit atomically; this fact is not write authorization.
    */
   can_create_workspace: boolean
   /**
@@ -3007,6 +3193,11 @@ export type ListWorkspacesResponse = {
    *
    */
   default_workspace_id?: string
+  denied_reasons?: WorkspaceCreationDenials
+  /**
+   * Owner membership count at which new workspace creation is refused, including the personal workspace. This is a creation-only threshold; other owner assignments can raise the actual count above it.
+   */
+  max_owned_workspaces: number
   workspaces: Array<WorkspaceWithRole>
 }
 
@@ -3445,6 +3636,32 @@ export type JobOutputAsset = {
 }
 
 /**
+ * Where one executed node ran and where its output is shown, as ComfyUI
+ * records it in the history `meta`. Live `executed` messages carry the
+ * same `display_node`.
+ *
+ */
+export type JobExecutionMetaEntry = {
+  /**
+   * Canvas node id that shows this output
+   */
+  display_node?: string
+  /**
+   * Executed node id (the `outputs` key), e.g. `15.0.0.3` for an expanded node
+   */
+  node_id?: string
+  /**
+   * Id of the node that expanded this one, or null for a node that was not expanded
+   */
+  parent_node?: string | null
+  /**
+   * Top-level workflow node this node was expanded from (its own id when not expanded)
+   */
+  real_node_id?: string
+  [key: string]: unknown
+}
+
+/**
  * Full job details including workflow and outputs
  */
 export type JobDetailResponse = {
@@ -3465,10 +3682,15 @@ export type JobDetailResponse = {
    */
   execution_error?: ExecutionError
   /**
-   * Node-level execution metadata (only for terminal states)
+   * Node-level execution metadata (only for terminal states), keyed by
+   * the executed node id, the same keys as `outputs`. Each entry says
+   * which canvas node shows that node's output, which matters for nodes
+   * that ComfyUI expands at run time (their executed id, such as
+   * `15.0.0.3`, is not on the canvas).
+   *
    */
   execution_meta?: {
-    [key: string]: unknown
+    [key: string]: JobExecutionMetaEntry
   }
   /**
    * Workflow execution start timestamp (Unix milliseconds, only present once execution has started)
@@ -3635,7 +3857,7 @@ export type JobAssetsResponse = {
  */
 export type InteractiveTopupRequest = {
   /**
-   * Nominal credit purchase in USD cents, excluding tax and discounts. Actual payment and credit grant are asynchronous.
+   * Nominal credit purchase in USD cents, excluding tax and discounts; at most `max_topup_cents` on GET /api/billing/balance. Actual payment and credit grant are asynchronous.
    */
   amount_cents: number
   /**
@@ -4781,7 +5003,7 @@ export type CreateTopupResponse = {
  */
 export type CreateTopupRequest = {
   /**
-   * Amount to charge and grant as credits (in cents). Minimum $5.00.
+   * Amount to charge and grant as credits (in cents). Minimum $5.00; maximum `max_topup_cents` on GET /api/billing/balance (400 INVALID_AMOUNT above it).
    */
   amount_cents: number
   /**
@@ -4840,9 +5062,7 @@ export type CreateTopupCheckoutResponse = {
 export type CreateTopupCheckoutRequest = {
   /**
    * Amount to charge in cents, before any promotion code the customer
-   * enters. Whole dollars only, from $5.00 to $16,000.00. The ceiling is
-   * a fixed business limit (not a Stripe technical constraint) on how
-   * much a single unauthenticated-approval session may sell. The
+   * enters. Whole dollars only, from $5.00 to `max_topup_cents` on GET /api/billing/balance. The
    * credits granted are derived server-side from this amount and
    * cannot be set by the caller.
    *
@@ -5328,6 +5548,10 @@ export type BillingStatusResponse = {
    */
   max_seats: number
   /**
+   * Eligible next scheduled credit refill for both the Credits card and out-of-credits banner. Uses the actual positive credit-grant cadence, not an Enterprise invoice anniversary. Present only for a known future refill before cancellation/end; annual grants must be within 31 elapsed days inclusive, evaluated on the server. Omitted when unavailable, ineligible or no future grant is known; omission never means zero. Display only, not a payment guarantee, balance or spending permission.
+   */
+  next_credit_refill_at?: string
+  /**
    * Current workspace members plus non-expired pending invites, used against max_seats. 0 when billing is disabled.
    */
   occupied_seats: number
@@ -5361,6 +5585,10 @@ export type BillingStatusResponse = {
    *
    */
   pending_billing_op_type?: 'subscription' | 'topup'
+  /**
+   * Server-resolved configured period allowance. Missing on older servers means unknown, never none; clients must not infer it from tier.
+   */
+  period_credit_grant?: PeriodCreditGrant
   /**
    * Plan identifier (e.g., standard-monthly, team-pro-annual)
    */
@@ -5452,6 +5680,18 @@ export type BillingOpStatusResponse = {
    *
    */
   amount_charged_cents?: number
+  /**
+   * Original server-owned deadline for this top-up's authentication wait.
+   * Present only while a pending top-up requires customer authentication
+   * and the caller may read its payment details. Historical or unknown
+   * deadlines, terminal and reconciliation states omit it. The server also
+   * omits expired deadlines using its own clock. Absence is not a payment
+   * outcome. Polling and
+   * retries never extend the deadline. At expiry the server begins its
+   * existing payment cleanup; this is not proof that a payment failed.
+   *
+   */
+  authentication_deadline?: string
   /**
    * State derived from the PaymentIntent attached to this operation's
    * exact stored Stripe invoice. Absent when the operation has no
@@ -5697,7 +5937,7 @@ export type BillingOpCancelResponse = {
  */
 export type BillingEventsResponse = {
   /**
-   * When this environment began recording the member and source behind every charge, the same instant as `attribution_since` on the usage time series. A charge created before it shows "Not recorded" for member and source: the record does not hold them. A charge at or after it with no member is genuinely unattributed, not unrecorded. Absent where no such start is configured, and on the admin history feed.
+   * When this environment began attributing every charge, the same instant as `attribution_since` on the usage time series. Charges from before it may still name their member and source (many carried them long before); the start is only the instant from which a charge naming no member is known to be unattributed, which each such event states itself with `unattributed`. Absent where no such start is configured, and on the admin history feed.
    */
   attribution_since?: string
   events: Array<BillingEvent>
@@ -5777,6 +6017,10 @@ export type BillingEvent = {
   params?: {
     [key: string]: unknown
   }
+  /**
+   * True for a charge made at or after the instant this environment began attributing every charge (`attribution_since`) that names no member: the system tried and could not say who it was. A charge names a member by any identity the `scope` filter matches it on. Absent on money and lifecycle events, on charges that name a member, on deployment charges (attributed to their deployment), on charges made before attribution began (by the charge's own time where recorded, else when it was written), where no start is configured, and on the admin history feed.
+   */
+  unattributed?: boolean
 }
 
 /**
@@ -6881,6 +7125,10 @@ export type BillingBalanceResponse = {
    */
   cloud_credit_balance_micros?: number
   /**
+   * Display-only subscription remainder in cents of currency, capped at the known configured period_credit_grant converted at USD1 = 211 credits. Preserves fractional cents and negative balances. A proven zero allowance caps at zero. Omitted when the allowance is unknown, unavailable, or the workspace is unprovisioned. When omitted, display cloud_credit_balance_cents unchanged, without a client-side cap or zero substitution. The cap may show less than spendable credit after a downgrade or on a known-zero plan. Does not change actual cloud_credit_balance_cents, totals, prepaid credit, pending charges or spend authorization.
+   */
+  cloud_credit_display_balance_cents?: number
+  /**
    * Currency code
    */
   currency: string
@@ -6903,6 +7151,22 @@ export type BillingBalanceResponse = {
    */
   low_balance?: boolean
   /**
+   * The most one top-up from this API may charge, in cents. First-purchase responses use the same bounds as purchase validation.
+   */
+  max_topup_cents?: number
+  /**
+   * The whole credits `max_topup_cents` buys. Absent when `max_topup_cents` is.
+   */
+  max_topup_credits?: number
+  /**
+   * The least one manual top-up may buy, in USD cents before tax or discounts. First-purchase responses use the same bounds as purchase validation.
+   */
+  min_topup_cents?: number
+  /**
+   * The whole credits min_topup_cents buys. Absent when min_topup_cents is.
+   */
+  min_topup_credits?: number
+  /**
    * Pending/unbilled charges from draft invoices. Cents of `currency`, the same value as `pending_charges_micros`, which is misnamed. A fractional `number`, deliberately not the integer-cents convention other `*_cents` fields in this spec use -- do not decode it as an integer.
    */
   pending_charges_cents?: number
@@ -6923,7 +7187,7 @@ export type BillingBalanceResponse = {
    */
   prepaid_balance_micros?: number
   /**
-   * Amount in cents to prefill for a top-up when the effective balance is negative: covers the shortfall plus the minimum top-up, rounded up to a whole dollar, and never below the default amount. Null when the balance is zero or positive, or not authoritative.
+   * Amount in cents to prefill for a top-up when the effective balance is negative: covers the shortfall plus the minimum top-up, rounded up to a whole dollar, never below the default amount and never above max_topup_cents. Null when the balance is zero or positive, or not authoritative.
    */
   suggested_topup_amount_cents?: number | null
 }
@@ -7112,6 +7376,31 @@ export type AutoReloadCardExpiry = {
   year: number
 }
 
+/**
+ * Estimated automatic charge for the proposed settings.
+ */
+export type AutoReloadPreview = {
+  /**
+   * Price of charge_credits in cents; null when charge_credits is null.
+   */
+  charge_cents: number | null
+  /**
+   * Credits the charge buys; null when the balance is at or above the threshold.
+   */
+  charge_credits: number | null
+  /**
+   * Whether saving would start a charge at the next check.
+   */
+  charges_now: boolean
+  /**
+   * Why saving would not start a charge; null when charges_now is true.
+   */
+  not_charging_reason:
+    | 'above_threshold'
+    | 'monthly_budget'
+    | 'paused_by_decline'
+}
+
 export type AuthenticateResponse = {
   /**
    * Seconds until the session ends, when `method` is `session`
@@ -7296,6 +7585,36 @@ export type AgentViewableAttachmentExtension =
   | '.tiff'
   | '.heic'
   | '.heif'
+
+/**
+ * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
+ */
+export type AgentTurnUsage = {
+  cache_creation_input_tokens: number
+  cache_read_input_tokens: number
+  charge_micro_usd?: number
+  input_tokens: number
+  output_tokens: number
+  total_tokens: number
+}
+
+/**
+ * Present on agent_message_done only when the model service refused the turn. Mirrors `$defs.agent_message_done.data.refusal` in services/agent/api/agent_events.schema.json, which states the full rendering rules. Absence must not be read as the account having credit.
+ */
+export type AgentTurnRefusal = {
+  /**
+   * Whether adding credit to the account clears this refusal. True only for no_funds.
+   */
+  can_add_credit: boolean
+  /**
+   * What refused the turn. Clients must treat an unknown kind like payment_required (show the text) rather than fail.
+   */
+  kind: 'no_funds' | 'manual_block' | 'payment_required' | 'auth' | 'rate_limit'
+  /**
+   * Ingest's error.reason from the refused 402, verbatim, for logging and analytics. Render from kind and can_add_credit, not from this field.
+   */
+  reason?: string
+}
 
 /**
  * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, agent_message_done); canvas edits arrive as doc_update frames.
@@ -7851,6 +8170,27 @@ export type AgentPendingAsk =
   | ({
       kind: 'delete_approval'
     } & AgentPendingDeleteApproval)
+
+/**
+ * Server-to-client agent_message_done frame on /ws. Closed, like the canonical envelope.
+ */
+export type AgentMessageDoneFrame = {
+  data: AgentMessageDoneData
+  type: 'agent_message_done'
+}
+
+/**
+ * The `data` of an agent_message_done WebSocket event: the assistant message is complete. Mirrors `$defs.agent_message_done.data` in services/agent/api/agent_events.schema.json.
+ */
+export type AgentMessageDoneData = {
+  message_id: string
+  refusal?: AgentTurnRefusal
+  thread_id: string
+  /**
+   * Null on a turn that failed or was refused; its rounds were billed as they ran, and the failed round has no usage.
+   */
+  usage: AgentTurnUsage | null
+}
 
 /**
  * A persisted message in an agent thread.
@@ -9526,6 +9866,19 @@ export type ListAssetsData = {
      */
     include_public?: boolean
     /**
+     * List the workspace's model library: every member's private model
+     * rows in this workspace, not only the caller's, and none of the
+     * public catalog. A browser that runs on a picked deployment gets the
+     * whole library, not only the Release's models, so its loader
+     * dropdowns can offer a model the deployment downloads for the job.
+     * Needs `models` among the tags (`tags_all` or `include_tags`), else
+     * 400 `INVALID_TAG_FILTER`. Honoured only while the
+     * `runtime_library_models_enabled` flag is on for the caller;
+     * otherwise ignored and the listing is the default one.
+     *
+     */
+    workspace_library?: boolean
+    /**
      * Filter assets by content hash, in the canonical `blake3:<hex>`
      * form. Matches regardless of which of this asset store's two
      * internal hash storage formats the matching row was written
@@ -9650,7 +10003,7 @@ export type CreateAssetErrors = {
    */
   500: ErrorResponse
   /**
-   * Upload buffer budget exhausted on this pod while buffering an image part; retry after the Retry-After seconds. `code` is `UPLOAD_BUDGET_EXHAUSTED`.
+   * Temporary upload unavailability. `PRIVATE_MODELS_UNAVAILABLE` means model-import eligibility could not be resolved; retry without inferring plan ineligibility. `UPLOAD_BUDGET_EXHAUSTED` means the image buffer budget is full; retry after the Retry-After seconds.
    */
   503: ErrorResponse
 }
@@ -10062,6 +10415,10 @@ export type CreateAssetDownloadErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Model-import eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
 }
 
 export type CreateAssetDownloadError =
@@ -10258,6 +10615,10 @@ export type CreateAssetFromHashErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Model-import eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
 }
 
 export type CreateAssetFromHashError =
@@ -10635,6 +10996,123 @@ export type GetAssetTagHistogramResponses = {
 
 export type GetAssetTagHistogramResponse =
   GetAssetTagHistogramResponses[keyof GetAssetTagHistogramResponses]
+
+export type StartModelUploadData = {
+  body: {
+    /**
+     * A bare file name ending in `.safetensors` (any case), at most 255 bytes, no path, no leading dot.
+     */
+    filename: string
+    /**
+     * The file's size, 1 to 2147483648 (2 GiB).
+     */
+    size_bytes: number
+    /**
+     * Exactly `models` plus one model folder from `model_upload_folders` in GET /api/features (`loras`, `checkpoints`, `vae`, `embeddings`, ...); another folder is `400 UNSUPPORTED_MODEL_TYPE`.
+     */
+    tags: Array<string>
+  }
+  path?: never
+  query?: never
+  url: '/api/assets/uploads'
+}
+
+export type StartModelUploadErrors = {
+  /**
+   * `INVALID_BODY` (bad filename, size or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`: a pickle format such as `.ckpt`, `.pt` or `.bin` can run code when loaded), `UNSUPPORTED_MODEL_TYPE` (`models` plus a folder not in `model_upload_folders` of GET /api/features) or `FILE_TOO_LARGE` (over 2 GiB; the message is "Files can be up to 2 GB.")
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), `MODEL_STORAGE_LIMIT_REACHED` when the file would take the workspace's private models past its model storage cap (1 TB unless its plan sets another; the message names the cap, e.g. "Your workspace has used its 1 TB of model storage."), or a refused session write (see `SessionWriteForbidden`)
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Private-model eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
+}
+
+export type StartModelUploadError =
+  StartModelUploadErrors[keyof StartModelUploadErrors]
+
+export type StartModelUploadResponses = {
+  /**
+   * Signed upload URL for one staged object
+   */
+  201: ModelUploadStarted
+}
+
+export type StartModelUploadResponse =
+  StartModelUploadResponses[keyof StartModelUploadResponses]
+
+export type CompleteModelUploadData = {
+  body: {
+    /**
+     * The `filename` sent to start the upload.
+     */
+    filename: string
+    /**
+     * The `tags` sent to start the upload.
+     */
+    tags: Array<string>
+  }
+  path: {
+    /**
+     * The `upload_id` from `POST /api/assets/uploads`.
+     */
+    upload_id: string
+  }
+  query?: never
+  url: '/api/assets/uploads/{upload_id}/complete'
+}
+
+export type CompleteModelUploadErrors = {
+  /**
+   * `INVALID_BODY` (bad filename or tag list), `UNSUPPORTED_FILE_TYPE` (not `.safetensors`), `UNSUPPORTED_MODEL_TYPE` (a folder not in `model_upload_folders`) or `FILE_TOO_LARGE` (the stored object is over 2 GiB; the message is "Files can be up to 2 GB.")
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * `FEATURE_DISABLED` when `runtime_library_models_enabled` is off for this workspace, `PRIVATE_MODELS_DISABLED` when the workspace's plan does not include private models (the link import's check), `MODEL_STORAGE_LIMIT_REACHED` when the file would take the workspace's private models past its model storage cap (1 TB unless its plan sets another; the message names the cap, e.g. "Your workspace has used its 1 TB of model storage."), or a refused session write (see `SessionWriteForbidden`)
+   */
+  403: ErrorResponse
+  /**
+   * `UPLOAD_NOT_FOUND`: no uploaded object for this `upload_id` under this caller and workspace (not uploaded yet, cleaned up, or someone else's)
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Private-model eligibility is temporarily unavailable (`PRIVATE_MODELS_UNAVAILABLE`); retry without inferring plan ineligibility.
+   */
+  503: ErrorResponse
+}
+
+export type CompleteModelUploadError =
+  CompleteModelUploadErrors[keyof CompleteModelUploadErrors]
+
+export type CompleteModelUploadResponses = {
+  /**
+   * Accepted; a task stores the file as an asset
+   */
+  202: AssetDownloadResponse
+}
+
+export type CompleteModelUploadResponse =
+  CompleteModelUploadResponses[keyof CompleteModelUploadResponses]
 
 export type AuthenticateData = {
   body: AuthenticateRequest
@@ -11216,6 +11694,64 @@ export type PutBillingAutoReloadResponses = {
 
 export type PutBillingAutoReloadResponse =
   PutBillingAutoReloadResponses[keyof PutBillingAutoReloadResponses]
+
+export type GetBillingAutoReloadPreviewData = {
+  body?: never
+  path?: never
+  query: {
+    threshold_credits: number
+    target_credits: number
+    /**
+     * Proposed monthly limit; absent means `max_monthly_budget_cents`.
+     */
+    monthly_budget_cents?: number
+  }
+  url: '/api/billing/auto-reload/preview'
+}
+
+export type GetBillingAutoReloadPreviewErrors = {
+  /**
+   * `INVALID_REQUEST`, `INVALID_AUTO_TOP_UP`, or `workspace_id_invalid`.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * `SUBSCRIPTION_CHANGE_IN_PROGRESS`.
+   */
+  409: ErrorResponse
+  /**
+   * `AUTO_TOP_UP_NOT_ELIGIBLE` (setup not ready, or no readable balance) or `AUTO_TOP_UP_NOT_AVAILABLE` (not in the rollout).
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `AUTO_TOP_UP_PREVIEW_UNAVAILABLE` (the balance could not be read).
+   */
+  503: ErrorResponse
+}
+
+export type GetBillingAutoReloadPreviewError =
+  GetBillingAutoReloadPreviewErrors[keyof GetBillingAutoReloadPreviewErrors]
+
+export type GetBillingAutoReloadPreviewResponses = {
+  /**
+   * Success
+   */
+  200: AutoReloadPreview
+}
+
+export type GetBillingAutoReloadPreviewResponse =
+  GetBillingAutoReloadPreviewResponses[keyof GetBillingAutoReloadPreviewResponses]
 
 export type GetBillingBalanceData = {
   body?: never
@@ -12457,11 +12993,14 @@ export type GetBillingUsageTimeSeriesData = {
      * grouping returns). The four `filter_*` parameters combine with each
      * other and with the ledger groupings `product_line`, `model`,
      * `person` and `source`, so a page can drill from a line to its
-     * models to the people behind one model. They apply only to
-     * ledger-served reads of an enabled workspace: on any other read,
-     * including the invoice groupings `product` and `endpoint`, the
-     * response is an empty series with `not_available` reason
-     * `filter_needs_ledger`. A member's view is still only their own
+     * models to the people behind one model. They apply to
+     * ledger-served reads of an enabled workspace. One more read takes
+     * a filter: `filter_product_line` alone on `product_line` or `model`
+     * over a range the ledger does not hold is answered from Metronome's
+     * invoices, narrowed to that line, with `served_from: invoice`. On
+     * any other read, including the invoice groupings `product` and
+     * `endpoint`, the response is an empty series with `not_available`
+     * reason `filter_needs_ledger`. A member's view is still only their own
      * rows: filtering on a colleague returns nothing.
      *
      */
@@ -12909,6 +13448,10 @@ export type GetFeaturesResponses = {
       state: 'ready'
     }
     /**
+     * Authenticated assignment for the Agent per-turn credit usage experiment. Control renders no usage line; treatment renders the authoritative server-reported charge beneath completed replies. It remains optional so older environments and partial fixtures fail closed. Reading this field is not exposure; the frontend records exposure only when a charged reply is rendered.
+     */
+    'agent-credit-usage-summary'?: 'control' | 'treatment'
+    /**
      * Authenticated assignment for the Agent free-use notice placement experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract, as agent-starter-prompt-set does, so older environments mid-rolling-deploy and partial feature fixtures fail closed rather than decoding an absent field as the empty string, which is not a member of this enum.
      */
     'agent-free-use-message-placement'?:
@@ -12973,6 +13516,10 @@ export type GetFeaturesResponses = {
      * Maximum upload size in bytes
      */
     max_upload_size?: number
+    /**
+     * The model types (folder names, sorted) a model file uploaded from disk may be: the list POST /api/assets/uploads checks, which answers any other with 400 UNSUPPORTED_MODEL_TYPE. Present only while runtime_library_models_enabled is on for the caller.
+     */
+    model_upload_folders?: Array<string>
     /**
      * Whether new free-tier subscriptions are enabled for this caller. Current servers always emit a boolean; clients should tolerate absence when talking to older servers that predate this declared field.
      */
@@ -16492,7 +17039,7 @@ export type ListCccWebsiteCardsErrors = {
    */
   403: unknown
   /**
-   * Public authority or cursor selection changed or expired; restart from current authority
+   * Public authority or Draft cursor selection changed or expired; restart from current authority
    */
   409: unknown
   /**
@@ -16503,7 +17050,7 @@ export type ListCccWebsiteCardsErrors = {
 
 export type ListCccWebsiteCardsResponses = {
   /**
-   * At most 24 card summaries; no graphs, inputs, examples or long bodies. Anonymous responses omit total, generation and facet counts. Cursors are audience, filter, clock and state bound and expire after five minutes.
+   * At most 24 card summaries; no graphs, inputs, examples or long bodies. Anonymous responses omit total, generation and facet counts. Cursors are audience and filter bound. LIVE cursors resume after their sort key at the current Live and clock; Draft cursors are clock and state bound and expire after five minutes.
    */
   200: CccWebsiteCardsPage
 }
@@ -19771,6 +20318,10 @@ export type CreateWorkspaceErrors = {
    */
   404: ErrorResponse
   /**
+   * The account already owns the maximum number of live workspaces
+   */
+  409: WorkspaceCreationLimitError
+  /**
    * Validation error
    */
   422: ErrorResponse
@@ -20213,7 +20764,12 @@ export type ListWorkspaceDeploymentsData = {
      */
     id: string
   }
-  query?: never
+  query?: {
+    /**
+     * The deployments this browser started (POST /api/workspaces/{id}/deployments/{deployment_id}/start answered 202), one parameter each. A cached listing that still offers Start (can_start) on any of them predates its start, so it is listed again; if comfy-deploy cannot be reached for that, the answer is the 503, never the listing from before the start. Send each on every listing until one asked for after its start offers Start on it again or no longer lists it: each ingest server keeps its own cache, so a later listing can reach one that cached the deployment as stopped. An id the listing does not offer Start on costs nothing.
+     */
+    started_deployment_id?: Array<string>
+  }
   url: '/api/workspaces/{id}/deployments'
 }
 

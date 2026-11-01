@@ -1,7 +1,7 @@
 import { markRaw } from 'vue'
 
 import { assert } from '@/base/assert'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
@@ -55,6 +55,7 @@ export interface WorkflowChangeTracker {
   restore(): void
   updateModified(previousState?: ComfyWorkflowJSON): void
   captureCanvasState(): void
+  markModified(): void
   checkState(): void
   updateState(
     source: ComfyWorkflowJSON[],
@@ -82,6 +83,8 @@ export interface WorkflowRuntime {
     workflow: ComfyWorkflow,
     initialState: ComfyWorkflowJSON
   ): WorkflowChangeTracker
+  /** `ChangeTracker.graphEqual`: the comparison that decides unsaved changes. */
+  graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON): boolean
   getDraft(path: string): WorkflowDraft | null
   removeDraft(path: string): void
   markDraftUsed(path: string): void
@@ -217,6 +220,18 @@ function readUsableDraft(
     runtime.removeDraft(workflow.path)
     return null
   }
+}
+
+function draftMatchesSavedFile(
+  runtime: WorkflowRuntime,
+  saved: ComfyWorkflowJSON,
+  draft: ComfyWorkflowJSON
+): boolean {
+  return (
+    Array.isArray(saved.nodes) &&
+    Array.isArray(draft.nodes) &&
+    runtime.graphEqual(saved, draft)
+  )
 }
 
 /**
@@ -365,9 +380,11 @@ export class ComfyWorkflow extends UserFile {
     if (draft?.state && draft.content) {
       this.changeTracker.activeState = draft.state
       this.content = draft.content
-      this._isModified = true
-      // Saved-workflow draft overlay path; direct persisted-draft restores
-      // are touched in workflowDraftStoreV2.loadDraft().
+      this._isModified = !draftMatchesSavedFile(
+        runtime,
+        initialState,
+        draft.state
+      )
       runtime.markDraftUsed(this.path)
     }
     return this as this & LoadedComfyWorkflow

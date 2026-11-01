@@ -20,6 +20,7 @@ import type {
   BillingActions,
   BillingPortalOutcome,
   BillingState,
+  BillingStatusReadOptions,
   SubscriptionInfo
 } from './types'
 
@@ -32,6 +33,27 @@ type RuntimeLegacyBalance = Omit<
   effective_balance_micros?: number
 }
 type StatusReadResult = { ok: true } | { ok: false; cause: unknown }
+
+function datesFromStatus(status: BillingStatusResponse | null) {
+  return {
+    renewalDate: status?.renewal_date ?? null,
+    endDate: status?.cancel_at ?? null,
+    endedAt: status?.ended_at
+  }
+}
+
+function servesEndedSubscription(status: BillingStatusResponse | null) {
+  switch (status?.subscription_status) {
+    case 'ended':
+      return true
+  }
+  switch (status?.subscription_state) {
+    case 'ended':
+      return true
+    default:
+      return false
+  }
+}
 
 function fundsFromStatus(
   status: BillingStatusResponse | null,
@@ -121,7 +143,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     if (
       !legacyCanAccessSubscriptionFeatures.value &&
       !subscriptionTier.value &&
-      !status?.renewal_invoice
+      !status?.renewal_invoice &&
+      !servesEndedSubscription(status)
     ) {
       return null
     }
@@ -132,8 +155,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
       duration: subscriptionDuration.value,
       planSlug: null,
       scheduledChange: null,
-      renewalDate: status?.renewal_date ?? null,
-      endDate: status?.cancel_at ?? null,
+      ...datesFromStatus(status),
       isCancelled: isCancelled.value,
       ...fundsFromStatus(status, statusReadAuthoritative.value)
     }
@@ -211,28 +233,35 @@ export function useLegacyBilling(): BillingState & BillingActions {
     if (!result.ok) authActions.reportError(result.cause)
   }
 
-  async function readStatus(): Promise<StatusReadResult> {
+  async function readStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<StatusReadResult> {
     const requestId = ++latestStatusReadId
     isLoading.value = true
     error.value = null
     try {
-      const status = await legacyFetchStatusDirect()
+      const status = await legacyFetchStatusDirect(options)
       if (requestId === latestStatusReadId)
         statusReadAuthoritative.value = status?.billing_rail !== undefined
       return { ok: true }
     } catch (cause) {
-      if (requestId === latestStatusReadId)
+      if (requestId === latestStatusReadId) {
         statusReadAuthoritative.value = false
-      error.value =
-        cause instanceof Error ? cause.message : 'Failed to fetch subscription'
+        error.value =
+          cause instanceof Error
+            ? cause.message
+            : 'Failed to fetch subscription'
+      }
       return { ok: false, cause }
     } finally {
-      isLoading.value = false
+      if (requestId === latestStatusReadId) isLoading.value = false
     }
   }
 
-  async function fetchStatus(): Promise<void> {
-    const result = await readStatus()
+  async function fetchStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<void> {
+    const result = await readStatus(options)
     if (!result.ok) throw result.cause
   }
 
@@ -328,6 +357,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
     renewalDate,
     renewalInvoice: computed(
       () => legacySubscriptionStatus.value?.renewal_invoice ?? null
+    ),
+    periodCreditGrant: computed(
+      () => legacySubscriptionStatus.value?.period_credit_grant ?? null
     ),
 
     // Actions

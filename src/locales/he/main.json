@@ -83,6 +83,7 @@
     "copyMarkdown": "העתק כ-Markdown",
     "copyUnavailable": "בגרסה זו ניתן להעתיק רק את השיחה הנוכחית",
     "creditTransitionNotice": "ניצלת את הקרדיטים החינמיים של הסוכן. פעילות נוספת של הסוכן משתמשת בקרדיטים של סביבת העבודה שלך, שעשויים לכלול קרדיטים בתשלום.",
+    "creditsUsed": "הסוכן השתמש בקרדיט {credits} | הסוכן השתמש ב־{credits} קרדיטים",
     "currentTab": "הלשונית הנוכחית",
     "delete": "מחק",
     "deleteApproval": {
@@ -5471,6 +5472,11 @@
   },
   "templates": {
     "logoProviderSeparator": " & "
+  },
+  "textEditor": {
+    "characterCount": "תו {count} | {count} תווים",
+    "expand": "הגדלה",
+    "title": "{widget} · {node}"
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "לא ניתן לטעון את תהליך העבודה כי התקנת ComfyUI זו חסרה צמתים חיוניים. בדוק שהשרת האחורי הופעל כראוי.",

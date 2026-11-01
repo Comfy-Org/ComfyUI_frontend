@@ -83,6 +83,7 @@
     "copyMarkdown": "复制为 Markdown",
     "copyUnavailable": "此版本只能复制当前对话",
     "creditTransitionNotice": "您已用完免费的智能体积分。后续智能体活动将使用您工作区的积分，其中可能包含付费积分。",
+    "creditsUsed": "智能体使用了 {credits} 个积分 | 智能体使用了 {credits} 个积分",
     "currentTab": "当前标签页",
     "delete": "删除",
     "deleteApproval": {
@@ -5471,6 +5472,11 @@
   },
   "templates": {
     "logoProviderSeparator": " 与 "
+  },
+  "textEditor": {
+    "characterCount": "{count} 个字符",
+    "expand": "放大",
+    "title": "{widget} · {node}"
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "无法加载工作流，因为此 ComfyUI 安装缺少核心节点。请检查后端是否已正确启动。",

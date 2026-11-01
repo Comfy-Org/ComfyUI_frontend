@@ -83,6 +83,7 @@
     "copyMarkdown": "複製為 Markdown",
     "copyUnavailable": "此版本僅能複製目前的對話",
     "creditTransitionNotice": "您已用完免費的代理程式點數。後續的代理程式活動會使用您的工作區點數，其中可能包含付費點數。",
+    "creditsUsed": "代理程式使用了 {credits} 點積分 | 代理程式使用了 {credits} 點積分",
     "currentTab": "目前分頁",
     "delete": "刪除",
     "deleteApproval": {
@@ -5471,6 +5472,11 @@
   },
   "templates": {
     "logoProviderSeparator": " ＆ "
+  },
+  "textEditor": {
+    "characterCount": "{count} 個字元",
+    "expand": "放大",
+    "title": "{widget} · {node}"
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "無法載入工作流程，因為此 ComfyUI 安裝缺少核心節點。請確認後端是否正確啟動。",

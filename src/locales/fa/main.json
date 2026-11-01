@@ -83,6 +83,7 @@
     "copyMarkdown": "کپی به‌صورت مارک‌داون",
     "copyUnavailable": "در این نسخه فقط گفت‌وگوی فعلی قابل کپی است",
     "creditTransitionNotice": "از اعتبارهای رایگان agent خود استفاده کرده‌اید. فعالیت‌های بعدی agent از اعتبارهای workspace شما استفاده می‌کنند که ممکن است شامل اعتبارهای پولی باشند.",
+    "creditsUsed": "عامل {credits} اعتبار مصرف کرد | عامل {credits} اعتبار مصرف کرد",
     "currentTab": "زبانهٔ فعلی",
     "delete": "حذف",
     "deleteApproval": {
@@ -5471,6 +5472,11 @@
   },
   "templates": {
     "logoProviderSeparator": " و "
+  },
+  "textEditor": {
+    "characterCount": "{count} کاراکتر | {count} کاراکتر",
+    "expand": "بزرگ کردن",
+    "title": "{widget} · {node}"
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "امکان بارگذاری workflow وجود ندارد زیرا این نصب ComfyUI فاقد nodeهای اصلی است. بررسی کنید که backend به درستی راه‌اندازی شده باشد.",

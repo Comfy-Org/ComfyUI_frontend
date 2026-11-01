@@ -48,16 +48,20 @@ export interface ProgressToast {
 
 interface ProgressToastOperation {
   readonly actionUrl?: string | null
+  readonly paymentMethodUrl?: string | null
   readonly phase?: BillingOperationPhase | null
 }
 
 /**
- * A checkout parked on a card with no link to offer is a state the customer
+ * A checkout parked on a card with no verification link to offer is a state the customer
  * leaves by subscribing again, not a payment in flight, so no surface may
  * describe it as one. A served link turns it back into a verification ask.
  */
 export function isParkedCheckout(operation: ProgressToastOperation): boolean {
-  return !operation.actionUrl && operation.phase === 'awaiting_payment_method'
+  return (
+    operation.phase === 'awaiting_payment_method' &&
+    (!operation.actionUrl || operation.actionUrl === operation.paymentMethodUrl)
+  )
 }
 
 export function progressToastKind(

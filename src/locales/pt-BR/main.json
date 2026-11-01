@@ -83,6 +83,7 @@
     "copyMarkdown": "Copiar como markdown",
     "copyUnavailable": "Somente a conversa atual pode ser copiada nesta versão",
     "creditTransitionNotice": "Você usou seus créditos gratuitos do agente. As atividades futuras do agente usam os créditos do seu espaço de trabalho, que podem incluir créditos pagos.",
+    "creditsUsed": "O agente usou {credits} crédito | O agente usou {credits} créditos",
     "currentTab": "Aba atual",
     "delete": "Excluir",
     "deleteApproval": {
@@ -5471,6 +5472,11 @@
   },
   "templates": {
     "logoProviderSeparator": " & "
+  },
+  "textEditor": {
+    "characterCount": "{count} caractere | {count} caracteres",
+    "expand": "Ampliar",
+    "title": "{widget} · {node}"
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Não foi possível carregar o fluxo de trabalho porque esta instalação do ComfyUI está sem os nós principais. Verifique se o backend foi iniciado corretamente.",

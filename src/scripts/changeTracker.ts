@@ -3,6 +3,7 @@ import _ from 'es-toolkit/compat'
 
 import { assert } from '@/base/assert'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
+import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -11,12 +12,13 @@ import type {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { isChangeCaptureSuppressed } from '@/services/changeCaptureSuppression'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
   collectSubgraphDefinitions,
   parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -342,6 +344,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    * serialize the wrong graph into the old workflow's activeState, corrupting it.
    */
   static isLoadingGraph = false
+
   /**
    * The active state of the workflow.
    */
@@ -505,7 +508,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
       !useApp().isGraphReady ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
-      ChangeTracker.isLoadingGraph
+      ChangeTracker.isLoadingGraph ||
+      isChangeCaptureSuppressed()
     )
       return
 
@@ -543,7 +547,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
   squashState = useDebounceFn(() => {
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
-      ChangeTracker.isLoadingGraph
+      ChangeTracker.isLoadingGraph ||
+      isChangeCaptureSuppressed()
     )
       return
 
@@ -556,6 +561,18 @@ export class ChangeTracker implements WorkflowChangeTracker {
     this.activeState = currentState
     this.updateModified(previousState)
   }, 50)
+
+  /**
+   * Marks the workflow modified and sends graphChanged with the committed
+   * state, without adding undo history or reading the canvas.
+   */
+  markModified() {
+    if (!isActiveTracker(this) || ChangeTracker.isLoadingGraph) return
+
+    const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
+    if (workflow) workflow.isModified = true
+    api.dispatchCustomEvent('graphChanged', this.activeState)
+  }
 
   /** @deprecated Use {@link captureCanvasState} instead. */
   checkState() {
@@ -722,12 +739,11 @@ export class ChangeTracker implements WorkflowChangeTracker {
       }
     })
 
-    // Handle clicking DOM elements (e.g. widgets)
     window.addEventListener('mouseup', () => {
+      if (dialogStore.isDialogOpen(TEXT_EDITOR_DIALOG_KEY)) return
       captureState()
     })
 
-    // Handle prompt queue event for dynamic widget changes
     api.addEventListener('promptQueued', () => {
       captureState()
     })

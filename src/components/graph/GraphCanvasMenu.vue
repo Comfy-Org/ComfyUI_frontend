@@ -1,19 +1,8 @@
 <template>
-  <div>
-    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
+  <div class="isolate">
+    <div v-if="hasActivePopup" class="fixed inset-0" @click="hideModal"></div>
 
-    <!-- Backdrop -->
-    <div
-      v-if="hasActivePopup"
-      class="fixed inset-0 z-1200"
-      @click="hideModal"
-    ></div>
-
-    <!-- Right-anchoring alone lets a toolbar wider than the canvas overhang its
-         left edge and cover the sidebar. Spanning the canvas and pushing with an
-         auto margin pins the toolbar to the right instead, and the width cap keeps
-         any overflow inside the canvas as a scroll. -->
-    <div class="pointer-events-none absolute inset-x-0 bottom-0 z-1200 flex">
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 flex">
       <div
         role="toolbar"
         :aria-label="t('graphCanvasMenu.canvasToolbar')"
@@ -94,6 +83,7 @@
         </Button>
       </div>
     </div>
+    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
   </div>
 </template>
 

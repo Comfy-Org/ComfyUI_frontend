@@ -83,6 +83,7 @@
     "copyMarkdown": "Als Markdown kopieren",
     "copyUnavailable": "In dieser Version kann nur die aktuelle Unterhaltung kopiert werden",
     "creditTransitionNotice": "Sie haben Ihre kostenlosen Agent-Credits verbraucht. Weitere Agent-Aktivitäten verwenden die Credits Ihres Workspaces, die kostenpflichtige Credits enthalten können.",
+    "creditsUsed": "Der Agent hat {credits} Credit verwendet | Der Agent hat {credits} Credits verwendet",
     "currentTab": "Aktueller Tab",
     "delete": "Löschen",
     "deleteApproval": {
@@ -5471,6 +5472,11 @@
   },
   "templates": {
     "logoProviderSeparator": " & "
+  },
+  "textEditor": {
+    "characterCount": "{count} Zeichen | {count} Zeichen",
+    "expand": "Vergrößern",
+    "title": "{widget} · {node}"
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Der Workflow konnte nicht geladen werden, da in dieser ComfyUI-Installation Core-Nodes fehlen. Überprüfen Sie, ob das Backend korrekt gestartet wurde.",

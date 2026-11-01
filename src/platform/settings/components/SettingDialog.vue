@@ -141,11 +141,11 @@ import type {
   ISettingGroup,
   SettingDialogProps,
   SettingParams
-} from '@/platform/settings/types'
+} from '@comfyorg/settings-core/types'
 import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { flattenTree } from '@/utils/treeUtil'
 
-const { onClose, defaultPanel, scrollToSettingId } =
+const { onClose, defaultPanel, scrollToSettingId, navigationRequestId } =
   defineProps<SettingDialogProps>()
 
 const modalLayoutLabels = useModalLayoutLabels()
@@ -212,6 +212,16 @@ watch(navItems, (items) => {
   const activeKey = activeCategoryKey.value
   if (!activeKey || items.some(({ id }) => id === activeKey)) return
   activeCategoryKey.value = items[0]?.id ?? null
+})
+
+watch([() => defaultPanel, () => navigationRequestId], ([panel]) => {
+  if (!panel) return
+  if (!findCategoryByKey(panel) && !findPanelByKey(panel)) return
+  if (inSearch.value) {
+    searchQuery.value = ''
+    handleSearch('')
+  }
+  activeCategoryKey.value = panel
 })
 
 watch(

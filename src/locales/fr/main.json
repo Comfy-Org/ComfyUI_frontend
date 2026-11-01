@@ -83,6 +83,7 @@
     "copyMarkdown": "Copier au format markdown",
     "copyUnavailable": "Seule la conversation actuelle peut être copiée dans cette version",
     "creditTransitionNotice": "Vous avez utilisé vos crédits d'agent gratuits. Toute activité ultérieure de l'agent utilise les crédits de votre espace de travail, qui peuvent inclure des crédits payants.",
+    "creditsUsed": "L’agent a utilisé {credits} crédit | L’agent a utilisé {credits} crédits",
     "currentTab": "Onglet actuel",
     "delete": "Supprimer",
     "deleteApproval": {
@@ -5471,6 +5472,11 @@
   },
   "templates": {
     "logoProviderSeparator": " & "
+  },
+  "textEditor": {
+    "characterCount": "{count} caractère | {count} caractères",
+    "expand": "Agrandir",
+    "title": "{widget} · {node}"
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Impossible de charger le workflow car cette installation de ComfyUI ne dispose pas des nœuds principaux. Vérifiez que le backend a démarré correctement.",

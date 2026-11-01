@@ -16,15 +16,9 @@
           "
           :surface="item.dialogComponentProps.headless ? 'none' : 'card'"
           :maximized="!!item.dialogComponentProps.maximized"
-          :class="
-            item.dialogComponentProps.centerOnViewport &&
-            !item.dialogComponentProps.maximized &&
-            '[--workspace-inset-right:0px]'
-          "
           :data-dialog-key="item.key"
           @escape-key-down="
-            (e) =>
-              item.dialogComponentProps.closable === false && e.preventDefault()
+            (e) => onRekaEscapeKeyDown(item.dialogComponentProps, e)
           "
           @pointer-down-outside="
             (e) => onRekaPointerDownOutside(item.dialogComponentProps, e)
@@ -114,7 +108,10 @@ import DialogMaximize from '@comfyorg/design-system/dialog/DialogMaximize'
 import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
+import {
+  onRekaEscapeKeyDown,
+  onRekaPointerDownOutside
+} from '@/components/dialog/dialogDismissGuards'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
