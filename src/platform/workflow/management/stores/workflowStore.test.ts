@@ -521,8 +521,8 @@ describe('useWorkflowStore', () => {
         return workflow
       }
 
-      const draftWithExtra = (extra: Record<string, unknown>) => {
-        const draftGraph = JSON.parse(defaultGraphJSON)
+      const draftWithExtra = (extra: ComfyWorkflowJSON['extra']) => {
+        const draftGraph: ComfyWorkflowJSON = structuredClone(defaultGraph)
         draftGraph.extra = { ...draftGraph.extra, ...extra }
         return JSON.stringify(draftGraph)
       }
