@@ -6,12 +6,14 @@ import {
   waitFor,
   within
 } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { toValue } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAssetDownload } from '@/composables/useAssetDownload'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { api } from '@/scripts/api'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
 
@@ -357,22 +359,55 @@ describe('AssetsSidebarTab tab panel', () => {
 })
 
 describe('AssetsSidebarTab gallery selection', () => {
-  it('downloads the asset the viewer is showing through the download composable', async () => {
-    const asset = {
-      ...folderAsset,
-      id: 'b',
-      name: 'b.png',
-      preview_url: '/api/assets/b/preview'
-    }
-    useAssetsStore().outputAssets.items = [asset]
+  const galleryAssetId = '9a7111df-ccba-4be6-8057-c673755d097c'
 
-    renderTab({ realLightbox: true })
-
-    await userEvent.click(screen.getByRole('button', { name: 'Preview b.png' }))
-    await userEvent.click(await screen.findByLabelText('Download'))
-
-    const [downloads] = downloadFiles.mock.calls[0]
-    expect(downloads[0]).toMatchObject({ filename: 'b.png' })
-    expect(downloads[0].url).toBeTruthy()
+  afterEach(() => {
+    api.serverFeatureFlags.value = {}
   })
+
+  it.for([
+    {
+      assetsEnabled: false,
+      downloadUrl: '/api/assets/b-preview/content'
+    },
+    {
+      assetsEnabled: true,
+      downloadUrl: `/api/assets/${galleryAssetId}/content`
+    }
+  ])(
+    'downloads the file the viewer is showing with assetsEnabled=$assetsEnabled',
+    async ({ assetsEnabled, downloadUrl }) => {
+      const asset = {
+        ...folderAsset,
+        id: galleryAssetId,
+        name: 'b.png',
+        preview_url: 'http://localhost:8188/api/assets/b-preview/content',
+        user_metadata: {}
+      }
+      api.serverFeatureFlags.value = { assets: assetsEnabled }
+      vi.spyOn(api, 'fetchApi').mockImplementation(async () =>
+        Response.json({ assets: [asset], has_more: false, total: 1 })
+      )
+      useAssetsStore().outputAssets.items = [asset]
+
+      renderTab({ realLightbox: true })
+
+      await vi.waitFor(() =>
+        expect(toValue(useAssetsStore().outputAssets.items)).toEqual([
+          expect.objectContaining({ id: galleryAssetId })
+        ])
+      )
+      await vi.waitFor(() =>
+        expect(toValue(useAssetsStore().outputAssets.isLoading)).toBe(false)
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Preview b.png' })
+      )
+      await userEvent.click(await screen.findByLabelText('Download'))
+
+      const [downloads] = downloadFiles.mock.calls[0]
+      expect(downloads[0]).toMatchObject({ filename: 'b.png' })
+      expect(downloads[0].url).toContain(downloadUrl)
+    }
+  )
 })
