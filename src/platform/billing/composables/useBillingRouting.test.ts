@@ -1,3 +1,5 @@
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import type { BillingRail } from '@comfyorg/billing-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { storeToRefs } from 'pinia'
@@ -59,6 +61,21 @@ describe('useBillingRouting', () => {
     expect(type.value).toBe('workspace')
     expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
+
+  it.for<BillingRail | null>(['legacy_stripe', 'stripe', 'metronome', null])(
+    'uses workspace billing for a Cloud personal workspace whatever its served rail (%s)',
+    (rail) => {
+      const servedRail: Ref<BillingRail | null> = storeToRefs(
+        useWorkspaceBillingStateStore()
+      ).activeWorkspaceBillingRail
+      servedRail.value = rail
+
+      const { type, shouldUseWorkspaceBilling } = useBillingRouting()
+
+      expect(type.value).toBe('workspace')
+      expect(shouldUseWorkspaceBilling.value).toBe(true)
+    }
+  )
 
   it('uses unified pricing for a Cloud personal workspace', () => {
     const { shouldUseUnifiedPricing } = useBillingRouting()
