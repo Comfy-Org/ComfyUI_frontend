@@ -540,9 +540,8 @@ export function topologicalSortSubgraphs(
     }
   }
 
-  if (sorted.length !== subgraphs.length) return subgraphs
-
-  return sorted
+  const emitted = new Set(sorted)
+  return [...sorted, ...subgraphs.filter((sg) => !emitted.has(sg))]
 }
 
 function patchSubgraphNodeReferences(

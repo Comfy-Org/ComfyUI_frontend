@@ -1849,36 +1849,54 @@ describe('LiveGraphApplier', () => {
       }
     )
 
-    it('does not register a definition whose child nests a malformed one when an unrelated cycle exists', () => {
-      const MALFORMED = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
-      const CYCLE_A = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
-      const CYCLE_B = 'ffffffff-ffff-4fff-8fff-ffffffffffff'
-      const { graph, applyCollected } = setup({
-        nodes: [],
-        links: [],
-        definitions: {
-          subgraphs: [
-            createTestSubgraphData({ id: CYCLE_A, nodes: [interior(CYCLE_B)] }),
-            createTestSubgraphData({ id: CYCLE_B, nodes: [interior(CYCLE_A)] }),
-            outer(),
-            inner(MALFORMED),
-            { ...createTestSubgraphData({ id: MALFORMED }), inputs: 'invalid' }
-          ]
-        }
-      })
+    const MALFORMED = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
+    const CYCLE_A = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
+    const CYCLE_B = 'ffffffff-ffff-4fff-8fff-ffffffffffff'
 
-      applyCollected()
-
-      expect(graph.subgraphs.has(INNER)).toBe(false)
-      expect(graph.subgraphs.has(OUTER)).toBe(false)
-      expect(reportError).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          errorType: 'agent_subgraph_definitions_failed',
-          context: expect.objectContaining({ definitionId: OUTER })
+    it.for([
+      [
+        'nests a malformed definition',
+        () => [
+          inner(MALFORMED),
+          { ...createTestSubgraphData({ id: MALFORMED }), inputs: 'invalid' }
+        ]
+      ],
+      ['fails to configure', () => [inner('TestThrowingConfigure')]]
+    ] as const)(
+      'does not register a parent whose child %s when an unrelated cycle exists',
+      ([, children]) => {
+        const { graph, applyCollected } = setup({
+          nodes: [],
+          links: [],
+          definitions: {
+            subgraphs: [
+              createTestSubgraphData({
+                id: CYCLE_A,
+                nodes: [interior(CYCLE_B)]
+              }),
+              createTestSubgraphData({
+                id: CYCLE_B,
+                nodes: [interior(CYCLE_A)]
+              }),
+              outer(),
+              ...children()
+            ]
+          }
         })
-      )
-    })
+
+        applyCollected()
+
+        expect(graph.subgraphs.has(INNER)).toBe(false)
+        expect(graph.subgraphs.has(OUTER)).toBe(false)
+        expect(reportError).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            errorType: 'agent_subgraph_definitions_failed',
+            context: expect.objectContaining({ definitionId: OUTER })
+          })
+        )
+      }
+    )
   })
 
   it('restores a widget and its mirrored property when a widget callback throws', () => {
