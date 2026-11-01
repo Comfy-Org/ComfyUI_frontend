@@ -584,7 +584,6 @@ function overflowWidget(
   node: LGraphNode,
   name: string
 ): IBaseWidget | undefined {
-  if (!supportsDynamicWidgetOverflow(node)) return undefined
   const overflowIndex = overflowWidgetIndex(name)
   return overflowIndex === null
     ? undefined
