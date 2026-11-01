@@ -3,7 +3,7 @@ import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { createI18n } from 'vue-i18n'
@@ -1525,7 +1525,7 @@ describe('TabErrors.vue', () => {
     const groupKey = screen
       .getByTestId('error-group-execution')
       .getAttribute('data-group-key')
-    if (!groupKey) throw new Error('missing group key')
+    assert.exists(groupKey)
     useRightSidePanelStore().requestErrorDetails(['execution:unrelated'])
     await nextTick()
     expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
@@ -1571,7 +1571,7 @@ describe('TabErrors.vue', () => {
     const groupKey = screen
       .getByTestId('error-group-execution')
       .getAttribute('data-group-key')
-    if (!groupKey) throw new Error('missing group key')
+    assert.exists(groupKey)
     useRightSidePanelStore().requestErrorDetails([groupKey])
     await nextTick()
 
@@ -1580,6 +1580,37 @@ describe('TabErrors.vue', () => {
       screen.getByText('KSampler is missing a required input: positive')
     ).toBeInTheDocument()
   })
+  it('clears an active search so the requested group is shown', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(new LGraphNode('KSampler'))
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError(
+              'required_input_missing',
+              'Required input is missing'
+            )
+          ],
+          'KSampler'
+        )
+      })
+    })
+    const groupKey = screen
+      .getByTestId('error-group-execution')
+      .getAttribute('data-group-key')
+    assert.exists(groupKey)
+
+    await user.type(screen.getByRole('textbox'), 'zzz')
+    expect(
+      screen.queryByTestId('error-group-execution')
+    ).not.toBeInTheDocument()
+
+    useRightSidePanelStore().requestErrorDetails([groupKey])
+
+    expect(await screen.findByTestId('error-group-execution')).toBeVisible()
+  })
+
   it('uses error severity for a runtime error with an unnormalisable node id', () => {
     renderRightSidePanel((pinia) => {
       useExecutionErrorStore(pinia).recordExecutionError({

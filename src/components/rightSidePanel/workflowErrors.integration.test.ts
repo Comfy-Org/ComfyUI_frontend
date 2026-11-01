@@ -3,7 +3,15 @@ import type { Pinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { defineComponent, nextTick, provide } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
@@ -261,7 +269,7 @@ describe('ErrorGroupList selection emphasis', () => {
     expect(isSectionExpanded(loaderSection)).toBe(false)
 
     const groupKey = samplerSection.getAttribute('data-group-key')
-    if (!groupKey) throw new Error('missing group key')
+    assert.exists(groupKey)
     useRightSidePanelStore(pinia).requestErrorDetails([groupKey])
     await nextTick()
 

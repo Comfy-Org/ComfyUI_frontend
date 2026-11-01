@@ -48,6 +48,10 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     }
   })
 
+  watch([isOpen, activeTab], ([open, tab]) => {
+    if (!open || tab !== 'errors') errorDetailsRequest.value = null
+  })
+
   function openPanel(tab?: RightSidePanelTab) {
     if (isLegacyMenu.value) return
     isOpen.value = true

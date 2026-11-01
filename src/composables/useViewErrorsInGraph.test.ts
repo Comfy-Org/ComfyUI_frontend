@@ -76,4 +76,14 @@ describe('useViewErrorsInGraph', () => {
     expect(rightSidePanelStore.errorDetailsRequest).toEqual([])
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
   })
+
+  it('drops a details request when the user leaves the errors tab before it opens', async () => {
+    const rightSidePanelStore = useRightSidePanelStore()
+
+    useViewErrorsInGraph().viewErrorsInGraph(['missing_node'])
+    rightSidePanelStore.activeTab = 'parameters'
+    await nextTick()
+
+    expect(rightSidePanelStore.errorDetailsRequest).toBeNull()
+  })
 })

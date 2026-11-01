@@ -925,6 +925,8 @@ watch(
 )
 
 function openClosedErrorDetails(groupKeys: readonly string[]) {
+  searchQuery.value = ''
+  severityFilter.value = null
   const keys = new Set(groupKeys)
   const nextKeys = new Set(expandedExecutionItemDetailKeys.value)
   for (const group of allErrorGroups.value) {
