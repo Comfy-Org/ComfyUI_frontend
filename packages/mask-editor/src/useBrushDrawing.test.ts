@@ -1,5 +1,5 @@
 import { useMaskEditorStore } from './maskEditorStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
@@ -188,13 +188,14 @@ describe('startDrawing error handling', () => {
 
 describe('startDrawing shift+click', () => {
   it('draws a line from the previous point when shift is held', async () => {
-    const { startDrawing } = setup()
+    const { startDrawing, drawEnd } = setup()
+    const ctx = mockStoreDef.maskCtx
+    assert.exists(ctx)
     await startDrawing(makePointerEvent(50, 50))
+    await drawEnd(makePointerEvent(50, 50))
+    vi.mocked(ctx.fill).mockClear()
     await startDrawing(makePointerEvent(100, 50, { shiftKey: true }))
-    expect(
-      (mockStoreDef.maskCtx as unknown as ReturnType<typeof makeMockCtx>)
-        .beginPath
-    ).toHaveBeenCalled()
+    expect(ctx.fill).toHaveBeenCalled()
   })
 })
 
@@ -322,33 +323,36 @@ describe('drawEnd canvas visibility', () => {
 
 describe('drawEnd', () => {
   it.for(['pointerup', 'pointercancel'])(
-    'ignores %s from a pointer that no longer owns the stroke',
+    'preserves the first stroke when a second pointer starts and sends %s',
     async (type) => {
-      const { startDrawing, drawEnd } = setup()
+      const { startDrawing, handleDrawing, drawEnd } = setup()
+      const ctx = mockStoreDef.maskCtx
+      assert.exists(ctx)
+      await startDrawing(makePointerEvent(40, 60, { pointerId: 11 }))
+      await handleDrawing(makePointerEvent(50, 65, { pointerId: 11 }))
+      vi.advanceTimersToNextFrame()
       await startDrawing(
-        new PointerEvent('pointerdown', {
-          pointerType: 'pen',
-          pointerId: 11,
-          buttons: 1
-        })
+        makePointerEvent(180, 180, { pointerId: 22, buttons: 2 })
       )
-      await startDrawing(
-        new PointerEvent('pointerdown', {
-          pointerType: 'pen',
-          pointerId: 22,
-          buttons: 1
-        })
-      )
-
-      await drawEnd(
-        new PointerEvent(type, { pointerType: 'pen', pointerId: 11 })
-      )
-
-      expect(saveStateSpy).not.toHaveBeenCalled()
       await drawEnd(
         new PointerEvent(type, { pointerType: 'pen', pointerId: 22 })
       )
+
+      expect(saveStateSpy).not.toHaveBeenCalled()
+      expect(useGPUResources().prepareStroke).toHaveBeenCalledOnce()
+      expect(ctx.globalCompositeOperation).toBe('source-over')
+      vi.mocked(ctx.fill).mockClear()
+      await handleDrawing(makePointerEvent(90, 95, { pointerId: 11 }))
+      vi.advanceTimersToNextFrame()
+      expect(ctx.fill).toHaveBeenCalled()
+      await drawEnd(
+        new PointerEvent(type, { pointerType: 'pen', pointerId: 11 })
+      )
       expect(saveStateSpy).toHaveBeenCalledOnce()
+
+      await startDrawing(makePointerEvent(180, 180, { pointerId: 22 }))
+      await drawEnd(new PointerEvent('pointerup', { pointerId: 22 }))
+      expect(saveStateSpy).toHaveBeenCalledTimes(2)
     }
   )
 
