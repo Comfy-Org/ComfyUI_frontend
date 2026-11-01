@@ -45,7 +45,9 @@ const isLinked = computed(() => {
   return inputForWidget(node, widget)?.widgetId != null
 })
 const canShowInput = computed(() => host != null && !isLinked.value)
-const canHideInput = computed(() => host != null && isLinked.value)
+const canHideInput = computed(
+  () => host != null && node === host && isLinked.value
+)
 const isFavorited = computed(() =>
   favoritedWidgetsStore.isFavorited(node, widget.name)
 )
@@ -142,6 +144,7 @@ const menuItems = computed<MenuItem[]>(() => [
     data-testid="widget-actions-hide-input-button"
     icon="icon-[lucide--eye-off]"
     :aria-label="t('rightSidePanel.hideInput')"
+    :title="t('rightSidePanel.hideInput')"
     @click="handleHideInput"
   />
   <Menu :items="menuItems" align="end">

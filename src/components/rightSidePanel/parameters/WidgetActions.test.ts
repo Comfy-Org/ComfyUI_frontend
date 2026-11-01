@@ -114,9 +114,6 @@ describe('WidgetActions', () => {
         plugins: [i18n]
       }
     })
-    // The standalone "Hide input" button sits outside the dropdown and gets
-    // aria-hidden while the (modal) dropdown is open, so callers that only
-    // need that button skip opening the menu.
     if (openMenu) {
       await user.click(screen.getByTestId('widget-actions-menu-button'))
       await screen.findByRole('menu')
@@ -419,9 +416,25 @@ describe('WidgetActions', () => {
     expect(outerHost.subgraph.inputs).toHaveLength(0)
     expect(outerHost.inputs).toHaveLength(0)
     expect(promotedInputWidgets(outerHost)).toHaveLength(0)
-    // The inner promotion is untouched — only the outer host's projection of
-    // it was hidden.
     expect(promotedInputWidgets(innerHost)).toHaveLength(1)
+  })
+
+  it('does not offer "Hide input" on an interior row whose node is not the host', async () => {
+    const { outerHost, innerHost } = setupNestedLinkedPromotedWidget()
+    const innerPromotedWidget = promotedInputWidgets(innerHost).at(0)
+    if (!innerPromotedWidget)
+      throw new Error('Expected a promoted widget on inner host')
+
+    await renderWidgetActions(
+      innerPromotedWidget,
+      innerHost,
+      { host: outerHost },
+      { openMenu: false }
+    )
+
+    expect(
+      screen.queryByRole('button', { name: /Hide input/ })
+    ).not.toBeInTheDocument()
   })
 
   it('does not offer "Hide input" without a host', async () => {
