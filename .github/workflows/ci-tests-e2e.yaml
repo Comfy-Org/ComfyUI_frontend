@@ -539,8 +539,6 @@ jobs:
     concurrency:
       group: pr-comment-${{ github.event.pull_request.number }}
       cancel-in-progress: false
-    # !cancelled(), not always(): a run superseded by a new push must not
-    # overwrite the newer run's section with its partial reports.
     if: >-
       ${{
         !cancelled() &&
