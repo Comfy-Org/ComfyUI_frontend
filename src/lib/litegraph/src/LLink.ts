@@ -18,7 +18,7 @@ import {
   toOwningGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import {
   UNASSIGNED_NODE_ID,

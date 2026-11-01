@@ -39,7 +39,7 @@ import {
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
 import type { UUID } from '@/utils/uuid'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import {
   SIMPLE_ERROR_TYPES,
   errorsForSlot,
