@@ -148,6 +148,10 @@ export function useAgentWorkflowSelection({
       if (tab.isTemporary && cloudIdFor(tab) === undefined) {
         if (!(await refreshCloudWorkflowIds())) return fail()
         if (!isCurrent()) return
+        // After a reload, background tabs stay unloaded until opened, and a
+        // save needs the tab's graph. Loading reads it back from the draft.
+        if (!tab.isLoaded) await tab.load()
+        if (!isCurrent()) return
         const filename = nextSaveFilename(tab)
         if (!(await workflowService.saveWorkflowAs(tab, { filename })))
           return fail()

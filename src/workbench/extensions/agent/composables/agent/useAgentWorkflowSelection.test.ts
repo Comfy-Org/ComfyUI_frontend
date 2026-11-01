@@ -4,6 +4,7 @@ import { getActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -879,5 +880,48 @@ describe('historical workflow restoration', () => {
     expect(panel.targetUnavailable).toBe(false)
     expect(panel.selectedWorkflow?.path).toBe(current.path)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+})
+
+describe('picking a target tab', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('loads an unsaved tab a reload left unopened before saving it', async () => {
+    const { selection, workflows, panel, listCloudWorkflows } = setup()
+    const graph = { ...blankGraph, id: 'b6c1d1e6-7f00-4a7e-9a52-0d1a2b3c4d5e' }
+    const restored = workflows.createTemporary(
+      'Unsaved Workflow (2).json',
+      graph
+    )
+    workflows.openWorkflowsInBackground({ right: [restored.path] })
+    expect(restored.isLoaded).toBe(false)
+    let saved = false
+    vi.spyOn(restored, 'isTemporary', 'get').mockImplementation(() => !saved)
+    vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
+      async (tab) => {
+        // workflowStore.saveWorkflow refuses a tab that has no loaded state.
+        if (!tab.isLoaded)
+          throw new Error(
+            `Cannot save workflow '${tab.path}' before it is loaded`
+          )
+        saved = true
+        return true
+      }
+    )
+    listCloudWorkflows.mockImplementation(async () =>
+      listing([
+        { id: 'wf-current', name: 'current' },
+        ...(saved ? [{ id: 'wf-restored', name: 'Unsaved Workflow (2)' }] : [])
+      ])
+    )
+    const toast = useToast()
+
+    expect(await selection.selectTarget(restored.path)).toBe(true)
+
+    expect(useWorkflowService().saveWorkflowAs).toHaveBeenCalledWith(restored, {
+      filename: 'Unsaved Workflow (2)'
+    })
+    expect(panel.selectedWorkflow?.path).toBe(restored.path)
+    expect(toast.toasts).toHaveLength(0)
   })
 })
