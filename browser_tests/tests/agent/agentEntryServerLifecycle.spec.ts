@@ -10,11 +10,11 @@ const test = mergeTests(agentTest, webSocketFixture)
 test.describe(
   "Agent entry button follows ComfyUI's agent",
   {
-    tag: '@cloud',
+    tag: ['@agent', '@ui'],
     annotation: {
       type: 'issue',
       description:
-        'https://github.com/Comfy-Org/ComfyUI_frontend/pull/20971: the panel mounts from the agent feature ComfyUI publishes, and unit tests only cover that with a mocked store'
+        'https://github.com/Comfy-Org/ComfyUI_frontend/pull/20971: the entry button follows the agent feature ComfyUI publishes, and unit tests only cover that with a mocked store'
     }
   },
   () => {
@@ -24,7 +24,7 @@ test.describe(
       initialLocalStorage: { 'Comfy.AgentPanel.activationVisits': '2' }
     })
 
-    test('stays inert while the agent starts or fails, then opens once it is ready', async ({
+    test('stays inert while the agent starts or fails, then offers it once it is ready', async ({
       page,
       agentPanel,
       getWebSocket
@@ -65,16 +65,23 @@ test.describe(
         await expect(failed).toHaveAttribute('aria-pressed', 'false')
       })
 
-      await test.step('a ready agent opens the panel', async () => {
+      await test.step('a ready agent offers itself to a signed-out user', async () => {
         const status: AgentServerFeature = { state: 'ready', reason: null }
         publish('agent_status', status)
         await expect(agentPanel.openButton).not.toHaveAttribute(
           'aria-disabled',
           'true'
         )
-        await expect(agentPanel.root).toHaveCount(0)
+        await expect(agentPanel.consentDialog).toHaveCount(0)
         await agentPanel.openButton.click()
-        await expect(agentPanel.root).toBeVisible()
+        await expect(agentPanel.consentDialog).toBeVisible()
+        await expect(
+          agentPanel.consentDialog.getByRole('button', {
+            name: enMessages.agent.consent.agreeAndContinue,
+            exact: true
+          })
+        ).toBeVisible()
+        await expect(agentPanel.root).toHaveCount(0)
       })
     })
   }
