@@ -5473,6 +5473,11 @@
   "templates": {
     "logoProviderSeparator": " & "
   },
+  "textEditor": {
+    "characterCount": "{count} Zeichen | {count} Zeichen",
+    "expand": "Vergrößern",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Der Workflow konnte nicht geladen werden, da in dieser ComfyUI-Installation Core-Nodes fehlen. Überprüfen Sie, ob das Backend korrekt gestartet wurde.",
     "a1111EmbeddingsUnavailable": "Embeddings konnten nicht vom Server geladen werden. Der Workflow wurde importiert, aber die Embedding-Namen wurden als Klartext belassen.",

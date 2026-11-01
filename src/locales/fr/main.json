@@ -5473,6 +5473,11 @@
   "templates": {
     "logoProviderSeparator": " & "
   },
+  "textEditor": {
+    "characterCount": "{count} caractère | {count} caractères",
+    "expand": "Agrandir",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Impossible de charger le workflow car cette installation de ComfyUI ne dispose pas des nœuds principaux. Vérifiez que le backend a démarré correctement.",
     "a1111EmbeddingsUnavailable": "Les embeddings n’ont pas pu être chargés depuis le serveur. Le workflow a été importé, mais les noms des embeddings ont été conservés sous forme de texte brut.",

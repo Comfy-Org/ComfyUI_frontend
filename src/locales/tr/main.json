@@ -5473,6 +5473,11 @@
   "templates": {
     "logoProviderSeparator": " & "
   },
+  "textEditor": {
+    "characterCount": "{count} karakter | {count} karakter",
+    "expand": "Genişlet",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Çalışma akışı yüklenemedi çünkü bu ComfyUI kurulumunda çekirdek düğümler eksik. Arka ucun doğru başlatıldığından emin olun.",
     "a1111EmbeddingsUnavailable": "Embedding'ler sunucudan yüklenemedi. İş akışı içe aktarıldı, ancak embedding adları düz metin olarak bırakıldı.",
