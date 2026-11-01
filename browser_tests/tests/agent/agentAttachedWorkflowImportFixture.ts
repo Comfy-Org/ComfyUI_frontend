@@ -1,4 +1,5 @@
-import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
+import type { Locator, Page, Request } from '@playwright/test'
 
 import type {
   AgentPostMessageRequest,
@@ -36,6 +37,9 @@ const MARKER_TYPE = 'AttachedWorkflowMarker'
 const CURRENT_CANVAS_TITLE = 'Current canvas sentinel'
 const ATTACHED_WORKFLOW_TITLE = 'Attached workflow source'
 const IMPORTED_RESULT_TITLE = 'Imported workflow result'
+const CURRENT_CANVAS_NODE_ID = 11
+const ATTACHED_WORKFLOW_NODE_ID = 41
+const IMPORTED_RESULT_NODE_ID = 71
 const USER_REQUEST = 'Change the attached workflow and open the result.'
 
 const NODE_DEFINITIONS: Record<string, ComfyNodeDef> = {
@@ -83,9 +87,47 @@ function markerWorkflow(
   }
 }
 
-const CURRENT_WORKFLOW = markerWorkflow(11, CURRENT_CANVAS_TITLE)
-const ATTACHED_WORKFLOW = markerWorkflow(41, ATTACHED_WORKFLOW_TITLE)
-const IMPORTED_RESULT = markerWorkflow(41, IMPORTED_RESULT_TITLE)
+const CURRENT_WORKFLOW = markerWorkflow(
+  CURRENT_CANVAS_NODE_ID,
+  CURRENT_CANVAS_TITLE
+)
+const ATTACHED_WORKFLOW = markerWorkflow(
+  ATTACHED_WORKFLOW_NODE_ID,
+  ATTACHED_WORKFLOW_TITLE
+)
+const IMPORTED_RESULT = markerWorkflow(
+  IMPORTED_RESULT_NODE_ID,
+  IMPORTED_RESULT_TITLE
+)
+
+async function uploadedWorkflow(request: Request): Promise<unknown> {
+  const body = request.postDataBuffer()
+  if (!body) throw new Error('The attached-workflow upload has no body')
+  const form = await new Response(new Uint8Array(body), {
+    headers: { 'content-type': request.headers()['content-type'] ?? '' }
+  }).formData()
+  const file = form.get('image')
+  if (!(file instanceof File))
+    throw new Error('The attached-workflow upload has no image file')
+  return JSON.parse(await file.text())
+}
+
+function hasAttachedWorkflowMarker(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null || !('nodes' in value))
+    return false
+  if (!Array.isArray(value.nodes)) return false
+  return value.nodes.some(
+    (node) =>
+      typeof node === 'object' &&
+      node !== null &&
+      'id' in node &&
+      node.id === ATTACHED_WORKFLOW_NODE_ID &&
+      'type' in node &&
+      node.type === MARKER_TYPE &&
+      'title' in node &&
+      node.title === ATTACHED_WORKFLOW_TITLE
+  )
+}
 
 class AgentAttachedWorkflowImportFixture {
   public readonly activeCanvasNode: Locator
@@ -105,7 +147,7 @@ class AgentAttachedWorkflowImportFixture {
   public readonly userRequest = USER_REQUEST
 
   private readonly hostSocket: AgentFollowerHostSocket
-  private postedTurnValue: AgentPostMessageRequest | undefined
+  private postedTurnValue: AgentPostMessageRequest | Error | undefined
 
   constructor(private readonly page: Page) {
     const host = new HostDoc(IMPORTED_WORKFLOW_ID, IMPORTED_RESULT, {
@@ -117,9 +159,15 @@ class AgentAttachedWorkflowImportFixture {
       host
     )
     const vueNodes = new VueNodeHelpers(page)
-    this.activeCanvasNode = vueNodes.getNodeByTitle(CURRENT_CANVAS_TITLE)
-    this.attachedSourceNode = vueNodes.getNodeByTitle(ATTACHED_WORKFLOW_TITLE)
-    this.importedResultNode = vueNodes.getNodeByTitle(IMPORTED_RESULT_TITLE)
+    this.activeCanvasNode = vueNodes
+      .getNodeLocator(String(CURRENT_CANVAS_NODE_ID))
+      .and(vueNodes.getNodeByTitle(CURRENT_CANVAS_TITLE))
+    this.attachedSourceNode = vueNodes
+      .getNodeLocator(String(ATTACHED_WORKFLOW_NODE_ID))
+      .and(vueNodes.getNodeByTitle(ATTACHED_WORKFLOW_TITLE))
+    this.importedResultNode = vueNodes
+      .getNodeLocator(String(IMPORTED_RESULT_NODE_ID))
+      .and(vueNodes.getNodeByTitle(IMPORTED_RESULT_TITLE))
     this.agentPanel = new AgentPanel(page)
     this.topbar = new Topbar(page)
   }
@@ -150,15 +198,25 @@ class AgentAttachedWorkflowImportFixture {
     await this.page.route('**/api/agent/run-mode', (route) =>
       route.fulfill(jsonRoute(runMode))
     )
-    await this.page.route('**/api/upload/image', (route) =>
-      route.fulfill(jsonRoute(upload))
-    )
+    await this.page.route('**/api/upload/image', async (route) => {
+      const uploaded = await uploadedWorkflow(route.request())
+      if (!hasAttachedWorkflowMarker(uploaded)) {
+        return route.fulfill({
+          ...jsonRoute({ error: 'Attached workflow marker missing' }),
+          status: 422
+        })
+      }
+      return route.fulfill(jsonRoute(upload))
+    })
     await this.page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() !== 'POST')
         return route.fulfill(jsonRoute([]))
-      this.postedTurnValue = zAgentPostMessageRequest.parse(
+      const parsed = zAgentPostMessageRequest.safeParse(
         route.request().postDataJSON()
       )
+      this.postedTurnValue = parsed.success
+        ? parsed.data
+        : new Error(parsed.error.message)
       return route.fulfill({ ...jsonRoute(accepted), status: 202 })
     })
 
@@ -186,9 +244,11 @@ class AgentAttachedWorkflowImportFixture {
     await this.agentPanel.sendMessage(USER_REQUEST)
   }
 
-  postedTurn(): AgentPostMessageRequest {
+  async postedTurn(): Promise<AgentPostMessageRequest> {
+    await expect.poll(() => this.postedTurnValue).toBeDefined()
     if (this.postedTurnValue === undefined)
       throw new Error('The attached-workflow turn was not posted')
+    if (this.postedTurnValue instanceof Error) throw this.postedTurnValue
     return this.postedTurnValue
   }
 

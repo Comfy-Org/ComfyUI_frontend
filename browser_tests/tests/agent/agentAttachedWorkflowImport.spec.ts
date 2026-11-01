@@ -24,7 +24,9 @@ test(
 
     await expect(agentPanel.userMessageBubbles).toHaveText([userRequest])
     await expect(agentPanel.stopButton).toBeVisible()
-    expect(attachedWorkflowImport.postedTurn()).toMatchObject(expectedRequest)
+    expect(await attachedWorkflowImport.postedTurn()).toMatchObject(
+      expectedRequest
+    )
     await expect(activeCanvasNode).toBeVisible()
     await expect(attachedSourceNode).toHaveCount(0)
     await expect(importedResultNode).toHaveCount(0)
@@ -35,5 +37,17 @@ test(
     await expect(importedResultNode).toBeVisible()
     await expect(attachedSourceNode).toHaveCount(0)
     await expect(topbar.getActiveTab()).toContainText(importedName)
+    await expect(topbar.tabs).toHaveCount(2)
+    await expect(activeCanvasNode).toHaveCount(0)
+
+    await topbar.getTab(0).click()
+    await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
+    await expect(activeCanvasNode).toBeVisible()
+    await expect(importedResultNode).toHaveCount(0)
+
+    await topbar.getTab(1).click()
+    await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
+    await expect(importedResultNode).toBeVisible()
+    await expect(activeCanvasNode).toHaveCount(0)
   }
 )
