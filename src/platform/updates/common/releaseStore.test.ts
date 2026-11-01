@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { createSharedComposable, until, useStorage } from '@vueuse/core'
 import { compare } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
@@ -32,7 +32,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/updates/common/releaseService'), () => {
   const getReleases = vi.fn()
-  const isLoading = ref(false)
+  const isLoading = computed(() => false)
   const error = ref<string | null>(null)
   return {
     useReleaseService: () => ({

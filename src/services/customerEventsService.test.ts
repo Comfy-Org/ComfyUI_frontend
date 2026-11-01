@@ -30,7 +30,8 @@ const mockI18n = vi.hoisted(() => ({
 vi.mock<unknown>(import('axios'), () => ({
   default: {
     create: vi.fn(() => mockAxiosInstance),
-    isAxiosError: vi.fn()
+    isAxiosError: vi.fn(),
+    isCancel: vi.fn(() => false)
   }
 }))
 
@@ -310,6 +311,51 @@ describe('useCustomerEventsService', () => {
       void activeRequest
     })
 
+    it.for([
+      {
+        newer: 'success',
+        expectedError: null,
+        startNewer: () => {
+          mockAxiosInstance.get.mockResolvedValueOnce({
+            data: mockEventsResponse
+          })
+        }
+      },
+      {
+        newer: 'noPersonalWorkspace',
+        expectedError: 'toastMessages.noPersonalWorkspace',
+        startNewer: () => {
+          Object.assign(useAuthStore(), { hasPersonalWorkspace: false })
+        }
+      }
+    ])(
+      'keeps an older failure from overwriting a newer $newer result',
+      async ({ expectedError, startNewer }) => {
+        let rejectOlder!: (reason: unknown) => void
+        const olderRequestStarted = new Promise<void>((requestStarted) => {
+          mockAxiosInstance.get.mockImplementationOnce(() => {
+            requestStarted()
+            return new Promise((_resolve, reject) => {
+              rejectOlder = reject
+            })
+          })
+        })
+        vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+        const olderRequest = service.getMyEvents()
+        await olderRequestStarted
+        startNewer()
+        await service.getMyEvents()
+
+        rejectOlder({
+          response: { status: 400, data: { message: 'older backend error' } }
+        })
+
+        await expect(olderRequest).resolves.toBeNull()
+        expect(service.error.value).toBe(expectedError)
+      }
+    )
+
     it('should handle 400 errors', async () => {
       const errorResponse = {
         response: {
@@ -352,6 +398,21 @@ describe('useCustomerEventsService', () => {
       expect(result).toBeNull()
       expect(service.error.value).toBe(
         'Fetching customer events failed: Network Error'
+      )
+    })
+
+    it('should handle axios errors with no response (timeout/CORS)', async () => {
+      mockAxiosInstance.get.mockRejectedValue({
+        message: 'timeout of 5000ms exceeded',
+        response: undefined
+      })
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      const result = await service.getMyEvents()
+
+      expect(result).toBeNull()
+      expect(service.error.value).toBe(
+        'Fetching customer events failed: timeout of 5000ms exceeded'
       )
     })
   })
