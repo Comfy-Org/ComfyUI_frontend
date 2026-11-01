@@ -50,6 +50,10 @@ case "$1 $2" in
       */reviews)
         [ -z "\${FAKE_REVIEWS_FAIL:-}" ] || { echo 'API rate limit exceeded (HTTP 403)' >&2; exit 1; }
         cat "$FAKE_REVIEWS" ;;
+      */collaborators/*/permission)
+        login="\${2%/permission}" login="\${login##*/}"
+        jq -rn --arg login "$login" --slurpfile reviews "$FAKE_REVIEWS" '
+          [$reviews[0][] | select(.user.login == $login)][0].permission // "none"' ;;
       */comments) echo '[]' ;;
       *) echo "unexpected gh api call: $2" >&2; exit 2 ;;
     esac ;;
@@ -62,6 +66,7 @@ interface Review {
   commit_id: string
   login?: string
   author_association?: string
+  permission?: string
 }
 
 function runMerge(reviews: Review[], { reviewsFail = false } = {}) {
@@ -88,9 +93,15 @@ function runMerge(reviews: Review[], { reviewsFail = false } = {}) {
     join(directory, 'reviews.json'),
     JSON.stringify(
       reviews.map(
-        ({ login = 'reviewer', author_association = 'MEMBER', ...review }) => ({
+        ({
+          login = 'reviewer',
+          author_association = 'MEMBER',
+          permission = 'write',
+          ...review
+        }) => ({
           user: { login },
           author_association,
+          permission,
           ...review
         })
       )
@@ -145,7 +156,8 @@ describe('backport auto-merge', () => {
         state: 'APPROVED',
         commit_id: HEAD,
         login: 'outsider',
-        author_association: 'NONE'
+        author_association: 'NONE',
+        permission: 'read'
       }
     ])
 
@@ -170,5 +182,29 @@ describe('backport auto-merge', () => {
     expect(merges).toHaveLength(0)
     expect(result.stdout).toContain('Could not read reviews')
     expect(result.stdout).toContain('API rate limit exceeded')
+  })
+
+  it('ignores an approval at head from a member with read access only', () => {
+    const { merges } = runMerge([
+      { state: 'APPROVED', commit_id: OLD, login: 'maintainer' },
+      {
+        state: 'APPROVED',
+        commit_id: HEAD,
+        login: 'reader',
+        permission: 'read'
+      }
+    ])
+
+    expect(merges).toHaveLength(0)
+  })
+
+  it('does not merge after the head approver later requests changes', () => {
+    const { merges } = runMerge([
+      { state: 'APPROVED', commit_id: OLD, login: 'maintainer' },
+      { state: 'APPROVED', commit_id: HEAD, login: 'reviewer' },
+      { state: 'CHANGES_REQUESTED', commit_id: HEAD, login: 'reviewer' }
+    ])
+
+    expect(merges).toHaveLength(0)
   })
 })
