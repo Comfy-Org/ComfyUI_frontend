@@ -2,7 +2,6 @@ import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
 import {
@@ -13,7 +12,7 @@ import {
 } from './check-command-locales'
 
 const LOAD3D_FILE = 'src/extensions/core/load3d/load3d.ts'
-const TSX_LOADER = fileURLToPath(import.meta.resolve('tsx'))
+const TSX_LOADER = import.meta.resolve('tsx')
 
 const LAZY_EXTENSION = `
 export const load3dExtension: ComfyExtension = {
@@ -99,6 +98,49 @@ describe('collectDeclaredCommands', () => {
     )
     expect(declared).toEqual([])
     expect(unresolved).toEqual([{ file: 'src/x.ts', line: 1 }])
+  })
+
+  test.for([
+    {
+      name: 'typed variable',
+      source: `
+        const extension: ComfyExtension = {
+          name: 'Comfy.Example',
+          commands: buildCommands()
+        }
+      `,
+      line: 4
+    },
+    {
+      name: 'typed factory',
+      source: `
+        function extension(): ComfyExtension {
+          return {
+            name: 'Comfy.Example',
+            commands: buildCommands()
+          }
+        }
+      `,
+      line: 5
+    }
+  ])(
+    'reports non-literal commands in a $name as unresolved',
+    ({ source, line }) => {
+      const { declared, unresolved } = collectDeclaredCommands(
+        'src/x.ts',
+        source
+      )
+      expect(declared).toEqual([])
+      expect(unresolved).toEqual([{ file: 'src/x.ts', line }])
+    }
+  )
+
+  test('ignores non-literal commands on unrelated objects', () => {
+    const fixture = `const state = { commands: buildCommands() }`
+    expect(collectDeclaredCommands('src/x.ts', fixture)).toEqual({
+      declared: [],
+      unresolved: []
+    })
   })
 
   test.for([

@@ -77,6 +77,96 @@ function isInsideMenuCommands(node: ts.Node): boolean {
   return false
 }
 
+function isComfyExtensionType(type: ts.TypeNode | undefined): boolean {
+  return (
+    type !== undefined &&
+    ts.isTypeReferenceNode(type) &&
+    ts.isIdentifier(type.typeName) &&
+    type.typeName.text === 'ComfyExtension'
+  )
+}
+
+function isRegisterExtensionCall(node: ts.Node): boolean {
+  if (!ts.isCallExpression(node)) return false
+  const expression = node.expression
+  return (
+    (ts.isIdentifier(expression) && expression.text === 'registerExtension') ||
+    (ts.isPropertyAccessExpression(expression) &&
+      expression.name.text === 'registerExtension')
+  )
+}
+
+function functionReturnType(node: ts.Node): ts.TypeNode | undefined {
+  for (
+    let current = node.parent;
+    !ts.isSourceFile(current);
+    current = current.parent
+  ) {
+    if (
+      ts.isFunctionDeclaration(current) ||
+      ts.isFunctionExpression(current) ||
+      ts.isArrowFunction(current) ||
+      ts.isMethodDeclaration(current)
+    )
+      return current.type
+  }
+}
+
+type ExpressionWrapper =
+  | ts.AsExpression
+  | ts.SatisfiesExpression
+  | ts.ParenthesizedExpression
+
+function expressionWrapper(node: ts.Node): ExpressionWrapper | undefined {
+  if (ts.isAsExpression(node)) return node
+  if (ts.isSatisfiesExpression(node)) return node
+  if (ts.isParenthesizedExpression(node)) return node
+}
+
+function wrapperType(node: ExpressionWrapper): ts.TypeNode | undefined {
+  if (ts.isAsExpression(node) || ts.isSatisfiesExpression(node))
+    return node.type
+}
+
+function isComfyExtensionReturn(
+  expression: ts.Expression,
+  parent: ts.Node
+): boolean {
+  if (ts.isArrowFunction(parent))
+    return parent.body === expression && isComfyExtensionType(parent.type)
+  if (ts.isReturnStatement(parent))
+    return isComfyExtensionType(functionReturnType(expression))
+  return false
+}
+
+function isComfyExtensionObject(node: ts.ObjectLiteralExpression): boolean {
+  let expression: ts.Expression = node
+  for (let wrapper = expressionWrapper(expression.parent); wrapper;) {
+    if (isComfyExtensionType(wrapperType(wrapper))) return true
+    expression = wrapper
+    wrapper = expressionWrapper(expression.parent)
+  }
+  const parent = expression.parent
+  if (ts.isVariableDeclaration(parent)) return isComfyExtensionType(parent.type)
+  if (isComfyExtensionReturn(expression, parent)) return true
+  return isRegisterExtensionCall(parent)
+}
+
+function unresolvedExtensionCommands(
+  node: ts.Node
+): ts.PropertyAssignment | undefined {
+  if (
+    !ts.isPropertyAssignment(node) ||
+    propertyName(node.name) !== 'commands' ||
+    isInsideMenuCommands(node) ||
+    !ts.isObjectLiteralExpression(node.parent) ||
+    !isComfyExtensionObject(node.parent) ||
+    arrayLiteral(node.initializer)
+  )
+    return
+  return node
+}
+
 function commandArray(node: ts.Node): ts.ArrayLiteralExpression | undefined {
   if (
     ts.isPropertyAssignment(node) &&
@@ -152,6 +242,12 @@ export function collectDeclaredCommands(
   const unresolved: UnresolvedCommand[] = []
   const walk = (node: ts.Node): void => {
     const array = commandArray(node)
+    const unresolvedCommands = unresolvedExtensionCommands(node)
+    if (unresolvedCommands)
+      unresolved.push({
+        file,
+        line: lineOf(sourceFile, unresolvedCommands.initializer)
+      })
     for (const element of array?.elements ?? []) {
       const found = collectCommandArrayElement(file, sourceFile, element)
       declared.push(...found.declared)
