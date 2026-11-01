@@ -2,13 +2,19 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import en from '@/locales/en/main.json'
 import type {
   SafeControlWidget,
   SimplifiedControlWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 
+import WidgetInputNumberGradientSlider from './WidgetInputNumberGradientSlider.vue'
+import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
+import WidgetSelectDefault from './WidgetSelectDefault.vue'
 import WidgetWithControl from './WidgetWithControl.vue'
 import { createMockWidget } from './widgetTestUtils'
 
@@ -77,6 +83,44 @@ const mount = (widget: SimplifiedControlWidget, modelValue = 0) =>
   })
 
 describe('WidgetWithControl', () => {
+  it.for([
+    { name: 'select', component: WidgetSelectDefault },
+    { name: 'slider', component: WidgetInputNumberSlider },
+    { name: 'gradient slider', component: WidgetInputNumberGradientSlider }
+  ])(
+    'changes the generation mode for a unified $name',
+    async ({ component }) => {
+      let mode: WidgetValue = 'randomize'
+      const widget: SimplifiedControlWidget<number> = {
+        name: 'controlled_widget',
+        type: 'number',
+        value: 1,
+        options: { values: [1, 2], min: 0, max: 10 },
+        controlWidget: {
+          value: 'randomize',
+          update: (value) => {
+            mode = value
+          }
+        }
+      }
+      render(WidgetWithControl, {
+        props: { widget, component, modelValue: 1 },
+        global: {
+          plugins: [
+            createI18n({ legacy: false, locale: 'en', messages: { en } })
+          ],
+          provide: { [UnifiedWidgetRowsKey]: true }
+        }
+      })
+      const user = userEvent.setup()
+
+      await user.click(screen.getByTestId('value-control'))
+      await user.click(await screen.findByRole('radio', { name: /fixed/i }))
+
+      expect(mode).toBe('fixed')
+    }
+  )
+
   it('renders the passed component with widget and modelValue', () => {
     mount(makeControlWidget(), 42)
     const rendered = screen.getByTestId('rendered')

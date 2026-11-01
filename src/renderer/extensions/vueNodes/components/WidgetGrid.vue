@@ -2,7 +2,8 @@
   <div
     ref="grid"
     data-testid="node-widgets"
-    class="lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3 text-xs text-node-foreground"
+    class="lg-node-widgets grid gap-y-1 pr-3 text-xs text-node-foreground"
+    :class="rowLayout.grid"
     :style="{
       'grid-template-rows': gridTemplateRows,
       flex: gridTemplateRows.includes('auto') ? 1 : undefined
@@ -55,7 +56,7 @@
           >
             <Tooltip :disabled="!row.widget.tooltipText">
               <TooltipTrigger as-child>
-                <div class="col-span-2 grid grid-cols-subgrid">
+                <div :class="rowLayout.control">
                   <component
                     :is="row.widget.vueComponent"
                     :model-value="row.widget.simplified.value"
@@ -85,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import { computed, inject, nextTick, useTemplateRef, watch } from 'vue'
 
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
@@ -96,12 +97,23 @@ import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 
 const grid = useTemplateRef<HTMLElement>('grid')
+const unifiedRows = inject(UnifiedWidgetRowsKey, false)
+const rowLayout = unifiedRows
+  ? {
+      grid: 'grid-cols-[min-content_minmax(0,1fr)]',
+      control: 'grid min-w-0 grid-cols-2'
+    }
+  : {
+      grid: 'grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)]',
+      control: 'col-span-2 grid grid-cols-subgrid'
+    }
 
 const isConvertedWidgetType = (type: string) =>
   type === 'converted-widget' || type.startsWith('converted-widget:')

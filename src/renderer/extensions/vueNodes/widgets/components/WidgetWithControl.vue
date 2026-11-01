@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends WidgetValue">
-import { defineAsyncComponent, ref, watch } from 'vue'
+import { defineAsyncComponent, inject, ref, watch } from 'vue'
 import type { Component } from 'vue'
 
 import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
@@ -9,6 +9,7 @@ import type {
   SimplifiedControlWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 
 import ValueControlButton from './ValueControlButton.vue'
 
@@ -22,6 +23,8 @@ const props = defineProps<{
 }>()
 
 const modelValue = defineModel<T>()
+const unifiedRows = inject(UnifiedWidgetRowsKey, false)
+const controlSlot = unifiedRows ? 'between' : 'default'
 
 const controlModel = ref(props.widget.controlWidget.value)
 
@@ -30,19 +33,25 @@ watch(controlModel, props.widget.controlWidget.update)
 <template>
   <div class="relative grid grid-cols-subgrid">
     <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
-      <PopoverRoot>
-        <PopoverTrigger as-child>
-          <ValueControlButton :mode="controlModel" class="mr-1 self-center" />
-        </PopoverTrigger>
-        <PopoverContent
-          :side-offset="5"
-          dismiss-on-viewport-change
-          class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
-        >
-          <ValueControlPopover v-model="controlModel" />
-          <PopoverArrow class="fill-background stroke-border/50" />
-        </PopoverContent>
-      </PopoverRoot>
+      <template #[controlSlot]>
+        <PopoverRoot>
+          <PopoverTrigger as-child>
+            <ValueControlButton
+              :mode="controlModel"
+              :variant="unifiedRows ? 'button' : 'badge'"
+              class="mr-1 self-center"
+            />
+          </PopoverTrigger>
+          <PopoverContent
+            :side-offset="5"
+            dismiss-on-viewport-change
+            class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
+          >
+            <ValueControlPopover v-model="controlModel" />
+            <PopoverArrow class="fill-background stroke-border/50" />
+          </PopoverContent>
+        </PopoverRoot>
+      </template>
     </component>
   </div>
 </template>

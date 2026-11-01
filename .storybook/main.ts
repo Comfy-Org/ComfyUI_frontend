@@ -18,6 +18,7 @@ function withoutAppSrcAlias(alias: AliasOptions = []): Alias[] {
 
 const config: StorybookConfig = {
   stories: [
+    './*.stories.ts',
     '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
     '../packages/design-system/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'
   ],

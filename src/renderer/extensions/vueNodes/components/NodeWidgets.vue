@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, provide, ref } from 'vue'
 
 import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -30,6 +30,9 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
+
+provide(UnifiedWidgetRowsKey, true)
 
 interface NodeWidgetsProps {
   nodeData?: NodeState

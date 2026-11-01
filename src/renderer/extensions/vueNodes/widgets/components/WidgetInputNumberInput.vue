@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
@@ -8,6 +8,7 @@ import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
@@ -19,6 +20,7 @@ import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const { locale } = useI18n()
+const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
@@ -146,6 +148,7 @@ const sliderWidth = computed(() => {
 })
 
 const inputAriaAttrs = computed(() => ({
+  'aria-label': props.widget.label || props.widget.name,
   'aria-valuenow': modelValue.value,
   'aria-valuemin': filteredProps.value.min,
   'aria-valuemax': filteredProps.value.max,
@@ -155,7 +158,12 @@ const inputAriaAttrs = computed(() => ({
 </script>
 
 <template>
-  <WidgetLayoutField :widget :root-class="props.rootClass">
+  <WidgetLayoutField
+    :widget
+    :root-class="props.rootClass"
+    :value-text="formattedValue"
+  >
+    <template #between><slot name="between" /></template>
     <Tooltip :disabled="!buttonTooltip">
       <TooltipTrigger as-child>
         <ScrubableNumberInput
@@ -167,19 +175,26 @@ const inputAriaAttrs = computed(() => ({
           :display-value="formattedValue"
           :disabled="isDisabled"
           :hide-buttons="buttonsDisabled"
+          :edge-buttons="unifiedRows"
           :parse-value="parseWidgetValue"
           :input-attrs="inputAriaAttrs"
           :class="
             cn(
               WidgetInputBaseClass,
-              'relative flex grow text-xs',
+              'flex grow text-xs',
+              !unifiedRows && 'relative',
               useWidgetHeight()
             )
           "
         >
           <template #background>
             <div
-              class="pointer-events-none absolute size-full overflow-clip rounded-md"
+              :class="
+                cn(
+                  'pointer-events-none absolute size-full overflow-clip rounded-md',
+                  unifiedRows && 'inset-0'
+                )
+              "
             >
               <div
                 class="size-full bg-primary/15"

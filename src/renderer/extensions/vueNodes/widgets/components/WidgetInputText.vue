@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget="layoutWidget">
+  <WidgetLayoutField :widget="layoutWidget" :value-text="modelValue">
     <div class="relative">
       <Loader
         v-if="loading"
@@ -15,9 +15,11 @@
             'h-auto min-w-[4ch] truncate',
             !isReadOnly && 'hover:bg-muted',
             size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
+            unifiedRows && 'pr-7 pl-2',
             loading && 'pl-9'
           )
         "
+        :size="unifiedRows ? 1 : undefined"
         :aria-label="widget.name"
         :aria-invalid="invalid || undefined"
         :readonly="isReadOnly"
@@ -27,11 +29,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
 import Input from '@comfyorg/design-system/input/Input'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
@@ -54,6 +57,7 @@ const {
 }>()
 
 const modelValue = defineModel<string>({ default: '' })
+const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
