@@ -81,7 +81,8 @@ human_size() {
       bytes /= 1024
       i++
     }
-    printf i == 1 ? "%d %s\n" : "%.1f %s\n", bytes, unit[i]
+    # BWK/macOS awk rejects unparenthesized comparisons in printf arguments
+    printf (i == 1 ? "%d %s\n" : "%.1f %s\n"), bytes, unit[i]
   }'
 }
 
