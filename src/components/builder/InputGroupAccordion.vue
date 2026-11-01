@@ -168,6 +168,7 @@ function handleDissolve() {
 
     <CollapsibleContent>
       <InputGroupContent
+        :group-id="group.id"
         :items="resolvedItems"
         :builder-mode
         :mobile
