@@ -15,11 +15,25 @@ type Translate = (
 /** The switcher's radio value for Comfy Cloud; deployment rows use their id. */
 export const COMFY_CLOUD_ROW = 'comfy-cloud'
 
-/** How a deployment's status reads at a glance: ready, stopped, or on its way. */
-export type DeploymentStatusTone = 'ready' | 'stopped' | 'pending'
+/** How a deployment's status reads at a glance. */
+export type DeploymentStatusTone = 'ready' | 'pending' | 'failed' | 'stopped'
+
+/** What a switcher row shows for a deployment, or for Comfy Cloud. */
+export interface DeploymentRowLabels {
+  value: string
+  deploymentId: string | null
+  title: string
+  name: string | null
+  detail: string | null
+  tooltip: string
+  tone?: DeploymentStatusTone
+}
 
 const STATUS_LABEL_KEYS = new Map([
   ['stopped', 'deploymentSwitcher.status.stopped'],
+  ['stopping', 'deploymentSwitcher.status.stopping'],
+  ['failed', 'deploymentSwitcher.status.failed'],
+  ['queued', 'deploymentSwitcher.status.starting'],
   ['starting', 'deploymentSwitcher.status.starting'],
   ['provisioning', 'deploymentSwitcher.status.provisioning']
 ])
@@ -53,10 +67,11 @@ function labelMessage(
   ]
 }
 
-const STARTING_STATUSES = new Set(['starting', 'provisioning'])
+const STARTING_STATUSES = new Set(['queued', 'starting', 'provisioning'])
 
 export function deploymentStatusTone(status: string): DeploymentStatusTone {
   if (status === 'ready') return 'ready'
+  if (status === 'failed') return 'failed'
   return STARTING_STATUSES.has(status) ? 'pending' : 'stopped'
 }
 
@@ -70,7 +85,7 @@ function deploymentNames(t: Translate) {
     return text(key, values)
   }
 
-  function subtitle(deployment: WorkspaceDeployment): string | null {
+  function name(deployment: WorkspaceDeployment): string | null {
     if (deployment.build_name) {
       return deployment.deployment_name || shortId(deployment.deployment_id)
     }
@@ -79,11 +94,11 @@ function deploymentNames(t: Translate) {
 
   function fullLabel(deployment: WorkspaceDeployment | null): string {
     if (!deployment) return text('deploymentSwitcher.comfyCloud')
-    const name = subtitle(deployment)
-    if (name === null) return title(deployment)
+    const deploymentName = name(deployment)
+    if (deploymentName === null) return title(deployment)
     return text('deploymentSwitcher.fullLabel', {
       build: title(deployment),
-      deployment: name
+      deployment: deploymentName
     })
   }
 
@@ -93,22 +108,50 @@ function deploymentNames(t: Translate) {
     )
   }
 
-  function rowSubtitle(deployment: WorkspaceDeployment): string | null {
-    const name = subtitle(deployment)
-    if (name === null || deployment.release_version === undefined) return name
-    return text('deploymentSwitcher.nameWithVersion', {
-      name,
+  function detail(deployment: WorkspaceDeployment): string | null {
+    if (deployment.status !== 'ready') return statusText(deployment.status)
+    if (deployment.release_version === undefined) return null
+    return text('deploymentSwitcher.version', {
       version: deployment.release_version
     })
   }
 
-  function meta(deployment: WorkspaceDeployment): string | null {
-    return deploymentStatusTone(deployment.status) === 'ready'
-      ? null
-      : statusText(deployment.status)
+  function rowTooltip(deployment: WorkspaceDeployment): string {
+    const label = fullLabel(deployment)
+    const rowDetail = detail(deployment)
+    if (rowDetail === null) return label
+    return text('deploymentSwitcher.labelWithDetail', {
+      label,
+      detail: rowDetail
+    })
   }
 
-  return { title, subtitle, rowSubtitle, fullLabel, meta }
+  function rowLabels(
+    deployment: WorkspaceDeployment | null
+  ): DeploymentRowLabels {
+    if (!deployment) {
+      const cloud = text('deploymentSwitcher.comfyCloud')
+      return {
+        value: COMFY_CLOUD_ROW,
+        deploymentId: null,
+        title: cloud,
+        name: null,
+        detail: null,
+        tooltip: cloud
+      }
+    }
+    return {
+      value: deployment.deployment_id,
+      deploymentId: deployment.deployment_id,
+      title: title(deployment),
+      name: name(deployment),
+      detail: detail(deployment),
+      tooltip: rowTooltip(deployment),
+      tone: deploymentStatusTone(deployment.status)
+    }
+  }
+
+  return { title, fullLabel, rowLabels }
 }
 
 /**
@@ -154,10 +197,8 @@ export function useDeploymentLabels() {
   )
 
   return {
-    deploymentTitle: names.title,
-    deploymentRowSubtitle: names.rowSubtitle,
+    deploymentRowLabels: names.rowLabels,
     deploymentFullLabel: names.fullLabel,
-    deploymentMeta: names.meta,
     currentLabel,
     defaultTitle
   }

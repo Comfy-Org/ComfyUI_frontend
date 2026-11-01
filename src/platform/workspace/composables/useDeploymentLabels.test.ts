@@ -54,42 +54,35 @@ describe('deployment labels', () => {
       name: 'named',
       fields: { deployment_name: 'production' },
       title: 'Studio Build',
-      subtitle: 'production · v2',
+      deploymentName: 'production',
       full: 'Studio Build · production'
     },
     {
       name: 'unnamed',
       fields: {},
       title: 'Studio Build',
-      subtitle: 'dep-12345678 · v2',
+      deploymentName: 'dep-12345678',
       full: 'Studio Build · dep-12345678'
-    },
-    {
-      name: 'named without a Release version',
-      fields: { deployment_name: 'production', release_version: undefined },
-      title: 'Studio Build',
-      subtitle: 'production',
-      full: 'Studio Build · production'
     },
     {
       name: 'empty name',
       fields: { deployment_name: '' },
       title: 'Studio Build',
-      subtitle: 'dep-12345678 · v2',
+      deploymentName: 'dep-12345678',
       full: 'Studio Build · dep-12345678'
     },
     {
       name: 'named without Build',
       fields: { deployment_name: 'staging', build_name: undefined },
       title: 'staging',
-      subtitle: 'dep-12345678 · v2',
+      deploymentName: 'dep-12345678',
       full: 'staging · dep-12345678'
     },
     {
       name: 'unnamed without Build',
       fields: { build_name: undefined },
       title: 'Deployment dep-12345678',
-      subtitle: null,
+      deploymentName: null,
       full: 'Deployment dep-12345678'
     },
     {
@@ -99,51 +92,107 @@ describe('deployment labels', () => {
         build_name: "Artist's R&D"
       },
       title: "Artist's R&D",
-      subtitle: "Studio's R&D/Prod · v2",
+      deploymentName: "Studio's R&D/Prod",
       full: "Artist's R&D · Studio's R&D/Prod"
     }
   ] satisfies {
     name: string
     fields: Partial<WorkspaceDeployment>
     title: string
-    subtitle: string | null
+    deploymentName: string | null
     full: string
   }[])(
-    'names a $name deployment by its Build first, then its name and version',
-    ({ fields, title, subtitle, full }) => {
+    'names a $name deployment by its Build first, then its own name',
+    ({ fields, title, deploymentName, full }) => {
       const labels = mountLabels()
       const row = { ...deployment, ...fields }
-      expect(labels.deploymentTitle(row)).toBe(title)
-      expect(labels.deploymentRowSubtitle(row)).toBe(subtitle)
+      expect(labels.deploymentRowLabels(row)).toMatchObject({
+        title,
+        name: deploymentName
+      })
       expect(labels.deploymentFullLabel(row)).toBe(full)
     }
   )
 
   it.for([
-    { status: 'ready', fields: {}, meta: null },
-    { status: 'stopped', fields: {}, meta: 'Stopped' },
-    { status: 'provisioning', fields: {}, meta: 'Starting' },
-    { status: 'failed', fields: {}, meta: 'Not ready' }
+    { status: 'ready', fields: {}, detail: 'v2' },
+    { status: 'ready', fields: { release_version: undefined }, detail: null },
+    { status: 'queued', fields: {}, detail: 'Starting' },
+    { status: 'provisioning', fields: {}, detail: 'Starting' },
+    { status: 'starting', fields: {}, detail: 'Starting' },
+    { status: 'stopping', fields: {}, detail: 'Stopping' },
+    { status: 'stopped', fields: {}, detail: 'Stopped' },
+    { status: 'failed', fields: {}, detail: 'Failed' },
+    { status: 'unhealthy', fields: {}, detail: 'Not ready' }
   ] satisfies {
     status: string
     fields: Partial<WorkspaceDeployment>
-    meta: string | null
+    detail: string | null
   }[])(
-    'reads $meta beside a $status deployment',
-    ({ status, fields, meta }) => {
+    'reads $detail in the column after the name of a $status deployment',
+    ({ status, fields, detail }) => {
       const labels = mountLabels()
-      expect(labels.deploymentMeta({ ...deployment, ...fields, status })).toBe(
-        meta
-      )
+      expect(
+        labels.deploymentRowLabels({ ...deployment, ...fields, status }).detail
+      ).toBe(detail)
     }
   )
 
   it.for([
+    {
+      status: 'ready',
+      fields: {},
+      tooltip: 'Studio Build · production · v2'
+    },
+    {
+      status: 'ready',
+      fields: { release_version: undefined },
+      tooltip: 'Studio Build · production'
+    },
+    {
+      status: 'stopped',
+      fields: {},
+      tooltip: 'Studio Build · production · Stopped'
+    }
+  ] satisfies {
+    status: string
+    fields: Partial<WorkspaceDeployment>
+    tooltip: string
+  }[])(
+    'spells out a $status row in full for the tooltip: $tooltip',
+    ({ status, fields, tooltip }) => {
+      const labels = mountLabels()
+      expect(
+        labels.deploymentRowLabels({
+          ...deployment,
+          deployment_name: 'production',
+          ...fields,
+          status
+        }).tooltip
+      ).toBe(tooltip)
+    }
+  )
+
+  it('labels the Comfy Cloud row by its name alone', () => {
+    expect(mountLabels().deploymentRowLabels(null)).toEqual({
+      value: 'comfy-cloud',
+      deploymentId: null,
+      title: 'Comfy Cloud',
+      name: null,
+      detail: null,
+      tooltip: 'Comfy Cloud'
+    })
+  })
+
+  it.for([
     { status: 'ready', tone: 'ready' },
+    { status: 'queued', tone: 'pending' },
     { status: 'starting', tone: 'pending' },
     { status: 'provisioning', tone: 'pending' },
+    { status: 'failed', tone: 'failed' },
+    { status: 'stopping', tone: 'stopped' },
     { status: 'stopped', tone: 'stopped' },
-    { status: 'failed', tone: 'stopped' }
+    { status: 'unhealthy', tone: 'stopped' }
   ] as const)(
     'gives a $status deployment the $tone dot',
     ({ status, tone }) => {
