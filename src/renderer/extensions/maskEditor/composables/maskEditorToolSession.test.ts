@@ -217,6 +217,13 @@ describe('MaskEditor extension session contract', () => {
     { name: 'null point', invalid: [null] },
     { name: 'sparse array', invalid: Object.assign([], { length: 1 }) },
     {
+      name: 'duplicate identity',
+      invalid: [
+        { id: 'positive', x: 1, y: 1, radius: 4, color: 'blue' },
+        { id: 'positive', x: 2, y: 0, radius: 4, color: 'red' }
+      ]
+    },
+    {
       name: 'non-string identity',
       invalid: [{ id: 7, x: 1, y: 1, radius: 4, color: 'blue' }]
     },
@@ -276,10 +283,16 @@ describe('MaskEditor extension session contract', () => {
 
     const { runtime, overlay } = setup()
     const point = new Point()
-    expect(runtime.context.setOverlay([point])).toBe(true)
+    expect(
+      runtime.context.setOverlay([
+        point,
+        { id: 'negative', color: 'red', x: 2, y: 1, radius: 3 }
+      ])
+    ).toBe(true)
     point.position = 9
     expect(overlay()).toEqual([
-      { id: 'positive', color: 'blue', x: 1, y: 2, radius: 4 }
+      { id: 'positive', color: 'blue', x: 1, y: 2, radius: 4 },
+      { id: 'negative', color: 'red', x: 2, y: 1, radius: 3 }
     ])
   })
 
