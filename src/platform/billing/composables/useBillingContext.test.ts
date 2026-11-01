@@ -6,9 +6,7 @@ import { effectScope, nextTick, computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -145,9 +143,6 @@ describe('useBillingContext', () => {
         })
       )
     })
-    const authStore = useAuthStore()
-    authStore.balance = { currency: 'usd', amount_micros: 5000000 }
-    vi.mocked(authStore.fetchBalance).mockResolvedValue(authStore.balance)
     vi.mocked(useWorkspaceBillingStateStore().updateSummary).mockImplementation(
       () => {}
     )
@@ -338,7 +333,6 @@ describe('useBillingContext', () => {
     await context.topup(500)
 
     expect(billingApi.createTopup).toHaveBeenCalledWith(500, expect.any(String))
-    expect(useAuthActions().purchaseCreditsDirect).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -492,7 +486,6 @@ describe('useBillingContext', () => {
       expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
       expect(billingApi.getBillingBalance).not.toHaveBeenCalled()
       expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
-      expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
 
       loaded.value = true
       await initializing
@@ -725,7 +718,6 @@ describe('useBillingContext', () => {
         500,
         expect.any(String)
       )
-      expect(useAuthActions().purchaseCreditsDirect).not.toHaveBeenCalled()
     })
   })
 

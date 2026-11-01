@@ -1,6 +1,7 @@
 import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -16,8 +17,12 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import CreditsTile from '@/platform/billing/subscription/components/CreditsTile.vue'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useTelemetry } from '@comfyorg/telemetry'
-import type { TeamCreditStopSummary } from '@comfyorg/billing-core'
-import { useCustomerEventsService } from '@/services/customerEventsService'
+import type {
+  BillingEventsResponse,
+  TeamCreditStopSummary
+} from '@comfyorg/billing-core'
+import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 
 type Balance = Pick<
   BalanceInfo,
@@ -30,6 +35,13 @@ type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
   tier: SubscriptionInfo['tier'] | 'TEAM'
 }
 type TeamStop = TeamCreditStopSummary
+
+const eventsPage = (
+  events: Partial<BillingEventsResponse['events'][number]>[]
+) =>
+  fromPartial<Awaited<ReturnType<typeof readWorkspaceBillingEvents>>>({
+    events
+  })
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
@@ -58,7 +70,9 @@ vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
 vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/services/customerEventsService'))
+vi.mock(import('@/platform/billing/composables/readWorkspaceBillingEvents'))
+
+vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -852,7 +866,7 @@ describe('CreditsTile', () => {
       expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
     )
     expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(2)
-    expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledTimes(2)
+    expect(readWorkspaceBillingEvents).toHaveBeenCalledTimes(2)
   })
 
   it('waits for a failed refresh to settle before its trailing refresh', async () => {
@@ -888,7 +902,7 @@ describe('CreditsTile', () => {
       expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
     )
     expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(2)
-    expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledOnce()
+    expect(readWorkspaceBillingEvents).toHaveBeenCalledOnce()
   })
 
   it('clears a confirmed top-up before the next focus', async () => {
@@ -901,9 +915,9 @@ describe('CreditsTile', () => {
         createdAt: new Date(Date.now() + 1000).toISOString()
       }
     ]
-    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
-      events
-    })
+    vi.mocked(readWorkspaceBillingEvents).mockResolvedValueOnce(
+      eventsPage(events)
+    )
 
     renderTile()
 
@@ -918,7 +932,7 @@ describe('CreditsTile', () => {
     await waitFor(() =>
       expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
     )
-    expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
+    expect(readWorkspaceBillingEvents).not.toHaveBeenCalled()
   })
 
   it('closes a confirmed top-up with one succeeded event measured from its start', async () => {
@@ -930,14 +944,14 @@ describe('CreditsTile', () => {
       'pending_topup_timestamp',
       String(confirmedAtMs - 90_000)
     )
-    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
-      events: [
+    vi.mocked(readWorkspaceBillingEvents).mockResolvedValueOnce(
+      eventsPage([
         {
           event_type: 'credit_added',
           createdAt: new Date(confirmedAtMs - 1000).toISOString()
         }
-      ]
-    })
+      ])
+    )
 
     renderTile()
 
@@ -971,9 +985,9 @@ describe('CreditsTile', () => {
         createdAt: new Date(Date.now() + 1000).toISOString()
       }
     ]
-    vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValueOnce({
-      events
-    })
+    vi.mocked(readWorkspaceBillingEvents).mockResolvedValueOnce(
+      eventsPage(events)
+    )
 
     renderTile()
 
@@ -988,16 +1002,15 @@ describe('CreditsTile', () => {
     activeProSubscription()
     state.type = 'unknown'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
-    useCustomerEventsService().error.value = 'events unavailable'
     const retryEvents = [
       {
         event_type: 'credit_added',
         createdAt: new Date(Date.now() + 1000).toISOString()
       }
     ]
-    vi.mocked(useCustomerEventsService().getMyEvents)
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ events: retryEvents })
+    vi.mocked(readWorkspaceBillingEvents)
+      .mockRejectedValueOnce(new Error('events unavailable'))
+      .mockResolvedValueOnce(eventsPage(retryEvents))
 
     renderTile()
     await waitFor(() =>
@@ -1012,7 +1025,22 @@ describe('CreditsTile', () => {
     await waitFor(() =>
       expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
     )
-    expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledTimes(2)
+    expect(readWorkspaceBillingEvents).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps a pending top-up and reads no events while routing is unknown', async () => {
+    activeProSubscription()
+    useBillingRouting().shouldUseWorkspaceBilling = computed(() => false)
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+
+    renderTile()
+
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).toHaveBeenCalled()
+    )
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(readWorkspaceBillingEvents).not.toHaveBeenCalled()
+    expect(localStorage.getItem('pending_topup_timestamp')).not.toBeNull()
   })
 
   it('surfaces a failure toast when a refresh rejects', async () => {
