@@ -130,6 +130,19 @@ function surfacePermanentAuthError(err: WorkspaceAuthError): void {
   })
 }
 
+function reportTransientRecoveryFailure(err: unknown): void {
+  reportError(err, {
+    surface: 'auth',
+    errorType: 'workspace_token_recovery_failure',
+    level: 'warning',
+    tags: {
+      failure_code:
+        (err instanceof WorkspaceAuthError && err.code) || 'unclassified'
+    },
+    logToConsole: false
+  })
+}
+
 export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   const { flags } = useFeatureFlags()
   // Read fresh after an await: the reactive flag can flip mid-mint, and a
@@ -181,7 +194,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     endWorkspaceSession,
     persistWorkspaceIdentity,
     clearSessionStorage,
-    surfacePermanentAuthError
+    surfacePermanentAuthError,
+    reportTransientRecoveryFailure
   })
 
   // Getters

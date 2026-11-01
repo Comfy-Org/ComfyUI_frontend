@@ -165,6 +165,7 @@ export interface LegacyWorkspaceTokenRailDeps {
   persistWorkspaceIdentity: (workspace: WorkspaceIdentity) => void
   clearSessionStorage: () => void
   surfacePermanentAuthError: (err: WorkspaceAuthError) => void
+  reportTransientRecoveryFailure: (err: unknown) => void
 }
 
 export function createLegacyWorkspaceTokenRail({
@@ -180,7 +181,8 @@ export function createLegacyWorkspaceTokenRail({
   endWorkspaceSession,
   persistWorkspaceIdentity,
   clearSessionStorage,
-  surfacePermanentAuthError
+  surfacePermanentAuthError,
+  reportTransientRecoveryFailure
 }: LegacyWorkspaceTokenRailDeps) {
   const workspaceToken = ref<string | null>(null)
   const workspaceTokenExpiresAt = ref<number | null>(null)
@@ -191,6 +193,7 @@ export function createLegacyWorkspaceTokenRail({
   let inFlightSwitchCount = 0
   let inFlightSwitchPromise: Promise<void> | null = null
   let recoveryCooldownUntil = 0
+  let recoveryFailureStreakReported = false
   let scheduledRefreshRetryCount = 0
 
   // Request ID to prevent stale refresh operations from overwriting newer workspace contexts
@@ -425,6 +428,7 @@ export function createLegacyWorkspaceTokenRail({
       workspaceTokenOwnerUid.value = ownerUid
       scheduledRefreshRetryCount = 0
       recoveryCooldownUntil = 0
+      endRecoveryFailureStreak()
 
       persistToSession(workspace, token, expiresAt, ownerUid)
       scheduleTokenRefresh(expiresAt)
@@ -494,6 +498,16 @@ export function createLegacyWorkspaceTokenRail({
     recoveryCooldownUntil = Date.now() + RECOVERY_COOLDOWN_MS
   }
 
+  function endRecoveryFailureStreak(): void {
+    recoveryFailureStreakReported = false
+  }
+
+  function reportTransientRecoveryFailureOncePerStreak(err: unknown): void {
+    if (recoveryFailureStreakReported) return
+    recoveryFailureStreakReported = true
+    reportTransientRecoveryFailure(err)
+  }
+
   function handleRecoveryFailure(
     err: unknown,
     failedWorkspaceId?: string
@@ -510,6 +524,8 @@ export function createLegacyWorkspaceTokenRail({
       if (hadContext) {
         surfacePermanentAuthError(err)
       }
+    } else {
+      reportTransientRecoveryFailureOncePerStreak(err)
     }
     if (!invalidSelectionHandled) startRecoveryCooldown()
     console.warn('Workspace auth recovery failed:', err)
@@ -543,6 +559,7 @@ export function createLegacyWorkspaceTokenRail({
       if (isCurrentUser(ownerUid)) handleRecoveryFailure(err, targetWorkspaceId)
       return null
     }
+    endRecoveryFailureStreak()
 
     if (!isCurrentUser(ownerUid)) return null
     if (hasValidTokenForWorkspace(targetWorkspaceId)) {
