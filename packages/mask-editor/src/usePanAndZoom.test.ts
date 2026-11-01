@@ -112,6 +112,28 @@ describe('usePanAndZoom', () => {
       expect(zoom).toBeGreaterThan(0)
     })
 
+    it.for([
+      { width: 200, height: 800 },
+      { width: 284, height: 800 },
+      { width: 1200, height: 0 }
+    ])(
+      'keeps the last usable fit when the viewport is $width by $height',
+      async ({ width, height }) => {
+        const { pz } = await initComposable()
+
+        await pz.initializeCanvasPanZoom(
+          createMockImage(800, 600),
+          createMockElement(width, height)
+        )
+        await pz.zoom(
+          fromPartial<WheelEvent>({ clientX: 400, clientY: 300, deltaY: -100 })
+        )
+
+        expect(mockStore.zoomRatio).toBeCloseTo(1.2595)
+        expect(Number.isFinite(mockStore.displayZoomRatio)).toBe(true)
+      }
+    )
+
     it('accounts for panel widths via setPanOffset', async () => {
       const pz = usePanAndZoom()
       mockStore.canvasContainer = createMockElement()
