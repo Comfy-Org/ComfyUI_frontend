@@ -76,6 +76,7 @@ function mount(steps = STEPS) {
 
 beforeEach(() => {
   localStorage.clear()
+  vi.mocked(fetch).mockImplementation(async () => Response.json([]))
   telemetry().trackAgentOnboardingShown.mockClear()
   telemetry().trackAgentOnboardingStep.mockClear()
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(

@@ -1,10 +1,13 @@
 import { useStorage } from '@vueuse/core'
-import { computed, ref, toValue } from 'vue'
+import { computed, reactive, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentOnboardingNotShownMetadata } from '@/platform/telemetry/types'
+
+import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 export interface CoachStep {
   target: string
@@ -61,7 +64,69 @@ export function reportMissingCoachTarget(target: string, step: number): void {
   })
 }
 
-export function hasSeenCoach(scopedKey: string): boolean {
+function scopeList(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((scope): scope is string => typeof scope === 'string')
+}
+
+function onboardedScopes(): readonly string[] {
+  return scopeList(
+    useSettingStore().settingValues[AGENT_ONBOARDED_SCOPES_SETTING_ID]
+  )
+}
+
+const replayRequested = reactive(new Set<string>())
+
+function settingsRecordSeen(scopedKey: string): boolean {
+  return (
+    !replayRequested.has(scopedKey) && onboardedScopes().includes(scopedKey)
+  )
+}
+
+const unsavedScopes = new Map<string, boolean>()
+let settingsWrites: Promise<void> = Promise.resolve()
+let reportedWriteFailure = false
+
+function reportWriteFailure(failure: unknown): void {
+  if (reportedWriteFailure) return
+  reportedWriteFailure = true
+  reportError(failure, {
+    surface: 'agent',
+    errorType: 'failure_persisting_agent_onboarding_completion',
+    level: 'warning'
+  })
+}
+
+async function writeSeen(scopedKey: string, seen: boolean): Promise<void> {
+  const scopes = onboardedScopes()
+  if (
+    scopes.includes(scopedKey) === seen &&
+    unsavedScopes.get(scopedKey) !== seen
+  ) {
+    unsavedScopes.delete(scopedKey)
+    return
+  }
+  const next = seen
+    ? [...new Set([...scopes, scopedKey])]
+    : scopes.filter((scope) => scope !== scopedKey)
+  try {
+    await useSettingStore().set(AGENT_ONBOARDED_SCOPES_SETTING_ID, next)
+    unsavedScopes.delete(scopedKey)
+  } catch (failure) {
+    unsavedScopes.set(scopedKey, seen)
+    reportWriteFailure(failure)
+  }
+}
+
+function persistSeenToSettings(scopedKey: string, seen: boolean): void {
+  if (seen) replayRequested.delete(scopedKey)
+  else replayRequested.add(scopedKey)
+  settingsWrites = settingsWrites
+    .then(() => writeSeen(scopedKey, seen))
+    .catch(reportWriteFailure)
+}
+
+function localStorageRecordsSeen(scopedKey: string): boolean {
   try {
     return localStorage.getItem(scopedKey) === 'true'
   } catch {
@@ -69,16 +134,20 @@ export function hasSeenCoach(scopedKey: string): boolean {
   }
 }
 
+export function hasSeenCoach(scopedKey: string): boolean {
+  return localStorageRecordsSeen(scopedKey) || settingsRecordSeen(scopedKey)
+}
+
 /**
- * Clear the persisted flag with no live tour to notify. Only for the deferred
- * case, where no `useOnboarding` instance is mounted to take `restart()`; a
- * mounted tour must go through the transition so it reacts without a remount.
+ * Clear the persisted flag with no live tour to notify; a mounted tour must use
+ * `restart()` so it reacts without a remount.
  */
 export function resetCoach(scopedKey: string): void {
+  persistSeenToSettings(scopedKey, false)
   try {
     localStorage.removeItem(scopedKey)
   } catch {
-    // Storage is unavailable, so the coach marks already run every time.
+    return
   }
 }
 
@@ -106,14 +175,25 @@ export function useOnboarding(
   steps: MaybeRefOrGetter<CoachStep[]>,
   storageKey = SHARED_ONBOARDING_KEY
 ) {
-  const seen = useStorage(storageKey, false)
+  const seenLocally = useStorage(storageKey, false)
+  if (seenLocally.value) persistSeenToSettings(storageKey, true)
+  else if (unsavedScopes.get(storageKey) === false)
+    persistSeenToSettings(storageKey, false)
+  const seen = computed(
+    () => seenLocally.value || settingsRecordSeen(storageKey)
+  )
   const index = ref(0)
   const step = computed(() => toValue(steps)[index.value])
   const active = computed(() => !seen.value && !!step.value)
   const isLast = computed(() => index.value === toValue(steps).length - 1)
 
+  function markSeen(value: boolean): void {
+    seenLocally.value = value
+    persistSeenToSettings(storageKey, value)
+  }
+
   function finish(): void {
-    seen.value = true
+    markSeen(true)
   }
 
   function next(): void {
@@ -127,14 +207,9 @@ export function useOnboarding(
     index.value -= 1
   }
 
-  /**
-   * Replay from the first card. `seen` is the same reactive storage ref the
-   * tour reads, so clearing it here reaches every consumer; the caller does not
-   * have to poke localStorage and remount to be noticed.
-   */
   function restart(): void {
     index.value = 0
-    seen.value = false
+    markSeen(false)
   }
 
   return { active, index, step, isLast, next, previous, finish, restart }
