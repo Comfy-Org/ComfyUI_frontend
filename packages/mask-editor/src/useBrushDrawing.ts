@@ -1,4 +1,5 @@
 import { nextTick, ref } from 'vue'
+import { useEventListener } from '@vueuse/core'
 
 import { CompositionOperation, Tools } from './types'
 import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
@@ -256,7 +257,10 @@ export function useBrushDrawing(initialSettings?: {
     if (drawingPointerId === undefined || event.pointerId !== drawingPointerId)
       return
 
-    const coords = { x: event.offsetX, y: event.offsetY }
+    const rect = store.pointerZone?.getBoundingClientRect()
+    const coords = rect
+      ? { x: event.clientX - rect.left, y: event.clientY - rect.top }
+      : { x: event.offsetX, y: event.offsetY }
     const coords_canvas = coordinateTransform.screenToCanvas(coords)
 
     drawingPointerId = undefined
@@ -315,6 +319,10 @@ export function useBrushDrawing(initialSettings?: {
       gpu.previewCanvas.value.style.opacity = '1'
     }
   }
+
+  useEventListener(window, ['pointerup', 'pointercancel'], drawEnd, {
+    capture: true
+  })
 
   return {
     startDrawing,

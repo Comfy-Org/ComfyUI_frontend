@@ -1,7 +1,7 @@
 import { useMaskEditorStore } from './maskEditorStore'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { effectScope, ref } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
 import { BrushShape, Tools } from './types'
 
@@ -322,6 +322,65 @@ describe('drawEnd canvas visibility', () => {
 })
 
 describe('drawEnd', () => {
+  it.for(['pointerup', 'pointercancel'])(
+    'finishes the owning stroke on %s outside the pointer zone',
+    async (type) => {
+      const zone = document.createElement('div')
+      vi.spyOn(zone, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(20, 10, 200, 200)
+      )
+      mockStoreDef.pointerZone = zone
+      const ctx = mockStoreDef.maskCtx
+      assert.exists(ctx)
+      const { startDrawing, drawEnd } = setup()
+      await startDrawing(makePointerEvent(40, 60, { pointerId: 11 }))
+      window.dispatchEvent(new PointerEvent(type, { pointerId: 22 }))
+      await nextTick()
+      expect(saveStateSpy).not.toHaveBeenCalled()
+
+      const end = new PointerEvent(type, {
+        pointerId: 11,
+        clientX: 120,
+        clientY: 90
+      })
+      window.dispatchEvent(end)
+      await nextTick()
+      expect(saveStateSpy).toHaveBeenCalledOnce()
+      await drawEnd(end)
+      expect(saveStateSpy).toHaveBeenCalledOnce()
+
+      vi.mocked(ctx.arc).mockClear()
+      await startDrawing(
+        makePointerEvent(130, 80, { pointerId: 11, shiftKey: true })
+      )
+      expect(ctx.arc).toHaveBeenCalledWith(
+        101,
+        80,
+        expect.any(Number),
+        0,
+        Math.PI * 2,
+        false
+      )
+      await drawEnd(
+        new PointerEvent('pointerup', {
+          pointerId: 11,
+          clientX: 150,
+          clientY: 90
+        })
+      )
+      expect(saveStateSpy).toHaveBeenCalledTimes(2)
+    }
+  )
+
+  it('stops listening for pointer completion when the editor scope closes', async () => {
+    const { startDrawing } = setup()
+    await startDrawing(makePointerEvent(40, 60, { pointerId: 11 }))
+    scope?.stop()
+    window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 11 }))
+    await nextTick()
+    expect(saveStateSpy).not.toHaveBeenCalled()
+  })
+
   it.for(['pointerup', 'pointercancel'])(
     'preserves the first stroke when a second pointer starts and sends %s',
     async (type) => {
