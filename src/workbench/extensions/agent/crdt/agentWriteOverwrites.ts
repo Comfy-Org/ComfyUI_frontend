@@ -38,14 +38,7 @@ export interface AgentWriteOverwriteWatch {
 
 const MAX_TRACKED_REGISTERS = 256
 
-/**
- * Per-session ceiling on telemetry reports. One undo or reload can revert a
- * whole Agent frame, so an uncapped watch would send up to
- * `MAX_TRACKED_REGISTERS` reports synchronously from inside the widget
- * setter. The dev-panel ring buffer is local and stays uncapped; what this
- * bounds is the egress.
- */
-const MAX_TELEMETRY_REPORTS = 32
+const MAX_TELEMETRY_REPORTS_PER_SESSION = 32
 
 export function describeWidgetValue(value: unknown): WidgetValueShape {
   if (value === null) return { type: 'null' }
@@ -54,10 +47,6 @@ export function describeWidgetValue(value: unknown): WidgetValueShape {
       return { type: 'undefined' }
     case 'boolean':
       return { type: 'boolean', literal: value }
-    // A number is kept literally on purpose: the ticket asks for the old and
-    // new value, and a seed, duration or dimension is what identifies the
-    // overwriting action. Free-form text is the content risk, so a string
-    // keeps its length only.
     case 'number':
       return { type: 'number', literal: value }
     case 'string':
@@ -71,13 +60,6 @@ export function describeWidgetValue(value: unknown): WidgetValueShape {
   }
 }
 
-/**
- * Which kind of local edit arrived. A restore is named from the change
- * tracker rather than from the intent source: `local` is the default source
- * for any write outside a `withGraphIntentSource` scope, so an
- * `afterConfigureGraph` hook or a normalization watcher running during a
- * restore would otherwise read as a person's canvas edit.
- */
 function editKindOf(
   source: Exclude<GraphIntentSource, 'agent-remote'>,
   isRestoringState: boolean
@@ -102,20 +84,9 @@ interface RememberedAgentWrite {
 }
 
 /**
- * Watches the widget-value seam for a later edit that changed a value a live
- * Agent turn wrote, and names the kind of edit responsible (PM-2379).
- *
- * What it cannot see, stated so a silent gap is not read as a clean signal:
- * the register seam only announces a value that actually changed
- * (`observeValue` skips an `Object.is`-equal write). So a restore that puts
- * an Agent-written value back to the widget's own default — `generate_audio`
- * false back to true — announces nothing during `configure`, because the
- * widget is re-registered at that default first and the saved value never
- * differs from it. Replacing a dynamic combo's option swaps its child
- * widgets with no `set_widget` either. Both are real overwrites this records
- * nothing for; what it does guarantee is that neither leaves a stale entry
- * behind to misattribute a later edit, because the load path clears the
- * graph and a removal forgets its node.
+ * Records which later edit changed a value a live Agent turn wrote (PM-2379).
+ * Reads the widget-value seam only; never writes. Known blind spots are in
+ * the pull request description.
  */
 export function attachAgentWriteOverwriteWatch(
   deps: AgentWriteOverwriteWatchDeps
@@ -160,7 +131,7 @@ export function attachAgentWriteOverwriteWatch(
       ms_since_agent_write: Math.round(performance.now() - agentWrite.at)
     }
     recordDevEvent('agent_write_overwritten', detail, { level: 'warn' })
-    if (telemetryReports >= MAX_TELEMETRY_REPORTS) return
+    if (telemetryReports >= MAX_TELEMETRY_REPORTS_PER_SESSION) return
     telemetryReports++
     reportError(new Error('agent_write_overwritten'), {
       surface: 'agent',
@@ -171,7 +142,7 @@ export function attachAgentWriteOverwriteWatch(
       context: {
         ...detail,
         report_index: telemetryReports,
-        report_cap: MAX_TELEMETRY_REPORTS
+        report_cap: MAX_TELEMETRY_REPORTS_PER_SESSION
       }
     })
   }
@@ -181,12 +152,6 @@ export function attachAgentWriteOverwriteWatch(
   ): void {
     const key = registerKey(event.graphId, event.nodeId, event.name)
     if (event.source === 'agent-remote') {
-      // Every applied frame arrives as `agent-remote`, so remembering all of
-      // them would store host baselines, catch-up replays, another tab's
-      // `human:*` frames and rejection rollbacks as Agent writes, and report
-      // the person's next edit as overwriting a value the Agent never set.
-      // Anything that is not a live Agent turn also makes an earlier
-      // remembered value stale, so it is forgotten rather than kept.
       if (isLiveAgentTurnWrite()) rememberAgentWrite(key, event.value)
       else agentWrites.delete(key)
       return
@@ -205,24 +170,13 @@ export function attachAgentWriteOverwriteWatch(
   function onIntent(event: GraphIntentEvent): void {
     if (detached) return
     if (!deps.isEnabled()) {
-      // Bookkeeping stops with the reporting, so anything remembered before
-      // the gate closed would be compared against an edit made while it was
-      // closed and reported with a misleading `ms_since_agent_write` once it
-      // reopens. Drop the lot instead.
-      if (agentWrites.size > 0) agentWrites.clear()
+      agentWrites.clear()
       return
     }
     switch (event.type) {
       case 'set_widget':
         onWidgetWrite(event)
         return
-      // Removals and clears are forgotten whatever moved them: an Agent
-      // delete, `app.clean()` and `configure({ clearGraph: true })` are not
-      // `local`, and node ids are reused, so a kept entry misattributes a
-      // later edit to a new occupant of the same id. Widget registers are
-      // keyed by the root graph id (`BaseWidget.setNodeId`), while a
-      // `remove_node` carries the owning graph — the subgraph for an
-      // interior node — so the key has to be rebuilt from `rootGraph`.
       case 'remove_node':
         forgetNode(event.graph.rootGraph.id, event.node.id)
         return

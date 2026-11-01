@@ -8,7 +8,6 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import {
-  emitGraphIntent,
   onGraphIntent,
   withGraphIntentSource
 } from '@/lib/litegraph/src/graphIntents'
@@ -17,6 +16,7 @@ import type {
   GraphIntentSource
 } from '@/lib/litegraph/src/graphIntents'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -24,6 +24,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
+import { withLiveAgentTurnWrites } from './agentRemoteProvenance'
 import {
   attachAgentWriteOverwriteWatch,
   describeWidgetValue
@@ -177,8 +178,6 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
     })
   }
   projection.bind(WORKFLOW_ID, follower)
-  // The first frame is the host's baseline, which is a catch-up sync rather
-  // than a turn's writes.
   deliver(Y.encodeStateAsUpdate(host), { actor: HOST_ACTOR, catchUp: true })
 
   const sourcesOf = new Map<string, GraphIntentSource[]>()
@@ -233,12 +232,49 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
     }
   }
 
+  const addNodeTo = (target: LGraph) => {
+    const added = withGraphIntentSource('load', () => {
+      const created = LiteGraph.createNode(CLASS)
+      if (!created) throw new Error(`${CLASS} not registered`)
+      target.add(created)
+      return created
+    })
+    const widgetOf = (name: string) => {
+      const found = added.widgets?.find((candidate) => candidate.name === name)
+      if (!found) throw new Error(`no widget ${name}`)
+      return found
+    }
+    withGraphIntentSource('load', () => {
+      widgetOf('model').value = MODEL
+    })
+    return {
+      node: added,
+      widgetValue: (name: string) => widgetOf(name).value,
+      setWidgetValue: (name: string, value: unknown) => {
+        widgetOf(name).value = value as never
+      }
+    }
+  }
+
+  const agentWritesTo = (
+    target: ReturnType<typeof addNodeTo>,
+    widgetName: string,
+    value: unknown
+  ) =>
+    withLiveAgentTurnWrites({ isLiveAgentTurn: true }, () =>
+      withGraphIntentSource('agent-remote', () => {
+        target.setWidgetValue(widgetName, value)
+      })
+    )
+
   return {
     graph,
     node,
     widget,
     agentWrites,
     remoteWrites,
+    addNodeTo,
+    agentWritesTo,
     edits,
     setGateOpen: (open: boolean) => {
       gateOpen = open
@@ -483,9 +519,6 @@ describe('recording which edit overwrote an Agent write (PM-2379)', () => {
     const s = setup()
     s.agentWrites('model.generate_audio', false)
 
-    // `local` is the default source for anything outside an explicit scope,
-    // so a normalization watcher or `afterConfigureGraph` hook running under
-    // a restore arrives as `local`.
     s.edits(
       'local',
       () => {
@@ -502,9 +535,6 @@ describe('recording which edit overwrote an Agent write (PM-2379)', () => {
     const s = setup()
     s.agentWrites('model.generate_audio', false)
 
-    // An Agent delete and `configure({ clearGraph: true })` are not `local`.
-    // Node ids are reused, so an entry kept past the removal is charged to
-    // whoever next occupies that id and widget name.
     withGraphIntentSource('agent-remote', () => {
       s.graph.remove(s.node)
     })
@@ -521,23 +551,21 @@ describe('recording which edit overwrote an Agent write (PM-2379)', () => {
 
   it('keys a removal by the root graph, not the subgraph holding the node', () => {
     const s = setup()
-    s.agentWrites('model.generate_audio', false)
+    const subgraph = s.graph.createSubgraph(createTestSubgraphData())
+    expect(subgraph.id).not.toBe(s.graph.id)
+    expect(subgraph.rootGraph).toBe(s.graph)
 
-    // Widget registers are keyed by the root graph id, while a `remove_node`
-    // carries the graph that held the node — a subgraph for an interior one.
-    // Keying the removal by that graph's own id would never match.
-    emitGraphIntent({
-      type: 'remove_node',
-      graph: {
-        id: 'some-interior-subgraph',
-        rootGraph: s.graph
-      } as unknown as LGraph,
-      node: s.node,
-      removedLinkIds: []
+    const interior = s.addNodeTo(subgraph)
+    s.agentWritesTo(interior, 'model.generate_audio', false)
+    expect(interior.widgetValue('model.generate_audio')).toBe(false)
+
+    subgraph.remove(interior.node)
+    withGraphIntentSource('load', () => {
+      subgraph.add(interior.node)
     })
 
     s.edits('local', () => {
-      s.widget('model.generate_audio').value = true
+      interior.setWidgetValue('model.generate_audio', true)
     })
 
     expect(overwriteEvents()).toEqual([])
@@ -547,10 +575,6 @@ describe('recording which edit overwrote an Agent write (PM-2379)', () => {
     const s = setup()
     s.agentWrites('model.duration', 9)
 
-    // The edit made while the gate was closed is the one that overwrote the
-    // Agent's value, and it is invisible. Comparing the next edit against the
-    // Agent's stale value would blame it for an overwrite it did not make,
-    // with a `ms_since_agent_write` spanning the whole closed window.
     s.setGateOpen(false)
     s.edits('local', () => {
       s.widget('model.duration').value = 7
