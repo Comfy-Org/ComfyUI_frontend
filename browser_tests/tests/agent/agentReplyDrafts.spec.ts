@@ -17,6 +17,11 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import {
+  askIdFor,
+  askResolved,
+  askUserQuestionFrame
+} from '@e2e/fixtures/data/agent/agentAskFrames'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -151,6 +156,42 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
 }
 
 test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
+  test(
+    'the answer stays above the card while a remember call waits on its approval',
+    async ({ page }) => {
+      test.setTimeout(60_000)
+      await page.setViewportSize({ width: 1280, height: 1000 })
+      const { panel, send } = await startTurn(page, 'Set my usual strength.')
+      const answer = 'ControlNet strength works best around 0.7 for your style.'
+      const askId = askIdFor('call-remember')
+
+      send(draft(answer))
+      await expect(panel.getByText(answer, { exact: true })).toBeVisible()
+
+      send(toolCall('remember', 'running'))
+      send(
+        askUserQuestionFrame(askId, {
+          prompt: 'Keep this note for every chat?',
+          options: [
+            { id: 'allow', label: 'Allow' },
+            { id: 'deny', label: 'Deny' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        })
+      )
+      await expect(
+        panel.getByText('Keep this note for every chat?')
+      ).toBeVisible()
+      await expect(panel.getByText(answer, { exact: true })).toBeVisible()
+
+      send(askResolved(['deny'], askId))
+      send(toolCall('remember', 'success'))
+      await expect(panel.getByText(answer, { exact: true })).toBeVisible()
+    }
+  )
+
   test('the answer appears while the model writes it, and the final answer replaces it', async ({
     page
   }) => {
