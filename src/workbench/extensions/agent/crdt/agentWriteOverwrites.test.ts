@@ -250,8 +250,8 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
     return {
       node: added,
       widgetValue: (name: string) => widgetOf(name).value,
-      setWidgetValue: (name: string, value: unknown) => {
-        widgetOf(name).value = value as never
+      setWidgetValue: (name: string, value: boolean) => {
+        widgetOf(name).value = value
       }
     }
   }
@@ -259,7 +259,7 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
   const agentWritesTo = (
     target: ReturnType<typeof addNodeTo>,
     widgetName: string,
-    value: unknown
+    value: boolean
   ) =>
     withLiveAgentTurnWrites({ isLiveAgentTurn: true }, () =>
       withGraphIntentSource('agent-remote', () => {
