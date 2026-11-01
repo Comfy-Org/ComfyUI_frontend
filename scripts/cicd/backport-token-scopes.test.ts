@@ -180,7 +180,7 @@ describe('backport workflow token scopes', () => {
   // already grants issues: write and pull-requests: write.
   it('clears needs-backport with the job token, not the shared token', () => {
     const workflow = readWorkflow(WORKFLOW)
-    const step = workflow.jobs?.backport?.steps?.find(
+    const step = workflow.jobs?.backport.steps?.find(
       (step) => step.name === 'Remove needs-backport label'
     )
 
