@@ -41,13 +41,13 @@ const borderStyle = computed(() =>
       :class="
         cn(
           'content-center-safe truncate',
-          unifiedRows && '@container min-w-0 flex-1 text-muted-foreground'
+          unifiedRows && 'max-w-fit min-w-0 flex-1 text-muted-foreground'
         )
       "
     >
       <span
         data-testid="widget-layout-field-label"
-        :class="unifiedRows && 'block truncate @max-[3ch]:invisible'"
+        :class="unifiedRows && 'block truncate'"
       >
         <template v-if="widget.name">
           {{ widget.displayLabel ?? (widget.label || widget.name) }}
@@ -56,7 +56,9 @@ const borderStyle = computed(() =>
     </div>
     <slot name="between" />
     <div
-      :class="cn('min-w-0', unifiedRows ? 'grid shrink' : 'relative flex-1')"
+      :class="
+        cn('min-w-0', unifiedRows ? 'ml-auto grid shrink' : 'relative flex-1')
+      "
     >
       <span
         v-if="unifiedRows"

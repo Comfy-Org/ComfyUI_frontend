@@ -11,13 +11,7 @@
     <label
       v-if="!hideLayoutField"
       :for="id"
-      :class="
-        cn(
-          'pointer-events-none absolute top-1.5 left-3 z-10 text-2xs text-muted-foreground',
-          unifiedRows &&
-            'opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100'
-        )
-      "
+      class="pointer-events-none absolute top-1.5 left-3 z-10 text-2xs text-muted-foreground"
     >
       {{ displayName }}
     </label>
@@ -58,14 +52,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, ref, useId, useTemplateRef } from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
@@ -90,7 +83,6 @@ function trackFocus() {
 }
 
 const hideLayoutField = useHideLayoutField()
-const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 const { copyToClipboard } = useCopyToClipboard()
 
 const filteredProps = computed(() =>
