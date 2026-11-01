@@ -56,6 +56,13 @@ jobs:
         run: pnpm collect-i18n
         env:
           PLAYWRIGHT_TEST_URL: http://localhost:5173
+      # Collection rewrites src/locales/en/commands.json from the commands the
+      # running app registered, so an extension that had not loaded loses its
+      # command entry. Fail here rather than committing the pruned catalog and
+      # translating it: ESLint caches on file content, so the prune can reach a
+      # release branch and only surface later in an unrelated pull request.
+      - name: Verify no command locale was pruned
+        run: pnpm command-locales:check
       - name: Update translations
         id: translate
         # continue-on-error so completed entry files (written and recorded in
