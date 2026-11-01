@@ -43,8 +43,6 @@ const jsonRoute = (body: unknown) => ({
   body: JSON.stringify(body)
 })
 
-// Legacy `/customers/balance` and workspace `/api/billing/balance` share the
-// same response shape, so one body fulfills both endpoints.
 const balanceRoute = (balance: {
   amount: number
   monthly: number
@@ -168,10 +166,6 @@ async function mockCloudBoot(
     )
   )
 
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(balanceRoute(DEFAULT_BALANCE))
-  )
-
   // Workspace billing (flag-on path) — a personal workspace now routes through
   // `/api/billing/*`.
   await page.route('**/api/billing/status', (r) =>
@@ -200,11 +194,7 @@ async function mockBalance(
   page: Page,
   balance: { amount: number; monthly: number; prepaid: number }
 ) {
-  await page.unroute('**/customers/balance')
   await page.unroute('**/api/billing/balance')
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(balanceRoute(balance))
-  )
   await page.route('**/api/billing/balance', (r) =>
     r.fulfill(balanceRoute(balance))
   )

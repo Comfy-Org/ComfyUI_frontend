@@ -248,6 +248,7 @@ import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/util
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
@@ -278,6 +279,7 @@ const {
 } = useSubscriptionCredits()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
+const workspaceStore = useWorkspaceIdentity()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
 const { pendingTopupNeedsRefresh, consumeCompletedTopup } = usePendingTopup()
@@ -525,8 +527,9 @@ async function refreshCredits() {
 
   if (!shouldUseWorkspaceBilling.value) return
 
+  const workspaceId = workspaceStore.activeWorkspaceId
   const response = await readWorkspaceBillingEvents({ page: 1, limit: 10 })
-  if (!response) return
+  if (!response || workspaceStore.activeWorkspaceId !== workspaceId) return
   const completedTopup = consumeCompletedTopup(response.events)
   if (completedTopup) {
     telemetry?.trackApiCreditTopupSucceeded()

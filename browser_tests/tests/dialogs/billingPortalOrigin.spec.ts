@@ -104,9 +104,6 @@ async function setupRefusedPlanChange(page: Page, portalUrl: string) {
   await page.route('**/api/billing/balance', (r) =>
     r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
   )
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
-  )
   await page.route('**/api/billing/capabilities', (r) => {
     if (r.request().method() !== 'GET') return r.fallback()
     return r.fulfill(jsonRoute(createWorkspaceBillingCapabilities(PERSONAL)))

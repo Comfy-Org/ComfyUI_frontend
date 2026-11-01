@@ -57,9 +57,6 @@ test.describe('Run refused for locked credits', { tag: '@cloud' }, () => {
     await page.route('**/api/features', (route) =>
       route.fulfill(jsonRoute({ subscription_required: true }))
     )
-    await page.route('**/customers/balance', (route) =>
-      route.fulfill(jsonRoute({ amount_micros: 0, currency: 'usd' }))
-    )
   })
 
   test(

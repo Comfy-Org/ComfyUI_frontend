@@ -87,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -104,6 +104,7 @@ import TableRow from '@comfyorg/design-system/table/TableRow'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { toFiniteNumber } from '@/services/customerEventParams'
@@ -229,22 +230,36 @@ const refresh = async () => {
 }
 
 const workspaceStore = useWorkspaceIdentity()
+const { isLoggedIn } = useCurrentUser()
+const workspaceInitSettled = computed(
+  () =>
+    !isLoggedIn.value ||
+    workspaceStore.initState === 'ready' ||
+    workspaceStore.initState === 'error'
+)
 
 // The active workspace is watched alongside the billing mode: a switch between
 // two workspaces on the same mode leaves this table mounted, and without this
 // nothing reloads it at all when no read happens to be in flight.
 watch(
-  [shouldUseWorkspaceBilling, () => workspaceStore.activeWorkspaceId],
+  [
+    shouldUseWorkspaceBilling,
+    () => workspaceStore.activeWorkspaceId,
+    workspaceInitSettled
+  ],
   ([, workspaceId], previous) => {
     if (previous !== undefined && previous[1] !== workspaceId) {
       dropRenderedEvents()
     }
     if (!shouldUseWorkspaceBilling.value) {
-      // Routing is not known yet: invalidate any read in flight and wait.
+      // Routing is not known yet: invalidate any read in flight and wait,
+      // unless init has finished with no workspace, which will not resolve.
       latestLoadToken++
       dropRenderedEvents()
-      error.value = null
-      loading.value = true
+      error.value = workspaceInitSettled.value
+        ? t('credits.loadEventsError')
+        : null
+      loading.value = !workspaceInitSettled.value
       return
     }
     refresh().catch((error) => {

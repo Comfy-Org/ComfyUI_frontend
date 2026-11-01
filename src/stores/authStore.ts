@@ -7,7 +7,6 @@ import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account-core/customerRecovery'
 import {
   isSsoRequiredRefusal,
   ssoRequiredOrganizationId
@@ -125,15 +124,6 @@ export const useAuthStore = defineStore('auth', () => {
   const loading = ref(false)
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
-  const customerProvisionedIdentity = ref<string | null>(null)
-  /**
-   * Memoizes the in-flight or successful customer provisioning attempt for
-   * the current account (see recoverMissingCustomer). Declared here so the
-   * auth-state listener below can reset it before its initializer would
-   * otherwise run.
-   */
-  let customerRecovery: Promise<void> | null = null
-  let customerRecoveryIdentity: string | null = null
   const mintUnifiedToken = useMemoize((uid: string) =>
     useWorkspaceAuthStore()
       .mintAtLogin()
@@ -236,13 +226,6 @@ export const useAuthStore = defineStore('auth', () => {
     if (isCloud && identityChanged) {
       void api.resetSocket()
     }
-
-    // Customer provisioning state is per-account: without this reset, a
-    // second account in the same browser session would be short-circuited by
-    // the previous account's memoized recovery and stay stuck on 409s.
-    customerProvisionedIdentity.value = null
-    customerRecovery = null
-    customerRecoveryIdentity = null
   }
 
   firebaseIdentity.onUserChanged((user) => {
@@ -713,57 +696,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (!completedUser) assertIdentityUnchanged(sessionIdentity)
-    if (sessionIdentity !== null) {
-      customerProvisionedIdentity.value = sessionIdentity
-    }
     return createCustomerResJson
-  }
-
-  /**
-   * Memoizes the customer provisioning attempt so concurrent or repeated 409
-   * responses from /customers/* endpoints trigger at most one successful
-   * POST /customers per account. A failed attempt is cleared so a later
-   * request can retry, e.g. after a transient network failure.
-   */
-  const recoverMissingCustomer = (): Promise<void> => {
-    const sessionIdentity = currentUserIdentity()
-    if (
-      customerRecovery === null ||
-      customerRecoveryIdentity !== sessionIdentity
-    ) {
-      const thisRecovery: Promise<void> = createCustomer()
-        .then(() => undefined)
-        .catch((error: unknown) => {
-          if (customerRecovery === thisRecovery) {
-            customerRecovery = null
-            customerRecoveryIdentity = null
-          }
-          throw error
-        })
-      customerRecovery = thisRecovery
-      customerRecoveryIdentity = sessionIdentity
-    }
-    return customerRecovery
-  }
-
-  /** /customers/* fetch that self-heals a never-provisioned account (rule in @comfyorg/account-core). */
-  const fetchWithCustomerRecovery = async (
-    input: string,
-    init?: RequestInit
-  ): Promise<Response> => {
-    assertHasPersonalWorkspace()
-    const requestOwner = currentUserIdentity()
-    return fetchHealingMissingCustomer(input, {
-      request: () =>
-        fetchWithUnifiedRemint(
-          input,
-          init ?? {},
-          isCloud && flags.unifiedCloudAuthEnabled
-        ),
-      recoverMissingCustomer,
-      identityUnchanged: () => currentUserIdentity() === requestOwner,
-      base: window.location.href
-    })
   }
 
   const executeAuthAction = async <T>(
@@ -979,7 +912,6 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     createCustomer,
-    fetchWithCustomerRecovery,
     getIdToken,
     loginWithGoogle,
     loginWithGithub,

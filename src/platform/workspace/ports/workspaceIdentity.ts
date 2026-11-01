@@ -9,6 +9,7 @@ export interface WorkspaceIdentityAccess {
     'id' | 'name' | 'type' | 'role' | 'subscription_tier'
   > | null
   readonly activeWorkspaceId: string | null
+  readonly initState: 'uninitialized' | 'loading' | 'ready' | 'error'
   readonly isInPersonalWorkspace: boolean
   readonly workspaceTransitionGeneration: number
   readonly identityGeneration: number
@@ -25,6 +26,9 @@ export function useWorkspaceIdentity(): WorkspaceIdentityAccess {
     },
     get activeWorkspaceId() {
       return workspace.activeWorkspaceId
+    },
+    get initState() {
+      return workspace.initState
     },
     get isInPersonalWorkspace() {
       return workspace.isInPersonalWorkspace

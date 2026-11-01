@@ -252,9 +252,6 @@ async function setupParity(
     routes.balanceRequests.push(route.request())
     return route.fulfill(jsonRoute(balance(server.balanceMicros)))
   })
-  await page.route('**/customers/balance', (route) =>
-    route.fulfill(jsonRoute(balance(server.balanceMicros)))
-  )
   await page.route('**/api/billing/plans', (route) =>
     route.fulfill(jsonRoute(PLAN_CATALOG))
   )

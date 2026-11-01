@@ -239,7 +239,6 @@ async function mockCloudBoot(
     eventPages.push(requested)
     return r.fulfill(jsonRoute(eventsPage(Number(requested ?? 1))))
   })
-  await page.route('**/customers/balance', (r) => r.fulfill(jsonRoute(BALANCE)))
 
   return { reads, eventPages }
 }

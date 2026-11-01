@@ -173,14 +173,6 @@ async function mockCloudBoot(
       )
     )
   })
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(
-      jsonRoute({
-        amount_micros: 0,
-        currency: 'usd'
-      } satisfies BillingBalanceResponse)
-    )
-  )
 
   // Both lifecycle routes answer POST only. A regression to GET would
   // otherwise be served the success fixture and pass every assertion below,

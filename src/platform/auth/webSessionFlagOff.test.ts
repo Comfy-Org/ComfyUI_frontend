@@ -768,57 +768,6 @@ describe.for([
     })
   }
 )
-describe.for([
-  { name: 'unified_cloud_auth off', features: { unified_cloud_auth: false } },
-  { name: 'unified_cloud_auth on', features: { unified_cloud_auth: true } }
-])('billing with unified_web_session off ($name)', ({ features }) => {
-  const onFirebaseToken = (method: string, path: string): RecordedRequest => ({
-    method,
-    path: `${getComfyApiBaseUrl()}${path}`,
-    headers: {
-      authorization: 'Bearer firebase-id-token',
-      'content-type': 'application/json'
-    },
-    credentials: null
-  })
-
-  beforeEach(() => {
-    identity.reset()
-  })
-
-  afterEach(() => {
-    remoteConfig.value = {}
-  })
-
-  it('sends the 409 recovery on the Firebase token and mints nothing', async () => {
-    const recorder = installFetchRecorder(features)
-    await refreshRemoteConfig({ useAuth: false })
-    const authStore = useAuthStore()
-    await authStore.login('user-a@example.com', 'password')
-    await vi.waitFor(() =>
-      expect(recorder.pending).toContainEqual(CUSTOMER_PROVISIONING)
-    )
-    recorder.take()
-
-    recorder.loseCustomer()
-    await authStore.fetchWithCustomerRecovery(
-      `${getComfyApiBaseUrl()}/customers/me`,
-      {
-        headers: {
-          ...(await authStore.getUserAuthHeader()),
-          'Content-Type': 'application/json'
-        }
-      }
-    )
-
-    expect(recorder.take()).toEqual([
-      onFirebaseToken('GET', '/customers/me'),
-      onFirebaseToken('POST', '/customers'),
-      onFirebaseToken('GET', '/customers/me')
-    ])
-  })
-})
-
 describe('an interactive sign-in with unified_web_session off', () => {
   beforeEach(() => {
     identity.reset()

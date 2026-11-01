@@ -112,6 +112,7 @@ describe('billing UI entry capabilities', () => {
           role: 'member'
         },
         activeWorkspaceId: 'workspace-1',
+        initState: 'ready' as const,
         isInPersonalWorkspace: false,
         workspaceTransitionGeneration: 0,
         identityGeneration: 0

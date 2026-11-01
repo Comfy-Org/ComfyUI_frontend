@@ -29,8 +29,7 @@ const {
 
   mockLocalStorage,
   mockReportTelemetryError,
-  mockReportError,
-  mockAccessBillingPortalDirect
+  mockReportError
 } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
   const mockIsLoggedIn = ref(false)
@@ -43,7 +42,6 @@ const {
 
     mockReportTelemetryError: vi.fn(),
     mockReportError: vi.fn(),
-    mockAccessBillingPortalDirect: vi.fn(),
     mockGetCheckoutAttribution: vi.fn(() => ({
       im_ref: 'impact-click-001',
       utm_source: 'impact'
@@ -123,8 +121,7 @@ vi.mock<unknown>(import('@comfyorg/telemetry/reportError'), () => ({
 
 vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: vi.fn(() => ({
-    reportError: mockReportError,
-    accessBillingPortalDirect: mockAccessBillingPortalDirect
+    reportError: mockReportError
   }))
 }))
 
@@ -234,10 +231,6 @@ beforeEach(() => {
   vi.mocked(useAuthStore().getFirebaseAuthHeader).mockResolvedValue({
     Authorization: 'Bearer test-token' as const
   })
-  vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
-    (input, init) => fetch(input, init)
-  )
-  mockAccessBillingPortalDirect.mockResolvedValue(true)
 })
 
 describe('useSubscription', () => {

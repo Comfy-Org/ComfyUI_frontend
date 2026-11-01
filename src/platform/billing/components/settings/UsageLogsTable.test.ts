@@ -11,6 +11,7 @@ import {
   useCustomerEventsService
 } from '@/services/customerEventsService'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { BillingEventsResponse } from '@comfyorg/billing-core'
@@ -23,6 +24,8 @@ import UsageLogsTable from './UsageLogsTable.vue'
 vi.mock(import('@/services/customerEventsService'))
 
 vi.mock(import('@comfyorg/telemetry'))
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const CONFIRMED_AT_MS = Date.parse('2024-06-15T12:30:00Z')
 
@@ -106,6 +109,8 @@ describe('UsageLogsTable', () => {
   ])
 
   beforeEach(() => {
+    useCurrentUser().isLoggedIn = computed(() => true)
+    Object.assign(useTeamWorkspaceStore(), { initState: 'loading' })
     setWorkspaceBilling(true)
     vi.mocked(billingApi.getBillingEvents).mockResolvedValue(mockEventsResponse)
     mockBillingReadRail.readEvents.mockResolvedValue({
@@ -156,6 +161,39 @@ describe('UsageLogsTable', () => {
         expect(screen.getByRole('table')).toBeInTheDocument()
       })
       expect(billingApi.getBillingEvents).toHaveBeenCalledTimes(1)
+    })
+
+    it.for(['ready', 'error'] as const)(
+      'shows the load error once workspace init is %s with no workspace',
+      async (initState) => {
+        setWorkspaceBilling(false)
+
+        renderComponent()
+        await flushMicrotasks()
+        expect(screen.getByRole('progressbar')).toBeInTheDocument()
+
+        Object.assign(useTeamWorkspaceStore(), { initState })
+
+        await waitFor(() => {
+          expect(
+            screen.getByText('Failed to load activity. Please try again.')
+          ).toBeInTheDocument()
+        })
+        expect(billingApi.getBillingEvents).not.toHaveBeenCalled()
+      }
+    )
+
+    it('shows the load error when signed out with no workspace', async () => {
+      setWorkspaceBilling(false)
+      useCurrentUser().isLoggedIn = computed(() => false)
+
+      renderComponent()
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Failed to load activity. Please try again.')
+        ).toBeInTheDocument()
+      })
     })
 
     it('shows a loading spinner while the initial load is in flight', () => {

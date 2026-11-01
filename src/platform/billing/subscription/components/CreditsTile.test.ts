@@ -22,6 +22,7 @@ import type {
   TeamCreditStopSummary
 } from '@comfyorg/billing-core'
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 
 type Balance = Pick<
@@ -928,6 +929,36 @@ describe('CreditsTile', () => {
       expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
     )
     expect(readWorkspaceBillingEvents).not.toHaveBeenCalled()
+  })
+
+  it('drops a reply that lands after the active workspace changed', async () => {
+    activeProSubscription()
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+    let resolveReply!: (
+      value: Awaited<ReturnType<typeof readWorkspaceBillingEvents>>
+    ) => void
+    vi.mocked(readWorkspaceBillingEvents).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveReply = resolve
+      })
+    )
+
+    renderTile()
+    await waitFor(() => expect(readWorkspaceBillingEvents).toHaveBeenCalled())
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-2' })
+    resolveReply(
+      eventsPage([
+        {
+          event_type: 'topup_completed',
+          createdAt: new Date(Date.now() + 1000).toISOString()
+        }
+      ])
+    )
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(localStorage.getItem('pending_topup_timestamp')).not.toBeNull()
+    expect(useTelemetry()?.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
   })
 
   it('closes a confirmed top-up with one succeeded event measured from its start', async () => {

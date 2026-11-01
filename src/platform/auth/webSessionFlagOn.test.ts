@@ -83,7 +83,6 @@ import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
 import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
@@ -2553,25 +2552,7 @@ describe('billing on a tab that arrived by session', () => {
     localStorage.clear()
   })
 
-  const readCustomer = async (authStore: ReturnType<typeof useAuthStore>) =>
-    authStore.fetchWithCustomerRecovery(
-      `${getComfyApiBaseUrl()}/customers/me`,
-      {
-        headers: {
-          ...((await webSessionResourceHeader()) ??
-            (await authStore.getUserAuthHeader())),
-          'Content-Type': 'application/json'
-        }
-      }
-    )
-
   it.for([
-    {
-      name: 'customer read',
-      call: (authStore: ReturnType<typeof useAuthStore>) =>
-        readCustomer(authStore),
-      sent: [onSessionToken('GET', '/customers/me')]
-    },
     {
       name: 'customer provisioning',
       call: (authStore: ReturnType<typeof useAuthStore>) =>
@@ -2596,14 +2577,14 @@ describe('billing on a tab that arrived by session', () => {
     { sso: true, reported: true, sendsCustomers: true },
     { sso: true, reported: false, sendsCustomers: false }
   ])(
-    'sso_enabled $sso with has_personal_workspace $reported: a customer read reaches /customers is $sendsCustomers',
+    'sso_enabled $sso with has_personal_workspace $reported: a customer setup reaches /customers is $sendsCustomers',
     async ({ sso, reported, sendsCustomers }) => {
       const { ingest, authStore } = await bootSessionOnly(
         { sso_enabled: sso },
         reported
       )
 
-      await readCustomer(authStore).catch(() => undefined)
+      await authStore.createCustomer().catch(() => undefined)
 
       expect(
         ingest.requests.some(({ path }) => path.startsWith('/customers'))
@@ -2611,32 +2592,18 @@ describe('billing on a tab that arrived by session', () => {
     }
   )
 
-  it('refuses a customer read before /customers without a personal workspace', async () => {
+  it('refuses customer setup before /customers without a personal workspace', async () => {
     const { ingest, authStore } = await bootSessionOnly(
       { sso_enabled: true },
       false
     )
 
-    await expect(readCustomer(authStore)).rejects.toMatchObject({
+    await expect(authStore.createCustomer()).rejects.toMatchObject({
       code: NO_PERSONAL_WORKSPACE
     })
     expect(
       ingest.requests.filter(({ path }) => path.startsWith('/customers'))
     ).toEqual([])
-  })
-
-  it('provisions a missing customer on the session token and retries once', async () => {
-    const { ingest, authStore } = await bootSessionOnly()
-    ingest.customerMissing = true
-
-    await readCustomer(authStore)
-
-    expect(authorizationsOf(ingest)).toEqual([
-      SESSION_MINT,
-      onSessionToken('GET', '/customers/me'),
-      onSessionToken('POST', '/customers'),
-      onSessionToken('GET', '/customers/me')
-    ])
   })
 
   it.for([

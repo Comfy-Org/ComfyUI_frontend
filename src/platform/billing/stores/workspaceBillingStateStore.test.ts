@@ -13,6 +13,7 @@ function createIdentity() {
     workspaces: [],
     activeWorkspace: null as WorkspaceIdentityAccess['activeWorkspace'],
     activeWorkspaceId: null as string | null,
+    initState: 'ready' as const,
     isInPersonalWorkspace: false,
     workspaceTransitionGeneration: 0,
     identityGeneration: 0
