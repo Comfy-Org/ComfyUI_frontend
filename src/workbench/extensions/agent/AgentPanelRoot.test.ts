@@ -1,5 +1,10 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
+import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import { setImmediate } from 'node:timers/promises'
 
 import type {
@@ -38,6 +43,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
+import type { ConsentOfferHooks } from './composables/agent/useAgentConsent'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
@@ -110,7 +116,11 @@ const socketSend = vi.hoisted(() => vi.fn())
 let agentSocket: ReturnType<typeof createFakeAgentSocket>
 const currentUserInfo = ref<{ id: string } | null>(null)
 const withConsent = vi.fn<
-  (trigger: AgentConsentTrigger, onAccept: () => void) => Promise<void>
+  (
+    trigger: AgentConsentTrigger,
+    onAccept: () => void,
+    hooks?: ConsentOfferHooks
+  ) => Promise<void>
 >(async (_trigger, onAccept) => onAccept())
 
 vi.mock(import('./composables/agent/useAgentConsent'), { spy: true })
@@ -151,6 +161,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
       fetch(route.startsWith('/api') ? route : `/api${route}`, options),
     getServerFeature,
     socket: { readyState: 1, send: socketSend },
+    resetSocket: vi.fn(async () => {}),
     dispatchCustomEvent: vi.fn(),
     addEventListener: ws.add,
     removeEventListener: ws.remove,
@@ -269,6 +280,7 @@ const paywallBilling = vi.hoisted(() => ({
 const paywallHasFunds = ref<boolean | null>(false)
 const paywallAgentHasFunds = ref<boolean | undefined>()
 const paywallAgentScopedHasFunds = ref<boolean | undefined>()
+const paywallAgentScopedHasFundsAuthoritative = ref(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -350,7 +362,10 @@ beforeEach(() => {
     reset: vi.fn(),
     stop: () => {}
   })
-  useAuthStore().currentUser = fromPartial<User>({ uid: 'account-a' })
+  useAuthStore().currentUser = fromPartial<User>({
+    uid: 'account-a',
+    getIdToken: async () => 'id-token'
+  })
   vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue({
     Authorization: 'Bearer id-token'
   })
@@ -393,7 +408,9 @@ beforeEach(() => {
               hasFunds: paywallHasFunds.value,
               agentHasFunds:
                 paywallAgentHasFunds.value ?? paywallHasFunds.value,
-              agentScopedHasFunds: paywallAgentScopedHasFunds.value
+              agentScopedHasFunds: paywallAgentScopedHasFunds.value,
+              agentScopedHasFundsAuthoritative:
+                paywallAgentScopedHasFundsAuthoritative.value
             })
       ),
       tier: computed(() => paywallBilling.tier),
@@ -521,6 +538,7 @@ beforeEach(() => {
   paywallHasFunds.value = false
   paywallAgentHasFunds.value = undefined
   paywallAgentScopedHasFunds.value = undefined
+  paywallAgentScopedHasFundsAuthoritative.value = false
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -713,6 +731,7 @@ describe('AgentPanelRoot first-use experience', () => {
   function placeFundedFreeUseNotice() {
     paywallHasFunds.value = true
     paywallAgentScopedHasFunds.value = true
+    paywallAgentScopedHasFundsAuthoritative.value = true
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
       fromPartial({
         variant: ref('top-banner'),
@@ -745,6 +764,17 @@ describe('AgentPanelRoot first-use experience', () => {
   ])('says nothing about free turns when $label', async ({ scoped }) => {
     placeFundedFreeUseNotice()
     paywallAgentScopedHasFunds.value = scoped
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    expect(reportFreeUseNotice).not.toHaveBeenCalled()
+  })
+
+  it('rejects a billing-disabled fallback that reports a grant without a rail', async () => {
+    placeFundedFreeUseNotice()
+    paywallAgentScopedHasFundsAuthoritative.value = false
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
@@ -986,19 +1016,8 @@ describe('AgentPanelRoot onboarding', () => {
     expect(useTelemetry()!.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
   })
 
-  it('walks through the four cards and leaves the composer usable after Done', async () => {
-    render(
-      defineComponent({
-        setup: () => () =>
-          h('div', [
-            h('section', { class: 'graph-canvas-panel' }, [
-              h('div', { role: 'toolbar' })
-            ]),
-            h(AgentPanelRoot)
-          ])
-      }),
-      { global: { plugins: [i18n] } }
-    )
+  it('walks through the three cards and leaves the composer usable after Done', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     for (const [index, { title, description }] of [
       {
@@ -1007,14 +1026,9 @@ describe('AgentPanelRoot onboarding', () => {
           'Describe your ideas, ask it to build and run workflows. It sees your canvas and files.'
       },
       {
-        title: "Your agent edits the workflow you're viewing",
+        title: 'The agent edits one workflow at a time',
         description:
-          'It switches with your tabs until you send a message, choose a workflow, or add a node reference.'
-      },
-      {
-        title: 'Let the agent run while you edit',
-        description:
-          'You can still edit the graph or switch tabs while the agent is working.'
+          'That workflow is named at the top of the message box. Click the name to pick another. Clicking a workflow tab can open its latest chat, unless the message box has a draft.'
       },
       {
         title: 'Pick up where you left off',
@@ -1025,11 +1039,11 @@ describe('AgentPanelRoot onboarding', () => {
       const dialog = await screen.findByRole('dialog', { name: title })
       expect(dialog).toHaveAccessibleDescription(description)
       await waitFor(() =>
-        expect(within(dialog).getByText(`${index + 1} of 4`)).toBeVisible()
+        expect(within(dialog).getByText(`${index + 1} of 3`)).toBeVisible()
       )
       await userEvent.click(
         within(dialog).getByRole('button', {
-          name: index === 3 ? 'Done' : 'Next'
+          name: index === 2 ? 'Done' : 'Next'
         })
       )
     }
@@ -2189,6 +2203,27 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
         surface: 'credits_exhausted'
       })
     )
+  })
+
+  it('stays hidden on a thread the agent started, with no user message', async () => {
+    paywallHasFunds.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-agent-started')
+    conversation.messages.push({
+      id: toTurnId('msg-agent-opening'),
+      role: 'assistant',
+      parts: [
+        { type: 'text', text: 'Want me to wire that up?', state: 'done' }
+      ],
+      streaming: false,
+      thinking: false
+    })
+    await nextTick()
+
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
   it('stays hidden while a restored thread has not loaded any messages', async () => {
@@ -8656,7 +8691,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(withConsent).toHaveBeenCalledExactlyOnceWith(
       'first_message',
-      expect.any(Function)
+      expect.any(Function),
+      { onExit: expect.any(Function) }
     )
     expect(bodies).toHaveLength(0)
 
@@ -8664,6 +8700,101 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Stop' })
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
+
+  it('reports the consent hold and its release against the attempt that is then sent', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
+      Object.assign(useAgentConsentStore(), { accepted: true })
+      onAccept()
+    })
+    renderWithSelectedTarget()
+
+    await sendFromComposer('build me a workflow')
+    await waitFor(() => expect(bodies).toHaveLength(1))
+
+    expect(telemetry.trackAgentSendGated.mock.calls).toEqual([
+      [
+        {
+          gate: 'consent',
+          outcome: 'held',
+          reason: null,
+          client_message_id: 'client-message-1',
+          held_ms: null,
+          thread_id: null,
+          client_session_id: expect.any(String)
+        }
+      ],
+      [
+        {
+          gate: 'consent',
+          outcome: 'released',
+          reason: 'accepted',
+          client_message_id: 'client-message-1',
+          held_ms: expect.any(Number),
+          thread_id: null,
+          client_session_id: expect.any(String)
+        }
+      ]
+    ])
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith(
+      expect.objectContaining({ client_message_id: 'client-message-1' })
+    )
+  })
+
+  it.for(['declined', 'dismissed'] as const)(
+    'reports a send dropped because consent was %s',
+    async (exit) => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      withConsent.mockImplementationOnce(async (_trigger, _onAccept, hooks) =>
+        hooks?.onExit?.(exit)
+      )
+      renderWithSelectedTarget()
+
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('build me a workflow')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+
+      expect(telemetry.trackAgentSendGated).toHaveBeenLastCalledWith({
+        gate: 'consent',
+        outcome: 'dropped',
+        reason: exit,
+        client_message_id: 'client-message-1',
+        held_ms: expect.any(Number),
+        thread_id: null,
+        client_session_id: expect.any(String)
+      })
+      expect(telemetry.trackAgentSendGated).toHaveBeenCalledTimes(2)
+      expect(bodies).toHaveLength(0)
+    }
+  )
+
+  it.for(['workspace', 'legacy'] as const)(
+    'leaves the $ post-consent billing refresh to the dock host on first send',
+    async (billingType) => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      paywallBilling.type = billingType
+      paywallAgentHasFunds.value = true
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
+        Object.assign(useAgentConsentStore(), { accepted: true })
+        onAccept()
+      })
+      renderWithSelectedTarget()
+
+      paywallBilling.fetchStatus.mockClear()
+
+      await sendFromComposer('build me a workflow')
+
+      expect(withConsent).toHaveBeenCalledOnce()
+      expect(paywallBilling.fetchStatus).not.toHaveBeenCalled()
+    }
+  )
 
   it.for([
     { host: 'Desktop', desktop: true },
@@ -8689,7 +8820,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
       expect(withConsent).toHaveBeenCalledExactlyOnceWith(
         'first_message',
-        expect.any(Function)
+        expect.any(Function),
+        { onExit: expect.any(Function) }
       )
       expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
       expect(bodies).toHaveLength(0)
@@ -8964,6 +9096,36 @@ describe('AgentPanelRoot workflow binding', () => {
       await waitFor(() => expect(bodies).toHaveLength(1))
     })
 
+    it('reports the coach hold as released when the tour is skipped', async () => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
+      const coach = await sendHeldByCoach('build me a workflow')
+
+      expect(telemetry.trackAgentSendGated).toHaveBeenLastCalledWith({
+        gate: 'coach',
+        outcome: 'held',
+        reason: null,
+        client_message_id: 'client-message-1',
+        held_ms: null,
+        thread_id: null,
+        client_session_id: expect.any(String)
+      })
+
+      await userEvent.click(within(coach).getByRole('button', { name: 'Skip' }))
+      await waitFor(() => expect(bodies).toHaveLength(1))
+
+      expect(telemetry.trackAgentSendGated).toHaveBeenLastCalledWith({
+        gate: 'coach',
+        outcome: 'released',
+        reason: 'skipped',
+        client_message_id: 'client-message-1',
+        held_ms: expect.any(Number),
+        thread_id: null,
+        client_session_id: expect.any(String)
+      })
+    })
+
     it('shows no hold notice on a replay with nothing held', async () => {
       withConsent.mockReset()
       Object.assign(useAgentConsentStore(), { accepted: true })
@@ -8981,6 +9143,43 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(screen.queryByTestId('agent-coach-hold-notice')).toBeNull()
     })
 
+    it('sends once when another tab finishes the tour during the hold', async () => {
+      const key = 'Comfy.AgentPanel.onboarded.account-a.workspace-hold'
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+      expect(bodies).toHaveLength(0)
+
+      localStorage.setItem(key, 'true')
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key,
+          newValue: 'true',
+          storageArea: localStorage
+        })
+      )
+
+      await waitFor(() => expect(bodies).toHaveLength(1))
+      expect(telemetry.trackAgentSendGated).toHaveBeenCalledWith({
+        gate: 'coach',
+        outcome: 'released',
+        reason: 'elsewhere',
+        client_message_id: 'client-message-1',
+        held_ms: expect.any(Number),
+        thread_id: null,
+        client_session_id: expect.any(String)
+      })
+      const coachOutcomes = telemetry.trackAgentSendGated.mock.calls
+        .map(([metadata]) => metadata)
+        .filter((metadata) => metadata.gate === 'coach')
+        .map(({ outcome, reason }) => ({ outcome, reason }))
+      expect(coachOutcomes).toEqual([
+        { outcome: 'held', reason: null },
+        { outcome: 'released', reason: 'elsewhere' }
+      ])
+    })
+
     it('sends once when a coach step never finds its target', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true })
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
@@ -8989,6 +9188,9 @@ describe('AgentPanelRoot workflow binding', () => {
       renderWithSelectedTarget()
 
       await sendHeldByCoach('build me a workflow')
+      screen
+        .getByRole('button', { name: 'Show chat history', hidden: true })
+        .removeAttribute('id')
       await user.click(
         within(
           await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
@@ -8997,10 +9199,13 @@ describe('AgentPanelRoot workflow binding', () => {
       await user.click(
         within(
           await screen.findByRole('dialog', {
-            name: "Your agent edits the workflow you're viewing"
+            name: 'The agent edits one workflow at a time'
           })
         ).getByRole('button', { name: 'Next' })
       )
+      expect(
+        screen.queryByRole('dialog', { name: 'Pick up where you left off' })
+      ).not.toBeInTheDocument()
       expect(bodies).toHaveLength(0)
 
       await vi.advanceTimersByTimeAsync(8_000)
@@ -9042,6 +9247,45 @@ describe('AgentPanelRoot workflow binding', () => {
       }
     )
 
+    it('puts the draft back when App Mode releases the hold in the update that closes the panel', async () => {
+      Object.assign(useAgentPanelStore(), { enabled: true, isOpen: true })
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      const settleSubmission = vi.spyOn(
+        useAgentComposerStore(),
+        'settleSubmission'
+      )
+      const { unmount } = renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+      const stopCloseOnAppMode = watch(
+        () => canvasStore.linearMode,
+        () => {
+          useAgentPanelStore().close('close_button')
+          unmount()
+        },
+        { flush: 'post' }
+      )
+
+      try {
+        canvasStore.linearMode = true
+
+        await waitFor(() =>
+          expect(settleSubmission).toHaveBeenCalledWith(
+            expect.any(Number),
+            false
+          )
+        )
+      } finally {
+        stopCloseOnAppMode()
+      }
+      expect(bodies).toHaveLength(0)
+      renderWithSelectedTarget()
+      expect(await screen.findByRole('textbox')).toHaveTextContent(
+        'build me a workflow'
+      )
+      expect(bodies).toHaveLength(0)
+    })
+
     it('puts the draft back when consent is cleared before App Mode releases the hold', async () => {
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
@@ -9061,6 +9305,20 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(bodies).toHaveLength(0)
     })
 
+    it('shows the feedback form which gate holds the send until the panel closes', async () => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      const { unmount } = renderWithSelectedTarget()
+
+      await sendHeldByCoach('build me a workflow')
+      expect(useAgentPanelStore().heldSendGate).toBe('coach')
+
+      useAgentPanelStore().close('close_button')
+      unmount()
+
+      expect(useAgentPanelStore().heldSendGate).toBeNull()
+    })
+
     it('puts the draft back instead of sending when the panel closes', async () => {
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
@@ -9078,6 +9336,14 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
       )
       expect(bodies).toHaveLength(0)
+      const coachOutcomes = telemetry.trackAgentSendGated.mock.calls
+        .map(([metadata]) => metadata)
+        .filter((metadata) => metadata.gate === 'coach')
+        .map(({ outcome, reason }) => ({ outcome, reason }))
+      expect(coachOutcomes).toEqual([
+        { outcome: 'held', reason: null },
+        { outcome: 'dropped', reason: 'panel_closed' }
+      ])
       renderWithSelectedTarget()
       expect(await screen.findByRole('textbox')).toHaveTextContent(
         'build me a workflow'
@@ -9093,7 +9359,7 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mockClear()
     renderWithSelectedTarget()
 
-    const prompt = i18n.global.t('agent.suggestedPrompts.cloud.1')
+    const prompt = i18n.global.t('agent.suggestedPrompts.treatment.cloud.1')
     await userEvent.click(await screen.findByRole('button', { name: prompt }))
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
@@ -14073,11 +14339,47 @@ describe('AgentPanelRoot workflow binding', () => {
         seq: 1
       })
 
+      vi.mocked(reportError).mockClear()
       agentSocket.drop()
       await sendFromComposer('second message')
 
       expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
       expect(bodies[1]).not.toHaveProperty('draft')
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_canvas_draft_withheld_stale',
+        level: 'warning',
+        fingerprint: ['agent_canvas_draft_withheld_stale'],
+        tags: {
+          failure_kind: 'bad_state',
+          feature_area: 'agent',
+          operation: 'send',
+          outcome: 'withheld'
+        },
+        context: { workflowId: 'wf-42' }
+      })
+    })
+
+    it('reports nothing when a connected canvas sends its draft', async () => {
+      const bodies = await bindAndSettle()
+      ws.emit('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: true,
+        seq: 1
+      })
+      vi.mocked(reportError).mockClear()
+
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toHaveProperty('draft')
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'agent_canvas_draft_withheld_stale'
+        })
+      )
     })
 
     it('seeds the draft for a bound document while the agent identity is still pending', async () => {
@@ -16037,6 +16339,31 @@ function signInAs({ firebase, apiKeyUser }: AgentAccount): void {
     apiKeyUser === null ? null : { id: apiKeyUser }
 }
 
+async function startDesktopHostSessionOn(initialWorkspaceId: string) {
+  const hostOn = (workspaceId: string) =>
+    fromPartial<DesktopHostAuthState>({
+      status: 'signed_in',
+      userId: 'account-a',
+      workspaceId
+    })
+  let notify: (state: DesktopHostAuthState) => void = () => {}
+  await startDesktopHostSession({
+    getState: async () => hostOn(initialWorkspaceId),
+    getWorkspaceToken: async () => 'host-token',
+    requestSignIn: async () => hostOn(initialWorkspaceId),
+    signOut: async () => ({ status: 'signed_out' }),
+    switchWorkspace: async (workspaceId) => hostOn(workspaceId),
+    onChanged: (listener) => {
+      notify = listener
+      return () => {}
+    }
+  })
+  return {
+    hostOn,
+    notifyHostChanged: (state: DesktopHostAuthState) => notify(state)
+  }
+}
+
 describe('AgentPanelRoot agent socket', () => {
   it.for([
     {
@@ -16082,6 +16409,141 @@ describe('AgentPanelRoot agent socket', () => {
       expect(reset).toHaveBeenCalledOnce()
     }
   )
+
+  it('reconnects the socket and looks the identity up again on a workspace switch', async () => {
+    const reset = vi.fn()
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset,
+      stop: () => {}
+    })
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    agentSocket.reconnect.mockClear()
+
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-b' })
+    await nextTick()
+
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+    expect(reset).toHaveBeenCalledOnce()
+  })
+
+  it('handshakes once for a workspace switch that passes through null', async () => {
+    const reset = vi.fn()
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset,
+      stop: () => {}
+    })
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    agentSocket.reconnect.mockClear()
+
+    Object.assign(workspaces, { activeWorkspaceId: null })
+    await nextTick()
+    expect(agentSocket.reconnect).not.toHaveBeenCalled()
+    expect(reset).not.toHaveBeenCalled()
+
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-b' })
+    await nextTick()
+
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+    expect(reset).toHaveBeenCalledOnce()
+  })
+
+  it('drops the socket when the workspace goes null while Desktop pins another', async () => {
+    const reset = vi.fn()
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset,
+      stop: () => {}
+    })
+    await startDesktopHostSessionOn('ws-host')
+    try {
+      signInAs({ firebase: 'account-a', apiKeyUser: null })
+      const workspaces = useTeamWorkspaceStore()
+      Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      agentSocket.reconnect.mockClear()
+
+      Object.assign(workspaces, { activeWorkspaceId: null })
+      await nextTick()
+
+      expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+      expect(reset).toHaveBeenCalledOnce()
+    } finally {
+      stopDesktopHostSession()
+    }
+  })
+
+  it('reconnects when only the Desktop host workspace moves', async () => {
+    const reset = vi.fn()
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset,
+      stop: () => {}
+    })
+    const { hostOn, notifyHostChanged } =
+      await startDesktopHostSessionOn('ws-a')
+    try {
+      signInAs({ firebase: 'account-a', apiKeyUser: null })
+      const workspaces = useTeamWorkspaceStore()
+      Object.assign(workspaces, { activeWorkspaceId: null })
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      agentSocket.reconnect.mockClear()
+
+      notifyHostChanged(hostOn('ws-b'))
+      await nextTick()
+
+      expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+      expect(reset).toHaveBeenCalledOnce()
+    } finally {
+      stopDesktopHostSession()
+    }
+  })
+
+  it('still drops the socket when a sign-out clears the workspace too', async () => {
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    agentSocket.reconnect.mockClear()
+
+    signInAs({ firebase: null, apiKeyUser: null })
+    Object.assign(workspaces, { activeWorkspaceId: null })
+    await nextTick()
+
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+  })
+
+  it('leaves the socket alone when neither the account nor the workspace moves', async () => {
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    agentSocket.reconnect.mockClear()
+
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-a' })
+    await nextTick()
+
+    expect(agentSocket.reconnect).not.toHaveBeenCalled()
+  })
 
   it('opens the events socket under the api base path', async () => {
     vi.mocked(api.apiURL).mockImplementation((route) => `/comfy/api${route}`)

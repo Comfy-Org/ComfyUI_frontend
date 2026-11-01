@@ -19,6 +19,7 @@ vi.mock(import('@/platform/billing/api/billingApi'))
 import { usePlanCheckoutBanner } from './usePlanCheckoutBanner'
 
 const status = {
+  ended_at: null,
   is_active: true,
   has_funds: true,
   max_seats: 1,

@@ -70,6 +70,7 @@ export type InlineOutcome =
       readonly serverMessage?: string
     }
   | { readonly kind: 'not_completed'; readonly operationId?: string }
+  | { readonly kind: 'not_verified'; readonly operationId?: string }
   | { readonly kind: 'price_updated' }
   | { readonly kind: 'promo_expired'; readonly code: string }
   | { readonly kind: 'reconciling'; readonly because?: Recheck }

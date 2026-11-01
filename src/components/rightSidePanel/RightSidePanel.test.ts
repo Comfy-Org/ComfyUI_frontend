@@ -36,6 +36,13 @@ vi.mock(import('@/composables/graph/useGraphHierarchy'), () => ({
   useGraphHierarchy: () => ({ findParentGroup: vi.fn(() => null) })
 }))
 
+vi.mock(import('@/composables/canvas/useFocusNode'), () => ({
+  useFocusNode: () => ({
+    focusNode: vi.fn(),
+    focusNodeInstance: vi.fn()
+  })
+}))
+
 vi.mock(import('@comfyorg/telemetry'))
 
 function createPanelI18n() {

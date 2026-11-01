@@ -19,6 +19,7 @@ export interface PlanRowFacts {
   planName: string | null
   renewalDate: string | null
   endDate: string | null
+  endedAt?: string | null
   scheduledChange: { planName: string; effectiveAt: string } | null
   freeRuns: { remaining: number; total: number } | null
   planKind: PlanKind | null
@@ -42,9 +43,9 @@ export type PlanRowState =
     }
   | {
       kind: 'ended'
-      planName: string
+      planName: string | null
       cadence: BillingCadence | null
-      endedAt: string
+      endedAt: string | null
     }
   | {
       kind: 'noPlan'
@@ -80,6 +81,19 @@ function toCadence(
   return null
 }
 
+function endedDate(facts: PlanRowFacts): string | null {
+  return facts.endedAt === undefined ? facts.endDate : facts.endedAt
+}
+
+function endedRow(facts: PlanRowFacts): PlanRowState {
+  return {
+    kind: 'ended',
+    planName: facts.planName,
+    cadence: toCadence(facts.duration),
+    endedAt: endedDate(facts)
+  }
+}
+
 function salesManagedRow(facts: PlanRowFacts): PlanRowState | null {
   if (facts.planKind !== 'sales_managed') return null
   switch (facts.billingStatus) {
@@ -104,6 +118,13 @@ export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
   const { subscriptionStatus, planName, renewalDate, endDate } = facts
   if (facts.subscriptionState === 'activating' && planName !== null) {
     return { kind: 'activating', planName }
+  }
+  if (facts.subscriptionState === 'ended') {
+    return endedRow(facts)
+  }
+  switch (subscriptionStatus) {
+    case 'ended':
+      return endedRow(facts)
   }
   if (subscriptionStatus === null) {
     return { kind: 'noPlan', freeRuns: facts.freeRuns }
@@ -131,10 +152,6 @@ export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
       return endDate
         ? { kind: 'ending', planName, cadence, endsAt: endDate }
         : UNKNOWN
-    case 'ended':
-      return endDate
-        ? { kind: 'ended', planName, cadence, endedAt: endDate }
-        : UNKNOWN
     default:
       return UNKNOWN
   }
@@ -153,6 +170,7 @@ export function planRowAction(
   switch (state.kind) {
     case 'activating':
     case 'active':
+    case 'ending':
     case 'paused':
     case 'unknown':
       return 'manage'
@@ -160,7 +178,6 @@ export function planRowAction(
       return 'subscribe'
     case 'ended':
       return 'choosePlan'
-    case 'ending':
     case 'salesManaged':
       return null
   }

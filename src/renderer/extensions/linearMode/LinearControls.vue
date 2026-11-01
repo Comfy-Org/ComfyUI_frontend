@@ -7,7 +7,7 @@ import { computed, ref, toValue, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
-import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'

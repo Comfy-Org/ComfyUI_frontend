@@ -58,7 +58,7 @@ import {
   webSessionRequests,
   webSessionResourceHeader,
   webSessionSend
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -81,7 +81,7 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type { ComfyApp } from '@/scripts/app'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -158,7 +158,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>({
       registerExtension: (extension: ComfyExtension) => {
@@ -656,6 +656,7 @@ function capabilitiesResponse({
   workspaceId
 }: BillingScope): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
     resolved_for: { user_id: userId, workspace_id: workspaceId },
     capabilities: {
       can_subscribe_self_serve: true,
@@ -695,6 +696,7 @@ function billingAnswer(path: string, scope: BillingScope): unknown {
     case '/api/billing/status':
       return {
         billing_rail: 'stripe',
+        ended_at: null,
         has_funds: true,
         is_active: true,
         max_seats: 1,
@@ -918,7 +920,8 @@ describe('cloud API requests on the shared web session', () => {
         { ...LISTED, id: 'ws-personal', name: 'Personal', type: 'personal' },
         { ...LISTED, id: 'ws-team', name: 'Team', type: 'team' }
       ],
-      can_create_workspace: true
+      can_create_workspace: true,
+      max_owned_workspaces: 10
     })
 
     await useTeamWorkspaceStore().initialize()

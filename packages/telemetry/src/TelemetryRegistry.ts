@@ -14,6 +14,7 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentCreditTransitionNoticeMetadata,
+  AgentCreditUsageExposureMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
@@ -25,6 +26,7 @@ import type {
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentSendGatedMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -33,7 +35,6 @@ import type {
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
-  AgentStarterPromptExposureMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -82,6 +83,7 @@ import type {
   TabCountMetadata,
   TelemetryDispatcher,
   TelemetryProvider,
+  FetchStatusRetryMetadata,
   FetchTimeoutMetadata,
   TemplateFilterMetadata,
   TemplateLibraryClosedMetadata,
@@ -488,20 +490,20 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     )
   }
 
-  trackAgentStarterPromptExposure(
-    metadata: AgentStarterPromptExposureMetadata
-  ): void {
-    this.dispatch((provider) =>
-      provider.trackAgentStarterPromptExposure?.(metadata)
-    )
-  }
-
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
     this.dispatch((provider) => provider.trackAgentFreeUseNotice?.(metadata))
   }
 
   trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
     this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
+  }
+
+  trackAgentCreditUsageExposure(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentCreditUsageExposure?.(metadata)
+    )
   }
 
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
@@ -579,6 +581,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     )
   }
 
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentSendGated?.(metadata))
+  }
+
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.dispatch((provider) => provider.trackWidgetFavoriteToggled?.(metadata))
   }
@@ -609,5 +615,9 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
     this.dispatch((provider) => provider.trackFetchTimeout?.(metadata))
+  }
+
+  trackFetchStatusRetry(metadata: FetchStatusRetryMetadata): void {
+    this.dispatch((provider) => provider.trackFetchStatusRetry?.(metadata))
   }
 }

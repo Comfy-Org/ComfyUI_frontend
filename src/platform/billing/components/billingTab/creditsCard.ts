@@ -1,13 +1,20 @@
 import type { BalanceInfo } from '@/platform/billing/composables/types'
 import type { AutoReloadSettings, BillingStatus } from '@comfyorg/billing-core'
-import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
+import type { PeriodCreditGrant } from '@comfyorg/ingest-types'
+import type {
+  PlanKind,
+  PlanRowState
+} from '@/platform/billing/components/billingTab/planRow'
 
 export interface CreditsCardFacts {
   balance: BalanceInfo | null
   planKind: PlanRowState['kind']
+  servedPlanKind: PlanKind | null
   billingStatus: BillingStatus | null
+  periodCreditGrant: PeriodCreditGrant | null
   planPoolCredits: number | null
   renewalDate: string | null
+  endDate: string | null
 }
 
 export type CreditsCardState =
@@ -20,9 +27,22 @@ export type CreditsCardState =
       planPoolCredits: number | null
       topUpCents: number
       topUpInUse: boolean
-      renewalDate: string | null
-      refillAwaitsPayment: boolean
+      showUsage: boolean
+      planDate:
+        | { kind: 'refills' | 'availableUntil'; date: string | null }
+        | { kind: 'afterPayment' }
     }
+
+export type PlanCreditsState = Extract<CreditsCardState, { kind: 'plan' }>
+
+const PLAN_USAGE_SHOWN: Record<BillingStatus, boolean> = {
+  awaiting_payment_method: true,
+  pending_payment: true,
+  paid: true,
+  payment_failed: true,
+  paused: false,
+  inactive: true
+}
 
 /** Maps the served balance and plan state onto the Credits card. */
 export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
@@ -32,7 +52,11 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
   }
   const availableCents = balance.effectiveBalanceMicros ?? balance.amountMicros
 
-  if (facts.planKind === 'noPlan' || facts.planKind === 'ended') {
+  if (
+    facts.planKind === 'noPlan' ||
+    facts.planKind === 'ended' ||
+    facts.periodCreditGrant?.state === 'none'
+  ) {
     return { kind: 'noPlan', availableCents }
   }
 
@@ -43,11 +67,13 @@ export function deriveCreditsCard(facts: CreditsCardFacts): CreditsCardState {
     kind: 'plan',
     availableCents,
     planCents: facts.billingStatus === 'paused' ? 0 : planCents,
-    planPoolCredits: facts.planPoolCredits,
+    planPoolCredits: planPoolCreditsFor(facts),
     topUpCents,
     topUpInUse: planCents === 0 && topUpCents > 0,
-    renewalDate: facts.renewalDate,
-    refillAwaitsPayment: facts.planKind === 'paused'
+    showUsage: facts.billingStatus
+      ? PLAN_USAGE_SHOWN[facts.billingStatus]
+      : true,
+    planDate: planDateFor(facts)
   }
 }
 
@@ -70,4 +96,24 @@ export function addCreditsEmphasis(
     !facts.planActionIsPrimary
     ? 'inverted'
     : 'secondary'
+}
+
+function planPoolCreditsFor(facts: CreditsCardFacts): number | null {
+  const grant = facts.periodCreditGrant
+  if (!grant) return facts.planPoolCredits
+  return grant.state === 'amount' ? (grant.credits ?? null) : null
+}
+
+function planDateFor(facts: CreditsCardFacts): PlanCreditsState['planDate'] {
+  switch (facts.planKind) {
+    case 'paused':
+      return { kind: 'afterPayment' }
+    case 'ending':
+      return { kind: 'availableUntil', date: facts.endDate }
+    default:
+      return {
+        kind: 'refills',
+        date: facts.servedPlanKind === 'self_serve' ? facts.renewalDate : null
+      }
+  }
 }

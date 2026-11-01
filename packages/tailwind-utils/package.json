@@ -11,6 +11,7 @@
   "types": "./dist-types/index.d.ts",
   "exports": {
     ".": {
+      "@comfyorg/tailwind-utils": "./src/index.ts",
       "types": "./dist-types/index.d.ts",
       "default": "./src/index.ts"
     }

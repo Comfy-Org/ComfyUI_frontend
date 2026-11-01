@@ -31,12 +31,21 @@
       </Button>
       <Button
         v-else-if="action"
-        :variant="action === 'manage' ? 'secondary' : 'inverted'"
+        as="a"
+        :href="plansHref"
+        target="_blank"
+        rel="noopener"
+        :variant="
+          action === 'manage' || addCreditsVariant === 'inverted'
+            ? 'secondary'
+            : 'inverted'
+        "
         size="md"
-        class="shrink-0"
-        @click="emit('openPlan')"
+        class="shrink-0 no-underline"
+        @click="trackPlans"
       >
         {{ $t(`workspacePanel.billingTab.plan.actions.${action}`) }}
+        <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
       </Button>
     </div>
   </section>
@@ -52,6 +61,7 @@ import {
   CONTACT_SALES_URL,
   formatPlanDate
 } from '@/platform/billing/components/billingTab/planRow'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 import type {
   PlanRowAction,
   PlanRowState
@@ -61,17 +71,20 @@ const {
   state,
   action,
   canManageSubscription,
-  salesVariant = 'secondary'
+  salesVariant = 'secondary',
+  addCreditsVariant = 'secondary'
 } = defineProps<{
   state: PlanRowState
   action: PlanRowAction | null
   canManageSubscription: boolean
   salesVariant?: 'inverted' | 'secondary'
+  addCreditsVariant?: 'inverted' | 'secondary'
 }>()
 
-const emit = defineEmits<{
-  openPlan: []
-}>()
+const { href: plansHref, track: trackPlans } = usePlatformHandoff(
+  '/profile/billing/plans',
+  { target: 'plans' }
+)
 
 const { t, locale } = useI18n()
 
@@ -81,6 +94,9 @@ const title = computed(() => {
   }
   if (state.kind === 'unknown') {
     return t('workspacePanel.billingTab.plan.unknown.title')
+  }
+  if (state.kind === 'ended') {
+    return state.planName ?? t('workspacePanel.billingTab.plan.unknown.title')
   }
   if (state.kind === 'salesManaged') {
     return (
@@ -117,6 +133,14 @@ function noPlanLine(state: Extract<PlanRowState, { kind: 'noPlan' }>) {
     : t(`${key}.freeRunsUsed`, { total })
 }
 
+function endedLine(state: Extract<PlanRowState, { kind: 'ended' }>) {
+  const key = 'workspacePanel.billingTab.plan'
+  if (!state.endedAt) return t(`${key}.endedNoDate`)
+  return t(`${key}.ended`, {
+    date: formatPlanDate(state.endedAt, locale.value, state.cadence)
+  })
+}
+
 const statusLine = computed(() => {
   const key = 'workspacePanel.billingTab.plan'
   if (state.kind === 'activating') {
@@ -137,11 +161,7 @@ const statusLine = computed(() => {
       date: formatPlanDate(state.endsAt, locale.value, state.cadence)
     })
   }
-  if (state.kind === 'ended') {
-    return t(`${key}.ended`, {
-      date: formatPlanDate(state.endedAt, locale.value, state.cadence)
-    })
-  }
+  if (state.kind === 'ended') return endedLine(state)
   return ''
 })
 

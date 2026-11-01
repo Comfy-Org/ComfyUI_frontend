@@ -230,28 +230,16 @@ describe('useWidgetSelectItems', () => {
         query: { filename: 'x.png', type: 'output', subfolder: 'sub' }
       },
       {
-        value: '/x.png [output]',
-        query: { filename: '/x.png', type: 'output' }
+        value: '12:30.png [output]',
+        query: { filename: '12:30.png', type: 'output' }
       },
       {
-        value: '\\x.png [output]',
-        query: { filename: '\\x.png', type: 'output' }
+        value: 'pasted/12:30.png [output]',
+        query: { filename: '12:30.png', type: 'output', subfolder: 'pasted' }
       },
       {
-        value: 'sub/x.png/ [output]',
-        query: { filename: 'sub/x.png/', type: 'output' }
-      },
-      {
-        value: 'D:\\x.png [output]',
-        query: { filename: 'D:\\x.png', type: 'output' }
-      },
-      {
-        value: '1:/x.png [output]',
-        query: { filename: '1:/x.png', type: 'output' }
-      },
-      {
-        value: 'sub/../x.png [output]',
-        query: { filename: 'sub/../x.png', type: 'output' }
+        value: '12:30/x.png [output]',
+        query: { filename: 'x.png', type: 'output', subfolder: '12:30' }
       }
     ])(
       'previews the fallback for $value from its root, subfolder and filename',
@@ -265,6 +253,27 @@ describe('useWidgetSelectItems', () => {
         const [path, search] = previewUrl.split('?')
         expect(path).toBe('/api/view')
         expect(Object.fromEntries(new URLSearchParams(search))).toEqual(query)
+      }
+    )
+
+    it.for([
+      '/x.png [output]',
+      '\\x.png [output]',
+      'sub/x.png/ [output]',
+      'sub//x.png [output]',
+      'D:\\x.png [output]',
+      '1:/x.png [output]',
+      'D:x.png [output]',
+      'C:sub/x.png [output]',
+      'sub/../x.png [output]'
+    ])(
+      'shows no fallback preview for %s, which is not a plain relative path',
+      (value) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(value) })
+        )
+
+        expect(dropdownItems.value[0].preview_url).toBe('')
       }
     )
 
@@ -1089,6 +1098,181 @@ describe('useWidgetSelectItems', () => {
 
       expect(dropdownItems.value).toHaveLength(1)
       expect(dropdownItems.value[0].name).toBe('sub/photo.png [output]')
+    })
+  })
+
+  describe('option preview URLs', () => {
+    it.for([
+      { value: 'x.png', query: { filename: 'x.png', type: 'input' } },
+      {
+        value: 'sub/x.png',
+        query: { filename: 'x.png', type: 'input', subfolder: 'sub' }
+      },
+      {
+        value: 'a\\b\\x.png',
+        query: { filename: 'x.png', type: 'input', subfolder: 'a/b' }
+      }
+    ])(
+      'previews the input option $value from its subfolder and filename',
+      ({ value, query }) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({
+            values: () => [value],
+            modelValue: ref(value)
+          })
+        )
+
+        const previewUrl = dropdownItems.value[0].preview_url
+        assert(previewUrl)
+        const [path, search] = previewUrl.split('?')
+        expect(path).toBe('/api/view')
+        expect(Object.fromEntries(new URLSearchParams(search))).toEqual(query)
+      }
+    )
+
+    it.for(['../x.png', 'folder/./photo.png', '/abs/x.png', 'C:photo.png'])(
+      'shows no preview for the input option %s, which is not a plain relative path',
+      (value) => {
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({
+            values: () => [value],
+            modelValue: ref(value)
+          })
+        )
+
+        expect(dropdownItems.value[0].preview_url).toBe('')
+      }
+    )
+
+    it.for([
+      {
+        title: 'an output in a subfolder',
+        tags: ['output'],
+        subfolder: 'sub',
+        query: { filename: 'photo.png', type: 'output', subfolder: 'sub' }
+      },
+      {
+        title: 'a generated temp output',
+        tags: ['output', 'temp'],
+        subfolder: 'previews',
+        query: { filename: 'photo.png', type: 'temp', subfolder: 'previews' }
+      }
+    ])(
+      'falls back to a preview of $title from its root and subfolder',
+      async ({ tags, subfolder, query }) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'asset-no-preview',
+            name: 'photo.png',
+            preview_url: '',
+            tags,
+            user_metadata: { subfolder }
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(undefined) })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        const previewUrl = dropdownItems.value[0].preview_url
+        assert(previewUrl)
+        const [path, search] = previewUrl.split('?')
+        expect(path).toBe('/api/view')
+        expect(Object.fromEntries(new URLSearchParams(search))).toEqual(query)
+      }
+    )
+  })
+
+  describe('HDR image outputs', () => {
+    it.for(['sky_00001.exr', 'sky_00001.hdr'])(
+      'lists %s under image outputs with its stored preview',
+      async (name) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'asset-hdr-1',
+            name,
+            preview_id: 'preview-1',
+            preview_url: '',
+            tags: ['output']
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(undefined) })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        expect(dropdownItems.value).toMatchObject([
+          {
+            name: `${name} [output]`,
+            preview_url: expect.stringContaining('/assets/preview-1/content')
+          }
+        ])
+      }
+    )
+
+    it.for([
+      {
+        source: 'the job thumbnail',
+        asset: {
+          thumbnail_url: '/api/assets/thumb-1/content',
+          preview_url: '/api/view?filename=sky_00001.exr&type=output'
+        },
+        previewUrl: '/api/assets/thumb-1/content'
+      },
+      {
+        source: 'no thumbnail when only the raw file is known',
+        asset: { preview_url: '/api/view?filename=sky_00001.exr&type=output' },
+        previewUrl: ''
+      }
+    ])(
+      'shows $source for an HDR output without a stored preview id',
+      async ({ asset, previewUrl }) => {
+        mockMediaAssets.items.value = [
+          fromPartial({
+            id: 'asset-hdr-1',
+            name: 'sky_00001.exr',
+            tags: ['output'],
+            ...asset
+          })
+        ]
+
+        const { dropdownItems, filterSelected } = useWidgetSelectItems(
+          createDefaultOptions({ values: () => [], modelValue: ref(undefined) })
+        )
+        filterSelected.value = 'outputs'
+        await nextTick()
+
+        expect(dropdownItems.value).toMatchObject([
+          { name: 'sky_00001.exr [output]', preview_url: previewUrl }
+        ])
+      }
+    )
+
+    it('does not list HDR outputs for video widgets', async () => {
+      mockMediaAssets.items.value = [
+        fromPartial({
+          id: 'asset-hdr-1',
+          name: 'sky_00001.exr',
+          preview_id: 'preview-1',
+          tags: ['output']
+        })
+      ]
+
+      const { dropdownItems, filterSelected } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref(undefined),
+          assetKind: () => 'video' as const
+        })
+      )
+      filterSelected.value = 'outputs'
+      await nextTick()
+
+      expect(dropdownItems.value).toEqual([])
     })
   })
 

@@ -10,16 +10,19 @@ import {
 } from 'vitest'
 
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { ApiAuthProvider } from '@/platform/auth/apiAuthProvider'
-import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import type { ApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
+import { anonymousApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
+import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useAuthStore } from '@/stores/authStore'
-import { DEFAULT_RETRY_POLICY, NO_RETRY_POLICY } from '@/utils/retryPolicy'
+import {
+  DEFAULT_RETRY_POLICY,
+  NO_RETRY_POLICY
+} from '@comfyorg/api-client/retryPolicy'
 
 const { addBreadcrumb } = vi.hoisted(() => ({
   addBreadcrumb: vi.fn()

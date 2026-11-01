@@ -8,6 +8,8 @@ interface AccountPreconditionContext {
   /** Node type that triggered the precondition, used as modal context. */
   nodeType?: string
   source?: PaymentIntentSource
+  creditsLocked?: boolean
+  refusalType?: string
 }
 
 // Routes a resolved account precondition to its dedicated modal. This is the
@@ -19,21 +21,24 @@ export function useAccountPreconditionDialog() {
   const { showSubscriptionRequiredDialog, showTopUpCreditsDialog } =
     useBillingDialogs()
 
-  function open(
+  async function open(
     precondition: AccountPrecondition,
     context: AccountPreconditionContext = {}
-  ): void {
+  ): Promise<boolean> {
     switch (precondition) {
       case 'sign_in':
         void showApiNodesSignInDialog(
           context.nodeType ? [context.nodeType] : []
         )
-        return
+        return true
       case 'subscription':
-        void showSubscriptionRequiredDialog({
-          reason: context.source ?? 'subscription_required'
+        return showSubscriptionRequiredDialog({
+          reason: context.source ?? 'subscription_required',
+          ...(context.creditsLocked !== undefined && {
+            creditsLocked: context.creditsLocked
+          }),
+          ...(context.refusalType && { refusalType: context.refusalType })
         })
-        return
       case 'credits': {
         // The server just declared the balance exhausted; there is no push or
         // polling for billing state, so refresh it here to converge
@@ -46,7 +51,7 @@ export function useAccountPreconditionDialog() {
           isInsufficientCredits: true,
           ...(context.source && { source: context.source })
         })
-        return
+        return true
       }
     }
   }

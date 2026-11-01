@@ -30,7 +30,13 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { getMediaTypeFromFilename, parseFilePath } from '@/utils/formatUtil'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  hdrPreviewAssetUrl,
+  isHdrImageFilename,
+  isHdrImageUrl
+} from '@/utils/hdrFormatUtil'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
@@ -51,6 +57,21 @@ function assetKindToMediaType(kind: AssetKind): string {
   return kind === 'mesh' ? '3D' : kind
 }
 
+function getAssetMediaType(asset: AssetItem): string {
+  return isHdrImageFilename(asset.name)
+    ? 'image'
+    : getMediaTypeFromFilename(asset.name)
+}
+
+function getHdrOutputPreviewUrl(asset: AssetItem): string {
+  if (asset.preview_id) return hdrPreviewAssetUrl(asset.preview_id)
+  return (
+    [asset.thumbnail_url, asset.preview_url].find(
+      (url) => url && !isHdrImageUrl(url)
+    ) ?? ''
+  )
+}
+
 function getMediaUrl(
   filename: string,
   type: string,
@@ -65,26 +86,21 @@ function getMediaUrl(
 }
 
 function isPlainRelativePath(filepath: string): boolean {
-  return filepath
-    .split(/[\\/]/)
-    .every(
-      (segment) =>
-        segment !== '' &&
-        segment !== '.' &&
-        segment !== '..' &&
-        !segment.includes(':')
-    )
+  return (
+    !/^[^\\/]:/.test(filepath) &&
+    filepath
+      .split(/[\\/]/)
+      .every((segment) => segment !== '' && segment !== '.' && segment !== '..')
+  )
 }
 
 function getAnnotatedValueMediaUrl(
   value: string,
   assetKind: AssetKind | undefined
 ): string {
-  const { filepath, rootFolder } = parseAnnotatedPath(value)
-  if (!isPlainRelativePath(filepath))
-    return getMediaUrl(filepath, rootFolder, assetKind)
-  const { filename, subfolder } = parseFilePath(filepath)
-  return getMediaUrl(filename, rootFolder, assetKind, subfolder)
+  if (!isPlainRelativePath(parseAnnotatedPath(value).filepath)) return ''
+  const { filename, subfolder, type } = parseImageWidgetValue(value)
+  return getMediaUrl(filename, type, assetKind, subfolder)
 }
 
 export interface UseWidgetSelectItemsOptions {
@@ -219,7 +235,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       .filter((value) => !missing.has(String(value)))
       .map((value, index) => ({
         id: `input-${index}`,
-        preview_url: getMediaUrl(String(value), 'input', kind),
+        preview_url: getAnnotatedValueMediaUrl(String(value), kind),
         name: String(value),
         label: getDisplayLabel(String(value), labelFn)
       }))
@@ -246,7 +262,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     const missing = missingMediaValues.value
     for (const asset of assets) {
-      if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
+      if (getAssetMediaType(asset) !== targetMediaType) continue
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const filenameForUrl = getAssetUrlFilename(asset)
@@ -263,7 +279,10 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         preview_url:
           kind === 'mesh'
             ? ''
-            : asset.preview_url || getMediaUrl(filenameForUrl, 'output', kind),
+            : isHdrImageFilename(asset.name)
+              ? getHdrOutputPreviewUrl(asset)
+              : asset.preview_url ||
+                getMediaUrl(filenameForUrl, rootFolder, kind, subfolder),
         name: annotatedPath,
         label: getDisplayLabel(displayLabel, labelFn)
       })

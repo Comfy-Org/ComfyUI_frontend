@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { autoUpdate, offset, shift, useFloating } from '@floating-ui/vue'
+import { arrow, autoUpdate, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware } from '@floating-ui/vue'
 import {
   useElementBounding,
@@ -13,6 +13,7 @@ import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import {
+  CARD_GAP,
   SPOTLIGHT_PAD,
   clampSpotlight,
   unionRect
@@ -29,13 +30,18 @@ import {
 /** Long enough for any panel layout to settle; a target still absent is a regression. */
 const TARGET_MISSING_AFTER_MS = 8000
 const COACH_HOVER_ATTRIBUTE = 'data-coach-hover'
+const NUDGE_MS = 1200
+const ARROW_CORNER_CLEARANCE = 20
 
 const { steps, storageKey, holdNotice } = defineProps<{
   steps: CoachStep[]
   storageKey?: string
   holdNotice?: string
 }>()
-const emit = defineEmits<{ finished: []; stalled: [] }>()
+const emit = defineEmits<{
+  finished: [action: 'finish' | 'skip' | 'elsewhere']
+  stalled: []
+}>()
 
 const { active, index, step, isLast, next, previous, finish, restart } =
   useOnboarding(() => steps, storageKey)
@@ -56,16 +62,21 @@ defineExpose({
 const titleId = useId()
 const bodyId = useId()
 const holdNoticeId = useId()
+const describedBy = computed(() =>
+  holdNotice ? `${bodyId} ${holdNoticeId}` : bodyId
+)
+const advanceLabelKey = computed(() =>
+  isLast.value ? 'onboardingCoachmarks.done' : 'g.next'
+)
 const target = ref<HTMLElement | null>(null)
 const visible = computed(() => active.value && target.value !== null)
 // Let surfaces like the What's New popup defer while a coach card is on
 // screen. The store drops the source with this component's scope on unmount.
 useOnboardingOverlayStore().registerSource(() => visible.value)
-const toolbar = ref<HTMLElement | null>(null)
 const card = ref<HTMLElement | null>(null)
+const arrowElement = ref<HTMLElement | null>(null)
 const tooltip = ref<HTMLElement | null>(null)
 const bounds = useElementBounding(target)
-const toolbarBounds = useElementBounding(toolbar)
 const tooltipBounds = useElementBounding(tooltip)
 const { width, height } = useWindowSize()
 let targetRetryTimer: ReturnType<typeof setTimeout> | undefined
@@ -83,14 +94,8 @@ function resolveTargets(): void {
   const nextTarget = active.value
     ? document.querySelector<HTMLElement>(step.value.target)
     : null
-  const nextToolbar =
-    active.value && step.value.toolbarTarget
-      ? document.querySelector<HTMLElement>(step.value.toolbarTarget)
-      : null
   if (target.value !== nextTarget) target.value = nextTarget
-  if (toolbar.value !== nextToolbar) toolbar.value = nextToolbar
   bounds.update()
-  toolbarBounds.update()
   scheduleTargetRetry()
 }
 
@@ -104,21 +109,36 @@ watch(visible, (isVisible) => {
 })
 
 function reportStep(action: AgentOnboardingAction): void {
-  useTelemetry()?.trackAgentOnboardingStep({ step: index.value + 1, action })
+  useTelemetry()?.trackAgentOnboardingStep({
+    step: index.value + 1,
+    card: step.value.card,
+    total: steps.length,
+    action
+  })
 }
+
+let finishedHere = false
 
 function onNext(): void {
   const finished = isLast.value
   reportStep(isLast.value ? 'finish' : 'next')
+  if (finished) finishedHere = true
   next()
-  if (finished) emit('finished')
+  if (finished) emit('finished', 'finish')
 }
 
 function onSkip(): void {
   reportStep('skip')
+  finishedHere = true
   finish()
-  emit('finished')
+  emit('finished', 'skip')
 }
+
+const completed = computed(() => !active.value && !!step.value)
+watch(completed, (isCompleted) => {
+  if (isCompleted && !finishedHere) emit('finished', 'elsewhere')
+  finishedHere = false
+})
 
 const targetObserver = new MutationObserver(resolveTargets)
 targetObserver.observe(document.body, {
@@ -174,42 +194,65 @@ watch(
 )
 
 const middleware = computed<Middleware[]>(() => {
-  const result = [
+  return [
     offset({
-      mainAxis: 16,
+      mainAxis: CARD_GAP,
       crossAxis: step.value?.placement === 'left-start' ? -16 : 0
-    })
+    }),
+    shift({ padding: 8, crossAxis: true })
   ]
-  if (step.value?.placement === 'graph-bottom') {
-    const bottom = toolbar.value ? toolbarBounds.top.value : bounds.bottom.value
-    result.push({
-      name: 'graphBottom',
-      fn: ({ rects }) => ({
-        x:
-          rects.reference.x +
-          (rects.reference.width - rects.floating.width) / 2,
-        y:
-          Math.min(bottom, rects.reference.y + rects.reference.height) -
-          16 -
-          rects.floating.height
-      })
-    })
-  }
-  return [...result, shift({ padding: 8, crossAxis: true })]
 })
 
-const { floatingStyles, isPositioned } = useFloating(target, card, {
-  strategy: 'fixed',
-  transform: false,
-  placement: () =>
-    step.value?.placement === 'left-center'
-      ? 'left'
-      : step.value?.placement === 'left-end'
-        ? 'left-end'
-        : 'left-start',
-  middleware,
-  whileElementsMounted: autoUpdate
+const pointsAtTarget = computed(() => step.value?.placement.startsWith('left'))
+
+const { floatingStyles, isPositioned, middlewareData } = useFloating(
+  target,
+  card,
+  {
+    strategy: 'fixed',
+    transform: false,
+    placement: () =>
+      step.value?.placement === 'left-center'
+        ? 'left'
+        : step.value?.placement === 'left-end'
+          ? 'left-end'
+          : 'left-start',
+    middleware: () => [
+      ...middleware.value,
+      arrow({ element: arrowElement, padding: ARROW_CORNER_CLEARANCE })
+    ],
+    whileElementsMounted: autoUpdate
+  }
+)
+
+const arrowStyle = computed(() => {
+  const { arrow: arrowData, shift: shiftData } = middlewareData.value
+  const besideTarget = (shiftData?.x ?? 0) < CARD_GAP
+  const reachesTargetCenter = arrowData?.centerOffset === 0
+  return arrowData?.y !== undefined && besideTarget && reachesTargetCenter
+    ? { top: `${arrowData.y}px` }
+    : { visibility: 'hidden' as const }
 })
+
+const cardBorderClass = computed(() =>
+  index.value < 2 ? 'border-secondary' : 'border-smoke-500/20'
+)
+const cardStyle = computed(() => ({
+  ...floatingStyles.value,
+  opacity: isPositioned.value ? 1 : 0
+}))
+
+const {
+  isPending: nudged,
+  start: startNudgeTimer,
+  stop: stopNudgeTimer
+} = useTimeoutFn(() => undefined, NUDGE_MS, { immediate: false })
+const nudgedAttribute = computed(() => (nudged.value ? '' : undefined))
+watch([index, active], stopNudgeTimer)
+function nudgeCard(): void {
+  startNudgeTimer()
+  card.value?.focus()
+}
 
 const spotlightStyle = computed(() => {
   const targetRect = new DOMRect(
@@ -252,7 +295,11 @@ useEventListener(
 <template>
   <Teleport to="body">
     <div v-if="visible" class="agent-scope fixed inset-0 z-tour">
-      <div class="absolute inset-0" />
+      <div
+        class="absolute inset-0"
+        data-testid="agent-coach-scrim"
+        @click="nudgeCard"
+      />
       <div
         aria-hidden="true"
         data-testid="agent-coach-spotlight"
@@ -282,20 +329,33 @@ useEventListener(
           role="dialog"
           aria-modal="true"
           :aria-labelledby="titleId"
-          :aria-describedby="holdNotice ? `${bodyId} ${holdNoticeId}` : bodyId"
+          :aria-describedby="describedBy"
           tabindex="-1"
-          :style="{
-            ...floatingStyles,
-            opacity: isPositioned ? 1 : 0
-          }"
+          :data-nudged="nudgedAttribute"
+          :style="cardStyle"
           :class="
             cn(
-              'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 overflow-y-auto rounded-2xl border bg-background p-4 text-foreground shadow-lg',
-              index < 2 ? 'border-secondary' : 'border-smoke-500/20'
+              'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 rounded-2xl border bg-background p-4 text-foreground shadow-lg transition-shadow',
+              cardBorderClass,
+              nudged &&
+                'ring-2 ring-foreground ring-offset-2 ring-offset-background'
             )
           "
         >
-          <div class="flex flex-col gap-6">
+          <span
+            v-if="pointsAtTarget"
+            ref="arrowElement"
+            aria-hidden="true"
+            data-testid="agent-coach-arrow"
+            :style="arrowStyle"
+            :class="
+              cn(
+                'pointer-events-none absolute -right-1.5 size-3 rotate-45 border-t border-r bg-background',
+                cardBorderClass
+              )
+            "
+          />
+          <div class="-m-1 flex min-h-0 flex-col gap-6 overflow-y-auto p-1">
             <div class="flex flex-col gap-2">
               <p class="m-0 text-xs/normal opacity-50">
                 {{
@@ -335,11 +395,15 @@ useEventListener(
                 @click="previous"
                 >{{ $t('onboardingCoachmarks.back') }}</Button
               >
-              <Button variant="secondary" size="md" @click="onSkip">{{
-                $t('agent.skip')
-              }}</Button>
+              <Button
+                v-if="!isLast"
+                variant="secondary"
+                size="md"
+                @click="onSkip"
+                >{{ $t('agent.skip') }}</Button
+              >
               <Button variant="inverted" size="md" @click="onNext">{{
-                $t(isLast ? 'onboardingCoachmarks.done' : 'g.next')
+                $t(advanceLabelKey)
               }}</Button>
             </div>
           </div>

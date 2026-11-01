@@ -166,7 +166,64 @@ describe('derivePlanRow', () => {
     {
       case: 'an ended plan without an end date',
       facts: { subscriptionStatus: 'ended' },
-      expected: { kind: 'unknown' }
+      expected: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: null
+      }
+    },
+    {
+      case: 'an ended plan with a served ended_at over cancel_at',
+      facts: {
+        subscriptionStatus: 'ended',
+        endedAt: '2026-08-20T00:00:00Z',
+        endDate: '2026-09-01T00:00:00Z'
+      },
+      expected: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: '2026-08-20T00:00:00Z'
+      }
+    },
+    {
+      case: 'an ended plan whose ended_at is served as null',
+      facts: {
+        subscriptionStatus: 'ended',
+        endedAt: null,
+        endDate: '2026-09-01T00:00:00Z'
+      },
+      expected: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: null
+      }
+    },
+    {
+      case: 'an ended subscription_state with no plan name',
+      facts: {
+        subscriptionState: 'ended',
+        subscriptionStatus: null,
+        planName: null
+      },
+      expected: {
+        kind: 'ended',
+        planName: null,
+        cadence: 'monthly',
+        endedAt: null
+      }
+    },
+    {
+      case: 'a served ended subscription_state',
+      facts: { subscriptionState: 'ended', subscriptionStatus: null },
+      expected: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: null
+      }
     },
     {
       case: 'an active sales-managed plan with no served plan name',
@@ -219,7 +276,22 @@ describe('derivePlanRow', () => {
         planName: null,
         endDate: '2026-09-01T00:00:00Z'
       },
-      expected: { kind: 'unknown' }
+      expected: {
+        kind: 'ended',
+        planName: null,
+        cadence: 'monthly',
+        endedAt: '2026-09-01T00:00:00Z'
+      }
+    },
+    {
+      case: 'an ended subscription_status with no plan name',
+      facts: { subscriptionStatus: 'ended', planName: null, duration: null },
+      expected: {
+        kind: 'ended',
+        planName: null,
+        cadence: null,
+        endedAt: null
+      }
     }
   ])('maps $case', ({ facts, expected }) => {
     expect(derivePlanRow({ ...baseFacts, ...facts })).toEqual(expected)
@@ -260,7 +332,7 @@ describe('planRowAction', () => {
     { state: 'unknown', expected: 'manage' },
     { state: 'noPlan', expected: 'subscribe' },
     { state: 'ended', expected: 'choosePlan' },
-    { state: 'ending', expected: null }
+    { state: 'ending', expected: 'manage' }
   ])('offers $expected for $state when granted', ({ state, expected }) => {
     expect(
       planRowAction(states[state], {

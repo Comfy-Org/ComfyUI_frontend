@@ -22,6 +22,7 @@ const statusWith = (
 ): BillingStatusResponse =>
   Object.assign(
     {
+      ended_at: null,
       is_active: true,
       has_funds: false,
       max_seats: 0,
@@ -96,6 +97,34 @@ describe('useLegacyBilling', () => {
       useInactiveStatus(statusWith({ is_active: false }))
 
       expect(useLegacyBilling().subscription.value).toBeNull()
+    })
+
+    it('keeps a tierless ended status without an invoice as a subscription', () => {
+      useInactiveStatus(
+        statusWith({
+          is_active: false,
+          subscription_status: 'ended',
+          ended_at: '2026-08-20T00:00:00Z'
+        })
+      )
+
+      expect(useLegacyBilling().subscription.value?.endedAt).toBe(
+        '2026-08-20T00:00:00Z'
+      )
+    })
+
+    it('keeps a tierless ended subscription_state without an invoice as a subscription', () => {
+      useInactiveStatus(
+        statusWith({
+          is_active: false,
+          subscription_state: 'ended',
+          ended_at: '2026-08-20T00:00:00Z'
+        })
+      )
+
+      expect(useLegacyBilling().subscription.value?.endedAt).toBe(
+        '2026-08-20T00:00:00Z'
+      )
     })
 
     it('is null when the billing status carries no renewal invoice', () => {
@@ -181,6 +210,45 @@ describe('useLegacyBilling', () => {
         })
       }
     )
+
+    it('stops treating a cached Agent grant as authoritative after the current read fails', async () => {
+      useSubscription().subscriptionStatus.value = statusWith({
+        billing_rail: 'stripe',
+        scoped_has_funds: { agent: true }
+      })
+      let rejectStatusRead!: (reason: unknown) => void
+      const statusRead = new Promise<BillingStatusResponse | null>(
+        (_resolve, reject) => {
+          rejectStatusRead = (reason) => reject(reason)
+        }
+      )
+      vi.mocked(useSubscription().fetchStatusDirect).mockReturnValueOnce(
+        statusRead
+      )
+      const billing = useLegacyBilling()
+
+      const refresh = billing.fetchStatus()
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        true
+      )
+
+      rejectStatusRead(new Error('status unavailable'))
+      await expect(refresh).rejects.toThrow('status unavailable')
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        false
+      )
+      expect(billing.subscription.value?.agentScopedHasFunds).toBe(true)
+    })
+
+    it('passes a fresh request through to the shared status read', async () => {
+      const billing = useLegacyBilling()
+
+      await billing.fetchStatus({ fresh: true })
+
+      expect(useSubscription().fetchStatusDirect).toHaveBeenCalledWith({
+        fresh: true
+      })
+    })
   })
 
   describe('initialize', () => {
@@ -212,9 +280,32 @@ describe('useLegacyBilling', () => {
 
         await useLegacyBilling().initialize()
 
-        expect(useSubscription().fetchStatus).toHaveBeenCalledTimes(reads)
+        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledTimes(reads)
       }
     )
+
+    it('finishes initialization and reports a failed status read', async () => {
+      const failure = new Error('status unavailable')
+      useSubscription().subscriptionStatus.value = statusWith({
+        billing_rail: 'stripe',
+        scoped_has_funds: { agent: true }
+      })
+      vi.mocked(useSubscription().fetchStatusDirect).mockRejectedValueOnce(
+        failure
+      )
+      vi.mocked(useAuthStore().fetchBalance).mockResolvedValueOnce(null)
+      const billing = useLegacyBilling()
+
+      await expect(billing.initialize()).resolves.toBeUndefined()
+
+      expect(billing.isInitialized.value).toBe(true)
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        false
+      )
+      expect(useAuthActions().reportError).toHaveBeenCalledExactlyOnceWith(
+        failure
+      )
+    })
   })
 
   describe('resubscribe', () => {

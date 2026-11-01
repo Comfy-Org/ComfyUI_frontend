@@ -67,10 +67,14 @@ function vueBadges(node: LGraphNode) {
 
 function vueBadgeText(node: LGraphNode): string {
   const partitioned = vueBadges(node)
-  return [
-    ...partitioned.core.map((badge) => badge.text),
-    ...(partitioned.hasComfyBadge ? [CORE_SOURCE_BADGE] : [])
-  ].join(' ')
+  return partitioned.groups
+    .filter((group) => group.kind === 'core' || group.kind === 'source')
+    .flatMap((group) =>
+      group.badges.map((badge) =>
+        group.kind === 'source' ? CORE_SOURCE_BADGE : badge.text
+      )
+    )
+    .join(' ')
 }
 
 describe('badge renderer parity (I2)', () => {
@@ -160,10 +164,26 @@ describe('badge renderer parity (I2)', () => {
 
     it('Vue marks Comfy Cloud and leaves the other partner node unmarked', () => {
       const cloud = setup(NodeBadgeMode.ShowAll, 'CloudNode', CLOUD)
-      expect(vueBadges(cloud).hasComfyCloudBadge).toBe(true)
+      expect(vueBadges(cloud).groups).toContainEqual({
+        kind: 'source',
+        badges: [
+          {
+            text: '',
+            cssIcon: 'icon-[comfy--comfy-c] size-3 text-brand-yellow'
+          }
+        ]
+      })
 
       const partner = setup(NodeBadgeMode.ShowAll, 'KlingNode', OTHER_PARTNER)
-      expect(vueBadges(partner).hasComfyCloudBadge).toBe(false)
+      expect(vueBadges(partner).groups).not.toContainEqual({
+        kind: 'source',
+        badges: [
+          {
+            text: '',
+            cssIcon: 'icon-[comfy--comfy-c] size-3 text-brand-yellow'
+          }
+        ]
+      })
     })
   })
 

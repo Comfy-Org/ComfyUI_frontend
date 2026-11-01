@@ -85,7 +85,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
-import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
+import { graphHasMissingNodes } from '@/platform/customNodes/manager/utils/graphHasMissingNodes'
 
 export interface BreadcrumbItem extends MenuItemAction {
   isBlueprint?: boolean

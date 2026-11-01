@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-col"
+    class="pointer-events-none absolute top-0 left-0 isolate flex size-full flex-col"
   >
     <slot name="workflow-tabs" />
 
