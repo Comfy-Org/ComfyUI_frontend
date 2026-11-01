@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { reactive } from 'vue'
 
-import { LGraphNode, NodeInputSlot } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  NodeInputSlot
+} from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 function nodeWithNamespacedExtension(): ISerialisedNode {
@@ -239,5 +244,214 @@ describe('LGraphNode extension payload fallbacks', () => {
     const serialized = node.serialize()
 
     expect(serialized.extensions).toEqual({ healthyExt: { note: 'kept' } })
+  })
+})
+
+describe('serialize output detaches live state that hooks hand back', () => {
+  function nodeInGraph() {
+    const graph = new LGraph()
+    const node = new LGraphNode('TestNode')
+    graph.add(node)
+    node.properties.elapsed = '00:01:000'
+    return { graph, node }
+  }
+
+  it('copies a canonical field an onSerialize hook replaced with live node state', () => {
+    const { node } = nodeInGraph()
+    node.onSerialize = function (o) {
+      o.properties = this.properties
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.properties).toEqual({ elapsed: '00:01:000' })
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('keeps the whole graph serialization cloneable with such a hook', () => {
+    const { graph, node } = nodeInGraph()
+    node.onSerialize = function (o) {
+      o.properties = this.properties
+    }
+
+    expect(() => structuredClone(graph.serialize())).not.toThrow()
+  })
+
+  it('does not let later live edits leak into an already serialized node', () => {
+    const { node } = nodeInGraph()
+    node.onSerialize = function (o) {
+      o.properties = this.properties
+    }
+
+    const serialised = node.serialize()
+    node.properties.elapsed = '00:02:000'
+
+    expect(serialised.properties).toEqual({ elapsed: '00:01:000' })
+  })
+
+  it('copies a canonical graph field a graph onSerialize hook replaced with a proxy', () => {
+    const graph = new LGraph()
+    graph.onSerialize = (data) => {
+      data.extra = reactive({ note: 'live' })
+    }
+
+    const serialised = graph.serialize()
+
+    expect(serialised.extra).toMatchObject({ note: 'live' })
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('detaches a live nested value a hook writes into an untouched canonical field', () => {
+    const { node } = nodeInGraph()
+    node.properties.cfg = { mode: 'a' }
+    node.onSerialize = function (o) {
+      o.properties!.cfg = this.properties.cfg
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.properties).toMatchObject({ cfg: { mode: 'a' } })
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('keeps a canonical field the hook left untouched at full fidelity', () => {
+    const graph = new LGraph()
+    graph.extra.savedAt = new Date(0)
+    graph.onSerialize = () => {}
+
+    expect(graph.serialize().extra?.savedAt).toStrictEqual(new Date(0))
+  })
+
+  it('detaches a proxy a graph hook writes into the existing extra', () => {
+    const graph = new LGraph()
+    graph.onSerialize = (data) => {
+      data.extra!.live = reactive({ note: 'live' })
+    }
+
+    const serialised = graph.serialize()
+
+    expect(serialised.extra?.live).toEqual({ note: 'live' })
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('keeps pos and size as arrays when a hook hands back the live views', () => {
+    const { node } = nodeInGraph()
+    node.pos = [10, 20]
+    node.size = [180, 75]
+    node.onSerialize = function (o) {
+      o.pos = this.pos
+      o.size = this.size
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.pos).toStrictEqual([10, 20])
+    expect(serialised.size).toStrictEqual([180, 75])
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('keeps a nested live geometry view as an array', () => {
+    const { node } = nodeInGraph()
+    node.onSerialize = function (o) {
+      o.properties = { savedSize: this.size }
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.properties?.savedSize).toStrictEqual([...node.size])
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('detaches a live geometry view written into a canonical field in place', () => {
+    const { node } = nodeInGraph()
+    node.properties.savedSize = [0, 0]
+    node.onSerialize = function (o) {
+      o.properties!.savedSize = this.size
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.properties?.savedSize).toStrictEqual([...node.size])
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('keeps the saved shape of a typed array detached alongside a proxy', () => {
+    const { node } = nodeInGraph()
+    node.onSerialize = function (o) {
+      o.properties = { live: this.properties, typed: new Uint8Array([2, 3]) }
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.properties?.typed).toStrictEqual({ 0: 2, 1: 3 })
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('keeps a canonical field that cannot be detached so saving fails', () => {
+    const { node } = nodeInGraph()
+    const cyclic = reactive<Record<string, unknown>>({})
+    cyclic.self = cyclic
+    node.onSerialize = (o) => {
+      Reflect.set(o, 'properties', cyclic)
+    }
+    const warn = vi.mocked(console.warn)
+
+    const serialised = node.serialize()
+
+    expect(serialised.properties).toBe(cyclic)
+    expect(() => JSON.stringify(serialised)).toThrow()
+    expect(warn).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a canonical field whose in-place mutation throws so saving fails', () => {
+    const { node } = nodeInGraph()
+    node.onSerialize = (o) => {
+      Object.defineProperty(o.properties!, 'broken', {
+        enumerable: true,
+        get(): never {
+          throw new Error('accessor failed')
+        }
+      })
+    }
+    const warn = vi.mocked(console.warn)
+
+    const serialised = node.serialize()
+
+    expect(serialised.properties).toHaveProperty('elapsed', '00:01:000')
+    expect(() => JSON.stringify(serialised)).toThrow('accessor failed')
+    expect(warn).toHaveBeenCalledOnce()
+  })
+
+  it('keeps cloneable values a hook replaced intact', () => {
+    const { node } = nodeInGraph()
+    class PersistedValue {
+      raw = 'ignored'
+
+      toJSON() {
+        return { saved: 'value' }
+      }
+    }
+    node.onSerialize = (o) => {
+      o.properties = { custom: new PersistedValue(), when: new Date(0) }
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.properties?.when).toStrictEqual(new Date(0))
+    expect(JSON.parse(JSON.stringify(serialised)).properties.custom).toEqual({
+      saved: 'value'
+    })
+  })
+
+  it('serializes a reactive object widget value as plain data', () => {
+    const { node } = nodeInGraph()
+    node.serialize_widgets = true
+    const widget = node.addWidget('text', 'box', '', null)
+    widget.value = reactive({ x: 1, y: [2, 3] })
+
+    const serialised = node.serialize()
+
+    expect(serialised.widgets_values).toEqual([{ x: 1, y: [2, 3] }])
+    expect(() => structuredClone(serialised)).not.toThrow()
   })
 })
