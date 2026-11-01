@@ -12,15 +12,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/queue/job/useJobErrorReporting.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/queue/job/useJobErrorReporting.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/queue/job/useQueueEstimates.test.ts",
       "role": "application"
     },
     {
@@ -36,24 +28,12 @@
       "role": "application"
     },
     {
-      "path": "src/composables/queue/jobTabs.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/composables/queue/jobTabs.ts",
       "role": "domain"
     },
     {
-      "path": "src/composables/sidebarTabs/useJobHistorySidebarTab.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/sidebarTabs/useJobHistorySidebarTab.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/composables/useReconnectQueueRefresh.test.ts",
-      "role": "application"
     },
     {
       "path": "src/composables/useReconnectQueueRefresh.ts",
@@ -68,10 +48,6 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/remote/comfyui/useQueuePolling.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/remote/comfyui/useQueuePolling.ts",
       "role": "application"
     },
@@ -80,16 +56,8 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/services/autoQueueService.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/services/autoQueueService.ts",
       "role": "application"
-    },
-    {
-      "path": "src/services/jobOutputCache.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/services/jobOutputCache.ts",
@@ -100,20 +68,8 @@
       "role": "application"
     },
     {
-      "path": "src/stores/queueStore.loadWorkflow.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/queueStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/queueStore.ts",
       "role": "application"
-    },
-    {
-      "path": "src/stores/resultItemParsing.test.ts",
-      "role": "domain"
     },
     {
       "path": "src/stores/resultItemParsing.ts",
@@ -128,10 +84,6 @@
       "role": "domain"
     },
     {
-      "path": "src/utils/queueDisplay.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/queueDisplay.ts",
       "role": "domain"
     },
@@ -141,10 +93,6 @@
     },
     {
       "path": "src/utils/resultItem.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/resultItemUrl.test.ts",
       "role": "domain"
     },
     {

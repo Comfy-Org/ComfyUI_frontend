@@ -58,8 +58,8 @@ import { useMenuItemStore } from '@/stores/menuItemStore'
 import type { AppMenuItem } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 
 const { t } = useI18n()
 const menuItemStore = useMenuItemStore()

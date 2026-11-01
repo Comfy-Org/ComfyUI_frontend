@@ -4,23 +4,11 @@
   "description": "Application error-reporting adapters for the shared telemetry package, vendor initialization and filtering, assertions, asset-load reporting, and manual-refresh diagnostics. Product analytics and startup tracing are separate records.",
   "modules": [
     {
-      "path": "src/base/assert.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/base/assert.ts",
       "role": "domain"
     },
     {
-      "path": "src/platform/telemetry/assertFailureReporter.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/telemetry/assertFailureReporter.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/assetLoadErrorReporting.test.ts",
       "role": "application"
     },
     {
@@ -28,16 +16,8 @@
       "role": "application"
     },
     {
-      "path": "src/platform/telemetry/datadogRumBeforeSend.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/telemetry/datadogRumBeforeSend.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/imageFailureDiagnostics.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/platform/telemetry/imageFailureDiagnostics.ts",
@@ -48,23 +28,11 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/telemetry/initDatadogRum.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/telemetry/initDatadogRum.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/telemetry/initSentry.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/telemetry/initSentry.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/telemetry/manualRefreshTracker.test.ts",
       "role": "infrastructure"
     },
     {
@@ -80,15 +48,7 @@
       "role": "application"
     },
     {
-      "path": "src/platform/telemetry/sentryBeforeSend.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/telemetry/sentryBeforeSend.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/thirdPartyErrorNoise.test.ts",
       "role": "domain"
     },
     {
@@ -96,15 +56,7 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/telemetry/vueDirectiveErrorDiagnostics.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/telemetry/vueDirectiveErrorDiagnostics.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/preloadErrorUtil.test.ts",
       "role": "domain"
     },
     {

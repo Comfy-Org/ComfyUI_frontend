@@ -8,19 +8,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/extensions/core/load3d/components/modelThumbnail.deferredImport.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/components/modelThumbnail.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/extensions/core/load3d/components/modelThumbnail.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/composables/useLoad3d.test.ts",
       "role": "application"
     },
     {
@@ -28,15 +16,7 @@
       "role": "application"
     },
     {
-      "path": "src/extensions/core/load3d/composables/useLoad3dDrag.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/extensions/core/load3d/composables/useLoad3dDrag.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d/composables/useLoad3dViewer.test.ts",
       "role": "application"
     },
     {
@@ -44,15 +24,7 @@
       "role": "application"
     },
     {
-      "path": "src/extensions/core/load3d/load3d.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/load3d/load3d.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/Load3DConfiguration.test.ts",
       "role": "integration"
     },
     {
@@ -60,23 +32,11 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3d/Load3dUtils.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/extensions/core/load3d/Load3dUtils.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/extensions/core/load3d/exportMenuHelper.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/load3d/exportMenuHelper.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dSerialize.test.ts",
       "role": "integration"
     },
     {
@@ -84,15 +44,7 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3d/model3dOutput.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/extensions/core/load3d/model3dOutput.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/nodeTypes.test.ts",
       "role": "domain"
     },
     {
@@ -104,15 +56,7 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3d/load3dLazy.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/load3d/load3dLazy.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dPreviewExtensions.test.ts",
       "role": "integration"
     },
     {
@@ -120,16 +64,8 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3d/saveMesh.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/load3d/saveMesh.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/services/load3dService.test.ts",
-      "role": "application"
     },
     {
       "path": "src/extensions/core/load3d/services/load3dService.ts",

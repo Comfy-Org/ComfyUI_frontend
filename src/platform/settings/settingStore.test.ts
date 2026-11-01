@@ -497,6 +497,39 @@ describe('useSettingStore', () => {
       )
     })
 
+    it('announces both sides of a refused revertible setting write', async () => {
+      const key = 'Comfy.Extension.DisabledPacks'
+      store.settingValues[key] = ['/extensions/saved/']
+      store.addSetting({
+        id: key,
+        name: key,
+        type: 'hidden',
+        defaultValue: []
+      })
+      const changes: unknown[] = []
+      store.onSettingChanged(({ value }) => changes.push(value))
+      vi.mocked(api.storeSetting).mockResolvedValue(
+        new Response(null, { status: 500, statusText: 'Server Error' })
+      )
+
+      expect(
+        await store.setWithOutcome(key, ['/extensions/rejected/'])
+      ).toEqual({
+        status: 'refused',
+        statusCode: 500,
+        statusText: 'Server Error'
+      })
+
+      expect(api.storeSetting).toHaveBeenCalledWith(key, [
+        '/extensions/rejected/'
+      ])
+      expect(store.get(key)).toEqual(['/extensions/saved/'])
+      expect(changes).toEqual([
+        ['/extensions/rejected/'],
+        ['/extensions/saved/']
+      ])
+    })
+
     it('awaits an onChange handler before persisting the value', async () => {
       const order: string[] = []
       vi.mocked(api.storeSetting).mockImplementation(async () => {

@@ -14,6 +14,7 @@ import type {
   PendingInvite,
   PickWorkspaceDeploymentRequest,
   ReleaseUnsupportedPacks,
+  StartWorkspaceDeploymentResult,
   UpdateWorkspaceRequest,
   WorkspaceDeployment,
   WorkspaceDeploymentCpuServer,
@@ -23,9 +24,13 @@ import type {
 import {
   zDeploymentCompatibility,
   zReleaseUnsupportedPacks,
+  zStartWorkspaceDeploymentResult,
   zWorkspaceDeploymentCpuServer
 } from '@comfyorg/ingest-types/zod'
-import { DEPLOYMENT_LISTING_TIMEOUT_MS } from './deploymentListingTimeouts'
+import {
+  DEPLOYMENT_LISTING_TIMEOUT_MS,
+  DEPLOYMENT_START_TIMEOUT_MS
+} from './deploymentListingTimeouts'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -135,7 +140,8 @@ export const workspaceApi = {
     }
   },
   async listDeployments(
-    workspaceId: WorkspaceId
+    workspaceId: WorkspaceId,
+    startedDeploymentIds: readonly string[]
   ): Promise<WorkspaceDeploymentList> {
     const auth = await requestAuth()
     try {
@@ -143,6 +149,8 @@ export const workspaceApi = {
         ingestApiUrl(`/workspaces/${workspaceId}/deployments`),
         {
           ...auth,
+          params: { started_deployment_id: startedDeploymentIds },
+          paramsSerializer: { indexes: null },
           timeout: DEPLOYMENT_LISTING_TIMEOUT_MS,
           __skipStatusRetry: true
         }
@@ -167,6 +175,24 @@ export const workspaceApi = {
       )
     } catch (err) {
       handleAxiosError(err, 'pickDeployment')
+    }
+  },
+  async startDeployment(
+    workspaceId: WorkspaceId,
+    deploymentId: string
+  ): Promise<StartWorkspaceDeploymentResult> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        ingestApiUrl(
+          `/workspaces/${workspaceId}/deployments/${encodeURIComponent(deploymentId)}/start`
+        ),
+        undefined,
+        { ...auth, timeout: DEPLOYMENT_START_TIMEOUT_MS }
+      )
+      return zStartWorkspaceDeploymentResult.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'startDeployment')
     }
   },
   async clearDeployment(

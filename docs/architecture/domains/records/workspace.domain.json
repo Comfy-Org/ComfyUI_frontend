@@ -8,19 +8,11 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workspace/api/partnerNodePolicyApi.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/workspace/api/partnerNodePolicyApi.ts",
       "role": "infrastructure"
     },
     {
       "path": "src/platform/workspace/api/webSessionAdapter.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/workspace/api/workspaceApi.test.ts",
       "role": "infrastructure"
     },
     {
@@ -34,10 +26,6 @@
     {
       "path": "src/platform/workspace/api/workspaceApiUrl.test.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/workspace/components/InviteMembersForm.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/platform/workspace/components/InviteMembersForm.vue",
@@ -56,24 +44,12 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useWorkspaceSwitch.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workspace/composables/useWorkspaceSwitch.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workspace/composables/useWorkspaceUI.test.ts",
       "role": "application"
     },
     {
       "path": "src/platform/workspace/composables/useWorkspaceUI.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/workspace/composables/useWorkspaceUrlLoader.test.ts",
-      "role": "integration"
     },
     {
       "path": "src/platform/workspace/composables/useWorkspaceUrlLoader.ts",
@@ -84,15 +60,7 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/stores/partnerNodeGovernanceStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workspace/stores/partnerNodeGovernanceStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workspace/stores/teamWorkspaceStore.test.ts",
       "role": "application"
     },
     {
@@ -100,15 +68,7 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/utils/inviteLinks.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workspace/utils/inviteLinks.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workspace/utils/platformLink.test.ts",
       "role": "application"
     },
     {

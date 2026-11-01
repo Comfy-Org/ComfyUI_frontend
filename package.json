@@ -53,7 +53,7 @@
     "lint:packages": "pnpm --filter './packages/*' -r --if-present run lint",
     "lint:server-facts": "tsx scripts/server-fact-gate.ts",
     "lint:unstaged:fix": "tsx scripts/lint-unstaged.ts --fix",
-    "lint": "pnpm run --parallel '/^(stylelint|oxlint|architecture:check|lint:eslint)$/' && pnpm lint:packages",
+    "lint": "pnpm run --parallel --workspace-root '/^(stylelint|oxlint|architecture:check|lint:eslint)$/' && pnpm lint:packages",
     "locale": "tsx scripts/i18n/update-locales.ts",
     "locale:check": "tsx scripts/i18n/update-locales.ts --check",
     "oxlint": "oxlint . --type-aware",

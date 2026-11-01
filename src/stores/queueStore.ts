@@ -16,10 +16,11 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/types/comfy'
-import { useExtensionServiceAccess } from '@/services/extensionServiceAccess'
+import { useExtensionServiceAccess } from '@/platform/extensions/services/extensionServiceAccess'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -365,6 +366,7 @@ export const useQueueStore = defineStore('queue', () => {
           ...queue.Pending.map((j) => j.id)
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
+        useJobModelDownloadStore().reconcileActiveJobs(activeJobIds)
       } else {
         console.error('Failed to fetch queue:', queueResult.reason)
       }

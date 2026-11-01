@@ -24,7 +24,8 @@ are ready; a remount whose target is already decided has nothing to restore, so
 it preserves its current identity. A failed startup restoration leaves the
 session unmarked until a successful retry.
 Failures remain in history with a retry affordance and existing error details;
-the selected row is their only feedback. A chat whose recorded workflow a
+the selected row is their only on-screen feedback, and every workflow
+restoration failure is still reported with its reason. A chat whose recorded workflow a
 successful Cloud listing no longer includes opens without a target, even if a
 stale local binding still names a tab, and the
 composer tip says the target workflow is no longer available until a workflow is

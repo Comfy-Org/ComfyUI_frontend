@@ -16,8 +16,8 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { isExtensionlessVideo } from '@/utils/mediaUploadUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
@@ -83,13 +83,12 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       const asset = await resolveWidgetValueAsset(widgetValue)
       if (!asset?.preview_id || modelValue.value !== widgetValue) return
 
-      const { filepath, rootFolder } = parseAnnotatedPath(widgetValue)
-      const separatorIndex = filepath.lastIndexOf('/')
+      const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
       setPreviewImage({
-        filename: filepath.slice(separatorIndex + 1),
+        filename,
         preview_id: asset.preview_id,
-        subfolder: filepath.slice(0, Math.max(separatorIndex, 0)),
-        type: isResultItemType(rootFolder) ? rootFolder : undefined
+        subfolder,
+        type: isResultItemType(type) ? type : undefined
       })
     }
   )

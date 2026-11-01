@@ -63,8 +63,18 @@ interface RetryDecisionInput {
   readonly now?: () => number
 }
 
-/** Delay before the next attempt, or `undefined` to stop retrying. */
-export function retryDelayMs({
+/** Why {@link nextRetry} stopped instead of scheduling another attempt. */
+export type RetryStopReason =
+  | 'not_retryable'
+  | 'attempts_spent'
+  | 'retry_after_too_long'
+
+export type RetryDecision =
+  | { readonly retry: true; readonly delayMs: number }
+  | { readonly retry: false; readonly reason: RetryStopReason }
+
+/** Whether to send another attempt, and after how long. */
+export function nextRetry({
   method,
   status,
   readRetryAfter,
@@ -72,14 +82,17 @@ export function retryDelayMs({
   policy = DEFAULT_RETRY_POLICY,
   random = Math.random,
   now = Date.now
-}: RetryDecisionInput): number | undefined {
-  if (attempt >= policy.maxAttempts) return undefined
-  if (!isRetryableStatus(status)) return undefined
-  if (!canRetryMethod(method, policy)) return undefined
+}: RetryDecisionInput): RetryDecision {
+  if (!isRetryableStatus(status) || !canRetryMethod(method, policy)) {
+    return { retry: false, reason: 'not_retryable' }
+  }
+  if (attempt >= policy.maxAttempts) {
+    return { retry: false, reason: 'attempts_spent' }
+  }
 
   const retryAfterMs = parseRetryAfterMs(readRetryAfter(), now())
   if (retryAfterMs !== undefined && retryAfterMs > policy.maxDelayMs) {
-    return undefined
+    return { retry: false, reason: 'retry_after_too_long' }
   }
 
   const ceiling = Math.min(
@@ -87,9 +100,15 @@ export function retryDelayMs({
     policy.baseDelayMs * 2 ** (attempt - 1)
   )
   const jittered = ceiling / 2 + (random() * ceiling) / 2
-  if (retryAfterMs === undefined) return jittered
+  if (retryAfterMs === undefined) return { retry: true, delayMs: jittered }
   const spread = (random() * ceiling) / 2
-  return Math.min(policy.maxDelayMs, Math.max(jittered, retryAfterMs + spread))
+  return {
+    retry: true,
+    delayMs: Math.min(
+      policy.maxDelayMs,
+      Math.max(jittered, retryAfterMs + spread)
+    )
+  }
 }
 
 export function sleep(ms: number, signal?: AbortSignal): Promise<void> {

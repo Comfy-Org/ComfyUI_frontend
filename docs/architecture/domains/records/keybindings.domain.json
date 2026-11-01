@@ -16,10 +16,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/keybindings/composables/useShortcutsTab.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/platform/keybindings/composables/useShortcutsTab.ts",
       "role": "integration"
     },

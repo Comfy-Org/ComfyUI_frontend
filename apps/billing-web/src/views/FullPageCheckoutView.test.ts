@@ -2501,7 +2501,7 @@ describe('FullPageCheckoutView payment authentication', () => {
     )
   })
 
-  it('puts a challenge the bank refused on its card and frees Pay for the retry, on the same form', async () => {
+  it('puts a challenge the bank refused, still pending, on a not-verified card and frees Pay for the retry, on the same form', async () => {
     const fake = await payHeld()
     fake.publishOperation(challengedOperation('op_3ds', 'in_progress'))
     await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_A))
@@ -2512,9 +2512,9 @@ describe('FullPageCheckoutView payment authentication', () => {
       challenge: { clientSecret: 'cs', status: 'failed' }
     })
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Payment not completed'
-    )
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Payment not verified')
+    expect(alert).not.toHaveTextContent("you haven't been charged")
     await waitFor(() => expect(payButton()).toBeEnabled())
     expect(footnote()).toBeEmptyDOMElement()
     expect(form.locked()).toBe(false)

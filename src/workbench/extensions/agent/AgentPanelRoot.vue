@@ -99,7 +99,6 @@ import {
 } from './composables/agent/useOnboarding'
 
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
-import { useStarterPromptSet } from './experiments/starterPromptSet'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
@@ -1345,15 +1344,6 @@ function refreshAgentBillingStatus(): void {
   })
 }
 
-watch(
-  [consentAccepted, consentIdentity],
-  ([accepted, identity], [previousAccepted, previousIdentity]) => {
-    if (accepted && (!previousAccepted || identity !== previousIdentity))
-      refreshAgentBillingStatus()
-  },
-  { flush: 'sync' }
-)
-
 // Adoption (onWorkflowAdopted) and tab activation (onAgentActiveTab) are the
 // primary spinner setters; the non-idle branch only re-arms it after the
 // stash/resume flip of a panel remount, where those setters never run.
@@ -1702,11 +1692,6 @@ const { copy } = useClipboard({ legacy: true })
 // is the panel openers the hypothesis is about.
 const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
   useFreeUsePlacement(isCloud)
-const {
-  assignment: starterPromptAssignment,
-  attributeExperiment: attributeStarterPromptExperiment,
-  expose: exposeStarterPromptSet
-} = useStarterPromptSet()
 
 const freeUseGrantActive = computed(
   () =>
@@ -2027,12 +2012,7 @@ const { submit: onSend } = useAgentDraftSubmission({
         client_message_id: meta.clientMessageId,
         input_method: meta.inputMethod,
         starter_prompt_id: meta.starterPrompt?.id ?? null,
-        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null,
-        ...(meta.starterPrompt?.assignment
-          ? {
-              '$feature/agent-starter-prompt-set': meta.starterPrompt.assignment
-            }
-          : {})
+        starter_prompt_click_id: meta.starterPrompt?.clickId ?? null
       },
       origin:
         originContext === undefined ? null : { tabPath: originContext.tabPath }
@@ -2450,9 +2430,6 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         crdtStatus.terminal === 'timeout'
       "
       :free-use-placement="freeUsePlacement"
-      :starter-prompt-assignment="starterPromptAssignment"
-      :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
-      @starter-prompt-rendered="exposeStarterPromptSet"
       @free-use-notice="onFreeUseNotice"
       @send="onSend"
       @stop="onStop"

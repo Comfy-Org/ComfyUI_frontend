@@ -12,10 +12,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/extensions/core/load3d/composables/useViewportNodeWiring.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/load3d/composables/useViewportNodeWiring.ts",
       "role": "integration"
     }

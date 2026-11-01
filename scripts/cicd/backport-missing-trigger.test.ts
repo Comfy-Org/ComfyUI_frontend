@@ -12,15 +12,25 @@ import { join } from 'node:path'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
 
+interface WorkflowStep {
+  run?: string
+  env?: Record<string, string>
+}
+
+interface WorkflowJob {
+  env?: Record<string, string>
+  steps?: WorkflowStep[]
+}
+
 interface Workflow {
-  jobs?: Record<string, { steps?: Array<{ run?: string }> }>
+  jobs?: Partial<Record<string, WorkflowJob>>
 }
 
 const workflow = parse(
   readFileSync('.github/workflows/pr-backport.yaml', 'utf8')
 ) as Workflow
-const warnScript =
-  workflow.jobs?.['warn-missing-needs-backport']?.steps?.[0]?.run ?? ''
+const warnStep = workflow.jobs?.['warn-missing-needs-backport']?.steps?.[0]
+const warnScript = warnStep?.run ?? ''
 
 const fakeGh = `#!/usr/bin/env bash
 set -euo pipefail
@@ -259,5 +269,9 @@ describe('backport warning for release labels without needs-backport', () => {
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('::warning::')
     expect(result.stdout).toContain('core/1.57')
+  })
+
+  it('posts with the same token the backport job uses, since the auto-provided one is refused', () => {
+    expect(warnStep?.env?.GH_TOKEN).toBe(workflow.jobs?.backport?.env?.GH_TOKEN)
   })
 })

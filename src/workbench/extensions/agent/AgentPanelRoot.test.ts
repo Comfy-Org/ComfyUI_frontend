@@ -8709,7 +8709,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it.for(['workspace', 'legacy'] as const)(
-    'refreshes $ billing after successful consent before resuming the first send',
+    'leaves the $ post-consent billing refresh to the dock host on first send',
     async (billingType) => {
       makeTab('wf-42')
       mockMessagesEndpoint('wf-42')
@@ -8722,25 +8722,12 @@ describe('AgentPanelRoot workflow binding', () => {
       })
       renderWithSelectedTarget()
 
-      await sendFromComposer('build me a workflow')
-
-      expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
-    }
-  )
-
-  it.for(['workspace', 'legacy'] as const)(
-    'refreshes $ billing when consent succeeds outside the first send',
-    async (billingType) => {
-      paywallBilling.type = billingType
-      Object.assign(useAgentConsentStore(), { accepted: false })
-      renderWithSelectedTarget()
       paywallBilling.fetchStatus.mockClear()
 
-      Object.assign(useAgentConsentStore(), { accepted: true })
+      await sendFromComposer('build me a workflow')
 
-      await waitFor(() =>
-        expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
-      )
+      expect(withConsent).toHaveBeenCalledOnce()
+      expect(paywallBilling.fetchStatus).not.toHaveBeenCalled()
     }
   )
 
@@ -9192,7 +9179,7 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.mocked(useTelemetry())!.trackAgentStarterPromptClicked.mockClear()
     renderWithSelectedTarget()
 
-    const prompt = i18n.global.t('agent.suggestedPrompts.cloud.1')
+    const prompt = i18n.global.t('agent.suggestedPrompts.treatment.cloud.1')
     await userEvent.click(await screen.findByRole('button', { name: prompt }))
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })

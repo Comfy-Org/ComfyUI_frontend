@@ -41,14 +41,13 @@ export function parseImageWidgetValue(raw: string): {
   type: string
 } {
   const { filepath, rootFolder: type } = parseAnnotatedPath(raw)
-  let value = filepath
-  let subfolder = ''
-  const slashIndex = value.lastIndexOf('/')
-  if (slashIndex !== -1) {
-    subfolder = value.slice(0, slashIndex)
-    value = value.slice(slashIndex + 1)
+  const path = filepath.replaceAll('\\', '/')
+  const slashIndex = path.lastIndexOf('/')
+  return {
+    filename: path.slice(slashIndex + 1),
+    subfolder: path.slice(0, Math.max(slashIndex, 0)),
+    type
   }
-  return { filename: value, subfolder, type }
 }
 
 export const is_all_same_aspect_ratio = (imgs: HTMLImageElement[]): boolean => {

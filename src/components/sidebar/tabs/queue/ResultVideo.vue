@@ -14,7 +14,7 @@
 import { computed, onActivated, useTemplateRef } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
   resultItemUrl,

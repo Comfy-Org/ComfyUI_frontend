@@ -24,6 +24,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
   const loadedIdentity = ref<string | null>(null)
   const acceptedIdentity = ref<string | null>(null)
   const checkSettled = ref(false)
+  const confirmedAcceptances = ref(0)
   const isChecking = computed(
     () => Boolean(currentUserId()) && !checkSettled.value
   )
@@ -167,6 +168,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
       loadedIdentity.value = identity
       acceptedIdentity.value = identity
       checkSettled.value = true
+      confirmedAcceptances.value += 1
       return true
     } catch (error) {
       if (!stillOwns(sessionId, identity)) return false
@@ -174,5 +176,13 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     }
   }
 
-  return { accepted, identity, isChecking, ensureScope, load, accept }
+  return {
+    accepted,
+    confirmedAcceptances,
+    identity,
+    isChecking,
+    ensureScope,
+    load,
+    accept
+  }
 })

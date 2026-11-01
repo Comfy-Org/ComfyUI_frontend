@@ -34,7 +34,7 @@ vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@comfyorg/graph-model/curve'
-import type { useExtensionService } from '@/services/extensionService'
+import type { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -100,12 +100,14 @@ import { setTelemetryRegistry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -148,6 +150,8 @@ const {
   },
   mockValidateWorkflow: vi.fn<WorkflowValidation['validateWorkflow']>()
 }))
+
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
 vi.mock(
   import('@/platform/workflow/validation/composables/useWorkflowValidation'),
@@ -193,7 +197,7 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: vi.fn(() =>
     fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
   )
@@ -364,9 +368,22 @@ describe('ComfyApp', () => {
   })
 
   describe('loadGraphData', () => {
-    it.for([false, true])(
-      'matches individual node loading with invalid-value reset %s',
-      async (resetInvalidValues) => {
+    it.for([
+      {
+        name: 'keeps invalid combo values',
+        resetInvalidValues: false,
+        loadInput: (workflow: ComfyWorkflowJSON) => workflow,
+        scheduler: 'invalid'
+      },
+      {
+        name: 'resets invalid combo values',
+        resetInvalidValues: true,
+        loadInput: () => undefined,
+        scheduler: 'normal'
+      }
+    ])(
+      'matches individual node loading: $name',
+      async ({ resetInvalidValues, loadInput, scheduler }) => {
         const alwaysSnapToGrid = LiteGraph.alwaysSnapToGrid
         LiteGraph.alwaysSnapToGrid = true
         onTestFinished(() => {
@@ -417,7 +434,7 @@ describe('ComfyApp', () => {
               flags: {},
               order: 1,
               mode: 0,
-              properties: {},
+              properties: { configuredByWorkflow: true },
               widgets_values: ['sample_euler', false, null]
             },
             {
@@ -439,12 +456,21 @@ describe('ComfyApp', () => {
         app.canvasElRef.value = document.createElement('canvas')
         Reflect.set(app, 'rootGraphInternal', new LGraph())
 
-        await app.loadGraphData(
-          resetInvalidValues ? undefined : fixture,
-          false,
-          true,
-          null
+        const peerConfigurations: unknown[] = []
+        mockExtensionService.invokeExtensions.mockImplementation(
+          (method: string, node?: LGraphNode) => {
+            if (method === 'loadedGraphNode' && node?.id === toNodeId(1)) {
+              peerConfigurations.push(
+                app.rootGraph.getNodeById(toNodeId(2))?.properties
+                  .configuredByWorkflow
+              )
+            }
+            return []
+          }
         )
+        await app.loadGraphData(loadInput(fixture), false, true, null)
+        expect(peerConfigurations).toEqual([true])
+        mockExtensionService.invokeExtensions.mockReturnValue([])
         const graph = new LGraph()
         const individuallyLoaded = withGraphConfiguring(() =>
           fixture.nodes.map((info) =>
@@ -460,7 +486,7 @@ describe('ComfyApp', () => {
         expect(
           individuallyLoaded.map((node) => node.serialize().widgets_values)
         ).toEqual([
-          ['heun', 'randomize', resetInvalidValues ? 'normal' : 'invalid'],
+          ['heun', 'randomize', scheduler],
           ['euler', 'fixed', 'normal'],
           ['unknown']
         ])
@@ -632,14 +658,14 @@ describe('ComfyApp', () => {
       const [offer] = useToast().toasts
       expect(offer).toEqual(
         expect.objectContaining({
-          action: expect.objectContaining({ label: t('g.migrate') }),
+          actions: [expect.objectContaining({ label: t('g.migrate') })],
           kind: 'warning',
           title: t('toastMessages.migrateToLitegraphReroute')
         })
       )
       const reload = vi.spyOn(app, 'loadGraphData').mockResolvedValue(true)
 
-      await offer.action?.onClick()
+      await offer.actions[0]?.onClick()
 
       const [migrated] = reload.mock.calls[0]
       expect(migrated?.nodes.map((node) => node.type)).not.toContain('Reroute')
@@ -2044,6 +2070,55 @@ describe('ComfyApp', () => {
         now.mockRestore()
         setTelemetryRegistry(null)
       }
+    })
+
+    it('falls back to the error panel when the subscription dialog cannot open', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          error: {
+            type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+            message: 'A cloud subscription is required',
+            details: ''
+          }
+        })
+      )
+      vi.mocked(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).mockResolvedValueOnce(false)
+
+      await app.queuePrompt(0)
+
+      expect(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'subscription_required' })
+      expect(useExecutionErrorStore().lastPromptError).toMatchObject({
+        type: 'CLOUD_SUBSCRIPTION_REQUIRED'
+      })
+    })
+
+    it('still reports a rejected submission once the dialog takes over', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError({
+          error: {
+            type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+            message: 'You have enough credits for this workflow',
+            details: ''
+          },
+          node_errors: {}
+        })
+      )
+      vi.mocked(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).mockResolvedValueOnce(true)
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(
+        useBillingDialogs().showSubscriptionRequiredDialog
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'subscription_required' })
+      expect(useExecutionErrorStore().lastPromptError).toBeNull()
     })
 
     it('records a rejected submission on the workflow that queued it', async () => {
@@ -3849,6 +3924,31 @@ describe('ComfyApp', () => {
       await app.loadApiJson({}, 'repeat')
 
       expect(useWorkflowStore().activeWorkflow).toBe(activeWorkflow)
+    })
+  })
+
+  describe('socket handlers', () => {
+    it('keeps a model download that arrives as the socket starts', async () => {
+      vi.spyOn(api, 'init').mockImplementation(async () => {
+        api.dispatchCustomEvent('model_download', {
+          status: 'downloading',
+          name: 'my_style_v2.safetensors',
+          dir: 'loras',
+          index: 1,
+          count: 1,
+          bytes_downloaded: 1,
+          bytes_total: 2,
+          progress: 0.5,
+          prompt_id: 'job-1'
+        })
+      })
+
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+
+      expect(api.init).toHaveBeenCalledOnce()
+      expect(useJobModelDownloadStore().downloadFor('job-1')?.progress).toBe(
+        0.5
+      )
     })
   })
 

@@ -185,6 +185,12 @@ export function useFeatureFlags() {
         true
       )
     },
+    get deploymentStartEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.DEPLOYMENT_START_ENABLED,
+        remoteConfig.value.deployment_start_enabled
+      )
+    },
     get partnerNodeTokenEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.PARTNER_NODE_TOKEN,
@@ -229,6 +235,13 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED,
         remoteConfig.value.deployment_compatibility_marks_enabled,
+        false
+      )
+    },
+    get runtimeLibraryModelsEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.RUNTIME_LIBRARY_MODELS_ENABLED,
+        remoteConfig.value.runtime_library_models_enabled,
         false
       )
     },

@@ -30,7 +30,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
-import { createWorkflowErrorManager } from '@/workbench/extensions/manager/composables/workflowErrorManager'
+import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
 
 import ErrorGroupList from '@/platform/workflowErrors/panel/ErrorGroupList.vue'
 
