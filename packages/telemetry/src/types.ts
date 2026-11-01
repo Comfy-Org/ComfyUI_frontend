@@ -160,6 +160,8 @@ export interface BootstrapCompleteMetadata {
   phase_count: number
   /** Wall-clock ms not covered by any recorded phase. */
   untraced_ms: number
+  /** Wall-clock ms the tab was hidden during startup. */
+  hidden_ms: number
   /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
    * `bootstrap/object-info`). Nested phases intentionally overlap their
