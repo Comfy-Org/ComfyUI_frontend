@@ -542,7 +542,11 @@ describe('useWorkflowPersistenceV2', () => {
       vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
       const draftStore = useWorkflowDraftStoreV2()
       const draftPath = 'workflows/Background.json'
-      const draftGraph = JSON.stringify({ ...blankGraph, extra: { a: 1 } })
+      const draftGraph = JSON.stringify({
+        ...blankGraph,
+        id: '6f1e9a2b-3c4d-4e5f-8a9b-0c1d2e3f4a5b',
+        extra: { a: 1 }
+      })
       draftStore.saveDraft(draftPath, draftGraph, {
         name: 'Background.json',
         isTemporary: true
