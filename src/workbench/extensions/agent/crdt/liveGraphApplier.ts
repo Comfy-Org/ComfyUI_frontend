@@ -942,17 +942,23 @@ export class LiveGraphApplier {
     definitions: ExportedSubgraph[],
     failed: Set<string>
   ): ExportedSubgraph[] {
-    const registrable: ExportedSubgraph[] = []
-    for (const definition of topologicalSortSubgraphs(definitions)) {
-      const failure = nestedDefinitionFailure(definition, failed)
-      if (failure === undefined) {
-        registrable.push(definition)
-        continue
-      }
+    const dependents = definitions.filter((definition) =>
+      nestedDefinitionFailure(definition, failed)
+    )
+    if (dependents.length === 0) return definitions
+    for (const definition of dependents) {
       failed.add(definition.id)
-      this.reportDefinitionFailure(graph, definition.id, failure)
+      this.reportDefinitionFailure(
+        graph,
+        definition.id,
+        nestedDefinitionFailure(definition, failed)
+      )
     }
-    return registrable
+    return this.withoutFailedDependents(
+      graph,
+      definitions.filter(({ id }) => !failed.has(id)),
+      failed
+    )
   }
 
   private registerIndividually(
@@ -961,7 +967,7 @@ export class LiveGraphApplier {
     failed: Set<string>,
     reserved: { nodeIds: NodeId[]; linkIds: number[] }
   ): void {
-    for (const definition of definitions) {
+    for (const definition of topologicalSortSubgraphs(definitions)) {
       const failure =
         nestedDefinitionFailure(definition, failed) ??
         tryCreateSubgraphs(graph.rootGraph, [definition], reserved)

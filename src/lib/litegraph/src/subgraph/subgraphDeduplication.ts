@@ -507,8 +507,6 @@ export function topologicalSortSubgraphs(
   const subgraphIds = new Set(subgraphs.map((sg) => sg.id))
   const byId = new Map(subgraphs.map((sg) => [sg.id, sg]))
 
-  // Build adjacency: dependency → set of dependents (parents that use it).
-  // Edges go from leaf to parent so Kahn's emits leaves first.
   const dependents = new Map<string, Set<string>>()
   const inDegree = new Map<string, number>()
   for (const id of subgraphIds) {
@@ -518,15 +516,14 @@ export function topologicalSortSubgraphs(
 
   for (const sg of subgraphs) {
     for (const node of sg.nodes ?? []) {
-      if (subgraphIds.has(node.type)) {
-        // sg depends on node.type → edge from node.type to sg.id
-        dependents.get(node.type)!.add(sg.id)
+      const nodeDependents = dependents.get(node.type)
+      if (nodeDependents && !nodeDependents.has(sg.id)) {
+        nodeDependents.add(sg.id)
         inDegree.set(sg.id, (inDegree.get(sg.id) ?? 0) + 1)
       }
     }
   }
 
-  // Kahn's algorithm — leaves (in-degree 0) are emitted first.
   const queue: string[] = []
   for (const [id, degree] of inDegree) {
     if (degree === 0) queue.push(id)
@@ -543,7 +540,6 @@ export function topologicalSortSubgraphs(
     }
   }
 
-  // Cycle fallback: return original order
   if (sorted.length !== subgraphs.length) return subgraphs
 
   return sorted

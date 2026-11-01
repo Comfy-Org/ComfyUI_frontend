@@ -1803,30 +1803,74 @@ describe('LiveGraphApplier', () => {
       )
     })
 
-    it('registers a valid sibling when another definition fails to configure', () => {
-      const unrelated = createTestSubgraphData({
-        id: UNRELATED,
-        nodes: [interior('TestSink')]
-      })
+    it.for([
+      ['one instance', () => outer()],
+      [
+        'two instances',
+        () =>
+          createTestSubgraphData({
+            id: OUTER,
+            nodes: [interior(INNER), { ...interior(INNER), id: 2 }]
+          })
+      ]
+    ] as const)(
+      'registers a valid sibling when a definition nested %s fails to configure',
+      ([, parent]) => {
+        const unrelated = createTestSubgraphData({
+          id: UNRELATED,
+          nodes: [interior('TestSink')]
+        })
+        const { graph, applyCollected } = setup({
+          nodes: [],
+          links: [],
+          definitions: {
+            subgraphs: [parent(), inner('TestThrowingConfigure'), unrelated]
+          }
+        })
+
+        const result = applyCollected()
+
+        expect(result.failureCount).toBe(2)
+        expect([...graph.subgraphs.keys()]).toEqual([UNRELATED])
+        expect(reportError).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'configure exploded' }),
+          expect.objectContaining({
+            errorType: 'agent_subgraph_definitions_failed',
+            context: expect.objectContaining({ definitionId: INNER })
+          })
+        )
+        expect(reportError).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            errorType: 'agent_subgraph_definitions_failed',
+            context: expect.objectContaining({ definitionId: OUTER })
+          })
+        )
+      }
+    )
+
+    it('does not register a definition whose child nests a malformed one when an unrelated cycle exists', () => {
+      const MALFORMED = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
+      const CYCLE_A = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
+      const CYCLE_B = 'ffffffff-ffff-4fff-8fff-ffffffffffff'
       const { graph, applyCollected } = setup({
         nodes: [],
         links: [],
         definitions: {
-          subgraphs: [outer(), inner('TestThrowingConfigure'), unrelated]
+          subgraphs: [
+            createTestSubgraphData({ id: CYCLE_A, nodes: [interior(CYCLE_B)] }),
+            createTestSubgraphData({ id: CYCLE_B, nodes: [interior(CYCLE_A)] }),
+            outer(),
+            inner(MALFORMED),
+            { ...createTestSubgraphData({ id: MALFORMED }), inputs: 'invalid' }
+          ]
         }
       })
 
-      const result = applyCollected()
+      applyCollected()
 
-      expect(result.failureCount).toBe(2)
-      expect([...graph.subgraphs.keys()]).toEqual([UNRELATED])
-      expect(reportError).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'configure exploded' }),
-        expect.objectContaining({
-          errorType: 'agent_subgraph_definitions_failed',
-          context: expect.objectContaining({ definitionId: INNER })
-        })
-      )
+      expect(graph.subgraphs.has(INNER)).toBe(false)
+      expect(graph.subgraphs.has(OUTER)).toBe(false)
       expect(reportError).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
