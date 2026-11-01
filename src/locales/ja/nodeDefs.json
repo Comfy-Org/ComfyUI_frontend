@@ -6750,11 +6750,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "FLUX超解像度で動画を1.5～3倍にアップスケールします。ソースを正確に維持するか、細部を創造的に強調できます。",
-    "display_name": "Flux 動画アップスケール",
+    "display_name": "Flux ビデオアップスケール（レガシー）",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "入力上限に合わせるため、面積が3840x2160ピクセルを超えるソースを自動的に縮小します。アスペクト比は維持され、小さい動画は変更されません。"
+        "tooltip": "面積が2560x1440ピクセルを超えるソースを、入力上限に収まるよう自動的にダウンスケールします。アスペクト比は維持され、小さい動画には影響しません。"
       },
       "control_after_generate": {
         "name": "生成後の制御"
@@ -6782,6 +6782,48 @@
       "video": {
         "name": "video",
         "tooltip": "アスペクト比が1:4～4:1の、1～20秒のソースclip。出力は24 fpsでレンダリングされ、1フレームあたり約14.4メガピクセルに制限されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "FLUX超解像を使用して、ソースを忠実に保持するか、ディテールを創造的に強調しながら、動画を1080p、2K、4K、または1.5～3倍にアップスケールします。",
+    "display_name": "Flux ビデオアップスケール",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "大きすぎるソースを拒否せずにダウンスケールします。面積が2560x1440ピクセルを超える場合、またはターゲット解像度の3分の2を超える場合（最小倍率は1.5x）が対象です。アスペクト比は維持されます。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "'creative' は細部を復元・生成し、生成映像、テクスチャ、風景に最適です。'precise' はソースを変更せずに鮮明化し、顔、製品、実写映像に適しています。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "強調するディテールを導くclipの任意の説明です。ニュートラルなアップスケールを行うには空欄のままにします。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "モデレーションの許容度です。0が最も厳格です。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するseedです。FLUXは独自のseedを選択するため、この値にかかわらず実際の結果は非決定的です。"
+      },
+      "target_resolution": {
+        "name": "target_resolution",
+        "tooltip": "2K、4K、1080pでは、出力をそれぞれ2560x1440、3840x2160、1920x1080以内に収めます（縦向きclipでは回転）。最大3xでも収まるまで拡大できないほど小さいソースは、3xにアップスケールされ、出力もそれより小さくなります。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "アスペクト比が1:4から4:1の、1～20秒のソースclipです。出力は24 fpsでレンダリングされ、1フレームあたり約14.4メガピクセルに制限されます。"
       }
     },
     "outputs": {
@@ -9039,7 +9081,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Ideogram 4.5 の精密編集を使用して、テキストプロンプトに従い画像を編集します。プロンプトで指定された部分のみが変更され、変更していないピクセルは同一に保たれ、出力は画像1のサイズを維持します（約4 MPを超える画像は先に縮小されます）。最大4枚の参照画像を受け付けます。",
+    "description": "Ideogram 4.5の精密編集を使用し、テキストpromptに従って画像を編集します。promptで要求された部分のみが変更され、変更されないピクセルは同一のまま保たれ、出力は画像1のサイズを維持します（約4 MPを超える画像は先に縮小されます）。maskまたはバウンディングボックスで指定した単一領域の編集と、画像をフルサイズで返すこともできます。最大4枚の参照画像を受け付けます（context_window_mask使用時は3枚）。",
     "display_name": "Ideogram 4.5 精密編集",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9090,9 @@
       "model": {
         "name": "モデル",
         "tooltip": "使用するモデル。"
+      },
+      "model_context_window": {
+        "name": "context_window"
       },
       "model_prompt": {
         "name": "プロンプト"
@@ -15062,6 +15107,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "MiniMax H3のコンテキストウィンドウを設定します。動画と音声の同期を保つため、ウィンドウはモデルの17フレームチャンクに合わせて開始されます。",
+    "display_name": "MiniMax H3 コンテキストウィンドウ",
+    "inputs": {
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "実フレーム単位のコンテキストウィンドウの長さです。17*n + 5である必要があります。"
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "実フレーム単位のコンテキストウィンドウの重複量です。17*n + 5である必要があります。"
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "FreeNoiseノイズシャッフルを適用するかどうかです。ウィンドウのブレンドが改善されます。"
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "コンテキストウィンドウを融合するために使用する方法です。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "サンプリング中にコンテキストウィンドウを適用するmodelです。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "複数のconditioning（ConditionCombineで作成）を、領域インデックスに基づいて各ウィンドウに分割するかどうかです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "サンプリング中にコンテキストウィンドウを適用したmodelです。"
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "MiniMax H3 Fun ControlNetをモデルパッチとしてテキストから動画へのモデルに適用します。",
     "display_name": "MiniMax H3 Fun ControlNetを適用",
@@ -15137,6 +15217,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "潜在アップスケールmodelを使用してMiniMax H3 latentの動画をリサイズします。音声は変更されずに通過します。",
+    "display_name": "MiniMax H3 モデル使用の潜在アップスケール",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "model": {
+        "name": "model"
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

@@ -5175,6 +5175,7 @@
     "pricingBlurbSeeDetails": "vedi dettagli",
     "reactivatePlan": "Riprendi l'abbonamento",
     "reactivateToUseCredits": "Riattiva il tuo piano per utilizzare questi crediti",
+    "refillsAfterPayment": "Si ricarica quando il pagamento va a buon fine",
     "refillsDate": "Ricarica {date}",
     "refillsNextCycle": "Ricarica al prossimo ciclo",
     "refreshCredits": "Aggiorna crediti",
@@ -5793,7 +5794,10 @@
         "title": "Il tuo piano Team termina il {date}"
       },
       "lowCredits": {
-        "localBody": "Ti restano {credits} crediti. Aggiungi crediti per continuare a eseguire i Nodi partner.",
+        "localBody": "Ti rimane {credits} credito. Aggiungi crediti per continuare a eseguire Partner Nodes. | Ti rimangono {credits} crediti. Aggiungi crediti per continuare a eseguire Partner Nodes.",
+        "memberBody": "A questo workspace rimane {credits} credito. Chiedi al proprietario del workspace di aggiungere crediti prima di esaurirli. | A questo workspace rimangono {credits} crediti. Chiedi al proprietario del workspace di aggiungere crediti prima di esaurirli.",
+        "ownerBody": "A questo workspace rimane {credits} credito. Aggiungi crediti prima di esaurirli. | A questo workspace rimangono {credits} crediti. Aggiungi crediti prima di esaurirli.",
+        "personalBody": "Ti rimane {credits} credito. Aggiungi crediti prima di esaurirli. | Ti rimangono {credits} crediti. Aggiungi crediti prima di esaurirli.",
         "title": "Crediti in esaurimento"
       },
       "outOfCredits": {
@@ -5829,7 +5833,7 @@
           "title": "Pagamento ricevuto"
         },
         "verifyPayment": {
-          "action": "Verifica il tuo pagamento",
+          "action": "Completa la verifica",
           "body": "La tua banca richiede un'ulteriore verifica per completare questo pagamento.",
           "title": "Verifica il tuo pagamento"
         }
@@ -5864,8 +5868,10 @@
         "onHold": "Nessun metodo di pagamento predefinito. Impostane uno per riprendere la ricarica automatica.",
         "paused": "Limite mensile raggiunto. Riprende il {date}.",
         "pausedNoDate": "Limite mensile raggiunto.",
+        "rule": "Ricarica fino a {target} crediti quando il saldo scende sotto {threshold} crediti.",
         "status": {
           "failed": "Non riuscito",
+          "limitReached": "Limite raggiunto",
           "off": "Disattivata",
           "on": "Attivata",
           "onHold": "In attesa",
@@ -5878,17 +5884,23 @@
       "credits": {
         "addCredits": "Aggiungi crediti",
         "available": "Disponibili",
+        "availableUntil": "Disponibili fino al {date}",
         "inUse": "Attualmente in uso",
         "overdrawn": "Le tue esecuzioni hanno utilizzato {count} credito in più di quelli disponibili. | Le tue esecuzioni hanno utilizzato {count} crediti in più di quelli disponibili.",
         "plan": "Piano",
         "planOfPool": "{remaining} di {total}",
         "planTooltip": "Crediti inclusi nel tuo piano. Si rinnovano a ogni periodo di fatturazione.",
+        "planUsed": "{percent}% utilizzato",
         "rateInfo": "Informazioni sui crediti",
         "rateTooltip": "I crediti servono a pagare le esecuzioni. {credits} crediti = $1.",
         "title": "Crediti",
         "topUp": "Ricarica",
         "topUpTooltip": "Crediti che hai aggiunto. Vengono usati quando i crediti del piano si esauriscono.",
         "unavailable": "Impossibile caricare il tuo saldo."
+      },
+      "footer": {
+        "messageSupport": "Contatta l'assistenza",
+        "partnerNodesPricing": "Prezzi dei Partner Nodes"
       },
       "handoff": {
         "member": {
@@ -5897,7 +5909,9 @@
         },
         "owner": {
           "action": "Apri fatturazione",
-          "label": "Metodi di pagamento, fatture e utilizzo"
+          "label": "Metodi di pagamento, fatture e utilizzo",
+          "line": "Gestisci tutto il resto relativo alla fatturazione su {platform}",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "Impossibile caricare il tuo piano.",
@@ -5925,12 +5939,19 @@
           "line": "Abbonati per eseguire workflow su Cloud.",
           "title": "Questo spazio di lavoro non ha un piano attivo"
         },
+        "paused": "In pausa. Il pagamento di rinnovo non è andato a buon fine.",
         "resumeConfirm": {
           "body": "Il tuo piano si rinnoverà il {date}. Puoi annullarlo di nuovo in qualsiasi momento.",
           "title": "Riprendere il tuo piano {plan}?"
         },
+        "salesManaged": {
+          "line": "Fatturato in base al contratto.",
+          "renews": "Fatturato in base al contratto. Rinnovo il {date}.",
+          "title": "Enterprise"
+        },
         "scheduledChange": "Passaggio a {plan} il {date}.",
         "stayConfirm": {
+          "bodyNoAmount": "Rimarrai su {current}. Puoi programmare nuovamente una modifica in qualsiasi momento.",
           "title": "Annullare la modifica al piano {plan}?"
         },
         "unknown": {

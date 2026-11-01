@@ -5175,6 +5175,7 @@
     "pricingBlurbSeeDetails": "詳細を見る",
     "reactivatePlan": "サブスクリプションを再開",
     "reactivateToUseCredits": "これらのクレジットを使用するにはプランを再有効化してください",
+    "refillsAfterPayment": "支払いが完了すると補充されます",
     "refillsDate": "{date}に補充",
     "refillsNextCycle": "次のサイクルで補充",
     "refreshCredits": "クレジットを更新",
@@ -5793,7 +5794,10 @@
         "title": "Team プランは {date} に終了します"
       },
       "lowCredits": {
-        "localBody": "残りのクレジットは {credits} です。Partner Nodes を引き続き実行するには、クレジットを追加してください。",
+        "localBody": "残りのクレジットは {credits} です。パートナーノードを引き続き実行するには、クレジットを追加してください。 | 残りのクレジットは {credits} です。パートナーノードを引き続き実行するには、クレジットを追加してください。",
+        "memberBody": "このワークスペースの残りのクレジットは {credits} です。なくなる前に、ワークスペースの所有者にクレジットの追加を依頼してください。 | このワークスペースの残りのクレジットは {credits} です。なくなる前に、ワークスペースの所有者にクレジットの追加を依頼してください。",
+        "ownerBody": "このワークスペースの残りのクレジットは {credits} です。なくなる前にクレジットを追加してください。 | このワークスペースの残りのクレジットは {credits} です。なくなる前にクレジットを追加してください。",
+        "personalBody": "残りのクレジットは {credits} です。なくなる前にクレジットを追加してください。 | 残りのクレジットは {credits} です。なくなる前にクレジットを追加してください。",
         "title": "クレジット残高が少なくなっています"
       },
       "outOfCredits": {
@@ -5829,7 +5833,7 @@
           "title": "支払いを受け付けました"
         },
         "verifyPayment": {
-          "action": "支払いを確認",
+          "action": "認証を完了",
           "body": "この支払いを完了するには、銀行による追加の確認が必要です。",
           "title": "支払いを確認"
         }
@@ -5864,8 +5868,10 @@
         "onHold": "デフォルトの支払い方法がありません。設定して自動チャージを再開してください。",
         "paused": "月間上限に達しました。{date} に再開します。",
         "pausedNoDate": "月間上限に達しました。",
+        "rule": "{threshold} クレジットを下回ると、{target} クレジットまで追加します。",
         "status": {
           "failed": "失敗",
+          "limitReached": "上限に達しました",
           "off": "オフ",
           "on": "オン",
           "onHold": "保留中",
@@ -5878,17 +5884,23 @@
       "credits": {
         "addCredits": "クレジットを追加",
         "available": "利用可能",
+        "availableUntil": "{date} まで利用可能",
         "inUse": "現在使用中",
         "overdrawn": "実行により、所持クレジットを{count}クレジット超過しました。 | 実行により、所持クレジットを{count}クレジット超過しました。",
         "plan": "プラン",
         "planOfPool": "{total}中{remaining}",
         "planTooltip": "プランに含まれるクレジットです。各請求期間に補充されます。",
+        "planUsed": "{percent}% 使用済み",
         "rateInfo": "クレジットについて",
         "rateTooltip": "クレジットは実行に使用されます。{credits}クレジット = $1。",
         "title": "クレジット",
         "topUp": "チャージ",
         "topUpTooltip": "追加したクレジットです。プランのクレジットを使い切った後に使用されます。",
         "unavailable": "残高を読み込めませんでした。"
+      },
+      "footer": {
+        "messageSupport": "サポートにメッセージを送る",
+        "partnerNodesPricing": "パートナーノードの料金"
       },
       "handoff": {
         "member": {
@@ -5897,7 +5909,9 @@
         },
         "owner": {
           "action": "請求を開く",
-          "label": "支払い方法、請求書、使用状況"
+          "label": "支払い方法、請求書、使用状況",
+          "line": "請求に関するその他の管理はすべて {platform} で行えます",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "プランを読み込めませんでした。",
@@ -5925,12 +5939,19 @@
           "line": "Cloudでワークフローを実行するには登録してください。",
           "title": "このワークスペースには有効なプランがありません"
         },
+        "paused": "一時停止中です。更新の支払いが完了しませんでした。",
         "resumeConfirm": {
           "body": "プランは{date}に更新されます。いつでも再度キャンセルできます。",
           "title": "{plan}プランを再開しますか？"
         },
+        "salesManaged": {
+          "line": "契約に基づいて請求されます。",
+          "renews": "契約に基づいて請求されます。{date} に更新されます。",
+          "title": "エンタープライズ"
+        },
         "scheduledChange": "{date}に{plan}へ変更されます。",
         "stayConfirm": {
+          "bodyNoAmount": "{current} のまま継続します。変更はいつでも再度予約できます。",
           "title": "{plan} への変更をキャンセルしますか？"
         },
         "unknown": {

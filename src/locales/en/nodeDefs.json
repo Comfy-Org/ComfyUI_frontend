@@ -6719,7 +6719,7 @@
     }
   },
   "FluxVideoUpscaleNode": {
-    "display_name": "Flux Video Upscale",
+    "display_name": "Flux Video Upscale (Legacy)",
     "description": "Upscales a video 1.5 to 3 times with FLUX super-resolution, either preserving the source precisely or creatively enhancing its detail.",
     "inputs": {
       "video": {
@@ -6740,7 +6740,49 @@
       },
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "Automatically downscale sources larger than 3840x2160 pixels in area to fit the input limit. Aspect ratio is preserved; smaller videos are untouched."
+        "tooltip": "Automatically downscale sources larger than 2560x1440 pixels in area to fit the input limit. Aspect ratio is preserved; smaller videos are untouched."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderation tolerance, 0 is the strictest."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; FLUX picks its own seed, so actual results are nondeterministic regardless of this value."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "display_name": "Flux Video Upscale",
+    "description": "Upscales a video to 1080p, 2K or 4K, or 1.5 to 3 times, with FLUX super-resolution, either preserving the source precisely or creatively enhancing its detail.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Source clip of 1 to 20 seconds with an aspect ratio between 1:4 and 4:1. The output is rendered at 24 fps and capped at about 14.4 megapixels per frame."
+      },
+      "target_resolution": {
+        "name": "target_resolution",
+        "tooltip": "2K, 4K and 1080p fit the output inside 2560x1440, 3840x2160 or 1920x1080 (turned for portrait clips). A source too small to fill it at the maximum 3x is upscaled 3x and comes out smaller."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "'creative' restores and invents fine detail, best for generated footage, textures and scenery. 'precise' sharpens the source without changing it, for faces, products and real footage."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Optional description of the clip that steers the enhanced detail. Leave empty for a neutral upscale."
+      },
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Downscale sources that are too large instead of rejecting them: above 2560x1440 pixels in area, or above two thirds of the target resolution (the minimum factor is 1.5x). Aspect ratio is preserved."
       },
       "safety_tolerance": {
         "name": "safety_tolerance",
@@ -9040,7 +9082,7 @@
   },
   "IdeogramPreciseEditApi": {
     "display_name": "Ideogram 4.5 Precise Edit",
-    "description": "Edits an image guided by a text prompt using Ideogram 4.5 precise editing: only what the prompt asks for changes, untouched pixels stay identical and the output keeps the size of image 1 (images above ~4 MP are scaled down first). Accepts up to 4 reference images.",
+    "description": "Edits an image guided by a text prompt using Ideogram 4.5 precise editing: only what the prompt asks for changes, untouched pixels stay identical and the output keeps the size of image 1 (images above ~4 MP are scaled down first). Can also edit a single region, set by a mask or bounding boxes, and return the image at full size. Accepts up to 4 reference images (3 with context_window_mask).",
     "inputs": {
       "model": {
         "name": "model",
@@ -9048,6 +9090,9 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      },
+      "model_context_window": {
+        "name": "context_window"
       },
       "model_prompt": {
         "name": "prompt"
@@ -14985,6 +15030,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "display_name": "MiniMax H3 Context Windows",
+    "description": "Set context windows for MiniMax H3. Windows start on the model's 17-frame chunks to keep video and audio in sync.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model to apply context windows to during sampling."
+      },
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "The length of the context window in real frames. Must be 17*n + 5."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "The overlap of the context window in real frames. Must be 17*n + 5."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "The method to use to fuse the context windows."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "Whether to apply FreeNoise noise shuffling, improves window blending."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Whether to split multiple conditionings (created by ConditionCombine) to each window based on region index."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The model with context windows applied during sampling."
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "display_name": "Apply MiniMax H3 Fun ControlNet",
     "description": "Apply a MiniMax H3 Fun ControlNet to a text-to-video model as a model patch.",
@@ -15060,6 +15140,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "display_name": "MiniMax H3 Latent Upscale With Model",
+    "description": "Resizes the video of a MiniMax H3 latent with a latent upscale model; audio passes through unchanged.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

@@ -5175,6 +5175,7 @@
     "pricingBlurbSeeDetails": "자세히 보기",
     "reactivatePlan": "구독 재개",
     "reactivateToUseCredits": "이 크레딧을 사용하려면 플랜을 다시 활성화하세요",
+    "refillsAfterPayment": "결제가 완료되면 충전됩니다",
     "refillsDate": "{date}에 리필",
     "refillsNextCycle": "다음 주기에 리필",
     "refreshCredits": "크레딧 새로고침",
@@ -5793,7 +5794,10 @@
         "title": "Team 요금제가 {date}에 종료됩니다"
       },
       "lowCredits": {
-        "localBody": "크레딧이 {credits}개 남았습니다. Partner Nodes를 계속 실행하려면 크레딧을 추가하세요.",
+        "localBody": "{credits}크레딧이 남았습니다. 파트너 노드를 계속 실행하려면 크레딧을 추가하세요. | {credits}크레딧이 남았습니다. 파트너 노드를 계속 실행하려면 크레딧을 추가하세요.",
+        "memberBody": "이 워크스페이스에 {credits}크레딧이 남았습니다. 모두 소진되기 전에 워크스페이스 소유자에게 크레딧 추가를 요청하세요. | 이 워크스페이스에 {credits}크레딧이 남았습니다. 모두 소진되기 전에 워크스페이스 소유자에게 크레딧 추가를 요청하세요.",
+        "ownerBody": "이 워크스페이스에 {credits}크레딧이 남았습니다. 모두 소진되기 전에 크레딧을 추가하세요. | 이 워크스페이스에 {credits}크레딧이 남았습니다. 모두 소진되기 전에 크레딧을 추가하세요.",
+        "personalBody": "{credits}크레딧이 남았습니다. 모두 소진되기 전에 크레딧을 추가하세요. | {credits}크레딧이 남았습니다. 모두 소진되기 전에 크레딧을 추가하세요.",
         "title": "크레딧이 부족합니다"
       },
       "outOfCredits": {
@@ -5829,7 +5833,7 @@
           "title": "결제를 받았습니다"
         },
         "verifyPayment": {
-          "action": "결제 확인",
+          "action": "인증 완료",
           "body": "이 결제를 완료하려면 은행에서 추가 인증을 요구합니다.",
           "title": "결제 확인"
         }
@@ -5864,8 +5868,10 @@
         "onHold": "기본 결제 수단이 없습니다. 자동 충전을 재개하려면 설정하세요.",
         "paused": "월간 한도에 도달했습니다. {date}에 재개됩니다.",
         "pausedNoDate": "월간 한도에 도달했습니다.",
+        "rule": "{threshold}크레딧 미만일 때 {target}크레딧까지 충전합니다.",
         "status": {
           "failed": "실패",
+          "limitReached": "한도에 도달했습니다",
           "off": "끔",
           "on": "켬",
           "onHold": "보류 중",
@@ -5878,17 +5884,23 @@
       "credits": {
         "addCredits": "크레딧 추가",
         "available": "사용 가능",
+        "availableUntil": "{date}까지 이용 가능",
         "inUse": "현재 사용 중",
         "overdrawn": "실행에서 보유한 크레딧보다 {count}개 더 사용했습니다. | 실행에서 보유한 크레딧보다 {count}개 더 사용했습니다.",
         "plan": "요금제",
         "planOfPool": "{total}개 중 {remaining}개",
         "planTooltip": "요금제에 포함된 크레딧입니다. 각 청구 기간마다 충전됩니다.",
+        "planUsed": "{percent}% 사용됨",
         "rateInfo": "크레딧 정보",
         "rateTooltip": "크레딧은 실행 비용으로 사용됩니다. {credits}크레딧 = $1.",
         "title": "크레딧",
         "topUp": "충전",
         "topUpTooltip": "추가한 크레딧입니다. 요금제 크레딧을 모두 사용한 후 사용됩니다.",
         "unavailable": "잔액을 불러올 수 없습니다."
+      },
+      "footer": {
+        "messageSupport": "지원팀에 메시지 보내기",
+        "partnerNodesPricing": "파트너 노드 요금"
       },
       "handoff": {
         "member": {
@@ -5897,7 +5909,9 @@
         },
         "owner": {
           "action": "결제 관리 열기",
-          "label": "결제 수단, 청구서 및 사용량"
+          "label": "결제 수단, 청구서 및 사용량",
+          "line": "청구와 관련된 나머지 모든 항목은 {platform}에서 관리하세요",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "요금제를 불러올 수 없습니다.",
@@ -5925,12 +5939,19 @@
           "line": "Cloud에서 워크플로를 실행하려면 구독하세요.",
           "title": "이 워크스페이스에는 활성 요금제가 없습니다"
         },
+        "paused": "일시 중지됨. 갱신 결제가 완료되지 않았습니다.",
         "resumeConfirm": {
           "body": "요금제가 {date}에 갱신됩니다. 언제든 다시 취소할 수 있습니다.",
           "title": "{plan} 요금제를 재개할까요?"
         },
+        "salesManaged": {
+          "line": "계약에 따라 청구됩니다.",
+          "renews": "계약에 따라 청구됩니다. {date}에 갱신됩니다.",
+          "title": "엔터프라이즈"
+        },
         "scheduledChange": "{date}에 {plan}(으)로 변경됩니다.",
         "stayConfirm": {
+          "bodyNoAmount": "{current} 요금제를 유지합니다. 언제든지 다시 변경을 예약할 수 있습니다.",
           "title": "{plan}(으)로 변경을 취소하시겠습니까?"
         },
         "unknown": {

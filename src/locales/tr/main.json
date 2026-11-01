@@ -5175,6 +5175,7 @@
     "pricingBlurbSeeDetails": "detayları gör",
     "reactivatePlan": "Aboneliği sürdür",
     "reactivateToUseCredits": "Bu kredileri kullanmak için planınızı yeniden etkinleştirin",
+    "refillsAfterPayment": "Ödeme gerçekleştiğinde yeniden yüklenir",
     "refillsDate": "{date} tarihinde yenilenecek",
     "refillsNextCycle": "Sonraki döngüde yenilenecek",
     "refreshCredits": "Kredileri yenile",
@@ -5793,7 +5794,10 @@
         "title": "Team planınız {date} tarihinde sona eriyor"
       },
       "lowCredits": {
-        "localBody": "{credits} krediniz kaldı. Partner Nodes'u çalıştırmaya devam etmek için kredi ekleyin.",
+        "localBody": "{credits} krediniz kaldı. İş Ortağı Düğümlerini çalıştırmaya devam etmek için kredi ekleyin. | {credits} krediniz kaldı. İş Ortağı Düğümlerini çalıştırmaya devam etmek için kredi ekleyin.",
+        "memberBody": "Bu çalışma alanında {credits} kredi kaldı. Tükenmeden önce çalışma alanı sahibinden kredi eklemesini isteyin. | Bu çalışma alanında {credits} kredi kaldı. Tükenmeden önce çalışma alanı sahibinden kredi eklemesini isteyin.",
+        "ownerBody": "Bu çalışma alanında {credits} kredi kaldı. Tükenmeden önce kredi ekleyin. | Bu çalışma alanında {credits} kredi kaldı. Tükenmeden önce kredi ekleyin.",
+        "personalBody": "{credits} krediniz kaldı. Tükenmeden önce kredi ekleyin. | {credits} krediniz kaldı. Tükenmeden önce kredi ekleyin.",
         "title": "Krediler azalıyor"
       },
       "outOfCredits": {
@@ -5829,7 +5833,7 @@
           "title": "Ödeme alındı"
         },
         "verifyPayment": {
-          "action": "Ödemenizi doğrulayın",
+          "action": "Doğrulamayı tamamla",
           "body": "Bankanız, bu ödemeyi tamamlamak için ek doğrulama gerektiriyor.",
           "title": "Ödemenizi doğrulayın"
         }
@@ -5864,8 +5868,10 @@
         "onHold": "Varsayılan ödeme yöntemi yok. Otomatik kredi yüklemeyi sürdürmek için bir tane ayarlayın.",
         "paused": "Aylık sınıra ulaşıldı. {date} tarihinde devam eder.",
         "pausedNoDate": "Aylık sınıra ulaşıldı.",
+        "rule": "{threshold} kredinin altına düştüğünde {target} krediye tamamlar.",
         "status": {
           "failed": "Başarısız",
+          "limitReached": "Sınıra ulaşıldı",
           "off": "Kapalı",
           "on": "Açık",
           "onHold": "Beklemede",
@@ -5878,17 +5884,23 @@
       "credits": {
         "addCredits": "Kredi ekle",
         "available": "Kullanılabilir",
+        "availableUntil": "{date} tarihine kadar kullanılabilir",
         "inUse": "Şu anda kullanımda",
         "overdrawn": "Çalıştırmalarınız, sahip olduğunuzdan {count} kredi daha fazla kullandı. | Çalıştırmalarınız, sahip olduğunuzdan {count} kredi daha fazla kullandı.",
         "plan": "Plan",
         "planOfPool": "{total} kredinin {remaining}'i",
         "planTooltip": "Planınıza dahil olan krediler. Her faturalandırma döneminde yenilenirler.",
+        "planUsed": "%{percent} kullanıldı",
         "rateInfo": "Krediler hakkında",
         "rateTooltip": "Krediler çalıştırmalar için ödeme yapar. {credits} kredi = $1.",
         "title": "Krediler",
         "topUp": "Bakiye yükle",
         "topUpTooltip": "Eklediğiniz krediler. Plan kredileri tükendiğinde kullanılırlar.",
         "unavailable": "Bakiyeniz yüklenemedi."
+      },
+      "footer": {
+        "messageSupport": "Destek ekibine mesaj gönder",
+        "partnerNodesPricing": "İş Ortağı Düğümleri fiyatlandırması"
       },
       "handoff": {
         "member": {
@@ -5897,7 +5909,9 @@
         },
         "owner": {
           "action": "Faturalandırmayı aç",
-          "label": "Ödeme yöntemleri, faturalar ve kullanım"
+          "label": "Ödeme yöntemleri, faturalar ve kullanım",
+          "line": "Faturalandırmayla ilgili diğer her şeyi {platform} üzerinden yönetin",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "Planınız yüklenemedi.",
@@ -5925,12 +5939,19 @@
           "line": "Cloud'da iş akışlarını çalıştırmak için abone olun.",
           "title": "Bu çalışma alanının etkin bir planı yok"
         },
+        "paused": "Duraklatıldı. Yenileme ödemesi gerçekleşmedi.",
         "resumeConfirm": {
           "body": "Planınız {date} tarihinde yenilenecek. İstediğiniz zaman tekrar iptal edebilirsiniz.",
           "title": "{plan} planınıza yeniden başlansın mı?"
         },
+        "salesManaged": {
+          "line": "Sözleşmeye göre faturalandırılır.",
+          "renews": "Sözleşmeye göre faturalandırılır. {date} tarihinde yenilenir.",
+          "title": "Kurumsal"
+        },
         "scheduledChange": "{date} tarihinde {plan} planına geçilecek.",
         "stayConfirm": {
+          "bodyNoAmount": "{current} planında kalacaksınız. İstediğiniz zaman yeniden değişiklik planlayabilirsiniz.",
           "title": "{plan} planındaki değişiklik iptal edilsin mi?"
         },
         "unknown": {
