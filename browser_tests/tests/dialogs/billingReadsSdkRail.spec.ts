@@ -65,6 +65,7 @@ const ACTIVE_STATUS: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 }

@@ -55,7 +55,8 @@ const ACTIVE_PRO_STATUS: BillingStatusResponse = {
   occupied_seats: 1,
   ended_at: null,
   team_credit_stop: null,
-  scheduled_change: null
+  scheduled_change: null,
+  next_charge: null
 }
 
 const STANDARD_YEARLY_PLAN = createPlan({

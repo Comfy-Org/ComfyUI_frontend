@@ -700,6 +700,7 @@ function billingAnswer(path: string, scope: BillingScope): unknown {
         has_funds: true,
         is_active: true,
         max_seats: 1,
+        next_charge: null,
         occupied_seats: 1,
         scheduled_change: null,
         team_credit_stop: null

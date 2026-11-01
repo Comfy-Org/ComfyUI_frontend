@@ -108,6 +108,7 @@ const ACTIVE_STANDARD = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies BillingStatusResponse
