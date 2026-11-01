@@ -584,6 +584,7 @@ test.describe(
 
     test('picks an unsaved tab a reload left unopened', async ({
       page,
+      toast,
       workflowSelection
     }) => {
       const tabs = page.getByTestId('workflow-tab')
@@ -639,17 +640,15 @@ test.describe(
 
       await expect(agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
       await expect(
-        page.getByText(enMessages.shareWorkflow.saveFailedTitle)
+        toast.withText(enMessages.shareWorkflow.saveFailedTitle)
       ).toHaveCount(0)
-      expect(
-        await page.evaluate(() =>
-          (
-            window.app!.extensionManager as WorkspaceStore
-          ).workflow.activeWorkflow!.activeState.nodes.some(
-            (node) => node.type === 'Note'
-          )
+      const savedGraph = await page.evaluate(async (path) => {
+        const response = await fetch(
+          `/api/userdata/${encodeURIComponent(path)}`
         )
-      ).toBe(true)
+        return (await response.json()) as { nodes: { type: string }[] }
+      }, workflowSelection.savedPaths[0])
+      expect(savedGraph.nodes.map(({ type }) => type)).toContain('Note')
     })
   }
 )

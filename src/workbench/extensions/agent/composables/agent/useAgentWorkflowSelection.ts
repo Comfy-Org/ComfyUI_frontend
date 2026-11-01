@@ -144,17 +144,28 @@ export function useAgentWorkflowSelection({
       if (isCurrent()) warnWorkflowSelectionFailed(detail)
       return undefined
     }
+    const needsSave = () => tab.isTemporary && cloudIdFor(tab) === undefined
     try {
-      if (tab.isTemporary && cloudIdFor(tab) === undefined) {
+      if (needsSave()) {
         if (!(await refreshCloudWorkflowIds())) return fail()
         if (!isCurrent()) return
         // After a reload, background tabs stay unloaded until opened, and a
-        // save needs the tab's graph. Loading reads it back from the draft.
-        if (!tab.isLoaded) await tab.load()
-        if (!isCurrent()) return
-        const filename = nextSaveFilename(tab)
-        if (!(await workflowService.saveWorkflowAs(tab, { filename })))
-          return fail()
+        // save needs the tab's graph. Open it through the normal path: that
+        // serializes the load, sets the app/graph mode the filename depends
+        // on, and keeps the tab's draft persisted if the save then fails.
+        if (!tab.isLoaded) {
+          if (!(await workflowService.openWorkflow(tab, { isCurrent }))) {
+            if (!isCurrent()) return
+            return fail(t('agent.targetNavigationUnavailable'))
+          }
+          if (!isCurrent()) return
+        }
+        // The tab may have been saved while this selection was waiting.
+        if (needsSave()) {
+          const filename = nextSaveFilename(tab)
+          if (!(await workflowService.saveWorkflowAs(tab, { filename })))
+            return fail()
+        }
       }
       if (!isCurrent()) return
       let workflowId = cloudIdFor(tab)
