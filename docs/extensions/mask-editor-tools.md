@@ -60,9 +60,10 @@ owned by the editor. An active extension does not also draw a native brush
 stroke. Switching back to a native tool ends the extension session. Selecting
 the extension again creates a fresh session.
 
-`pointerType` preserves the browser's string value. Handle `mouse`, `pen`, and
-`touch` when device-specific behavior is needed, and provide a default for empty
-or vendor-specific values.
+Touch input is reserved for editor navigation and is not delivered to extensions.
+For delivered events, `pointerType` preserves the browser's string value. Handle
+`mouse` and `pen` when device-specific behavior is needed, and provide a default
+for empty or vendor-specific values.
 
 If an extension callback fails, the editor closes that session, cleans up its
 panel, and reports the failure to the user. Native tools remain available.
