@@ -102,7 +102,8 @@ const topCategories = computed(() => [
 const categoryTree = computed<CategoryNode[]>(() => {
   const defs = nodeDefs ?? nodeDefStore.visibleNodeDefs
   const tree = nodeOrganizationService.organizeNodes(defs, {
-    groupBy: 'category'
+    groupBy: 'category',
+    sortBy: 'alphabetical'
   })
 
   const stripRootPrefix = (key: string) => key.replace(/^root\//, '')
