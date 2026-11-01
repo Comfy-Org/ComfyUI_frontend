@@ -156,6 +156,7 @@ export function useBrushDrawing(initialSettings?: {
   }
 
   async function startDrawing(event: PointerEvent): Promise<void> {
+    if (drawingPointerId !== undefined) return
     drawingPointerId = event.pointerId
     gpu.dirtyRect.value = resetDirtyRect()
 
