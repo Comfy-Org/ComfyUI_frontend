@@ -112,7 +112,13 @@ const snapshot = editor.readImage()
 if (!snapshot) return
 
 const signal = editor.signal
-const mask = await inferMask(snapshot.image, prompts, { signal })
+let mask: MaskEditorMask
+try {
+  mask = await inferMask(snapshot.image, prompts, { signal })
+} catch (error) {
+  if (!signal.aborted) showInferenceFailure(error)
+  return
+}
 if (signal.aborted) return
 
 const result = editor.commitMask(mask, {
@@ -121,7 +127,9 @@ const result = editor.commitMask(mask, {
 if (!result.ok) showApplyFailure(result.reason)
 ```
 
-`inferMask` and `showApplyFailure` above belong to the extension.
+`inferMask`, `showInferenceFailure`, and `showApplyFailure` above belong to the
+extension. Cancellation returns quietly; other inference failures are reported
+without applying a mask.
 The mask is `{ width, height, data: Uint8Array }`, one byte per pixel in row-major
 order. Zero is unselected, 255 is fully selected, and intermediate values are
 partial selection. Dimensions must match the snapshot. The API replaces only

@@ -1,4 +1,6 @@
-import { assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
+
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useMaskEditorExtensionStore } from '@/renderer/extensions/maskEditor/stores/maskEditorExtensionStore'
 import type {
@@ -54,6 +56,56 @@ describe('MaskEditor tool registration', () => {
     const icon = 'icon-[lucide--crosshair]'
     expect(registry.registerTool({ ...invalid, icon }).ok).toBe(true)
     expect(registry.tools.map((item) => item.icon)).toEqual([undefined, icon])
+  })
+
+  it('rejects a throwing tool getter without changing registrations', () => {
+    const registry = useMaskEditorExtensionStore()
+    registry.registerTool(tool)
+    const failure = new Error('Tool label unavailable')
+    const invalid = {
+      ...tool,
+      id: 'test.getter',
+      get label(): string {
+        throw failure
+      }
+    }
+
+    expect(registry.registerTool(invalid)).toEqual({
+      ok: false,
+      reason: 'invalid-tool'
+    })
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+      errorType: 'failure_registering_mask_editor_tool',
+      surface: 'workspace'
+    })
+    expect(registry.tools.map((item) => item.id)).toEqual(['impact.sam'])
+    expect(registry.registerTool({ ...tool, id: 'test.getter' }).ok).toBe(true)
+  })
+
+  it('registers the validated snapshot when a tool getter changes its id', () => {
+    const registry = useMaskEditorExtensionStore()
+    registry.registerTool(tool)
+    const readId = vi
+      .fn()
+      .mockReturnValueOnce('test.snapshot')
+      .mockReturnValueOnce('test.snapshot')
+      .mockReturnValue('impact.sam')
+    const changing = {
+      ...tool,
+      get id(): string {
+        return readId()
+      }
+    }
+
+    expect(registry.registerTool(changing).ok).toBe(true)
+    expect(registry.tools.map((item) => item.id)).toEqual([
+      'impact.sam',
+      'test.snapshot'
+    ])
+    expect(registry.registerTool({ ...tool, id: 'test.snapshot' })).toEqual({
+      ok: false,
+      reason: 'duplicate-id'
+    })
   })
 
   it('activates a class-based tool with its original receiver', () => {
