@@ -225,6 +225,26 @@ describe('useCanvasTransform', () => {
       expect(mockStore.gpuTextureHeight).toBe(100)
     })
 
+    it('saves GPU rotation without SharedArrayBuffer support', async () => {
+      vi.stubGlobal('SharedArrayBuffer', undefined)
+      mockStore.tgpuRoot = fromPartial<NonNullable<typeof mockStore.tgpuRoot>>(
+        {}
+      )
+
+      await useCanvasTransform().rotateClockwise()
+
+      expect(mockCanvasHistory.saveState).toHaveBeenCalledWith(
+        expect.objectContaining({ width: 50, height: 100 }),
+        expect.objectContaining({ width: 50, height: 100 }),
+        expect.objectContaining({ width: 50, height: 100 })
+      )
+      expect(mockStore.pendingGPUMaskData?.buffer).toBeInstanceOf(ArrayBuffer)
+      expect(mockStore.pendingGPURgbData?.buffer).toBeInstanceOf(ArrayBuffer)
+      expect(mockStore.pendingGPUMaskData?.slice(0, 4)).toEqual(
+        new Uint8ClampedArray([255, 0, 0, 255])
+      )
+    })
+
     it('should not recreate GPU textures when GPU is inactive', async () => {
       mockStore.tgpuRoot = null
 
