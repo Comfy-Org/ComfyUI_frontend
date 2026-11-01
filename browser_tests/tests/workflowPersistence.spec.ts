@@ -1014,6 +1014,59 @@ test.describe('Workflow Persistence', () => {
     await expect(comfyPage.toast.toastErrors).toHaveCount(0)
   })
 
+  test('Unedited saved workflows reopen as saved after a reload', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'Switching tabs leaves a draft equal to the saved file; after a reload that draft marked the workflow unsaved'
+    })
+    test.setTimeout(45_000)
+
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+
+    const names = [
+      generateUniqueFilename(),
+      generateUniqueFilename(),
+      generateUniqueFilename()
+    ]
+    await comfyPage.menu.topbar.saveWorkflow(names[0])
+    for (const name of names.slice(1)) {
+      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+      await comfyPage.menu.topbar.saveWorkflow(name)
+    }
+
+    // Visit every tab without editing: each switch writes the outgoing
+    // tab's draft.
+    for (const name of names) {
+      await comfyPage.menu.topbar.getWorkflowTab(name).click()
+      await comfyPage.workflow.waitForWorkflowIdle()
+      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
+    }
+    await waitForWorkflowTabState(comfyPage, names.length)
+    await expect
+      .poll(async () => (await comfyPage.workflow.getDraftWorkflows()).length)
+      .toBeGreaterThanOrEqual(2)
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+
+    for (const name of names.slice(0, 2)) {
+      await comfyPage.menu.topbar.getWorkflowTab(name).click()
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await expect
+        .poll(() => comfyPage.menu.topbar.getActiveTabName())
+        .toBe(name)
+      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
+      await expect.poll(() => comfyPage.page.title()).not.toMatch(/^\*/)
+    }
+  })
+
   test('Flushes a pending draft edit before an immediate reload', async ({
     comfyPage
   }) => {
