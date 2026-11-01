@@ -97,7 +97,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["ingest-api", "server-facts"],
+  "allowedDependencies": ["ingest-api", "navigation", "server-facts"],
   "allowedConsumers": ["account"],
   "characterizationScenarios": [
     {
