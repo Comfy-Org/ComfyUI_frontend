@@ -5285,6 +5285,71 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toEqual([])
   })
 
+  it('(g11a) a deleted thread invalidates an in-flight send before its acknowledgement', async () => {
+    let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockResolvedValueOnce({
+        thread_id: 'th-1',
+        message_id: 'msg-1',
+        workflow_id: 'wf-bound'
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve) => {
+            resolvePost = resolve
+          })
+      )
+      .mockResolvedValueOnce({
+        thread_id: 'th-2',
+        message_id: 'msg-3',
+        workflow_id: 'wf-fresh'
+      })
+    const rest = fakeRest({
+      postMessage,
+      getMessages: vi.fn(async (): Promise<AgentMessages> => {
+        throw new AgentApiError('gone', 404, undefined)
+      })
+    })
+    const { source, emit, status } = fakeEvents()
+    let target: WorkflowTurnContext = {
+      id: 'wf-bound',
+      tabPath: 'workflows/bound.json'
+    }
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => target,
+        adopted: vi.fn(),
+        draft: () => ({ content: { nodes: [{ id: 1 }], links: [] } })
+      }
+    })
+    session.start()
+    status(true)
+
+    await session.sendMessage('first')
+    emit(delta('msg-1', 'partial'))
+    target = { tabPath: 'workflows/Unsaved Workflow.json' }
+    const staleSend = session.sendMessage('second')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
+
+    status(false)
+    status(true)
+    await vi.waitFor(() => expect(session.threadId.value).toBeNull())
+    resolvePost?.({
+      thread_id: 'th-1',
+      message_id: 'msg-2',
+      workflow_id: 'wf-minted'
+    })
+
+    await expect(staleSend).resolves.toBe(false)
+    expect(session.threadId.value).toBeNull()
+    await session.sendMessage('start over')
+    expect(postMessage.mock.calls[2][0]).toBe('new')
+    expect(postMessage.mock.calls[2][1].currentTabUnbound).toBe(true)
+  })
+
   it('(g15) a deleted team-workspace thread is forgotten without touching another workspace', async () => {
     sessionStorage.setItem(
       'Comfy.Workspace.Current',

@@ -2951,6 +2951,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.settleTurn(turn, undefined, 'failed')
       return
     }
+    loadGeneration++
     conversationStore.reset()
     pruneSkillTurns()
     onThreadActivated?.(null)
