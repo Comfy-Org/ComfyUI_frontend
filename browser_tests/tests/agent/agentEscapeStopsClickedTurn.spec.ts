@@ -1,7 +1,10 @@
+import type { UploadImageResponse } from '@comfyorg/ingest-types'
 import { expect, mergeTests } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
@@ -29,6 +32,7 @@ import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 const test = mergeTests(agentTest, webSocketFixture)
 
 const PROMPT = 'Build a rainy city at night'
+const ATTACHMENT = 'image32x32.webp'
 
 test.describe(
   'Escape stops a turn that was submitted by clicking Send',
@@ -89,5 +93,53 @@ test.describe(
           .toBe(1)
       })
     })
+
+    test(
+      'an attachment preview closes before the active turn is cancelled',
+      { tag: '@ui' },
+      async ({ agentPanel, postedMessages, page }) => {
+        const uploaded: UploadImageResponse = {
+          name: ATTACHMENT,
+          subfolder: '',
+          type: 'input'
+        }
+        await page.route('**/api/upload/image', (route) =>
+          route.fulfill(jsonRoute(uploaded))
+        )
+        await page.route(`**/view?filename=${ATTACHMENT}&type=input`, (route) =>
+          route.fulfill({ path: assetPath(ATTACHMENT) })
+        )
+        const cancelled: string[] = []
+        await page.route(
+          '**/api/agent/threads/*/messages/*/cancel',
+          (route) => {
+            cancelled.push(route.request().url())
+            return route.fallback()
+          }
+        )
+
+        await agentPanel.open()
+        await agentPanel.selectWorkflow()
+        await agentPanel.composer.fill(PROMPT)
+        await agentPanel.sendButton.click()
+        await expect.poll(() => postedMessages.length).toBe(1)
+        await expect(agentPanel.stopButton).toBeVisible()
+
+        await agentPanel.fileInput.setInputFiles(assetPath(ATTACHMENT))
+        const trigger = agentPanel.previewAssetButton(ATTACHMENT)
+        const preview = agentPanel.assetPreview(ATTACHMENT)
+        await expect(trigger).toBeVisible()
+        await trigger.hover()
+        await expect(preview).toBeVisible()
+
+        await page.keyboard.press('Escape')
+        await expect(preview).toHaveCount(0)
+        expect(cancelled).toHaveLength(0)
+        await expect(agentPanel.stopButton).toBeVisible()
+
+        await page.keyboard.press('Escape')
+        await expect.poll(() => cancelled.length).toBe(1)
+      }
+    )
   }
 )
