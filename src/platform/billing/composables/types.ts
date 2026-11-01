@@ -147,23 +147,18 @@ export interface BillingActions {
   manageSubscription: () => Promise<BillingPortalOutcome>
   cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<void>
   /**
-   * Reactivates a cancelled-but-still-active subscription. Legacy has no
-   * dedicated endpoint, so the legacy adapter re-runs the checkout flow.
-   * The workspace adapter refreshes status and balance internally on success.
+   * Reactivates a cancelled-but-still-active subscription. The adapter
+   * refreshes status and balance internally on success.
    *
-   * `source` identifies the click-time UI surface. The workspace adapter
-   * ignores it (its resubscribe call is itself terminal); the legacy adapter
-   * carries it through to the pending-checkout-recovery terminal event, since
-   * that recovery path is shared with plain subscribes and has no other way
-   * to attribute a later-confirmed success back to a resubscribe click.
+   * `source` identifies the click-time UI surface; the adapter ignores it
+   * (its resubscribe call is itself terminal).
    */
   resubscribe: (options?: {
     source?: 'pricing_dialog' | 'settings_billing_panel'
   }) => Promise<void>
   /**
    * Purchases additional credits. Standardized on **whole-dollar cents**
-   * (multiples of 100); the legacy adapter divides by 100 for the
-   * dollar-based /customers/credit endpoint.
+   * (multiples of 100).
    * Pass-through by design: the caller owns the completed/pending follow-up
    * (balance refresh or billing-op polling), so this does not refresh.
    */
@@ -203,13 +198,8 @@ export interface BillingState {
   periodCreditGrant: ComputedRef<PeriodCreditGrant | null>
 }
 
-/** The rail a cancel actually ran on, fixed when the call was dispatched. */
-export type CancelRail = 'workspace' | 'legacy'
-
-export interface BillingContext
-  extends BillingState, Omit<BillingActions, 'cancelSubscription'> {
+export interface BillingContext extends BillingState, BillingActions {
   type: ComputedRef<BillingType>
-  cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<CancelRail>
   reconcileSubscriptionSuccess: () => Promise<void>
   /**
    * Waits up to ten seconds for the workspace type to load. False when the
