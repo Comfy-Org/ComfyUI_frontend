@@ -194,6 +194,19 @@ export const useExtensionStore = defineStore('extension', () => {
     return useSettingStore().get('Comfy.Extension.DisabledPacks')
   }
 
+  const enabledByPath = computed<Record<string, boolean>>(() => {
+    const disabled = new Set(getCurrentDisabledExtensionPaths())
+    return Object.fromEntries(
+      extensionPaths.value.map((path) => [path, !disabled.has(path)])
+    )
+  })
+
+  const changedExtensionPaths = computed(() =>
+    extensionPaths.value.filter(
+      (path) => enabledByPath.value[path] !== isExtensionPathEnabledAtBoot(path)
+    )
+  )
+
   async function setExtensionPathEnabled(
     path: string,
     enabled: boolean
@@ -297,6 +310,8 @@ export const useExtensionStore = defineStore('extension', () => {
     loadExtensionPaths,
     isExtensionPathEnabledAtBoot,
     getCurrentDisabledExtensionPaths,
+    enabledByPath,
+    changedExtensionPaths,
     setExtensionPathEnabled,
     markCoreExtensions,
     captureCoreExtensions,
