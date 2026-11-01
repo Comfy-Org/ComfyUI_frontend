@@ -262,6 +262,7 @@ describe('useOnboarding', () => {
 })
 
 describe('useOnboarding settings write failures', () => {
+  const offline = new Error('offline')
   let onboarding: typeof OnboardingModule
   let storeSetting: MockInstance<typeof api.storeSetting>
   let reportFailure: typeof reportError
@@ -312,8 +313,8 @@ describe('useOnboarding settings write failures', () => {
   it.for([
     {
       failure: 'its write threw',
-      fail: () => storeSetting.mockRejectedValueOnce(new Error('offline')),
-      report: expect.any(Error)
+      fail: () => storeSetting.mockRejectedValueOnce(offline),
+      report: offline
     },
     {
       failure: 'the server answered 5xx',
