@@ -5,8 +5,12 @@ import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixtu
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
+// The reply filter itself lives in the Cloud agent and is tested there
+// (Comfy-Org/cloud services/agent/internal/loop/scrub_code_test.go). This spec
+// feeds the already-filtered reply text and covers the panel's half: markdown
+// rendering and history hydration must show the commands exactly, once.
 test.describe(
-  'Cloud Agent local command replies',
+  'Cloud Agent panel renders local command replies exactly',
   {
     tag: ['@cloud', '@agent', '@ui'],
     annotation: {
@@ -68,7 +72,11 @@ test.describe(
         ).toBeVisible()
       })
 
+      let repliesBeforeReload = 0
       await test.step('reload the panel from persisted history', async () => {
+        repliesBeforeReload = await agentPanel.root
+          .getByTestId('markdown-stream')
+          .count()
         const historyReadsBeforeReload = promptHistory.historyReads()
         await agentPanel.reload()
         await expect
@@ -77,6 +85,9 @@ test.describe(
       })
 
       await test.step('keep the hydrated reply text exact', async () => {
+        await expect(
+          agentPanel.root.getByTestId('markdown-stream')
+        ).toHaveCount(repliesBeforeReload)
         const reply = agentPanel.root.getByTestId('markdown-stream').last()
         await expect(reply).toBeVisible()
         await expect(
