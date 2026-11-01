@@ -7,6 +7,8 @@ import type {
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
+export const MOCK_WORKSPACE_TOKEN = 'mock-workspace-token'
+
 export function workspace(
   type: 'personal' | 'team',
   role: 'owner' | 'member'
@@ -44,7 +46,7 @@ export async function mockWorkspaceTokenMint(
   await routeTarget.route('**/api/auth/token', (r) =>
     r.fulfill(
       jsonRoute({
-        token: 'mock-workspace-token',
+        token: MOCK_WORKSPACE_TOKEN,
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
         user_id: 'uid-1',
         workspace: { id: ws.id, name: ws.name, type: ws.type },
