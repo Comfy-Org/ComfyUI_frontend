@@ -144,7 +144,8 @@ const renderedRows = computed(() =>
           showsControl
             ? 'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
             : 'col-span-full',
-          widget.slotMetadata?.linked && 'opacity-100'
+          (widget.slotMetadata?.linked || widget.slotMetadata?.alwaysVisible) &&
+            'opacity-100'
         ),
         standalone: !showsControl && !!widget.suppressedByConnection,
         testId: showsControl ? 'node-widget' : undefined,

@@ -22,6 +22,7 @@ import {
   zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
+import { addShimWidget } from '@/core/graph/widgets/inputWidgetShim'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import {
@@ -77,24 +78,9 @@ function syncNodeWidgetOrder(node: LGraphNode) {
 }
 
 function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
-  node.widgets ??= []
   const { widget } = input
-  if (widget && node.widgets.some((w) => w.name === widget.name)) return
-  node.widgets.push({
-    draw(ctx, _n, _w, y) {
-      ctx.save()
-      ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
-      ctx.fillText(input.label ?? input.name, 20, y + 15)
-      ctx.restore()
-    },
-    name: input.name,
-    options: {},
-    serialize: false,
-    type: 'shim',
-    y: 0
-  })
-  input.alwaysVisible = true
-  input.widget = { name: input.name }
+  if (!widget || !node.widgets?.some((w) => w.name === widget.name))
+    addShimWidget(node, input)
 }
 
 function dynamicComboWidget(
