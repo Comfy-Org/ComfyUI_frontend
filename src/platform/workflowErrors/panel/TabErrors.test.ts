@@ -1605,6 +1605,8 @@ describe('TabErrors.vue', () => {
 
     const icon = screen.getByTestId('panel-tab-icon')
     expect(icon).toHaveAccessibleName('Setup required')
+    expect(icon.className).toContain('icon-[comfy--triangle-alert-filled]')
+    expect(icon.className).toContain('bg-warning')
   })
 
   it('uses error severity for an unabsorbed node validation error', () => {
@@ -1619,6 +1621,7 @@ describe('TabErrors.vue', () => {
 
     const icon = screen.getByTestId('panel-tab-icon')
     expect(icon).toHaveAccessibleName('Blocking errors')
+    expect(icon.className).toContain('icon-[comfy--circle-alert-filled]')
   })
 
   it('opens a closed runtime error log when view details is requested', async () => {
