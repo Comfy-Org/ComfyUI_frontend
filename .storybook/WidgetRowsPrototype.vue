@@ -4,15 +4,15 @@ import { provide, reactive } from 'vue'
 import type {
   SimplifiedControlWidget,
   SimplifiedWidget
-} from '@/types/simplifiedWidget'
-import { isControlOption } from '@/types/simplifiedWidget'
-import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
+} from '../src/types/simplifiedWidget'
+import { isControlOption } from '../src/types/simplifiedWidget'
+import { UnifiedWidgetRowsKey } from '../src/types/widgetRowLayout'
 
-import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
-import WidgetInputText from './WidgetInputText.vue'
-import WidgetSelectDefault from './WidgetSelectDefault.vue'
-import WidgetTextarea from './WidgetTextarea.vue'
-import WidgetWithControl from './WidgetWithControl.vue'
+import WidgetInputNumberInput from '../src/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
+import WidgetInputText from '../src/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue'
+import WidgetSelectDefault from '../src/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
+import WidgetTextarea from '../src/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue'
+import WidgetWithControl from '../src/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue'
 
 const {
   unified = true,
