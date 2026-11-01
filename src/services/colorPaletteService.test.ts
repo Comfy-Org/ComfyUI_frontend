@@ -38,23 +38,23 @@ describe('useColorPaletteService theme variables', () => {
     {
       paletteId: 'dark',
       expected: {
-        '--background': '#171718',
+        '--background': '#09090a',
         '--node': 'var(--card)',
-        '--node-header': '#202121',
+        '--node-header': '#09090a',
         '--node-foreground': '#a0a0a0',
-        '--secondary': '#262729',
-        '--border': '#494a50'
+        '--secondary': '#272729',
+        '--border': 'oklch(1 0 0 / 10%)'
       }
     },
     {
       paletteId: 'light',
       expected: {
-        '--background': '#ffffff',
+        '--background': '#fafafa',
         '--node': 'var(--card)',
-        '--node-header': 'var(--secondary)',
-        '--node-foreground': '#444444',
-        '--secondary': '#e9e9e9',
-        '--border': '#b4b4b4'
+        '--node-header': '#fafafa',
+        '--node-foreground': '#3f3f44',
+        '--secondary': '#e4e4e6',
+        '--border': 'oklch(0 0 0 / 10%)'
       }
     },
     {
@@ -132,7 +132,7 @@ describe('useColorPaletteService theme variables', () => {
       readRootProperty('--node'),
       readRootProperty('--muted'),
       readRootProperty('--background')
-    ]).toEqual(['var(--card)', '#3c3d42', '#171718'])
+    ]).toEqual(['var(--card)', '#3f3f44', '#09090a'])
   })
 
   it('starts a light custom palette without a theme from the light theme', async () => {

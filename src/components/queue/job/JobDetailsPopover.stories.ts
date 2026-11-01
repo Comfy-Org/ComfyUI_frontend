@@ -160,7 +160,7 @@ export const Queued: Story = {
       return { args: { ...args, jobId } }
     },
     template: `
-      <div style="padding: 12px; background: var(--color-charcoal-700); display:inline-block;">
+      <div style="padding: 12px; background: var(--color-charcoal-800); display:inline-block;">
         <JobDetailsPopover v-bind="args" />
       </div>
     `
@@ -219,7 +219,7 @@ export const QueuedParallel: Story = {
       return { args: { ...args, jobId } }
     },
     template: `
-      <div style="padding: 12px; background: var(--color-charcoal-700); display:inline-block;">
+      <div style="padding: 12px; background: var(--color-charcoal-800); display:inline-block;">
         <JobDetailsPopover v-bind="args" />
       </div>
     `
@@ -260,7 +260,7 @@ export const Running: Story = {
       return { args: { ...args, jobId } }
     },
     template: `
-      <div style="padding: 12px; background: var(--color-charcoal-700); display:inline-block;">
+      <div style="padding: 12px; background: var(--color-charcoal-800); display:inline-block;">
         <JobDetailsPopover v-bind="args" />
       </div>
     `
@@ -305,7 +305,7 @@ export const QueuedZeroAheadSingleRunning: Story = {
       return { args: { ...args, jobId } }
     },
     template: `
-      <div style="padding: 12px; background: var(--color-charcoal-700); display:inline-block;">
+      <div style="padding: 12px; background: var(--color-charcoal-800); display:inline-block;">
         <JobDetailsPopover v-bind="args" />
       </div>
     `
@@ -362,7 +362,7 @@ export const QueuedZeroAheadMultiRunning: Story = {
       return { args: { ...args, jobId } }
     },
     template: `
-      <div style="padding: 12px; background: var(--color-charcoal-700); display:inline-block;">
+      <div style="padding: 12px; background: var(--color-charcoal-800); display:inline-block;">
         <JobDetailsPopover v-bind="args" />
       </div>
     `
@@ -383,7 +383,7 @@ export const Completed: Story = {
       return { args: { ...args, jobId } }
     },
     template: `
-      <div style="padding: 12px; background: var(--color-charcoal-700); display:inline-block;">
+      <div style="padding: 12px; background: var(--color-charcoal-800); display:inline-block;">
         <JobDetailsPopover v-bind="args" />
       </div>
     `
@@ -414,7 +414,7 @@ export const Failed: Story = {
       return { args: { ...args, jobId } }
     },
     template: `
-      <div style="padding: 12px; background: var(--color-charcoal-700); display:inline-block;">
+      <div style="padding: 12px; background: var(--color-charcoal-800); display:inline-block;">
         <JobDetailsPopover v-bind="args" />
       </div>
     `
@@ -455,7 +455,7 @@ export const FailedWithLongError: Story = {
       return { args: { ...args, jobId } }
     },
     template: `
-      <div style="padding: 12px; background: var(--color-charcoal-700); display:inline-block;">
+      <div style="padding: 12px; background: var(--color-charcoal-800); display:inline-block;">
         <JobDetailsPopover v-bind="args" />
       </div>
     `

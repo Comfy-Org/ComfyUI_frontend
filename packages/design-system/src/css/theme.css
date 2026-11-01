@@ -73,26 +73,26 @@
   --color-credit: #ddbd31;
 
   --color-bypass: #6a246a;
-  --color-warning-foreground: var(--color-charcoal-800);
+  --color-warning-foreground: var(--color-charcoal-900);
   --color-success: var(--color-jade-600);
 }
 
 :root {
   color-scheme: dark;
 
-  --background: var(--color-charcoal-800);
+  --background: var(--color-charcoal-950);
   --foreground: var(--color-white);
-  --card: var(--color-charcoal-600);
+  --card: var(--color-charcoal-900);
   --node-foreground: var(--color-smoke-700);
-  --node-header: var(--color-charcoal-700);
-  --node-border: var(--color-charcoal-100);
+  --node-header: var(--color-charcoal-950);
+  --node-border: var(--color-charcoal-700);
   --primary: var(--color-azure-600);
-  --secondary: var(--color-charcoal-600);
-  --muted: var(--color-charcoal-300);
+  --secondary: var(--color-charcoal-800);
+  --muted: var(--color-charcoal-700);
   --muted-foreground: var(--color-smoke-800);
-  --accent: var(--color-charcoal-400);
+  --accent: var(--color-charcoal-800);
   --destructive: var(--color-coral-700);
-  --border: var(--color-charcoal-200);
+  --border: oklch(1 0 0 / 10%);
   --ring: var(--muted-foreground);
   --popover: var(--background);
   --input: var(--accent);
