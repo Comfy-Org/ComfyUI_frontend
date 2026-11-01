@@ -91,9 +91,12 @@ describe('groupPosition', () => {
     { index: 0, count: 3, expected: 'first' },
     { index: 1, count: 3, expected: 'middle' },
     { index: 2, count: 3, expected: 'last' }
-  ] as const)('returns $expected for index $index of $count', ({ index, count, expected }) => {
-    expect(groupPosition(index, count)).toBe(expected)
-  })
+  ] as const)(
+    'returns $expected for index $index of $count',
+    ({ index, count, expected }) => {
+      expect(groupPosition(index, count)).toBe(expected)
+    }
+  )
 })
 
 describe('isRenderableAppInput', () => {

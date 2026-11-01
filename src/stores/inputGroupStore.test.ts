@@ -46,14 +46,17 @@ describe('inputGroupStore', () => {
   it('moves an input between groups with one history entry', () => {
     const first = store.createGroup('First', inputIds.a)
     const second = store.createGroup('Second', inputIds.b)
-    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock.calls.length
+    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock
+      .calls.length
     store.addItemToGroup(second, inputIds.a)
     expect(store.findGroup(first)).toBeUndefined()
     expect(store.findGroup(second)?.items).toEqual([
       { key: inputIds.b },
       { key: inputIds.a }
     ])
-    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(captures + 1)
+    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(
+      captures + 1
+    )
   })
 
   it('persists metadata while preserving selected inputs and outputs', () => {
@@ -73,13 +76,19 @@ describe('inputGroupStore', () => {
   it('clears persisted grouping after the last group is deleted', () => {
     const id = store.createGroup()
     store.deleteGroup(id)
-    expect((app.rootGraph.extra.linearData as LinearData).inputGroups).toBeUndefined()
+    expect(
+      (app.rootGraph.extra.linearData as LinearData).inputGroups
+    ).toBeUndefined()
   })
 
   it('restores imported groups and detaches mutable saved objects', async () => {
     await nextTick()
     const saved = [{ id: 'saved', name: 'Saved', items: [{ key: inputIds.a }] }]
-    app.rootGraph.extra.linearData = { inputs: [], outputs: [], inputGroups: saved }
+    app.rootGraph.extra.linearData = {
+      inputs: [],
+      outputs: [],
+      inputGroups: saved
+    }
     app.rootGraph.events.dispatch('configured')
     expect(store.inputGroups).toEqual(saved)
     store.addItemToGroup('saved', inputIds.b)
@@ -92,24 +101,30 @@ describe('inputGroupStore', () => {
       inputs: [],
       outputs: [],
       inputGroups: [
-        { id: 'one', name: null, items: [
-          { key: inputIds.a, pairId: 'orphan' },
-          { key: inputIds.a },
-          { key: inputIds.b }
-        ] },
+        {
+          id: 'one',
+          name: null,
+          items: [
+            { key: inputIds.a, pairId: 'orphan' },
+            { key: inputIds.a },
+            { key: inputIds.b }
+          ]
+        },
         { id: 'one', name: 'Repeated', items: [{ key: inputIds.c }] },
-        { id: 'two', name: 'Second', items: [
-          { key: inputIds.a },
-          { key: inputIds.c }
-        ] }
+        {
+          id: 'two',
+          name: 'Second',
+          items: [{ key: inputIds.a }, { key: inputIds.c }]
+        }
       ]
     }
     app.rootGraph.events.dispatch('configured')
     expect(store.inputGroups).toEqual([
-      { id: 'one', name: null, items: [
-        { key: inputIds.a },
-        { key: inputIds.b }
-      ] },
+      {
+        id: 'one',
+        name: null,
+        items: [{ key: inputIds.a }, { key: inputIds.b }]
+      },
       { id: 'two', name: 'Second', items: [{ key: inputIds.c }] }
     ])
   })

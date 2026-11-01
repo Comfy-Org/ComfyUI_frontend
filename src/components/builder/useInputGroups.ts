@@ -12,22 +12,16 @@ interface ResolvedGroupItem {
   pairId?: string
 }
 
-type GroupRow =
-  | { type: 'single'; item: ResolvedGroupItem }
-  | { type: 'pair'; items: [ResolvedGroupItem, ResolvedGroupItem] }
-
-type LinkLookup = Pick<
-  ReturnType<typeof useLinkStore>,
-  'isInputSlotConnected'
->
+type LinkLookup = Pick<ReturnType<typeof useLinkStore>, 'isInputSlotConnected'>
 
 export function createInputLinkChecker(linkStore: LinkLookup) {
   return (node: LGraphNode, widgetName: string): boolean => {
     const graph = node.graph
-    const slot = node.inputs?.findIndex((input) => input.widget?.name === widgetName)
+    const slot = node.inputs.findIndex(
+      (input) => input.widget?.name === widgetName
+    )
     return (
       !!graph &&
-      slot !== undefined &&
       slot >= 0 &&
       linkStore.isInputSlotConnected(graphScopeOf(graph), node.id, slot)
     )
@@ -86,4 +80,3 @@ export function resolveGroupItems(
   )
   return group.items.filter(({ key }) => selectedIds.has(key))
 }
-

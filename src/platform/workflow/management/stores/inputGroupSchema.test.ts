@@ -14,14 +14,18 @@ const graph = {
 
 describe('linearData.inputGroups schema', () => {
   it('preserves group IDs, labels and canonical widget identities', async () => {
-    const inputGroups = [{
-      id: 'group',
-      name: 'Generation',
-      items: [{ key, pairId: 'pair' }]
-    }]
+    const inputGroups = [
+      {
+        id: 'group',
+        name: 'Generation',
+        items: [{ key, pairId: 'pair' }]
+      }
+    ]
     const value = await validateComfyWorkflow({
       ...graph,
-      extra: { linearData: { inputs: [[key, 'steps']], outputs: [], inputGroups } }
+      extra: {
+        linearData: { inputs: [[key, 'steps']], outputs: [], inputGroups }
+      }
     })
     expect(value?.extra?.linearData?.inputGroups).toEqual(inputGroups)
   })
@@ -31,10 +35,13 @@ describe('linearData.inputGroups schema', () => {
     { id: 'group', name: null, items: null },
     { id: 'group', name: null, items: [{ key, pairId: 123 }] }
   ])('rejects malformed group metadata: %j', async (group) => {
-    const value = await validateComfyWorkflow({
-      ...graph,
-      extra: { linearData: { inputs: [], outputs: [], inputGroups: [group] } }
-    }, () => {})
+    const value = await validateComfyWorkflow(
+      {
+        ...graph,
+        extra: { linearData: { inputs: [], outputs: [], inputGroups: [group] } }
+      },
+      () => {}
+    )
     expect(value).toBeNull()
   })
 })
