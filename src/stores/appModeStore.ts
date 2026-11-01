@@ -245,6 +245,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       const graph = useApp().rootGraph
       const extra = graph.extra
       extra.linearData = {
+        ...(extra.linearData as Partial<LinearData> | undefined),
         inputs: data.inputs.map(
           ([id, name, config]): LinearInput =>
             config

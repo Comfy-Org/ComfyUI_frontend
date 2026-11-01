@@ -3,7 +3,7 @@ import { markRaw } from 'vue'
 import { assert } from '@/base/assert'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import type { ComfyWorkflowJSON, InputGroup } from '@comfyorg/graph-model/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
@@ -25,6 +25,7 @@ export type LinearInput = [LinearInputId, string, InputWidgetConfig?]
 export interface LinearData {
   inputs: LinearInput[]
   outputs: LinearOutputNodeId[]
+  inputGroups?: InputGroup[]
 }
 
 export interface PendingWarnings {
