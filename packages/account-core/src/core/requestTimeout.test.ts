@@ -3,10 +3,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { timedSignal } from './requestTimeout'
 
 describe('timedSignal', () => {
-  it('passes the caller signal through when there is no timeout', () => {
-    const { signal } = new AbortController()
+  it('forwards caller cancellation without a timeout', () => {
+    const caller = new AbortController()
+    const reason = new DOMException('Stopped', 'AbortError')
+    const { signal } = timedSignal(caller.signal, undefined)
 
-    expect(timedSignal(signal, undefined).signal).toBe(signal)
+    caller.abort(reason)
+
+    expect(signal?.reason).toBe(reason)
   })
 
   it('aborts when the timeout passes', () => {
