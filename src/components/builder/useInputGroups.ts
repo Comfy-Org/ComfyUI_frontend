@@ -84,7 +84,6 @@ export function resolveGroupItems(
   )
   return group.items.filter(({ key }) => selectedIds.has(key))
 }
-
 export function groupedByPair(items: ResolvedGroupItem[]): GroupRow[] {
   const rows: GroupRow[] = []
   const paired = new Set<WidgetId>()
