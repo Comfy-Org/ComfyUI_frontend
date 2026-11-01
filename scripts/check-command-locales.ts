@@ -79,11 +79,15 @@ function lineOf(sourceFile: ts.SourceFile, node: ts.Node): number {
 
 function commandIdProperty(
   element: ts.Expression
-): ts.PropertyAssignment | undefined {
+): ts.PropertyAssignment | ts.ShorthandPropertyAssignment | undefined {
   if (!ts.isObjectLiteralExpression(element)) return
   return element.properties.find(
-    (property): property is ts.PropertyAssignment =>
-      ts.isPropertyAssignment(property) && propertyName(property.name) === 'id'
+    (
+      property
+    ): property is ts.PropertyAssignment | ts.ShorthandPropertyAssignment =>
+      (ts.isPropertyAssignment(property) ||
+        ts.isShorthandPropertyAssignment(property)) &&
+      propertyName(property.name) === 'id'
   )
 }
 
@@ -92,15 +96,19 @@ function collectCommandArrayElement(
   sourceFile: ts.SourceFile,
   element: ts.Expression
 ): { declared: DeclaredCommand[]; unresolved: UnresolvedCommand[] } {
+  if (ts.isStringLiteralLike(element)) return { declared: [], unresolved: [] }
   if (ts.isSpreadElement(element))
     return {
       declared: [],
       unresolved: [{ file, line: lineOf(sourceFile, element) }]
     }
   const property = commandIdProperty(element)
-  if (!property) return { declared: [], unresolved: [] }
-  const line = lineOf(sourceFile, property)
-  if (ts.isStringLiteralLike(property.initializer))
+  const line = lineOf(sourceFile, property ?? element)
+  if (
+    property &&
+    ts.isPropertyAssignment(property) &&
+    ts.isStringLiteralLike(property.initializer)
+  )
     return {
       declared: [{ id: property.initializer.text, file, line }],
       unresolved: []

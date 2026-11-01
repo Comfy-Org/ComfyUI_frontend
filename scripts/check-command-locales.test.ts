@@ -91,6 +91,21 @@ describe('collectDeclaredCommands', () => {
     expect(declared).toEqual([])
     expect(unresolved).toEqual([{ file: 'src/x.ts', line: 1 }])
   })
+
+  test.for([
+    {
+      name: 'identifier element',
+      source: `const command = { id: 'Comfy.A' }; const commands = [command]`
+    },
+    {
+      name: 'shorthand id',
+      source: `const id = 'Comfy.A'; const commands = [{ id }]`
+    }
+  ])('reports an unresolved $name', ({ source }) => {
+    const { declared, unresolved } = collectDeclaredCommands('src/x.ts', source)
+    expect(declared).toEqual([])
+    expect(unresolved).toEqual([{ file: 'src/x.ts', line: 1 }])
+  })
 })
 
 describe('findCommandLocaleGaps', () => {
