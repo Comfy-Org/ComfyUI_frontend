@@ -485,7 +485,7 @@ function focusAllowsComposerStop(): boolean {
 // itself first via stopPropagation (useAgentMentionPicker.ts's
 // onComposerKeydown), select has its own stopEscapeToDocument
 // (packages/design-system/src/select.variants.ts), and the capture-phase
-// document listeners in OnboardingCoach.vue and TourSpotlight.vue let a
+// window listeners in OnboardingCoach.vue and TourSpotlight.vue let a
 // full-screen overlay pre-empt everything else. This handler only ever runs
 // when none of those more specific handlers claimed the event first.
 function handleEscapeOverride(event: KeyboardEvent): boolean {
