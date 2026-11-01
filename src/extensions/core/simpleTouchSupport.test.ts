@@ -153,12 +153,16 @@ describe('Comfy.SimpleTouchSupport', () => {
 
   it('ignores a pinch when no canvas exists', () => {
     withoutCanvas()
+    const listenerErrors = vi.fn()
+    window.addEventListener('error', listenerErrors)
+    onTestFinished(() => window.removeEventListener('error', listenerErrors))
     const twoFingers = [touchAt(canvasEl), touchAt(canvasEl, 100)]
 
     dispatchTouch('touchstart', twoFingers)
     dispatchTouch('touchmove', twoFingers)
     pressPointer({ isPrimary: true })
 
+    expect(listenerErrors).not.toHaveBeenCalled()
     expect(processMouseDown).toHaveBeenCalledOnce()
   })
 
