@@ -14,7 +14,7 @@ import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 type InstallationDeployState =
   | { status: 'idle' }
   | { status: 'uploading' }
-  | { status: 'ready'; url: string }
+  | { status: 'ready'; url: string; bundleId: string }
 
 type DeployFailure = {
   ok: false
@@ -144,7 +144,11 @@ export function useInstallationDeploy() {
     const bundle = await createInstallationBundle(credential.header, workflow)
     if (owner !== authStore.currentUserIdentity()) return stopUploading()
     if (!bundle.ok) return fail(bundle)
-    state.value = { status: 'ready', url: bundle.url }
+    state.value = {
+      status: 'ready',
+      url: bundle.url,
+      bundleId: bundle.bundleId
+    }
   }
 
   return { state, deploy }

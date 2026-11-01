@@ -34,7 +34,7 @@ type BundlePost =
   | { ok: false; cause: unknown }
 
 type BundleResult =
-  | { ok: true; url: string }
+  | { ok: true; url: string; bundleId: string }
   | { ok: false; reason: BundleFailureReason; cause?: unknown }
 
 const REASON_BY_ERROR_CODE = {
@@ -101,7 +101,7 @@ async function uploadBundle(
 
   const created = zBundleCreated.safeParse(body)
   return created.success
-    ? { ok: true, url: created.data.url }
+    ? { ok: true, url: created.data.url, bundleId: created.data.bundle_id }
     : { ok: false, reason: 'unavailable', cause: created.error }
 }
 
