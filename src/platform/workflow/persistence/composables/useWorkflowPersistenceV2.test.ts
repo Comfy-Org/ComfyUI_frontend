@@ -1,13 +1,23 @@
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { api } from '@/scripts/api'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import '@/scripts/changeTracker'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
@@ -522,6 +532,71 @@ describe('useWorkflowPersistenceV2', () => {
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+    })
+
+    it('keeps the draft of an unsaved background tab when it is first loaded', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const draftStore = useWorkflowDraftStoreV2()
+      const draftPath = 'workflows/Background.json'
+      const draftGraph = JSON.stringify({
+        ...blankGraph,
+        id: '6f1e9a2b-3c4d-4e5f-8a9b-0c1d2e3f4a5b',
+        extra: { a: 1 }
+      })
+      draftStore.saveDraft(draftPath, draftGraph, {
+        name: 'Background.json',
+        isTemporary: true
+      })
+      const active = workflowStore.createTemporary('Active.json')
+      writeTabState([draftPath, active.path], 1)
+      vi.advanceTimersByTime(60_000)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+      const background = workflowStore.getWorkflowByPath(draftPath)
+      expect(background?.isLoaded).toBe(false)
+
+      await background!.load()
+
+      expect(draftStore.getDraft(draftPath)?.data).toBe(draftGraph)
+    })
+
+    it('leaves a reused workflow outside the workflows folder unstamped', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const draftStore = useWorkflowDraftStoreV2()
+      const id = '7a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d'
+      const graph = { ...blankGraph, id }
+      const outside = new ComfyWorkflow({
+        path: 'templates/Shared.json',
+        modified: Date.now(),
+        size: -1
+      })
+      outside.originalContent = outside.content = JSON.stringify(graph)
+      await outside.load()
+      workflowStore.attachWorkflow(outside)
+      const outsideModified = outside.lastModified
+      vi.advanceTimersByTime(60_000)
+      draftStore.saveDraft('workflows/Shared.json', JSON.stringify(graph), {
+        name: 'Shared.json',
+        isTemporary: true
+      })
+      const active = workflowStore.createTemporary('Active.json')
+      writeTabState(['workflows/Shared.json', active.path], 1)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+
+      expect(outside.lastModified).toBe(outsideModified)
     })
 
     it('activates first tab when storedActiveIndex is 0', async () => {
