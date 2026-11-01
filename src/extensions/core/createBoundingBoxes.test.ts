@@ -11,7 +11,7 @@ import {
 } from 'vue'
 
 import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'
-import type { ComfyApp } from '@/scripts/app'
+import type { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { IBoundingBoxesWidget } from '@comfyorg/graph-model/widgets'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
@@ -19,18 +19,17 @@ import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
 import { createBoundingBoxesExtension } from './createBoundingBoxes'
 
-const graph = vi.hoisted(() => ({
-  id: 'bbox-serialization',
-  events: new EventTarget(),
-  getNodeById: vi.fn<ComfyApp['rootGraph']['getNodeById']>()
+const lookupNode = vi.hoisted(() =>
+  vi.fn<() => ReturnType<typeof useLiveGraphNode>['value']>(() => null)
+)
+
+vi.mock(import('@/composables/useLiveGraphNode'), () => ({
+  useLiveGraphNode: () => computed(() => lookupNode())
 }))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    rootGraph: graph,
-    rootGraphOrUndefined: graph,
-    canvas: fromPartial<ComfyApp['canvas']>({ graph })
-  })
+vi.mock(import('@/composables/widgetHistoryScope'), () => ({
+  locateWidgetNode: () => null,
+  widgetHistoryScope: () => null
 }))
 
 vi.mock(
@@ -227,7 +226,7 @@ it('serializes coherent editor pixels when canvas dimensions change in the queue
     metadata: { ...boxes()[0].metadata, palette: ['#ff0000'] }
   }
   editor.value = [initialBox]
-  graph.getNodeById.mockReturnValue(fixture.node)
+  lookupNode.mockReturnValue(fixture.node)
   const modelValue = computed({
     get: () => editor.value,
     set: (value: BoundingBox[]) => {
