@@ -41,13 +41,16 @@ import {
   GetNodeParentGroupKey,
   useFlatAndCategorizeSelectedItems
 } from './shared'
+import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from '@/platform/workflowErrors/panel/TabErrors.vue'
 import { useHasBlockingError } from '@/platform/workflowErrors/panel/useHasBlockingError'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
 import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
 
 provide(WorkflowErrorManagerKey, createWorkflowErrorManager())
+provide(AskAgentPortKey, useAskAgentAboutIssues())
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const executionErrorStore = useExecutionErrorStore()

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import './agentPanel.css'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
@@ -203,6 +204,7 @@ const CrdtDevPanel = defineAsyncComponent(
 
 const { t } = useI18n()
 const toast = useToast()
+let errorAttachRun = 0
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
 const {
@@ -1926,6 +1928,8 @@ async function onSelectHistory(
   if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
   composerStore.invalidateSubmission()
+  errorAttachRun++
+  composerStore.clearErrorContext()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
   canvasStore.stopNodePicking()
@@ -1965,6 +1969,37 @@ if (
   selectedTarget.value.path !== mountedOn.path
 )
   void followTab(mountedOn)
+
+async function attachErrorContext(context: AgentErrorContext): Promise<void> {
+  const run = ++errorAttachRun
+  const workflow = workflowStore.activeWorkflow
+  if (context.workflowPath && workflow?.path !== context.workflowPath) {
+    toast.warning(t('agent.errorContext.workflowChanged'), { duration: 5000 })
+    return
+  }
+  if (workflow) {
+    await followTab(workflow)
+    if (run !== errorAttachRun) return
+    if (selectedTarget.value?.path !== workflow.path) {
+      if (composerStore.hasDraft) {
+        toast.warning(t('agent.errorContext.draftBlocked'), { duration: 5000 })
+        return
+      }
+      onNewChat()
+    }
+  }
+  composerStore.setErrorContext(context)
+}
+
+watch(
+  () => agentPanelStore.pendingErrorContext,
+  (context) => {
+    if (!context) return
+    agentPanelStore.pendingErrorContext = null
+    void attachErrorContext(context)
+  },
+  { immediate: true }
+)
 
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
   return entries
@@ -2170,6 +2205,8 @@ function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
   composerStore.setWorkflowReferences([])
+  errorAttachRun++
+  composerStore.clearErrorContext()
   composerStore.resetPromptHistory()
   newChat(source)
   if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()

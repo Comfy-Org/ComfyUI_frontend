@@ -658,7 +658,12 @@ export type AgentPanelCloseSource =
   | 'topbar_button'
   | 'pagehide'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button' | 'automatic_consent' | 'activation'
+  source:
+    | 'restored'
+    | 'topbar_button'
+    | 'automatic_consent'
+    | 'activation'
+    | 'error_context'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
@@ -945,7 +950,11 @@ export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
  * the user wrote themselves. Each send falls into exactly one — a chip the user
  * then reworded stays `suggestion`, because the chip is still what it came from.
  */
-export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
+export type AgentInputMethod =
+  | 'typed'
+  | 'suggestion'
+  | 'edited'
+  | 'error_context'
 /**
  * A starter prompt by the slot it occupies in the empty state, not by the text
  * it shows: the copy is owned elsewhere and changes without the funnel

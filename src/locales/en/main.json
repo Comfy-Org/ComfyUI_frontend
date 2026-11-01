@@ -5200,6 +5200,9 @@
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
+    "askAgent": "Ask agent",
+    "askAgentAbout": "Ask agent about {title}",
+    "askAgentAboutAll": "Ask agent about all issues ({count})",
     "resetToDefault": "Reset to default",
     "resetAllParameters": "Reset all parameters",
     "missingNodePacks": {
@@ -5253,6 +5256,7 @@
     "multipleIssueCount": "{count} issue found | {count} issues found",
     "multipleIssuesMessage": "Resolve these issues before running the workflow.",
     "viewDetails": "View details",
+    "askAgent": "Ask agent",
     "runsOn": "Runs on {deployment}",
     "switchDeployment": "Switch",
     "moreDeployments": "{count} more",
@@ -6126,6 +6130,13 @@
     "greetingQuestion": "What do you want to make?",
     "placeholder": "Describe what you want to create",
     "placeholderWithoutSkills": "Describe what you want to create",
+    "errorContext": {
+      "remove": "Remove attached issue",
+      "problemCount": "{count} problem | {count} problems",
+      "allLabel": "All issues",
+      "draftBlocked": "Send or clear your current message first, then ask the agent about these errors.",
+      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached."
+    },
     "skills": "Skills",
     "typeToSearch": "type to search",
     "skillNotAvailable": "Not available",

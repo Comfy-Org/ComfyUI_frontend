@@ -22,6 +22,8 @@ import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import type { AskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
 import type { WorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 
@@ -39,6 +41,13 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
 const { mockFocusNode } = vi.hoisted(() => ({
   mockFocusNode: vi.fn()
 }))
+
+const askAgentMock = {
+  canAskAgent: ref(true),
+  askAgentAboutIssues: vi.fn<AskAgentPort['askAgentAboutIssues']>()
+}
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/scripts/app'))
 
@@ -81,6 +90,7 @@ describe('TabErrors.vue', () => {
   const selectedItems = ref<Positionable[]>([])
 
   beforeEach(() => {
+    askAgentMock.canAskAgent.value = true
     selectedItems.value = []
     i18n = createI18n({
       legacy: false,
@@ -122,6 +132,10 @@ describe('TabErrors.vue', () => {
             expand: 'Expand',
             collapse: 'Collapse',
             errorHelp: 'Error help',
+            askAgent: 'Ask agent',
+            askAgentAbout: 'Ask agent about {title}',
+            askAgentAboutAll:
+              'Ask agent about {count} issue | Ask agent about all {count} issues',
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues',
             getHelpTooltip: 'Get help',
@@ -137,6 +151,11 @@ describe('TabErrors.vue', () => {
             },
             missingMedia: {
               missingMediaTitle: 'Missing Inputs'
+            }
+          },
+          agent: {
+            errorContext: {
+              allLabel: 'All issues'
             }
           }
         }
@@ -179,7 +198,10 @@ describe('TabErrors.vue', () => {
     render(Host, {
       global: {
         plugins: [i18n, pinia],
-        provide: { [WorkflowErrorManagerKey]: manager },
+        provide: {
+          [WorkflowErrorManagerKey]: manager,
+          [AskAgentPortKey]: askAgentMock
+        },
         stubs: {
           AsyncSearchInput: {
             template:
@@ -373,13 +395,110 @@ describe('TabErrors.vue', () => {
     expect(screen.queryByText('Input: clip')).not.toBeInTheDocument()
   })
 
-  it('renders runtime execution errors from WebSocket', async () => {
+  it('inserts a card chip and an all-issues chip from the panel buttons', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(
-      fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        title: 'KSampler'
-      })
+      Object.assign(new LGraphNode('KSampler'), { id: toNodeId(10) })
     )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1', 'Line 2'],
+        timestamp: Date.now()
+      })
+    })
+
+    const card = screen.getByTestId('error-card-ask-agent')
+    expect(card).toHaveTextContent('Ask agent')
+    await user.click(card)
+
+    const footer = screen.getByTestId('errors-footer-ask-agent')
+    expect(footer).toHaveTextContent('Ask agent about 1 issue')
+    await user.click(footer)
+
+    expect(askAgentMock.askAgentAboutIssues).toHaveBeenCalledTimes(2)
+    expect(askAgentMock.askAgentAboutIssues.mock.calls[0][0]).toMatchObject({
+      scope: 'card',
+      severity: 'error',
+      count: 1,
+      label: 'Execution failed'
+    })
+    expect(askAgentMock.askAgentAboutIssues.mock.calls[1][0]).toMatchObject({
+      scope: 'all',
+      label: 'All issues',
+      count: 1
+    })
+  })
+
+  it('keeps the footer on every issue while search narrows the list', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+      Object.assign(
+        new LGraphNode(nodeId === '1' ? 'KSampler' : 'CLIPTextEncode'),
+        { id: toNodeId(Number(nodeId)) }
+      )
+    )
+
+    const { user } = renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [validationError('unknown', undefined, {}, 'Out of memory', '')],
+          'KSampler'
+        ),
+        '2': nodeError(
+          [validationError('unknown', undefined, {}, 'Missing text input', '')],
+          'CLIPTextEncode'
+        )
+      })
+    })
+
+    await nextTick()
+    expect(screen.getByTestId('errors-footer-ask-agent')).toHaveTextContent(
+      'Ask agent about all 2 issues'
+    )
+
+    await user.type(screen.getByRole('textbox'), 'Missing text input')
+
+    expect(screen.getByTestId('errors-footer-ask-agent')).toHaveTextContent(
+      'Ask agent about all 2 issues'
+    )
+    await user.click(screen.getByTestId('errors-footer-ask-agent'))
+    expect(askAgentMock.askAgentAboutIssues).toHaveBeenCalledTimes(1)
+    expect(askAgentMock.askAgentAboutIssues.mock.calls[0][0]).toMatchObject({
+      scope: 'all',
+      count: 2,
+      label: 'All issues'
+    })
+  })
+
+  it('omits the agent actions when the agent is unavailable', () => {
+    askAgentMock.canAskAgent.value = false
+    renderComponent((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: '10',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Out of memory',
+        exception_type: 'RuntimeError',
+        traceback: ['Line 1'],
+        timestamp: Date.now()
+      })
+    })
+
+    expect(screen.queryByTestId('error-card-ask-agent')).toBeNull()
+    expect(screen.queryByTestId('errors-footer-ask-agent')).toBeNull()
+  })
+
+  it('renders runtime execution errors from WebSocket', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue(new LGraphNode('KSampler'))
 
     const { user } = renderComponent((pinia) => {
       useExecutionErrorStore(pinia).recordExecutionError({

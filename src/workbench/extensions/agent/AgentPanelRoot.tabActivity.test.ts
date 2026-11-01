@@ -40,6 +40,9 @@ import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { registerWorkflowTabActivityTracker } from './services/agent/workflowTabActivityTracker'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -356,6 +359,158 @@ beforeEach(() => {
 
 afterEach(() => {
   stopTracker()
+})
+
+describe('AgentPanelRoot Ask agent about errors', () => {
+  const errorContext: AgentErrorContext = {
+    scope: 'card',
+    count: 1,
+    label: 'Execution failed',
+    severity: 'error',
+    problems: [{ category: 'execution_failure', message: 'boom' }]
+  }
+
+  function respondWithChats(
+    threads: { id: string; title: string; workflowId: string }[]
+  ): void {
+    respondToFetch(/\/workflows(?:\?|$)/, () =>
+      json(200, {
+        data: [
+          { id: 'wf-42', name: 'current' },
+          { id: 'wf-other', name: 'other' }
+        ],
+        pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+      })
+    )
+    respondToFetch(/\/agent\/threads(?:\?|$)/, () =>
+      json(200, {
+        ...threadList,
+        threads: threads.map(({ id, title, workflowId }) => ({
+          ...agentThread(id, title),
+          workflow_id: workflowId
+        })),
+        pagination: {
+          has_more: false,
+          limit: threads.length,
+          offset: 0,
+          total: threads.length
+        }
+      })
+    )
+  }
+
+  it('opens the latest chat of the errored workflow before attaching the chip', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
+      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+    ])
+    respondToFetch('/api/agent/threads/th-2/messages', () =>
+      json(200, liveOtherThread('wf-other'))
+    )
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = errorContext
+
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-2')
+    )
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).toEqual(errorContext)
+    )
+    expect(useAgentPanelStore().pendingErrorContext).toBeNull()
+  })
+
+  it('keeps a draft and does not attach when the chat it belongs to is for another workflow', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+    useAgentComposerStore().setText('keep this draft')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: otherTab
+    }
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'Send or clear your current message first, then ask the agent about these errors.'
+      )
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
+    expect(useAgentComposerStore().draft).toBe('keep this draft')
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('does not attach diagnostics from a workflow that is no longer active', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: runningTab
+    }
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'The workflow with these errors is no longer open, so nothing was attached.'
+      )
+    )
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('keeps an attached chip with its workflow when the user switches tabs before sending', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: runningTab
+    }
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).not.toBeNull()
+    )
+
+    await useWorkflowService().openWorkflow(other)
+
+    await vi.waitFor(() =>
+      expect(workflowStore.activeWorkflow?.path).toBe(otherTab)
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
+    expect(useAgentComposerStore().errorContext).not.toBeNull()
+  })
+
+  it('starts a new chat on the errored workflow when it has none', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = errorContext
+
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).toEqual(errorContext)
+    )
+    expect(useAgentConversationStore().threadId).toBeNull()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+  })
 })
 
 describe('AgentPanelRoot tab activity across chats', () => {

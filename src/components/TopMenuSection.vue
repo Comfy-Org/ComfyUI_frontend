@@ -182,7 +182,7 @@
 <script setup lang="ts">
 import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -193,6 +193,8 @@ import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBan
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
@@ -315,6 +317,7 @@ const shouldShowRedDot = computed((): boolean => {
 
 const { hasAnyError, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
 const { viewErrorsInGraph } = useViewErrorsInGraph()
+provide(AskAgentPortKey, useAskAgentAboutIssues())
 
 const isErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')

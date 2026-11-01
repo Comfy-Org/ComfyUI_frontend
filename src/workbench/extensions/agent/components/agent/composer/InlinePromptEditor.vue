@@ -20,7 +20,10 @@ import { useI18n } from 'vue-i18n'
 
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
-import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
+import type {
+  ComposerInsertionPoint,
+  ComposerPrompt
+} from '@/workbench/extensions/agent/types/composerPrompt'
 import {
   composerReferenceKey,
   composerReferenceName
@@ -35,6 +38,7 @@ import type { PromptEditor } from '@/workbench/extensions/agent/types/promptEdit
 import type { WorkflowReferenceMetadata } from '@/workbench/extensions/agent/types/workflowReference'
 import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import InlineAssetReference from './InlineAssetReference.vue'
+import InlineErrorReference from './InlineErrorReference.vue'
 import {
   inlineReferenceChipClass,
   inlineReferenceRemoveAnchorClass,
@@ -47,6 +51,7 @@ import {
   pastedSkillCommand,
   promptDocument,
   promptDocumentPosition,
+  promptInsertionPosition,
   promptInsertionPoint,
   promptNodeReference,
   promptDraft,
@@ -62,7 +67,8 @@ const {
   historyEpoch = 0,
   editableWorkflowId,
   skillScope = '',
-  searchHint
+  searchHint,
+  caretRequest = null
 } = defineProps<{
   label: string
   expanded?: boolean
@@ -72,12 +78,14 @@ const {
   editableWorkflowId?: string
   skillScope?: string
   searchHint?: string
+  caretRequest?: ComposerInsertionPoint | null
 }>()
 const model = defineModel<ComposerPrompt>({
   default: () => ({ text: '', references: [] })
 })
 const emit = defineEmits<{
   input: []
+  caretRequestHandled: []
   resolveSkillMetadata: [prompt: ComposerPrompt]
   selectionChange: []
   keydown: [event: KeyboardEvent]
@@ -148,6 +156,7 @@ function referenceClipboardText(node: Node): string {
   const name = composerReferenceName(reference)
   if (reference.kind === 'skill') return `/${name}`
   if (reference.kind === 'workflow') return `@[Workflow: ${name}]`
+  if (reference.kind === 'error') return ''
   return reference.kind === 'node'
     ? nodeReferenceText(name)
     : assetReferenceText(name)
@@ -320,6 +329,42 @@ function assetReferenceView(
   }
 }
 
+function errorReferenceView(
+  node: Node,
+  editor: EditorView,
+  getPos: () => number | undefined
+) {
+  const dom = document.createElement('span')
+  const reference = promptNodeReference(node, 0)
+  if (reference?.kind !== 'error') return { dom }
+  dom.contentEditable = 'false'
+  dom.className =
+    'inline-flex rounded-sm align-middle ring-offset-base-background [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground [&.ProseMirror-selectednode]:ring-offset-1'
+  const vnode = h(InlineErrorReference, {
+    context: reference.context,
+    removeLabel: t('agent.errorContext.remove'),
+    countLabel: t(
+      'agent.errorContext.problemCount',
+      { count: reference.context.count },
+      reference.context.count
+    ),
+    onRemove: () => {
+      const position = getPos()
+      if (position === undefined) return
+      editor.dispatch(deleteReference(editor.state, position, node))
+      editor.focus()
+    }
+  })
+  vnode.appContext = appContext ?? null
+  render(vnode, dom)
+  return {
+    dom,
+    stopEvent: () => true,
+    ignoreMutation: () => true,
+    destroy: () => render(null, dom)
+  }
+}
+
 function nodeReferenceView(
   node: Node,
   editor: EditorView,
@@ -367,6 +412,24 @@ function nodeReferenceView(
   removeAnchor.append(remove)
   dom.append(id, removeAnchor)
   return { dom, stopEvent: () => true, ignoreMutation: () => true }
+}
+
+function requestedCaret(doc: Node): number | undefined {
+  if (!caretRequest) return
+  return promptInsertionPosition(doc, caretRequest)
+}
+
+function focusRequestedCaret(): void {
+  if (!view) return
+  const caret = requestedCaret(view.state.doc)
+  if (caret === undefined) return
+  view.dispatch(
+    view.state.tr
+      .setSelection(TextSelection.create(view.state.doc, caret))
+      .scrollIntoView()
+  )
+  view.focus()
+  emit('caretRequestHandled')
 }
 
 onMounted(() => {
@@ -537,6 +600,7 @@ onMounted(() => {
       },
       node: (node, editor, getPos) => nodeReferenceView(node, editor, getPos),
       asset: assetReferenceView,
+      error: errorReferenceView,
       workflow(node, editor, getPos) {
         const id: unknown = node.attrs.id
         const name: unknown = node.attrs.name
@@ -604,6 +668,7 @@ onMounted(() => {
       }
     }
   })
+  focusRequestedCaret()
 })
 
 watch(
@@ -614,12 +679,18 @@ watch(
     if (epoch !== previousEpoch) {
       insertions.clear()
       const state = createState()
-      const position = Math.min(view.state.selection.head, doc.content.size)
+      const caret = requestedCaret(state.doc)
+      const position =
+        caret ?? Math.min(view.state.selection.head, doc.content.size)
       view.updateState(
         state.apply(
           state.tr.setSelection(TextSelection.create(state.doc, position))
         )
       )
+      if (caret !== undefined) {
+        view.focus()
+        emit('caretRequestHandled')
+      }
       emit('selectionChange')
       return
     }

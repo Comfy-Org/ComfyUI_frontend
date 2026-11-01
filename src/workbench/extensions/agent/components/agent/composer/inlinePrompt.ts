@@ -132,6 +132,17 @@ export const inlinePromptSchema = new Schema({
         { 'data-asset-id': node.attrs.id },
         assetReferenceText(node.attrs.name)
       ]
+    },
+    error: {
+      group: 'inline',
+      inline: true,
+      atom: true,
+      attrs: { id: {}, context: {} },
+      toDOM: (node) => [
+        'span',
+        { 'data-error-context': '1' },
+        String(node.attrs.context?.label ?? '')
+      ]
     }
   }
 })
@@ -160,6 +171,11 @@ function promptReferenceNode(reference: ComposerReference): Node {
       })
     case 'asset':
       return inlinePromptSchema.nodes.asset.create({ ...reference.attachment })
+    case 'error':
+      return inlinePromptSchema.nodes.error.create({
+        id: reference.id,
+        context: reference.context
+      })
   }
 }
 
@@ -226,12 +242,23 @@ function skillNodeReference(
   }
 }
 
+function errorNodeReference(
+  node: Node,
+  textOffset: number
+): ComposerReference | undefined {
+  const { id, context } = node.attrs
+  if (typeof id !== 'string' || context == null || typeof context !== 'object')
+    return
+  return { kind: 'error', id, context, textOffset }
+}
+
 export function promptNodeReference(
   node: Node,
   textOffset: number
 ): ComposerReference | undefined {
   if (node.type === inlinePromptSchema.nodes.skill)
     return skillNodeReference(node, textOffset)
+  if (node.type.name === 'error') return errorNodeReference(node, textOffset)
   const { id, name } = node.attrs
   if (typeof id !== 'string' || typeof name !== 'string') return
   if (node.type.name === 'workflow')
@@ -286,6 +313,32 @@ export function promptInsertionPoint(
     if (!node.isText && offset < position) referenceIndex++
   })
   return { textOffset: promptTextOffset(doc, position), referenceIndex }
+}
+
+export function promptInsertionPosition(
+  doc: Node,
+  point: ComposerInsertionPoint
+): number {
+  let text = 0
+  let references = 0
+  let position: number | undefined
+  doc.forEach((node, offset) => {
+    if (position !== undefined) return
+    const atReference = references === point.referenceIndex
+    if (node.isText) {
+      if (
+        atReference &&
+        point.textOffset >= text &&
+        point.textOffset <= text + node.nodeSize
+      )
+        position = offset + point.textOffset - text
+      text += node.nodeSize
+      return
+    }
+    if (atReference && point.textOffset === text) position = offset
+    references++
+  })
+  return position ?? doc.content.size
 }
 
 export function promptDocumentPosition(doc: Node, textOffset: number): number {
