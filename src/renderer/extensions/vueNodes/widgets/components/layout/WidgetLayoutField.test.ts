@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 import WidgetLayoutField from './WidgetLayoutField.vue'
@@ -16,17 +17,27 @@ function renderField(
   widget: WidgetShape,
   {
     hideLayoutField = false,
+    unifiedRows = false,
+    valueText,
     slotContent = '<span data-testid="slot">content</span>'
-  }: { hideLayoutField?: boolean; slotContent?: string } = {}
+  }: {
+    hideLayoutField?: boolean
+    unifiedRows?: boolean
+    valueText?: string
+    slotContent?: string
+  } = {}
 ) {
   const Harness = defineComponent({
     components: { WidgetLayoutField },
-    setup: () => ({ widget }),
-    template: `<WidgetLayoutField :widget="widget">${slotContent}</WidgetLayoutField>`
+    setup: () => ({ widget, valueText }),
+    template: `<WidgetLayoutField :widget="widget" :value-text="valueText">${slotContent}</WidgetLayoutField>`
   })
   return render(Harness, {
     global: {
-      provide: { [HideLayoutFieldKey as symbol]: hideLayoutField }
+      provide: {
+        [HideLayoutFieldKey as symbol]: hideLayoutField,
+        [UnifiedWidgetRowsKey as symbol]: unifiedRows
+      }
     }
   })
 }
@@ -74,8 +85,8 @@ describe('WidgetLayoutField', () => {
 
   describe('Slot content', () => {
     it('renders the default slot', () => {
-      renderField({ name: 'seed' })
-      expect(screen.getByTestId('slot')).toBeInTheDocument()
+      renderField({ name: 'seed' }, { unifiedRows: true, valueText: 'content' })
+      expect(screen.getByText('content')).toBeInTheDocument()
     })
 
     it('passes borderStyle to the default slot', () => {

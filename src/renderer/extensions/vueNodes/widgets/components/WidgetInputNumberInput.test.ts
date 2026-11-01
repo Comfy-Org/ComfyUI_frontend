@@ -53,10 +53,9 @@ function getNumberInput(container: Element) {
 describe('WidgetInputNumberInput Value Binding', () => {
   it('displays initial value in input field', () => {
     const widget = createNumberInputWidget(42, 'int')
-    const { container } = renderComponent(widget, 42)
+    renderComponent(widget, 42)
 
-    const input = getNumberInput(container)
-    expect(input.value).toBe('42')
+    expect(screen.getByLabelText('test_input_number')).toHaveValue('42')
   })
 
   it('emits update:modelValue when value changes', () => {

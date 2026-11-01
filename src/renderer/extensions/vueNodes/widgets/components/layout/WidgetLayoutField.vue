@@ -37,7 +37,6 @@ const borderStyle = computed(() =>
   >
     <div
       v-if="!hideLayoutField"
-      data-testid="widget-layout-field-label"
       :title="widget.displayLabel ?? (widget.label || widget.name)"
       :class="
         cn(
@@ -47,10 +46,12 @@ const borderStyle = computed(() =>
       "
     >
       <span
-        v-if="widget.name"
+        data-testid="widget-layout-field-label"
         :class="unifiedRows && 'block truncate @max-[3ch]:invisible'"
       >
-        {{ widget.displayLabel ?? (widget.label || widget.name) }}
+        <template v-if="widget.name">
+          {{ widget.displayLabel ?? (widget.label || widget.name) }}
+        </template>
       </span>
     </div>
     <slot name="between" />
@@ -60,9 +61,9 @@ const borderStyle = computed(() =>
       <span
         v-if="unifiedRows"
         aria-hidden="true"
-        class="invisible col-start-1 row-start-1 truncate pr-7 pl-2"
-        >{{ valueText }}</span
-      >
+        :data-value="valueText"
+        class="invisible col-start-1 row-start-1 truncate pr-7 pl-2 after:content-[attr(data-value)]"
+      />
       <div
         :class="
           cn(

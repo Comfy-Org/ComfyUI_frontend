@@ -168,7 +168,6 @@ const inputAriaAttrs = computed(() => ({
       <TooltipTrigger as-child>
         <ScrubableNumberInput
           v-model="modelValue"
-          :aria-label="widget.name"
           :min="filteredProps.min"
           :max="filteredProps.max"
           :step="stepValue"
