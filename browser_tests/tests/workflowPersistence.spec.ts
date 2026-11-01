@@ -43,6 +43,14 @@ const waitForWorkflowTabState = async (comfyPage: ComfyPage, minPaths = 2) => {
   }, minPaths)
 }
 
+const expectTabOpensAsSaved = async (comfyPage: ComfyPage, name: string) => {
+  await comfyPage.menu.topbar.getWorkflowTab(name).click()
+  await comfyPage.workflow.waitForWorkflowIdle()
+  await expect.poll(() => comfyPage.menu.topbar.getActiveTabName()).toBe(name)
+  expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
+  expect(await comfyPage.page.title()).not.toMatch(/^\*/)
+}
+
 type NodeRef = NonNullable<
   Awaited<ReturnType<ComfyPage['nodeOps']['getFirstNodeRef']>>
 >
@@ -1031,24 +1039,22 @@ test.describe('Workflow Persistence', () => {
       'Topbar'
     )
 
-    const names = [
+    const [first, second, third] = [
       generateUniqueFilename(),
       generateUniqueFilename(),
       generateUniqueFilename()
     ]
-    await comfyPage.menu.topbar.saveWorkflow(names[0])
-    for (const name of names.slice(1)) {
-      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-      await comfyPage.menu.topbar.saveWorkflow(name)
-    }
+    await comfyPage.menu.topbar.saveWorkflow(first)
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.menu.topbar.saveWorkflow(second)
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.menu.topbar.saveWorkflow(third)
 
     await test.step('visit every tab without editing, leaving drafts behind', async () => {
-      for (const name of names) {
-        await comfyPage.menu.topbar.getWorkflowTab(name).click()
-        await comfyPage.workflow.waitForWorkflowIdle()
-        expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
-      }
-      await waitForWorkflowTabState(comfyPage, names.length)
+      await expectTabOpensAsSaved(comfyPage, first)
+      await expectTabOpensAsSaved(comfyPage, second)
+      await expectTabOpensAsSaved(comfyPage, third)
+      await waitForWorkflowTabState(comfyPage, 3)
       await expect
         .poll(async () => (await comfyPage.workflow.getDraftWorkflows()).length)
         .toBeGreaterThanOrEqual(2)
@@ -1059,21 +1065,17 @@ test.describe('Workflow Persistence', () => {
     await test.step('the tab active at reload is restored as saved', async () => {
       await expect
         .poll(() => comfyPage.menu.topbar.getActiveTabName())
-        .toBe(names[2])
+        .toBe(third)
       expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
     })
 
-    for (const name of names.slice(0, 2)) {
-      await test.step(`restored tab ${name} reopens as saved`, async () => {
-        await comfyPage.menu.topbar.getWorkflowTab(name).click()
-        await comfyPage.workflow.waitForWorkflowIdle()
-        await expect
-          .poll(() => comfyPage.menu.topbar.getActiveTabName())
-          .toBe(name)
-        expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
-        expect(await comfyPage.page.title()).not.toMatch(/^\*/)
-      })
-    }
+    await test.step('the first restored tab reopens as saved', async () => {
+      await expectTabOpensAsSaved(comfyPage, first)
+    })
+
+    await test.step('the second restored tab reopens as saved', async () => {
+      await expectTabOpensAsSaved(comfyPage, second)
+    })
   })
 
   test('Flushes a pending draft edit before an immediate reload', async ({

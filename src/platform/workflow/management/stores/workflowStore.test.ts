@@ -503,20 +503,16 @@ describe('useWorkflowStore', () => {
       expect(workflow.isModified).toBe(true)
     })
 
-    // Switching tabs writes a draft for every open workflow, edited or not,
-    // so after a reload an unedited saved workflow has a draft equal to its
-    // file. That draft must not mark the workflow unsaved.
-    it('does not mark a saved workflow modified when its draft matches the file', async () => {
+    it('does not mark a saved workflow modified when the draft a tab switch left matches the file', async () => {
       enableWorkflowPersistence()
       await syncRemoteWorkflowsWithMeta([
         { path: 'a.json', modified: 100, size: 1 }
       ])
       const workflow = store.getWorkflowByPath('workflows/a.json')!
       saveV2Draft(workflow.path, { data: defaultGraphJSON, name: 'a.json' })
-      vi.mocked(api.getUserData).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      } as Response)
+      vi.mocked(api.getUserData).mockResolvedValue(
+        new Response(defaultGraphJSON, { status: 200 })
+      )
 
       await workflow.load()
 
@@ -539,10 +535,9 @@ describe('useWorkflowStore', () => {
         data: JSON.stringify(draftGraph),
         name: 'a.json'
       })
-      vi.mocked(api.getUserData).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      } as Response)
+      vi.mocked(api.getUserData).mockResolvedValue(
+        new Response(defaultGraphJSON, { status: 200 })
+      )
 
       await workflow.load()
 
@@ -565,10 +560,9 @@ describe('useWorkflowStore', () => {
         data: JSON.stringify(draftGraph),
         name: 'a.json'
       })
-      vi.mocked(api.getUserData).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      } as Response)
+      vi.mocked(api.getUserData).mockResolvedValue(
+        new Response(defaultGraphJSON, { status: 200 })
+      )
 
       await workflow.load()
 
