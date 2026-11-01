@@ -9,7 +9,6 @@
     @dblclick="handleDoubleClick"
   >
     <div class="flex min-w-0 items-center justify-between gap-1">
-      <!-- Collapse/Expand Button -->
       <div class="relative mr-auto flex min-w-0 items-center gap-1">
         <div class="flex shrink-0 items-center px-0.5">
           <Button
@@ -17,6 +16,8 @@
             variant="textonly"
             class="text-inherit hover:bg-transparent"
             data-testid="node-collapse-button"
+            :aria-label="$t(collapsed ? 'g.expand' : 'g.collapse')"
+            :aria-expanded="!collapsed"
             @click.stop="handleCollapse"
             @dblclick.stop
           >

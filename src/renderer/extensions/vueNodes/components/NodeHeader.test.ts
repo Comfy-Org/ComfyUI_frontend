@@ -119,7 +119,7 @@ const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
 describe('NodeHeader.vue', () => {
   it('emits collapse when collapse button is clicked', async () => {
     const { user, onCollapse } = renderHeader()
-    await user.click(screen.getByTestId('node-collapse-button'))
+    await user.click(screen.getByRole('button', { name: 'Collapse' }))
     expect(onCollapse).toHaveBeenCalled()
   })
 
@@ -171,20 +171,21 @@ describe('NodeHeader.vue', () => {
     expect(screen.getByTestId('node-title').textContent).toContain('KeepMe')
   })
 
-  it('renders correct chevron icon based on collapsed prop', async () => {
+  it('names the action and exposes the expanded state', async () => {
     const { rerender } = renderHeader({ collapsed: false })
-    const collapseButton = screen.getByTestId('node-collapse-button')
-    // oxlint-disable-next-line testing-library/no-node-access
-    const expandedIcon = collapseButton.querySelector('i')!
-    expect(expandedIcon.classList).not.toContain('-rotate-90')
+    expect(screen.getByRole('button', { name: 'Collapse' })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
 
     await rerender({
       nodeData: makeNodeData(),
       collapsed: true
     })
-    // oxlint-disable-next-line testing-library/no-node-access
-    const collapsedIcon = collapseButton.querySelector('i')!
-    expect(collapsedIcon.classList).toContain('-rotate-90')
+    expect(screen.getByRole('button', { name: 'Expand' })).toHaveAttribute(
+      'aria-expanded',
+      'false'
+    )
   })
 
   it.for([

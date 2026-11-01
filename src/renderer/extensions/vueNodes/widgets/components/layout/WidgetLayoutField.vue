@@ -41,7 +41,7 @@ const borderStyle = computed(() =>
       :class="
         cn(
           'content-center-safe truncate',
-          unifiedRows && 'max-w-fit min-w-0 flex-1 text-muted-foreground'
+          unifiedRows && 'max-w-fit min-w-0 flex-1 text-node-foreground'
         )
       "
     >
