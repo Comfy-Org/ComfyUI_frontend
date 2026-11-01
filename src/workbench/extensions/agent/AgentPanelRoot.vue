@@ -841,27 +841,31 @@ const {
   }
 })
 
-const selectionModeNodeKeys = ref<Set<string>>(new Set())
 watch(
   selectionTags,
   (tags, previousTags) => {
     const stagedKeys = new Set(tags.map(selectedNodeKey))
     const nextKeys = new Set(
-      [...selectionModeNodeKeys.value].filter((key) => stagedKeys.has(key))
+      [...composerStore.selectionModeNodeKeys].filter((key) =>
+        stagedKeys.has(key)
+      )
     )
     if (canvasStore.isPickingNodes) {
       const previousKeys = new Set(previousTags.map(selectedNodeKey))
+      const selectedKeys = new Set(selectedNodes.value.map(selectedNodeKey))
       for (const tag of tags) {
         const key = selectedNodeKey(tag)
-        if (!previousKeys.has(key)) nextKeys.add(key)
+        if (!previousKeys.has(key) && selectedKeys.has(key)) nextKeys.add(key)
       }
     }
-    selectionModeNodeKeys.value = nextKeys
+    composerStore.setSelectionModeNodeKeys(nextKeys)
   },
   { deep: true, flush: 'sync' }
 )
-const hasNodeSelectionModeAddition = computed(
-  () => selectionModeNodeKeys.value.size > 0
+const hasNodeSelectionModeAddition = computed(() =>
+  selectionTags.value.some((tag) =>
+    composerStore.selectionModeNodeKeys.has(selectedNodeKey(tag))
+  )
 )
 
 let nodeReferenceWorkflow = selectionTags.value.length

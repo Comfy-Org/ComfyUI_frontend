@@ -41,6 +41,7 @@ test.describe(
       ).toBeVisible()
       await expect(selectedNodePrompt).toHaveCount(0)
 
+      await agentPanel.enterNodeSelectionMode()
       await agentPanel.composer.fill('@')
       await agentPanel.root
         .getByRole('menuitem', { name: enMessages.agent.nodes, exact: true })
@@ -53,7 +54,6 @@ test.describe(
         .click()
       await expect(selectedNodePrompt).toHaveCount(0)
 
-      await agentPanel.enterNodeSelectionMode()
       const [{ x, y }, { width, height }] = await Promise.all([
         selectedNode.getPosition(),
         selectedNode.getSize()
