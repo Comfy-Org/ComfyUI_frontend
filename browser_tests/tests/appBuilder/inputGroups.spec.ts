@@ -15,7 +15,6 @@ test.describe('App builder input groups', { tag: '@ui' }, () => {
   })
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
     await setupBuilder(comfyPage, undefined, ['seed', 'steps', 'cfg'])
     await comfyPage.appMode.steps.goToPreview()
   })
