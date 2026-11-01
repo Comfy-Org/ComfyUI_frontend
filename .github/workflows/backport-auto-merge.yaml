@@ -139,8 +139,8 @@ jobs:
               echo "::endgroup::"; continue
             fi
             case "$base" in
-              cloud/*|core/*) : ;;
-              *) echo "Base '$base' is not a release branch — skipping."; echo "::endgroup::"; continue ;;
+              cloud/1.56|core/1.56|cloud/1.57|core/1.57|cloud/1.58|core/1.58|cloud/1.59|core/1.59) : ;;
+              *) echo "Base '$base' is not an active release branch — skipping."; echo "::endgroup::"; continue ;;
             esac
 
             # Ready = approved AND GitHub says it's mergeable with required checks green.
@@ -157,10 +157,6 @@ jobs:
               echo "::endgroup::"; continue
             fi
 
-            # Release-branch protection keeps an approval after new commits are
-            # pushed, so reviewDecision can be APPROVED for code nobody reviewed.
-            # Merge only when a reviewer with write access has, as their latest
-            # review, approved the current head; the merge is pinned to that head.
             head=$(echo "$info" | jq -r '.headRefOid')
             if ! reviews=$(GH_TOKEN="$READ_TOKEN" gh api "repos/${GH_REPO}/pulls/${pr}/reviews" --paginate 2>&1); then
               echo "Could not read reviews for PR #${pr}: ${reviews}"
@@ -172,7 +168,10 @@ jobs:
               | .[] | select(.state == "APPROVED" and .commit_id == $head) | .user.login' 2>/dev/null || true)
             approved_at_head=false
             for login in $head_approvers; do
-              permission=$(GH_TOKEN="$READ_TOKEN" gh api "repos/${GH_REPO}/collaborators/${login}/permission" --jq '.permission' 2>/dev/null || echo none)
+              if ! permission=$(GH_TOKEN="$READ_TOKEN" gh api "repos/${GH_REPO}/collaborators/${login}/permission" --jq '.permission' 2>&1); then
+                echo "Could not read permission for reviewer ${login} on PR #${pr}: ${permission}"
+                continue
+              fi
               case "$permission" in
                 admin|maintain|write) approved_at_head=true; break ;;
               esac

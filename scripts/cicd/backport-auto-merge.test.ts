@@ -31,6 +31,24 @@ const mergeScript =
 
 const HEAD = 'b'.repeat(40)
 const OLD = 'a'.repeat(40)
+const AUTHORIZED_BASES = [
+  'cloud/1.56',
+  'core/1.56',
+  'cloud/1.57',
+  'core/1.57',
+  'cloud/1.58',
+  'core/1.58',
+  'cloud/1.59',
+  'core/1.59'
+]
+const UNAUTHORIZED_BASES = [
+  'cloud/1.54',
+  'core/1.54',
+  'cloud/1.55',
+  'core/1.55',
+  'cloud/1.60',
+  'core/1.60'
+]
 
 const fakeGh = `#!/usr/bin/env bash
 set -euo pipefail
@@ -51,6 +69,7 @@ case "$1 $2" in
         [ -z "\${FAKE_REVIEWS_FAIL:-}" ] || { echo 'API rate limit exceeded (HTTP 403)' >&2; exit 1; }
         cat "$FAKE_REVIEWS" ;;
       */collaborators/*/permission)
+        [ -z "\${FAKE_PERMISSION_FAIL:-}" ] || { echo 'API rate limit exceeded (HTTP 403)' >&2; exit 1; }
         login="\${2%/permission}" login="\${login##*/}"
         jq -rn --arg login "$login" --slurpfile reviews "$FAKE_REVIEWS" '
           [$reviews[0][] | select(.user.login == $login)][0].permission // "none"' ;;
@@ -69,7 +88,14 @@ interface Review {
   permission?: string
 }
 
-function runMerge(reviews: Review[], { reviewsFail = false } = {}) {
+function runMerge(
+  reviews: Review[],
+  {
+    baseRefName = 'core/1.59',
+    permissionFail = false,
+    reviewsFail = false
+  } = {}
+) {
   const directory = mkdtempSync(join(tmpdir(), 'backport-auto-merge-'))
   onTestFinished(() => rmSync(directory, { recursive: true, force: true }))
   const calls = join(directory, 'calls')
@@ -83,7 +109,7 @@ function runMerge(reviews: Review[], { reviewsFail = false } = {}) {
       state: 'OPEN',
       isDraft: false,
       labels: [{ name: 'backport' }],
-      baseRefName: 'core/1.59',
+      baseRefName,
       reviewDecision: 'APPROVED',
       mergeStateStatus: 'CLEAN',
       headRefOid: HEAD
@@ -114,6 +140,7 @@ function runMerge(reviews: Review[], { reviewsFail = false } = {}) {
       CANDIDATES: '22422',
       FAKE_CALLS: calls,
       FAKE_PR: join(directory, 'pr.json'),
+      FAKE_PERMISSION_FAIL: permissionFail ? '1' : '',
       FAKE_REVIEWS: join(directory, 'reviews.json'),
       FAKE_REVIEWS_FAIL: reviewsFail ? '1' : '',
       GH_REPO: 'Comfy-Org/ComfyUI_frontend',
@@ -139,6 +166,30 @@ describe('backport auto-merge', () => {
     expect(merges).toHaveLength(1)
     expect(merges[0]).toContain(`--match-head-commit ${HEAD}`)
   })
+
+  it.for(AUTHORIZED_BASES)(
+    'merges an approved backport to %s',
+    (baseRefName) => {
+      const { merges } = runMerge([{ state: 'APPROVED', commit_id: HEAD }], {
+        baseRefName
+      })
+
+      expect(merges).toHaveLength(1)
+    }
+  )
+
+  it.for(UNAUTHORIZED_BASES)(
+    'does not merge a backport to unauthorized train %s',
+    (baseRefName) => {
+      const { result, merges } = runMerge(
+        [{ state: 'APPROVED', commit_id: HEAD }],
+        { baseRefName }
+      )
+
+      expect(merges).toHaveLength(0)
+      expect(result.stdout).toContain('not an active release branch')
+    }
+  )
 
   it('does not merge when the only approval is on an older commit', () => {
     const { result, merges } = runMerge([{ state: 'APPROVED', commit_id: OLD }])
@@ -184,6 +235,18 @@ describe('backport auto-merge', () => {
     expect(result.stdout).toContain('API rate limit exceeded')
   })
 
+  it('reports a failed permission lookup and rejects that reviewer', () => {
+    const { result, merges } = runMerge(
+      [{ state: 'APPROVED', commit_id: HEAD }],
+      { permissionFail: true }
+    )
+
+    expect(result.status).toBe(0)
+    expect(merges).toHaveLength(0)
+    expect(result.stdout).toContain('Could not read permission for reviewer')
+    expect(result.stdout).toContain('API rate limit exceeded')
+  })
+
   it('ignores an approval at head from a member with read access only', () => {
     const { merges } = runMerge([
       { state: 'APPROVED', commit_id: OLD, login: 'maintainer' },
@@ -206,5 +269,14 @@ describe('backport auto-merge', () => {
     ])
 
     expect(merges).toHaveLength(0)
+  })
+
+  it('keeps an approval when the same reviewer later comments', () => {
+    const { merges } = runMerge([
+      { state: 'APPROVED', commit_id: HEAD },
+      { state: 'COMMENTED', commit_id: HEAD }
+    ])
+
+    expect(merges).toHaveLength(1)
   })
 })
