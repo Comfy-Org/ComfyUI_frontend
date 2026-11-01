@@ -199,8 +199,7 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       await expect(panel.getByText(answer, { exact: true })).toBeVisible()
     }
   )
-} from '@e2e/fixtures/data/agent/agentAskFrames'
-import {
+
   test('thinking appears while the model writes it, and is shown once when the round ends', async ({
     page
   }) => {
@@ -249,7 +248,6 @@ import {
       panel.getByText('half a thought', { exact: true })
     ).toHaveCount(0)
   })
-} from '@e2e/fixtures/data/agent/agentThinkingFrames'
 
   test('the answer appears while the model writes it, and the final answer replaces it', async ({
     page
