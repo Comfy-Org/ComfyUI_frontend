@@ -626,7 +626,12 @@ describe('PostHogTelemetryProvider', () => {
         save_error_shown: true
       })
       provider.trackAgentOnboardingShown()
-      provider.trackAgentOnboardingStep({ step: 4, action: 'finish' })
+      provider.trackAgentOnboardingStep({
+        step: 3,
+        card: 'history',
+        total: 3,
+        action: 'finish'
+      })
 
       expect(hoisted.mockCapture.mock.calls).toEqual([
         [TelemetryEvents.AGENT_CONSENT_SHOWN, { trigger: 'first_load' }],
@@ -635,7 +640,10 @@ describe('PostHogTelemetryProvider', () => {
           { decision: 'dismissed', save_error_shown: true }
         ],
         [TelemetryEvents.AGENT_ONBOARDING_SHOWN, {}],
-        [TelemetryEvents.AGENT_ONBOARDING_STEP, { step: 4, action: 'finish' }]
+        [
+          TelemetryEvents.AGENT_ONBOARDING_STEP,
+          { step: 3, card: 'history', total: 3, action: 'finish' }
+        ]
       ])
     })
 

@@ -57,7 +57,8 @@ vi.mock(import('@/i18n'))
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     isAssetBrowserEligible: vi.fn(() => false),
-    shouldUseWidgetAssetPicker: vi.fn(() => false)
+    shouldUseWidgetAssetPicker: vi.fn(() => false),
+    onAssetsChanged: vi.fn(() => () => {})
   }
 }))
 

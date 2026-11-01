@@ -76,6 +76,15 @@ const outcomeLabel = computed(() => {
       count: failedJobs.value.length
     })
   if (cancelledJobs.value.length > 0) return t('electronFileDownload.cancelled')
+  if (downloadJobs.value.every((job) => job.source === 'upload'))
+    return t(
+      'progressToast.uploadsInLibrary',
+      {
+        name: downloadJobs.value[0]?.assetName,
+        count: downloadJobs.value.length
+      },
+      downloadJobs.value.length
+    )
   return t('progressToast.allDownloadsCompleted')
 })
 
