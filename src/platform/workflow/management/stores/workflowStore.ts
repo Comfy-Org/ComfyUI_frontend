@@ -52,6 +52,7 @@ export { ComfyWorkflow, type LoadedComfyWorkflow }
 registerWorkflowRuntime({
   createChangeTracker: (workflow, initialState) =>
     new ChangeTrackerAccess(workflow, initialState),
+  graphEqual: (a, b) => ChangeTrackerAccess.graphEqual(a, b),
   getDraft: (path) => useWorkflowDraftStoreV2().getDraft(path),
   removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
   markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),
@@ -272,9 +273,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     })
     workflow.legacyId = getLegacyWorkflowId(workflowData?.id)
 
-    const initialWorkflowData = ensureWorkflowId(
-      structuredClone(workflowData ?? defaultGraph)
-    )
+    const initialWorkflowData = ensureWorkflowId(workflowData ?? defaultGraph)
     workflow.originalContent = workflow.content =
       JSON.stringify(initialWorkflowData)
 

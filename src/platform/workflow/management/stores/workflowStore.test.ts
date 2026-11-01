@@ -1,9 +1,10 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { nextTick } from 'vue'
+import { nextTick, reactive } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -305,6 +306,23 @@ describe('useWorkflowStore', () => {
       expect(workflowData).toEqual(originalData)
     })
 
+    it('accepts workflow data holding a reactive proxy', () => {
+      const workflowData = fromPartial<ComfyWorkflowJSON>({
+        ...structuredClone(defaultGraph),
+        extra: {
+          linearData: {
+            inputs: [reactive<LinearInput>(['1', 'seed'])],
+            outputs: []
+          }
+        }
+      })
+
+      const workflow = store.createNewTemporary('proxy.json', workflowData)
+      const state = JSON.parse(workflow.content!)
+
+      expect(state.extra.linearData.inputs).toEqual([['1', 'seed']])
+    })
+
     it.for([
       {
         label: 'the same legacy id',
@@ -446,6 +464,73 @@ describe('useWorkflowStore', () => {
 
       expect(workflow.activeState?.extra?.draftMarker).toBe('v2')
       expect(workflow.isModified).toBe(true)
+    })
+
+    describe('restoring a saved workflow over its draft', () => {
+      const loadWithDraft = async (
+        draftData: string,
+        fileData = defaultGraphJSON
+      ) => {
+        enableWorkflowPersistence()
+        await syncRemoteWorkflowsWithMeta([
+          { path: 'a.json', modified: 100, size: 1 }
+        ])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        saveV2Draft(workflow.path, { data: draftData, name: 'a.json' })
+        vi.mocked(api.getUserData).mockResolvedValue(
+          new Response(fileData, { status: 200 })
+        )
+        await workflow.load()
+        return workflow
+      }
+
+      const draftWithExtra = (extra: ComfyWorkflowJSON['extra']) => {
+        const draftGraph: ComfyWorkflowJSON = structuredClone(defaultGraph)
+        draftGraph.extra = { ...draftGraph.extra, ...extra }
+        return JSON.stringify(draftGraph)
+      }
+
+      it('does not mark it modified when the draft a tab switch left matches the file', async () => {
+        const workflow = await loadWithDraft(defaultGraphJSON)
+
+        expect(workflow.activeState).toEqual(defaultGraph)
+        expect(workflow.isModified).toBe(false)
+      })
+
+      it('keeps the draft viewport without marking it modified', async () => {
+        const workflow = await loadWithDraft(
+          draftWithExtra({ ds: { scale: 2.5, offset: [40, -80] } })
+        )
+
+        expect(workflow.activeState?.extra?.ds).toEqual({
+          scale: 2.5,
+          offset: [40, -80]
+        })
+        expect(workflow.isModified).toBe(false)
+      })
+
+      it('marks it modified when the draft only changes app mode', async () => {
+        const workflow = await loadWithDraft(
+          draftWithExtra({ linearMode: true })
+        )
+
+        expect(workflow.activeState?.extra?.linearMode).toBe(true)
+        expect(workflow.isModified).toBe(true)
+      })
+
+      it('marks it modified when the draft has no node list to compare', async () => {
+        const workflow = await loadWithDraft('{"links":[]}')
+
+        expect(workflow.activeState).toEqual({ links: [] })
+        expect(workflow.isModified).toBe(true)
+      })
+
+      it('marks it modified when the saved file has no node list to compare', async () => {
+        const workflow = await loadWithDraft(defaultGraphJSON, '{"links":[]}')
+
+        expect(workflow.activeState).toEqual(defaultGraph)
+        expect(workflow.isModified).toBe(true)
+      })
     })
 
     it('should discard a stale V2 draft when the remote workflow is newer', async () => {
