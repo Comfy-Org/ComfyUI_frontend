@@ -458,36 +458,6 @@ function focusAllowsComposerStop(): boolean {
   )
 }
 
-// The prompt editor only forwards `keydown` while it (the ProseMirror
-// contenteditable) itself has focus, so pressing Escape after submitting via
-// Enter is caught there (see the editor-scoped handler above). Clicking Send
-// with the mouse doesn't reliably leave focus in a place a container-scoped
-// listener would see: Chrome moves it onto the button, but Safari and
-// Firefox leave it on <body> without moving it at all, so a plain pointer
-// click can leave the next Escape with nothing inside the composer in its
-// bubble path.
-//
-// For that case this registers into `keybindingService`'s Escape override
-// hook instead of adding another DOM listener: `platform/` can't import from
-// `workbench/`, so it can't see this component's `running` state directly,
-// but `keybindHandler` consults whatever is registered here before it would
-// dispatch the default Escape keybinding (`Comfy.Graph.ExitSubgraph`). This
-// handler decides whether to act by checking focus directly rather than
-// relying on the event's bubble path: it fires while focus is inside this
-// composer, or nowhere in particular (the Safari/Firefox click case), but
-// stays out of the way once focus has genuinely moved elsewhere on the page
-// (see the "once focus has left the composer entirely" test).
-//
-// This is one of several places that establish Escape ownership in this
-// app: `useKeybindingService`'s own bailouts for `[role="menu"]` targets and
-// open dialogs run before this override is even consulted
-// (src/platform/keybindings/keybindingService.ts), the mention picker closes
-// itself first via stopPropagation (useAgentMentionPicker.ts's
-// onComposerKeydown), select has its own stopEscapeToDocument
-// (packages/design-system/src/select.variants.ts), and the capture-phase
-// window listeners in OnboardingCoach.vue and TourSpotlight.vue let a
-// full-screen overlay pre-empt everything else. This handler only ever runs
-// when none of those more specific handlers claimed the event first.
 function handleEscapeOverride(event: KeyboardEvent): boolean {
   if (
     openingChat ||
