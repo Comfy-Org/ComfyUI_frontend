@@ -10,11 +10,12 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
-
 import { useToast } from '@/components/ui/toast/toastStore'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { reportError } from '@/platform/telemetry/reportError'
 import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
