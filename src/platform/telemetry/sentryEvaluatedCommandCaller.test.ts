@@ -43,9 +43,9 @@ describe('Sentry origin of a rejected unknown command', () => {
 
   it.for([
     {
-      name: 'a bundled caller',
+      name: 'a bundled caller invoked from evaluated code',
       caller:
-        'at HTMLButtonElement.onclick (https://cloud.comfy.org/assets/settingStore-C3KhBREl.js:207:137197)'
+        'at HTMLButtonElement.onclick (https://cloud.comfy.org/assets/settingStore-C3KhBREl.js:207:137197)\nat <anonymous>:1:38'
     },
     {
       name: 'an engine builtin called by the bundle',
