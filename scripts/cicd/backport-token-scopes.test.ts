@@ -173,6 +173,56 @@ describe('backport workflow token scopes', () => {
     expect(step!.run).toContain('issues/${PR_NUM}/assignees')
   })
 
+  it('clears needs-backport with the job token, falling back to the shared token', () => {
+    const workflow = readWorkflow(WORKFLOW)
+    const step = workflow.jobs?.backport.steps?.find(
+      (step) => step.name === 'Remove needs-backport label'
+    )
+    const run = stripComments(step?.run ?? '')
+
+    expect(step?.env?.GH_TOKEN).toBe('${{ github.token }}')
+    expect(step?.env?.FALLBACK_TOKEN).toBe(
+      '${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}'
+    )
+    expect(run).toMatch(
+      /LABELS=\$\((gh api --paginate "[^"]*\/labels" --jq '[^']*') \|\| GH_TOKEN="\$\{FALLBACK_TOKEN\}" \1\)/
+    )
+    expect(run).toMatch(
+      /(gh api --silent --method DELETE "[^"]*\/labels\/needs-backport") \|\| GH_TOKEN="\$\{FALLBACK_TOKEN\}" \1$/m
+    )
+  })
+
+  it('defines every token a step swaps into GH_TOKEN', () => {
+    const undefinedTokens = Object.entries(
+      readWorkflow(WORKFLOW).jobs ?? {}
+    ).flatMap(([jobName, job]) =>
+      (job.steps ?? []).flatMap((step) =>
+        [
+          ...stripComments(step.run ?? '').matchAll(
+            /GH_TOKEN="\$\{([A-Za-z_]\w*)\}"/g
+          )
+        ]
+          .map((match) => match[1])
+          .filter((name) => !step.env?.[name] && !job.env?.[name])
+          .map((name) => `${jobName} / ${step.name}: ${name}`)
+      )
+    )
+
+    expect(undefinedTokens).toEqual([])
+  })
+
+  it('falls back to the shared token when the warning job cannot read labels', () => {
+    const step = readWorkflow(WORKFLOW).jobs?.[
+      'warn-missing-needs-backport'
+    ].steps?.find(
+      (step) => step.name === 'Comment when release labels lack needs-backport'
+    )
+
+    expect(stripComments(step?.run ?? '')).toMatch(
+      /LABELS=\$\((gh api --paginate "[^"]*\/labels" --jq '[^']*') \|\| GH_TOKEN="\$\{POST_TOKEN\}" \1\)/
+    )
+  })
+
   it('removes needs-backport through the REST labels endpoint, tolerating an already-absent label', () => {
     expect(labelStepViolations(labelStepRun())).toEqual([])
   })

@@ -639,6 +639,8 @@ jobs:
            steps.backport.outputs.failed == '' &&
            steps.create-prs.outputs.pr-create-failed == '')
         env:
+          GH_TOKEN: ${{ github.token }}
+          FALLBACK_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
         run: |
@@ -653,16 +655,14 @@ jobs:
           # Read the labels into a variable first rather than piping straight
           # into grep: under a pipe, a failed read is indistinguishable from a
           # PR that simply does not carry the label, and would exit 0 here.
-          LABELS=$(gh api --paginate \
-            "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name')
+          LABELS=$(gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name' || GH_TOKEN="${FALLBACK_TOKEN}" gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name')
 
           if ! printf '%s\n' "${LABELS}" | grep -qx 'needs-backport'; then
             echo "Label 'needs-backport' already absent from PR #${PR_NUMBER}"
             exit 0
           fi
 
-          gh api --silent --method DELETE \
-            "repos/${GH_REPO}/issues/${PR_NUMBER}/labels/needs-backport"
+          gh api --silent --method DELETE "repos/${GH_REPO}/issues/${PR_NUMBER}/labels/needs-backport" || GH_TOKEN="${FALLBACK_TOKEN}" gh api --silent --method DELETE "repos/${GH_REPO}/issues/${PR_NUMBER}/labels/needs-backport"
 
       # Re-red the run for partial failures, after the clean backports have
       # been turned into PRs and the conflicts reported above.
@@ -706,8 +706,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          LABELS=$(gh api --paginate \
-            "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name')
+          LABELS=$(gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name' || GH_TOKEN="${POST_TOKEN}" gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name')
           if grep -qx 'needs-backport' <<<"${LABELS}"; then
             echo "PR #${PR_NUMBER} now has needs-backport; the backport job handles it."
             exit 0
