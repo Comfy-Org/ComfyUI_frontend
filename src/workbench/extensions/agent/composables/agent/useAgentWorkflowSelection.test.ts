@@ -899,7 +899,6 @@ describe('picking a target tab', () => {
     vi.spyOn(restored, 'isTemporary', 'get').mockImplementation(() => !saved)
     vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
       async (tab) => {
-        // workflowStore.saveWorkflow refuses a tab that has no loaded state.
         if (!tab.isLoaded)
           throw new Error(
             `Cannot save workflow '${tab.path}' before it is loaded`

@@ -619,18 +619,20 @@ test.describe(
       await page.reload()
       await waitForCloudApp(page)
       await expect(tabs).toHaveCount(2)
-      // The precondition of the bug: the background tab is restored unloaded.
-      await expect
-        .poll(() =>
-          page.evaluate(
-            () =>
-              (
-                window.app!.extensionManager as WorkspaceStore
-              ).workflow.getWorkflowByPath('workflows/Unsaved Workflow.json')
-                ?.isLoaded
+
+      await test.step('the background tab is restored unloaded', async () => {
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () =>
+                (
+                  window.app!.extensionManager as WorkspaceStore
+                ).workflow.getWorkflowByPath('workflows/Unsaved Workflow.json')
+                  ?.isLoaded
+            )
           )
-        )
-        .toBe(false)
+          .toBe(false)
+      })
 
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()

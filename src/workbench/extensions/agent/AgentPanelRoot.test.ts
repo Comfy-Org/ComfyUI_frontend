@@ -691,7 +691,6 @@ function addTab(
     suffix,
     isTemporary: false,
     isModified: false,
-    // It has a change tracker, so like a real loaded workflow it is loaded.
     isLoaded: true,
     activeState: null,
     ...overrides
