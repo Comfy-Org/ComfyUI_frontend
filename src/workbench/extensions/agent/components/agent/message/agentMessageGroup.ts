@@ -3,6 +3,7 @@ import type {
   AskUnavailablePart,
   AskUserPart,
   DeleteApprovalPart,
+  ExtensionChangePart,
   MessagePart,
   NoticePart,
   PausedPart,
@@ -18,6 +19,7 @@ export type AgentMessageGroup =
   | { kind: 'paywall'; part: PaywallPart }
   | { kind: 'trace' }
   | { kind: 'tabLinks'; parts: TabLinkPart[] }
+  | { kind: 'extensionChange'; part: ExtensionChangePart }
   | { kind: 'runApproval'; part: RunApprovalPart }
   | { kind: 'askUser'; part: AskUserPart }
   | { kind: 'deleteApproval'; part: DeleteApprovalPart }
@@ -90,6 +92,8 @@ function cardGroup(
       return { kind: 'paused', part }
     case 'paywall':
       return { kind: 'paywall', part }
+    case 'extensionChange':
+      return { kind: 'extensionChange', part }
     case 'notice':
     case 'askUnavailable':
       return { kind: 'notice', part }

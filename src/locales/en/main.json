@@ -6071,6 +6071,12 @@
       "answerSuperseded": "This was already answered somewhere else, so that answer was used instead of yours."
     },
     "askUnavailable": "The agent is waiting on a step this panel can't show.",
+    "extensionChange": {
+      "disabled": "Turned off the node pack {pack}",
+      "enabled": "Turned on the node pack {pack}",
+      "removed": "Removed the node pack {pack}",
+      "restartHint": "This takes effect after ComfyUI restarts. Reload this page after the restart."
+    },
     "askUser": {
       "card": "Question from the agent",
       "chooseUpTo": "Choose up to {max}",
@@ -6275,6 +6281,10 @@
     "toolSavingPreference": "Saving a preference",
     "toolForgotPreference": "Forgot a preference",
     "toolForgettingPreference": "Forgetting a preference",
+    "toolRemovedNodePack": "Removed a node pack",
+    "toolRemovingNodePack": "Removing a node pack",
+    "toolSwitchedNodePack": "Switched a node pack",
+    "toolSwitchingNodePack": "Switching a node pack",
     "openWorkflowTab": "Open {name}",
     "unavailableWorkflowReference": "{name} (unavailable)",
     "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",

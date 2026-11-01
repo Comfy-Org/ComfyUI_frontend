@@ -375,6 +375,24 @@ const zAgentAskResolvedEvent = z.object({
   data: zAgentAskResolvedData
 })
 
+const zAgentExtensionChangedEvent = z.object({
+  type: z.literal('agent_extension_changed'),
+  data: z
+    .object({
+      thread_id: z.string(),
+      message_id: z.string(),
+      action: z.enum(['enabled', 'disabled', 'removed']),
+      pack: z
+        .string()
+        .min(1)
+        .max(256)
+        .refine((pack) => !/[\p{Cc}\p{Cf}]/u.test(pack)),
+      agent_created: z.boolean(),
+      restart_required: z.boolean()
+    })
+    .passthrough()
+})
+
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
@@ -384,7 +402,8 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,
-  zAgentAskResolvedEvent
+  zAgentAskResolvedEvent,
+  zAgentExtensionChangedEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 

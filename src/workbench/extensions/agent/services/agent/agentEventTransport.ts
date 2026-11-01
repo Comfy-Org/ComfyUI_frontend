@@ -37,16 +37,21 @@ export type AgentChatEvent = Extract<
       | 'agent_active_tab'
       | 'agent_ask'
       | 'agent_ask_resolved'
+      | 'agent_extension_changed'
   }
 >
 type AgentNonTerminalEvent = Exclude<
   AgentChatEvent,
-  { type: 'agent_message_done' }
+  { type: 'agent_message_done' | 'agent_extension_changed' }
 >
 
 type AgentToolCallEvent = Extract<AgentChatEvent, { type: 'agent_tool_call' }>
 type AgentActiveTabEvent = Extract<AgentChatEvent, { type: 'agent_active_tab' }>
 type AgentAskEvent = Extract<AgentChatEvent, { type: 'agent_ask' }>
+type AgentExtensionChangedEvent = Extract<
+  AgentChatEvent,
+  { type: 'agent_extension_changed' }
+>
 type AgentThinkingEvent = Extract<AgentChatEvent, { type: 'agent_thinking' }>
 type AgentAskResolvedEvent = Extract<
   AgentChatEvent,
@@ -344,6 +349,23 @@ export function createAgentEventTransport(
     return true
   }
 
+  function handleExtensionChangedEvent(
+    data: AgentExtensionChangedEvent['data']
+  ): void {
+    dropThinkingDraft()
+    closeOpenText()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    message.parts.push({
+      type: 'extensionChange',
+      action: data.action,
+      pack: data.pack,
+      agentCreated: data.agent_created,
+      restartRequired: data.restart_required
+    })
+  }
+
   function reportUnrenderedAsk(data: AgentAskEvent['data']): void {
     reportUndeliverableAsk(
       data,
@@ -549,6 +571,11 @@ export function createAgentEventTransport(
         event.data.usage?.charge_micro_usd
       )
       settle()
+      return
+    }
+    if (event.type === 'agent_extension_changed') {
+      handleExtensionChangedEvent(event.data)
+      emit(snapshotMessage(message))
       return
     }
     if (applyChatEvent(event)) emit(snapshotMessage(message))

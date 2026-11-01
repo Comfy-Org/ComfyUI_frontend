@@ -2385,3 +2385,79 @@ describe('agentEventTransport CANVAS_MUTATING_TOOLS pinning (PM-1575)', () => {
     )
   })
 })
+
+describe('agent_extension_changed', () => {
+  function extensionChanged(data: Record<string, unknown>): AgentChatEvent {
+    return zAgentWsEvent.parse({
+      type: 'agent_extension_changed',
+      data: { message_id: 'm', thread_id: 't', ...data }
+    })
+  }
+
+  it('shows the pack change in place, between the text around it', () => {
+    const message = drive([
+      delta('Turning it off.'),
+      extensionChanged({
+        action: 'disabled',
+        pack: 'comfy-cushions',
+        agent_created: true,
+        restart_required: true
+      }),
+      delta('Done.')
+    ])
+
+    expect(message.parts.map((part) => part.type)).toEqual([
+      'text',
+      'extensionChange',
+      'text'
+    ])
+    expect(message.parts[1]).toEqual({
+      type: 'extensionChange',
+      action: 'disabled',
+      pack: 'comfy-cushions',
+      agentCreated: true,
+      restartRequired: true
+    })
+  })
+
+  it('stops showing the agent as thinking once the card arrives', () => {
+    const message = drive([
+      thinking('Finding the pack.'),
+      extensionChanged({
+        action: 'enabled',
+        pack: 'comfy-cushions',
+        agent_created: false,
+        restart_required: true
+      })
+    ])
+
+    expect(message.thinking).toBe(false)
+    expect(message.thinkingText).toBeUndefined()
+  })
+
+  it.for([
+    { name: 'an unknown action', data: { action: 'paused' } },
+    { name: 'an empty pack name', data: { pack: '' } },
+    {
+      name: 'a bidi override in the pack name',
+      data: { pack: 'evil\u202Epack' }
+    },
+    { name: 'a newline in the pack name', data: { pack: 'two\nlines' } },
+    { name: 'no restart flag', data: { restart_required: undefined } }
+  ])('rejects a frame with $name', ({ data }) => {
+    const parsed = zAgentWsEvent.safeParse({
+      type: 'agent_extension_changed',
+      data: {
+        message_id: 'm',
+        thread_id: 't',
+        action: 'removed',
+        pack: 'comfy-cushions',
+        agent_created: false,
+        restart_required: true,
+        ...data
+      }
+    })
+
+    expect(parsed.success).toBe(false)
+  })
+})
