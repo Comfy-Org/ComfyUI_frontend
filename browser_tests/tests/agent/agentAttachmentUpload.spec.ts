@@ -25,7 +25,7 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
       })
       const uploadsSettled = new Set<Promise<void>>()
       let uploadCount = 0
-      const holdUpload = (route: Route) => {
+      function holdUpload(route: Route) {
         uploadCount += 1
         const uploadSettled = uploadsHeld.then(() => route.abort())
         uploadsSettled.add(uploadSettled)

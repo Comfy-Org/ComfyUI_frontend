@@ -10144,38 +10144,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByRole('textbox')).toHaveTextContent('Keep my new draft')
   })
 
-  it('retains staged node references when Back starts a new chat', async () => {
-    const target = makeTab('wf-42')
-    const other = addTab('workflows/other.json')
-    mockMessagesEndpoint('wf-42')
-    setupNodeSelectionCanvas()
-    renderWithSelectedTarget()
-    await openMentionPicker()
-    await userEvent.click(await screen.findByText('KSampler'))
-    await userEvent.click(screen.getByRole('textbox'))
-    await userEvent.paste('Keep my new draft')
-    workflowStore.activeWorkflow = other
-    await nextTick()
-    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
-    useAgentPanelStore().view = {
-      screen: 'history',
-      previousThreadId: null,
-      selection: { status: 'failed', id: 'th-1' }
-    }
-    await nextTick()
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Back to previous chat' })
-    )
-
-    expect(screen.getByRole('textbox')).toHaveTextContent('Keep my new draft')
-    expect(
-      screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
-    ).toBeVisible()
-    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
-    expect(workflowStore.activeWorkflow.path).toBe(other.path)
-  })
-
   it('restores Current after remounting an interrupted return instead of reusing stale messages', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint(
