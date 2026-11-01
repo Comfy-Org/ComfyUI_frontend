@@ -87,7 +87,7 @@ const CURRENT_WORKFLOW = markerWorkflow(11, CURRENT_CANVAS_TITLE)
 const ATTACHED_WORKFLOW = markerWorkflow(41, ATTACHED_WORKFLOW_TITLE)
 const IMPORTED_RESULT = markerWorkflow(41, IMPORTED_RESULT_TITLE)
 
-export class AgentAttachedWorkflowImportFixture {
+class AgentAttachedWorkflowImportFixture {
   public readonly activeCanvasNode: Locator
   public readonly agentPanel: AgentPanel
   public readonly attachedSourceNode: Locator
