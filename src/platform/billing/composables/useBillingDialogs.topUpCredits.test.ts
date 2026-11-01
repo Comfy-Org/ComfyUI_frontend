@@ -4,6 +4,7 @@ import { useSubscriptionDialog } from '@/platform/billing/subscription/composabl
 import { useTelemetry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
@@ -162,19 +163,37 @@ describe('showTopUpCreditsDialog', () => {
   )
 
   it.for(['subscription_ended', 'free_plan', 'no_subscription'])(
-    'shows no contact-admin notice to a personal owner denied as %s',
+    'sends a personal owner denied as %s to the plans dialog, not the admin notice',
     async (denial) => {
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
       useBillingCapabilities().canTopUp = computed(() => false)
       useBillingCapabilities().topUpDenial = computed(() => denial)
 
       await useBillingDialogs().showTopUpCreditsDialog({
-        isInsufficientCredits: true
+        isInsufficientCredits: true,
+        source: 'agent_paywall'
       })
 
+      expect(useSubscriptionDialog().show).toHaveBeenCalledExactlyOnceWith({
+        reason: 'agent_paywall'
+      })
       expect(useDialogStore().showDialog).not.toHaveBeenCalled()
     }
   )
+
+  it('tells a personal owner to retry when the capability read failed', async () => {
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().hasResolvedCapabilities = computed(() => false)
+
+    await useBillingDialogs().showTopUpCreditsDialog({
+      isInsufficientCredits: true
+    })
+
+    expect(useToast().error).toHaveBeenCalledOnce()
+    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
+  })
 
   it('awaits an in-flight capability read instead of dropping the request', async () => {
     const canTopUp = ref(false)

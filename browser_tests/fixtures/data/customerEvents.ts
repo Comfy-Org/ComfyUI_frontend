@@ -1,7 +1,4 @@
-import type { operations } from '@comfyorg/registry-types'
-
-type CustomerEventsResponse =
-  operations['GetCustomerEvents']['responses']['200']['content']['application/json']
+import type { BillingEventsResponse } from '@comfyorg/ingest-types'
 
 /** Badge text the Activity table renders for each mocked event. */
 export const AGENT_USAGE_EVENT_TYPE = 'Agent Usage'
@@ -45,4 +42,4 @@ export const AGENT_USAGE_CUSTOMER_EVENTS = {
   limit: 7,
   total: 3,
   totalPages: 1
-} satisfies CustomerEventsResponse
+} satisfies BillingEventsResponse

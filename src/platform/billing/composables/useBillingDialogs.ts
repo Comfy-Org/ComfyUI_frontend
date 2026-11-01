@@ -40,8 +40,13 @@ export function useBillingDialogs() {
         (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
     })
     const { type } = useBillingContext()
-    const { canTopUp, topUpDenial, isReady, initialize } =
-      useBillingCapabilities()
+    const {
+      canTopUp,
+      topUpDenial,
+      isReady,
+      initialize,
+      hasResolvedCapabilities
+    } = useBillingCapabilities()
     if (!isReady.value) await initialize()
     if (!isReady.value) return
 
@@ -50,11 +55,21 @@ export function useBillingDialogs() {
     }
 
     if (!canTopUp.value) {
-      // Personal owners have no admins to ask, so only team members get the notice.
-      const asksAdmins =
-        type.value === 'workspace' &&
-        !useWorkspaceIdentity().isInPersonalWorkspace
-      if (!asksAdmins) return
+      if (type.value !== 'workspace') return
+      if (useWorkspaceIdentity().isInPersonalWorkspace) {
+        // Personal owners have no admins to ask: send them to a plan, or say
+        // the read failed.
+        if (!hasResolvedCapabilities.value) {
+          useToast().error(
+            t('subscription.planUnavailable.billingStateUnknown')
+          )
+          return
+        }
+        await useSubscriptionDialog().show({
+          reason: options?.source ?? 'out_of_credits'
+        })
+        return
+      }
       return dialogStore.showDialog({
         key: 'insufficient-credits-member',
         component: InsufficientCreditsMemberDialog,
