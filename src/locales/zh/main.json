@@ -307,7 +307,7 @@
     "workflowReferenceUnavailableReason": "此引用的工作流已不可用，或你无权访问它。",
     "workflowSyncFailedDetail": "此工作流使用不兼容的文档版本创建。你的画布未被更改。",
     "workflowSyncFailedDetailCatalogMismatch": "自智能体上次查看后，此工作流中的某个节点已发生更改。你的画布未被修改。你的下一条消息会发送你的画布，以便智能体重新构建其工作流副本。",
-    "workflowSyncFailedDetailStaleClient": "此页面已过期，因此无法显示代理所做的更改。请重新加载页面以查看这些更改。",
+    "workflowSyncFailedDetailStaleClient": "此页面无法显示此文档的当前版本，因此无法在此处显示智能体的更改。这些更改已被保留。重新加载可能会解决此问题；如果无效，说明更新尚未传送到你的应用。",
     "workflowSyncFailedTitle": "此工作流无法同步",
     "workflows": "工作流",
     "working": "正在处理..."
@@ -2028,6 +2028,7 @@
     "arrangeVertically": "垂直排列",
     "asset": "{count} 个资源",
     "audioFailedToLoad": "音频加载失败",
+    "audioPlaybackFailed": "无法播放此音频。请重试，或下载后在其他应用中播放。",
     "audioProgress": "音频进度",
     "author": "作者",
     "back": "返回",

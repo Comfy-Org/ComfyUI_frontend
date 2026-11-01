@@ -4529,6 +4529,10 @@
         "name": "bit_depth",
         "tooltip": "Auto משתמש ב-8-bit עבור sRGB וב-10-bit עבור HDR. בחירות מפורשות של 8-bit ו-10-bit אינן תלויות במרחב הצבע."
       },
+      "chroma_subsampling": {
+        "name": "דגימת_משנה_כרומה",
+        "tooltip": "444 שומר על רזולוציית צבע מלאה, 422 מחצית את רזולוציית הצבע האופקית, ו-420 מחצית אותה בשני הצירים. האפשרות אוטומטי משתמשת בברירת המחדל של ה-codec. בחירות שאינן נתמכות משתמשות במצב הנתמך הקרוב ביותר ומדפיסות אזהרה במסוף."
+      },
       "codec": {
         "name": "codec",
         "tooltip": "ניתן לקודד את הווידאו מיד באופן אופציונלי. None שומר את התמונות בצורת טנזורים; Auto משתמש ב-H.264."
@@ -15434,8 +15438,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "יצירת וידאו שמתחיל מהתמונה ומניע את המצלמה לזווית ולמרחק חדשים סביב הנושא.",
+    "display_name": "MiniMax H3 Max בקרת מצלמה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_azimuth": {
+        "name": "אזימוט"
+      },
+      "model_distance": {
+        "name": "מרחק"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_elevation": {
+        "name": "גובה"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "מצב_הרחבת_הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "המשך וידאו עם קטעים חדשים המונחים באמצעות הנחיה והפניות שמע אופציונליות.",
+    "display_name": "MiniMax H3 Max הרחבת וידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה-רוחב"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_output": {
+        "name": "פלט"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_prompt_expansion": {
+        "name": "הרחבת_הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "החלפת החלק בסרטון שבין זמני ההתחלה והחידוש בסצנה שנוצרה מחדש, המונחית באמצעות הנחיה ותמונות וסרטוני הפניה אופציונליים.",
+    "display_name": "MiniMax H3 Max הוספת וידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_color_match": {
+        "name": "התאמת_צבע"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_prompt_expansion": {
+        "name": "הרחבת_הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_resume_time": {
+        "name": "זמן_חידוש"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_start_time": {
+        "name": "זמן_התחלה"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "הנפשת תמונה כך שתנועות הפה שלה יתאימו לשמע. אורך הסרטון זהה לאורך השמע.",
+    "display_name": "סנכרון שפתיים MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "שליטה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת סרטון."
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_transcription": {
+        "name": "תמלול"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "החלפת האנשים בסרטון באנשים מתמונות ייחוס, תוך שמירה על התנועה, המצלמה, החיתוכים והצליל של סרטון המקור.",
+    "display_name": "MiniMax H3 Max החלפת דמויות",
+    "inputs": {
+      "control_after_generate": {
+        "name": "שליטה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת סרטון."
+      },
+      "model_enhance_realism": {
+        "name": "שיפור ריאליזם"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "התאמת סרטון ליחס גובה-רוחב חדש באמצעות התאמתו לקנבס חדש ויצירת האזורים שמסביב. התזמון והצליל של סרטון המקור נשמרים.",
+    "display_name": "MiniMax H3 Max שינוי מסגרת סרטון",
+    "inputs": {
+      "control_after_generate": {
+        "name": "שליטה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת סרטון."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס גובה-רוחב"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "יצירת וידאו המותנה בתמונות, סרטונים ושמע של ייחוס באמצעות מודלי MiniMax H3. התייחסו להפניות בפרומפט לפי סדרן: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
+    "description": "יצירת סרטון המותנה בתמונות ייחוס, סרטונים ושמע באמצעות מודלי MiniMax H3. יש להפנות אל פריטי הייחוס בפרומפט לפי סדרם: {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1, וכן הלאה.",
     "display_name": "MiniMax H3 רפרנס לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -20266,6 +20480,33 @@
       }
     }
   },
+  "PrunaPVideoUpscaleNode": {
+    "description": "הגדלת רזולוציית סרטון ל-720p, 1080p, 2K או 4K באמצעות Pruna P-Video Upscale, תוך שמירה על יחס הגובה-רוחב והשמע שלו.",
+    "display_name": "Pruna P-Video הגדלת רזולוציה",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "קצב הפריימים בפלט. 'source' שומר על קצב הסרטון, עד 60. קצב גבוה יותר יחושב באינטרפולציה. פלט מעל 30 fps עולה פי שניים."
+      },
+      "target": {
+        "name": "יעד",
+        "tooltip": "שטח הפיקסלים בפלט: 720p הוא כ-0.9 מגה-פיקסל, 1080p הוא 2.1, ‏2K הוא 3.7, ‏4K הוא 8.3. סרטון שכבר בגודל זה ישמור על גודלו וישופר בלבד. אורך מרבי: 2400, 1200, 600 או 300 פריימים, כ-100, 50, 25 או 12.5 שניות ב-24 fps."
+      },
+      "turbo": {
+        "name": "טורבו",
+        "tooltip": "הגדלת רזולוציה מהירה יותר עם פרטים רכים יותר, באותו מחיר."
+      },
+      "video": {
+        "name": "סרטון",
+        "tooltip": "הסרטון להגדלת רזולוציה, עד 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaTextToVideoNode": {
     "description": "יוצר וידאו מפרומפט טקסט באמצעות מודלי הווידאו של Pruna, עם צליל שנוצר באופן אופציונלי או רצועת שמע להנעתו.",
     "display_name": "Pruna P-Video-2 טקסט לווידאו",
@@ -24122,7 +24363,7 @@
       },
       "format": {
         "name": "פורמט",
-        "tooltip": "מכל הפלט. Auto משתמש ב-MP4 עבור Auto/H.264 וב-WebM עבור AV1. MP4, MKV ו-WebM בוחרים מכל מסוים."
+        "tooltip": "אוטומטי משתמש ב-MOV עבור ProRes, ב-WebM עבור AV1, וב-MP4 בכל מקרה אחר."
       },
       "format_codec": {
         "name": "מקודד"
@@ -28445,6 +28686,24 @@
     "inputs": {
       "model_name": {
         "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "מגדיר את סוג נתוני החישוב עבור קידוד ופענוח של VAE בלי להשפיע על ענפים אחרים.",
+    "display_name": "סוג נתוני חישוב VAE",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "ברירת המחדל שומרת על dtype החישוב של ה-VAE בקלט."
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

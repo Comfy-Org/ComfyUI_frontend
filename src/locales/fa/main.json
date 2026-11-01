@@ -307,7 +307,7 @@
     "workflowReferenceUnavailableReason": "این workflow ارجاع‌شده دیگر در دسترس نیست یا به آن دسترسی ندارید.",
     "workflowSyncFailedDetail": "این workflow با نسخه‌ای ناسازگار از سند ایجاد شده است. canvas شما بدون تغییر باقی مانده است.",
     "workflowSyncFailedDetailCatalogMismatch": "یک node در این workflow از زمانی که agent آخرین بار آن را دیده است تغییر کرده است. بوم شما بدون تغییر باقی مانده است. پیام بعدی شما بوم‌تان را ارسال می‌کند تا agent بتواند کپی خود از workflow را بازسازی کند.",
-    "workflowSyncFailedDetailStaleClient": "این صفحه به‌روز نیست، بنابراین تغییرات عامل نمایش داده نمی‌شوند. برای دیدن آن‌ها، صفحه را بارگذاری مجدد کنید.",
+    "workflowSyncFailedDetailStaleClient": "این صفحه نمی‌تواند نسخهٔ فعلی این سند را نمایش دهد، بنابراین تغییرات عامل اینجا قابل نمایش نیستند. این تغییرات حفظ شده‌اند. بارگذاری مجدد ممکن است مشکل را برطرف کند؛ اگر نشد، به‌روزرسانی هنوز به برنامهٔ شما نرسیده است.",
     "workflowSyncFailedTitle": "این workflow همگام‌سازی نمی‌شود",
     "workflows": "workflowها",
     "working": "در حال انجام..."
@@ -2028,6 +2028,7 @@
     "arrangeVertically": "چیدمان عمودی",
     "asset": "{count} دارایی | {count} دارایی",
     "audioFailedToLoad": "بارگذاری صوت ناموفق بود",
+    "audioPlaybackFailed": "پخش این صدا ممکن نشد. دوباره تلاش کنید یا آن را دانلود کنید تا در برنامه‌ای دیگر پخش شود.",
     "audioProgress": "پیشرفت صوت",
     "author": "نویسنده",
     "back": "بازگشت",
