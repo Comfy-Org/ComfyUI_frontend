@@ -47,10 +47,16 @@ const CARD_NOTES = [
 function renderCard(
   facts: CreditsCardFacts,
   canTopUp = true,
-  planCreditNote: string | null = null
+  planCreditNote: string | null = null,
+  topUpPaused = false
 ) {
   return render(BillingCreditsCard, {
-    props: { state: deriveCreditsCard(facts), canTopUp, planCreditNote },
+    props: {
+      state: deriveCreditsCard(facts),
+      canTopUp,
+      planCreditNote,
+      topUpPaused
+    },
     global: {
       plugins: [
         createI18n({
@@ -430,6 +436,36 @@ describe('BillingCreditsCard', () => {
 
     expect(emitted('retry')).toHaveLength(1)
   })
+
+  it.for<{
+    reason: 'topup_purchases_paused' | 'not_workspace_owner' | undefined
+    button: 'enabled' | 'disabled' | 'absent'
+    pausedNote: boolean
+  }>([
+    { reason: 'topup_purchases_paused', button: 'disabled', pausedNote: true },
+    { reason: 'not_workspace_owner', button: 'absent', pausedNote: false },
+    { reason: undefined, button: 'enabled', pausedNote: false }
+  ])(
+    'shows the top-up row for reason $reason with Add credits $button',
+    ({ reason, button, pausedNote }) => {
+      renderCard(
+        activeFacts,
+        reason === undefined,
+        null,
+        reason === 'topup_purchases_paused'
+      )
+
+      const addCredits = screen.queryByRole('button', { name: 'Add credits' })
+      if (button === 'absent') expect(addCredits).toBeNull()
+      else if (button === 'disabled') expect(addCredits).toBeDisabled()
+      else expect(addCredits).toBeEnabled()
+      expect(
+        screen.queryByText(
+          "Buying credits isn't available right now. Try again later."
+        ) !== null
+      ).toBe(pausedNote)
+    }
+  )
 
   it('opens the top-up flow from Add credits', async () => {
     const { emitted } = renderCard(activeFacts)

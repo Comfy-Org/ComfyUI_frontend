@@ -149,6 +149,14 @@ const i18n = createI18n({
               'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.',
             memberBodyNoDate:
               'Your team has used all its credits. Ask your workspace owner to add more credits.',
+            pausedBody:
+              "Your team has used all its credits. Buying credits isn't available right now. Credits refill on {date}.",
+            pausedBodyNoDate:
+              "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+            pausedPersonalBody:
+              "You've used all your credits. Buying credits isn't available right now. Credits refill on {date}.",
+            pausedPersonalBodyNoDate:
+              "You've used all your credits. Buying credits isn't available right now. Try again later.",
             addCredits: 'Add credits',
             dismiss: 'Dismiss'
           },
@@ -466,6 +474,101 @@ describe('BillingStatusBanner', () => {
       useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
       useBillingCapabilities().canManageBilling =
         canManageBillingFact(canManageBilling)
+
+      renderBanner()
+
+      const banner = screen.getByRole('status')
+      expect(banner).toHaveTextContent('Out of credits')
+      expect(banner).toHaveTextContent(body)
+      expect(
+        screen
+          .queryAllByRole('button')
+          .map((button) => button.textContent.trim())
+      ).toEqual(buttons)
+    }
+  )
+
+  it.for<{
+    reason: 'topup_purchases_paused' | 'not_workspace_owner' | undefined
+    owner: boolean
+    personal: boolean
+    refill: string | null
+    body: string
+    buttons: string[]
+  }>([
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      personal: false,
+      refill: '2027-10-28T00:00:00Z',
+      body: "Your team has used all its credits. Buying credits isn't available right now. Credits refill on October 28, 2027.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      personal: false,
+      refill: null,
+      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      personal: true,
+      refill: '2027-10-28T00:00:00Z',
+      body: "You've used all your credits. Buying credits isn't available right now. Credits refill on October 28, 2027.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      personal: true,
+      refill: null,
+      body: "You've used all your credits. Buying credits isn't available right now. Try again later.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'not_workspace_owner',
+      owner: false,
+      personal: false,
+      refill: '2027-10-28T00:00:00Z',
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on October 28, 2027.',
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'not_workspace_owner',
+      owner: false,
+      personal: false,
+      refill: null,
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits.',
+      buttons: ['Dismiss']
+    },
+    {
+      reason: undefined,
+      owner: true,
+      personal: false,
+      refill: null,
+      body: 'Your team has used all its credits. Add more credits.',
+      buttons: ['Dismiss', 'Add credits']
+    },
+    {
+      reason: undefined,
+      owner: true,
+      personal: true,
+      refill: '2027-10-28T00:00:00Z',
+      body: "You've used all your credits. Add more credits or wait until credits refill on October 28, 2027.",
+      buttons: ['Dismiss', 'Add credits']
+    }
+  ])(
+    'words out of credits for reason $reason, owner $owner, personal $personal, refill $refill',
+    ({ reason, owner, personal, refill, body, buttons }) => {
+      if (personal) personalProWorkspace()
+      state.subscription = { ...state.subscription!, hasFunds: false }
+      state.canManageSubscription = owner
+      state.nextCreditRefillAt = refill
+      useBillingCapabilities().canTopUp = computed(() => reason === undefined)
+      useBillingCapabilities().topUpDenial = computed(() => reason)
 
       renderBanner()
 

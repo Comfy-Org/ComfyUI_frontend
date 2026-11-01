@@ -173,6 +173,29 @@ watch(availableCents, (cents, previous) => {
 
 const audience = computed(() => (isTeamPlan.value ? 'team' : 'personal'))
 
+const OWNER_OUT_OF_CREDITS_COPY = {
+  open: {
+    team: {
+      body: `${bs}.outOfCredits.body`,
+      noDate: `${bs}.outOfCredits.bodyNoDate`
+    },
+    personal: {
+      body: `${bs}.outOfCredits.personalBody`,
+      noDate: `${bs}.outOfCredits.personalBodyNoDate`
+    }
+  },
+  paused: {
+    team: {
+      body: `${bs}.outOfCredits.pausedBody`,
+      noDate: `${bs}.outOfCredits.pausedBodyNoDate`
+    },
+    personal: {
+      body: `${bs}.outOfCredits.pausedPersonalBody`,
+      noDate: `${bs}.outOfCredits.pausedPersonalBodyNoDate`
+    }
+  }
+} as const
+
 const refillDate = computed(() =>
   longDate(billing.nextCreditRefillAt?.value ?? null)
 )
@@ -210,19 +233,22 @@ function outOfCreditsView(): BannerView | null {
       dismissible: true
     }
   }
+  if (topUpDenial.value === 'topup_purchases_paused') {
+    return ownerOutOfCreditsView(OWNER_OUT_OF_CREDITS_COPY.paused, null)
+  }
   if (!canTopUp.value) return null
-  const bodyKey =
-    audience.value === 'personal'
-      ? `${bs}.outOfCredits.personalBody`
-      : `${bs}.outOfCredits.body`
-  const noDateKey =
-    audience.value === 'personal'
-      ? `${bs}.outOfCredits.personalBodyNoDate`
-      : `${bs}.outOfCredits.bodyNoDate`
+  return ownerOutOfCreditsView(OWNER_OUT_OF_CREDITS_COPY.open, 'addCredits')
+}
+
+function ownerOutOfCreditsView(
+  copy: (typeof OWNER_OUT_OF_CREDITS_COPY)[keyof typeof OWNER_OUT_OF_CREDITS_COPY],
+  action: BannerAction | null
+): BannerView {
+  const { body, noDate } = copy[audience.value]
   return {
     title: t(`${bs}.outOfCredits.title`),
-    body: datedBody(bodyKey, noDateKey),
-    action: 'addCredits',
+    body: datedBody(body, noDate),
+    action,
     dismissible: true
   }
 }
@@ -238,6 +264,8 @@ function creditsLeft(): string {
 }
 
 function lowCreditsBodyKey(): string {
+  if (topUpDenial.value === 'topup_purchases_paused')
+    return `${bs}.lowCredits.pausedBody`
   if (!isCloud) return `${bs}.lowCredits.localBody`
   if (workspaceType.value !== 'team') return `${bs}.lowCredits.personalBody`
   return canManageBilling.value

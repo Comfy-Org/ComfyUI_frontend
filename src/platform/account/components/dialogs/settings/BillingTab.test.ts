@@ -1345,6 +1345,30 @@ describe('BillingTab', () => {
       ).not.toBeInTheDocument()
     })
 
+    it('disables the top-up row Add credits while the server pauses purchases', async () => {
+      arrange({
+        planKind: 'self_serve',
+        canTopUp: false,
+        topUpDenial: 'topup_purchases_paused',
+        balance: {
+          amountMicros: 0,
+          currency: 'usd',
+          effectiveBalanceMicros: 0,
+          effectiveBalanceAuthoritative: true,
+          prepaidBalanceMicros: 0,
+          cloudCreditBalanceMicros: 0
+        }
+      })
+
+      const card = await screen.findByTestId('billing-credits-card')
+      expect(
+        within(card).getByRole('button', { name: 'Add credits' })
+      ).toBeDisabled()
+      expect(card).toHaveTextContent(
+        "Buying credits isn't available right now. Try again later."
+      )
+    })
+
     it('reveals the processing payment once the failed top-up is dismissed', async () => {
       servedCheckouts(checkout('failed'), checkout('payment_processing'))
       arrange()
