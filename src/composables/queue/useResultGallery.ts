@@ -81,7 +81,7 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     const activeUrl = activeItem ? resultItemUrl(activeItem) : undefined
     const rerun = retainActiveItem(resolveItems(targetTask, tasks), activeItem)
     openSequence += 1
-    if (rerun.length) {
+    if (rerun.length >= galleryItems.value.length) {
       galleryItems.value = rerun
       galleryActiveIndex.value = findActiveIndex(rerun, activeUrl)
     }

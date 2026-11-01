@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, shallowRef } from 'vue'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 vi.mock(import('@/services/hdrViewerService'))
@@ -289,6 +289,43 @@ describe('useResultGallery', () => {
     expect(galleryActiveIndex.value).toBe(0)
   })
 
+  it('holds the shown outputs when a queue update carries only the preview', async () => {
+    const shown = [
+      createResultItem('o-1.png'),
+      createResultItem('o-2.png'),
+      createResultItem('o-3.png')
+    ]
+    const jobId = 'non-shrinking-job'
+    const job = createMockJob(jobId, 3)
+    const fullTask = new TaskItemImpl(job, {}, shown)
+    const openedTask = new TaskItemImpl(job, {}, shown)
+    openedTask.loadFullOutputs = async () => fullTask
+    const sources = ref([openedTask])
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => sources.value
+    )
+
+    await onViewItem(createJobViewItem('job-non-shrinking', openedTask))
+    expect(galleryItems.value).toEqual(shown)
+    galleryActiveIndex.value = 2
+
+    let releaseRefresh!: (items: AugmentedResultItem[]) => void
+    vi.mocked(getOutputsForTask).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseRefresh = resolve
+        })
+    )
+    sources.value = [new TaskItemImpl(job, {}, [shown[2]])]
+    await nextTick()
+
+    expect(galleryItems.value).toEqual(shown)
+    expect(galleryActiveIndex.value).toBe(2)
+
+    releaseRefresh(shown)
+    await vi.waitFor(() => expect(galleryItems.value).toEqual(shown))
+  })
+
   it('re-anchors the active item by URL when new items arrive while open', async () => {
     const first = createResultItem('first.png')
     const second = createResultItem('second.png')
@@ -446,7 +483,7 @@ describe('useResultGallery', () => {
       {},
       [preview]
     )
-    const sources = ref([runningTask])
+    const sources = shallowRef([runningTask])
     const { galleryItems, onViewItem } = useResultGallery(() => sources.value)
 
     await onViewItem(createJobViewItem('job-completing', runningTask))

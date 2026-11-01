@@ -18,6 +18,11 @@ const i18n = createI18n({
         gallery: 'Gallery',
         previous: 'Previous',
         next: 'Next',
+        play: 'Play',
+        pause: 'Pause',
+        volume: 'Volume',
+        skipToStart: 'Skip to start',
+        skipToEnd: 'Skip to end',
         videoFailedToLoad: 'Video failed to load',
         textFailedToLoad: 'Text failed to load'
       }
@@ -163,8 +168,16 @@ describe('MediaLightbox', () => {
   })
 
   describe('focus management', () => {
-    const renderHost = (activeIndex: number) => {
-      const galleryItems = ref<MockResultItem[]>([...mockGalleryItems])
+    const renderHost = (
+      activeIndex: number,
+      options: {
+        items?: MockResultItem[]
+        components?: Record<string, unknown>
+      } = {}
+    ) => {
+      const galleryItems = ref<MockResultItem[]>([
+        ...(options.items ?? mockGalleryItems)
+      ])
       const index = ref(activeIndex)
       const Host = defineComponent({
         components: { MediaLightbox },
@@ -179,7 +192,8 @@ describe('MediaLightbox', () => {
           components: {
             ComfyImage: mockComfyImage,
             ResultVideo: mockResultVideo,
-            ResultAudio: mockResultAudio
+            ResultAudio: mockResultAudio,
+            ...options.components
           }
         }
       })
@@ -212,6 +226,31 @@ describe('MediaLightbox', () => {
       expect(screen.getByLabelText('Next')).toBe(next)
       expect(next).toHaveFocus()
       expect(screen.getByRole('dialog')).not.toHaveFocus()
+    })
+
+    it('restores dialog focus when navigation removes the focused control', async () => {
+      const audioItem: MockResultItem = {
+        filename: 'clip.mp3',
+        subfolder: '',
+        type: 'output',
+        nodeId: '8',
+        mediaType: 'audio',
+        url: 'clip.mp3',
+        id: 'audio'
+      }
+      const { index } = renderHost(0, {
+        items: [audioItem, mockGalleryItems[0]]
+      })
+      const volume = await screen.findByRole('button', { name: 'Volume' })
+      await vi.waitFor(() => expect(volume).toBeEnabled())
+      volume.focus()
+      expect(volume).toHaveFocus()
+
+      index.value = 1
+      await nextTick()
+      await nextTick()
+
+      expect(screen.getByRole('dialog')).toHaveFocus()
     })
   })
 

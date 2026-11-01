@@ -117,15 +117,24 @@ let previouslyFocusedElement: HTMLElement | null = null
 const hasMultiple = computed(() => props.allGalleryItems.length > 1)
 const activeItem = computed(() => props.allGalleryItems[props.activeIndex])
 
+function focusDialogWhenFocusLeftIt() {
+  const dialog = dialogRef.value
+  if (!dialog || dialog.contains(document.activeElement)) return
+  dialog.focus()
+}
+
 watch(
   () => props.activeIndex,
   (index, previousIndex) => {
     galleryVisible.value = index !== -1
-    const isOpening =
-      index !== -1 && (previousIndex === undefined || previousIndex === -1)
-    if (!isOpening) return
-    previouslyFocusedElement = document.activeElement as HTMLElement | null
-    void nextTick(() => dialogRef.value?.focus())
+    if (index === -1) return
+    const isOpening = previousIndex === undefined || previousIndex === -1
+    if (isOpening) {
+      previouslyFocusedElement = document.activeElement as HTMLElement | null
+      void nextTick(() => dialogRef.value?.focus())
+      return
+    }
+    void nextTick(focusDialogWhenFocusLeftIt)
   },
   { immediate: true }
 )
