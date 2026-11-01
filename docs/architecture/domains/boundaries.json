@@ -88,7 +88,9 @@
           "packages/mask-editor/src/useCanvasTransform.ts",
           "packages/mask-editor/src/ui/EditorCanvas.vue",
           "packages/mask-editor/src/ui/EditorToolbar.vue",
-          "packages/mask-editor/src/ui/style.css"
+          "packages/mask-editor/src/ui/style.css",
+          "packages/mask-editor/src/extensionTypes.ts",
+          "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.ts"
         ]
       },
       {
