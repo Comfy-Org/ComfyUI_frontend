@@ -1373,6 +1373,7 @@
           "src/platform/extensions/services/extensionLoader.test.ts",
           "packages/api-client/src/ComfyApi.ts",
           "packages/api-client/src/ComfyApi.clientId.test.ts",
+          "packages/api-client/src/ComfyApi.createSocket.test.ts",
           "packages/api-client/src/ComfyApi.eventListeners.test.ts",
           "packages/api-client/src/apiTimeouts.ts"
         ]
