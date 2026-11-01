@@ -2032,6 +2032,66 @@ describe('billingOperationStore', () => {
       },
       {
         type: 'subscription' as const,
+        errorMessage: 'fraudulent',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'lost_card',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'stolen_card',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'pickup_card',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'invalid_account',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'topup' as const,
+        errorMessage: 'card_velocity_exceeded',
+        summary: 'billingOperation.topupFailed',
+        detail: 'billingOperation.paymentDeclinedDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'incorrect_number',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.incorrectNumberDetail'
+      },
+      {
+        type: 'topup' as const,
+        errorMessage: 'invalid_number',
+        summary: 'billingOperation.topupFailed',
+        detail: 'billingOperation.incorrectNumberDetail'
+      },
+      {
+        type: 'subscription' as const,
+        errorMessage: 'reset_now_no_payment_method',
+        summary: 'billingOperation.subscriptionFailed',
+        detail: 'billingOperation.noPaymentMethodDetail'
+      },
+      {
+        type: 'topup' as const,
+        errorMessage: 'topup_currency_incompatible',
+        summary: 'billingOperation.topupFailed',
+        detail: 'billingOperation.topupMethodIncompatibleDetail'
+      },
+      {
+        type: 'subscription' as const,
         errorMessage: 'authentication_failed',
         summary: 'billingOperation.subscriptionFailed',
         detail: 'billingOperation.authenticationFailedDetail'
@@ -2110,6 +2170,37 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(1_500)
       await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+    })
+
+    it("carries only the latest poll's authentication deadline", async () => {
+      vi.mocked(billingApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-topup',
+          status: 'pending',
+          action_url: 'https://verify.example/token',
+          authentication_deadline: '2026-10-30T15:40:00Z',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValue({
+          id: 'op-topup',
+          status: 'pending',
+          action_url: 'https://verify.example/token',
+          started_at: new Date().toISOString()
+        })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-topup', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-topup')?.authenticationDeadline).toBe(
+        '2026-10-30T15:40:00Z'
+      )
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(
+        store.getOperation('op-topup')?.authenticationDeadline
+      ).toBeUndefined()
     })
 
     it('falls back to the parked cadence once the discovery window passes while a blocked phase offers no action', async () => {

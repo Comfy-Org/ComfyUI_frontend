@@ -64,6 +64,7 @@ import {
   isAttachmentKind,
   normalizeAgentTranscript
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
 import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
@@ -193,12 +194,6 @@ const HYDRATION_MAILBOX_MS = 5 * 60_000
 const MAX_HYDRATION_EVENTS = 256
 const MAX_HYDRATION_MAILBOXES = 32
 
-/**
- * After a reconnect the server may still be finishing the turn, and its
- * terminal event may or may not reach the new socket. Poll the persisted row
- * with backoff; once the schedule is exhausted the socket alone is trusted.
- */
-const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 /** Upper bound on one recovery job, including any history fetch still in flight. */
 const TURN_RECOVERY_DEADLINE_MS = 60_000
 const THREAD_MISSING_CONFIRMATION_INTERVAL_MS = 1000
@@ -222,7 +217,7 @@ type TurnOutcome =
     }
   | { kind: 'thread-missing' }
   | { kind: 'streaming'; pendingAsk: PendingAsk | undefined }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; cause: unknown }
 
 function streamingPendingAskId(outcome: TurnOutcome): string | undefined {
   return outcome.kind === 'streaming' ? outcome.pendingAsk?.ask_id : undefined
@@ -294,10 +289,7 @@ function recoveryKey(turn: LiveTurn): string {
 function turnOutcomeFromError(error: unknown): TurnOutcome {
   if (error instanceof AgentApiError && error.status === 404)
     return { kind: 'thread-missing' }
-  return {
-    kind: 'error',
-    message: error instanceof Error ? error.message : String(error)
-  }
+  return { kind: 'error', cause: error }
 }
 
 const NON_RETRYABLE_REQUEST_STATUSES = new Set([
@@ -564,6 +556,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
    */
   const boundWorkflowId = ref<string | null>(rememberedWorkflowId)
 
+  const unadoptedMintBinding = new Map<string, string | null>()
+
   /**
    * H8 reporting state, kept beside the binding it describes: the workflow
    * last reported for the current thread (suppresses the ack's re-report of a
@@ -635,6 +629,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
+  let unsubscribeSnapshotSettled: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
   let receivedStatusSnapshot = false
@@ -797,6 +792,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function forgetBinding(): void {
+    boundWorkflowId.value = null
+    rememberedWorkflowId = null
+    unadoptedMintBinding.clear()
+  }
+
   function initializeWorkflowContext(hasThread: boolean): void {
     workflow?.initialize?.(hasThread)
     // The binding only outlives a remount together with its thread: a page
@@ -825,6 +826,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
+    unsubscribeSnapshotSettled = conversationStore.onSnapshotTurnSettled(
+      (turn) => void reconcileSettledSnapshotTurn(turn)
+    ).off
     if (!restore) return
     if (initialThreadId === null) {
       onThreadActivated?.(null)
@@ -1141,8 +1145,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = null
     unsubscribe?.()
     unsubscribeStatus?.()
+    unsubscribeSnapshotSettled?.()
     unsubscribe = null
     unsubscribeStatus = null
+    unsubscribeSnapshotSettled = null
     for (const running of recoveringTurns.values()) running.controller.abort()
     recoveringTurns.clear()
     recoveryPendingAskObservations.clear()
@@ -1175,28 +1181,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function refusesTarget(
+    text: string,
+    originContext: WorkflowTurnContext | undefined,
+    wfContext: WorkflowTurnContext | undefined,
+    draft: DraftSnapshot | undefined
+  ): boolean {
+    const refused =
+      workflowTargetChanged(originContext, wfContext) ||
+      lacksCanvasForRemint(wfContext, draft)
+    if (refused) recordUnavailableTarget(text)
+    return refused
+  }
+
   function postTurn(
     threadId: string,
-    text: string,
-    origin: TurnOrigin,
-    wfContext: WorkflowTurnContext | undefined,
-    attachments?: SentAttachment[],
-    tags?: SentTag[],
-    workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    input: PostMessageInput,
+    wfContext: WorkflowTurnContext | undefined
   ): Promise<AgentTurnAccepted> {
-    const input = buildPostInput(
-      threadId,
-      text,
-      origin,
-      wfContext,
-      attachments,
-      tags,
-      workflowReferences,
-      selectionWorkflowId,
-      clientMessageId
-    )
     if (wfContext?.id === undefined) return rest.postMessage(threadId, input)
     return rest.postMessage(threadId, { ...input, workflowId: wfContext.id })
   }
@@ -1206,13 +1208,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     origin: TurnOrigin,
     wfContext: WorkflowTurnContext | undefined,
+    draft: DraftSnapshot | undefined,
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string
   ): PostMessageInput {
-    const draft = workflow?.draft?.(origin)
     const tabs = workflow?.tabs?.(origin)
     const unboundTarget = isUnboundTarget(
       wfContext,
@@ -1277,8 +1279,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tabs: OpenTabsSnapshot | undefined
   ): boolean {
     if (wfContext === undefined || wfContext.id !== undefined) return false
+    if (mintAlreadyRequested(wfContext.tabPath, boundWorkflowId)) return false
     if (boundWorkflowId === null) return true
-    return draft !== undefined && isOpenInATab(boundWorkflowId, tabs)
+    if (draft === undefined) return false
+    return hasContent(draft) || isOpenInATab(boundWorkflowId, tabs)
+  }
+
+  function hasContent(draft: DraftSnapshot): boolean {
+    const { nodes, groups } = draft.content
+    return [nodes, groups].some(
+      (items) => Array.isArray(items) && items.length > 0
+    )
   }
 
   function isOpenInATab(
@@ -1286,6 +1297,38 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tabs: OpenTabsSnapshot | undefined
   ): boolean {
     return (tabs?.open_tabs ?? []).some((tab) => tab.workflow_id === workflowId)
+  }
+
+  function mintAlreadyRequested(
+    tabPath: string,
+    boundWorkflowId: string | null
+  ): boolean {
+    return (
+      unadoptedMintBinding.has(tabPath) &&
+      unadoptedMintBinding.get(tabPath) === boundWorkflowId
+    )
+  }
+
+  function rememberMint(
+    input: PostMessageInput,
+    wfContext: WorkflowTurnContext | undefined,
+    workflowId: string | undefined
+  ): void {
+    if (!input.currentTabUnbound || wfContext === undefined) return
+    const adoptedOrHeld =
+      workflowId !== undefined &&
+      bindingStore.tabPathFor(workflowId) !== undefined
+    if (!adoptedOrHeld)
+      unadoptedMintBinding.set(wfContext.tabPath, boundWorkflowId.value)
+  }
+
+  function lacksCanvasForRemint(
+    wfContext: WorkflowTurnContext | undefined,
+    draft: DraftSnapshot | undefined
+  ): boolean {
+    if (wfContext === undefined || wfContext.id !== undefined) return false
+    if (boundWorkflowId.value === null) return false
+    return workflow?.draft !== undefined && draft === undefined
   }
 
   function buildTargetFields(
@@ -1499,6 +1542,33 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return adoptedActiveTurn
   }
 
+  async function recoverFailedSend({
+    error,
+    text,
+    sentContext,
+    accepted,
+    threadAtSend,
+    generation
+  }: {
+    error: unknown
+    text: string
+    sentContext: WorkflowTurnContext | undefined
+    accepted: boolean
+    threadAtSend: string
+    generation: number
+  }): Promise<false> {
+    releaseDisownedWorkflow(sentContext, error)
+    if (generation !== loadGeneration) return false
+    const reattached = await reattachRefusedTurn(
+      error,
+      threadAtSend,
+      generation
+    )
+    if (generation !== loadGeneration) return false
+    recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
+    return false
+  }
+
   async function performSend(
     text: string,
     attachments?: SentAttachment[],
@@ -1520,22 +1590,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
-      if (workflowTargetChanged(originContext, wfContext)) {
-        recordUnavailableTarget(text)
-        return false
-      }
+      const draft = workflow?.draft?.(origin)
+      if (refusesTarget(text, originContext, wfContext, draft)) return false
       sentContext = wfContext
-      const ack = await postTurn(
+      const input = buildPostInput(
         threadAtSend,
         text,
         origin,
         wfContext,
+        draft,
         attachments,
         tags,
         workflowReferences,
         selectionWorkflowId,
         clientMessageId
       )
+      const ack = await postTurn(threadAtSend, input, wfContext)
       accepted = true
       if (!observeAcceptedTurn(generation, onAccepted)) return false
       acceptTurn(
@@ -1547,21 +1617,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         skillScopeAtSend
       )
+      rememberMint(input, wfContext, ack.workflow_id)
       return true
     } catch (error) {
-      // Before the generation guard: the binding store is page-global and
-      // persisted, so a refusal that lands after newChat()/loadThread() has
-      // moved on still has to release, or the dead id survives the reload.
-      releaseDisownedWorkflow(sentContext, error)
-      if (generation !== loadGeneration) return false
-      const reattached = await reattachRefusedTurn(
+      return recoverFailedSend({
         error,
+        text,
+        sentContext,
+        accepted,
         threadAtSend,
         generation
-      )
-      if (generation !== loadGeneration) return false
-      recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
-      return false
+      })
     }
   }
 
@@ -2109,8 +2175,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.reset()
     pruneSkillTurns()
     onThreadActivated?.(null)
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
+    forgetBinding()
     pendingWorkflowBind = null
     malformedStreamReports.clear()
     localStorage.removeItem(threadStorageKey)
@@ -2142,8 +2207,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       promptEditState.value = { phase: 'idle' }
       load.stashedTurn = conversationStore.activeTurnId !== null
       conversationStore.stashActiveTurn()
-      boundWorkflowId.value = null
-      rememberedWorkflowId = null
+      forgetBinding()
       pendingWorkflowBind = null
       malformedStreamReports.clear()
       conversationStore.setThreadId(threadId)
@@ -2427,6 +2491,73 @@ export function useAgentSession(deps: AgentSessionDeps) {
     } finally {
       clearTimeout(deadline)
       finishRecovery(key, recovery, state, turn)
+    }
+  }
+
+  async function fetchSettledTurnOutcome(
+    turn: LiveTurn,
+    generation: number,
+    signal: AbortSignal
+  ): Promise<TurnOutcome> {
+    let outcome = await fetchTurnOutcome(turn, signal)
+    for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
+      if (outcome.kind !== 'streaming' || generation !== sessionGeneration)
+        return outcome
+      await delay(ms, { signal })
+      outcome = await fetchTurnOutcome(turn, signal)
+    }
+    return outcome
+  }
+
+  async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
+    const generation = ownedGeneration
+    const key = recoveryKey(turn)
+    recoveringTurns.get(key)?.controller.abort()
+    const recovery = new AbortController()
+    const state: RunningRecovery = {
+      controller: recovery,
+      cause: 'hydrate',
+      rerun: false,
+      rerunCause: 'hydrate',
+      automaticRerun: false
+    }
+    recoveringTurns.set(key, state)
+    const deadline = setTimeout(
+      () => recovery.abort(),
+      TURN_RECOVERY_DEADLINE_MS
+    )
+    try {
+      const outcome = await fetchSettledTurnOutcome(
+        turn,
+        generation,
+        recovery.signal
+      )
+      if (generation !== sessionGeneration) return
+      if (outcome.kind === 'error') {
+        reportError(outcome.cause, {
+          surface: 'agent',
+          errorType: 'failure_recovering_agent_turn'
+        })
+        return
+      }
+      if (outcome.kind !== 'terminal') return
+      conversationStore.reconcileSettledTurn(turn, outcome.parts)
+    } catch (error) {
+      if (!recovery.signal.aborted)
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_recovering_agent_turn'
+        })
+    } finally {
+      clearTimeout(deadline)
+      if (
+        generation === sessionGeneration &&
+        recoveringTurns.get(key) === state
+      )
+        conversationStore.reconcileSettledTurn(turn, undefined)
+      finishRecovery(key, recovery, state, turn)
+      recoveryPendingAskObservations.delete(key)
+      recoveryThreadMissingCounts.delete(key)
     }
   }
 
@@ -2783,7 +2914,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const anchor = history.find(
         (entry) => entry.role === 'assistant' && entry.id === turn.messageId
       )
-      if (!anchor) return { kind: 'error', message: 'turn row is not visible' }
+      if (!anchor)
+        return { kind: 'error', cause: new Error('turn row is not visible') }
       const rows = history
         .filter(
           (entry) =>
@@ -2819,11 +2951,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.settleTurn(turn, undefined, 'failed')
       return
     }
+    loadGeneration++
     conversationStore.reset()
     pruneSkillTurns()
     onThreadActivated?.(null)
-    boundWorkflowId.value = null
-    rememberedWorkflowId = null
+    forgetBinding()
     localStorage.removeItem(threadStorageKey)
   }
 

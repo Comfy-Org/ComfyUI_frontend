@@ -59,6 +59,73 @@ const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 // mid-flow. The operation is terminal-failed only because it never completed —
 // its replacement is proceeding normally, so there is nothing to report.
 const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
+const FAILURE_DETAIL_CODES: [string, string[]][] = [
+  ['billingOperation.insufficientFundsDetail', ['insufficient_funds']],
+  ['billingOperation.expiredCardDetail', ['expired_card']],
+  ['billingOperation.incorrectCvcDetail', ['incorrect_cvc', 'invalid_cvc']],
+  [
+    'billingOperation.incorrectNumberDetail',
+    ['incorrect_number', 'invalid_number']
+  ],
+  ['billingOperation.noPaymentMethodDetail', ['reset_now_no_payment_method']],
+  [
+    'billingOperation.topupMethodIncompatibleDetail',
+    ['topup_currency_incompatible']
+  ],
+  [
+    'billingOperation.authenticationFailedDetail',
+    [
+      'authentication_failed',
+      'authentication_required',
+      'payment_intent_authentication_failure',
+      'payment_not_completed',
+      'payment_method_customer_decline',
+      'payment_intent_payment_attempt_expired'
+    ]
+  ],
+  [
+    'billingOperation.processingErrorDetail',
+    ['processing_error', 'issuer_not_available', 'try_again_later']
+  ],
+  [
+    'billingOperation.paymentDeclinedDetail',
+    [
+      'card_declined',
+      'generic_decline',
+      'fraudulent',
+      'lost_card',
+      'stolen_card',
+      'pickup_card',
+      'invalid_account',
+      'card_velocity_exceeded',
+      'approve_with_id',
+      'call_issuer',
+      'do_not_honor',
+      'do_not_try_again',
+      'not_permitted',
+      'restricted_card',
+      'security_violation',
+      'service_not_allowed',
+      'transaction_not_allowed',
+      'initial_subscription_rejected',
+      'subscribe_invoice_payment_failed',
+      'topup_payment_declined',
+      'topup_invoice_payment_failed',
+      'upgrade_payment_declined',
+      'upgrade_invoice_payment_failed',
+      'team_credit_raise_payment_declined',
+      'reset_now_payment_declined',
+      'reset_now_invoice_payment_failed'
+    ]
+  ]
+]
+
+const FAILURE_DETAIL_KEYS = new Map(
+  FAILURE_DETAIL_CODES.flatMap(([key, codes]) =>
+    codes.map((code) => [code, key] as const)
+  )
+)
+
 // The poller adopts only operations the legacy rail issued; the SDK rail settles its own.
 function trackLegacyBillingEvent(event: BillingTelemetryEvent) {
   useTelemetry()?.trackBillingEvent({ ...event, billing_client: 'legacy' })
@@ -119,6 +186,7 @@ interface BillingOperation {
   actionUrl: string | null
   paymentMethodUrl: string | null
   authenticationState: BillingAuthenticationState | null
+  authenticationDeadline?: string
   isAuthenticating: boolean
   canRetryAuthentication: boolean
   authenticationRequiredSeen: boolean
@@ -493,7 +561,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       updateOperationPhase(opId, response.phase ?? null)
       if (stopIfTimedOut(opId, operations.value.get(opId) ?? operation)) return
 
-      updateOperationActionUrl(opId, validateActionUrl(response.action_url))
+      updateOperationActionUrl(
+        opId,
+        validateActionUrl(response.action_url),
+        response.authentication_deadline
+      )
       scheduleNextPoll(opId)
     } catch {
       const currentOperation = operations.value.get(opId)
@@ -661,7 +733,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     return keeps ? operation.paymentMethodUrl : null
   }
 
-  function updateOperationActionUrl(opId: string, actionUrl: string | null) {
+  function updateOperationActionUrl(
+    opId: string,
+    actionUrl: string | null,
+    authenticationDeadline?: string
+  ) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
     const paymentMethodUrl = keptPaymentMethodUrl(operation, actionUrl)
@@ -670,6 +746,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       ...operation,
       actionUrl: shownUrl,
       paymentMethodUrl,
+      authenticationDeadline,
       authenticationRequiredSeen:
         operation.authenticationRequiredSeen || shownUrl !== null
     }
@@ -1095,56 +1172,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     errorMessage: string | null,
     recovery?: FailureRecovery
   ) {
-    switch (errorMessage) {
-      case 'insufficient_funds':
-        return t('billingOperation.insufficientFundsDetail')
-      case 'expired_card':
-        return t('billingOperation.expiredCardDetail')
-      case 'incorrect_cvc':
-      case 'invalid_cvc':
-        return t('billingOperation.incorrectCvcDetail')
-      case 'authentication_failed':
-      case 'authentication_required':
-      case 'payment_intent_authentication_failure':
-      case 'payment_not_completed':
-      case 'payment_method_customer_decline':
-      case 'payment_intent_payment_attempt_expired':
-        return t('billingOperation.authenticationFailedDetail')
-      case 'subscribe_method_not_chargeable_off_session':
-        // `recovery` is withheld from operations that never charge a card.
-        if (recovery) {
-          return t('billingOperation.methodNotChargeableOffSessionDetail')
-        }
-        break
-      case 'processing_error':
-      case 'issuer_not_available':
-      case 'try_again_later':
-        return t('billingOperation.processingErrorDetail')
-      case 'card_declined':
-      case 'generic_decline':
-      case 'approve_with_id':
-      case 'call_issuer':
-      case 'do_not_honor':
-      case 'do_not_try_again':
-      case 'not_permitted':
-      case 'restricted_card':
-      case 'security_violation':
-      case 'service_not_allowed':
-      case 'transaction_not_allowed':
-      case 'initial_subscription_rejected':
-      case 'subscribe_invoice_payment_failed':
-      case 'topup_payment_declined':
-      case 'topup_invoice_payment_failed':
-      case 'upgrade_payment_declined':
-      case 'upgrade_invoice_payment_failed':
-      case 'team_credit_raise_payment_declined':
-      case 'reset_now_payment_declined':
-      case 'reset_now_invoice_payment_failed':
-        return t('billingOperation.paymentDeclinedDetail')
+    const detailKey = errorMessage && FAILURE_DETAIL_KEYS.get(errorMessage)
+    if (detailKey) return t(detailKey)
+    if (
+      errorMessage === 'subscribe_method_not_chargeable_off_session' &&
+      recovery
+    ) {
+      return t('billingOperation.methodNotChargeableOffSessionDetail')
     }
-    // Reached only when no coded reason named something more actionable. A
-    // terminal operation is served no action_url, so this copy must promise no
-    // button — and no retry unless the server says another attempt can work.
     if (recovery?.action === 'authenticate_payment') {
       return t(
         recovery.retryable === false

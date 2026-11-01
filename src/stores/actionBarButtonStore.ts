@@ -9,7 +9,9 @@ export const useActionBarButtonStore = defineStore('actionBarButton', () => {
   const extensionStore = useExtensionStore()
 
   const buttons = computed<ActionBarButton[]>(() =>
-    extensionStore.extensions.flatMap((e) => e.actionBarButtons ?? [])
+    extensionStore.extensions
+      .filter((e) => extensionStore.contributes(e.name))
+      .flatMap((e) => e.actionBarButtons ?? [])
   )
 
   return {

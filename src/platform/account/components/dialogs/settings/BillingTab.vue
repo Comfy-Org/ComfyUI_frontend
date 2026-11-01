@@ -24,7 +24,7 @@
     <BillingStatusBanner section="billing" />
     <BillingLocalCreditBanner
       :suppressed="suppressCreditBanner"
-      :add-credits-variant="addCreditsVariant"
+      :add-credits-variant="creditBannerAddCreditsVariant"
     />
     <section class="flex flex-col gap-3" data-testid="billing-plan-section">
       <h2 class="m-0 text-base font-medium text-foreground">
@@ -59,6 +59,7 @@
         :state="planRow"
         :action="action"
         :sales-variant="salesVariant"
+        :add-credits-variant="addCreditsVariant"
         :can-manage-subscription="capabilities.canManageSubscription.value"
       />
     </section>
@@ -162,6 +163,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { isCloud } from '@/platform/distribution/types'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -253,8 +255,12 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      action.value === 'subscribe' || action.value === 'choosePlan'
+      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
   })
+)
+
+const creditBannerAddCreditsVariant = computed(() =>
+  planRow.value.kind === 'ended' ? 'secondary' : addCreditsVariant.value
 )
 
 const salesVariant = computed(() =>

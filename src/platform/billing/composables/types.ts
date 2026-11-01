@@ -55,6 +55,10 @@ export interface SubscriptionDialogOptions {
   planMode?: 'personal' | 'team'
   /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
   initialCheckout?: SubscriptionCheckoutSelection
+  /** The refused account holds credits, so the dialog says why they did not help. */
+  creditsLocked?: boolean
+  /** Server `error.type` of the refused run, reported with the paywall opening. */
+  refusalType?: string
 }
 
 // A type alias, not an interface: `showDialog`'s props are index-signature
@@ -79,6 +83,8 @@ export interface SubscriptionInfo {
   renewalDate: string | null
   /** ISO 8601; format at the display site. */
   endDate: string | null
+  /** Served `ended_at`; absent when the server omits the field. */
+  endedAt?: string | null
   isCancelled: boolean
   hasFunds: boolean
   /** Agent funds across shared credits and the Agent-scoped balance. */
@@ -123,9 +129,14 @@ export type BillingPortalOutcome =
       reason: 'routing_unavailable' | 'blocked' | 'missing_url' | 'failed'
     }
 
+export interface BillingStatusReadOptions {
+  /** Read after any read already in flight, instead of joining it. */
+  fresh?: boolean
+}
+
 export interface BillingActions {
   initialize: () => Promise<void>
-  fetchStatus: () => Promise<void>
+  fetchStatus: (options?: BillingStatusReadOptions) => Promise<void>
   fetchBalance: () => Promise<void>
   subscribe: (
     planSlug: string,

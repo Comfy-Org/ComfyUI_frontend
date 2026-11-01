@@ -275,6 +275,17 @@ describe('BillingCreditsCard', () => {
       meter: '16'
     },
     {
+      case: 'a sales-managed plan the row cannot name has no refill date',
+      facts: {
+        planKind: 'unknown',
+        billingStatus: 'paused'
+      },
+      amount: '0 of 1,000',
+      date: '',
+      used: null,
+      meter: null
+    },
+    {
       case: 'an ending plan is available until its end date',
       facts: {
         planKind: 'ending',

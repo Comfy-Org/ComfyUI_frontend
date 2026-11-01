@@ -280,7 +280,7 @@ describe('ExtensionPanel', () => {
     const user = userEvent.setup()
     loadExtensionPaths(['/extensions/a/'], [])
     vi.spyOn(api, 'storeSetting').mockResolvedValue(
-      new Response(null, { status: 500 })
+      new Response(null, { status: 400 })
     )
 
     renderPanel()
@@ -302,6 +302,35 @@ describe('ExtensionPanel', () => {
         kind: 'warning',
         title: 'Warning',
         description: 'The extension change was not saved. Please try again.'
+      })
+    )
+  })
+
+  it('keeps an indeterminate extension change and offers reload', async () => {
+    const user = userEvent.setup()
+    loadExtensionPaths(['/extensions/a/'], [])
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(
+      new Response(null, { status: 500 })
+    )
+
+    renderPanel()
+    const extensionSwitch = screen.getByRole('switch', {
+      name: 'Extension folder a'
+    })
+    await user.click(extensionSwitch)
+
+    await vi.waitFor(() => expect(extensionSwitch).not.toBeChecked())
+    expect(
+      screen.getByRole('button', { name: 'Reload to apply changes' })
+    ).toBeEnabled()
+    expect(useSettingStore().get('Comfy.Extension.DisabledPacks')).toEqual([
+      '/extensions/a/'
+    ])
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        description:
+          'The extension change could not be confirmed. Reload the page before trying again.'
       })
     )
   })
@@ -363,7 +392,7 @@ describe('ExtensionPanel', () => {
     expect(pendingChangeFor('My Pack')).toContain('[-]')
   })
 
-  it('leaves safe mode before reloading extension changes', async () => {
+  it('reloads the current URL to apply extension changes', async () => {
     const user = userEvent.setup()
     loadExtensionPaths(['/extensions/a/'], [])
     vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
@@ -372,7 +401,7 @@ describe('ExtensionPanel', () => {
     window.history.replaceState(
       historyState,
       '',
-      '/workflows?other=kept&safe=1#selected'
+      '/workflows?other=kept#selected'
     )
 
     renderPanel()

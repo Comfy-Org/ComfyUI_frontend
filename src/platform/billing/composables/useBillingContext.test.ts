@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, computed, ref } from 'vue'
@@ -32,6 +34,7 @@ import { useBillingContext as useSharedBillingContext } from './useBillingContex
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 function useBillingContext() {
   const scope = effectScope()
@@ -204,6 +207,7 @@ describe('useBillingContext', () => {
       scheduledChange: null,
       renewalDate: '2025-01-01T00:00:00Z',
       endDate: null,
+      endedAt: null,
       isCancelled: false,
       hasFunds: true,
       agentHasFunds: true,
@@ -686,6 +690,66 @@ describe('useBillingContext', () => {
       expect(useSubscription().fetchStatusDirect).toHaveBeenCalled()
       expect(context.type.value).toBe('legacy')
       expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
+    })
+
+    it('runs a fresh read asked for while unknown once routing is known', async () => {
+      const loaded = holdWorkspaceUnloaded('personal')
+      mockBillingRail.value = 'legacy_stripe'
+      const context = useBillingContext()
+      vi.clearAllMocks()
+
+      await context.fetchStatus({ fresh: true })
+      expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
+
+      loaded.value = true
+
+      await vi.waitFor(() => {
+        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledWith({
+          fresh: true
+        })
+      })
+    })
+
+    it('reports a deferred fresh read failure with the same telemetry as an immediate one', async () => {
+      const loaded = holdWorkspaceUnloaded('personal')
+      mockBillingRail.value = 'legacy_stripe'
+      const context = useBillingContext()
+      vi.clearAllMocks()
+      const failure = new Error('status read rejected')
+      vi.mocked(useSubscription().fetchStatusDirect).mockRejectedValue(failure)
+
+      await context.fetchStatus({ fresh: true })
+      expect(reportError).not.toHaveBeenCalled()
+
+      loaded.value = true
+
+      await vi.waitFor(() => {
+        expect(reportError).toHaveBeenCalledWith(failure, {
+          surface: 'agent',
+          errorType: 'error_refreshing_agent_billing_status'
+        })
+      })
+    })
+
+    it('still runs the owed fresh read when initializing the billing context throws', async () => {
+      const loaded = holdWorkspaceUnloaded('personal')
+      mockBillingRail.value = 'legacy_stripe'
+      const context = useBillingContext()
+      vi.clearAllMocks()
+      vi.mocked(useAuthStore().fetchBalance).mockRejectedValue(
+        new Error('balance read rejected')
+      )
+
+      await context.fetchStatus({ fresh: true })
+
+      loaded.value = true
+
+      await vi.waitFor(() => {
+        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledWith({
+          fresh: true
+        })
+      })
+      expect(context.isInitialized.value).toBe(false)
     })
 
     it('makes no billing call while unknown, then routes to workspace billing for a team', async () => {
