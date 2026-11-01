@@ -14,20 +14,56 @@ const ABSOLUTE_URL_START = /(?:https?:)?\/\/[^\s"'<>?#]+/.source
  * redacted while leaving a bare fraction such as `1/2?x` as ordinary text, so
  * non-URL messages keep their Sentry grouping.
  */
+// These sub-patterns are only ever interpolated into the `SPACED_QUERY_URL_PATTERN`/
+// `URL_TOKEN_PATTERN` regexes below, both of which carry the `i` flag, so the
+// letter ranges below intentionally omit the redundant lowercase half.
 const ROOT_RELATIVE_URL_START =
   /(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Za-z._~%-]|\d(?:[A-Za-z0-9._~%/-]|(?=[?#]))|(?=[?#]))[A-Za-z0-9._~%/-]*/
     .source
 const RELATIVE_URL_START =
-  /(?<![A-Za-z0-9._~%/-])(?!\d+\/\d+[?#])[A-Za-z0-9_~%-]+(?:[./][A-Za-z0-9._~%-]+)*/
+  /(?<![A-Z0-9._~%/-])(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+[A-Z0-9_~%-]+)*/
+    .source
+/**
+ * Same as `RELATIVE_URL_START`, but requires the separator group to match at
+ * least once (`+` instead of `*`), so the matched prefix necessarily contains
+ * a `.` or `/`. Used only for the bare `#fragment` alternative below, to tell
+ * a real path-shaped URL fragment (`model.glb#private`) apart from a bare
+ * identifier that merely happens to be followed by `#`, such as a CSS
+ * selector (`div#id`) or a click-event invoker string (`BUTTON#run`).
+ */
+const RELATIVE_URL_START_WITH_SEPARATOR =
+  /(?<![A-Z0-9._~%/-])(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+[A-Z0-9_~%-]+)+/
     .source
 const URL_START = `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START}|${RELATIVE_URL_START})`
+// The run between `?` and the mandatory `\s` excludes whitespace entirely so
+// there is exactly one place the engine can match `\s` (no cubic blowup from
+// trying every split point). The remaining runs only exclude `"` and `<>`
+// (not `'`) because `encodeURIComponent` never escapes `'`, so an apostrophe
+// is legal content inside a real query value and must not end the match.
 const SPACED_QUERY_URL_PATTERN = new RegExp(
-  `${URL_START}\\?[^\\n"'<>]*\\s[^\\n"'<>]*&[A-Za-z0-9_~%-]+=[^\\n"'<>]*`,
+  `${URL_START}\\?[^\\s"<>]*\\s[^\\n"<>]*&[A-Z0-9_~%-]+=[^\\n"<>]*`,
   'gi'
 )
 
+// A `#fragment` only counts as URL-shaped when either its prefix already
+// looks path-like (contains a `.` or `/`, via
+// `RELATIVE_URL_START_WITH_SEPARATOR`) or the fragment's own content looks
+// like `key=value`. A bare query (`?key=value`) stays as permissive as
+// before, since callback-style routes (`callback?code=SECRET`) have no
+// separator in their prefix at all.
+//
+// The final alternative matches a bare leading `?query`/`#fragment` with no
+// URL-ish token in front of it at all (e.g. Sentry's `http.query`/
+// `http.fragment` span attributes, which arrive as plain strings like
+// `?token=secret`). It requires an actual `key=` right after the `?`/`#` so
+// it won't fire on ordinary prose such as `"Is this fine? token=yes"`, which
+// has a space (not a key) immediately after the `?`.
 const URL_TOKEN_PATTERN = new RegExp(
-  `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})[^\\s"'<>]*|${RELATIVE_URL_START}(?:\\?[^\\s"'<>]*=[^\\s"'<>]*|#[^\\s"'<>]+)`,
+  `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})[^\\s"<>]*` +
+    `|${RELATIVE_URL_START}\\?[^\\s"<>]*=[^\\s"<>]*` +
+    `|${RELATIVE_URL_START_WITH_SEPARATOR}#[^\\s"<>]+` +
+    `|${RELATIVE_URL_START}#[A-Z0-9_~%-]+=[^\\s"<>]*` +
+    `|(?<![A-Z0-9._~%/-])[?#][A-Z0-9_~%-]+=[^\\s"<>]*`,
   'gi'
 )
 
@@ -37,17 +73,32 @@ function redactUrlToken(token: string): string {
   for (;;) {
     const boundary = findGluedUrlBoundary(token, tokenStart)
     if (!boundary) {
-      return redacted + redactSingleUrlToken(token.slice(tokenStart))
+      redacted += redactSingleUrlToken(token.slice(tokenStart))
+      break
     }
     const { nextUrl, separator } = boundary
     redacted += redactSingleUrlToken(token.slice(tokenStart, separator))
     redacted += token.slice(separator, nextUrl)
     tokenStart = nextUrl
   }
+  // Defense-in-depth: `findGluedUrlBoundary` can miss a second URL glued on
+  // without recognizable boundary punctuation (e.g. a bare `|` or a `:` from
+  // an uppercase scheme), in which case the whole remainder above is treated
+  // as a single opaque token and only its first authority gets stripped. Make
+  // one final pass over the assembled result to strip userinfo from any
+  // `//...@` authority that is still left anywhere in the string. This never
+  // touches an authority already stripped above, since no `@` remains there.
+  return redacted.replace(/\/\/[^/\s"'<>]*@/gi, '//')
 }
 
 function redactSingleUrlToken(token: string): string {
   const { core, trailing } = peelTrailingPunctuation(token)
+  // Known limitation: a query value that itself ends in `:\d+:\d+` (e.g.
+  // `?ts=12:30:45`) is indistinguishable here from a real trailing stack
+  // frame `:line:col` suffix glued onto a closed query (e.g. `?v=1:12:9`) -
+  // both have the identical `<digits>:<digits>:<digits>` shape with a digit
+  // immediately before the candidate suffix, so this can't be disambiguated
+  // from the token text alone without risking the legitimate suffix case.
   const stackSuffix = core.match(/:\d+:\d+$/)?.[0] ?? ''
   const url = stackSuffix ? core.slice(0, -stackSuffix.length) : core
   const clean = url.split(/[?#]/, 1)[0]
@@ -63,7 +114,7 @@ function findGluedUrlBoundary(
   token: string,
   tokenStart: number
 ): { separator: number; nextUrl: number } | undefined {
-  const urlStartPattern = /(?:https?:)?\/\//g
+  const urlStartPattern = /(?:https?:)?\/\//gi
   urlStartPattern.lastIndex = tokenStart + 1
   for (const match of token.matchAll(urlStartPattern)) {
     const nextUrl = match.index
@@ -283,9 +334,11 @@ function redactPlainObject(
   const output: Record<string, unknown> = Object.create(null)
   context.memo.set(value, output)
   context.ancestors.add(value)
+  const usedKeys = new Set<string>()
   try {
     for (const [key, nested] of entries) {
-      Object.defineProperty(output, redactTelemetryUrls(key), {
+      const redactedKey = uniqueRedactedKey(redactTelemetryUrls(key), usedKeys)
+      Object.defineProperty(output, redactedKey, {
         configurable: true,
         enumerable: true,
         value: redactValue(nested, context, depth + 1),
@@ -296,6 +349,21 @@ function redactPlainObject(
   } finally {
     context.ancestors.delete(value)
   }
+}
+
+/**
+ * Two distinct keys can redact to the same string (e.g. two URLs that only
+ * differ in a stripped query parameter). Appending a `~2`, `~3`, ... suffix on
+ * collision lets both entries survive instead of the later one silently
+ * overwriting the earlier one via `Object.defineProperty`.
+ */
+function uniqueRedactedKey(key: string, usedKeys: Set<string>): string {
+  let candidate = key
+  for (let suffix = 2; usedKeys.has(candidate); suffix++) {
+    candidate = `${key}~${suffix}`
+  }
+  usedKeys.add(candidate)
+  return candidate
 }
 
 type ObjectClassification =
@@ -352,9 +420,10 @@ function redactError(
       output.name = redactTelemetryUrls(name)
     }
     const stack = readErrorString(source, properties, 'stack')
-    if (stack !== undefined) {
-      output.stack = redactTelemetryUrls(stack)
-    }
+    // `new Error(...)` above auto-captured V8's own stack at this call site.
+    // When the source had no real string stack, clear it rather than leak
+    // this module's internal frames into telemetry.
+    output.stack = stack === undefined ? undefined : redactTelemetryUrls(stack)
     return output
   } finally {
     context.ancestors.delete(source)
