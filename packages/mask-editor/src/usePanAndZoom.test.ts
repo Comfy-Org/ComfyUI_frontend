@@ -25,11 +25,15 @@ function createMockElement(width = 1200, height = 800): HTMLElement {
   } as unknown as HTMLElement
 }
 
-function createMockCanvas(width: number, height: number): HTMLCanvasElement {
+function createMockCanvas(
+  width: number,
+  height: number,
+  context: CanvasRenderingContext2D | null = null
+): HTMLCanvasElement {
   return {
     width,
     height,
-    getContext: vi.fn().mockImplementation(() => null),
+    getContext: vi.fn(() => context),
     clientWidth: width,
     clientHeight: height,
     style: {} as CSSStyleDeclaration,
@@ -64,12 +68,12 @@ function createTouchEvent(touches: TouchList): TouchEvent {
   } as unknown as TouchEvent
 }
 
-async function initComposable() {
+async function initComposable(context: CanvasRenderingContext2D | null = null) {
   const pz = usePanAndZoom()
   const img = createMockImage(800, 600)
   const root = createMockElement()
   const container = createMockElement()
-  const canvas = createMockCanvas(800, 600)
+  const canvas = createMockCanvas(800, 600, context)
   mockStore.canvasContainer = container
   mockStore.maskCanvas = canvas
   await pz.initializeCanvasPanZoom(img, root)
@@ -168,22 +172,19 @@ describe('usePanAndZoom', () => {
     })
 
     it('refits a rotated document and measures wheel zoom from the new fit', async () => {
-      const { pz, canvas } = await initComposable()
-      const container = mockStore.canvasContainer!
-      Object.defineProperty(canvas, 'clientWidth', {
-        get: () => parseFloat(container.style.width)
-      })
       const context = fromPartial<CanvasRenderingContext2D>({
         getImageData: vi.fn(
           (_x: number, _y: number, width: number, height: number) =>
             fromPartial<ImageData>({ width, height })
         )
       })
-      mockStore.rgbCanvas = createMockCanvas(800, 600)
-      mockStore.imgCanvas = createMockCanvas(800, 600)
-      vi.mocked(canvas.getContext).mockReturnValue(context)
-      vi.mocked(mockStore.rgbCanvas.getContext).mockReturnValue(context)
-      vi.mocked(mockStore.imgCanvas.getContext).mockReturnValue(context)
+      const { pz, canvas } = await initComposable(context)
+      const container = mockStore.canvasContainer!
+      Object.defineProperty(canvas, 'clientWidth', {
+        get: () => parseFloat(container.style.width)
+      })
+      mockStore.rgbCanvas = createMockCanvas(800, 600, context)
+      mockStore.imgCanvas = createMockCanvas(800, 600, context)
       mockStore.maskCtx = context
       mockStore.rgbCtx = context
       mockStore.imgCtx = context
