@@ -1028,7 +1028,7 @@ describe('AgentPanelRoot onboarding', () => {
       {
         title: 'The agent edits one workflow at a time',
         description:
-          "That workflow is named at the top of the message box. Click the name to pick another. Switching to a tab that has a chat opens its latest chat, unless you've started typing."
+          'That workflow is named at the top of the message box. Click the name to pick another. Clicking a workflow tab can open its latest chat, unless the message box has a draft.'
       },
       {
         title: 'Pick up where you left off',
