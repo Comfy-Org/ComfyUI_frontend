@@ -105,13 +105,18 @@ export interface UnifiedAuthRefreshMetadata {
  */
 export interface ImageLoadFailureMetadata {
   /**
-   * Which surface failed. `node_image_preview` is the Vue node renderer;
-   * `canvas_node_image` / `canvas_node_video` are the litegraph canvas previews
+   * Which surface failed. `node_image_preview` / `node_video_preview` are the
+   * Vue node renderer; `canvas_node_image` / `canvas_node_video` are the
+   * litegraph canvas previews
    * that every user gets by default, since `Comfy.VueNodes.Enabled` is off
    * unless App Builder turns it on. Splitting on this is what keeps a rate
    * measured on one renderer from being read as the rate for everyone.
    */
-  source: 'node_image_preview' | 'canvas_node_image' | 'canvas_node_video'
+  source:
+    | 'node_image_preview'
+    | 'node_video_preview'
+    | 'canvas_node_image'
+    | 'canvas_node_video'
   /** Load attempts made before giving up, including the first. */
   attempts?: number
   /** True when the load timed out rather than erroring — a stall, not a rejection. */
