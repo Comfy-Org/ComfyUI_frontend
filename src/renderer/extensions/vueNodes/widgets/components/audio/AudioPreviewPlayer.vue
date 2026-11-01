@@ -134,9 +134,8 @@
 import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { reportError } from '@comfyorg/telemetry/reportError'
-
 import { useToast } from '@/components/ui/toast/toastStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { createToastId } from '@/types/toastId'
 
 import { downloadFile } from '@/base/common/downloadUtil'
