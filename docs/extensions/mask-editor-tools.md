@@ -1,5 +1,12 @@
 # MaskEditor tools
 
+> **Proposed API — not released.** The contract-only review stage provides
+> registration but does not activate tools or invoke session callbacks. The
+> runtime/UI integration is reviewed separately; both stages require extension-API
+> owner approval and must ship together. The active-session behavior below
+> describes that proposed combined API. Extensions must wait for its release
+> before depending on it.
+
 Extensions can register an image selection tool through
 `app.extensionManager.maskEditor.registerTool(tool)`. Check that `maskEditor`
 exists before using the API on older frontend versions.
