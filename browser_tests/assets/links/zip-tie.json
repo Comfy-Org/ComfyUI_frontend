@@ -1,0 +1,137 @@
+{
+  "id": "920941b2-57f8-43e2-a3e5-ad70468bc482",
+  "revision": 0,
+  "last_node_id": 4,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "EmptyLatentImage",
+      "pos": [60, 340],
+      "size": [270, 110],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "title": "Three wires, one zip tie",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [1, 2, 3],
+          "slot_index": 0
+        }
+      ],
+      "properties": {},
+      "widgets_values": [512, 512, 1]
+    },
+    {
+      "id": 2,
+      "type": "LatentUpscaleBy",
+      "pos": [810, 210],
+      "size": [270, 100],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "title": "Branch A",
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {},
+      "widgets_values": ["nearest-exact", 1.5]
+    },
+    {
+      "id": 3,
+      "type": "LatentUpscaleBy",
+      "pos": [810, 390],
+      "size": [270, 100],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "title": "Branch B",
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {},
+      "widgets_values": ["nearest-exact", 1.5]
+    },
+    {
+      "id": 4,
+      "type": "LatentUpscaleBy",
+      "pos": [810, 570],
+      "size": [270, 100],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "title": "Branch C",
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {},
+      "widgets_values": ["nearest-exact", 1.5]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "LATENT"],
+    [2, 1, 0, 3, 0, "LATENT"],
+    [3, 1, 0, 4, 0, "LATENT"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [20, 20]
+    },
+    "reroutes": [
+      {
+        "id": 10,
+        "pos": [380, 300],
+        "linkIds": [1]
+      }
+    ],
+    "linkExtensions": [
+      {
+        "id": 1,
+        "parentId": 10
+      }
+    ]
+  },
+  "version": 0.4
+}

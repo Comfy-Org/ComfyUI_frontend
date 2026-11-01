@@ -28,3 +28,17 @@ remain editable after saving and reopening a workflow. A frontend without the
 extension still renders the saved native reroutes. Copying a subset of nodes or
 converting nodes into a subgraph preserves native routing according to the
 existing graph operations, but does not recreate the zip-tie clasp metadata.
+
+## Browser regression tests
+
+With the ComfyUI test backend and frontend running, run:
+
+```sh
+pnpm test:browser:local --project=chromium browser_tests/tests/links/zipTie.spec.ts
+```
+
+The tests use real keyboard and pointer input to create, move, save, reload, and
+release a tie. They check the workflow saved by the backend and preserve the
+original connections and earlier reroutes. A second test verifies that Escape
+cancels the marquee without changing the graph. Both run in the normal E2E CI
+suite, which also records a video walkthrough for newly added specs.
