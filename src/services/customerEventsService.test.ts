@@ -11,9 +11,10 @@ import {
 import {
   WebSessionTokenError,
   webSessionResourceHeader
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 
 // Hoist the mocks to avoid hoisting issues
 const mockAxiosInstance = vi.hoisted(() => ({
@@ -42,7 +43,7 @@ vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isAbortError: vi.fn()
 }))
 
-vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
+vi.mock(import('@comfyorg/api-client/webSessionFetch'), { spy: true })
 
 describe('useCustomerEventsService', () => {
   let service: ReturnType<typeof useCustomerEventsService>
@@ -82,6 +83,7 @@ describe('useCustomerEventsService', () => {
   }
 
   beforeEach(() => {
+    remoteConfig.value = { comfy_api_base_url: 'https://api.example.com' }
     vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(
       mockAuthHeaders
@@ -101,6 +103,10 @@ describe('useCustomerEventsService', () => {
     })
 
     service = useCustomerEventsService()
+
+    return () => {
+      remoteConfig.value = {}
+    }
   })
 
   describe('initialization', () => {
@@ -121,6 +127,7 @@ describe('useCustomerEventsService', () => {
 
       expect(useAuthStore().getUserAuthHeader).toHaveBeenCalled()
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
+        baseURL: 'https://api.example.com',
         params: { page: 1, limit: 10 },
         headers: mockAuthHeaders
       })
@@ -130,12 +137,26 @@ describe('useCustomerEventsService', () => {
       expect(service.error.value).toBeNull()
     })
 
+    it('sends the request to the base URL configured after service creation', async () => {
+      remoteConfig.value = { comfy_api_base_url: 'https://changed.example.com' }
+      mockAxiosInstance.get.mockResolvedValue({ data: mockEventsResponse })
+
+      await service.getMyEvents()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
+        baseURL: 'https://changed.example.com',
+        params: { page: 1, limit: 10 },
+        headers: mockAuthHeaders
+      })
+    })
+
     it('should use default parameters when none provided', async () => {
       mockAxiosInstance.get.mockResolvedValue({ data: mockEventsResponse })
 
       await service.getMyEvents()
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
+        baseURL: 'https://api.example.com',
         params: { page: 1, limit: 10 },
         headers: mockAuthHeaders
       })
@@ -164,7 +185,11 @@ describe('useCustomerEventsService', () => {
 
         expect(mockAxiosInstance.get).toHaveBeenCalledWith(
           '/customers/events',
-          { params: { page: 1, limit: 10 }, headers }
+          {
+            baseURL: 'https://api.example.com',
+            params: { page: 1, limit: 10 },
+            headers
+          }
         )
         expect(useAuthStore().getUserAuthHeader).toHaveBeenCalledTimes(
           userHeaderCalls

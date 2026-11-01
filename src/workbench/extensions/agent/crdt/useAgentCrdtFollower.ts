@@ -13,11 +13,11 @@ import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { AgentGraphProjectionStage } from '@/platform/telemetry/types'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { AgentGraphProjectionStage } from '@comfyorg/telemetry/types'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -39,17 +39,28 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
-import { RESEED_CONFLICT, isRetryableReseedCode } from './docFrameCodes'
+import {
+  RESEED_CONFLICT,
+  isPermanentSubscribeRefusalCode,
+  isRetryableReseedCode
+} from './docFrameCodes'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
-import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { LayoutFollowerBridge, isLiveAgentUpdate } from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
-import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
-import { readDocSlotNames } from './liveGraphApplier'
+import {
+  readDocPromotedWidgets,
+  readSubgraphDefinitionIds
+} from './agentSubgraphDefinitions'
+import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 import { createRejectedOpNotifier } from './rejectedOpNotice'
+import {
+  forgetUnsyncedAtLoad,
+  recordUnsyncedHumanOps
+} from './unsyncedHumanOps'
 
 export { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -135,9 +146,9 @@ function handleSubscribeRefusal(
   lifecycle: AgentCrdtDocLifecycle
 ): SubscribeRefusalOutcome {
   const code = typeof detail?.code === 'string' ? detail.code : undefined
-  if (!lifecycle.onSubscribeRefused(code)) return { shouldNotify: false }
+  const shouldNotify = lifecycle.onSubscribeRefused(code)
   return {
-    shouldNotify: true,
+    shouldNotify,
     message: typeof detail?.message === 'string' ? detail.message : undefined,
     code
   }
@@ -155,9 +166,8 @@ function notifyAgentMaterialization(
     const nodeId = parseNodeId(id)
     if (nodeId) pendingLiveNodeIds.delete(nodeId)
   }
-  const isLiveAgentUpdate =
-    !update.catchUp && update.actor?.startsWith('agent:') === true
-  if (isLiveAgentUpdate) {
+  const liveAgentUpdate = isLiveAgentUpdate(update)
+  if (liveAgentUpdate) {
     for (const nodeId of materialized) pendingLiveNodeIds.add(nodeId)
     for (const id of nodes.added) {
       const nodeId = parseNodeId(id)
@@ -170,7 +180,7 @@ function notifyAgentMaterialization(
   ])
   emitPendingMaterializations(
     update.workflowId,
-    isLiveAgentUpdate ? update.actor : undefined,
+    liveAgentUpdate ? update.actor : undefined,
     available,
     pendingLiveNodeIds,
     events
@@ -206,6 +216,10 @@ interface AgentCrdtFollowerEvents {
     nodeIds: readonly NodeId[]
   }) => void
   onReset?: (workflowId: string) => void
+  onLineageConfirmed?: (event: {
+    workflowId: string
+    lineageSeq: number
+  }) => void
   /**
    * PM-1604 / BE-11437: the doc-host classified a resync refusal as
    * permanent (one of `PERMANENT_SUBSCRIBE_REFUSAL_CODES`) — the lifecycle
@@ -235,6 +249,17 @@ function notifyAppliedUpdate(
   })
 }
 
+function notifyLineageConfirmed(
+  detail: { workflowId?: string; lineageSeq?: number },
+  events: AgentCrdtFollowerEvents
+): void {
+  if (detail.workflowId === undefined || detail.lineageSeq === undefined) return
+  events.onLineageConfirmed?.({
+    workflowId: detail.workflowId,
+    lineageSeq: detail.lineageSeq
+  })
+}
+
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
 // logError, which re-throws in dev/test builds (this app registers no
 // app.config.errorHandler) and aborts the rest of unmountComponent - leaving
@@ -257,31 +282,6 @@ type AgentCrdtApplierDeps = Omit<
   'getGraph' | 'holdsLocalWrite'
 >
 
-function reportRejectedHumanOps(
-  workflowId: string | null,
-  ops: readonly Op[],
-  result: OpsResultView
-): void {
-  const settled = new Set([...result.applied, ...result.skipped])
-  const rejected = ops.filter((op) => !settled.has(op.op_id))
-  const { failed } = result
-  reportError(
-    new Error(
-      `The doc host rejected ${rejected.length} local edit(s): ${failed?.message ?? 'no diagnostics'}`
-    ),
-    {
-      surface: 'agent',
-      errorType: 'agent_crdt_human_ops_rejected',
-      context: {
-        workflowId,
-        opId: failed?.op_id ?? rejected[0]?.op_id,
-        code: failed?.code,
-        rejectedOps: rejected.map((op) => op.op)
-      }
-    }
-  )
-}
-
 export interface AgentCrdtFollowerOptions {
   transport: AgentDocFrameTransport
   userId?: () => string | null
@@ -295,6 +295,7 @@ export interface AgentCrdtFollowerOptions {
   events?: AgentCrdtFollowerEvents
   applierDeps?: AgentCrdtApplierDeps
   canvasFor?: (workflowId: string) => Record<string, unknown> | null
+  knownLineageFor?: (workflowId: string) => number | null
 }
 
 export function useAgentCrdtFollower(
@@ -306,7 +307,8 @@ export function useAgentCrdtFollower(
     getGraph = () => null,
     events = {},
     applierDeps = {},
-    canvasFor = () => null
+    canvasFor = () => null,
+    knownLineageFor = () => null
   }: AgentCrdtFollowerOptions
 ) {
   const productGate = useAgentPanelStore()
@@ -349,7 +351,8 @@ export function useAgentCrdtFollower(
           getGraph,
           events,
           applierDeps,
-          canvasFor
+          canvasFor,
+          knownLineageFor
         })
       )
     },
@@ -368,12 +371,17 @@ export function useAgentCrdtFollower(
       }),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       follower.value?.enqueueHumanOperations(operations),
+    retrySubscription: () => follower.value?.retrySubscription(),
     docInputNames: (nodeId: NodeId) =>
       follower.value?.docInputNames(nodeId) ?? null,
+    docWidgetValue: (nodeId: NodeId, widgetName: string) =>
+      follower.value?.docWidgetValue(nodeId, widgetName),
     docPromotedWidgets: (nodeId: NodeId) =>
       follower.value?.docPromotedWidgets(nodeId) ?? null,
     mayWritePromotedHost: (nodeId: NodeId) =>
       follower.value?.mayWritePromotedHost(nodeId) ?? false,
+    docHasSubgraphDefinition: (definitionId: string) =>
+      follower.value?.docHasSubgraphDefinition(definitionId) ?? false,
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       follower.value?.notifyWidgetWriteRefused(nodeId, widgetName),
     subscriptionSent: () => follower.value?.subscriptionSent() ?? false
@@ -389,7 +397,8 @@ function startAgentCrdtFollower(
     getGraph,
     events,
     applierDeps,
-    canvasFor
+    canvasFor,
+    knownLineageFor
   }: Required<AgentCrdtFollowerOptions>
 ) {
   const connected = ref(false)
@@ -508,8 +517,6 @@ function startAgentCrdtFollower(
     outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
   ) => {
     const workflowId = outcome.result.workflowId ?? bridge.subscribedWorkflowId
-    if (outcome.result.failed)
-      reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
     if (workflowId === null) return
 
     const applied = new Set(outcome.result.applied)
@@ -528,12 +535,33 @@ function startAgentCrdtFollower(
       ])
   }
 
+  const workflowByUnsettledOpId = new Map<string, string>()
+  const workflowsWithLostOps = new Set<string>()
+  const recordUnsynced = (): void => {
+    const unsynced = new Set(workflowsWithLostOps)
+    for (const { workflowId, ops } of sender.pendingOps()) {
+      unsynced.add(workflowId)
+      for (const op of ops) workflowByUnsettledOpId.set(op.op_id, workflowId)
+    }
+    recordUnsyncedHumanOps(tabId, unsynced)
+  }
+  const noteSettledHumanOps = (outcome: BatchOutcome): void => {
+    const workflowId = workflowByUnsettledOpId.get(outcome.ops[0]?.op_id ?? '')
+    for (const op of outcome.ops) workflowByUnsettledOpId.delete(op.op_id)
+    if (workflowId !== undefined && outcome.state !== 'acknowledged')
+      workflowsWithLostOps.add(workflowId)
+    recordUnsynced()
+  }
+
   const settleHumanOps = (outcome: BatchOutcome) => {
-    if (outcome.state === 'acknowledged') trackAcknowledgedDeletes(outcome)
-    recordDevEvent('human_ops_settled', outcome)
+    if (outcome.state === 'acknowledged') {
+      trackAcknowledgedDeletes(outcome)
+      recordDevEvent('human_ops_settled', outcome)
+    }
     projection.settleLocalWrites(outcome.ops)
     if (outcome.state === 'acknowledged' && !outcome.result.ok)
       revertRejectedOps(outcome)
+    noteSettledHumanOps(outcome)
   }
 
   const sender = createOpSender({
@@ -551,12 +579,17 @@ function startAgentCrdtFollower(
     // Send REALITY, not this composable's intent: the sender re-reads it before
     // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
-    tab: tabId,
+    get tab() {
+      return tabId
+    },
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: settleHumanOps
   })
-  const coalescer = createOpCoalescer(sender.admit, sender.flush)
+  const coalescer = createOpCoalescer((operations) => {
+    sender.admit(operations)
+    recordUnsynced()
+  }, sender.flush)
 
   const pendingLiveNodeIds = new Set<NodeId>()
   const pendingProjectionFrames = new Map<string, ProjectionFrameId[]>()
@@ -708,8 +741,10 @@ function startAgentCrdtFollower(
     const code = typeof detail.code === 'string' ? detail.code : undefined
     if (detail.ok === true || code === RESEED_CONFLICT) return
     if (isRetryableReseedCode(code)) lifecycle.onSubscribeRefused(code)
-    else lifecycle.stopProbing()
-    if (lifecycle.refusalIsFinal()) terminal.value = 'refused'
+    else {
+      lifecycle.stopProbing()
+      terminal.value = 'refused'
+    }
   }
 
   function handleRejectedSubscription(
@@ -724,7 +759,13 @@ function startAgentCrdtFollower(
     const refusal = reseeding
       ? { shouldNotify: false }
       : handleSubscribeRefusal(detail, lifecycle)
-    if (!reseeding && lifecycle.refusalIsFinal()) terminal.value = 'refused'
+    if (
+      !reseeding &&
+      refusal.code !== undefined &&
+      isPermanentSubscribeRefusalCode(refusal.code) &&
+      lifecycle.refusalIsFinal()
+    )
+      terminal.value = 'refused'
     releaseHeldOps()
     sender.abortIfUnbound()
     if (refusal.shouldNotify)
@@ -761,12 +802,15 @@ function startAgentCrdtFollower(
       code?: unknown
       message?: unknown
       seq?: number
+      workflowId?: string
+      lineageSeq?: number
     } | null
     const ok = detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      notifyLineageConfirmed(detail, events)
       const workflowId = subscribedWorkflowId.value
       const projectionIsClean =
         workflowId === null || retryFailedProjection(workflowId)
@@ -774,7 +818,9 @@ function startAgentCrdtFollower(
         clearCanvasStaleness()
       terminal.value = null
       lifecycle.onSubscribeConfirmed()
+      forgetUnsyncedAtLoad(subscribedWorkflowId.value)
       resumeHeldOpsIfSubscribed()
+      sender.retryTransport()
     } else {
       handleRejectedSubscription(detail)
     }
@@ -861,6 +907,8 @@ function startAgentCrdtFollower(
     projection.replaceOnNextFrame(detail.workflowId)
     reportPendingFrames(detail.workflowId, 'discarded', NOTHING_APPLIED)
     sender.abortAll()
+    workflowsWithLostOps.delete(detail.workflowId)
+    recordUnsynced()
     events.onReset?.(detail.workflowId)
     connected.value = false
     markCanvasStale()
@@ -919,14 +967,23 @@ function startAgentCrdtFollower(
   function notifyStaleClient(
     detail: { workflowId?: string; found?: unknown } | null
   ): void {
-    const found = newerDocSchema(detail?.found)
+    const found = detail?.found
+    const skew = docSchemaSkew(found)
     const workflowId = detail?.workflowId
-    if (found === null || workflowId === undefined) return
-    if (staleClientNotified.has(workflowId)) return
-    staleClientNotified.add(workflowId)
+    if (skew === null || workflowId === undefined) return
+    const notificationKey = `${workflowId}:${skew}`
+    if (staleClientNotified.has(notificationKey)) return
+    staleClientNotified.add(notificationKey)
+    if (skew === 'newer') {
+      events.onSyncError?.(
+        `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
+        'stale_client_schema'
+      )
+      return
+    }
     events.onSyncError?.(
-      `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
-      'stale_client_schema'
+      `document schema v${found} is older than this page reads (v${SCHEMA_VERSION})`,
+      'stale_host_schema'
     )
   }
   const onGap: EventListener = (event) => {
@@ -1038,7 +1095,11 @@ function startAgentCrdtFollower(
   const retarget = (next: string | null): void => {
     sender.flush()
     if (next === null) bridge.unsubscribe()
-    else bridge.subscribe(next)
+    else {
+      const knownLineage = knownLineageFor(next)
+      if (knownLineage === null) bridge.subscribe(next)
+      else bridge.subscribe(next, knownLineage)
+    }
     if (next !== null && next === heldForWorkflowId) {
       resumeHeldOpsIfSubscribed()
       return
@@ -1143,7 +1204,6 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => bridge.removeEventListener('doc_reseed_result', onReseedResult),
       () => sender.detach(),
-      () => rejectedOpNotifier.cancel(),
       () => pendingRejected.clear(),
       () => coalescer.detach(),
       () => {
@@ -1178,6 +1238,11 @@ function startAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
+    retrySubscription: () => {
+      if (!lifecycle.retry()) return
+      connected.value = false
+      terminal.value = null
+    },
     enqueueHumanOperations: (operations: GraphOperation[]) => {
       const sentAdds = sentAddsToCurrentDoc()
       for (const operation of operations)
@@ -1187,12 +1252,16 @@ function startAgentCrdtFollower(
     },
     docInputNames: (nodeId: NodeId) =>
       readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
+    docWidgetValue: (nodeId: NodeId, widgetName: string) =>
+      readDocWidgetValue(bridge.follower.doc, String(nodeId), widgetName),
     docPromotedWidgets: (nodeId: NodeId) =>
       readDocPromotedWidgets(bridge.follower.doc, String(nodeId)),
     mayWritePromotedHost: (nodeId: NodeId) =>
       bridge.isSubscribeBaselineIntegrated ||
       (sentAddsToCurrentDoc().has(String(nodeId)) &&
         readDocPromotedWidgets(bridge.follower.doc, String(nodeId)) === null),
+    docHasSubgraphDefinition: (definitionId: string) =>
+      readSubgraphDefinitionIds(bridge.follower.doc).includes(definitionId),
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       rejectedOpNotifier.notifyWidgetWriteRefused(nodeId, widgetName),
     subscriptionSent: () =>
@@ -1201,6 +1270,10 @@ function startAgentCrdtFollower(
   }
 }
 
-function newerDocSchema(found: unknown): number | null {
-  return typeof found === 'number' && found > SCHEMA_VERSION ? found : null
+function docSchemaSkew(found: unknown): 'newer' | 'older' | null {
+  if (typeof found !== 'number' || !Number.isInteger(found) || found <= 0)
+    return null
+  if (found > SCHEMA_VERSION) return 'newer'
+  if (found < SCHEMA_VERSION) return 'older'
+  return null
 }

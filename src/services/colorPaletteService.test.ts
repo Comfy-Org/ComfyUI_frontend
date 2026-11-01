@@ -3,8 +3,9 @@ import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { basename, join } from 'node:path'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
-import { themeSchema } from '@/schemas/colorPaletteSchema'
+import { themeSchema } from '@comfyorg/settings-core/colorPaletteSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -236,16 +237,16 @@ describe('useColorPaletteService theme variables', () => {
       'css'
     )
     const paletteCss = readFileSync(join(cssDir, '_palette.css'), 'utf8')
-    const styleCss = readFileSync(join(cssDir, 'style.css'), 'utf8')
+    const themeCss = readFileSync(join(cssDir, 'theme.css'), 'utf8')
     const palette = Object.fromEntries(
       [...paletteCss.matchAll(/--color-([\w-]+):\s*(#[0-9a-f]{6});/gi)].map(
         ([, name, hex]) => [name, hex.toLowerCase()]
       )
     )
     palette.white = '#ffffff'
-    const rootBlock = styleCss.slice(
-      styleCss.indexOf(':root {'),
-      styleCss.indexOf('}', styleCss.indexOf(':root {'))
+    const rootBlock = themeCss.slice(
+      themeCss.indexOf(':root {'),
+      themeCss.indexOf('}', themeCss.indexOf(':root {'))
     )
     const stylesheetDefaults = Object.fromEntries(
       [...rootBlock.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(
@@ -323,6 +324,22 @@ describe('useColorPaletteService', () => {
       expect(readRootProperty('--shadow-color')).toBe(expected)
     }
   )
+
+  it('keeps the current palette and reports an error when asked to load an unknown palette', async () => {
+    clearRootThemeAfterTest()
+    const service = useColorPaletteService()
+    await service.loadColorPalette('nord')
+
+    await service.loadColorPalette('unknown')
+
+    expect(readRootProperty('--background')).toBe('#161b22')
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Color palette unknown not found'
+      })
+    )
+  })
 
   it('removes a custom palette legacy shadow once the next palette omits it', async () => {
     clearRootThemeAfterTest()

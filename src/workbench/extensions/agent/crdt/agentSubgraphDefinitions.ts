@@ -5,7 +5,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 
 /**
  * Root map the op layer mints `definitions.subgraphs` into, keyed by

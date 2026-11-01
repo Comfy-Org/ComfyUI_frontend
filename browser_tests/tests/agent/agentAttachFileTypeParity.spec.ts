@@ -31,7 +31,7 @@ test.describe(
         return route.fulfill(jsonRoute(response))
       })
       await comfyPage.nodeOps.clearGraph()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
     })
 
     test('accepts a video and an audio file by both the file browser and a drop', async ({
@@ -68,7 +68,7 @@ test.describe(
       await agentPanel.dropFile(comfyPage.dragDrop, AUDIO)
       await expect(agentPanel.attachmentChip(AUDIO)).toBeVisible()
 
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
     })
 
     test('refuses an oversized file the same way whichever route it arrives by', async ({

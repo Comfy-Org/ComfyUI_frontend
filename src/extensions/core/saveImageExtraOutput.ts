@@ -3,6 +3,7 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { app } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 
 const saveNodeTypes = new Set([
   'SaveImage',
@@ -29,7 +30,7 @@ const saveNodeTypes = new Set([
 
 // Use widget values and dates in output filenames
 
-app.registerExtension({
+export const saveImageExtraOutputExtension: ComfyExtension = {
   name: 'Comfy.SaveImageExtraOutput',
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
@@ -64,4 +65,4 @@ app.registerExtension({
       }
     }
   }
-})
+}

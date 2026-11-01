@@ -3,7 +3,7 @@
     class="mx-auto flex h-full min-h-0 max-w-[400px] flex-col justify-between overflow-y-auto text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
   >
     <div class="flex flex-col items-center gap-4 pt-8">
-      <i class="pi pi-check-circle text-5xl text-success" />
+      <i class="icon-[lucide--circle-check] size-12 text-success" />
       <CheckoutTitle
         class="m-0 text-center text-xl font-semibold text-foreground lg:text-2xl"
       >
@@ -34,7 +34,7 @@
             </span>
           </div>
           <div class="flex items-center gap-1 text-muted-foreground">
-            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
+            <i class="icon-[lucide--coins] bg-credit" />
             <span class="tabular-nums">
               {{ displayCredits }} {{ isYearly ? copy.perYear : copy.perMonth }}
             </span>
@@ -133,12 +133,15 @@ const isYearly = computed(() =>
 
 const displayPrice = computed(() => {
   if (previewData?.new_plan) {
-    return (previewData.new_plan.price_cents / 100).toFixed(0)
+    const amountUsd = previewData.new_plan.price_cents / 100
+    const keepCents =
+      !plan.pricedByQuote && isYearly.value && !Number.isInteger(amountUsd)
+    return keepCents ? amountUsd.toFixed(2) : amountUsd.toFixed(0)
   }
   if (plan.pricedByQuote) return '0'
   return String(
     isYearly.value
-      ? plan.monthlyPriceUsd.yearly * 12
+      ? (plan.yearlyChargeUsd ?? plan.monthlyPriceUsd.yearly * 12)
       : plan.monthlyPriceUsd.monthly
   )
 })

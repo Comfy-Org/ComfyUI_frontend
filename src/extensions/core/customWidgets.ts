@@ -4,16 +4,17 @@ import { computed, shallowReactive } from 'vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
+import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { ComfyExtension } from '@/types/comfy'
 
 function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
   applyFirstWidgetValueToGraph(this, extraLinks)
@@ -268,7 +269,7 @@ function onCustomFloatCreated(this: LGraphNode) {
   })
 }
 
-app.registerExtension({
+export const customWidgetsExtension: ComfyExtension = {
   name: 'Comfy.CustomWidgets',
   beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData.name === 'CustomCombo')
@@ -306,4 +307,4 @@ app.registerExtension({
       }
     }
   }
-})
+}

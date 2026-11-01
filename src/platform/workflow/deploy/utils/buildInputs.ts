@@ -2,8 +2,8 @@ import { z } from 'zod'
 
 import { matchesWidgetName } from '@/utils/widgetBinding'
 
-import { isModelFileName } from '@/platform/missingModel/missingModelScan'
-import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
+import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
+import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import {
   collectReachableSubgraphDefinitions,
   parseFlattenableSubgraphDefinitions

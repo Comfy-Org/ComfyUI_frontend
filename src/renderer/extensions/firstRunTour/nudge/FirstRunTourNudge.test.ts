@@ -19,7 +19,7 @@ import {
   registerTour
 } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -68,13 +68,13 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  import('@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'),
   () => ({
     useWorkflowTemplateSelectorDialog: () => ({ show: mocks.showTemplates })
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const i18n = createI18n({
   legacy: false,

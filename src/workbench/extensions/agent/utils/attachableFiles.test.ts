@@ -46,7 +46,8 @@ describe('isAgentAttachable', () => {
     'cloud.ply',
     'cloud.spz',
     'cloud.splat',
-    'cloud.ksplat'
+    'cloud.ksplat',
+    'plate.exr'
   ])('accepts %s', (name) => {
     expect(isAgentAttachable(fileNamed(name))).toBe(true)
   })

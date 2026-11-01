@@ -43,8 +43,6 @@ export default defineConfig({
   testDir: './browser_tests',
   testIgnore: [
     '**/liveCloud/**',
-    // Requires the CPU LoRA fixtures and the cloud build in its dedicated job.
-    '**/tests/vueNodes/widgets/nativeLoraStack.spec.ts',
     '**/crossOriginSession/**',
     '**/*.test.ts',
     // Untransformed recorder output — still bare codegen, not a runnable spec

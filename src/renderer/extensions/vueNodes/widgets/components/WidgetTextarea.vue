@@ -46,7 +46,7 @@
       @click="handleCopy"
       @pointerdown.capture.stop
     >
-      <i class="icon-[lucide--copy] size-4 text-foreground" />
+      <i class="icon-[lucide--copy] text-foreground" />
     </Button>
   </div>
 </template>
@@ -54,8 +54,8 @@
 <script setup lang="ts">
 import { computed, ref, useId, useTemplateRef } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'

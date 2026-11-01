@@ -1,4 +1,8 @@
-import { applyOps, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  nodesMap,
+  OPAQUE_WIDGETS_KEY
+} from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import {
@@ -19,6 +23,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { MAX_DYNAMIC_GROUP_ROWS } from '@/core/graph/widgets/dynamicGroupDiagnostics'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -26,14 +31,16 @@ import {
 import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { toNodeId } from '@/types/nodeId'
-import { toRootGraphId } from '@/types/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { useLitegraphService } from '@/services/litegraphService'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { DocChangeCollector } from '@/workbench/extensions/agent/crdt/docChangeCollector'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
@@ -58,7 +65,6 @@ vi.mock(import('@/scripts/app'), () => ({
   })
 }))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {
   constructor() {
@@ -196,6 +202,33 @@ function restoredAboveMaxDoc() {
     applyOps(doc, add, catalog).outcomes.map(({ outcome }) => outcome)
   ).toEqual(['applied'])
   return { doc, collector, node }
+}
+
+function twoRowFollower() {
+  const graph = new LGraph()
+  const node = LiteGraph.createNode('DynamicGroupTest')
+  assert.exists(node)
+  graph.add(node)
+  node.configure({
+    ...node.serialize(),
+    widgets_values: ['head', 2, 0.5, 0.7, 'tail']
+  })
+  const { flags, ...serialized } = node.serialize()
+  const { doc, collector } = followedDoc(
+    { nodes: [{ ...serialized, flags: { ...flags } }], links: [] },
+    CATALOG
+  )
+  return { graph, node, doc, collector }
+}
+
+function applyRowCount(doc: Y.Doc, value: number, seq: number) {
+  const write: Op = {
+    ...op({ op: 'set_widget', node_id: 1, widget: 'rows', value }),
+    op_id: `op-rows-${seq}`.padEnd(32, '0'),
+    base_version: seq,
+    stamp: [seq, 'agent:test']
+  }
+  expect(applyOps(doc, [write], CATALOG).outcomes[0].outcome).toBe('applied')
 }
 
 async function workflowJson(graph: LGraph): Promise<ComfyWorkflowJSON> {
@@ -419,8 +452,10 @@ describe('LiveGraphApplier with the real change tracker', () => {
       getGraph: () => graph,
       boundRootGraphId: () => toRootGraphId(graph.id),
       docInputNames: () => [],
+      docWidgetValue: () => undefined,
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
       onWidgetWriteRefused: () => {},
       enqueue
     })
@@ -460,11 +495,148 @@ describe('LiveGraphApplier with the real change tracker', () => {
           op: 'set_widget',
           node_id: '1',
           widget: 'after',
-          value: 'human tail',
-          old: 'remote tail'
+          value: 'human tail'
         }
       ])
     )
+  })
+
+  it('regrows a remotely hidden DynamicGroup row with the value the document kept', () => {
+    const { graph, node, doc, collector } = twoRowFollower()
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    applyRowCount(doc, 1, 2)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    expect(node.serialize().widgets_values).toEqual(['head', 1, 0.5, 'tail'])
+
+    applyRowCount(doc, 2, 3)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(node.serialize().widgets_values).toEqual([
+      'head',
+      2,
+      0.5,
+      0.7,
+      'tail'
+    ])
+  })
+
+  it('restores the kept value on a replayed frame when a DynamicGroup row regrew but its field failed', () => {
+    const { graph, node, doc, collector } = twoRowFollower()
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    applyRowCount(doc, 1, 2)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    node.onWidgetChanged = (name) => {
+      if (name === 'rows.1.strength') throw new Error('callback failed')
+    }
+
+    applyRowCount(doc, 2, 3)
+    const regrow = collector.take()
+    expect(applier.applyChanges(doc, regrow, CONTEXT).failureCount).toBe(1)
+    node.onWidgetChanged = undefined
+
+    expect(applier.applyChanges(doc, regrow, CONTEXT).failureCount).toBe(0)
+    expect(node.serialize().widgets_values).toEqual([
+      'head',
+      2,
+      0.5,
+      0.7,
+      'tail'
+    ])
+  })
+
+  it('forgets a failed DynamicGroup regrow once a full frame restores the row', () => {
+    const { graph, node, doc, collector } = twoRowFollower()
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    applyRowCount(doc, 1, 2)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    node.onWidgetChanged = (name) => {
+      if (name === 'rows.1.strength') throw new Error('callback failed')
+    }
+    applyRowCount(doc, 2, 3)
+    expect(
+      applier.applyChanges(doc, collector.take(), CONTEXT).failureCount
+    ).toBe(1)
+    node.onWidgetChanged = undefined
+
+    const catchUp = new Y.Doc()
+    const catchUpCollector = new DocChangeCollector(catchUp)
+    onTestFinished(() => {
+      catchUpCollector.destroy()
+      catchUp.destroy()
+    })
+    Y.applyUpdate(catchUp, Y.encodeStateAsUpdate(doc))
+    applier.applyChanges(catchUp, catchUpCollector.take(), CONTEXT)
+    const second = node.widgets?.find(
+      (widget) => widget.name === 'rows.1.strength'
+    )
+    assert.exists(second)
+    second.value = 0.3
+    const write: Op = {
+      ...op({
+        op: 'set_widget',
+        node_id: 1,
+        widget: 'before',
+        value: 'remote head'
+      }),
+      op_id: 'op-before-4'.padEnd(32, '0'),
+      base_version: 4,
+      stamp: [4, 'agent:test']
+    }
+    expect(applyOps(doc, [write], CATALOG).outcomes[0].outcome).toBe('applied')
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(node.serialize().widgets_values).toEqual([
+      'remote head',
+      2,
+      0.5,
+      0.3,
+      'tail'
+    ])
+  })
+
+  it('leaves visible DynamicGroup rows alone on a remote row count change', () => {
+    const { graph, node, doc, collector } = twoRowFollower()
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    const first = node.widgets?.find(
+      (widget) => widget.name === 'rows.0.strength'
+    )
+    assert.exists(first)
+    first.value = 0.9
+
+    applyRowCount(doc, 1, 2)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(node.serialize().widgets_values).toEqual(['head', 1, 0.9, 'tail'])
+  })
+
+  it('does not report a hidden DynamicGroup row the document kept as a missing widget', () => {
+    const { graph, node, doc, collector } = twoRowFollower()
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+    applyRowCount(doc, 1, 2)
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    const catchUp = new Y.Doc()
+    const catchUpCollector = new DocChangeCollector(catchUp)
+    onTestFinished(() => {
+      catchUpCollector.destroy()
+      catchUp.destroy()
+    })
+    Y.applyUpdate(catchUp, Y.encodeStateAsUpdate(doc))
+    const result = applier.applyChanges(
+      catchUp,
+      catchUpCollector.take(),
+      CONTEXT
+    )
+
+    expect(result.failureCount).toBe(0)
+    expect(reportError).not.toHaveBeenCalled()
+    expect(node.serialize().widgets_values).toEqual(['head', 1, 0.5, 'tail'])
   })
 
   it('creates a restored DynamicGroup holding more rows than its max on a follower', () => {
@@ -575,7 +747,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
     }
   )
 
-  it('still fails to create a restored above-max DynamicGroup on a node with a DynamicCombo (#21297)', () => {
+  it('creates a restored above-max DynamicGroup on a node with a DynamicCombo (#21297)', () => {
     const { doc, collector } = followedDoc(
       {
         nodes: [
@@ -609,10 +781,10 @@ describe('LiveGraphApplier with the real change tracker', () => {
 
     const result = applier.applyChanges(doc, collector.take(), CONTEXT)
 
-    expect(result.failureCount).toBe(1)
+    expect(result.failureCount).toBe(0)
     expect(
       follower.getNodeById(toNodeId(1))?.serialize().widgets_values
-    ).toEqual(['head', 0])
+    ).toEqual(['head', 4, 0.1, 0.2, 0.3, 0.4])
   })
 
   it('refuses a crafted DynamicGroup row count without row values on create', () => {
@@ -640,6 +812,85 @@ describe('LiveGraphApplier with the real change tracker', () => {
     expect(
       follower.getNodeById(toNodeId(1))?.serialize().widgets_values
     ).toEqual(['head', 0, 'tail'])
+  })
+
+  describe('a positional widget update that resizes a DynamicGroup', () => {
+    function updatedFrom(next: unknown[]) {
+      const { doc, collector } = followedDoc(
+        {
+          nodes: [
+            {
+              id: 1,
+              type: 'DynamicGroupTest',
+              pos: [0, 0],
+              size: [210, 100],
+              widgets_values: ['head', 2, 0.1, 0.2, 'tail']
+            }
+          ],
+          links: []
+        },
+        { types: {} }
+      )
+      const follower = new LGraph()
+      const applier = new LiveGraphApplier({ getGraph: () => follower })
+      applier.applyChanges(doc, collector.take(), CONTEXT)
+      doc.transact(() => {
+        const entry = nodesMap(doc).get('1')
+        assert(entry instanceof Y.Map)
+        entry.set(OPAQUE_WIDGETS_KEY, next)
+      })
+      const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+      return {
+        failureCount: result.failureCount,
+        values: follower.getNodeById(toNodeId(1))?.serialize().widgets_values
+      }
+    }
+
+    it.for<[string, unknown[]]>([
+      ['grows', ['head', 3, 0.1, 0.2, 0.3, 'new tail']],
+      ['grows above max', ['head', 4, 0.1, 0.2, 0.3, 0.4, 'new tail']],
+      ['shrinks', ['head', 1, 0.1, 'new tail']]
+    ])('lands later values on the rows it %s', ([, next]) => {
+      expect(updatedFrom(next)).toEqual({ failureCount: 0, values: next })
+    })
+
+    it('leaves later values unapplied when the count is refused', () => {
+      expect(updatedFrom(['head', 1e9, 'new tail'])).toEqual({
+        failureCount: 1,
+        values: ['head', 2, 0.1, 0.2, 'tail']
+      })
+    })
+  })
+
+  it('aborts an over-bound positional restore before trailing values shift', () => {
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'DynamicGroupTest',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: [
+              'remote head',
+              MAX_DYNAMIC_GROUP_ROWS + 1,
+              'attacker tail'
+            ]
+          }
+        ],
+        links: []
+      },
+      { types: {} }
+    )
+    const follower = new LGraph()
+    const applier = new LiveGraphApplier({ getGraph: () => follower })
+
+    const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(result.failureCount).toBe(1)
+    expect(
+      follower.getNodeById(toNodeId(1))?.serialize().widgets_values
+    ).toEqual(['remote head', 0, 'tail'])
   })
 
   it('builds a DynamicGroup node from the catch-up frame without outbound echo and reloads to the same graph', async () => {
@@ -670,8 +921,10 @@ describe('LiveGraphApplier with the real change tracker', () => {
       getGraph: () => graph,
       boundRootGraphId: () => toRootGraphId(graph.id),
       docInputNames: () => [],
+      docWidgetValue: () => undefined,
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
       onWidgetWriteRefused: () => {},
       enqueue
     })

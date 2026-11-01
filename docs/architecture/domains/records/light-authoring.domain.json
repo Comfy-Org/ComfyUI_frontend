@@ -4,27 +4,15 @@
   "description": "CreateLightInfo node viewport: light entry types and value normalization, light-to-orbit transforms, Three.js light overlays and viewport, the useLightInfo widget-state composable, Vue editor widgets, and extension registration. CameraInfo handles and orbit math, the shared Three.js renderer, Load3D viewport factory, load3d components, and viewport node wiring remain external host dependencies.",
   "modules": [
     {
-      "path": "src/components/lightInfo/**",
+      "path": "src/extensions/core/load3d/components/lightInfo/**",
       "role": "presentation"
     },
     {
-      "path": "src/components/lightInfo/useLightInfo.test.ts",
+      "path": "src/extensions/core/load3d/composables/useLightInfo.ts",
       "role": "application"
     },
     {
-      "path": "src/components/lightInfo/useLightInfo.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/lightInfo.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/lightInfo.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
+      "path": "src/extensions/core/load3d/lightInfo.ts",
       "role": "integration"
     },
     {
@@ -32,12 +20,12 @@
       "role": "integration"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts",
       "role": "integration"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts",
-      "role": "integration"
+      "path": "packages/viewport3d/src/lightInfo/**",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],
@@ -63,9 +51,9 @@
       "checks": [
         "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
         "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.test.ts",
-        "src/components/lightInfo/useLightInfo.test.ts",
-        "src/components/lightInfo/LightInfo.test.ts",
-        "src/extensions/core/lightInfo.test.ts"
+        "src/extensions/core/load3d/composables/useLightInfo.test.ts",
+        "src/extensions/core/load3d/components/lightInfo/LightInfo.test.ts",
+        "src/extensions/core/load3d/lightInfo.test.ts"
       ]
     }
   ],

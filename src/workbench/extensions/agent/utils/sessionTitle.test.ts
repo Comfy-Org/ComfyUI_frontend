@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
@@ -32,6 +32,17 @@ describe('deriveSessionTitle', () => {
 
   it('returns undefined without a user message', () => {
     expect(deriveSessionTitle([])).toBeUndefined()
+  })
+
+  it('defers building the grapheme segmenter until a title is derived', async () => {
+    vi.spyOn(Intl, 'Segmenter')
+    vi.resetModules()
+
+    const sessionTitle = await import('./sessionTitle')
+    expect(Intl.Segmenter).not.toHaveBeenCalled()
+
+    expect(sessionTitle.deriveSessionTitle([userEntry('hello')])).toBe('hello')
+    expect(Intl.Segmenter).toHaveBeenCalledOnce()
   })
 })
 

@@ -18,7 +18,7 @@
             borderRadius: '50%'
           }"
         />
-        <i v-else class="pi pi-palette text-lg" />
+        <i v-else class="icon-[lucide--palette] size-4.5" />
       </ToggleGroupItem>
     </ToggleGroup>
     <AppColorPicker
@@ -33,7 +33,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppColorPicker from '@/components/common/AppColorPicker.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 
 const { t } = useI18n()
 

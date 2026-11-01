@@ -2,9 +2,9 @@ import {
   addTextPreviewWidgets,
   updateTextPreviewWidgets
 } from '@/extensions/core/textPreviewWidgets'
-import { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
-useExtensionService().registerExtension({
+export const saveTextExtension: ComfyExtension = {
   name: 'Comfy.saveText',
   async beforeRegisterNodeDef(nodeType, nodeData) {
     if (nodeData.name !== 'SaveText') return
@@ -21,4 +21,4 @@ useExtensionService().registerExtension({
       updateTextPreviewWidgets(this, message)
     }
   }
-})
+}

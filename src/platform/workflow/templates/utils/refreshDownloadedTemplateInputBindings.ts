@@ -1,5 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 export function refreshDownloadedTemplateInputBindings(

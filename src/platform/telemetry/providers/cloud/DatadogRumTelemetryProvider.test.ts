@@ -7,8 +7,11 @@ import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-import { TelemetryEvents } from '@/platform/telemetry/types'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
 const {
@@ -52,6 +55,67 @@ const workflowExecutionIntent = {
 } as const
 
 describe('DatadogRumTelemetryProvider', () => {
+  it.for([
+    { paletteId: 'dark', expectedScheme: 'dark' },
+    { paletteId: 'light', expectedScheme: 'light' },
+    { paletteId: 'nord', expectedScheme: 'dark' }
+  ])(
+    'reports the active $paletteId theme after startup',
+    ({ paletteId, expectedScheme }) => {
+      useColorPaletteStore().activePaletteId = paletteId
+      const registry = new TelemetryRegistry()
+      registry.registerProvider(new DatadogRumTelemetryProvider())
+
+      registry.trackBootstrapComplete({
+        outcome: 'completed',
+        total_ms: 123,
+        phase_count: 0,
+        untraced_ms: 123,
+        phases: {}
+      })
+
+      expect(addAction).toHaveBeenCalledExactlyOnceWith('app:theme_loaded', {
+        theme: paletteId,
+        color_scheme: expectedScheme
+      })
+    }
+  )
+
+  it('reports custom themes without sending their user-defined IDs', () => {
+    useColorPaletteStore().addCustomPalette({
+      ...DEFAULT_LIGHT_COLOR_PALETTE,
+      id: 'private-palette-name'
+    })
+
+    new DatadogRumTelemetryProvider().trackBootstrapComplete({
+      outcome: 'completed',
+      total_ms: 123,
+      phase_count: 0,
+      untraced_ms: 123,
+      phases: {}
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith('app:theme_loaded', {
+      theme: 'custom',
+      color_scheme: 'light'
+    })
+  })
+
+  it.for(['failed', 'timed_out'] as const)(
+    'does not report a loaded theme for %s startup',
+    (outcome) => {
+      new DatadogRumTelemetryProvider().trackBootstrapComplete({
+        outcome,
+        total_ms: 123,
+        phase_count: 0,
+        untraced_ms: 123,
+        phases: {}
+      })
+
+      expect(addAction).not.toHaveBeenCalled()
+    }
+  )
+
   it('identifies restored sessions and replaces identity on account changes', () => {
     const provider = new DatadogRumTelemetryProvider()
     provider.trackUserLoggedIn()
@@ -147,6 +211,44 @@ describe('DatadogRumTelemetryProvider', () => {
       schema_version: 1,
       billing_surface: 'cloud_app'
     })
+  })
+
+  it('records gated agent sends as RUM actions so drop-offs can be monitored', () => {
+    const metadata = {
+      gate: 'coach',
+      outcome: 'dropped',
+      reason: 'panel_closed',
+      client_message_id: 'client-message-1',
+      held_ms: 800,
+      thread_id: 'thread-1',
+      client_session_id: 'client-session-1'
+    } as const
+
+    new DatadogRumTelemetryProvider().trackAgentSendGated(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_SEND_GATED,
+      metadata
+    )
+  })
+
+  it('records status retries as RUM actions', () => {
+    const metadata = {
+      transport: 'axios',
+      method: 'GET',
+      host: 'cloud.comfy.org',
+      route: '/api/billing/balance',
+      attempts: 3,
+      final_status: 503,
+      outcome: 'exhausted'
+    } as const
+
+    new DatadogRumTelemetryProvider().trackFetchStatusRetry(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.FETCH_STATUS_RETRY,
+      metadata
+    )
   })
 
   it('records fetch timeouts as RUM actions', () => {

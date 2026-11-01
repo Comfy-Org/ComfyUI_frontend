@@ -1,10 +1,11 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 
+import AppToaster from '@/components/common/AppToaster.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
@@ -12,8 +13,6 @@ import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import type { GraphOperation } from './graphOperations'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-rejected-widget-write'
 
@@ -215,8 +214,46 @@ describe('a human edit the doc host rejects', () => {
       expect(toastDescriptions()).toEqual([
         expect.stringContaining(WIDGET_REJECTION_TEXT)
       ])
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'error_applying_agent_widget_edit',
+          tags: expect.objectContaining({ outcome: 'host_rejected' })
+        })
+      )
     }
   )
+
+  it('reports the rejected node id on the telemetry context', async () => {
+    const { submit } = mountFollower()
+
+    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({ nodeId: WIDGET_EDIT.node_id })
+      })
+    )
+  })
+
+  it('reports the rejected node id and class on the telemetry context when the rejected op added a node', async () => {
+    const { submit } = mountFollower()
+
+    answerWithOpsResult(
+      rejection(await submit(NODE_ADD), 'uncatalogued_widget_write')
+    )
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({
+          nodeId: NODE_ADD.node_id,
+          classType: NODE_ADD.class_type
+        })
+      })
+    )
+  })
 
   // `op_id` is optional on the wire — the relay omits it when it cannot map
   // the failing index. Resolving by index is the only path left, and a first-
@@ -389,9 +426,7 @@ describe('a human edit the doc host rejects', () => {
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
     expect(toastDescriptions()).toEqual([
-      expect.stringMatching(
-        new RegExp(`${WIDGET_REJECTION_TEXT}.*Rejected: node 3 seed$`)
-      )
+      expect.stringContaining(WIDGET_REJECTION_TEXT)
     ])
   })
 
@@ -418,7 +453,7 @@ describe('a human edit the doc host rejects', () => {
     ])
   })
 
-  it('speaks again once the throttle window has passed', async () => {
+  it('shows a later rejection after the throttle window', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     onTestFinished(() => {
       vi.useRealTimers()
@@ -427,20 +462,16 @@ describe('a human edit the doc host rejects', () => {
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
     await vi.advanceTimersByTimeAsync(10_001)
-    answerWithOpsResult(
-      rejection(await submit(PUNCTUATED_WIDGET_EDIT), 'unknown_widget')
-    )
+    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
 
     expect(toastDescriptions()).toEqual([
-      expect.stringContaining('Rejected: node 3 seed (opaque_widgets)'),
-      expect.stringContaining(
-        "Rejected: node 3 Width/Height & 'x' (unknown_widget)"
-      )
+      expect.stringContaining(WIDGET_REJECTION_TEXT)
     ])
   })
 
-  it('still speaks for a rejection of another kind inside that window', async () => {
+  it('replaces the notice with the latest rejection instead of stacking it', async () => {
     const { submit } = mountFollower()
+    render(AppToaster, { global: { plugins: [i18n] } })
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
     answerWithOpsResult(
@@ -448,9 +479,13 @@ describe('a human edit the doc host rejects', () => {
     )
 
     expect(toastDescriptions()).toEqual([
-      expect.stringContaining(WIDGET_REJECTION_TEXT),
       expect.stringContaining(GENERIC_REJECTION_TEXT)
     ])
+    await nextTick()
+    expect(screen.getAllByTestId('toast')).toHaveLength(1)
+    const announcement = screen.getByRole('alert')
+    expect(announcement).toHaveTextContent(GENERIC_REJECTION_TEXT)
+    expect(announcement).not.toHaveTextContent(WIDGET_REJECTION_TEXT)
   })
 
   it('stays silent when the host applies the edit', async () => {
@@ -468,10 +503,6 @@ describe('a human edit the doc host rejects', () => {
     expect(useToast().toasts).toEqual([])
   })
 
-  // The host refuses a whole batch with a top-level `code` and no `failed`
-  // entry. Read only from `failed`, every one of these collapses to
-  // 'unspecified' — and because the telemetry dedupe keys on that, the first
-  // would suppress the report for every later kind.
   it('classifies a batch-level refusal that carries no failed entry', async () => {
     const { submit } = mountFollower()
     await submit(WIDGET_EDIT)
@@ -484,53 +515,56 @@ describe('a human edit the doc host rejects', () => {
       )
     ])
     expect(reportedCodes()).toEqual(['catalog_mismatch'])
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'error_applying_agent_graph_edit',
+        tags: expect.objectContaining({ outcome: 'host_rejected' })
+      })
+    )
   })
 
-  // Asserted on telemetry rather than toasts: every generic notice renders the
-  // same string, so they share one throttle key and the second is swallowed on
-  // screen even though it is a different failure.
-  it('reports each distinct batch-level code once', async () => {
+  it('reports each rejected batch once even when rejection codes repeat', async () => {
     const { submit } = mountFollower()
 
-    // One pending batch per answer: the notifier runs when a batch SETTLES, so
-    // a result with nothing outstanding settles nothing and reports nothing.
     await submit(WIDGET_EDIT)
     answerWithOpsResult(batchRefusal('overloaded'))
+    answerWithOpsResult(batchRefusal('overloaded'))
     await submit(WIDGET_EDIT)
+    answerWithOpsResult(batchRefusal('overloaded'))
     answerWithOpsResult(batchRefusal('overloaded'))
     await submit(WIDGET_EDIT)
     answerWithOpsResult(batchRefusal('catalog_mismatch'))
 
-    expect(reportedCodes()).toEqual(['overloaded', 'catalog_mismatch'])
+    expect(reportedCodes()).toEqual([
+      'overloaded',
+      'overloaded',
+      'catalog_mismatch'
+    ])
   })
 
-  // Schema §4 aborts the remainder of a batch, so the prefix is still applied.
-  // Both partial branches are user-facing copy, so both are exercised: a wrong
-  // key on either would tell the user nothing was saved after a batch that
-  // saved a prefix. The rejected op's KIND picks the branch, so the two rows
-  // differ only in which op the host rejects.
   it.for([
     {
       branch: 'widget',
       ops: [NODE_ADD, WIDGET_EDIT],
       code: 'opaque_widgets',
-      expected: WIDGET_REJECTION_TEXT
+      expected: WIDGET_REJECTION_TEXT,
+      errorType: 'error_applying_agent_widget_edit'
     },
     {
       branch: 'generic',
       ops: [WIDGET_EDIT, NODE_ADD],
       code: 'uncatalogued_widget_write',
-      expected: GENERIC_REJECTION_TEXT
+      expected: GENERIC_REJECTION_TEXT,
+      errorType: 'error_applying_agent_graph_edit'
     }
   ])(
     'does not claim nothing was saved when a batch applied a prefix ($branch)',
-    async ({ ops, code, expected }) => {
+    async ({ ops, code, expected, errorType }) => {
       const { submitBatch } = mountFollower()
-      const frames = await submitBatch(ops)
-      // EXACTLY one frame carrying BOTH ops: across two frames the host could
-      // never answer with one applied id and one failure index.
+      const frames = await submitBatch([NODE_DELETE, ...ops, NODE_DELETE])
       expect(frames).toHaveLength(1)
-      const [[appliedId, rejectedId]] = frames
+      const [[skippedId, appliedId, rejectedId, tailId]] = frames
       expect(rejectedId).toBeDefined()
 
       answerWithOpsResult({
@@ -538,17 +572,23 @@ describe('a human edit the doc host rejects', () => {
         workflow_id: WORKFLOW_ID,
         ok: false,
         applied: [appliedId],
-        skipped: [],
+        skipped: [skippedId],
         failed: {
-          index: 1,
+          index: 2,
           op_id: rejectedId,
           code,
           message: 'node is absent from the pinned catalog'
         }
       })
 
-      // Still carries the canonical substring the e2e spec filters on, so the
-      // partial variant cannot break that contract.
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType,
+          level: 'warning',
+          context: expect.objectContaining({ opIds: [rejectedId, tailId] })
+        })
+      )
       expect(toastDescriptions()).toEqual([expect.stringContaining(expected)])
       expect(toastDescriptions()[0]).toContain('some earlier edits were')
     }

@@ -20,7 +20,11 @@ const answers = computed(() => {
   return resolution.otherText
     ? [
         ...chosen,
-        t('agent.askUser.otherAnswer', { text: resolution.otherText })
+        t(
+          'agent.askUser.otherAnswer',
+          { text: resolution.otherText },
+          { escapeParameter: false }
+        )
       ]
     : chosen
 })
@@ -51,7 +55,7 @@ const STATUS_TEXT: Record<AskUserResolution['status'], string> = {
         :key="index"
         class="flex items-start gap-2 text-foreground"
       >
-        <i class="mt-0.5 icon-[lucide--check] size-4 shrink-0 text-primary" />
+        <i class="mt-0.5 icon-[lucide--check] text-primary" />
         <span class="min-w-0 wrap-break-word">{{ answer }}</span>
       </li>
     </ul>

@@ -1,8 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { isMediaUploadComboInput } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-
-import { app } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 
 // Adds an upload button to the nodes
 
@@ -17,7 +16,7 @@ const createUploadInput = (
   }
 ]
 
-app.registerExtension({
+export const uploadImageExtension: ComfyExtension = {
   name: 'Comfy.UploadImage',
   beforeRegisterNodeDef(_nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     const { input } = nodeData
@@ -34,4 +33,4 @@ app.registerExtension({
       required.upload = createUploadInput(inputName, inputSpec)
     }
   }
-})
+}

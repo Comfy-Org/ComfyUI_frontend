@@ -2,13 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
 import { api } from '@/scripts/api'
-import type {
-  JobDetail,
-  JobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobTypes'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
   findActiveIndex,
   getJobAssets,
@@ -20,7 +17,7 @@ import {
 import { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'), { spy: true })
+vi.mock(import('@comfyorg/api-client/fetchJobs'), { spy: true })
 
 vi.mock(import('@/scripts/api'))
 

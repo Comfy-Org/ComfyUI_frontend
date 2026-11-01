@@ -1,15 +1,30 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mock } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { api } from '@/scripts/api'
 
 import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
-vi.mock(import('@/platform/telemetry/reportError'))
+const devLogState = vi.hoisted(() => ({
+  recordDevEvent: vi.fn()
+}))
+
+vi.mock(import('./devPanelLog'), () => ({
+  recordDevEvent: devLogState.recordDevEvent
+}))
 
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
@@ -28,6 +43,12 @@ function summarizeSettlement(outcome: BatchOutcome): SettlementSummary {
     state: outcome.state,
     nodeIds: nodeIdsOf(outcome.ops)
   }
+}
+
+function reportsOfType(errorType: string) {
+  return vi
+    .mocked(reportError)
+    .mock.calls.filter(([, options]) => options.errorType === errorType)
 }
 
 const detachListenerFailureCases = [
@@ -187,6 +208,47 @@ describe('createOpSender', () => {
   afterEach(() => {
     sender.detach()
   })
+
+  it.for([
+    ['undeliverable', false, WORKFLOW, 3_000, 'detached'],
+    ['undeliverable', true, null, 0, 'unbound'],
+    ['unconfirmed', true, WORKFLOW, 0, 'detached'],
+    ['unacknowledged', true, WORKFLOW, 20_000, 'result_timeout']
+  ] as const)(
+    'reports %s exactly once with transport=%s, workflow=%s, elapsed=%s',
+    ([state, available, workflow, elapsed, code]) => {
+      transportUp = available
+      boundWorkflow = workflow
+      const previousClientId = api.clientId
+      api.clientId = 'api-tab'
+      onTestFinished(() => {
+        api.clientId = previousClientId
+      })
+
+      sender.enqueue([addNode(7), addNode(12)])
+      vi.advanceTimersByTime(elapsed)
+      sender.detach()
+      sender.abortAll()
+      vi.advanceTimersByTime(60_000)
+
+      expect(settled).toHaveLength(1)
+      expect(settled[0].state).toBe(state)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: `failure_syncing_agent_edit_${state}`,
+        fingerprint: [`failure_syncing_agent_edit_${state}`],
+        level: 'error',
+        tags: { tab: 'api-tab', outcome: state, code },
+        context: {
+          code,
+          workflowId: workflow ?? undefined,
+          opId: settled[0].ops[0].op_id,
+          opIds: settled[0].ops.map((op) => op.op_id),
+          operations: ['add_node', 'add_node']
+        }
+      })
+    }
+  )
 
   it('mints once and sends a doc_ops batch with the wire envelope', () => {
     sender.enqueue([addNode(1), addNode(2)])
@@ -421,6 +483,15 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe('wf-2')
     expect(settled[0].state).toBe('unconfirmed')
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({
+          code: 'unbound',
+          workflowId: WORKFLOW
+        })
+      })
+    )
   })
 
   it('drains 20,000 queued batches after unbinding without overflowing the stack', () => {
@@ -521,11 +592,56 @@ describe('createOpSender', () => {
     expect(settled[0].state).toBe('unconfirmed')
   })
 
-  it('settles undeliverable after the transport retry budget', () => {
+  it('holds a batch the transport retry budget could not carry', () => {
     transportUp = false
     sender.enqueue([addNode(1)])
 
     vi.advanceTimersByTime(500 * 6)
+
+    expect(sent).toHaveLength(0)
+    expect(settled).toEqual([])
+    expect(sender.pending()).toBe(1)
+  })
+
+  it('resends the held batch unchanged when the transport returns', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(500 * 6)
+    sender.enqueue([addNode(2)])
+    vi.advanceTimersByTime(500 * 6)
+
+    transportUp = true
+    sender.retryTransport()
+    expect(sent.map((frame) => frame.ops.map((op) => op.op))).toEqual([
+      ['add_node']
+    ])
+    const [firstOpId] = sent[0].ops.map((op) => op.op_id)
+    resultListener?.({
+      ok: true,
+      seq: 42,
+      applied: [firstOpId],
+      skipped: [],
+      workflowId: WORKFLOW
+    })
+
+    expect(settled).toEqual([
+      {
+        state: 'acknowledged',
+        ops: expect.any(Array),
+        result: expect.any(Object)
+      }
+    ])
+    expect(sent).toHaveLength(2)
+    expect(sent[1].ops[0].op_id).not.toBe(firstOpId)
+  })
+
+  it('settles a held batch undeliverable when its doc is unbound', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(500 * 6)
+
+    boundWorkflow = null
+    sender.abortIfUnbound()
 
     expect(settled).toEqual([
       { state: 'undeliverable', ops: expect.any(Array) }
@@ -999,7 +1115,9 @@ describe('createOpSender', () => {
       localSender.detach()
 
       expect(localSettled.map(summarizeSettlement)).toEqual(expectedSurvivors)
-      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(
+        reportsOfType('failure_settling_agent_op_sender_detach')
+      ).toHaveLength(1)
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
@@ -1029,7 +1147,9 @@ describe('createOpSender', () => {
 
     localSender.detach()
 
-    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(
+      reportsOfType('failure_settling_agent_op_sender_detach')
+    ).toHaveLength(1)
     expect(localUnsubscribe).toHaveBeenCalledOnce()
   })
 
@@ -1050,7 +1170,9 @@ describe('createOpSender', () => {
     localSender.enqueue([addNode(1)])
     localSender.enqueue([addNode(2)])
 
-    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(
+      reportsOfType('failure_settling_agent_op_sender_detach')
+    ).toHaveLength(1)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
@@ -1066,12 +1188,20 @@ describe('createOpSender', () => {
       { state: 'undeliverable', nodeIds: [1] }
     ])
     expect(sender.pending()).toBe(0)
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(
-      expect.any(TypeError),
-      expect.objectContaining({
-        errorType: 'failure_serializing_agent_op_sender'
-      })
-    )
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toEqual([
+      [expect.any(TypeError), expect.objectContaining({ surface: 'agent' })]
+    ])
+    expect(reportsOfType('failure_syncing_agent_edit_undeliverable')).toEqual([
+      [
+        expect.any(Error),
+        expect.objectContaining({
+          context: expect.objectContaining({
+            code: 'serialization_failed',
+            workflowId: WORKFLOW
+          })
+        })
+      ]
+    ])
 
     sender.detach()
 
@@ -1143,7 +1273,7 @@ describe('createOpSender', () => {
     enqueueCircular(4)
     enqueueCircular(5)
 
-    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toHaveLength(3)
   })
 
   it('keeps serialization telemetry bounded across successful sends and re-arms by time', () => {
@@ -1153,17 +1283,17 @@ describe('createOpSender', () => {
     enqueueCircular(1)
     enqueueCircular(2)
     enqueueCircular(3)
-    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toHaveLength(3)
 
     sender.enqueue([addNode(4)])
     ackInFlight()
     enqueueCircular(5)
 
-    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toHaveLength(3)
 
     vi.advanceTimersByTime(60_000)
     enqueueCircular(6)
-    expect(reportError).toHaveBeenCalledTimes(4)
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toHaveLength(4)
   })
 
   it('rejects an unserializable non-batchable op before transport', () => {
@@ -1434,9 +1564,36 @@ describe('createOpSender', () => {
       )
     ).toEqual([[1], [2], [3]])
     expect(sender.pending()).toBe(0)
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options.context)
+    ).toEqual([
+      expect.objectContaining({ code: 'doc_reset', workflowId: WORKFLOW }),
+      expect.objectContaining({ code: 'doc_reset', workflowId: WORKFLOW }),
+      expect.objectContaining({ code: 'doc_reset', workflowId: WORKFLOW })
+    ])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options.tags?.code)
+    ).toEqual(['doc_reset', 'doc_reset', 'doc_reset'])
 
     sender.enqueue([addNode(4)])
     expect(sent).toHaveLength(2)
+  })
+
+  it('budgets platform lost-edit reports without skipping settlement events', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    sender.enqueue([addNode(4)])
+    sender.enqueue([addNode(5)])
+
+    sender.abortAll()
+
+    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(
+      devLogState.recordDevEvent.mock.calls.filter(
+        ([event]) => event === 'human_ops_settled'
+      )
+    ).toHaveLength(5)
   })
 
   it('abortAll settles every other batch when one settlement listener throws', () => {

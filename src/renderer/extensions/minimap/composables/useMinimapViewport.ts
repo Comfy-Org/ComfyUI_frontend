@@ -10,10 +10,10 @@ import {
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 
 import type {
-  MinimapBounds,
-  MinimapCanvas,
-  ViewportTransform
-} from '@/renderer/extensions/minimap/types'
+  SizedExtents as MinimapBounds,
+  Bounds as ViewportTransform
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
 export function useMinimapViewport(
   canvas: Ref<MinimapCanvas | null>,

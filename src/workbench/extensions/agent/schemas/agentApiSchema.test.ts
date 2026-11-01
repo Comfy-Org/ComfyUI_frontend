@@ -151,6 +151,8 @@ describe('agentApiSchema contract subtleties', () => {
         op_ids: [],
         doc_seq: -1,
         doc_lineage_seq: null,
+        job_id: 123,
+        job_workflow_id: null,
         message_id: 'm1',
         thread_id: 't1'
       }
@@ -165,6 +167,25 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed.data.op_ids).toBeUndefined()
     expect(parsed.data.doc_seq).toBeUndefined()
     expect(parsed.data.doc_lineage_seq).toBeUndefined()
+    expect(parsed.data.job_id).toBeUndefined()
+    expect(parsed.data.job_workflow_id).toBeUndefined()
+
+    const controlCharacterParsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-2',
+        tool_name: 'run',
+        status: 'success',
+        job_id: 'job\n2',
+        job_workflow_id: 'wf-1',
+        message_id: 'm2',
+        thread_id: 't1'
+      }
+    })
+
+    assert(controlCharacterParsed.type === 'agent_tool_call')
+    expect(controlCharacterParsed.data.job_id).toBeUndefined()
+    expect(controlCharacterParsed.data.job_workflow_id).toBe('wf-1')
   })
 
   it('clamps an over-long skill instead of dropping the tool-call frame', () => {
@@ -289,40 +310,48 @@ describe('agentApiSchema contract subtleties', () => {
     ).toBe(true)
   })
 
-  it('accepts agent_message_done usage whether fully populated or partial', () => {
-    const usages = [
-      {
+  it.for([
+    {
+      name: 'fully populated',
+      usage: {
         input_tokens: 4493,
         output_tokens: 425,
         total_tokens: 4918,
         cache_read_input_tokens: 35596,
-        cache_creation_input_tokens: 0
-      },
-      { input_tokens: 1, output_tokens: 2 },
-      {}
-    ]
+        cache_creation_input_tokens: 0,
+        charge_micro_usd: 6038
+      }
+    },
+    {
+      name: 'partially populated',
+      usage: { input_tokens: 1, output_tokens: 2 }
+    },
+    { name: 'empty', usage: {} }
+  ])('accepts $name agent_message_done usage', ({ usage }) => {
+    const parsed = zAgentWsEvent.parse({
+      ...doneBase,
+      data: { ...doneBase.data, usage }
+    })
 
-    for (const usage of usages) {
-      const parsed = zAgentWsEvent.parse({
-        ...doneBase,
-        data: { ...doneBase.data, usage }
-      })
-
-      if (parsed.type !== 'agent_message_done') throw new Error('wrong variant')
-      expect(parsed.data.usage).toEqual(usage)
-    }
+    assert(parsed.type === 'agent_message_done')
+    expect(parsed.data.usage).toEqual(usage)
   })
 
-  it('degrades a malformed usage instead of failing the done frame', () => {
-    for (const usage of ['nope', 42, { input_tokens: '4493' }]) {
-      const parsed = zAgentWsEvent.parse({
-        ...doneBase,
-        data: { ...doneBase.data, usage }
-      })
+  it.for([
+    { name: 'string', usage: 'nope' },
+    { name: 'number', usage: 42 },
+    { name: 'string token count', usage: { input_tokens: '4493' } },
+    { name: 'negative charge', usage: { charge_micro_usd: -1 } },
+    { name: 'zero charge', usage: { charge_micro_usd: 0 } },
+    { name: 'fractional charge', usage: { charge_micro_usd: 1.5 } }
+  ])('degrades $name usage instead of failing the done frame', ({ usage }) => {
+    const parsed = zAgentWsEvent.parse({
+      ...doneBase,
+      data: { ...doneBase.data, usage }
+    })
 
-      if (parsed.type !== 'agent_message_done') throw new Error('wrong variant')
-      expect(parsed.data.usage).toBeUndefined()
-    }
+    assert(parsed.type === 'agent_message_done')
+    expect(parsed.data.usage).toBeUndefined()
   })
 
   it('keeps draft frames foreign to this union', () => {
@@ -407,6 +436,7 @@ describe('agentApiSchema contract subtleties', () => {
     'agent_message_done',
     'agent_message_draft',
     'agent_thinking',
+    'agent_thinking_draft',
     'agent_tool_call'
   ])('recognizes %s as an Agent event', (type) => {
     expect(isAgentEvent(type)).toBe(true)

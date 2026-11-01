@@ -1,28 +1,32 @@
+import type { DatadogRum } from '@datadog/browser-rum'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { TelemetryEvents } from '@/platform/telemetry/types'
-import { useTelemetry as sharedUseTelemetry } from '@/platform/telemetry'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
+import { useTelemetry as sharedUseTelemetry } from '@comfyorg/telemetry'
 
 import { BootstrapTracer } from './bootstrapTracer'
 
-const { addAction, addTiming, distribution, setViewLoadingTime } = vi.hoisted(
+const { addAction, addTiming, rumInstalled, setViewLoadingTime } = vi.hoisted(
   () => ({
     addAction: vi.fn(),
     addTiming: vi.fn(),
-    distribution: { isCloud: true },
+    rumInstalled: { value: true },
     setViewLoadingTime: vi.fn()
   })
 )
 
-vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
-  datadogRum: { addAction, addTiming, setViewLoadingTime }
+vi.mock(import('@comfyorg/telemetry/rumContext'), () => ({
+  getDatadogRum: () =>
+    rumInstalled.value
+      ? fromPartial<DatadogRum>({ addAction, addTiming, setViewLoadingTime })
+      : undefined
 }))
-vi.mock(import('@/platform/distribution/types'), () => distribution)
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 describe('bootstrapTracer', () => {
   beforeEach(() => {
-    distribution.isCloud = true
+    rumInstalled.value = true
     const telemetry = sharedUseTelemetry()
     if (!telemetry) throw new Error('Expected telemetry mock')
     vi.mocked(sharedUseTelemetry).mockReturnValue(telemetry)
@@ -123,6 +127,36 @@ describe('bootstrapTracer', () => {
     expect(setViewLoadingTime).toHaveBeenCalledOnce()
   })
 
+  it('reports the wall-clock time no phase covers, counting overlaps once', async () => {
+    const telemetry = sharedUseTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    const tracer = new BootstrapTracer()
+
+    await vi.advanceTimersByTimeAsync(10)
+    tracer.recordSinceTimeOrigin('startup/entry-modules')
+    const settings = tracer.startPhase('bootstrap/settings')
+    await vi.advanceTimersByTimeAsync(50)
+    const workflows = tracer.startPhase('bootstrap/workflows')
+    await vi.advanceTimersByTimeAsync(50)
+    settings.stop()
+    await vi.advanceTimersByTimeAsync(50)
+    workflows.stop()
+    await vi.advanceTimersByTimeAsync(40)
+    tracer.complete()
+
+    const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
+      .calls[0][0]
+    expect(metadata).toMatchObject({
+      total_ms: 200,
+      untraced_ms: 40,
+      phases: {
+        'startup/entry-modules': 10,
+        'bootstrap/settings': 100,
+        'bootstrap/workflows': 100
+      }
+    })
+  })
+
   it('reports a failed startup, closing phases still open', () => {
     const telemetry = sharedUseTelemetry()
     if (!telemetry) throw new Error('Expected telemetry mock')
@@ -140,6 +174,16 @@ describe('bootstrapTracer', () => {
       metadata
     )
     expect(setViewLoadingTime).not.toHaveBeenCalled()
+  })
+
+  it('exposes the startup outcome once it is known', () => {
+    const tracer = new BootstrapTracer()
+    const before = tracer.outcome
+
+    tracer.complete('failed')
+    tracer.complete()
+
+    expect([before, tracer.outcome]).toEqual(['pending', 'failed'])
   })
 
   it('reports only once', () => {
@@ -207,8 +251,8 @@ describe('bootstrapTracer', () => {
     expect(setViewLoadingTime).toHaveBeenCalledOnce()
   })
 
-  it('publishes nothing to RUM off cloud', async () => {
-    distribution.isCloud = false
+  it('publishes nothing to RUM when the SDK is not installed', async () => {
+    rumInstalled.value = false
     const tracer = new BootstrapTracer()
 
     await tracer.settle('bootstrap/settings', () => Promise.resolve())

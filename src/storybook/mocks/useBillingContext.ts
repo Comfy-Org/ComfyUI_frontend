@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 
-import type { BillingContext } from '@/composables/billing/types'
+import type { BillingContext } from '@/platform/billing/composables/types'
 
 type Subscription = BillingContext['subscription']['value']
 

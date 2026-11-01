@@ -1,6 +1,6 @@
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 
 type AssetExportRequest = CreateAssetExportData['body']

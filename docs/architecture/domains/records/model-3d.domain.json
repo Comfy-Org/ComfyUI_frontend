@@ -4,55 +4,27 @@
   "description": "Load3D, Preview3D, and Save mesh model viewing: model loading and format adapters, animation, gizmo, HDRI, recording, export, node configuration and serialization, viewer dialog, and node widget presentation. The shared three.js viewport (camera, controls, events, lighting, scene, view helper, render loop, context-menu guard, viewport sizing, shared interfaces), ViewportWidgetShell, menu bar styles, useViewportNodeWiring, and camera or light authoring nodes remain outside this capability.",
   "modules": [
     {
-      "path": "src/components/load3d/**",
+      "path": "src/extensions/core/load3d/components/**",
       "role": "presentation"
     },
     {
-      "path": "src/components/load3d/modelThumbnail.deferredImport.test.ts",
+      "path": "src/extensions/core/load3d/components/modelThumbnail.ts",
       "role": "application"
     },
     {
-      "path": "src/components/load3d/modelThumbnail.test.ts",
+      "path": "src/extensions/core/load3d/composables/useLoad3d.ts",
       "role": "application"
     },
     {
-      "path": "src/components/load3d/modelThumbnail.ts",
+      "path": "src/extensions/core/load3d/composables/useLoad3dDrag.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/useLoad3d.test.ts",
+      "path": "src/extensions/core/load3d/composables/useLoad3dViewer.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/useLoad3d.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useLoad3dDrag.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useLoad3dDrag.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useLoad3dViewer.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useLoad3dViewer.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/load3d.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/Load3DConfiguration.test.ts",
+      "path": "src/extensions/core/load3d/load3d.ts",
       "role": "integration"
     },
     {
@@ -60,23 +32,11 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3d/Load3dUtils.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/extensions/core/load3d/Load3dUtils.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/extensions/core/load3d/exportMenuHelper.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/load3d/exportMenuHelper.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dSerialize.test.ts",
       "role": "integration"
     },
     {
@@ -84,15 +44,7 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3d/model3dOutput.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/extensions/core/load3d/model3dOutput.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/nodeTypes.test.ts",
       "role": "domain"
     },
     {
@@ -100,39 +52,27 @@
       "role": "domain"
     },
     {
-      "path": "src/extensions/core/load3dAdvanced.ts",
+      "path": "src/extensions/core/load3d/load3dAdvanced.ts",
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3dLazy.test.ts",
+      "path": "src/extensions/core/load3d/load3dLazy.ts",
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3dLazy.ts",
+      "path": "src/extensions/core/load3d/load3dPreviewExtensions.ts",
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3dPreviewExtensions.test.ts",
+      "path": "src/extensions/core/load3d/saveMesh.ts",
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3dPreviewExtensions.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/saveMesh.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/saveMesh.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/services/load3dService.test.ts",
+      "path": "src/extensions/core/load3d/services/load3dService.ts",
       "role": "application"
     },
     {
-      "path": "src/services/load3dService.ts",
+      "path": "packages/viewport3d/src/load3d/**",
       "role": "application"
     }
   ],
@@ -163,28 +103,28 @@
     {
       "name": "Viewer composables and service keep node and standalone viewers in sync",
       "checks": [
-        "src/composables/useLoad3d.test.ts",
-        "src/composables/useLoad3dViewer.test.ts",
-        "src/composables/useLoad3dDrag.test.ts",
-        "src/services/load3dService.test.ts"
+        "src/extensions/core/load3d/composables/useLoad3d.test.ts",
+        "src/extensions/core/load3d/composables/useLoad3dViewer.test.ts",
+        "src/extensions/core/load3d/composables/useLoad3dDrag.test.ts",
+        "src/extensions/core/load3d/services/load3dService.test.ts"
       ]
     },
     {
       "name": "Extension registrations wire Load3D, preview, lazy loading, and Save mesh nodes",
       "checks": [
-        "src/extensions/core/load3d.test.ts",
-        "src/extensions/core/load3dLazy.test.ts",
-        "src/extensions/core/load3dPreviewExtensions.test.ts",
-        "src/extensions/core/saveMesh.test.ts"
+        "src/extensions/core/load3d/load3d.test.ts",
+        "src/extensions/core/load3d/load3dLazy.test.ts",
+        "src/extensions/core/load3d/load3dPreviewExtensions.test.ts",
+        "src/extensions/core/load3d/saveMesh.test.ts"
       ]
     },
     {
       "name": "Viewer components render controls, menu bar, and dialog content",
       "checks": [
-        "src/components/load3d/Load3D.test.ts",
-        "src/components/load3d/Load3DMenuBar.test.ts",
-        "src/components/load3d/Load3dViewerContent.test.ts",
-        "src/components/load3d/controls/ViewerControls.test.ts"
+        "src/extensions/core/load3d/components/Load3D.test.ts",
+        "src/extensions/core/load3d/components/Load3DMenuBar.test.ts",
+        "src/extensions/core/load3d/components/Load3dViewerContent.test.ts",
+        "src/extensions/core/load3d/components/controls/ViewerControls.test.ts"
       ]
     }
   ],

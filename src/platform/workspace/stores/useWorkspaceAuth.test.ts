@@ -15,12 +15,12 @@ import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
-} from '@/platform/auth/session/webSessionFetch'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
   UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS,
@@ -88,11 +88,10 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
   })
 }))
 
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
-  workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
+vi.mock(import('@/platform/remote/ingest/ingestApiUrl'), () => ({
+  ingestApiUrl: (route: string) => `https://api.example.com/api${route}`
 }))
 
 vi.mock(import('@/i18n'))
@@ -115,6 +114,7 @@ const mockWorkspaceWithRole = {
 const mockTokenResponse = {
   token: 'workspace-token-abc',
   expires_at: new Date('2024-06-15T13:00:00Z').toISOString(),
+  user_id: 'uid-1',
   workspace: mockWorkspace,
   role: 'owner' as const,
   permissions: ['owner:*']
@@ -1956,6 +1956,7 @@ describe('useWorkspaceAuthStore', () => {
     const personalTokenResponse = {
       token: 'unified-token-1',
       expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+      user_id: 'uid-1',
       workspace: {
         id: 'workspace-personal',
         name: 'Personal',
@@ -3627,6 +3628,7 @@ describe('useWorkspaceAuthStore constructed before authStore', () => {
       Response.json({
         token: 'unified-token-1',
         expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: {
           id: 'workspace-personal',
           name: 'Personal',

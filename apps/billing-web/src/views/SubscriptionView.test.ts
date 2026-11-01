@@ -158,6 +158,7 @@ describe('SubscriptionView', () => {
         max_seats: 1,
         occupied_seats: 1,
         scheduled_change: null,
+        ended_at: null,
         team_credit_stop: null,
         subscription_status: 'canceled',
         cancel_at: '2026-10-24T12:00:00.000Z'
@@ -186,6 +187,7 @@ describe('SubscriptionView', () => {
           max_seats: 1,
           occupied_seats: 1,
           scheduled_change: null,
+          ended_at: null,
           team_credit_stop: null,
           cancel_at: '2026-10-24T12:00:00.000Z'
         },
@@ -207,6 +209,7 @@ describe('SubscriptionView', () => {
       max_seats: 1,
       occupied_seats: 1,
       scheduled_change: null,
+      ended_at: null,
       team_credit_stop: null,
       subscription_status: 'canceled',
       cancel_at: '2026-10-24T12:00:00.000Z'

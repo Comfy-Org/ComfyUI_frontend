@@ -1,19 +1,21 @@
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type { Point2D as Position2D } from '@comfyorg/shared-frontend-utils/geometry'
+import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import type {
   ExecutedWsMessage,
   ExecutionErrorWsMessage,
   StatusWsMessageStatus
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
-} from '@/platform/telemetry/types'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useCommandStore } from '@/stores/commandStore'
+} from '@comfyorg/telemetry/types'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 
 import { api } from './api'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
@@ -23,11 +25,6 @@ import { toggleSwitch } from './ui/toggleSwitch'
 
 export const ComfyDialog = _ComfyDialog
 export const $el = _$el
-
-type Position2D = {
-  x: number
-  y: number
-}
 
 /** The slice of the app the legacy menu drives. `ComfyApp` implements it. */
 export interface LegacyUIApp {
@@ -43,13 +40,13 @@ export interface LegacyUIApp {
     options?: { intent?: WorkflowQueueIntent }
   ): Promise<boolean>
   showErrorOnFileLoad(file: File): void
-  handleFile(file: File, openSource?: WorkflowOpenSource): Promise<void>
+  handleFile(file: File, openSource?: WorkflowOpenSource): Promise<void | false>
   refreshComboInNodes(): Promise<void>
   openClipspace(): void
   clean(): void
 }
 
-function dragElement(dragEl: HTMLElement): () => void {
+function dragElement(dragEl: HTMLElement, signal: AbortSignal): () => void {
   let posDiffX = 0,
     posDiffY = 0,
     posStartX = 0,
@@ -58,17 +55,19 @@ function dragElement(dragEl: HTMLElement): () => void {
     newPosY = 0
   const dragHandle = dragEl.querySelector<HTMLElement>('.drag-handle')
   if (dragHandle) {
-    // if present, the handle is where you move the DIV from:
     dragHandle.onmousedown = dragMouseDown
   } else {
-    // otherwise, move the DIV from anywhere inside the DIV:
     dragEl.onmousedown = dragMouseDown
   }
 
-  // When the element resizes (e.g. view queue) ensure it is still in the windows bounds
-  new ResizeObserver(() => {
+  const resizeObserver = new ResizeObserver(() => {
     ensureInBounds()
-  }).observe(dragEl)
+  })
+  resizeObserver.observe(dragEl)
+  signal.addEventListener('abort', () => {
+    resizeObserver.disconnect()
+    if (document.onmousemove === elementDrag) closeDragElement()
+  })
 
   function ensureInBounds() {
     try {
@@ -83,7 +82,7 @@ function dragElement(dragEl: HTMLElement): () => void {
 
       positionElement()
     } catch {
-      // robust
+      return
     }
   }
 
@@ -93,7 +92,6 @@ function dragElement(dragEl: HTMLElement): () => void {
     const halfWidth = document.body.clientWidth / 2
     const anchorRight = newPosX + dragEl.clientWidth / 2 > halfWidth
 
-    // set the element's new position:
     if (anchorRight) {
       dragEl.style.left = 'unset'
       dragEl.style.right =
@@ -116,19 +114,12 @@ function dragElement(dragEl: HTMLElement): () => void {
           })
         )
       } catch {
-        // Persisting the menu position is cosmetic; storage can be unavailable
-        // (private browsing, quota exceeded). Never let it break dragging.
+        return
       }
     }
   }
 
   function restorePos() {
-    // `dragElement` is reached from ComfyUI's constructor, which runs at module
-    // scope via `export const app = new ComfyApp()` in app.ts. A throw here
-    // therefore breaks *importing* that module, not just the menu. Restoring a
-    // remembered position is cosmetic, so degrade quietly instead: localStorage
-    // may be absent or degraded outside a real browser (e.g. Node >= 25 without
-    // `--no-experimental-webstorage`), and the stored value may be corrupt.
     let pos: Position2D
     try {
       const posString = localStorage.getItem('Comfy.MenuPosition')
@@ -150,11 +141,9 @@ function dragElement(dragEl: HTMLElement): () => void {
 
   function dragMouseDown(e: MouseEvent) {
     e.preventDefault()
-    // get the mouse cursor position at startup:
     posStartX = e.clientX
     posStartY = e.clientY
     document.onmouseup = closeDragElement
-    // call a function whenever the cursor moves:
     document.onmousemove = elementDrag
   }
 
@@ -163,7 +152,6 @@ function dragElement(dragEl: HTMLElement): () => void {
 
     dragEl.classList.add('comfy-menu-manual-pos')
 
-    // calculate the new cursor position:
     posDiffX = e.clientX - posStartX
     posDiffY = e.clientY - posStartY
     posStartX = e.clientX
@@ -181,12 +169,15 @@ function dragElement(dragEl: HTMLElement): () => void {
     positionElement()
   }
 
-  window.addEventListener('resize', () => {
-    ensureInBounds()
-  })
+  window.addEventListener(
+    'resize',
+    () => {
+      ensureInBounds()
+    },
+    { signal }
+  )
 
   function closeDragElement() {
-    // stop moving when mouse button is released:
     document.onmouseup = null
     document.onmousemove = null
   }
@@ -343,6 +334,8 @@ export class ComfyUI {
   queueSize: Element = document.createElement('span')
   restoreMenuPosition = () => {}
   loadFile = () => {}
+  private readonly lifetime = new AbortController()
+  private fileInput: HTMLInputElement | undefined
 
   constructor(app: LegacyUIApp, host: LegacyMenuHost) {
     this.app = app
@@ -355,12 +348,25 @@ export class ComfyUI {
     this.queue = new ComfyList(app, host, 'Queue')
     this.history = new ComfyList(app, host, 'History', 'history', true)
 
-    api.addEventListener('status', () => {
-      void this.queue.update()
-      void this.history.update()
-    })
+    api.addEventListener(
+      'status',
+      () => {
+        void this.queue.update()
+        void this.history.update()
+      },
+      { signal: this.lifetime.signal }
+    )
 
     this.setup(document.body)
+  }
+
+  /** Removes the legacy menu and dialogs and stops their listeners. */
+  dispose() {
+    this.lifetime.abort()
+    this.dialog.element.remove()
+    this.settings.element.remove()
+    this.fileInput?.remove()
+    this.menuContainer.remove()
   }
 
   setup(containerElement: HTMLElement) {
@@ -377,13 +383,15 @@ export class ComfyUI {
             await this.app.handleFile(file, 'file_button')
           } catch (error) {
             console.error('Failed to load file:', error)
-            this.app.showErrorOnFileLoad(file)
+            if (!isGraphLoadFailurePresented(error))
+              this.app.showErrorOnFileLoad(file)
           } finally {
             fileInput.value = ''
           }
         }
       }
     })
+    this.fileInput = fileInput
 
     this.loadFile = () => fileInput.click()
 
@@ -408,18 +416,22 @@ export class ComfyUI {
     )
     autoQueueModeEl.style.display = 'none'
 
-    api.addEventListener('autoQueueGraphChanged', () => {
-      if (this.autoQueueMode === 'change' && this.autoQueueEnabled) {
-        if (this.lastQueueSize === 0) {
-          this.graphHasChanged = false
-          void this.app.queuePrompt(0, this.batchCount, {
-            intent: { trigger_source: 'auto_queue' }
-          })
-        } else {
-          this.graphHasChanged = true
+    api.addEventListener(
+      'autoQueueGraphChanged',
+      () => {
+        if (this.autoQueueMode === 'change' && this.autoQueueEnabled) {
+          if (this.lastQueueSize === 0) {
+            this.graphHasChanged = false
+            void this.app.queuePrompt(0, this.batchCount, {
+              intent: { trigger_source: 'auto_queue' }
+            })
+          } else {
+            this.graphHasChanged = true
+          }
         }
-      }
-    })
+      },
+      { signal: this.lifetime.signal }
+    )
 
     this.menuContainer = $el(
       'div.comfy-menu.no-drag',
@@ -515,10 +527,6 @@ export class ComfyUI {
                   const input = event.currentTarget
                   if (!(input instanceof HTMLInputElement)) return
                   this.batchCount = Number(input.value)
-                  /* Even though an <input> element with a type of range logically represents a number (since
-              it's used for numeric input), the value it holds is still treated as a string in HTML and
-              JavaScript. This behavior is consistent across all <input> elements regardless of their type
-              (like text, number, or range), where the .value property is always a string. */
                   ;(
                     document.getElementById(
                       'batchCountInputRange'
@@ -536,7 +544,6 @@ export class ComfyUI {
                   const input = event.currentTarget
                   if (!(input instanceof HTMLInputElement)) return
                   this.batchCount = Number(input.value)
-                  // Note
                   ;(
                     document.getElementById(
                       'batchCountInputNumber'
@@ -672,10 +679,12 @@ export class ComfyUI {
         })
       ]
     ) as HTMLDivElement
-    // Hide by default on construction so it does not interfere with other views.
     this.menuContainer.style.display = 'none'
 
-    this.restoreMenuPosition = dragElement(this.menuContainer)
+    this.restoreMenuPosition = dragElement(
+      this.menuContainer,
+      this.lifetime.signal
+    )
 
     this.queueSize.textContent = 'Queue size: X'
   }

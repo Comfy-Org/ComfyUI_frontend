@@ -1,5 +1,5 @@
 import { assert } from '@/base/assert'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type {
   DocFrameClient,
@@ -17,6 +17,13 @@ import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 /** A document update after the follower bridge has classified its provenance. */
 export interface ClassifiedDocUpdate extends DocUpdate {
   catchUp: boolean
+}
+
+export function isLiveAgentUpdate(
+  update: Pick<DocUpdate, 'actor'> &
+    Partial<Pick<ClassifiedDocUpdate, 'catchUp'>>
+): boolean {
+  return update.catchUp === false && update.actor?.startsWith('agent:') === true
 }
 
 function trySend(send: () => boolean): boolean {
@@ -67,6 +74,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * a later subscribe to a DIFFERENT workflow must still re-mint it.
    */
   private lineageWorkflowId: string | null = null
+  private lineageSeq: number | null = null
   /**
    * Subscription INTENT — the workflow the app wants followed. Set
    * synchronously by the caller; independent of whether any frame has left the
@@ -169,7 +177,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * workflow keeps the doc: that is the same-lineage catch-up path
    * (ADR-GRAPH-DOCUMENT-0024), where the state vector makes the delta cheap.
    */
-  subscribe(workflowId: string): void {
+  subscribe(workflowId: string, knownLineageSeq: number | null = null): void {
     const lineage = this.lineageWorkflowId
     if (this.desiredWorkflowId !== workflowId) {
       this.reseedBlockedUntilConfirmedWorkflowId = null
@@ -179,26 +187,34 @@ export class LayoutFollowerBridge extends EventTarget {
     this.desiredWorkflowId = workflowId
     if (lineage !== null && lineage !== workflowId) {
       this.dropDocForNewLineage()
+      this.lineageSeq = knownLineageSeq
       this.dispatchEvent(
         new CustomEvent('follower_replaced', { detail: { workflowId } })
       )
       this.reconcile()
       return
     }
+    this.lineageSeq ??= knownLineageSeq
     this.reconcile()
   }
 
   /** Drive intent at the transport. Idempotent and safe to call at any time. */
-  reconcile(): void {
+  reconcile(): boolean {
     const desired = this.desiredWorkflowId
     if (this.sentWorkflowId !== null && this.sentWorkflowId !== desired) {
       const sent = this.sentWorkflowId
       this.sentWorkflowId = null
       trySend(() => this.client.unsubscribe(sent))
     }
-    if (desired === null || this.sentWorkflowId === desired) return
+    if (desired === null || this.sentWorkflowId === desired) return false
     if (
-      trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
+      trySend(() =>
+        this.client.subscribe(
+          desired,
+          this.follower.stateVector(),
+          this.lineageSeq ?? 0
+        )
+      )
     ) {
       this.sentWorkflowId = desired
       this.attemptFirstSeq = null
@@ -210,12 +226,14 @@ export class LayoutFollowerBridge extends EventTarget {
           detail: { workflowId: desired }
         })
       )
+      return true
     }
+    return false
   }
 
-  resubscribe(): void {
+  resubscribe(): boolean {
     this.sentWorkflowId = null
-    this.reconcile()
+    return this.reconcile()
   }
 
   reconnect(): void {
@@ -293,6 +311,7 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
+    if (this.rejectForeignLineageUpdate(update)) return
 
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
     if (this.rejectStaleUpdate(update, isCatchUp)) return
@@ -313,6 +332,31 @@ export class LayoutFollowerBridge extends EventTarget {
         detail: classifiedUpdate
       })
     )
+  }
+
+  private rejectForeignLineageUpdate(update: DocUpdate): boolean {
+    if (
+      update.lineageSeq !== undefined &&
+      this.lineageSeq !== null &&
+      update.lineageSeq !== this.lineageSeq
+    ) {
+      const reset: DocReset = {
+        workflowId: update.workflowId,
+        seq: update.seq,
+        lineageSeq: update.lineageSeq,
+        actor: update.actor
+      }
+      this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+      this.dropDocForNewLineage()
+      this.lineageSeq = update.lineageSeq
+      this.resubscribe()
+      this.dispatchEvent(
+        new CustomEvent('follower_replaced', { detail: reset })
+      )
+      return true
+    }
+    this.lineageSeq ??= update.lineageSeq ?? null
+    return false
   }
 
   private rejectStaleUpdate(update: DocUpdate, isCatchUp: boolean): boolean {
@@ -387,6 +431,7 @@ export class LayoutFollowerBridge extends EventTarget {
     if (reset.workflowId !== this.sentWorkflowId) return
     this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
     this.dropDocForNewLineage()
+    this.lineageSeq = reset.lineageSeq
     this.resubscribe()
     this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }
@@ -424,11 +469,33 @@ export class LayoutFollowerBridge extends EventTarget {
       this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
       return
     }
+    this.adoptSubscribedLineage(subscribed)
     this.reseedBlockedUntilConfirmedWorkflowId = null
     this.ackSeq = subscribed.seq ?? 0
     this.catchUpPending = this.ackSeq > 0
     this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
     this.rejectPreAckGap(subscribed.workflowId)
+  }
+
+  private adoptSubscribedLineage(subscribed: DocSubscribed): void {
+    const lineageSeq = subscribed.lineageSeq
+    if (
+      lineageSeq !== undefined &&
+      this.lineageSeq !== null &&
+      lineageSeq !== this.lineageSeq
+    ) {
+      const reset: DocReset = {
+        workflowId: subscribed.workflowId,
+        seq: subscribed.seq ?? 0,
+        lineageSeq
+      }
+      this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+      this.dropDocForNewLineage()
+      this.dispatchEvent(
+        new CustomEvent('follower_replaced', { detail: reset })
+      )
+    }
+    this.lineageSeq = lineageSeq ?? this.lineageSeq
   }
 
   private recordIntegratedSequence(seq: number, isCatchUp: boolean): void {
@@ -463,6 +530,7 @@ export class LayoutFollowerBridge extends EventTarget {
     }
     this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
     this.dropDocForNewLineage()
+    this.lineageSeq = reset.lineageSeq
     this.resubscribe()
     this.dispatchEvent(new CustomEvent('follower_replaced', { detail: reset }))
   }

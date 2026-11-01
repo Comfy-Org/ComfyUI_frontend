@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { defineComponent, h, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 import type { BillingSession } from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 import {
@@ -120,13 +121,14 @@ function stubBillingRoutes() {
   const answers: Record<string, unknown> = {
     '/api/billing/status': {
       billing_rail: 'stripe',
+      ended_at: null,
       has_funds: true,
       is_active: true,
       max_seats: 1,
       occupied_seats: 1,
       scheduled_change: null,
       team_credit_stop: null
-    },
+    } satisfies BillingStatusResponse,
     '/api/billing/preview-subscribe': previewOf({
       quote_id: 'q_1',
       quote_version: 3,

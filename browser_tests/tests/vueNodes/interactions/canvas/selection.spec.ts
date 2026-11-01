@@ -23,10 +23,6 @@ test.describe(
       await expect(comfyPage.vueNodes.nodes).toHaveCount(3)
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('plain title click replaces the previous node selection', async ({
       comfyPage
     }) => {

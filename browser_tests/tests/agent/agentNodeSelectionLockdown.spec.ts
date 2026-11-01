@@ -69,6 +69,56 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
     })
   })
 
+  test.describe('after re-docking the run bar', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.Queue.QPOV2': true,
+        'Comfy.Queue.ShowRunProgressBar': true
+      }
+    })
+
+    test(
+      'still hides the top menu action bars while node selection mode is active',
+      {
+        annotation: {
+          type: 'issue',
+          description: 'https://comfy-org.sentry.io/issues/7787677594/'
+        }
+      },
+      async ({ agentPanel, comfyMouse, comfyPage }) => {
+        const { actionbar } = comfyPage
+        const actionBars = comfyPage.page.getByTestId('top-menu-actionbars')
+
+        await test.step('undock and re-dock the run bar', async () => {
+          await comfyMouse.dragElementBy(actionbar.dragHandle, {
+            x: -200,
+            y: 200
+          })
+          await expect.poll(() => actionbar.isDocked()).toBe(false)
+          await comfyMouse.dragElementBy(actionbar.dragHandle, {
+            x: 200,
+            y: -200
+          })
+          await expect.poll(() => actionbar.isDocked()).toBe(true)
+        })
+
+        await test.step('enter node selection mode', async () => {
+          await agentPanel.enterNodeSelectionMode()
+        })
+
+        await test.step('the action bars are hidden', async () => {
+          await expect(actionBars).toHaveAttribute('aria-hidden', 'true')
+        })
+
+        await test.step('exiting restores the action bars', async () => {
+          await agentPanel.exitNodeSelectionMode()
+          await expect(actionBars).toHaveAttribute('aria-hidden', 'false')
+          await expect(actionbar.queueButton.primaryButton).toBeVisible()
+        })
+      }
+    )
+  })
+
   for (const [location, gutterMargin] of [
     ['left', 'margin-left'],
     ['right', 'margin-right']
@@ -121,11 +171,10 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
   test.describe('with Vue nodes', { tag: '@vue-nodes' }, () => {
     test.use({ objectInfo: 'server' })
 
-    test.afterEach(async ({ agentPanel, comfyPage }) => {
+    test.afterEach(async ({ agentPanel }) => {
       if (await agentPanel.nodeSelectionBanner.isVisible()) {
         await agentPanel.exitNodeSelectionMode()
       }
-      await comfyPage.canvasOps.resetView()
     })
 
     test('keeps panning and zooming available while picking without dropping the picked node', async ({

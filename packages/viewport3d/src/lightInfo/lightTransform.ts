@@ -2,7 +2,8 @@ import { DEFAULT_CAMERA_INFO_STATE } from '#/cameraInfo/types'
 import type { CameraInfoState } from '#/cameraInfo/types'
 
 import { lightTarget } from './types'
-import type { LightInfoEntry, Vec3 } from './types'
+import type { LightInfoEntry } from './types'
+import type { Vector3 as Vec3 } from '@comfyorg/shared-frontend-utils/geometry'
 
 const DEG2RAD = Math.PI / 180
 const RAD2DEG = 180 / Math.PI

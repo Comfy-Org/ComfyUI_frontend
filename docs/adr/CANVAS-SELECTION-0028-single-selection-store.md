@@ -209,9 +209,12 @@ Amendment on acceptance, refining decision 6 and decision 7:
   not at all when the operation left selection unchanged. `select` and
   `deselect` previously emitted nothing; `processSelect` and `selectItems`
   previously emitted twice when they cleared the prior selection first.
-  Graph removal (`LGraph.remove`, `removeReroute`) drops the removed item
+  Graph removal (`LGraph.remove`, `removeReroute`, and the
+  `node:before-removed` listener in `canvasStore`) drops the removed item
   from selection without emitting, so `deleteSelected` emits once for the
-  whole batch.
+  whole batch. A selection operation that a selection hook starts while
+  another operation is running does not emit; the outer operation emits
+  once with the final selection.
 - Click and marquee intent is resolved by one pure module,
   `src/core/selection/selectionIntent.ts`, reached from both the classic
   canvas and the Vue node adapter through `processSelect`. Shift and

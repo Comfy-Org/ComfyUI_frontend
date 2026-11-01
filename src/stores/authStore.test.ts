@@ -18,7 +18,7 @@ import {
 } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { i18n } from '@/i18n'
 import {
@@ -59,7 +59,7 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -128,7 +128,7 @@ function pendingJsonResponse() {
 
 vi.mock(import('firebase/auth'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 let mockResetSocket: Mock
 
@@ -337,6 +337,53 @@ describe('useAuthStore', () => {
           error: 'Balance service down'
         })
       })
+    })
+
+    it('keeps the status and code on the thrown error', async () => {
+      respondToFetch(BALANCE_URL, () =>
+        Response.json(
+          { error: 'SERVICE_UNAVAILABLE', message: 'try again' },
+          { status: 503, headers: { 'Retry-After': '3600' } }
+        )
+      )
+
+      await expect(store.fetchBalance()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        status: 503,
+        code: 'SERVICE_UNAVAILABLE'
+      })
+    })
+
+    it('reports an unknown code when the failure body is not JSON', async () => {
+      respondToFetch(
+        BALANCE_URL,
+        () =>
+          new Response('upstream connect error', {
+            status: 503,
+            headers: { 'Retry-After': '3600' }
+          })
+      )
+
+      await expect(store.fetchBalance()).rejects.toMatchObject({
+        status: 503,
+        code: 'UNKNOWN_ERROR'
+      })
+    })
+
+    it('returns the balance when a 503 clears on retry', async () => {
+      vi.useFakeTimers()
+      let calls = 0
+      respondToFetch(BALANCE_URL, () =>
+        ++calls === 1
+          ? errorResponse(503, 'Balance temporarily unavailable')
+          : balanceResponse()
+      )
+
+      const pending = store.fetchBalance()
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(pending).resolves.toEqual({ balance: 0 })
+      expect(calls).toBe(2)
     })
   })
 
@@ -2728,6 +2775,25 @@ describe('useAuthStore in local/desktop distribution', () => {
       }
     )
 
+    it('returns the workspace token or refuses, never another credential', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      bridge.getWorkspaceToken.mockImplementation(async (workspaceId) =>
+        workspaceId === 'ws-a' ? 'host-token' : null
+      )
+      await startDesktopHostSession(bridge)
+
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+      await expect(store.getWorkspaceAuthTokenOrThrow()).resolves.toBe(
+        'host-token'
+      )
+
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-b' })
+      await expect(store.getWorkspaceAuthTokenOrThrow()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+    })
+
     it('drops the previous account state when Desktop switches accounts', async () => {
       const bridge = hostBridge({ status: 'signed_in', userId: 'host-a' })
       await startDesktopHostSession(bridge)
@@ -2813,6 +2879,7 @@ describe('store construction order', () => {
   const tokenResponse = {
     token: 'construction-token',
     expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+    user_id: 'uid-1',
     workspace: { id: 'workspace-personal', name: 'Personal', type: 'personal' },
     role: 'owner',
     permissions: ['owner:*']

@@ -10,11 +10,13 @@
  * own vocabulary, and the terminal operation is embedded whenever one was
  * observed so a host reads the coded decline and recovery action from it.
  */
+import type { InteractiveTopupRequest } from '@comfyorg/ingest-types'
 import {
   zCreateTopupCheckoutRequest,
   zCreateTopupCheckoutResponse,
   zCreateTopupRequest,
   zCreateTopupResponse,
+  zInteractiveTopupRequest,
   zTopupQuoteResponse
 } from '@comfyorg/ingest-types/zod'
 
@@ -48,6 +50,8 @@ export const TOPUP_ROUTE = '/billing/topup'
 export const TOPUP_CHECKOUT_ROUTE = '/billing/topup/checkout'
 /** A read the backend shapes as a POST: nothing is charged or reserved. */
 export const TOPUP_QUOTE_ROUTE = '/billing/topup/quote'
+/** Pay once with a new card or an explicitly chosen saved card; an older backend answers 404. */
+export const INTERACTIVE_TOPUP_ROUTE = '/billing/topup/interactive'
 
 /** The server's own server code for an amount it will not sell. */
 const INVALID_AMOUNT_SERVER_CODE = 'INVALID_AMOUNT'
@@ -66,6 +70,8 @@ export interface TopupQuote {
   readonly amountCents: number
   readonly credits: number
   readonly expiresAt: string
+  /** The provider configuration a pay-once card form mounts with; absent when the server configured none. */
+  readonly paymentMethodConfigurationId?: string
 }
 
 export type TopupQuoteResult =
@@ -196,6 +202,19 @@ export interface CreateTopupCheckoutInput {
   readonly signal?: AbortSignal
 }
 
+/** Exactly one payment authority: a new card's confirmation token, or a saved card the customer chose. */
+export type InteractiveTopupPayment =
+  | { readonly confirmationToken: string; readonly returnUrl: string }
+  | { readonly savedPaymentMethodId: string }
+
+export interface CreateInteractiveTopupInput {
+  readonly amountCents: number
+  readonly payment: InteractiveTopupPayment
+  /** The caller's key for this purchase, resent unchanged while its outcome is unresolved. */
+  readonly idempotencyKey: string
+  readonly signal?: AbortSignal
+}
+
 export interface TopupCommandOptions {
   readonly transport: BillingTransport
   readonly lifecycle: Pick<BillingOperationLifecycle, 'begin' | 'settled'>
@@ -213,6 +232,10 @@ export interface TopupCommand {
    */
   quoteTopup: (input: QuoteTopupInput) => Promise<TopupQuoteResult>
   createTopupCheckout: (input: CreateTopupCheckoutInput) => Promise<TopupResult>
+  /** Pays once with the given authority; never saves the card or changes the default. */
+  createInteractiveTopup: (
+    input: CreateInteractiveTopupInput
+  ) => Promise<TopupResult>
   /**
    * The route Workshop and Platform ship on today. Unlike
    * `createTopupCheckout` it resolves as soon as the session exists, because
@@ -250,6 +273,11 @@ function validateHostedCheckoutInput(
   return fields.has('amount_cents') ? INVALID_AMOUNT : INVALID_RETURN_URL
 }
 
+type PurchaseBody = Pick<
+  InteractiveTopupRequest,
+  'amount_cents' | 'idempotency_key'
+>
+
 const SUPERSEDED = {
   status: 'error',
   code: 'SUPERSEDED'
@@ -277,21 +305,15 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
   } = options
 
   async function issue(
-    amountCents: number,
+    route: string,
+    body: PurchaseBody,
     signal: AbortSignal | undefined
   ): Promise<BillingResult<IssuedBillingOperation>> {
-    // The schema coerces `amount_cents` to a bigint, which the transport
-    // could not serialize; the validated input is what travels, not the
-    // parsed output.
-    const body = {
-      amount_cents: amountCents,
-      idempotency_key: idempotencyKey()
-    }
     const response = await readValidatedBillingResponse(
       transport,
       {
         method: 'POST',
-        route: TOPUP_ROUTE,
+        route,
         body,
         idempotencyKey: body.idempotency_key,
         ...(signal === undefined ? {} : { signal })
@@ -299,9 +321,6 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
       (raw) => zCreateTopupResponse.safeParse(raw)
     )
     if (response.status === 'error') return response
-    // Adopted regardless of the response's own `status`: the first poll
-    // settles a synchronous result and carries the decline reason, which the
-    // POST response does not.
     return {
       status: 'ok',
       value: { operationId: response.value.data.billing_op_id }
@@ -352,14 +371,11 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
     }
   }
 
-  async function createTopupCheckout(
-    input: CreateTopupCheckoutInput
+  async function purchase(
+    route: string,
+    body: PurchaseBody,
+    signal: AbortSignal | undefined
   ): Promise<TopupResult> {
-    const { amountCents, signal } = input
-    if (!zCreateTopupRequest.safeParse({ amount_cents: amountCents }).success) {
-      return INVALID_AMOUNT
-    }
-
     const refused = await readTopupEligibility(signal)
     if (refused) return refused
 
@@ -369,12 +385,9 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
         ? baseline.value.balance.amount_micros
         : undefined
 
-    // `begin` reports every failure as a `BillingFailure`; the command-level
-    // meaning of its own POST failure is kept here so a status-read failure
-    // is never mistaken for one.
     let issueFailure: TopupFailure | undefined
     const began = await lifecycle.begin('topup', async () => {
-      const issued = await issue(amountCents, signal)
+      const issued = await issue(route, body, signal)
       if (issued.status === 'error') issueFailure = commandFailure(issued)
       return issued
     })
@@ -383,6 +396,38 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
     const settled = lifecycle.settled(began.value.id)
     if (settled === undefined) return SUPERSEDED
     return conclude(await settled, baselineMicros)
+  }
+
+  async function createTopupCheckout(
+    input: CreateTopupCheckoutInput
+  ): Promise<TopupResult> {
+    const { amountCents, signal } = input
+    if (!zCreateTopupRequest.safeParse({ amount_cents: amountCents }).success) {
+      return INVALID_AMOUNT
+    }
+    return purchase(
+      TOPUP_ROUTE,
+      { amount_cents: amountCents, idempotency_key: idempotencyKey() },
+      signal
+    )
+  }
+
+  async function createInteractiveTopup(
+    input: CreateInteractiveTopupInput
+  ): Promise<TopupResult> {
+    const { amountCents, payment, signal } = input
+    const body = {
+      amount_cents: amountCents,
+      idempotency_key: input.idempotencyKey,
+      ...('confirmationToken' in payment
+        ? {
+            confirmation_token: payment.confirmationToken,
+            return_url: payment.returnUrl
+          }
+        : { saved_payment_method_id: payment.savedPaymentMethodId })
+    }
+    if (!zInteractiveTopupRequest.safeParse(body).success) return INVALID_AMOUNT
+    return purchase(INTERACTIVE_TOPUP_ROUTE, body, signal)
   }
 
   async function issueHostedCheckout(
@@ -473,10 +518,21 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
       value: {
         amountCents: quote.amount_cents,
         credits: quote.credits,
-        expiresAt: quote.expires_at
+        expiresAt: quote.expires_at,
+        ...(quote.payment_method_configuration_id === undefined
+          ? {}
+          : {
+              paymentMethodConfigurationId:
+                quote.payment_method_configuration_id
+            })
       }
     }
   }
 
-  return { quoteTopup, createTopupCheckout, createHostedTopupCheckout }
+  return {
+    quoteTopup,
+    createTopupCheckout,
+    createInteractiveTopup,
+    createHostedTopupCheckout
+  }
 }

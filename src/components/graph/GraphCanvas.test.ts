@@ -16,13 +16,16 @@ import { createI18n } from 'vue-i18n'
 
 import type { Toast } from '@/components/ui/toast/toastStore'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import {
+  DEPLOYMENT_LISTING_BACKSTOP_MS,
+  DEPLOYMENT_LISTING_NO_HINT_WAIT_MS
+} from '@/platform/workspace/api/deploymentListingTimeouts'
 import {
   hasDeploymentLink,
   readDeploymentHint
@@ -31,11 +34,12 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
+import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import GraphCanvas from './GraphCanvas.vue'
 const distribution = vi.hoisted(() => ({ isCloud: false }))
@@ -154,7 +158,7 @@ vi.mock<unknown>(import('@/scripts/changeTracker'), () => ({
   ChangeTracker: { init: vi.fn() }
 }))
 
-vi.mock(import('@/services/extensionLoader'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionLoader'), () => ({
   loadExtensions: vi.fn(async () => {})
 }))
 
@@ -216,7 +220,10 @@ function setRootGraph(graph: LGraph | undefined) {
   ;(app as unknown as { rootGraph: LGraph | undefined }).rootGraph = graph
 }
 
-async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
+async function mountGraphCanvas(
+  stubs: Record<string, unknown> = {},
+  errorHandler?: (error: unknown) => void
+) {
   // Handed to the component rather than left to the active-Pinia fallback, so
   // the readiness gates below are set on the instance startup actually reads.
   const pinia = getActivePinia()!
@@ -238,7 +245,8 @@ async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
         pinia,
         createI18n({ legacy: false, locale: 'en', missingWarn: false })
       ],
-      stubs
+      stubs,
+      config: errorHandler ? { errorHandler } : {}
     }
   } as RenderOptions<typeof GraphCanvas>)
 
@@ -268,6 +276,17 @@ describe('GraphCanvas first-run tour wiring', () => {
     expect(
       mocks.runUrlActionLoaders.mock.invocationCallOrder[0]
     ).toBeGreaterThan(mocks.handleStartupOutcome.mock.invocationCallOrder[0])
+  })
+
+  it('settles tab restoration when startup fails before restoring tabs', async () => {
+    const failure = new Error('init failed')
+    mocks.initializeWorkflow.mockRejectedValue(failure)
+    const errors: unknown[] = []
+
+    await mountGraphCanvas({}, (error) => errors.push(error))
+
+    expect(errors).toEqual([failure])
+    expect(useWorkflowStore().tabsRestored).toBe(true)
   })
 
   it('offers the tour over a workflow that arrived from the URL', async () => {
@@ -327,6 +346,18 @@ describe('GraphCanvas legacy settings bridge', () => {
     await useSettingStore().set('Comfy.Locale', 'zh')
 
     expect(app.ui.settings.dispatchChange).not.toHaveBeenCalled()
+  })
+})
+
+describe('GraphCanvas late custom nodes', () => {
+  it('stops turning late custom nodes on once the canvas unmounts', async () => {
+    await mountGraphCanvas()
+    const [signal] = vi.mocked(loadExtensions).mock.calls[0]
+    expect(signal?.aborted).toBe(false)
+
+    cleanup()
+
+    expect(signal?.aborted).toBe(true)
   })
 })
 
@@ -491,8 +522,7 @@ describe('GraphCanvas execution progress updates', () => {
     await nextTick()
 
     expect(replacementNode.progress).toBeUndefined()
-    expect(mocks.setDirty).toHaveBeenCalledOnce()
-    expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+    expect(mocks.setDirty).toHaveBeenCalledWith(true, expect.anything())
   })
 
   it('does no graph work for structurally equal progress', async () => {
@@ -636,6 +666,24 @@ describe('GraphCanvas widget control mode watcher', () => {
   })
 })
 
+describe('GraphCanvas selection watcher', () => {
+  it('redraws the background when the selected nodes change', async () => {
+    await mountGraphCanvas()
+    const graph = new LGraph()
+    const node = new LGraphNode('Test node')
+    graph.add(node)
+    useCanvasStore().canvas = app.canvas
+    useCanvasStore().currentGraph = graph
+    await nextTick()
+    mocks.setDirty.mockClear()
+
+    node.selected = true
+    await nextTick()
+
+    expect(mocks.setDirty).toHaveBeenCalledWith(expect.anything(), true)
+  })
+})
+
 describe('GraphCanvas agent dock', () => {
   // The dock is slot content of the splitter overlay, so the overlay stub has
   // to render that slot for the guard to be observable.
@@ -704,8 +752,8 @@ describe('deployment model options at startup', () => {
       link: true
     },
     {
-      why: 'this browser has no hint for the workspace',
-      hint: 'unknown' as const,
+      why: 'this browser last booted on a deployment',
+      hint: 'deployment' as const,
       link: false
     }
   ])(
@@ -731,6 +779,82 @@ describe('deployment model options at startup', () => {
       )
     }
   )
+
+  describe('when this browser has no hint for the workspace', () => {
+    const deployment = {
+      deployment_id: 'dep-1',
+      release_id: 'r-1',
+      status: 'ready',
+      can_start: false,
+      created_at: ''
+    } as const
+
+    function listingAnswersAt(ms: number, pickedDeploymentId: string | null) {
+      const store = useDeploymentPickStore()
+      vi.spyOn(store, 'loadOnce').mockReturnValue(
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            store.state = {
+              phase: 'ready',
+              deployments: [deployment],
+              pickedDeploymentId,
+              pickSource: pickedDeploymentId ? 'browser' : null,
+              defaultDeploymentId: null,
+              gonePickedDeploymentId: null,
+              goneDefaultDeploymentId: null,
+              buildsVisible: true
+            }
+            resolve()
+          }, ms)
+        })
+      )
+    }
+
+    function lookupToasts() {
+      const toasts: Toast[] = getActivePinia()?.state.value.toast?.toasts ?? []
+      return toasts.filter(
+        (t) => t.title === 'deploymentSwitcher.lookupUnavailable'
+      )
+    }
+
+    beforeEach(() => {
+      vi.mocked(readDeploymentHint).mockReturnValue('unknown')
+    })
+
+    it('boots on Comfy Cloud models after the short wait, with no toast', async () => {
+      vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+        new Promise(() => {})
+      )
+
+      await mountGraphCanvas()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_NO_HINT_WAIT_MS - 1)
+      expect(app.setup).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+
+      await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+      expect(useDeploymentPickStore().bootDeployment).toBeNull()
+      expect(lookupToasts()).toEqual([])
+    })
+
+    it.for([
+      { answer: 'names a deployment', picked: 'dep-1', toasts: 1 },
+      { answer: 'says Comfy Cloud', picked: null, toasts: 0 }
+    ])(
+      'shows the lookup toast only when a listing that answers late $answer',
+      async ({ picked, toasts }) => {
+        listingAnswersAt(DEPLOYMENT_LISTING_NO_HINT_WAIT_MS + 2_000, picked)
+
+        await mountGraphCanvas()
+        await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_NO_HINT_WAIT_MS)
+        await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+        expect(lookupToasts()).toEqual([])
+        await vi.advanceTimersByTimeAsync(2_000)
+
+        expect(lookupToasts()).toHaveLength(toasts)
+        expect(useDeploymentPickStore().bootDeployment).toBeNull()
+      }
+    )
+  })
 
   it('waits for the deployment before constructing workflow widgets', async () => {
     let finishListing = () => {}
@@ -858,9 +982,11 @@ describe('deployment model options at startup', () => {
       kind: 'error',
       description: 'deploymentSwitcher.lookupUnavailableDetail',
       duration: Number.POSITIVE_INFINITY,
-      action: { label: 'deploymentSwitcher.reload' }
+      actions: [
+        { label: 'deploymentSwitcher.reload', onClick: expect.any(Function) }
+      ]
     })
-    toast?.action?.onClick()
+    toast?.actions[0]?.onClick()
     expect(reload).toHaveBeenCalledOnce()
     store.bootDeployment = {
       deployment_id: 'dep-1',
@@ -869,6 +995,7 @@ describe('deployment model options at startup', () => {
       build_name: 'Build',
       release_version: 1,
       status: 'ready',
+      can_start: false,
       created_at: ''
     }
     await nextTick()
@@ -925,6 +1052,7 @@ describe('deployment model options at startup', () => {
       build_name: 'Build',
       release_version: 1,
       status: 'ready',
+      can_start: false,
       created_at: ''
     } as const
     vi.spyOn(store, 'loadOnce').mockReturnValue(

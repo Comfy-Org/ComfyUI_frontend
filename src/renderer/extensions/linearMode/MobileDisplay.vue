@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useFullscreen, usePointerSwipe } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import MenuRadioGroup from '@/components/ui/menu/MenuRadioGroup.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { APP_MODE_FEEDBACK_FORM_URL } from '@/platform/surveys/appModeFeedback'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -18,7 +18,7 @@ import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import MobileError from '@/renderer/extensions/linearMode/MobileError.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import { useQueueStore } from '@/stores/queueStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
@@ -89,7 +89,8 @@ const activeWorkflowPath = computed({
   get: () => workflowStore.activeWorkflow?.path ?? '',
   set: (path: string) => {
     const workflow = workflowStore.getWorkflowByPath(path)
-    if (workflow) void workflowService.openWorkflow(workflow)
+    if (workflow)
+      void workflowService.openWorkflow(workflow, { initiator: 'user' })
   }
 })
 
@@ -189,10 +190,7 @@ const menuEntries = computed<MenuItem[]>(() => [
               class="min-w-0 flex-1 truncate"
               v-text="workflowStore.activeWorkflow?.filename"
             />
-            <i
-              class="icon-[lucide--chevron-down] size-4 shrink-0"
-              aria-hidden="true"
-            />
+            <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
           </Button>
         </template>
         <MenuRadioGroup
@@ -261,7 +259,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         @click="onClick(index)"
       >
         <div class="relative size-4">
-          <i :class="cn('size-4', icon)" />
+          <i :class="icon" />
           <div
             v-if="index === 1 && isErrorOverlayVisible"
             class="absolute -top-1 -right-1 size-2 rounded-full bg-destructive"

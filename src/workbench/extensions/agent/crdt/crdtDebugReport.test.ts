@@ -2,10 +2,10 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useExtensionStore } from '@/stores/extensionStore'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { api } from '@/scripts/api'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
@@ -27,7 +27,7 @@ beforeEach(() => {
   useExtensionStore().registerExtension({ name: 'Comfy.TestExtension' })
 })
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError
 }))
 

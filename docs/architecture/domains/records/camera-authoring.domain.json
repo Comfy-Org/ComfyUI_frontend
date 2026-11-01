@@ -4,51 +4,43 @@
   "description": "CameraInfo and CameraAngle node viewports: camera state and orbit/roll/look-through math, Three.js handles, overlays and inset previews, widget-value bridges, Vue widgets, and extension registration. The shared Three.js renderer, Load3D viewport factory, load3d components, and viewport node wiring remain external host dependencies.",
   "modules": [
     {
-      "path": "src/components/cameraAngle/**",
+      "path": "src/extensions/core/load3d/components/cameraAngle/**",
       "role": "presentation"
     },
     {
-      "path": "src/components/cameraInfo/**",
+      "path": "src/extensions/core/load3d/components/cameraInfo/**",
       "role": "presentation"
     },
     {
-      "path": "src/composables/useCameraAngle.test.ts",
+      "path": "src/extensions/core/load3d/composables/useCameraAngle.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/useCameraAngle.ts",
+      "path": "src/extensions/core/load3d/composables/useCameraInfo.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/useCameraInfo.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useCameraInfo.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/cameraAngle.test.ts",
+      "path": "src/extensions/core/load3d/cameraAngle.ts",
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/cameraAngle.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/cameraAngle/**",
+      "path": "src/extensions/core/load3d/cameraAngle/**",
       "role": "application"
     },
     {
-      "path": "src/extensions/core/cameraInfo.ts",
+      "path": "src/extensions/core/load3d/cameraInfo.ts",
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/cameraInfo/widgetBridge.test.ts",
+      "path": "src/extensions/core/load3d/cameraInfo/widgetBridge.ts",
       "role": "application"
     },
     {
-      "path": "src/extensions/core/cameraInfo/widgetBridge.ts",
+      "path": "packages/viewport3d/src/cameraAngle/**",
+      "role": "application"
+    },
+    {
+      "path": "packages/viewport3d/src/cameraInfo/**",
       "role": "application"
     }
   ],
@@ -69,10 +61,10 @@
     {
       "name": "Widget bridges read, clamp, and write camera node widget values",
       "checks": [
-        "src/extensions/core/cameraInfo/widgetBridge.test.ts",
-        "src/extensions/core/cameraAngle/widgetBridge.test.ts",
-        "src/composables/useCameraInfo.test.ts",
-        "src/composables/useCameraAngle.test.ts"
+        "src/extensions/core/load3d/cameraInfo/widgetBridge.test.ts",
+        "src/extensions/core/load3d/cameraAngle/widgetBridge.test.ts",
+        "src/extensions/core/load3d/composables/useCameraInfo.test.ts",
+        "src/extensions/core/load3d/composables/useCameraAngle.test.ts"
       ]
     },
     {
@@ -95,9 +87,9 @@
     {
       "name": "Camera widgets render controls and the CameraAngle extension registers its node widget",
       "checks": [
-        "src/components/cameraInfo/CameraInfo.test.ts",
-        "src/components/cameraAngle/CameraAngle.test.ts",
-        "src/extensions/core/cameraAngle.test.ts"
+        "src/extensions/core/load3d/components/cameraInfo/CameraInfo.test.ts",
+        "src/extensions/core/load3d/components/cameraAngle/CameraAngle.test.ts",
+        "src/extensions/core/load3d/cameraAngle.test.ts"
       ]
     }
   ],

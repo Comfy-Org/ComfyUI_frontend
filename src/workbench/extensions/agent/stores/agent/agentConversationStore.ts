@@ -1,15 +1,22 @@
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import { createEventHook } from '@vueuse/core'
+import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowReactive, shallowRef } from 'vue'
+
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { AgentTurnTab } from '@/stores/workflowTabActivityStore'
 
 import type {
   AgentMessages,
+  RenderedAskKind,
   TurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentChatEvent,
   AgentEventTransport,
+  CanvasConfirmation,
   CanvasSyncEvidence
 } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
@@ -19,6 +26,7 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   askIdOf,
+  askKindOf,
   createAssistantMessage,
   isOpenAskPart,
   isPendingAskPart,
@@ -62,6 +70,8 @@ interface BackgroundTurn {
   userText: string | undefined
   skillReference?: SkillReference
   settled: boolean
+  tab: TurnTab
+  pendingAskIds: readonly string[]
 }
 
 interface ActiveTurnSlot {
@@ -71,6 +81,19 @@ interface ActiveTurnSlot {
   threadId: string | null
   message: AssistantMessage
   transport: AgentEventTransport
+  tab: TurnTab
+}
+
+export type TurnTab =
+  | { status: 'unknown' }
+  | { status: 'none' }
+  | { status: 'guessed'; workflowInstanceId: string }
+  | { status: 'known'; workflowInstanceId: string }
+
+const UNKNOWN_TAB: TurnTab = { status: 'unknown' }
+
+function isProvisional(tab: TurnTab): boolean {
+  return tab.status === 'unknown' || tab.status === 'guessed'
 }
 
 /**
@@ -85,9 +108,22 @@ function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
   return part.type === 'tool' && part.name === 'load_skill'
 }
 
+function pendingAskIdsOf(message: AssistantMessage): string[] {
+  return message.parts.flatMap((part) =>
+    isPendingAskPart(part) ? [part.askId] : []
+  )
+}
+
 export interface LiveTurn {
   threadId: string
   messageId: TurnId
+}
+
+interface UnreconciledSnapshotTurn {
+  turn: LiveTurn
+  messageId: string
+  transport: AgentEventTransport
+  announced: boolean
 }
 
 interface AnchoredLocalPart {
@@ -200,9 +236,88 @@ function interleaveLocalParts(
   return mergedParts
 }
 
+function toolCallIdsOf(parts: AssistantMessage['parts']): string[] {
+  return parts.flatMap((part) => (part.type === 'tool' ? [part.callId] : []))
+}
+
+function liveToolOffset(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts']
+): number {
+  const live = toolCallIdsOf(liveParts)
+  const persisted = toolCallIdsOf(persistedParts)
+  if (live.length === 0) return persisted.length
+  for (const [index, callId] of live.entries()) {
+    const at = persisted.indexOf(callId)
+    if (at >= index) return at - index
+  }
+  return Math.max(0, persisted.length - live.length)
+}
+
+function storedCallIdOf(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts'],
+  offset: number
+): (callId: string) => string {
+  const liveCallIds = toolCallIdsOf(liveParts)
+  const persistedCallIds = toolCallIdsOf(persistedParts)
+  const persisted = new Set(persistedCallIds)
+  const live = new Set(liveCallIds)
+  return (callId) => {
+    if (persisted.has(callId)) return callId
+    const position = liveCallIds.indexOf(callId) + offset
+    const atPosition =
+      position < persistedCallIds.length
+        ? persistedCallIds.at(position)
+        : undefined
+    return atPosition !== undefined && !live.has(atPosition)
+      ? atPosition
+      : callId
+  }
+}
+
+function preserveCanvasConfirmation(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts'],
+  storedCallId: (callId: string) => string
+): AssistantMessage['parts'] {
+  const confirmedCallIds = new Set(
+    liveParts.flatMap((part) =>
+      part.type === 'tool' && part.canvasConfirmed === true
+        ? [storedCallId(part.callId)]
+        : []
+    )
+  )
+  return persistedParts.map((part) =>
+    part.type === 'tool' &&
+    part.ok === true &&
+    confirmedCallIds.has(part.callId)
+      ? { ...part, canvasConfirmed: true }
+      : part
+  )
+}
+
+function finishSnapshotTurn(
+  message: AssistantMessage,
+  persistedParts: AssistantMessage['parts']
+): void {
+  const liveParts = message.parts
+  const offset = liveToolOffset(liveParts, persistedParts)
+  finishWithPersistedParts(
+    message,
+    preserveCanvasConfirmation(
+      liveParts,
+      persistedParts,
+      storedCallIdOf(liveParts, persistedParts, offset)
+    ),
+    offset
+  )
+}
+
 function finishWithPersistedParts(
   message: AssistantMessage,
-  persistedParts: AssistantMessage['parts'] | undefined
+  persistedParts: AssistantMessage['parts'] | undefined,
+  localToolOffset = 0
 ): void {
   if (persistedParts === undefined) {
     message.parts = message.parts.filter((part) => !isOpenAskPart(part))
@@ -219,13 +334,28 @@ function finishWithPersistedParts(
     }
     return
   }
+  const persistedHasThinking = persistedParts.some(
+    (part) => part.type === 'thinking'
+  )
   message.parts = interleaveLocalParts(
     persistedParts,
     anchorLocalParts(message.parts)
+      .filter(({ part }) => !persistedHasThinking || part.type !== 'thinking')
+      .map((anchor) => ({
+        ...anchor,
+        toolCount: anchor.toolCount + localToolOffset
+      }))
   )
 }
 
 const MAX_DEPARTED_TURNS = 32
+
+interface SubmittedAskAnswer {
+  answer: AgentAnswerRequest
+  kind: RenderedAskKind | 'unknown'
+  owner: string
+  awaitingResolution?: 'accepted' | 'conflict'
+}
 
 export const useAgentConversationStore = defineStore(
   'agentConversation',
@@ -247,21 +377,8 @@ export const useAgentConversationStore = defineStore(
     const latestWorkflowId = ref<string>()
     const resolvedPaywallIds = ref(new Set<TurnId>())
     const activeSlot = shallowRef<ActiveTurnSlot | null>(null)
-    // PM-1575: whether a newly-created transport should hold a tool-call's
-    // chat "done" state back until canvas catch-up is confirmed (see
-    // agentEventTransport.ts). Defaults to never deferring, so a caller that
-    // never registers a gate (e.g. a headless/non-canvas conversation) keeps
-    // the pre-fix, immediate-done behavior. Read indirectly (via a wrapping
-    // closure, never passed by value) everywhere it is handed to a
-    // transport, so a later setCanvasSyncGate() call reaches transports
-    // that already exist -- passing the variable itself would freeze each
-    // transport onto whichever function this variable held at its own
-    // creation time.
-    let canvasSyncGate: (_workflowId?: string) => boolean = () => false
-    // PM-1575: mirrors canvasSyncGate above, for the monotonic doc-update
-    // outcome counter a transport compares its per-tool-call baseline
-    // against (agentEventTransport.ts's canvasSyncBaseline). Same
-    // read-indirectly rule applies.
+    let canvasSyncGate: (workflowId?: string) => CanvasConfirmation = () =>
+      'none'
     let canvasSyncOutcomeCount: () => number = () => 0
     // PM-1575: settled turns (agent_message_done already applied) whose
     // transport is still holding at least one tool-call part back pending
@@ -275,7 +392,24 @@ export const useAgentConversationStore = defineStore(
     // entry prunes itself out the first time notifyCanvasCaughtUp() finds it
     // has nothing left pending.
     const settledActiveTransports = new Set<AgentEventTransport>()
-    const backgroundTurns = new Map<string, BackgroundTurn>()
+    const backgroundTurns = shallowReactive(new Map<string, BackgroundTurn>())
+    let resolveTurnTab: () => TurnTab = () => UNKNOWN_TAB
+    const turnCompleted = createEventHook<string>()
+    const unreconciledSnapshotTurns = new Map<
+      TurnId,
+      UnreconciledSnapshotTurn
+    >()
+    const snapshotTurnSettled = createEventHook<LiveTurn>()
+    const workflowStore = useWorkflowStore()
+    const openTabPaths = computed(
+      () =>
+        new Map(
+          workflowStore.openWorkflows.map((workflow) => [
+            workflow.instanceId,
+            workflow.path
+          ])
+        )
+    )
     let hydratedMessageIds = new Set<string>()
     let hydratedTurnIds = new Map<string, TurnId>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
@@ -287,6 +421,72 @@ export const useAgentConversationStore = defineStore(
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
     const activeTurnId = computed(() => activeSlot.value?.turnId ?? null)
+
+    function setTurnTabResolver(resolve: () => TurnTab): void {
+      resolveTurnTab = resolve
+    }
+
+    function openPathOf(tab: TurnTab): string | null {
+      return 'workflowInstanceId' in tab
+        ? (openTabPaths.value.get(tab.workflowInstanceId) ?? null)
+        : null
+    }
+
+    function announceCompletion(tab: TurnTab): void {
+      const path = openPathOf(tab)
+      if (path !== null) void turnCompleted.trigger(path)
+    }
+
+    function updateBackgroundTurn(
+      turnId: TurnId,
+      change: Partial<Pick<BackgroundTurn, 'settled' | 'tab' | 'pendingAskIds'>>
+    ): void {
+      const entry = backgroundTurns.get(turnId)
+      if (entry) backgroundTurns.set(turnId, { ...entry, ...change })
+    }
+
+    function assignTurnTab(
+      matches: (
+        turnId: TurnId,
+        threadId: string | null,
+        tab: TurnTab
+      ) => boolean,
+      workflowInstanceId: string
+    ): void {
+      const tab: TurnTab = { status: 'known', workflowInstanceId }
+      const slot = activeSlot.value
+      if (slot !== null && matches(slot.turnId, slot.threadId, slot.tab))
+        activeSlot.value = { ...slot, tab }
+      for (const entry of backgroundTurns.values())
+        if (
+          !entry.settled &&
+          matches(entry.messageId, entry.threadId, entry.tab)
+        )
+          updateBackgroundTurn(entry.messageId, { tab })
+    }
+
+    function moveTurnToTab(turnId: TurnId, workflowInstanceId: string): void {
+      assignTurnTab((id) => id === turnId, workflowInstanceId)
+    }
+
+    function adoptThreadTab(owner: string, workflowInstanceId: string): void {
+      assignTurnTab(
+        (_id, thread, tab) => thread === owner && isProvisional(tab),
+        workflowInstanceId
+      )
+    }
+
+    function publishMessage(turnId: TurnId, message: AssistantMessage): void {
+      replaceActive(message)
+      const unreconciled = unreconciledSnapshotTurns.get(turnId)
+      if (unreconciled !== undefined)
+        announceReconcilableSnapshotTurn(unreconciled)
+      const entry = backgroundTurns.get(turnId)
+      if (!entry) return
+      const pendingAskIds = pendingAskIdsOf(message)
+      if (!isEqual(pendingAskIds, entry.pendingAskIds))
+        updateBackgroundTurn(turnId, { pendingAskIds })
+    }
 
     function recordApprovalShown(askId: string, shownAt: number): boolean {
       if (shownApprovalIds.has(askId)) return false
@@ -414,7 +614,8 @@ export const useAgentConversationStore = defineStore(
     function retireAsk(
       askId: string,
       resolution: AskUserResolution,
-      owner?: string
+      owner?: string,
+      permanent = true
     ): void {
       const key = threadKey(owner)
       if (key === threadKey()) {
@@ -429,14 +630,18 @@ export const useAgentConversationStore = defineStore(
       for (const entry of backgroundTurns.values())
         if (entry.threadId === key)
           entry.transport.retireAskPart(askId, resolution)
-      const retired = retiredAsksFor(key)
-      retired.set(askId, settleResolution(retired.get(askId), resolution))
+      if (permanent) {
+        const retired = retiredAsksFor(key)
+        retired.set(askId, settleResolution(retired.get(askId), resolution))
+        provisionalRetiredAsksFor(key).delete(askId)
+      } else provisionalRetiredAsksFor(key).add(askId)
       clearAskResolutionWatchdog(askId)
       submittedAskAnswers.delete(askId)
       setAskAnswering(askId, false)
     }
 
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
+    const provisionalRetiredAsks = new Map<string, Set<string>>()
 
     const threadKey = (owner?: string) => owner ?? threadId.value ?? ''
 
@@ -448,18 +653,112 @@ export const useAgentConversationStore = defineStore(
       return retired
     }
 
-    const submittedAskAnswers = new Map<string, AgentAnswerRequest>()
+    function provisionalRetiredAsksFor(owner?: string): Set<string> {
+      const key = threadKey(owner)
+      const retired = provisionalRetiredAsks.get(key) ?? new Set<string>()
+      provisionalRetiredAsks.set(key, retired)
+      return retired
+    }
+    function isAskRetired(askId: string, owner?: string): boolean {
+      const key = threadKey(owner)
+      return (
+        retiredAsks.get(key)?.has(askId) === true ||
+        provisionalRetiredAsks.get(key)?.has(askId) === true
+      )
+    }
 
-    function recordAskAnswer(askId: string, answer: AgentAnswerRequest): void {
-      submittedAskAnswers.set(askId, answer)
+    function confirmAskPending(askId: string, owner?: string): void {
+      const key = threadKey(owner)
+      const provisional = provisionalRetiredAsks.get(key)
+      if (provisional?.delete(askId) !== true) return
+      if (provisional.size === 0) provisionalRetiredAsks.delete(key)
+      if (retiredAsks.get(key)?.has(askId) === true) return
+      const reopen = (message: AssistantMessage): void => {
+        message.parts = message.parts.map((part) =>
+          (part.type === 'askUser' || part.type === 'deleteApproval') &&
+          askIdOf(part) === askId
+            ? { ...part, resolution: undefined }
+            : part
+        )
+      }
+      if (activeSlot.value?.threadId === key) reopen(activeSlot.value.message)
+      for (const entry of backgroundTurns.values())
+        if (entry.threadId === key) reopen(entry.message)
+      if (key === threadKey()) messages.value.forEach(reopen)
+    }
+
+    const submittedAskAnswers = new Map<string, SubmittedAskAnswer>()
+
+    function recordAskAnswer(
+      askId: string,
+      answer: AgentAnswerRequest,
+      owner?: string
+    ): void {
+      const kind =
+        messages.value
+          .map((message) => askKindOf(message.parts, askId))
+          .find((found) => found !== undefined) ?? 'unknown'
+      submittedAskAnswers.set(askId, {
+        answer,
+        kind,
+        owner: threadKey(owner)
+      })
+    }
+
+    function submittedAskAnswer(askId: string): AgentAnswerRequest | undefined {
+      return submittedAskAnswers.get(askId)?.answer
     }
 
     function takeSubmittedAskAnswer(
       askId: string
-    ): AgentAnswerRequest | undefined {
+    ): SubmittedAskAnswer | undefined {
       const answer = submittedAskAnswers.get(askId)
       submittedAskAnswers.delete(askId)
       return answer
+    }
+
+    function markAskAwaitingResolution(
+      askId: string,
+      kind: 'accepted' | 'conflict'
+    ): void {
+      const submitted = submittedAskAnswers.get(askId)
+      if (submitted) submitted.awaitingResolution = kind
+    }
+
+    function asksAwaitingResolution(): Array<{
+      askId: string
+      kind: 'accepted' | 'conflict'
+    }> {
+      return [...submittedAskAnswers]
+        .filter(([, submitted]) => submitted.awaitingResolution !== undefined)
+        .map(([askId, submitted]) => ({
+          askId,
+          kind: submitted.awaitingResolution!
+        }))
+    }
+
+    function clearAskAwaitingResolution(askId: string): void {
+      const submitted = submittedAskAnswers.get(askId)
+      if (submitted) submitted.awaitingResolution = undefined
+    }
+
+    function clearSettledAskState(owner: string): void {
+      provisionalRetiredAsks.delete(owner)
+      for (const [askId, submitted] of submittedAskAnswers)
+        if (submitted.owner === owner) submittedAskAnswers.delete(askId)
+    }
+
+    function discardDetachedAskState(): void {
+      const retainedThreads = new Set(
+        [...backgroundTurns.values()].map((turn) => turn.threadId)
+      )
+      for (const owner of retiredAsks.keys())
+        if (!retainedThreads.has(owner)) retiredAsks.delete(owner)
+      for (const owner of provisionalRetiredAsks.keys())
+        if (!retainedThreads.has(owner)) provisionalRetiredAsks.delete(owner)
+      for (const [askId, submitted] of submittedAskAnswers)
+        if (!retainedThreads.has(submitted.owner))
+          submittedAskAnswers.delete(askId)
     }
 
     const askResolutionWatchdogs = new Map<
@@ -513,11 +812,12 @@ export const useAgentConversationStore = defineStore(
         message,
         transport: createAgentEventTransport(
           message,
-          replaceActive,
+          (snapshot) => publishMessage(turnId, snapshot),
           (workflowId) => canvasSyncGate(workflowId),
           () => canvasSyncOutcomeCount(),
           reportUndeliverableAskData
-        )
+        ),
+        tab: resolveTurnTab()
       }
     }
 
@@ -593,7 +893,10 @@ export const useAgentConversationStore = defineStore(
       activeTransport: AgentEventTransport
     ): void {
       if (event.type === 'agent_message_done') {
+        const tab = activeSlot.value?.tab ?? UNKNOWN_TAB
+        activeTransport.ingest(event)
         settleActiveTurn(activeTransport)
+        announceCompletion(tab)
         return
       }
       activeTransport.ingest(event)
@@ -608,9 +911,59 @@ export const useAgentConversationStore = defineStore(
     function settleActiveTurn(activeTransport: AgentEventTransport): void {
       rememberDepartedActiveTurn('settled-turn')
       activeTransport.settle()
+      const restoredFromSnapshot = recordUnreconciledSnapshotTurn()
       if (activeTransport.hasPendingCanvasSync())
         settledActiveTransports.add(activeTransport)
       clearActive()
+      if (restoredFromSnapshot)
+        announceReconcilableSnapshotTurn(restoredFromSnapshot)
+    }
+
+    function recordUnreconciledSnapshotTurn():
+      | UnreconciledSnapshotTurn
+      | undefined {
+      const slot = activeSlot.value
+      if (slot?.origin !== 'snapshot' || slot.threadId === null)
+        return undefined
+      const unreconciled: UnreconciledSnapshotTurn = {
+        turn: { threadId: slot.threadId, messageId: slot.turnId },
+        messageId: slot.message.id,
+        transport: slot.transport,
+        announced: false
+      }
+      unreconciledSnapshotTurns.set(slot.turnId, unreconciled)
+      return unreconciled
+    }
+
+    function announceReconcilableSnapshotTurn(
+      unreconciled: UnreconciledSnapshotTurn
+    ): void {
+      if (
+        unreconciled.announced ||
+        unreconciled.transport.hasPendingCanvasSync()
+      )
+        return
+      settledActiveTransports.delete(unreconciled.transport)
+      unreconciled.announced = true
+      void snapshotTurnSettled.trigger(unreconciled.turn)
+    }
+
+    function reconcileSettledTurn(
+      turn: LiveTurn,
+      persistedParts: AssistantMessage['parts'] | undefined
+    ): void {
+      const unreconciled = unreconciledSnapshotTurns.get(turn.messageId)
+      if (unreconciled === undefined) return
+      unreconciledSnapshotTurns.delete(turn.messageId)
+      if (persistedParts === undefined || threadId.value !== turn.threadId)
+        return
+      const index = messages.value.findIndex(
+        (message) => message.id === unreconciled.messageId
+      )
+      if (index < 0) return
+      const reconciled = { ...messages.value[index] }
+      finishSnapshotTurn(reconciled, persistedParts)
+      messages.value[index] = reconciled
     }
 
     function ingestActiveTabEvent(
@@ -640,28 +993,24 @@ export const useAgentConversationStore = defineStore(
         return
       }
       if (event.type === 'agent_message_done') {
+        if (entry.settled) return
+        entry.transport.ingest(event)
         entry.transport.settle()
-        entry.settled = true
+        updateBackgroundTurn(entry.messageId, { settled: true })
+        announceCompletion(entry.tab)
         return
       }
       entry.transport.ingest(event)
     }
 
     function setCanvasSyncGate(
-      gate: (_workflowId?: string) => boolean,
+      gate: (workflowId?: string) => CanvasConfirmation,
       outcomeCount: () => number = () => 0
     ): void {
       canvasSyncGate = gate
       canvasSyncOutcomeCount = outcomeCount
     }
 
-    /**
-     * PM-1575: forwarded to every live transport (the active turn and any
-     * stashed background ones) whenever the bound workflow's CRDT follower
-     * applies a fresh doc update, so tool-call parts held back pending canvas
-     * catch-up can settle to 'done'. A no-op on a transport with nothing
-     * pending.
-     */
     function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
       activeSlot.value?.transport.notifyCanvasCaughtUp(evidence)
       for (const settledTransport of settledActiveTransports) {
@@ -700,7 +1049,9 @@ export const useAgentConversationStore = defineStore(
         transport: slot.transport,
         userText: userTexts.value.get(slot.message.id),
         skillReference: userSkillReferences.value.get(slot.message.id),
-        settled: false
+        settled: false,
+        tab: slot.tab,
+        pendingAskIds: pendingAskIdsOf(slot.message)
       })
       clearActive()
     }
@@ -793,7 +1144,8 @@ export const useAgentConversationStore = defineStore(
         index,
         threadId: resumedThreadId,
         message: entry.message,
-        transport: entry.transport
+        transport: entry.transport,
+        tab: entry.tab
       }
     }
 
@@ -977,7 +1329,8 @@ export const useAgentConversationStore = defineStore(
 
     function settleTurn(
       turn: LiveTurn,
-      persistedParts: AssistantMessage['parts'] | undefined
+      persistedParts: AssistantMessage['parts'] | undefined,
+      ending: 'completed' | 'failed' = 'completed'
     ): void {
       const slot = activeSlot.value
       const isActive =
@@ -985,18 +1338,22 @@ export const useAgentConversationStore = defineStore(
         turn.threadId === slot.threadId &&
         turn.messageId === slot.turnId
       if (isActive) {
+        clearSettledAskState(turn.threadId)
         finishWithPersistedParts(slot.message, persistedParts)
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
         slot.transport.dispose()
         clearActive()
+        if (ending === 'completed') announceCompletion(slot.tab)
         return
       }
       const entry = backgroundTurns.get(turn.messageId)
       if (!entry || entry.messageId !== turn.messageId || entry.settled) return
+      clearSettledAskState(turn.threadId)
       finishWithPersistedParts(entry.message, persistedParts)
       entry.transport.settle()
-      entry.settled = true
+      updateBackgroundTurn(entry.messageId, { settled: true })
+      if (ending === 'completed') announceCompletion(entry.tab)
     }
 
     function departedTurnKey(threadId: string, messageId: string): string {
@@ -1022,6 +1379,84 @@ export const useAgentConversationStore = defineStore(
       const slot = activeSlot.value
       if (slot === null || slot.threadId === null) return
       rememberDepartedTurn(slot.threadId, slot.turnId, reason)
+    }
+
+    /**
+     * The mutable message a live turn is written into, not the snapshot copy
+     * in `messages`: transports emit snapshots, so only this object carries
+     * parts applied since the last emit.
+     */
+    function liveTurnMessage(turn: LiveTurn): AssistantMessage | null {
+      const slot = activeSlot.value
+      if (
+        slot !== null &&
+        turn.threadId === slot.threadId &&
+        turn.messageId === slot.turnId
+      )
+        return slot.message
+      const entry = backgroundTurns.get(turn.messageId)
+      if (
+        !entry ||
+        entry.threadId !== turn.threadId ||
+        entry.messageId !== turn.messageId ||
+        entry.settled
+      )
+        return null
+      return entry.message
+    }
+
+    function reconcileApprovalParts(
+      turn: LiveTurn,
+      pendingAskId?: string,
+      protectedAskIds: ReadonlySet<string> = new Set()
+    ): string[] {
+      const message = liveTurnMessage(turn)
+      if (message === null) return []
+      const stale = message.parts.flatMap((part) => {
+        if (!isOpenAskPart(part)) return []
+        const askId = askIdOf(part)
+        return askId !== undefined &&
+          (pendingAskId === undefined || askId !== pendingAskId) &&
+          !protectedAskIds.has(askId) &&
+          submittedAskAnswer(askId) === undefined &&
+          !answeringAskIds.value.has(askId)
+          ? [askId]
+          : []
+      })
+      for (const askId of stale)
+        retireAsk(askId, { status: 'retired' }, turn.threadId, false)
+      return stale
+    }
+
+    /**
+     * Whether this turn is already showing `askId`. Turn recovery asks before
+     * re-delivering an ask off a persisted row: the card a hydrate drew is on
+     * screen without the session's ask ledger ever having seen a frame for
+     * it, and only this catches that one. Reads the mutable message, so it
+     * answers for the current moment and takes no reactive dependency.
+     */
+    function isApprovalShown(turn: LiveTurn, askId: string): boolean {
+      const message = liveTurnMessage(turn)
+      return (
+        message?.parts.some(
+          (part) => part.type === 'runApproval' && part.askId === askId
+        ) ?? false
+      )
+    }
+
+    function isAskShown(turn: LiveTurn, askId: string): boolean {
+      return (
+        liveTurnMessage(turn)?.parts.some(
+          (part) => isOpenAskPart(part) && askIdOf(part) === askId
+        ) ?? false
+      )
+    }
+
+    function hasApprovalShown(turn: LiveTurn): boolean {
+      return (
+        liveTurnMessage(turn)?.parts.some((part) => isOpenAskPart(part)) ??
+        false
+      )
     }
 
     function clearActive(): void {
@@ -1051,7 +1486,9 @@ export const useAgentConversationStore = defineStore(
     }
 
     function reset(): void {
+      unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
+      discardDetachedAskState()
       messages.value = []
       userTexts.value = new Map()
       userTags.value = new Map()
@@ -1079,28 +1516,31 @@ export const useAgentConversationStore = defineStore(
       transcript: ReturnType<typeof normalizeAgentTranscript>
     ): void {
       const retired = retiredAsksFor()
-      if (retired.size === 0) return
-      const named = new Set(
-        transcript.messages.flatMap((message) =>
-          message.parts.flatMap((part) => askIdOf(part) ?? [])
-        )
-      )
-      for (const askId of retired.keys())
-        if (!named.has(askId)) retired.delete(askId)
+      const provisional = provisionalRetiredAsksFor()
       for (const message of transcript.messages)
         for (const [askId, resolution] of retired)
           message.parts = retireAskParts(message.parts, askId, resolution)
+      for (const message of transcript.messages)
+        for (const askId of provisional)
+          message.parts = retireAskParts(message.parts, askId, {
+            status: 'retired'
+          })
     }
 
     function hydrate(history: AgentMessages): void {
-      if (activeSlot.value) rememberDepartedActiveTurn('no-live-turn')
+      const replacedSlot = activeSlot.value
+      if (replacedSlot) rememberDepartedActiveTurn('no-live-turn')
+      unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
       clearActive()
-      const transcript = normalizeAgentTranscript(history)
-      // Only the card is retired, never the turn: answering it is what lets
-      // the turn RESUME, so it is still live and still needs a transport, or
-      // every frame of the rest of it is dropped and the row stays "Working…"
-      // with nothing able to settle it.
+      const transcript = normalizeAgentTranscript(
+        history,
+        (askId) =>
+          isAskRetired(askId) ||
+          submittedAskAnswer(askId) !== undefined ||
+          answeringAskIds.value.has(askId),
+        (askId) => isAskRetired(askId)
+      )
       reapplyRetiredAsks(transcript)
       messages.value = transcript.messages
       resolvedPaywallIds.value = new Set()
@@ -1150,11 +1590,15 @@ export const useAgentConversationStore = defineStore(
           message: pending.message,
           transport: createAgentEventTransport(
             pending.message,
-            replaceActive,
+            (snapshot) => publishMessage(pending.messageId, snapshot),
             (workflowId) => canvasSyncGate(workflowId),
             () => canvasSyncOutcomeCount(),
             reportUndeliverableAskData
-          )
+          ),
+          tab:
+            replacedSlot?.turnId === pending.messageId
+              ? replacedSlot.tab
+              : resolveTurnTab()
         }
       }
     }
@@ -1245,8 +1689,67 @@ export const useAgentConversationStore = defineStore(
       )
     }
 
+    function askKind(
+      askId: string
+    ): 'runApproval' | 'askUser' | 'deleteApproval' | undefined {
+      for (const message of messages.value) {
+        const part = message.parts.find(
+          (candidate) =>
+            isPendingAskPart(candidate) && candidate.askId === askId
+        )
+        if (
+          part?.type === 'runApproval' ||
+          part?.type === 'askUser' ||
+          part?.type === 'deleteApproval'
+        )
+          return part.type
+      }
+    }
+
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
+
+    function awaitsAnswer(pendingAskIds: readonly string[]): boolean {
+      return pendingAskIds.some((askId) => !answeringAskIds.value.has(askId))
+    }
+
+    const activeTurnTabPath = computed(() => {
+      const slot = activeSlot.value
+      return slot !== null && isStreaming.value ? openPathOf(slot.tab) : null
+    })
+    const activeTurnAwaitsAnswer = computed(() =>
+      activeMessage.value
+        ? awaitsAnswer(pendingAskIdsOf(activeMessage.value))
+        : false
+    )
+    const awaitingApproval = computed(
+      () =>
+        (isStreaming.value && activeTurnAwaitsAnswer.value) ||
+        [...backgroundTurns.values()].some(
+          ({ settled, pendingAskIds }) =>
+            !settled && awaitsAnswer(pendingAskIds)
+        )
+    )
+    const turnTabs = computed<AgentTurnTab[]>(() => {
+      const activePath = activeTurnTabPath.value
+      const background = [...backgroundTurns.values()].flatMap(
+        ({ settled, tab, pendingAskIds }) => {
+          const path = settled ? null : openPathOf(tab)
+          return path === null
+            ? []
+            : [{ path, awaitingApproval: awaitsAnswer(pendingAskIds) }]
+        }
+      )
+      return activePath === null
+        ? background
+        : [
+            {
+              path: activePath,
+              awaitingApproval: activeTurnAwaitsAnswer.value
+            },
+            ...background
+          ]
+    })
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value
       if (!message?.streaming) return 'idle'
@@ -1258,6 +1761,14 @@ export const useAgentConversationStore = defineStore(
       entries,
       activeTurnId,
       activeMessageId,
+      activeTurnTabPath,
+      turnTabs,
+      awaitingApproval,
+      onTurnCompleted: turnCompleted.on,
+      onSnapshotTurnSettled: snapshotTurnSettled.on,
+      setTurnTabResolver,
+      moveTurnToTab,
+      adoptThreadTab,
       threadId,
       isStreaming,
       status,
@@ -1275,9 +1786,17 @@ export const useAgentConversationStore = defineStore(
       answeringAskIds,
       setAskAnswering,
       recordAskAnswer,
+      submittedAskAnswer,
       takeSubmittedAskAnswer,
+      markAskAwaitingResolution,
+      asksAwaitingResolution,
+      clearAskAwaitingResolution,
+      askKind,
       commitAsk,
       retireAsk,
+      isAskRetired,
+      confirmAskPending,
+      reconcileApprovalParts,
       startTurn,
       ingest,
       setCanvasSyncGate,
@@ -1291,6 +1810,10 @@ export const useAgentConversationStore = defineStore(
       turnUsesSkill,
       historySkillNames,
       settleTurn,
+      reconcileSettledTurn,
+      isApprovalShown,
+      isAskShown,
+      hasApprovalShown,
       reset,
       hydrate
     }

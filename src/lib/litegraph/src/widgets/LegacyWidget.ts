@@ -1,7 +1,7 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions } from './BaseWidget'

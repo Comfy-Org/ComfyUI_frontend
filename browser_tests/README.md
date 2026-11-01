@@ -463,8 +463,7 @@ Check for existing helpers before writing new ones — most needs are covered:
 
 - **ComfyPage** — main fixture; delegates to helper objects:
   `comfyPage.workflow.loadWorkflow()`, `comfyPage.settings.setSetting()`,
-  `comfyPage.command.executeCommand()`, `comfyPage.nodeOps.getNodeRefById()`,
-  `comfyPage.canvasOps.resetView()`.
+  `comfyPage.command.executeCommand()`, `comfyPage.nodeOps.getNodeRefById()`.
 - **Component page objects** — `fixtures/components/` (e.g. `Actionbar`,
   `ContextMenu`, `Templates`).
 - **Helper classes** — `fixtures/helpers/` (e.g. `CanvasHelper`,
@@ -777,14 +776,6 @@ Use a stateful mock when testing persistence across reloads.
 comfyPage.deleteFileAfterTest({ filename: 'image.png' })
 ```
 
-- Tests that manipulate canvas view should `resetView()` in `afterEach`:
-
-```typescript
-test.afterEach(async ({ comfyPage }) => {
-  await comfyPage.canvasOps.resetView()
-})
-```
-
 ### Debug helpers (remove before committing)
 
 `comfyPage.debugAddMarker(pos)`, `debugAttachScreenshot(testInfo, name)`,
@@ -878,19 +869,19 @@ await page.route('**/api/object_info', (route) =>
 The three generated-type packages are auto-generated from OpenAPI specs — prefer
 them for any mock targeting their endpoints:
 
-| Endpoint category                                 | Type source                                                                        |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types` (`packages/ingest-types`)                                 |
-| Registry (releases, nodes, publishers)            | `@comfyorg/registry-types` (`packages/registry-types`)                             |
-| Manager (queue tasks, packages)                   | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`)             |
-| Local webserver responses that differ from ingest | `src/platform/remote/comfyui/types.ts`                                             |
-| WebSocket messages and custom-node outputs        | `src/platform/remote/comfyui/execution/types.ts`                                   |
-| Frontend settings                                 | `src/platform/settings/types.ts`                                                   |
-| Node definitions                                  | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts`           |
-| Templates                                         | `src/platform/workflow/templates/types/template.ts`                                |
-| Jobs API                                          | `src/platform/remote/comfyui/jobs/jobTypes.ts` (`zJobDetail`, `zJobsListResponse`) |
-| Workflow validation                               | `src/platform/workflow/validation/schemas/workflowSchema.ts`                       |
-| Asset metadata                                    | `src/types/metadataTypes.ts`                                                       |
+| Endpoint category                                 | Type source                                                              |
+| ------------------------------------------------- | ------------------------------------------------------------------------ |
+| Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types` (`packages/ingest-types`)                       |
+| Registry (releases, nodes, publishers)            | `@comfyorg/registry-types` (`packages/registry-types`)                   |
+| Manager (queue tasks, packages)                   | `@comfyorg/api-client/generatedManagerTypes`                             |
+| Local webserver responses that differ from ingest | `@comfyorg/api-client/types`                                             |
+| WebSocket messages and custom-node outputs        | `@comfyorg/api-client/executionTypes`                                    |
+| Frontend settings                                 | `@comfyorg/settings-core/types`                                          |
+| Node definitions                                  | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts` |
+| Templates                                         | `@comfyorg/api-client/templateTypes`                                     |
+| Jobs API                                          | `@comfyorg/api-client/jobTypes` (`zJobDetail`, `zJobsListResponse`)      |
+| Workflow validation                               | `src/platform/workflow/validation/schemas/workflowSchema.ts`             |
+| Asset metadata                                    | `src/types/metadataTypes.ts`                                             |
 
 ```typescript
 // ✅ Import the type and annotate mock data
@@ -1034,12 +1025,34 @@ Screenshot expectations are **platform-specific** (font rendering). We maintain
 - Prefer functional assertions; use screenshots only when appearance is the
   behavior under test.
 
+- Capture only the area under test with `@e2e/fixtures/utils/screenshotRegion`.
+  Spec files may not call `toHaveScreenshot` directly; lint enforces this.
+
 ```typescript
-await expect(comfyPage.canvas).toHaveScreenshot('state.png')
-// Mask dynamic content (timestamps, versions) to avoid flakes:
-await expect(comfyPage.canvas).toHaveScreenshot('page.png', {
-  mask: [page.locator('.timestamp')]
-})
+import {
+  expectElementScreenshot,
+  expectRegionScreenshot,
+  graphItems,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
+
+// One element's box
+await expectElementScreenshot(dialog, 'dialog.png')
+
+// The area enclosing several targets plus padding: locators, node
+// references, graph items, page positions, or rectangles
+await expectRegionScreenshot(
+  comfyPage.page,
+  [ksamplerNode, graphItems(comfyPage.page, 'selection')],
+  'selection.png',
+  { padding: 40, mask: [page.locator('.timestamp')] }
+)
+
+// One area measured once and compared before and after an action
+const region = await screenshotRegion(comfyPage.page, nodes)
+await region.expectScreenshot('before.png')
+await doSomething()
+await region.expectScreenshot('after.png')
 ```
 
 ### Working with screenshots locally
@@ -1053,8 +1066,8 @@ export default defineConfig({
 })
 ```
 
-`grep` matches the test title and its tags, not the test body — a call to
-`toHaveScreenshot()` alone won't be detected. Tag every screenshot test
+`grep` matches the test title and its tags, not the test body — a screenshot
+assertion alone won't be detected. Tag every screenshot test
 `@screenshot` (or put "screenshot" in its title) for this filter to exclude it.
 
 Or generate local baselines for comparison (do not commit them). If you added
@@ -1067,7 +1080,7 @@ pnpm test:browser:local --update-snapshots
 
 ### Creating new baselines in CI
 
-1. Write the test with `toHaveScreenshot('filename.png')`.
+1. Write the test with one of the screenshot assertions above.
 2. Add the **`New Browser Test Expectations`** label, comment
    `/update-playwright`, or tick the "Update Playwright expectations"
    checkbox in the Playwright section of the PR report comment.

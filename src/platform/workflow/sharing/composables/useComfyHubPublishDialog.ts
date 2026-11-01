@@ -1,8 +1,14 @@
-import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
+import { defineAsyncComponent } from 'vue'
+
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'global-comfyhub-publish'
+
+const ComfyHubPublishDialog = defineAsyncComponent(
+  () =>
+    import('@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue')
+)
 
 export function useComfyHubPublishDialog() {
   const dialogService = useDialogService()

@@ -29,7 +29,10 @@ export class AgentPanel {
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
   public readonly composerStack: Locator
+  public readonly consentAcceptButton: Locator
+  public readonly consentContactFormButton: Locator
   public readonly consentDialog: Locator
+  public readonly consentLoadError: Locator
   public readonly consentRejectButton: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
@@ -38,9 +41,15 @@ export class AgentPanel {
   public readonly debugHeading: Locator
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
+  public readonly feedbackButton: Locator
   public readonly fileInput: Locator
+  public readonly historyButton: Locator
+  public readonly loadFailedMessage: Locator
+  public readonly loadRetryButton: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
+  public readonly replyAssetThumbnails: Locator
+  public readonly replyAssetTiles: Locator
   public readonly resizeHandle: Locator
   public readonly root: Locator
   public readonly scrollAssetsRight: Locator
@@ -49,6 +58,7 @@ export class AgentPanel {
   public readonly settingsSwitch: Locator
   public readonly stopButton: Locator
   public readonly suggestedPrompts: Locator
+  public readonly userMessageBubbles: Locator
   private readonly toasts: ToastHelper
   public readonly workflowPicker: Locator
   public readonly workflowSwitch: Locator
@@ -79,6 +89,13 @@ export class AgentPanel {
     this.consentDialog = page.getByRole('dialog', {
       name: enMessages.agent.consent.title
     })
+    this.consentAcceptButton = this.consentDialog.getByRole('button', {
+      name: enMessages.agent.consent.accept
+    })
+    this.consentContactFormButton = this.consentDialog.getByRole('button', {
+      name: enMessages.agent.consent.contactForm
+    })
+    this.consentLoadError = this.consentDialog.getByRole('alert')
     this.consentRejectButton = this.consentDialog.getByRole('button', {
       name: enMessages.agent.consent.reject
     })
@@ -95,12 +112,28 @@ export class AgentPanel {
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
+    this.feedbackButton = page.getByRole('button', {
+      name: enMessages.agent.feedbackCaption
+    })
     this.fileInput = this.root.getByTestId('agent-file-input')
+    this.historyButton = this.root.getByRole('button', {
+      name: enMessages.agent.showChatHistory
+    })
+    this.loadFailedMessage = this.dockedPanelShell.getByText(
+      enMessages.agent.loadFailed
+    )
+    this.loadRetryButton = this.dockedPanelShell.getByRole('button', {
+      name: enMessages.g.retry
+    })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
     this.openButton = page.getByRole('button', {
       name: enMessages.agent.entryButton,
       exact: true
     })
+    this.replyAssetThumbnails = this.root.getByRole('img', {
+      name: /^mesh-\d+/
+    })
+    this.replyAssetTiles = this.root.getByRole('button', { name: /^mesh-\d+$/ })
     this.resizeHandle = page.getByTestId('agent-panel-resize-handle')
     this.scrollAssetsRight = this.root.getByRole('button', {
       name: enMessages.g.scrollRight
@@ -116,15 +149,10 @@ export class AgentPanel {
       name: enMessages.agent.stop,
       exact: true
     })
-    /**
-     * Includes hidden buttons: the compact empty state keeps every suggestion
-     * in the DOM and hides the overflow, so a visible-only locator cannot tell
-     * "hidden" from "never rendered". Resolved by position rather than by
-     * prompt text, which varies with distribution and starter-prompt variant.
-     */
     this.suggestedPrompts = this.root
       .getByTestId('suggested-prompts')
       .getByRole('button', { includeHidden: true })
+    this.userMessageBubbles = this.root.getByTestId('user-message-bubble')
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
@@ -132,8 +160,22 @@ export class AgentPanel {
       name: 'Workflow JSON'
     })
     this.workSummary = this.root.getByRole('button', {
-      name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
+      name: new RegExp(
+        `^(${[
+          enMessages.agent.worked,
+          enMessages.agent.workedNotConfirmedOnCanvas
+        ]
+          .map(escapeRegExp)
+          .join('|')})`
+      )
     })
+  }
+
+  async openChatFromHistory(title: string): Promise<void> {
+    await this.historyButton.click()
+    const row = this.root.getByRole('button', { name: title, exact: true })
+    await expect(row).toBeEnabled()
+    await row.click()
   }
 
   async scrollAssetsToEnd(): Promise<void> {
@@ -286,7 +328,27 @@ export class AgentPanel {
   }
 
   async open(timeout?: number): Promise<Locator> {
-    if (await this.root.isVisible()) return this.root
+    return this.openUntilVisible(this.root, timeout)
+  }
+
+  /** Opens the panel until its dock is on screen, whatever the dock draws. */
+  async openDock(timeout?: number): Promise<Locator> {
+    return this.openUntilVisible(this.dockedPanel, timeout)
+  }
+
+  /** Clicks the entry from a known-closed state, for flows the panel never reaches. */
+  async openFromClosed(): Promise<void> {
+    await expect(this.openButton).toBeVisible()
+    if ((await this.openButton.getAttribute('aria-pressed')) === 'true')
+      await this.close()
+    await this.openButton.click()
+  }
+
+  private async openUntilVisible(
+    target: Locator,
+    timeout?: number
+  ): Promise<Locator> {
+    if (await target.isVisible()) return target
 
     const dropClickIfAlreadyOpen = await this.openButton.evaluateHandle(
       (button) => {
@@ -300,7 +362,7 @@ export class AgentPanel {
     )
     try {
       await expect(async () => {
-        if (await this.root.isVisible()) return
+        if (await target.isVisible()) return
         await this.openButton.click({ timeout: 1_000 })
       }).toPass({ timeout })
     } finally {
@@ -312,8 +374,8 @@ export class AgentPanel {
       await dropClickIfAlreadyOpen.dispose()
     }
 
-    await expect(this.root).toBeVisible({ timeout })
-    return this.root
+    await expect(target).toBeVisible({ timeout })
+    return target
   }
 
   async close(): Promise<void> {
@@ -427,6 +489,36 @@ export class AgentPanel {
   async sendMessage(message: string): Promise<void> {
     await this.composer.fill(message)
     await this.sendButton.click()
+  }
+
+  async expectUserMessages(prompts: string[]): Promise<void> {
+    await expect(this.userMessageBubbles).toHaveText(prompts)
+  }
+
+  async expectTurnSettled(): Promise<void> {
+    await expect(
+      this.stopButton,
+      'the active turn must settle before another turn is composed'
+    ).toHaveCount(0)
+    await expect(this.composer).toHaveText('')
+  }
+
+  async expectTourCard(
+    title: string,
+    description: string,
+    progress: string
+  ): Promise<Locator> {
+    const card = this.page.getByRole('dialog', { name: title, exact: true })
+    await expect(card).toBeVisible()
+    await expect(card).toHaveAccessibleDescription(description)
+    await expect(card.getByText(progress, { exact: true })).toBeVisible()
+    await expect(this.page.getByTestId('agent-coach-spotlight')).toBeVisible()
+    await expect(card).toBeInViewport({ ratio: 1 })
+    return card
+  }
+
+  tourSkipButton(card: Locator): Locator {
+    return card.getByRole('button', { name: enMessages.agent.skip })
   }
 
   async enterNodeSelectionMode(): Promise<void> {

@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { User, UserCredential } from 'firebase/auth'
 import {
   afterEach,
@@ -57,30 +58,30 @@ import {
   webSessionRequests,
   webSessionResourceHeader,
   webSessionSend
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
-import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
+import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
 import {
   getGlobalSetting,
   setGlobalSetting
 } from '@/platform/settings/globalSettingsApi'
-import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type { ComfyApp } from '@/scripts/app'
-import type { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -157,7 +158,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>({
       registerExtension: (extension: ComfyExtension) => {
@@ -174,12 +175,13 @@ vi.mock(import('@/views/UserSelectView.vue'), async () => ({
   default: defineComponent({ render: () => null })
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
-await import('@/extensions/core/cloudSessionCookie')
-const { default: router } = await import('@/router')
+const { cloudSessionCookieExtension } =
+  await import('@/extensions/core/cloudSessionCookie')
+useExtensionService().registerExtension(cloudSessionCookieExtension)
+const { createAppRouter } = await import('@/router')
+const router = await createAppRouter()
 
 installCloudApiAuth()
 installWorkspaceApiAuth()
@@ -654,6 +656,7 @@ function capabilitiesResponse({
   workspaceId
 }: BillingScope): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
     resolved_for: { user_id: userId, workspace_id: workspaceId },
     capabilities: {
       can_subscribe_self_serve: true,
@@ -673,6 +676,7 @@ function capabilitiesResponse({
       can_edit_workspace: false,
       can_manage_auto_top_up: false,
       can_manage_subscription: false,
+      can_open_plans: false,
       can_run_workflows: false,
       can_upgrade: false,
       can_downgrade_to_personal: false
@@ -692,6 +696,7 @@ function billingAnswer(path: string, scope: BillingScope): unknown {
     case '/api/billing/status':
       return {
         billing_rail: 'stripe',
+        ended_at: null,
         has_funds: true,
         is_active: true,
         max_seats: 1,
@@ -758,6 +763,7 @@ function installIngest(features: Record<string, boolean> = {}) {
     return jsonResponse({
       token: `session-jwt-${ingest.mints}`,
       expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+      user_id: 'uid-1',
       workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
       role: 'owner',
       permissions: []
@@ -914,7 +920,8 @@ describe('cloud API requests on the shared web session', () => {
         { ...LISTED, id: 'ws-personal', name: 'Personal', type: 'personal' },
         { ...LISTED, id: 'ws-team', name: 'Team', type: 'team' }
       ],
-      can_create_workspace: true
+      can_create_workspace: true,
+      max_owned_workspaces: 10
     })
 
     await useTeamWorkspaceStore().initialize()
@@ -1146,7 +1153,7 @@ describe('workspace API and global settings on the shared web session', () => {
       await useTeamWorkspaceStore().initialize()
       ingest.requests.length = 0
 
-      await workspaceApi.getBillingStatus()
+      await billingApi.getBillingStatus()
 
       expect(ingest.requests).toEqual([
         sessionRequest('GET', '/api/billing/status', {
@@ -1163,8 +1170,8 @@ describe('workspace API and global settings on the shared web session', () => {
     localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, 'ws-team')
 
     await useTeamWorkspaceStore().initialize()
-    await workspaceApi.getBillingStatus()
-    await workspaceApi.getBillingStatus()
+    await billingApi.getBillingStatus()
+    await billingApi.getBillingStatus()
 
     expect(ingest.requests.map(({ path }) => path)).toEqual([
       '/api/workspaces',
@@ -1179,7 +1186,7 @@ describe('workspace API and global settings on the shared web session', () => {
     ingest.refusals.push('csrf_invalid')
     ingest.csrfToken = 'csrf-2'
 
-    await workspaceApi.createTopup(500)
+    await billingApi.createTopup(500)
 
     expect(
       ingest.requests.map(({ path, headers }) =>
@@ -1197,7 +1204,7 @@ describe('workspace API and global settings on the shared web session', () => {
     const ingest = await bootOnSession()
     ingest.refusals.push('plan_required')
 
-    await expect(workspaceApi.getBillingStatus()).rejects.toMatchObject({
+    await expect(billingApi.getBillingStatus()).rejects.toMatchObject({
       name: 'WorkspaceApiError',
       status: 403,
       code: 'plan_required',
@@ -1209,7 +1216,7 @@ describe('workspace API and global settings on the shared web session', () => {
     const ingest = await bootOnSession()
     ingest.refusals.push('no_workspace_access')
 
-    await expect(workspaceApi.getBillingStatus()).rejects.toBeInstanceOf(
+    await expect(billingApi.getBillingStatus()).rejects.toBeInstanceOf(
       NoWorkspaceAccessError
     )
   })
@@ -1305,6 +1312,239 @@ describe('live updates and media on the shared web session', () => {
     await api.init()
     return ingest
   }
+
+  async function bootHiddenSocket(rememberedLogin = true) {
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    const server = installServer({ userId: 'user-a' })
+    await refreshRemoteConfig({ useAuth: false })
+    useAuthStore()
+    identity.resolve(rememberedLogin ? USER_A : null)
+    await useSessionCookie().ensureSessionCookie()
+    await api.resetSocket()
+    server.requests.length = 0
+    return server
+  }
+
+  async function refuseSocketFor(delayMs: number) {
+    const socket = FakeSocket.created.at(-1)
+    assert.exists(socket)
+    const attempts = FakeSocket.created.length
+    socket.closeFromServer()
+    await vi.advanceTimersByTimeAsync(delayMs - 1)
+    expect(FakeSocket.created).toHaveLength(attempts)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(FakeSocket.created).toHaveLength(attempts + 1)
+  }
+
+  it('backs off refused hidden-tab connections to one attempt per minute, resetting after an open', async () => {
+    await bootHiddenSocket()
+
+    await refuseSocketFor(1_000)
+    await refuseSocketFor(2_000)
+    await refuseSocketFor(4_000)
+    await refuseSocketFor(8_000)
+    await refuseSocketFor(16_000)
+    await refuseSocketFor(32_000)
+    await refuseSocketFor(60_000)
+    await refuseSocketFor(60_000)
+
+    FakeSocket.created.at(-1)?.dispatchEvent(new Event('open'))
+    await refuseSocketFor(300)
+    await refuseSocketFor(1_000)
+  })
+
+  it('renews an expired cookie before retrying a hidden tab and resumes live progress', async () => {
+    const server = await bootHiddenSocket()
+    server.session = 'none'
+    const progress = vi.fn()
+    api.addEventListener('progress', progress)
+    onTestFinished(() => api.removeEventListener('progress', progress))
+
+    await refuseSocketFor(1_000)
+
+    expect(methodsOf(server.requests)).toEqual(['GET', 'POST', 'GET'])
+    expect(useCloudWebSessionStore().signedInUser?.id).toBe('user-a')
+    const recovered = FakeSocket.created.at(-1)
+    assert.exists(recovered)
+    expect(recovered.path).toBe('/ws')
+    recovered.dispatchEvent(new Event('open'))
+    recovered.dispatchEvent(
+      new MessageEvent('message', {
+        data: JSON.stringify({ type: 'progress', data: { value: 1, max: 2 } })
+      })
+    )
+    expect(progress).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: { value: 1, max: 2 } })
+    )
+  })
+
+  it.for([
+    {
+      name: 'missing cookie and Firebase login',
+      remembered: false,
+      session: 'none'
+    },
+    { name: 'revoked session', remembered: true, session: 'revoked' }
+  ] satisfies { name: string; remembered: boolean; session: ServerSession }[])(
+    'stops socket retries and reports sign-out for $name even while hidden',
+    async ({ remembered, session }) => {
+      const server = await bootHiddenSocket(remembered)
+      const signedOut = vi.fn()
+      useCloudWebSessionStore().onSignedOutElsewhere(signedOut)
+      server.session = session
+      const attempts = FakeSocket.created.length
+      FakeSocket.created.at(-1)?.closeFromServer()
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(FakeSocket.created).toHaveLength(attempts)
+      expect(api.socket).toBeNull()
+      expect(useCloudWebSessionStore().state.phase).toBe('signed_out')
+      expect(signedOut).toHaveBeenCalledOnce()
+      expect(methodsOf(server.requests)).toEqual(['GET'])
+    }
+  )
+
+  it('backs off through an outage without signing out and can then renew the session', async () => {
+    const server = await bootHiddenSocket()
+    server.session = 'network'
+
+    await refuseSocketFor(1_000)
+    await refuseSocketFor(2_000)
+    expect(useCloudWebSessionStore().signedInUser?.id).toBe('user-a')
+    expect(firebaseSignOut).not.toHaveBeenCalled()
+
+    server.session = 'none'
+    server.requests.length = 0
+    await refuseSocketFor(4_000)
+
+    expect(methodsOf(server.requests)).toEqual(['GET', 'POST', 'GET'])
+    expect(useCloudWebSessionStore().signedInUser?.id).toBe('user-a')
+  })
+
+  it.for<{
+    name: string
+    stall: (signal: AbortSignal | undefined) => Promise<Response>
+  }>([
+    {
+      name: 'before headers',
+      stall: (signal) =>
+        new Promise((_resolve, reject) => {
+          signal?.addEventListener('abort', () => {
+            reject(new DOMException('aborted', 'AbortError'))
+          })
+        })
+    },
+    {
+      name: 'while reading the body',
+      stall: async (signal) =>
+        new Response(
+          new ReadableStream({
+            start(body) {
+              body.enqueue(new TextEncoder().encode('{"user":'))
+              signal?.addEventListener('abort', () => {
+                body.error(new DOMException('aborted', 'AbortError'))
+              })
+            }
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+    }
+  ])(
+    'resumes live progress after a session read stalls $name, without signing out',
+    async ({ stall }) => {
+      await bootHiddenSocket()
+      vi.mocked(fetch).mockImplementationOnce((_input, init) =>
+        stall(init?.signal ?? undefined)
+      )
+      const progress = vi.fn()
+      api.addEventListener('progress', progress)
+      onTestFinished(() => api.removeEventListener('progress', progress))
+      const attempts = FakeSocket.created.length
+
+      FakeSocket.created.at(-1)?.closeFromServer()
+      await vi.advanceTimersByTimeAsync(20_000)
+
+      expect(FakeSocket.created).toHaveLength(attempts + 1)
+      const recovered = FakeSocket.created.at(-1)
+      assert.exists(recovered)
+      expect(api.socket).toBe(recovered)
+      recovered.dispatchEvent(new Event('open'))
+      recovered.dispatchEvent(
+        new MessageEvent('message', {
+          data: JSON.stringify({ type: 'progress', data: { value: 1, max: 2 } })
+        })
+      )
+      expect(progress).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: { value: 1, max: 2 } })
+      )
+      expect(useCloudWebSessionStore().signedInUser?.id).toBe('user-a')
+      expect(firebaseSignOut).not.toHaveBeenCalled()
+    }
+  )
+
+  it('waits for a pending session read and does not reopen a replaced socket', async () => {
+    await bootHiddenSocket()
+    let resolveSession: (response: Response) => void = () => {}
+    const pending = new Promise<Response>((resolve) => {
+      resolveSession = resolve
+    })
+    vi.mocked(fetch).mockImplementationOnce(() => pending)
+    const attempts = FakeSocket.created.length
+    FakeSocket.created.at(-1)?.closeFromServer()
+
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(FakeSocket.created).toHaveLength(attempts)
+
+    await api.resetSocket()
+    const replacement = api.socket
+    resolveSession(jsonResponse(sessionBody('user-a')))
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(api.socket).toBe(replacement)
+    expect(FakeSocket.created).toHaveLength(attempts + 1)
+  })
+
+  it('does not start queue polling when a session socket fails to open', async () => {
+    await bootHiddenSocket()
+    vi.mocked(fetch).mockClear()
+    const socket = FakeSocket.created.at(-1)
+    assert.exists(socket)
+
+    socket.dispatchEvent(new Event('error'))
+    socket.closeFromServer()
+    await vi.advanceTimersByTimeAsync(5_000)
+
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.map(
+          ([input]) => new URL(String(input), location.href).pathname
+        )
+    ).toEqual(['/api/auth/session'])
+  })
+
+  it('sends a hidden tab to login once when its failed socket finds no remaining sign-in', async () => {
+    const server = await bootHiddenSocket(false)
+    await router.push('/cloud/login')
+    await router.push('/user-select')
+    expect(router.currentRoute.value.path).toBe('/user-select')
+    const landings: string[] = []
+    onTestFinished(
+      router.afterEach((to) => {
+        landings.push(to.path)
+      })
+    )
+
+    server.session = 'none'
+    FakeSocket.created.at(-1)?.closeFromServer()
+    await vi.advanceTimersByTimeAsync(60_000)
+    await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']))
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(landings).toEqual(['/cloud/login'])
+    expect(api.socket).toBeNull()
+  })
 
   it('keeps the socket off Personal once the team workspace is refused and the reload is held', async () => {
     const ingest = await bootWithSocket()
@@ -2572,6 +2812,7 @@ describe.for([{ unified: false }, { unified: true }])(
           return jsonResponse({
             token: 'session-jwt-1',
             expires_at: new Date(Date.now() + TEN_MINUTES_MS).toISOString(),
+            user_id: 'uid-1',
             workspace: {
               id: 'ws-personal',
               name: 'Personal',
@@ -2921,18 +3162,32 @@ describe.for([{ unified: false }, { unified: true }])(
         await expect(enterApp()).resolves.toBe('/user-select')
       })
 
-      it('sends a session-only tab holding a desktop login code to sign in, not into the app', async () => {
-        await install({ userId: 'user-a' })
-        identity.resolve(null)
-        await router.push('/cloud/login')
+      it.for(['/user-select', '/cloud/login', '/cloud/user-check'])(
+        'sends a session-only tab holding a desktop login code at %s to sign in without looping',
+        async (path) => {
+          await install({ userId: 'user-a' })
+          identity.resolve(null)
+          await router.push('/cloud/forgot-password')
+          const visited = new Set<string>()
+          onTestFinished(
+            router.beforeEach((to) => {
+              expect(visited.has(to.fullPath)).toBe(false)
+              visited.add(to.fullPath)
+            })
+          )
 
-        await router.push(
-          `/user-select?desktop_login_code=dlc_${'A'.repeat(43)}`
-        )
+          await router.push(`${path}?desktop_login_code=dlc_${'A'.repeat(43)}`)
 
-        expect(router.currentRoute.value.path).toBe('/cloud/login')
-        expect(router.currentRoute.value.query.switchAccount).toBeDefined()
-      })
+          expect(router.currentRoute.value.path).toBe('/cloud/login')
+          expect(router.currentRoute.value.query.switchAccount).toBe('true')
+          expect(
+            getPreservedQueryParam(
+              PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
+              'desktop_login_code'
+            )
+          ).toBe(`dlc_${'A'.repeat(43)}`)
+        }
+      )
 
       it('sends a revoked session to the login page', async () => {
         await install('revoked')

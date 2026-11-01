@@ -61,8 +61,8 @@ import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButton
 import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
-import type { Bounds } from '@/renderer/core/layout/types'
-import type { NodeId } from '@/types/nodeId'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const {

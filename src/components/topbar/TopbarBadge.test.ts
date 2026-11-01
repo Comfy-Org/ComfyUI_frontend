@@ -178,7 +178,7 @@ describe('TopbarBadge', () => {
         'full'
       )
       expect(screen.getByTestId('badge-icon')).toHaveClass(
-        'pi-exclamation-circle'
+        'icon-[lucide--circle-alert]'
       )
     })
 

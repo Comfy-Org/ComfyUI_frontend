@@ -1,16 +1,25 @@
+import type {
+  ReleaseUnsupportedPack,
+  ReleaseUnsupportedPacks
+} from '@comfyorg/ingest-types'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
-import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
+import type {
+  WorkspaceDeployment,
+  WorkspaceDeploymentList
+} from '@/platform/workspace/api/workspaceApi'
 
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import {
   readDeploymentHint,
-  setDeploymentHint
+  setDeploymentHint,
+  setUnconfirmedCloudHint
 } from '@/platform/workspace/deploymentHint'
 
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -22,24 +31,15 @@ const mockWorkspaceApi = vi.hoisted(() => ({
   pickDeployment: vi.fn(),
   clearDeployment: vi.fn(),
   setDefaultDeployment: vi.fn(),
-  clearDefaultDeployment: vi.fn()
+  clearDefaultDeployment: vi.fn(),
+  getReleaseUnsupportedPacks: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), async () => {
-  class WorkspaceApiError extends Error {
-    constructor(
-      message: string,
-      public readonly status?: number,
-      public readonly code?: string
-    ) {
-      super(message)
-      this.name = 'WorkspaceApiError'
-    }
-  }
-  return { workspaceApi: mockWorkspaceApi, WorkspaceApiError }
-})
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
+  workspaceApi: mockWorkspaceApi
+}))
 
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 const listing: WorkspaceDeploymentList = {
   builds_visible: true,
@@ -53,6 +53,7 @@ const listing: WorkspaceDeploymentList = {
       build_name: 'Studio Build',
       release_version: 2,
       status: 'ready',
+      can_start: false,
       created_at: '2026-10-01T00:00:00Z'
     },
     {
@@ -62,6 +63,7 @@ const listing: WorkspaceDeploymentList = {
       build_name: 'Studio Build',
       release_version: 1,
       status: 'stopped',
+      can_start: true,
       created_at: '2026-09-20T00:00:00Z'
     }
   ]
@@ -72,6 +74,10 @@ describe('useDeploymentPickStore', () => {
 
   beforeEach(() => {
     vi.mocked(reportError).mockImplementation(() => undefined)
+    mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+      release_id: null,
+      packs: []
+    })
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     Object.defineProperty(window, 'location', {
       value: { reload, origin: 'http://localhost' },
@@ -94,6 +100,51 @@ describe('useDeploymentPickStore', () => {
     await boot
 
     expect(store.bootDeployment).toBeUndefined()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing'
+    })
+  })
+
+  it('reports failed lookups once per page, however often they fail', async () => {
+    const error = new WorkspaceApiError('Service unavailable', 503)
+    mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+    const store = useDeploymentPickStore()
+
+    const boot = store.loadOnce()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await boot
+    await store.load()
+    await store.load()
+
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(5)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing'
+    })
+  })
+
+  it('saves the one report for the active workspace when a left workspace fails', async () => {
+    const staleError = new WorkspaceApiError('Service unavailable', 503)
+    let reject: (err: unknown) => void = () => {}
+    mockWorkspaceApi.listDeployments.mockReturnValueOnce(
+      new Promise<WorkspaceDeploymentList>((_, r) => {
+        reject = r
+      })
+    )
+    const store = useDeploymentPickStore()
+    const stale = store.load()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+    reject(staleError)
+    await stale
+
+    expect(reportError).not.toHaveBeenCalled()
+
+    const error = new WorkspaceApiError('Bad gateway', 502)
+    mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+    await store.load()
+    await store.load()
+
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
       surface: 'workspace',
       errorType: 'error_loading_deployment_listing'
@@ -186,7 +237,7 @@ describe('useDeploymentPickStore', () => {
     await boot
 
     expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
-    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1', [])
   })
 
   it('boots on Comfy Cloud, quietly, when ingest has no deployment routes (404)', async () => {
@@ -249,7 +300,7 @@ describe('useDeploymentPickStore', () => {
 
     await store.load()
 
-    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1', [])
     expect(store.state.phase).toBe('ready')
     expect(store.isVisible).toBe(true)
     expect(store.deployments).toHaveLength(2)
@@ -445,6 +496,37 @@ describe('useDeploymentPickStore', () => {
     expect(reload).toHaveBeenCalledOnce()
   })
 
+  it('locks out other switches while it drops an own pick of the default itself', async () => {
+    const ownPickOfDefault = {
+      ...listing,
+      picked_deployment_id: 'dep-2',
+      pick_source: 'browser',
+      default_deployment_id: 'dep-2'
+    } satisfies WorkspaceDeploymentList
+    mockWorkspaceApi.listDeployments
+      .mockResolvedValueOnce(ownPickOfDefault)
+      .mockResolvedValue({
+        ...ownPickOfDefault,
+        pick_source: 'workspace_default'
+      })
+    const cleared = deferred<void>()
+    mockWorkspaceApi.clearDeployment.mockReturnValue(cleared.promise)
+    const store = useDeploymentPickStore()
+    await store.load()
+
+    const following = store.followWorkspace()
+
+    expect(store.isSwitching).toBe(true)
+    await expect(store.pick('dep-1')).resolves.toBeNull()
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+
+    cleared.resolve()
+    await expect(following).resolves.toBeNull()
+    expect(store.isSwitching).toBe(false)
+    expect(store.followsWorkspace).toBe(true)
+    expect(reload).not.toHaveBeenCalled()
+  })
+
   it('an owner sets the picked deployment as the workspace default and the listing refreshes', async () => {
     Object.assign(useTeamWorkspaceStore(), {
       workspaceId: 'ws-1',
@@ -492,7 +574,7 @@ describe('useDeploymentPickStore', () => {
     expect(reload).toHaveBeenCalledOnce()
   })
 
-  it('an owner clears a workspace default that no longer exists, and a browser that follows it reloads', async () => {
+  it('an owner clears a workspace default that no longer exists without reloading a browser that already runs on Comfy Cloud', async () => {
     Object.assign(useTeamWorkspaceStore(), {
       workspaceId: 'ws-1',
       activeWorkspace: { id: 'ws-1', role: 'owner' }
@@ -512,7 +594,8 @@ describe('useDeploymentPickStore', () => {
     await expect(store.setDefault(null)).resolves.toBeNull()
 
     expect(mockWorkspaceApi.clearDefaultDeployment).toHaveBeenCalledWith('ws-1')
-    expect(reload).toHaveBeenCalledOnce()
+    expect(reload).not.toHaveBeenCalled()
+    expect(store.isSwitching).toBe(false)
   })
 
   it("hands back the server's refusal of a default and stays ready", async () => {
@@ -560,6 +643,22 @@ describe('useDeploymentPickStore', () => {
       deployment_id: 'dep-1'
     })
     expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it('goes back to the listing, refreshed, when the page is still in use after a switch reload', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
+    const store = useDeploymentPickStore()
+    await store.load()
+    await store.pick('dep-1')
+    expect(store.isSwitching).toBe(true)
+
+    window.dispatchEvent(new Event('pointerdown'))
+
+    expect(store.isSwitching).toBe(false)
+    await vi.waitFor(() =>
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
+    )
   })
 
   it('clears the pick for Comfy Cloud and reloads', async () => {
@@ -634,7 +733,10 @@ describe('useDeploymentPickStore', () => {
     expect(store.pickedDeploymentId).toBeNull()
 
     await store.load()
-    expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith('ws-2')
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith(
+      'ws-2',
+      []
+    )
     expect(store.state.phase).toBe('hidden')
   })
 
@@ -646,7 +748,10 @@ describe('useDeploymentPickStore', () => {
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
     await store.loadOnce()
 
-    expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith('ws-2')
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith(
+      'ws-2',
+      []
+    )
     expect(store.pickedDeploymentId).toBe('dep-2')
   })
 
@@ -1043,6 +1148,32 @@ describe('useDeploymentPickStore', () => {
       }
     )
 
+    it('hides a shown listing and stops retrying when a refresh gets a 404', async () => {
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce(listing)
+        .mockRejectedValueOnce(new WorkspaceApiError('404 page not found', 404))
+      const store = useDeploymentPickStore()
+      await store.load()
+
+      await store.load()
+
+      expect(store.isVisible).toBe(false)
+      expect(store.listingRefused).toBe(true)
+    })
+
+    it.for([
+      { answer: 'a 403', status: 403, refused: true },
+      { answer: 'a 404', status: 404, refused: true },
+      { answer: 'a 503', status: 503, refused: false }
+    ])('treats $answer as final: $refused', async ({ status, refused }) => {
+      mockWorkspaceApi.listDeployments.mockRejectedValue(
+        new WorkspaceApiError('listing failed', status)
+      )
+      const store = useDeploymentPickStore()
+      await store.load()
+      expect(store.listingRefused).toBe(refused)
+    })
+
     it('keeps the last listing when a refresh fails', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
       const store = useDeploymentPickStore()
@@ -1120,6 +1251,82 @@ describe('useDeploymentPickStore', () => {
         expect(reload).not.toHaveBeenCalled()
       }
     )
+  })
+
+  describe('a deployment this browser started', () => {
+    const stopped: WorkspaceDeployment = {
+      deployment_id: 'dep-1',
+      release_id: 'r-1',
+      status: 'stopped',
+      can_start: true,
+      created_at: '2026-09-20T00:00:00Z'
+    }
+
+    it.for([
+      {
+        answer: 'shows it queued',
+        outcome: 'is still named',
+        items: [{ ...stopped, status: 'queued', can_start: false }],
+        named: ['dep-1']
+      },
+      {
+        answer: 'shows it ready',
+        outcome: 'is still named',
+        items: [{ ...stopped, status: 'ready', can_start: false }],
+        named: ['dep-1']
+      },
+      {
+        answer: 'offers Start on it again',
+        outcome: 'is no longer named',
+        items: [{ ...stopped, status: 'failed', can_start: true }],
+        named: []
+      },
+      {
+        answer: 'no longer lists it',
+        outcome: 'is no longer named',
+        items: [],
+        named: []
+      }
+    ])(
+      '$outcome on the listing after one that $answer',
+      async ({ items, named }) => {
+        const store = useDeploymentPickStore()
+        store.followStart('dep-1')
+        mockWorkspaceApi.listDeployments.mockResolvedValue({
+          ...listing,
+          items
+        })
+
+        await store.load()
+        await store.load()
+
+        expect(mockWorkspaceApi.listDeployments.mock.calls).toEqual([
+          ['ws-1', ['dep-1']],
+          ['ws-1', named]
+        ])
+      }
+    )
+
+    it('is still named after a listing asked for before its start offers Start on it', async () => {
+      const beforeStart = deferred<WorkspaceDeploymentList>()
+      mockWorkspaceApi.listDeployments.mockReturnValueOnce(beforeStart.promise)
+      const store = useDeploymentPickStore()
+      const loading = store.load()
+
+      store.followStart('dep-1')
+      beforeStart.resolve({ ...listing, items: [stopped] })
+      await loading
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        items: [stopped]
+      })
+      await store.load()
+
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith(
+        'ws-1',
+        ['dep-1']
+      )
+    })
   })
 
   describe('when answers arrive out of order', () => {
@@ -1395,6 +1602,7 @@ describe('useDeploymentPickStore', () => {
     function seedHint(hint: HintState) {
       if (hint === 'deployment') setDeploymentHint('ws-1', 'dep-1')
       else if (hint === 'cloud') setDeploymentHint('ws-1', null)
+      else if (hint === 'unconfirmed') setUnconfirmedCloudHint('ws-1')
     }
 
     beforeEach(() => {
@@ -1454,7 +1662,16 @@ describe('useDeploymentPickStore', () => {
           ),
         hintAfter: 'cloud'
       },
-      ...(['deployment', 'cloud', 'unknown'] as const).map((hint) => ({
+      {
+        answer: 'a 403, after a failure left Comfy Cloud unconfirmed',
+        hintBefore: 'unconfirmed',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Outside rollout', 403)
+          ),
+        hintAfter: 'cloud'
+      },
+      ...(['deployment', 'cloud', 'unconfirmed'] as const).map((hint) => ({
         answer: `a transient failure, with the hint at ${hint}`,
         hintBefore: hint,
         respond: () =>
@@ -1462,7 +1679,25 @@ describe('useDeploymentPickStore', () => {
             new WorkspaceApiError('Service unavailable', 503)
           ),
         hintAfter: hint
-      }))
+      })),
+      {
+        answer: 'a transient failure, with no hint',
+        hintBefore: 'unknown',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Service unavailable', 503)
+          ),
+        hintAfter: 'unconfirmed'
+      },
+      {
+        answer: 'a failure that is not transient, with no hint',
+        hintBefore: 'unknown',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Bad request', 400)
+          ),
+        hintAfter: 'unknown'
+      }
     ])(
       'keeps the hint in step with the boot listing: $answer',
       async ({ hintBefore, respond, hintAfter }) => {
@@ -1475,6 +1710,128 @@ describe('useDeploymentPickStore', () => {
         await boot
 
         expect(readDeploymentHint('ws-1')).toBe(hintAfter)
+      }
+    )
+
+    it.for<{ why: string; arrange: () => void; hintAfter: HintState }>([
+      {
+        why: 'this browser last booted on a deployment',
+        arrange: () => seedHint('deployment'),
+        hintAfter: 'deployment'
+      },
+      {
+        why: 'the page opened from a deployment link',
+        arrange: () =>
+          Object.defineProperty(window, 'location', {
+            value: {
+              reload,
+              origin: 'http://localhost',
+              search: '?deployment=dep-1'
+            },
+            writable: true,
+            configurable: true
+          }),
+        hintAfter: 'unknown'
+      }
+    ])(
+      'leaves the hint alone and still reports a transient failure when $why',
+      async ({ arrange, hintAfter }) => {
+        arrange()
+        const error = new WorkspaceApiError('Service unavailable', 503)
+        mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+        const store = useDeploymentPickStore()
+
+        const boot = store.loadOnce()
+        await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+        await boot
+
+        expect(readDeploymentHint('ws-1')).toBe(hintAfter)
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+          surface: 'workspace',
+          errorType: 'error_loading_deployment_listing'
+        })
+      }
+    )
+
+    it('never writes the unconfirmed Comfy Cloud hint where an older frontend would read a deployment id', async () => {
+      mockWorkspaceApi.listDeployments.mockRejectedValue(
+        new WorkspaceApiError('Service unavailable', 503)
+      )
+
+      await useDeploymentPickStore().load()
+
+      expect(readDeploymentHint('ws-1')).toBe('unconfirmed')
+      expect(localStorage.getItem('Comfy.Workspace.DeploymentHint.ws-1')).toBe(
+        null
+      )
+    })
+
+    it.for<{
+      answer: string
+      respond: () => void
+      legacyHint: string
+      hintAfter: HintState
+    }>([
+      {
+        answer: 'a deployment',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing),
+        legacyHint: 'dep-2',
+        hintAfter: 'deployment'
+      },
+      {
+        answer: 'Comfy Cloud',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockResolvedValueOnce({
+            ...listing,
+            picked_deployment_id: null,
+            pick_source: null
+          }),
+        legacyHint: 'cloud',
+        hintAfter: 'cloud'
+      },
+      {
+        answer: 'a 403',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValueOnce(
+            new WorkspaceApiError('Outside rollout', 403)
+          ),
+        legacyHint: 'cloud',
+        hintAfter: 'cloud'
+      }
+    ])(
+      'replaces the unconfirmed Comfy Cloud hint a failure left once a listing answers with $answer',
+      async ({ respond, legacyHint, hintAfter }) => {
+        mockWorkspaceApi.listDeployments.mockRejectedValueOnce(
+          new WorkspaceApiError('Service unavailable', 503)
+        )
+        const store = useDeploymentPickStore()
+
+        await store.load()
+        expect(readDeploymentHint('ws-1')).toBe('unconfirmed')
+        respond()
+        await store.load()
+
+        expect(readDeploymentHint('ws-1')).toBe(hintAfter)
+        expect(
+          localStorage.getItem('Comfy.Workspace.DeploymentHint.ws-1')
+        ).toBe(legacyHint)
+        expect(
+          localStorage.getItem('Comfy.Workspace.UnconfirmedCloudHint.ws-1')
+        ).toBeNull()
+      }
+    )
+
+    it.for([
+      { legacyHint: 'dep-1', hint: 'deployment' },
+      { legacyHint: 'cloud', hint: 'cloud' }
+    ])(
+      'reads the hint an older frontend wrote over an unconfirmed Comfy Cloud hint: $legacyHint',
+      ({ legacyHint, hint }) => {
+        setUnconfirmedCloudHint('ws-1')
+        localStorage.setItem('Comfy.Workspace.DeploymentHint.ws-1', legacyHint)
+
+        expect(readDeploymentHint('ws-1')).toBe(hint)
       }
     )
 
@@ -1588,6 +1945,239 @@ describe('useDeploymentPickStore', () => {
       await store.loadOnce()
 
       expect(store.bootDeployment?.deployment_id).toBe('dep-2')
+    })
+  })
+
+  describe('packs the boot deployment could not load', () => {
+    const vfx: ReleaseUnsupportedPack = {
+      folder: 'ComfyUI-NVIDIA-VFX',
+      registry_id: 'comfyui-nvidia-vfx',
+      repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
+      cause: 'needs a GPU'
+    }
+    const seedvr: ReleaseUnsupportedPack = {
+      folder: 'seedvr2_videoupscaler',
+      registry_id: '',
+      repository: 'https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler',
+      cause: "No module named 'cv2'"
+    }
+
+    it('asks once the page boots on a deployment and matches a pack of its Release by registry id, then folder', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: 'r-2',
+        packs: [vfx, seedvr]
+      })
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockWorkspaceApi.getReleaseUnsupportedPacks).toHaveBeenCalledOnce()
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toEqual(vfx)
+      expect(store.unsupportedPackFor('seedvr2_videoupscaler')).toEqual(seedvr)
+      expect(store.unsupportedPackFor('comfyui-impact-pack')).toBeUndefined()
+    })
+
+    it('matches nothing when the build lists no packs', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockWorkspaceApi.getReleaseUnsupportedPacks).toHaveBeenCalledOnce()
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('prefers the pack whose registry id matches over one whose folder does', async () => {
+      const folderOnly = { ...seedvr, folder: 'comfyui-nvidia-vfx' }
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: 'r-2',
+        packs: [folderOnly, vfx]
+      })
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toEqual(vfx)
+    })
+
+    it.for([
+      {
+        name: 'no deployment picked',
+        answer: () =>
+          mockWorkspaceApi.listDeployments.mockResolvedValue({
+            ...listing,
+            picked_deployment_id: undefined,
+            pick_source: undefined
+          })
+      },
+      {
+        name: 'the account outside the rollout',
+        answer: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Outside rollout', 403)
+          )
+      },
+      {
+        name: 'an ingest without deployment routes',
+        answer: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Not found', 404)
+          )
+      }
+    ])('does not ask on Comfy Cloud: $name', async ({ answer }) => {
+      answer()
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.bootDeployment).toBeNull()
+      expect(mockWorkspaceApi.getReleaseUnsupportedPacks).not.toHaveBeenCalled()
+    })
+
+    it('does not ask when the boot listing never answered', async () => {
+      const store = useDeploymentPickStore()
+
+      store.bootOnComfyCloud()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockWorkspaceApi.getReleaseUnsupportedPacks).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      new WorkspaceApiError('Bad gateway', 502),
+      new WorkspaceApiError('Network Error'),
+      new TypeError('packs is not an array')
+    ])(
+      'matches nothing and reports once when the ask fails: %s',
+      async (error) => {
+        mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+        mockWorkspaceApi.getReleaseUnsupportedPacks.mockRejectedValue(error)
+        const store = useDeploymentPickStore()
+
+        await store.loadOnce()
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+          surface: 'workspace',
+          errorType: 'error_loading_release_unsupported_packs',
+          level: 'warning'
+        })
+      }
+    )
+
+    it("keeps the boot build's packs when a later listing names another deployment", async () => {
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce(listing)
+        .mockResolvedValue({ ...listing, picked_deployment_id: 'dep-1' })
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: 'r-2',
+        packs: [vfx]
+      })
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      await store.load()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.changeSinceBoot).toBe('deployment')
+      expect(mockWorkspaceApi.getReleaseUnsupportedPacks).toHaveBeenCalledOnce()
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toEqual(vfx)
+    })
+
+    it.for([
+      { name: 'the listing still says the boot Release', laterRelease: 'r-2' },
+      { name: 'the listing says the new Release', laterRelease: 'r-3' }
+    ])(
+      'matches nothing when the answer is for another Release than the page booted on: $name',
+      async ({ laterRelease }) => {
+        const answer = deferred<ReleaseUnsupportedPacks>()
+        mockWorkspaceApi.listDeployments.mockResolvedValueOnce(listing)
+        mockWorkspaceApi.getReleaseUnsupportedPacks.mockReturnValue(
+          answer.promise
+        )
+        const store = useDeploymentPickStore()
+        await store.loadOnce()
+        await vi.advanceTimersByTimeAsync(0)
+
+        mockWorkspaceApi.listDeployments.mockResolvedValue({
+          ...listing,
+          items: [
+            { ...listing.items[0], release_id: laterRelease },
+            listing.items[1]
+          ]
+        })
+        await store.load()
+        answer.resolve({ release_id: 'r-3', packs: [vfx] })
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(store.pickedDeployment?.release_id).toBe(laterRelease)
+        expect(store.bootDeployment?.release_id).toBe('r-2')
+        expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
+
+    it('matches nothing when the answer names no Release', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: null,
+        packs: [vfx]
+      })
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('asks again for the build of the deployment a switch reloads onto', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: 'r-2',
+        packs: [vfx]
+      })
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(store.unsupportedPackFor('comfyui-nvidia-vfx')).toEqual(vfx)
+
+      await expect(store.pick('dep-1')).resolves.toBeNull()
+      expect(reload).toHaveBeenCalledOnce()
+
+      store.$dispose()
+      delete getActivePinia()?.state.value[store.$id]
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        picked_deployment_id: 'dep-1'
+      })
+      mockWorkspaceApi.getReleaseUnsupportedPacks.mockResolvedValue({
+        release_id: 'r-1',
+        packs: [seedvr]
+      })
+      const reloaded = useDeploymentPickStore()
+      await reloaded.loadOnce()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockWorkspaceApi.getReleaseUnsupportedPacks).toHaveBeenCalledTimes(
+        2
+      )
+      expect(reloaded.unsupportedPackFor('comfyui-nvidia-vfx')).toBeUndefined()
+      expect(reloaded.unsupportedPackFor('seedvr2_videoupscaler')).toEqual(
+        seedvr
+      )
     })
   })
 })

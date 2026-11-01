@@ -4,9 +4,9 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useEnterBuilder } from '@/components/builder/useEnterBuilder'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useAppMode } from '@/composables/useAppMode'
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 

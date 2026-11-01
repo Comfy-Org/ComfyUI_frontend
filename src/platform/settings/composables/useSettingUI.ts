@@ -5,17 +5,20 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import {
-  getSettingInfo,
-  useSettingStore
-} from '@/platform/settings/settingStore'
+import { getSettingInfo } from '@comfyorg/settings-core/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
-import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
+import type {
+  SettingPanelType,
+  SettingParams
+} from '@comfyorg/settings-core/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import type { NavGroupData } from '@/types/navTypes'
+import type { NavGroupData } from '@comfyorg/design-system/lib/navigation/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 
@@ -53,6 +56,7 @@ export function useSettingUI(
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
+  const { canManageMembers } = useBillingCapabilities()
   const settingStore = useSettingStore()
   const activeCategory = ref<SettingTreeNode | null>(null)
 
@@ -136,7 +140,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/CreditsPanel.vue')
+      () => import('@/platform/billing/components/settings/CreditsPanel.vue')
     )
   }
 
@@ -153,7 +157,7 @@ export function useSettingUI(
 
   const workspaceSettingsPanelComponent = defineAsyncComponent(
     () =>
-      import('@/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.vue')
+      import('@/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue')
   )
 
   const planCreditsPanel: SettingPanelItem = {
@@ -174,7 +178,7 @@ export function useSettingUI(
     },
     component: defineAsyncComponent(
       () =>
-        import('@/platform/workspace/components/dialogs/settings/billing/BillingTab.vue')
+        import('@/platform/account/components/dialogs/settings/BillingTab.vue')
     )
   }
 
@@ -212,7 +216,13 @@ export function useSettingUI(
     const planPanel = flags.unifiedBillingSettingsEnabled
       ? billingPanel
       : planCreditsPanel
-    const workspacePanels = isCloud ? [planPanel, membersPanel] : [planPanel]
+    const canViewMembers = pendingServerFact(
+      'BE-24066',
+      isCloud || canManageMembers.value
+    )
+    const workspacePanels = canViewMembers
+      ? [planPanel, membersPanel]
+      : [planPanel]
     return shouldShowWorkspaceAllowlist.value
       ? [...workspacePanels, allowlistPanel]
       : workspacePanels
@@ -256,7 +266,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/KeybindingPanel.vue')
+      () => import('@/platform/keybindings/components/KeybindingPanel.vue')
     )
   }
 
@@ -267,7 +277,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/platform/settings/components/ExtensionPanel.vue')
+      () => import('@/platform/extensions/components/ExtensionPanel.vue')
     )
   }
 
@@ -412,6 +422,10 @@ export function useSettingUI(
     void skillPacksStore.startFlagGate()
   })
 
+  const unifiedBillingSettingsEnabled = computed(
+    () => flags.unifiedBillingSettingsEnabled
+  )
+
   return {
     panels,
     activeCategory,
@@ -419,6 +433,7 @@ export function useSettingUI(
     groupedMenuTreeNodes,
     settingCategories,
     navGroups,
+    unifiedBillingSettingsEnabled,
     findCategoryByKey,
     findPanelByKey
   }

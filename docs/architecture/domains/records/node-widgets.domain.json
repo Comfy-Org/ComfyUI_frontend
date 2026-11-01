@@ -4,10 +4,6 @@
   "description": "The legacy LiteGraph widget layer for generic widget kinds, the widget type contracts, the node.widgets compatibility view over the widget value store, value-control and dynamic input widgets, and named-value diffing. Feature-specific Vue-only widget stubs belong to their feature domains; Vue widget components belong to the renderer.",
   "modules": [
     {
-      "path": "src/composables/node/useWatchWidget.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/node/useWatchWidget.ts",
       "role": "application"
     },
@@ -24,24 +20,12 @@
       "role": "domain"
     },
     {
-      "path": "src/core/graph/widgets/dynamicGroupWidget.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/core/graph/widgets/dynamicGroupWidget.ts",
       "role": "application"
     },
     {
-      "path": "src/core/graph/widgets/dynamicInputSpec.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/core/graph/widgets/dynamicInputSpec.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/core/graph/widgets/dynamicWidgets.test.ts",
-      "role": "application"
     },
     {
       "path": "src/core/graph/widgets/dynamicWidgets.ts",
@@ -56,23 +40,11 @@
       "role": "application"
     },
     {
-      "path": "src/core/graph/widgets/nodeWidgetValues.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/core/graph/widgets/nodeWidgetValues.ts",
       "role": "application"
     },
     {
-      "path": "src/core/graph/widgets/revealDynamicInputSlot.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/core/graph/widgets/revealDynamicInputSlot.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/core/graph/widgets/valueControl.test.ts",
       "role": "domain"
     },
     {
@@ -80,35 +52,11 @@
       "role": "domain"
     },
     {
-      "path": "src/core/graph/widgets/valueControlWidgets.controlAfterGenerateName.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/core/graph/widgets/valueControlWidgets.ts",
       "role": "application"
     },
     {
-      "path": "src/extensions/core/customWidgets.clone.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/customWidgets.numericOptions.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/customWidgets.subgraphPromotion.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/customWidgets.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/customWidgets.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/saveImageExtraOutput.test.ts",
       "role": "integration"
     },
     {
@@ -116,20 +64,8 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/widgetInputs.refreshCombo.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/widgetInputs.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/widgetInputs.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/widgetValuePropagation.test.ts",
-      "role": "application"
     },
     {
       "path": "src/extensions/core/widgetValuePropagation.ts",
@@ -140,43 +76,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/node/widgetsView.emptyWidgetName.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/widgetsView.refusalCriterion.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/widgetsView.refusalValueRestore.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/widgetsView.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/lib/litegraph/src/node/widgetsView.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/lib/litegraph/src/types/widgets.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/utils/mathParser.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/lib/litegraph/src/utils/mathParser.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiff.test.ts",
       "role": "domain"
     },
     {
@@ -184,16 +88,12 @@
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/utils/widget.test.ts",
-      "role": "application"
+      "path": "src/lib/litegraph/src/utils/restoredWidgetValue.ts",
+      "role": "domain"
     },
     {
       "path": "src/lib/litegraph/src/utils/widget.ts",
@@ -212,20 +112,8 @@
       "role": "presentation"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/widgetMap.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/lib/litegraph/src/widgets/widgetMap.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/stores/widgetValueStore.graphReactivity.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/widgetValueStore.test.ts",
-      "role": "application"
     },
     {
       "path": "src/stores/widgetValueStore.ts",
@@ -236,15 +124,7 @@
       "role": "domain"
     },
     {
-      "path": "src/types/widgetId.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/types/widgetState.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/widgetVisibility.test.ts",
       "role": "domain"
     },
     {
@@ -252,15 +132,7 @@
       "role": "domain"
     },
     {
-      "path": "src/utils/nodeDefUtil.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/nodeDefUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/searchAndReplace.test.ts",
       "role": "domain"
     },
     {
@@ -272,16 +144,12 @@
       "role": "domain"
     },
     {
-      "path": "src/utils/widgetUtil.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/utils/widgetUtil.ts",
       "role": "application"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["error-reporting"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

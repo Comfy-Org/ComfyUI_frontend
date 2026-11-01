@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
@@ -33,7 +34,7 @@ export class ContextMenu {
     return this.anyMenu.getByRole('menuitem', { name, exact: true })
   }
 
-  async distanceFrom(point: { x: number; y: number }): Promise<number> {
+  async distanceFrom(point: Point2D): Promise<number> {
     return this.ariaMenu.evaluate((element, point) => {
       const { x, y } = element.getBoundingClientRect()
       return Math.hypot(x - point.x, y - point.y)
@@ -103,9 +104,7 @@ export class ContextMenu {
 
   async openColorSubmenu(): Promise<Locator> {
     await this.menuItem('Color').click()
-    const submenu = this.page.getByRole('menu').filter({
-      has: this.page.getByRole('menuitem', { name: 'Red', exact: true })
-    })
+    const submenu = this.page.getByRole('menu', { name: 'Color', exact: true })
     await expect(submenu).toBeVisible()
     return submenu
   }
@@ -118,12 +117,7 @@ export class ContextMenu {
 
   async openShapeSubmenu(): Promise<Locator> {
     await this.menuItem('Shape').click()
-    const submenu = this.page.getByRole('menu').filter({
-      has: this.page.getByRole('menuitemradio', {
-        name: 'Box',
-        exact: true
-      })
-    })
+    const submenu = this.page.getByRole('menu', { name: 'Shape', exact: true })
     await expect(submenu).toBeVisible()
     return submenu
   }
@@ -219,7 +213,7 @@ export class ContextMenu {
   }
 
   async dispatchFor(locator: Locator): Promise<{ defaultPrevented: boolean }> {
-    const defaultPrevented = await locator.evaluate((element) => {
+    const defaultPrevented = await locator.evaluate(async (element) => {
       const { x, y, width, height } = element.getBoundingClientRect()
       const event = new MouseEvent('contextmenu', {
         bubbles: true,
@@ -229,6 +223,7 @@ export class ContextMenu {
         clientY: y + height / 2
       })
       element.dispatchEvent(event)
+      await new Promise((resolve) => setTimeout(resolve))
       return event.defaultPrevented
     })
     await expect(this.anyMenu).toBeVisible()

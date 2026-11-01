@@ -5,7 +5,7 @@ import { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import type { NodeProperty } from '@/types/nodeProperty'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { LLink } from './LLink'
 import { Reroute } from './Reroute'
 import { InputIndicators } from './canvas/InputIndicators'
@@ -15,15 +15,20 @@ import type {
   Dictionary,
   INodeFlags,
   ISlotType,
-  Point,
-  Rect,
-  Size,
   WhenNullish
-} from './interfaces'
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Rect,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { distance, isInsideRectangle, overlapBounding } from './measure'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphSlot } from './subgraph/SubgraphSlotBase'
-import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
 import {
   LGraphEventMode,
   LinkDirection,
@@ -31,7 +36,7 @@ import {
   NodeSlotType,
   RenderShape,
   TitleMode
-} from './types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import { createUuidv4 } from '@/utils/uuid'
 
 /** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
@@ -252,24 +257,78 @@ export class LiteGraphGlobal {
   auto_load_slot_types = false
 
   // set these values if not using auto_load_slot_types
+  private registeredSlotInTypes: Record<string, { nodes: string[] }> = {}
+  private registeredSlotOutTypes: Record<string, { nodes: string[] }> = {}
+  private slotTypesOut: string[] = []
+  private slotTypesDefaultIn: Record<string, SlotTypeDefault> = {}
+  private slotTypesDefaultOut: Record<string, SlotTypeDefault> = {}
+  private fillSlotTypeTables?: () => void
+
   /** slot types for nodeclass */
-  registered_slot_in_types: Record<string, { nodes: string[] }> = {}
+  get registered_slot_in_types(): Record<string, { nodes: string[] }> {
+    this.flushSlotTypeTables()
+    return this.registeredSlotInTypes
+  }
+  set registered_slot_in_types(value: Record<string, { nodes: string[] }>) {
+    this.flushSlotTypeTables()
+    this.registeredSlotInTypes = value
+  }
   /** slot types for nodeclass */
-  registered_slot_out_types: Record<string, { nodes: string[] }> = {}
+  get registered_slot_out_types(): Record<string, { nodes: string[] }> {
+    this.flushSlotTypeTables()
+    return this.registeredSlotOutTypes
+  }
+  set registered_slot_out_types(value: Record<string, { nodes: string[] }>) {
+    this.flushSlotTypeTables()
+    this.registeredSlotOutTypes = value
+  }
   /** slot types IN */
   slot_types_in: string[] = []
   /** slot types OUT */
-  slot_types_out: string[] = []
+  get slot_types_out(): string[] {
+    this.flushSlotTypeTables()
+    return this.slotTypesOut
+  }
+  set slot_types_out(value: string[]) {
+    this.flushSlotTypeTables()
+    this.slotTypesOut = value
+  }
   /**
    * specify for each IN slot type a(/many) default node(s), use single string, array, or object
    * (with node, title, parameters, ..) like for search
    */
-  slot_types_default_in: Record<string, SlotTypeDefault> = {}
+  get slot_types_default_in(): Record<string, SlotTypeDefault> {
+    this.flushSlotTypeTables()
+    return this.slotTypesDefaultIn
+  }
+  set slot_types_default_in(value: Record<string, SlotTypeDefault>) {
+    this.flushSlotTypeTables()
+    this.slotTypesDefaultIn = value
+  }
   /**
    * specify for each OUT slot type a(/many) default node(s), use single string, array, or object
    * (with node, title, parameters, ..) like for search
    */
-  slot_types_default_out: Record<string, SlotTypeDefault> = {}
+  get slot_types_default_out(): Record<string, SlotTypeDefault> {
+    this.flushSlotTypeTables()
+    return this.slotTypesDefaultOut
+  }
+  set slot_types_default_out(value: Record<string, SlotTypeDefault>) {
+    this.flushSlotTypeTables()
+    this.slotTypesDefaultOut = value
+  }
+
+  /** Defers filling the slot type tables until one is read or {@link flushSlotTypeTables} runs. */
+  deferSlotTypeTables(fill: () => void): void {
+    this.fillSlotTypeTables = fill
+  }
+
+  /** Runs the fill passed to {@link deferSlotTypeTables}, if it has not run yet. */
+  flushSlotTypeTables(): void {
+    const fill = this.fillSlotTypeTables
+    this.fillSlotTypeTables = undefined
+    fill?.()
+  }
 
   /** [true!] very handy, ALT click to clone and drag the new node */
   alt_drag_do_clone_nodes = false
@@ -530,15 +589,14 @@ export class LiteGraphGlobal {
       if (slotType === '') slotType = '*'
 
       const register = out
-        ? this.registered_slot_out_types
-        : this.registered_slot_in_types
+        ? this.registeredSlotOutTypes
+        : this.registeredSlotInTypes
       register[slotType] ??= { nodes: [] }
 
       const { nodes } = register[slotType]
       if (class_type && !nodes.includes(class_type)) nodes.push(class_type)
 
-      // check if is a new type
-      const types = out ? this.slot_types_out : this.slot_types_in
+      const types = out ? this.slotTypesOut : this.slot_types_in
       const type = slotType.toLowerCase()
 
       if (!types.includes(type)) {
@@ -1028,7 +1086,7 @@ export class LiteGraphGlobal {
 type RegisteredSlotTypeDefaultNodeOpts = SlotTypeDefaultNodeOpts
 type RegisteredLiteGraphGlobal = LiteGraphGlobal
 
-declare module './types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface SlotTypeDefaultNodeOpts extends RegisteredSlotTypeDefaultNodeOpts {}
   interface LiteGraphGlobal extends RegisteredLiteGraphGlobal {}
 }

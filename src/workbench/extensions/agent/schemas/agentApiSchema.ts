@@ -12,7 +12,9 @@ import {
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
   zAgentToolCallData as zGeneratedAgentToolCallData,
+  zAgentThinkingEntry,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
+  zAgentTurnUsage as zGeneratedAgentTurnUsage,
   zToolCallSummary,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
@@ -26,7 +28,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 
-import { isNodeLocatorId } from '@/types/nodeIdentification'
+import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {
@@ -61,7 +63,8 @@ export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
 export const RENDERED_ASK_KINDS = [
   'run_approval',
   'ask_user',
-  'delete_approval'
+  'delete_approval',
+  'paused'
 ] as const satisfies readonly AgentAskKind[]
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
@@ -142,6 +145,14 @@ export const zPersistedToolCallSummary = zToolCallSummary.extend({
   skill: zSkillName
 })
 export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
+
+/**
+ * One persisted `content.thinking` entry: a model round's thinking text,
+ * anchored to that round's first tool call when it made one.
+ */
+export const zPersistedThinkingEntry = zAgentThinkingEntry
+  .pick({ text: true })
+  .extend({ tool_call_id: z.string().nullish() })
 
 /**
  * The message-parse boundary's `content.tool_calls` field is deliberately
@@ -249,7 +260,21 @@ const zAgentToolCallData = zGeneratedAgentToolCallData
     op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),
     doc_seq: zGeneratedAgentToolCallData.shape.doc_seq.catch(undefined),
     doc_lineage_seq:
-      zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined)
+      zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined),
+    job_id: z
+      .string()
+      .min(1)
+      .max(128)
+      .refine(
+        (value) =>
+          !value.includes('\u0000') &&
+          !value.includes('\n') &&
+          !value.includes('\r') &&
+          !value.includes('\t')
+      )
+      .optional()
+      .catch(undefined),
+    job_workflow_id: z.string().min(1).optional().catch(undefined)
   })
   .passthrough()
 
@@ -277,7 +302,8 @@ const zAgentUsage = z
     output_tokens: z.number().nullish(),
     total_tokens: z.number().nullish(),
     cache_read_input_tokens: z.number().nullish(),
-    cache_creation_input_tokens: z.number().nullish()
+    cache_creation_input_tokens: z.number().nullish(),
+    charge_micro_usd: zGeneratedAgentTurnUsage.shape.charge_micro_usd
   })
   .passthrough()
 
@@ -324,6 +350,11 @@ const zAgentMessageDraftEvent = z.object({
   data: zAgentMessageDraftData
 })
 
+const zAgentThinkingDraftEvent = z.object({
+  type: z.literal('agent_thinking_draft'),
+  data: zAgentMessageDraftData
+})
+
 const zAgentMessageDoneEvent = z.object({
   type: z.literal('agent_message_done'),
   data: zAgentMessageDoneData
@@ -349,6 +380,7 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentToolCallEvent,
   zAgentMessageDeltaEvent,
   zAgentMessageDraftEvent,
+  zAgentThinkingDraftEvent,
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,

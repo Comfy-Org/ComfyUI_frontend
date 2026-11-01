@@ -1,9 +1,13 @@
+import { once } from 'es-toolkit'
+
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 
 const MAX_DERIVED_TITLE_LENGTH = 60
 
-const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+const graphemeSegmenter = once(
+  () => new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+)
 
 /** First user message, trimmed and capped at 60 graphemes. */
 export function deriveSessionTitle(
@@ -15,7 +19,7 @@ export function deriveSessionTitle(
   )
   const text = firstUser?.text.trim() ?? ''
   return (
-    Array.from(graphemes.segment(text), ({ segment }) => segment)
+    Array.from(graphemeSegmenter().segment(text), ({ segment }) => segment)
       .slice(0, MAX_DERIVED_TITLE_LENGTH)
       .join('')
       .trimEnd() || undefined

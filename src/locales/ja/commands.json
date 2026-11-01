@@ -35,9 +35,6 @@
   "Comfy-Desktop_Restart": {
     "label": "再起動"
   },
-  "Comfy_3DViewer_Open3DViewer": {
-    "label": "選択したノードの3Dビューアー（ベータ）を開く"
-  },
   "Comfy_BrowseModelAssets": {
     "label": "実験的: モデルアセットを参照"
   },
@@ -50,8 +47,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "選択したアイテムを削除"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "選択したリンクを削除"
+  },
   "Comfy_Canvas_FitView": {
     "label": "選択したノードにビューを合わせる"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "選択したリンクを非表示"
   },
   "Comfy_Canvas_Lock": {
     "label": "キャンバスをロック"
@@ -82,6 +85,9 @@
   },
   "Comfy_Canvas_SelectAll": {
     "label": "すべて選択"
+  },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "選択したリンクを表示"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "キャンバスのリンク表示を切り替える"

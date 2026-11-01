@@ -1,4 +1,4 @@
-import type { IBoundingBoxesWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBoundingBoxesWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 

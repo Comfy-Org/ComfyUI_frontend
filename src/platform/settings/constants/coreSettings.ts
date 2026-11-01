@@ -5,13 +5,14 @@ import {
 } from '@/locales/localeConfig'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
-import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
-import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
+import { CANVAS_NAVIGATION_PRESETS } from '@comfyorg/settings-core/canvasNavigation'
+import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingParams } from '@/platform/settings/types'
-import type { Keybinding } from '@/platform/keybindings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
+import { normalizeDisabledExtensionPaths } from '@/platform/settings/utils/extensionPath'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'
 import { breakpointsTailwind } from '@vueuse/core'
 
 /**
@@ -305,10 +306,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
-    id: AGENT_CONSENT_OFFER_DECLINED_SETTING_ID,
-    name: 'Agent consent offer declined',
+    id: AGENT_ONBOARDED_SCOPES_SETTING_ID,
+    name: 'Agent onboarding tour completed for these account scopes',
     type: 'hidden',
-    defaultValue: false
+    defaultValue: []
+  },
+  {
+    id: 'Comfy.DeploymentSwitcher.Seen',
+    name: 'Running on button opened at least once',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.61.0'
   },
   {
     id: 'Comfy.Graph.ZoomSpeed',
@@ -593,7 +601,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Appearance', 'General'],
     name: 'Disable animations',
     type: 'boolean',
-    defaultValue: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    defaultValue: () =>
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     tooltip:
       'Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation.',
     onChange: (value: unknown) => {
@@ -687,6 +696,21 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: [] as string[],
     versionAdded: '1.3.11'
+  },
+  {
+    id: 'Comfy.Extension.SeenAgentExtensions',
+    name: 'Seen agent-created extension names',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.34.0'
+  },
+  {
+    id: 'Comfy.Extension.DisabledPacks',
+    name: 'Disabled extension paths',
+    type: 'hidden',
+    defaultValue: [],
+    migrateDeprecatedValue: normalizeDisabledExtensionPaths,
+    versionAdded: '1.59.0'
   },
   {
     id: 'Comfy.LinkRenderMode',
@@ -887,7 +911,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Seen new workflow action items',
     type: 'hidden',
     defaultValue: [] as string[],
-    versionAdded: '1.41.5'
+    versionAdded: '1.41.5',
+    deprecated: true
   },
   {
     id: 'Comfy.Execution.PreviewMethod',
@@ -1052,7 +1077,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Minimap.Visible',
     name: 'Display minimap on canvas',
     type: 'hidden',
-    defaultValue: window.innerWidth >= breakpointsTailwind.lg,
+    defaultValue: () => window.innerWidth >= breakpointsTailwind.lg,
     versionAdded: '1.25.0'
   },
   {

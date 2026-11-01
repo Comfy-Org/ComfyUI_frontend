@@ -5,22 +5,32 @@
  *
  *   Phase                          | Typical range (cloud, Lighthouse)
  *   ───────────────────────────────┼──────────────────────────────────
+ *   startup/entry-modules          | variable  (time origin → bootstrap(): HTML + static imports)
  *   startup/remote-config          | ~0–0.5 s  (pre-Firebase, blocking)
  *   startup/telemetry-init         | ~0–0.3 s
+ *   startup/local-auth             | non-cloud (local web or desktop host session)
  *   startup/firebase-init          | ~0–0.1 s
+ *   startup/router                 | ~0 s      (route table; cloud routes import)
  *   startup/sentry-init            | ~0–0.1 s
  *   auth-gate/initialized          | variable  (Firebase session restore + timeout/retry)
  *   auth-gate/user-store           | ~0–2.5 s  (GET /api/user/*)
  *   auth-gate/needs-login          | ~0 s      (computed resolution)
  *   bootstrap/settings             | ~0.2 s    (parallel, non-blocking)
  *   bootstrap/workflows            | ~0.3 s    (parallel, non-blocking)
+ *   bootstrap/i18n                 | parallel  (custom node translations)
+ *   bootstrap/graph-view-chunk     | variable  (lazy GraphView route import)
+ *   bootstrap/new-user             | ~0 s      (new-user defaults)
  *   bootstrap/extensions-load      | ~0.5 s    (fetch + import /extensions JS)
  *     ├ extensions-load-core       | subset    (core entry-point import)
  *     └ extensions-load-custom     | subset    (backend-provided extension imports)
+ *   bootstrap/deployment-pick      | cloud     (deployment lookup)
+ *   bootstrap/sync-workflows       | ~0 s      (workflow store sync)
  *   bootstrap/extensions-init      | ~0.3 s    (extension.init() hooks)
  *   bootstrap/object-info          | ~0.7 s    (GET /api/object_info)
  *   bootstrap/extensions           | ~0.5 s    (addCustomNodeDefs + registerCustomNodes)
+ *   bootstrap/vue-node-defs        | ~0.1 s    (node def store update)
  *   bootstrap/extensions-setup     | ~0.5 s    (extension.setup() hooks)
+ *   bootstrap/workflow-restore     | ~0.3 s    (initial workflow, tabs, URL template)
  *
  * The two `extensions-load-*` rows are nested inside `extensions-load` rather
  * than replacing it: the aggregate stays intact for the existing monitors, and
@@ -47,15 +57,12 @@
  *
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
-// oxlint-disable-next-line no-restricted-imports -- startup telemetry must publish before the registry exists
-import { datadogRum } from '@datadog/browser-rum'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { getDatadogRum } from '@comfyorg/telemetry/rumContext'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
+import type { BootstrapCompleteMetadata } from '@comfyorg/telemetry/types'
 
-import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { TelemetryEvents } from '@/platform/telemetry/types'
-import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
-
-import { perfMark, perfPoint } from './perfMark'
+import { perfMark, perfMeasureSinceOrigin, perfPoint } from './perfMark'
 import type { PerfSpan } from './perfMark'
 
 /**
@@ -70,18 +77,33 @@ function toRumTimingName(name: string): string {
 }
 
 const BOOTSTRAP_PHASES = {
-  startup: ['remote-config', 'telemetry-init', 'firebase-init', 'sentry-init'],
+  startup: [
+    'entry-modules',
+    'remote-config',
+    'telemetry-init',
+    'local-auth',
+    'firebase-init',
+    'router',
+    'sentry-init'
+  ],
   'auth-gate': ['initialized', 'user-store', 'needs-login'],
   bootstrap: [
     'settings',
     'workflows',
+    'i18n',
+    'graph-view-chunk',
+    'new-user',
     'extensions-load',
     'extensions-load-core',
     'extensions-load-custom',
+    'deployment-pick',
+    'sync-workflows',
     'extensions-init',
     'object-info',
     'extensions',
-    'extensions-setup'
+    'vue-node-defs',
+    'extensions-setup',
+    'workflow-restore'
   ]
 } as const satisfies Record<string, readonly string[]>
 
@@ -94,6 +116,17 @@ export type BootstrapPhase = {
   [Namespace in BootstrapPhaseNamespace]: `${Namespace}/${BootstrapSubphase<Namespace>}`
 }[BootstrapPhaseNamespace]
 
+function untracedMs(rows: BootstrapPhaseTiming[], totalMs: number): number {
+  let tracedMs = 0
+  let coveredUntil = 0
+  for (const { startMs, durationMs } of rows) {
+    const endMs = Math.min(startMs + durationMs, totalMs)
+    tracedMs += Math.max(0, endMs - Math.max(startMs, coveredUntil))
+    coveredUntil = Math.max(coveredUntil, endMs)
+  }
+  return totalMs - tracedMs
+}
+
 export interface BootstrapPhaseTiming {
   name: BootstrapPhase
   startMs: number
@@ -104,6 +137,7 @@ export class BootstrapTracer {
   private _spans = new Map<BootstrapPhase, PerfSpan>()
   private _timings: BootstrapPhaseTiming[] = []
   private _completed = false
+  private _outcome: 'completed' | 'failed' | undefined
   private _timeoutReported = false
   private _watchdog: ReturnType<typeof setTimeout> | undefined
 
@@ -153,6 +187,20 @@ export class BootstrapTracer {
   }
 
   /**
+   * Record a phase that began at the navigation time origin, such as the
+   * static module graph evaluated before any startup code can run.
+   */
+  recordSinceTimeOrigin(phase: BootstrapPhase): void {
+    const durationMs = perfMeasureSinceOrigin(phase)
+    this._publishRumTiming(phase)
+    this._timings.push({
+      name: phase,
+      startMs: 0,
+      durationMs: Math.round(durationMs)
+    })
+  }
+
+  /**
    * Record a named milestone with no duration (e.g. "app shell mounted").
    */
   milestone(name: string): void {
@@ -162,7 +210,7 @@ export class BootstrapTracer {
   }
 
   private _publishRumTiming(name: string): void {
-    if (isCloud) datadogRum.addTiming(toRumTimingName(name))
+    getDatadogRum()?.addTiming(toRumTimingName(name))
   }
 
   /**
@@ -176,6 +224,10 @@ export class BootstrapTracer {
     return [...this._timings].sort((a, b) => a.startMs - b.startMs)
   }
 
+  get outcome(): 'completed' | 'failed' | 'pending' {
+    return this._outcome ?? 'pending'
+  }
+
   /**
    * Close out startup: stop any phase still open, emit one aggregate event
    * carrying total wall-clock and the per-phase breakdown, and log the trace
@@ -184,6 +236,7 @@ export class BootstrapTracer {
   complete(outcome: 'completed' | 'failed' = 'completed'): void {
     if (this._completed) return
     this._completed = true
+    this._outcome = outcome
     clearTimeout(this._watchdog)
     for (const phase of Array.from(this._spans.keys())) this._stopPhase(phase)
     this._report(outcome)
@@ -227,14 +280,13 @@ export class BootstrapTracer {
         total_ms: totalMs,
         outcome,
         phase_count: rows.length,
+        untraced_ms: untracedMs(rows, totalMs),
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
         ...(pending?.length ? { pending } : {})
       }
-      if (isCloud) {
-        datadogRum.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
-      }
+      getDatadogRum()?.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
       useTelemetry()?.trackBootstrapComplete(metadata)
-      if (isCloud && outcome === 'completed') datadogRum.setViewLoadingTime()
+      if (outcome === 'completed') getDatadogRum()?.setViewLoadingTime()
       this._logSummary(rows, totalMs)
     } catch {
       return
@@ -254,7 +306,8 @@ export class BootstrapTracer {
         rows
           .map((r) => `  ${r.startMs}ms  ${r.name}: ${r.durationMs}ms`)
           .join('\n') +
-        `\n  Total wall-clock: ${totalMs}ms`
+        `\n  Total wall-clock: ${totalMs}ms` +
+        `\n  Untraced: ${untracedMs(rows, totalMs)}ms`
     )
   }
 }
