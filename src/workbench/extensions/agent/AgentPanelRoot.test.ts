@@ -691,6 +691,7 @@ function addTab(
     suffix,
     isTemporary: false,
     isModified: false,
+    isLoaded: true,
     activeState: null,
     ...overrides
   })

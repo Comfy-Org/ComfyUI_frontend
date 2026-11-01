@@ -7,6 +7,8 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
 
@@ -578,6 +580,77 @@ test.describe(
       ).toHaveText('Unsaved Workflow')
       await expect(page.getByRole('dialog')).toHaveCount(0)
       expect(workflowSelection.postedMessages).toHaveLength(0)
+    })
+
+    test('picks an unsaved tab a reload left unopened', async ({
+      page,
+      toast,
+      workflowSelection
+    }) => {
+      const tabs = page.getByTestId('workflow-tab')
+      await expect(tabs).toHaveCount(1)
+      await page.evaluate(() => {
+        const workflow = (window.app!.extensionManager as WorkspaceStore)
+          .workflow.activeWorkflow!
+        window.app!.graph.add(window.LiteGraph!.createNode('Note'))
+        workflow.changeTracker.checkState()
+      })
+      await page
+        .getByRole('button', {
+          name: enMessages.sideToolbar.newBlankWorkflow,
+          exact: true
+        })
+        .click()
+      await expect(tabs).toHaveCount(2)
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            Object.keys(localStorage).some(
+              (key) =>
+                key.startsWith('Comfy.Workflow.DraftIndex.v2:') &&
+                localStorage
+                  .getItem(key)!
+                  .includes('"workflows/Unsaved Workflow.json"')
+            )
+          )
+        )
+        .toBe(true)
+
+      await page.reload()
+      await waitForCloudApp(page)
+      await expect(tabs).toHaveCount(2)
+
+      await test.step('the background tab is restored unloaded', async () => {
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () =>
+                (
+                  window.app!.extensionManager as WorkspaceStore
+                ).workflow.getWorkflowByPath('workflows/Unsaved Workflow.json')
+                  ?.isLoaded
+            )
+          )
+          .toBe(false)
+      })
+
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      await agentPanel.chooseWorkflow('Unsaved Workflow')
+      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+      workflowSelection.finishSave(true)
+
+      await expect(agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
+      await expect(
+        toast.withText(enMessages.shareWorkflow.saveFailedTitle)
+      ).toHaveCount(0)
+      const savedGraph = await page.evaluate(async (path) => {
+        const response = await fetch(
+          `/api/userdata/${encodeURIComponent(path)}`
+        )
+        return (await response.json()) as { nodes: { type: string }[] }
+      }, workflowSelection.savedPaths[0])
+      expect(savedGraph.nodes.map(({ type }) => type)).toContain('Note')
     })
   }
 )
