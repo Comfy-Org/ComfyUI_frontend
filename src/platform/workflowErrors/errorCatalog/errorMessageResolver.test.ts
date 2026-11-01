@@ -11,6 +11,7 @@ import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/t
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { i18n, te } from '@/i18n'
+import enMessages from '@/locales/en/main.json'
 
 function nodeValidationError(
   type: string,
@@ -1064,7 +1065,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'timeout',
         displayTitle: 'Generation timed out',
         displayMessage:
-          "This workflow reached your plan's maximum run time (10 min on Free, 30 min on Standard and Creator, 1 hr on Pro). Try reducing image resolution, batch size, or workflow length and run again."
+          "This workflow reached your plan's maximum run time (10 min on Free, 1 hr on Pro, 30 min on all other plans). Try reducing image resolution, batch size, or workflow length and run again."
       }
     },
     {
@@ -1453,10 +1454,36 @@ describe('errorMessageResolver', () => {
     ).toMatchObject({
       catalogId: 'timeout',
       displayMessage:
-        "This workflow reached your plan's maximum run time (10 min on Free, 30 min on Standard and Creator, 1 hr on Pro). Try reducing image resolution, batch size, or workflow length and run again.",
+        "This workflow reached your plan's maximum run time (10 min on Free, 1 hr on Pro, 30 min on all other plans). Try reducing image resolution, batch size, or workflow length and run again.",
       toastMessage:
-        "This workflow reached your plan's maximum run time (10 min on Free, 30 min on Standard and Creator, 1 hr on Pro). Try reducing image resolution, batch size, or workflow length and run again."
+        "This workflow reached your plan's maximum run time (10 min on Free, 1 hr on Pro, 30 min on all other plans). Try reducing image resolution, batch size, or workflow length and run again."
     })
+  })
+
+  it('builds the timeout limits from the pricing-table durations', () => {
+    const { t } = i18n.global
+    const resolved = resolveRunErrorMessage({
+      kind: 'execution',
+      nodeDisplayName: 'KSampler',
+      error: executionError(
+        'ServiceError',
+        'Job execution time exceeded maximum limit'
+      )
+    })
+    const raw = enMessages.errorCatalog.runtimeErrors.timeout.message
+
+    expect(raw).toContain('@:subscription.maxDuration.free')
+    expect(raw).toContain('@:subscription.maxDuration.pro')
+    expect(resolved.displayMessage).toContain(
+      `${t('subscription.maxDuration.free')} on Free`
+    )
+    expect(resolved.displayMessage).toContain(
+      `${t('subscription.maxDuration.pro')} on Pro`
+    )
+    expect(resolved.displayMessage).toContain(
+      `${t('subscription.maxDuration.standard')} on all other plans`
+    )
+    expect(resolved.toastMessage).toBe(resolved.displayMessage)
   })
 
   it('does not over-match runtime error lookalikes', () => {
