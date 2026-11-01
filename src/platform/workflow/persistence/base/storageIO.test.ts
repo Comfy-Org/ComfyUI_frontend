@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
 import {
+  clearActivePath,
   clearAllWorkspaceStorage,
   clearAllWorkflowStorage,
   clearWorkflowRestoreState,
@@ -343,6 +344,61 @@ describe('storageIO', () => {
           workspaceId,
           path: 'workflows/b.json'
         })
+      })
+
+      it('drops every older tab list for the workspace when writing', () => {
+        for (const id of ['load-1', 'load-2', 'load-3']) {
+          sessionStorage.setItem(
+            `Comfy.Workflow.OpenPaths:${id}`,
+            JSON.stringify({
+              workspaceId,
+              paths: [`workflows/${id}.json`],
+              activeIndex: 0
+            })
+          )
+        }
+        const latest = {
+          workspaceId,
+          paths: ['workflows/latest.json'],
+          activeIndex: 0
+        }
+        writeOpenPaths('load-4', latest)
+
+        expect(
+          ['load-1', 'load-2', 'load-3'].map((id) =>
+            sessionStorage.getItem(`Comfy.Workflow.OpenPaths:${id}`)
+          )
+        ).toEqual([null, null, null])
+        expect(readOpenPaths('load-5', workspaceId)).toEqual(latest)
+      })
+
+      it('restores the latest saved tabs when the session copy cannot be written', () => {
+        writeOpenPaths('load-1', {
+          workspaceId,
+          paths: ['workflows/old.json'],
+          activeIndex: 0
+        })
+        const latest = {
+          workspaceId,
+          paths: ['workflows/latest.json'],
+          activeIndex: 0
+        }
+        const setItem = vi
+          .spyOn(sessionStorage, 'setItem')
+          .mockImplementation(() => {
+            throw new DOMException('full', 'QuotaExceededError')
+          })
+        writeOpenPaths('load-2', latest)
+        setItem.mockRestore()
+
+        expect(readOpenPaths('load-3', workspaceId)).toEqual(latest)
+      })
+
+      it('forgets the active tab saved under the previous page load’s id', () => {
+        writeActivePath('load-1', { workspaceId, path: 'workflows/a.json' })
+        clearActivePath('load-2', workspaceId)
+
+        expect(readActivePath('load-3', workspaceId)).toBeNull()
       })
 
       it('keeps another workspace’s tabs when writing this one', () => {

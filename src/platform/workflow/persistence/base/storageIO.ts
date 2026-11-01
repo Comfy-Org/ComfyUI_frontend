@@ -308,23 +308,36 @@ function writeSessionPointer<T extends { workspaceId: string }>(
 ): void {
   if (!isStorageAvailable()) return
 
+  let saved = true
   try {
     sessionStorage.setItem(key, JSON.stringify(pointer))
   } catch {
-    return
+    saved = false
   }
+  removeSessionPointers(
+    prefix,
+    pointer.workspaceId,
+    isValid,
+    saved ? key : null
+  )
+}
 
+function removeSessionPointers(
+  prefix: string,
+  workspaceId: string,
+  isValid: (value: unknown) => value is { workspaceId: string },
+  keepKey: string | null
+): void {
   try {
-    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+    const staleKeys: string[] = []
+    for (let i = 0; i < sessionStorage.length; i++) {
       const storageKey = sessionStorage.key(i)
-      if (!storageKey?.startsWith(prefix) || storageKey === key) continue
-      if (
-        readSessionValue(storageKey, isValid)?.workspaceId ===
-        pointer.workspaceId
-      ) {
-        sessionStorage.removeItem(storageKey)
+      if (!storageKey?.startsWith(prefix) || storageKey === keepKey) continue
+      if (readSessionValue(storageKey, isValid)?.workspaceId === workspaceId) {
+        staleKeys.push(storageKey)
       }
     }
+    for (const storageKey of staleKeys) sessionStorage.removeItem(storageKey)
   } catch {
     return
   }
@@ -401,8 +414,14 @@ export function clearActivePath(clientId: string, workspaceId: string): void {
     sessionStorage.removeItem(StorageKeys.activePath(clientId))
     localStorage.removeItem(StorageKeys.lastActivePath(workspaceId))
   } catch {
-    // Storage access can throw in private-mode browsers; nothing to undo.
+    return
   }
+  removeSessionPointers(
+    StorageKeys.prefixes.activePath,
+    workspaceId,
+    isValidActivePathPointer,
+    null
+  )
 }
 
 /**
