@@ -1,70 +1,68 @@
+import type { GetExtensionsResponse } from '@comfyorg/ingest-types'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import {
+  DISABLED_SHORTCUT_EXTENSION,
+  ENABLED_SHORTCUT_EXTENSION,
+  SHORTCUT_PACK_SCRIPT,
+  shortcutPackSource
+} from '@e2e/fixtures/data/shortcutPackFixture'
 
-const DISABLED = 'Test.DisabledShortcutPack'
-const ENABLED = 'Test.EnabledShortcutPack'
+test.use({
+  initialSettings: { 'Comfy.Extension.Disabled': [DISABLED_SHORTCUT_EXTENSION] }
+})
 
-test.use({ initialSettings: { 'Comfy.Extension.Disabled': [DISABLED] } })
+test.beforeEach(async ({ page }) => {
+  await page.route('**/extensions', (route) =>
+    route.fulfill({
+      json: [SHORTCUT_PACK_SCRIPT] satisfies GetExtensionsResponse
+    })
+  )
+  await page.route(`**${SHORTCUT_PACK_SCRIPT}*`, (route) =>
+    route.fulfill({ contentType: 'text/javascript', body: shortcutPackSource })
+  )
+})
 
 test.describe(
   'Disabled third-party extension shortcuts',
   { tag: ['@settings', '@keyboard'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.page.evaluate(
-        ({ disabled, enabled }) => {
-          const counts = (window.__commandExecutionCounts ??= {})
-          for (const [name, key] of [
-            [disabled, 'j'],
-            [enabled, 'k']
-          ] as const) {
-            const commandId = `${name}.Run`
-            window.app!.registerExtension({
-              name,
-              keybindings: [{ combo: { key, alt: true }, commandId }],
-              commands: [
-                {
-                  id: commandId,
-                  function: () => {
-                    counts[commandId] = (counts[commandId] ?? 0) + 1
-                  }
-                }
-              ]
-            })
-          }
-        },
-        { disabled: DISABLED, enabled: ENABLED }
-      )
-      await comfyPage.canvas.click({ position: { x: 400, y: 400 } })
-      await comfyPage.nextFrame()
-    })
-
-    test('a disabled extension adds no command and its shortcut does nothing', async ({
-      comfyPage
+    test("a disabled extension's shortcut does nothing and is not listed", async ({
+      comfyPage,
+      page
     }) => {
-      await comfyPage.canvas.press('Alt+KeyK')
-      await expect
-        .poll(() => comfyPage.command.getExecutionCount(`${ENABLED}.Run`))
-        .toBe(1)
+      const body = page.locator('body')
 
-      await comfyPage.canvas.press('Alt+KeyJ')
-      await comfyPage.nextFrame()
-      expect(await comfyPage.command.getExecutionCount(`${DISABLED}.Run`)).toBe(
-        0
-      )
+      await test.step('Alt+J (disabled extension) does nothing', async () => {
+        await comfyPage.canvas.click({ position: { x: 400, y: 400 } })
+        await comfyPage.canvas.press('Alt+KeyJ')
+        await comfyPage.nextFrame()
+        await expect(body).not.toHaveAttribute('data-ran-shortcut')
+      })
 
-      const registered = await comfyPage.page.evaluate(
-        (ids) =>
-          ids.map((id) =>
-            window.app!.extensionManager.command.commands.some(
-              (command) => command.id === id
-            )
-          ),
-        [`${DISABLED}.Run`, `${ENABLED}.Run`]
-      )
-      expect(registered).toEqual([false, true])
+      await test.step('Alt+K (enabled extension) still runs', async () => {
+        await comfyPage.canvas.press('Alt+KeyK')
+        await expect(body).toHaveAttribute(
+          'data-ran-shortcut',
+          ENABLED_SHORTCUT_EXTENSION
+        )
+      })
+
+      await test.step('Only the enabled shortcut is in Keybindings', async () => {
+        const { keybindingPanel } = comfyPage.settingDialog
+        await comfyPage.settingDialog.open()
+        await comfyPage.settingDialog.category('Keybinding').click()
+        await keybindingPanel.search('ShortcutPack')
+        await expect(
+          keybindingPanel.commandRow(`${ENABLED_SHORTCUT_EXTENSION}.Run`)
+        ).toBeVisible()
+        await expect(
+          keybindingPanel.commandRow(`${DISABLED_SHORTCUT_EXTENSION}.Run`)
+        ).toHaveCount(0)
+      })
     })
   }
 )
