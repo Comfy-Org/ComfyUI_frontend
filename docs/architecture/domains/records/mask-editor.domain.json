@@ -21,7 +21,9 @@
     "packages/mask-editor/src/useCanvasTransform.ts",
     "packages/mask-editor/src/ui/EditorCanvas.vue",
     "packages/mask-editor/src/ui/EditorToolbar.vue",
-    "packages/mask-editor/src/ui/style.css"
+    "packages/mask-editor/src/ui/style.css",
+    "packages/mask-editor/src/extensionTypes.ts",
+    "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.ts"
   ],
   "characterizationScenarios": [
     {
@@ -40,7 +42,9 @@
     },
     {
       "name": "Mask PNG encoding round-trips through the decoder fixture",
-      "checks": ["packages/mask-editor/src/pngEncodeUtil.test.ts"]
+      "checks": [
+        "packages/mask-editor/src/pngEncodeUtil.test.ts"
+      ]
     },
     {
       "name": "Core extensions register the clipspace and mask editor and open the editor from node menus",
@@ -57,9 +61,18 @@
         "packages/mask-editor/src/brushUtils.test.ts",
         "packages/mask-editor/src/maskEditorStore.test.ts"
       ]
+    },
+    {
+      "name": "External tool registration validates descriptors and releases registrations",
+      "checks": [
+        "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.test.ts"
+      ]
     }
   ],
-  "adrs": ["docs/adr/MASKEDITOR-0001-reusable-editor-and-host-ownership.md"],
+  "adrs": [
+    "docs/adr/MASKEDITOR-0001-reusable-editor-and-host-ownership.md",
+    "docs/adr/MASKEDITOR-EXTENSIONS-0001-session-scoped-external-tools.md"
+  ],
   "compatibilityPromises": [
     "The core extension remains the host integration seam for opening the editor.",
     "Image widget values and layer output remain covered by loader and saver characterization tests."

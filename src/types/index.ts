@@ -57,6 +57,18 @@ export type {
 } from '@comfyorg/graph-model/slotId'
 export { slotId } from '@comfyorg/graph-model/slotId'
 export type { ComfyExtension } from './comfy'
+export type {
+  MaskEditorCommitResult,
+  MaskEditorExtensionAPI,
+  MaskEditorImageSnapshot,
+  MaskEditorMask,
+  MaskEditorOverlayPoint,
+  MaskEditorPointerEvent,
+  MaskEditorTool,
+  MaskEditorToolContext,
+  MaskEditorToolRegistration,
+  MaskEditorToolSession
+} from '@comfyorg/mask-editor/extensionTypes'
 export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 export type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 export type { ComfyApp } from '@/types/comfy'
