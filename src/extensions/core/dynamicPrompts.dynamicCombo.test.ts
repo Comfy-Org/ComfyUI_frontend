@@ -1,6 +1,7 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
@@ -196,6 +197,100 @@ describe('dynamic prompt serialization', () => {
       ])
     }
   )
+
+  it.for([
+    { name: 'enabled', dynamicPrompts: true, expected: 'extra prompt' },
+    { name: 'disabled', dynamicPrompts: false, expected: 'extra custom' },
+    { name: 'ordinary', dynamicPrompts: undefined, expected: 'extra custom' }
+  ])(
+    'serializes every custom widget with an $name companion after reconstruction',
+    async ({ dynamicPrompts, expected }) => {
+      useWidgetStore().registerCustomWidgets({
+        CUSTOM_MULTIPLE_TEXT: (target, name, inputData) => {
+          const primary = target.addWidget(
+            'text',
+            name,
+            inputData[1]?.default ?? '',
+            () => {},
+            {}
+          )
+          primary.dynamicPrompts = true
+          const extra = target.addWidget(
+            'text',
+            `${name}.extra`,
+            'extra /*hidden*/prompt',
+            () => {},
+            {}
+          )
+          extra.dynamicPrompts = dynamicPrompts
+          extra.serializeValue = () => 'extra custom'
+          return primary
+        }
+      })
+      const { graph, node, combo } = createDynamicNode(
+        true,
+        false,
+        'CUSTOM_MULTIPLE_TEXT'
+      )
+      const retained = node.addWidget(
+        'text',
+        'retained',
+        'retained /*hidden*/template',
+        () => {},
+        {}
+      )
+      retained.dynamicPrompts = true
+      retained.serializeValue = () => 'retained custom'
+      combo.value = 'second'
+      combo.value = 'first'
+      combo.value = 'second'
+
+      const firstQueue = await graphToPrompt(graph)
+      const secondQueue = await graphToPrompt(graph)
+
+      expect(firstQueue.output[String(node.id)].inputs).toEqual({
+        mode: 'second',
+        'mode.text': 'second option',
+        'mode.text.extra': expected,
+        retained: 'retained custom'
+      })
+      expect(secondQueue.output[String(node.id)].inputs).toEqual(
+        firstQueue.output[String(node.id)].inputs
+      )
+      expect(secondQueue.workflow.nodes[0].widgets_values).toEqual([
+        'second',
+        'second /*hidden*/option',
+        'extra /*hidden*/prompt',
+        'retained /*hidden*/template'
+      ])
+    }
+  )
+
+  it('binds a custom widget returned without adding it to the node', () => {
+    const node = new LGraphNode('DetachedCustomPromptTest')
+    const widget: IBaseWidget = {
+      name: 'prompt',
+      type: 'text',
+      value: 'detached /*hidden*/prompt',
+      options: {},
+      y: 0,
+      dynamicPrompts: true
+    }
+    useWidgetStore().registerCustomWidgets({
+      CUSTOM_DETACHED_TEXT: () => widget
+    })
+
+    useLitegraphService().addNodeInput(node, {
+      name: 'prompt',
+      type: 'STRING',
+      widgetType: 'CUSTOM_DETACHED_TEXT',
+      isOptional: false
+    })
+
+    assert.exists(widget.serializeValue)
+    expect(widget.serializeValue(node, 0)).toBe('detached prompt')
+    expect(widget.value).toBe('detached /*hidden*/prompt')
+  })
 
   it.for([
     { dynamicPrompts: true, expected: 'hello world' },

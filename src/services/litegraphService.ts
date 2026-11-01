@@ -344,8 +344,15 @@ export const useLitegraphService = () => {
       ) ?? (returnedWidget ? toConcreteWidget(returnedWidget, node) : undefined)
     if (!widget) return
 
-    if (widget.dynamicPrompts) {
-      bindDynamicPromptSerializer(widget)
+    for (const candidate of new Set([
+      widget,
+      ...(node.widgets ?? []).filter(
+        (candidate) => !widgetsBefore.has(candidate)
+      )
+    ])) {
+      if (candidate.dynamicPrompts) {
+        bindDynamicPromptSerializer(candidate)
+      }
     }
 
     widget.label = resolveLabel(
