@@ -6,6 +6,9 @@
     v-else
     :class="cn('lg-node-header w-full min-w-0 p-1 text-xs', headerShapeClass)"
     :data-testid="`node-header-${nodeData?.id || ''}`"
+    @pointerdown="trackPress"
+    @pointermove="trackPressMove"
+    @pointerup="trackRelease"
     @dblclick="handleDoubleClick"
   >
     <div class="flex min-w-0 items-center justify-between gap-1">
@@ -80,6 +83,15 @@ import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import type {
+  GestureEvent,
+  GestureState
+} from '@/lib/litegraph/src/canvas/reduceGesture'
+import {
+  idleGesture,
+  reduceGesture
+} from '@/lib/litegraph/src/canvas/reduceGesture'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -172,7 +184,46 @@ const handleCollapse = () => {
   emit('collapse')
 }
 
+let gesture: GestureState = idleGesture
+let releasedAfterDrag = false
+
+const trackGesture = (gestureEvent: GestureEvent) => {
+  const result = reduceGesture(gesture, gestureEvent)
+  gesture = result.state
+  return result.effects
+}
+
+const trackPress = (event: PointerEvent) => {
+  if (event.button !== 0) return
+  releasedAfterDrag = false
+  gesture = idleGesture
+  trackGesture({
+    type: 'down',
+    position: { x: event.clientX, y: event.clientY },
+    timeStamp: event.timeStamp,
+    policy: CanvasPointer.gesturePolicy()
+  })
+}
+
+const trackPressMove = (event: PointerEvent) => {
+  if (event.buttons & 1)
+    trackGesture({
+      type: 'move',
+      position: { x: event.clientX, y: event.clientY }
+    })
+}
+
+const trackRelease = (event: PointerEvent) => {
+  if (event.button !== 0) return
+  releasedAfterDrag = trackGesture({
+    type: 'up',
+    position: { x: event.clientX, y: event.clientY },
+    acceptsDoubleClick: false
+  }).includes('endDrag')
+}
+
 const handleDoubleClick = () => {
+  if (releasedAfterDrag) return
   isEditing.value = true
 }
 
