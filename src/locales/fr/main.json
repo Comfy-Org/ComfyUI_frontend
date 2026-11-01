@@ -4865,7 +4865,6 @@
     "cancelDialog": {
       "endOfBillingPeriod": "la fin de votre période de facturation",
       "failed": "Échec de l'annulation de l'abonnement",
-      "finishOnStripe": "Votre abonnement n’est pas encore annulé. Terminez l’annulation sur la page Stripe qui vient de s’ouvrir. Jusqu’à ce que vous le fassiez, votre forfait sera renouvelé comme d’habitude.",
       "workspaceChanged": "Votre espace de travail actif a changé. Revenez à l’espace précédent et réessayez."
     },
     "cancelFlow": {

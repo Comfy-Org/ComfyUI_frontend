@@ -4865,7 +4865,6 @@
     "cancelDialog": {
       "endOfBillingPeriod": "faturalandırma döneminizin sonu",
       "failed": "Abonelik iptali başarısız oldu",
-      "finishOnStripe": "Aboneliğiniz henüz iptal edilmedi. Az önce açılan Stripe sayfasında iptal işlemini tamamlayın. Bunu yapana kadar planınız her zamanki gibi yenilenecek.",
       "workspaceChanged": "Aktif çalışma alanınız değişti. Geri dönüp tekrar deneyin."
     },
     "cancelFlow": {
