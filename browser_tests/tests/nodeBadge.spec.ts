@@ -291,19 +291,9 @@ for (const vueEnabled of [false, true] as const) {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.page.evaluate((type) => {
         const registered = window.LiteGraph!.registered_node_types[type] as {
-          nodeData?: {
-            price_badge?: unknown
-            input?: {
-              required?: Record<string, unknown>
-              optional?: Record<string, unknown>
-            }
-            inputs?: Record<string, unknown>
-          }
+          nodeData?: { price_badge?: unknown }
         }
         if (!registered.nodeData) throw new Error(`No nodeData for ${type}`)
-        delete registered.nodeData.input?.required?.raw
-        delete registered.nodeData.input?.optional?.raw
-        delete registered.nodeData.inputs?.raw
         registered.nodeData.price_badge = {
           engine: 'jsonata',
           expr: "{'type': 'text', 'text': '99.9 credits/Run'}",
