@@ -70,9 +70,9 @@ A canvas default the user has unbound entirely is left as plain prose rather
 than keycapped. The keys are known-stale, and a keycap is this panel asserting
 that a key works.
 
-Only a modifier-bearing default is reachable, because a bare key in prose is a
-word. `CANVAS_ACTION_COMMAND_IDS` therefore lists no modifier-free action, and
-a test fails if one is added rather than leaving a silently dead entry.
+Only modifier-bearing defaults enter the lookup, because a bare key in prose is
+a word. Modifier-free entries in `CORE_KEYBINDINGS` are filtered out rather
+than retained as silently unreachable actions.
 
 Keycaps are built from `createElement` and text nodes, never from an HTML string,
 and the result is sanitized downstream.
@@ -107,12 +107,11 @@ opposite of what this change is for. Caught in review by @dante01yoon.
 written. Rendering them as keycaps is defensible but it is a separate call about
 what a keycap means, and is not made here.
 
-**Deriving the action set from every modifier-bearing core keybinding.** It
-would remove the hand-maintained list, which is the drift argument this ADR
-makes against a prompt-side list. It also silently opts in commands the agent
-does not talk about, and every addition is a product call about which actions a
-reply names. The reachability test gives the mechanical half of that guarantee
-without the scope.
+**A curated list of agent-relevant actions.** This repeats the defaults in a
+second place and makes every new canvas shortcut a maintenance task. It also
+requires a product guess about which actions the model might mention. Matching
+the modifier-bearing defaults instead keeps the lookup complete without
+injecting any action or shortcut that was absent from the reply.
 
 ## Consequences
 
@@ -128,5 +127,5 @@ cannot tell which command such a combo was meant to be without guessing from the
 prose, and guessing is what this design gives up. The case it does fix, a user
 who rebound an action, is the one we can answer exactly.
 
-The agent domain now depends on keybindings. That dependency is narrow by
-construction: one entry point, one lookup.
+The agent domain now depends on keybindings. Its production import crosses one
+public entry point and performs one lookup.

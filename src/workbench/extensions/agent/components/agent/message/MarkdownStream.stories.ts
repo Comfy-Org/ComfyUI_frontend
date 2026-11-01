@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+
+import { CORE_KEYBINDINGS } from '@/platform/keybindings/defaults'
 import MarkdownStream from './MarkdownStream.vue'
 
 const meta: Meta<typeof MarkdownStream> = {
@@ -8,7 +12,16 @@ const meta: Meta<typeof MarkdownStream> = {
   parameters: { layout: 'centered' },
   render: (args) => ({
     components: { MarkdownStream },
-    setup: () => ({ args }),
+    setup: () => {
+      const keybindingStore = useKeybindingStore()
+      for (const value of CORE_KEYBINDINGS) {
+        const keybinding = new KeybindingImpl(value)
+        if (!keybindingStore.getKeybinding(keybinding.combo)) {
+          keybindingStore.addDefaultKeybinding(keybinding)
+        }
+      }
+      return { args }
+    },
     template: '<div class="w-[372px]"><MarkdownStream v-bind="args" /></div>'
   })
 }
