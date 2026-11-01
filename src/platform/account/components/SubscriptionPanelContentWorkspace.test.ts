@@ -962,7 +962,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   it('keeps billing access in the ended state for an inactive paid Personal workspace', async () => {
     const user = userEvent.setup()
-    mockBillingType.value = 'legacy'
+    mockBillingType.value = 'unknown'
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     mockIsActiveSubscription.value = false
     mockBillingStatus.value = 'inactive'
@@ -1427,7 +1427,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   ] as const)(
     'keeps billing access for $state personal workspaces',
     ({ hasSubscription, tier }) => {
-      mockBillingType.value = 'legacy'
+      mockBillingType.value = 'unknown'
       mockBillingStatus.value = 'inactive'
       mockSubscriptionTier.value = tier
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })

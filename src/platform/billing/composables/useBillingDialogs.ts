@@ -1,7 +1,6 @@
 import { watch } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import TopUpCreditsDialogContentLegacy from '@/platform/billing/components/TopUpCreditsDialogContentLegacy.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   DowngradeToPersonalResult,
@@ -65,14 +64,9 @@ export function useBillingDialogs() {
     }
     if (!canTopUp.value) return
 
-    // Unknown never selects the legacy content, which buys credits directly.
-    const isWorkspaceRail = type.value !== 'legacy'
-
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component: isWorkspaceRail
-        ? TopUpCreditsDialogContentWorkspace
-        : TopUpCreditsDialogContentLegacy,
+      component: TopUpCreditsDialogContentWorkspace,
       props: options,
       dialogComponentProps: {
         headless: true

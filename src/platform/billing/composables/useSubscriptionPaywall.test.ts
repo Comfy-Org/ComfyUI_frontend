@@ -24,10 +24,7 @@ function billingOn(type: () => BillingType) {
 }
 
 describe('useSubscriptionPaywall', () => {
-  it.for([
-    { type: 'workspace' as const, pricing: [[options]], gated: [] },
-    { type: 'legacy' as const, pricing: [], gated: [[options]] }
-  ])(
+  it.for([{ type: 'workspace' as const, pricing: [[options]], gated: [] }])(
     'opens the $type paywall at once when the type is known',
     ({ type, pricing, gated }) => {
       billingOn(() => type)

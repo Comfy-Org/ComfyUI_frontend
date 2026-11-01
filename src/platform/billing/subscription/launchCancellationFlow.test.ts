@@ -101,8 +101,8 @@ afterEach(() => {
 describe('launchCancellationFlow', () => {
   it.for([
     {
-      name: 'legacy billing',
-      billingType: 'legacy',
+      name: 'unresolved billing',
+      billingType: 'unknown',
       isPersonal: true,
       billingRail: 'stripe'
     },
@@ -142,7 +142,7 @@ describe('launchCancellationFlow', () => {
   )
 
   it('keeps legacy cancellation available while workspace state initializes', async () => {
-    mocks.billingType.value = 'legacy'
+    mocks.billingType.value = 'unknown'
     mocks.activeWorkspaceId = null
     const { shown, showFlow } = captureFlow()
 

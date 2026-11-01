@@ -51,7 +51,7 @@ export function setBillingContextMock(next: Partial<BillingContextMockState>) {
  */
 export function useBillingContext(): BillingContext {
   return {
-    type: computed(() => 'legacy' as const),
+    type: computed(() => 'workspace' as const),
     isInitialized: ref(true),
     subscription: computed(() => state.value.subscription),
     balance: computed(() => null),

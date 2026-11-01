@@ -307,7 +307,7 @@ beforeEach(() => {
         fromPartial({ hasFunds: true, agentHasFunds: true })
       ),
       tier: computed(() => 'STANDARD' as const),
-      type: computed(() => 'legacy' as const),
+      type: computed(() => 'unknown' as const),
       billingStatus: computed(() => 'paid' as const),
       canAccessSubscriptionFeatures: computed(() => true),
       fetchStatus: vi.fn(async () => {})
