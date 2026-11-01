@@ -247,7 +247,9 @@ function findAndMigratePointer<T extends { workspaceId: string }>(
   const candidateKeys = previousKey ? [previousKey] : []
   for (let i = 0; i < sessionStorage.length; i++) {
     const storageKey = sessionStorage.key(i)
-    if (storageKey?.startsWith(prefix)) candidateKeys.push(storageKey)
+    if (storageKey?.startsWith(prefix) && storageKey !== previousKey) {
+      candidateKeys.push(storageKey)
+    }
   }
 
   for (const storageKey of candidateKeys) {

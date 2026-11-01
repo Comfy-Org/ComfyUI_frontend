@@ -347,16 +347,30 @@ describe('storageIO', () => {
       })
 
       it('drops every older tab list for the workspace when writing', () => {
-        for (const id of ['load-1', 'load-2', 'load-3']) {
-          sessionStorage.setItem(
-            `Comfy.Workflow.OpenPaths:${id}`,
-            JSON.stringify({
-              workspaceId,
-              paths: [`workflows/${id}.json`],
-              activeIndex: 0
-            })
-          )
-        }
+        sessionStorage.setItem(
+          'Comfy.Workflow.OpenPaths:load-1',
+          JSON.stringify({
+            workspaceId,
+            paths: ['workflows/load-1.json'],
+            activeIndex: 0
+          })
+        )
+        sessionStorage.setItem(
+          'Comfy.Workflow.OpenPaths:load-2',
+          JSON.stringify({
+            workspaceId,
+            paths: ['workflows/load-2.json'],
+            activeIndex: 0
+          })
+        )
+        sessionStorage.setItem(
+          'Comfy.Workflow.OpenPaths:load-3',
+          JSON.stringify({
+            workspaceId,
+            paths: ['workflows/load-3.json'],
+            activeIndex: 0
+          })
+        )
         const latest = {
           workspaceId,
           paths: ['workflows/latest.json'],
@@ -365,10 +379,14 @@ describe('storageIO', () => {
         writeOpenPaths('load-4', latest)
 
         expect(
-          ['load-1', 'load-2', 'load-3'].map((id) =>
-            sessionStorage.getItem(`Comfy.Workflow.OpenPaths:${id}`)
-          )
-        ).toEqual([null, null, null])
+          sessionStorage.getItem('Comfy.Workflow.OpenPaths:load-1')
+        ).toBeNull()
+        expect(
+          sessionStorage.getItem('Comfy.Workflow.OpenPaths:load-2')
+        ).toBeNull()
+        expect(
+          sessionStorage.getItem('Comfy.Workflow.OpenPaths:load-3')
+        ).toBeNull()
         expect(readOpenPaths('load-5', workspaceId)).toEqual(latest)
       })
 
