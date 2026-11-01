@@ -54,6 +54,16 @@
       "count": 1
     }
   },
+  "packages/api-client/src/ComfyApi.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 8
+    }
+  },
+  "packages/settings-core/src/settingStore.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
   "packages/telemetry/src/redactTelemetryUrls.ts": {
     "regexp/no-dupe-characters-character-class": {
       "count": 13
@@ -100,11 +110,6 @@
     }
   },
   "src/components/helpcenter/HelpCenterMenuContent.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/components/rightSidePanel/errors/MissingNodeCard.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -170,11 +175,6 @@
     }
   },
   "src/composables/useCoreCommands.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/composables/useImageCrop.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -355,7 +355,7 @@
   },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
-      "count": 44
+      "count": 43
     }
   },
   "src/lib/litegraph/src/litegraphInstance.ts": {
@@ -636,9 +636,9 @@
       "count": 2
     }
   },
-  "src/platform/keybindings/keybindingStore.ts": {
+  "src/platform/extensions/stores/extensionStore.ts": {
     "comfy/no-new-error-throw": {
-      "count": 1
+      "count": 2
     }
   },
   "src/platform/keybindings/presetService.test.ts": {
@@ -658,11 +658,6 @@
   },
   "src/platform/settings/composables/useSettingsDialog.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/settings/settingStore.ts": {
-    "comfy/no-new-error-throw": {
       "count": 1
     }
   },
@@ -991,11 +986,6 @@
       "count": 10
     }
   },
-  "src/scripts/api.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 8
-    }
-  },
   "src/scripts/app.getNodeDefs.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -1052,11 +1042,6 @@
       "count": 1
     }
   },
-  "src/services/extensionLoader.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/services/jobOutputCache.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -1090,16 +1075,6 @@
   "src/stores/assetsStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/stores/commandStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/stores/extensionStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/stores/nodeBookmarkStore.ts": {
@@ -1139,7 +1114,7 @@
   },
   "src/types/index.ts": {
     "comfy/no-reexports": {
-      "count": 50
+      "count": 37
     }
   },
   "src/types/slotId.test.ts": {

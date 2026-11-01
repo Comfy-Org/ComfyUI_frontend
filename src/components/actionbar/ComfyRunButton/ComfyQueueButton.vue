@@ -59,7 +59,7 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   isInstantMode,

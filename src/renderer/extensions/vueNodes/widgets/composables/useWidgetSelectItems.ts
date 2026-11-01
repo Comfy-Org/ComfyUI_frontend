@@ -29,7 +29,14 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { AssetKind } from '@/types/widgetTypes'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  hdrPreviewAssetUrl,
+  isHdrImageFilename,
+  isHdrImageUrl
+} from '@/utils/hdrFormatUtil'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
@@ -50,15 +57,50 @@ function assetKindToMediaType(kind: AssetKind): string {
   return kind === 'mesh' ? '3D' : kind
 }
 
+function getAssetMediaType(asset: AssetItem): string {
+  return isHdrImageFilename(asset.name)
+    ? 'image'
+    : getMediaTypeFromFilename(asset.name)
+}
+
+function getHdrOutputPreviewUrl(asset: AssetItem): string {
+  if (asset.preview_id) return hdrPreviewAssetUrl(asset.preview_id)
+  return (
+    [asset.thumbnail_url, asset.preview_url].find(
+      (url) => url && !isHdrImageUrl(url)
+    ) ?? ''
+  )
+}
+
 function getMediaUrl(
   filename: string,
-  type: 'input' | 'output',
-  assetKind: AssetKind | undefined
+  type: string,
+  assetKind: AssetKind | undefined,
+  subfolder?: string
 ): string {
   if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
   const params = new URLSearchParams({ filename, type })
+  if (subfolder) params.set('subfolder', subfolder)
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
+}
+
+function isPlainRelativePath(filepath: string): boolean {
+  return (
+    !/^[^\\/]:/.test(filepath) &&
+    filepath
+      .split(/[\\/]/)
+      .every((segment) => segment !== '' && segment !== '.' && segment !== '..')
+  )
+}
+
+function getAnnotatedValueMediaUrl(
+  value: string,
+  assetKind: AssetKind | undefined
+): string {
+  if (!isPlainRelativePath(parseAnnotatedPath(value).filepath)) return ''
+  const { filename, subfolder, type } = parseImageWidgetValue(value)
+  return getMediaUrl(filename, type, assetKind, subfolder)
 }
 
 export interface UseWidgetSelectItemsOptions {
@@ -193,7 +235,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       .filter((value) => !missing.has(String(value)))
       .map((value, index) => ({
         id: `input-${index}`,
-        preview_url: getMediaUrl(String(value), 'input', kind),
+        preview_url: getAnnotatedValueMediaUrl(String(value), kind),
         name: String(value),
         label: getDisplayLabel(String(value), labelFn)
       }))
@@ -220,7 +262,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     const missing = missingMediaValues.value
     for (const asset of assets) {
-      if (getMediaTypeFromFilename(asset.name) !== targetMediaType) continue
+      if (getAssetMediaType(asset) !== targetMediaType) continue
       if (seen.has(asset.id)) continue
       seen.add(asset.id)
       const filenameForUrl = getAssetUrlFilename(asset)
@@ -237,7 +279,10 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         preview_url:
           kind === 'mesh'
             ? ''
-            : asset.preview_url || getMediaUrl(filenameForUrl, 'output', kind),
+            : isHdrImageFilename(asset.name)
+              ? getHdrOutputPreviewUrl(asset)
+              : asset.preview_url ||
+                getMediaUrl(filenameForUrl, rootFolder, kind, subfolder),
         name: annotatedPath,
         label: getDisplayLabel(displayLabel, labelFn)
       })
@@ -277,18 +322,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     if (existsInInputs || existsInOutputs) return undefined
 
-    const isOutput = currentValue.endsWith(' [output]')
-    const strippedValue = isOutput
-      ? currentValue.replace(' [output]', '')
-      : currentValue
-
     return {
       id: `missing-${currentValue}`,
-      preview_url: getMediaUrl(
-        strippedValue,
-        isOutput ? 'output' : 'input',
-        kind
-      ),
+      preview_url: getAnnotatedValueMediaUrl(currentValue, kind),
       name: currentValue,
       label: getDisplayLabel(currentValue, labelFn)
     }

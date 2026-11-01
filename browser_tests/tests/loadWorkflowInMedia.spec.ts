@@ -63,6 +63,13 @@ test.describe(
           const request = await uploadRequestPromise
           expect(request.url()).toContain('/upload/')
         } else {
+          const workflowName = fileName.replace(/\.\w+$/, '')
+          await expect
+            .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+            .toMatch(new RegExp(`(^|/)${workflowName}\\.json$`))
+          await expect
+            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+            .toBeGreaterThan(0)
           await expectRegionScreenshot(
             comfyPage.page,
             await comfyPage.nodeOps.getAllNodeRefs(),

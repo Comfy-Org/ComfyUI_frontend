@@ -162,10 +162,10 @@ import { areSelectedLinksHidden } from '@/lib/litegraph/src/canvas/linkSelection
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useExtensionService } from '@/services/extensionService'
-import { useCommandStore } from '@/stores/commandStore'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
-import type { ComfyCommandImpl } from '@/stores/commandStore'
+import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 

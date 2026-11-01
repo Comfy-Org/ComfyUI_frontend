@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, computed, ref } from 'vue'
@@ -32,6 +34,7 @@ import { useBillingContext as useSharedBillingContext } from './useBillingContex
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 function useBillingContext() {
   const scope = effectScope()
@@ -40,6 +43,7 @@ function useBillingContext() {
 }
 
 const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
+  ended_at: null,
   is_active: true,
   max_seats: 73,
   occupied_seats: 72,
@@ -160,6 +164,7 @@ describe('useBillingContext', () => {
     mockPlans.value = []
     const subscription = useSubscription()
     subscription.subscriptionStatus.value = {
+      ended_at: null,
       is_active: true,
       has_funds: true,
       max_seats: 0,
@@ -204,7 +209,9 @@ describe('useBillingContext', () => {
       endDate: null,
       isCancelled: false,
       hasFunds: true,
-      agentHasFunds: true
+      agentHasFunds: true,
+      agentScopedHasFunds: undefined,
+      agentScopedHasFundsAuthoritative: false
     })
   })
 
@@ -411,7 +418,7 @@ describe('useBillingContext', () => {
     await context.fetchStatus()
 
     expect(mockFetchPlans).toHaveBeenCalledOnce()
-    expect(useSubscription().fetchStatus).toHaveBeenCalled()
+    expect(useSubscription().fetchStatusDirect).toHaveBeenCalled()
     expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
 
     await context.previewSubscribe('creator-annual')
@@ -455,7 +462,7 @@ describe('useBillingContext', () => {
 
     const context = useBillingContext()
     await vi.waitFor(() => {
-      expect(useSubscription().fetchStatus).toHaveBeenCalled()
+      expect(useSubscription().fetchStatusDirect).toHaveBeenCalled()
       expect(useAuthStore().fetchBalance).toHaveBeenCalled()
     })
     vi.clearAllMocks()
@@ -468,7 +475,7 @@ describe('useBillingContext', () => {
     expect(context.type.value).toBe('workspace')
     expect(billingApi.getBillingStatus).toHaveBeenCalled()
     expect(billingApi.getBillingBalance).toHaveBeenCalled()
-    expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
+    expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
     expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
   })
 
@@ -477,7 +484,7 @@ describe('useBillingContext', () => {
 
     const context = useBillingContext()
     await vi.waitFor(() => {
-      expect(useSubscription().fetchStatus).toHaveBeenCalled()
+      expect(useSubscription().fetchStatusDirect).toHaveBeenCalled()
       expect(useAuthStore().fetchBalance).toHaveBeenCalled()
     })
     vi.clearAllMocks()
@@ -553,7 +560,9 @@ describe('useBillingContext', () => {
 
         await refreshBilling(scope)
 
-        expect(useSubscription().fetchStatus).toHaveBeenCalledTimes(status)
+        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledTimes(
+          status
+        )
         expect(useAuthStore().fetchBalance).toHaveBeenCalledTimes(balance)
       }
     )
@@ -629,7 +638,7 @@ describe('useBillingContext', () => {
       await context.fetchBalance()
 
       expect(context.type.value).toBe('unknown')
-      expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
+      expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
       expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
       expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
 
@@ -637,9 +646,69 @@ describe('useBillingContext', () => {
       await initializing
 
       expect(context.isInitialized.value).toBe(true)
-      expect(useSubscription().fetchStatus).toHaveBeenCalled()
+      expect(useSubscription().fetchStatusDirect).toHaveBeenCalled()
       expect(context.type.value).toBe('legacy')
       expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
+    })
+
+    it('runs a fresh read asked for while unknown once routing is known', async () => {
+      const loaded = holdWorkspaceUnloaded('personal')
+      mockBillingRail.value = 'legacy_stripe'
+      const context = useBillingContext()
+      vi.clearAllMocks()
+
+      await context.fetchStatus({ fresh: true })
+      expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
+
+      loaded.value = true
+
+      await vi.waitFor(() => {
+        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledWith({
+          fresh: true
+        })
+      })
+    })
+
+    it('reports a deferred fresh read failure with the same telemetry as an immediate one', async () => {
+      const loaded = holdWorkspaceUnloaded('personal')
+      mockBillingRail.value = 'legacy_stripe'
+      const context = useBillingContext()
+      vi.clearAllMocks()
+      const failure = new Error('status read rejected')
+      vi.mocked(useSubscription().fetchStatusDirect).mockRejectedValue(failure)
+
+      await context.fetchStatus({ fresh: true })
+      expect(reportError).not.toHaveBeenCalled()
+
+      loaded.value = true
+
+      await vi.waitFor(() => {
+        expect(reportError).toHaveBeenCalledWith(failure, {
+          surface: 'agent',
+          errorType: 'error_refreshing_agent_billing_status'
+        })
+      })
+    })
+
+    it('still runs the owed fresh read when initializing the billing context throws', async () => {
+      const loaded = holdWorkspaceUnloaded('personal')
+      mockBillingRail.value = 'legacy_stripe'
+      const context = useBillingContext()
+      vi.clearAllMocks()
+      vi.mocked(useAuthStore().fetchBalance).mockRejectedValue(
+        new Error('balance read rejected')
+      )
+
+      await context.fetchStatus({ fresh: true })
+
+      loaded.value = true
+
+      await vi.waitFor(() => {
+        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledWith({
+          fresh: true
+        })
+      })
+      expect(context.isInitialized.value).toBe(false)
     })
 
     it('makes no billing call while unknown, then routes to workspace billing for a team', async () => {
@@ -652,14 +721,14 @@ describe('useBillingContext', () => {
 
       expect(context.type.value).toBe('unknown')
       expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
+      expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
 
       loaded.value = true
       await initializing
 
       expect(billingApi.getBillingStatus).toHaveBeenCalled()
       expect(context.type.value).toBe('workspace')
-      expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
+      expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
     })
 
     it('reports a presentable error once if the workspace never loads', async () => {

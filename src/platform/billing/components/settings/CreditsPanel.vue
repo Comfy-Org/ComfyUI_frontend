@@ -68,7 +68,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useExternalLink } from '@/composables/useExternalLink'
 import CreditsTile from '@/platform/billing/subscription/components/CreditsTile.vue'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 const { embedded = false } = defineProps<{
   embedded?: boolean

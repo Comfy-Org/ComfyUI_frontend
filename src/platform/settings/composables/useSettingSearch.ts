@@ -1,11 +1,12 @@
 import { computed, ref, watch } from 'vue'
 
 import { st } from '@/i18n'
-import {
-  getSettingInfo,
-  useSettingStore
-} from '@/platform/settings/settingStore'
-import type { ISettingGroup, SettingParams } from '@/platform/settings/types'
+import { getSettingInfo } from '@comfyorg/settings-core/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type {
+  ISettingGroup,
+  SettingParams
+} from '@comfyorg/settings-core/types'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'

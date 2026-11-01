@@ -34,7 +34,7 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
-import { loadExtensions } from '@/services/extensionLoader'
+import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -158,7 +158,7 @@ vi.mock<unknown>(import('@/scripts/changeTracker'), () => ({
   ChangeTracker: { init: vi.fn() }
 }))
 
-vi.mock(import('@/services/extensionLoader'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionLoader'), () => ({
   loadExtensions: vi.fn(async () => {})
 }))
 
@@ -220,7 +220,10 @@ function setRootGraph(graph: LGraph | undefined) {
   ;(app as unknown as { rootGraph: LGraph | undefined }).rootGraph = graph
 }
 
-async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
+async function mountGraphCanvas(
+  stubs: Record<string, unknown> = {},
+  errorHandler?: (error: unknown) => void
+) {
   // Handed to the component rather than left to the active-Pinia fallback, so
   // the readiness gates below are set on the instance startup actually reads.
   const pinia = getActivePinia()!
@@ -242,7 +245,8 @@ async function mountGraphCanvas(stubs: Record<string, unknown> = {}) {
         pinia,
         createI18n({ legacy: false, locale: 'en', missingWarn: false })
       ],
-      stubs
+      stubs,
+      config: errorHandler ? { errorHandler } : {}
     }
   } as RenderOptions<typeof GraphCanvas>)
 
@@ -272,6 +276,17 @@ describe('GraphCanvas first-run tour wiring', () => {
     expect(
       mocks.runUrlActionLoaders.mock.invocationCallOrder[0]
     ).toBeGreaterThan(mocks.handleStartupOutcome.mock.invocationCallOrder[0])
+  })
+
+  it('settles tab restoration when startup fails before restoring tabs', async () => {
+    const failure = new Error('init failed')
+    mocks.initializeWorkflow.mockRejectedValue(failure)
+    const errors: unknown[] = []
+
+    await mountGraphCanvas({}, (error) => errors.push(error))
+
+    expect(errors).toEqual([failure])
+    expect(useWorkflowStore().tabsRestored).toBe(true)
   })
 
   it('offers the tour over a workflow that arrived from the URL', async () => {
@@ -770,6 +785,7 @@ describe('deployment model options at startup', () => {
       deployment_id: 'dep-1',
       release_id: 'r-1',
       status: 'ready',
+      can_start: false,
       created_at: ''
     } as const
 
@@ -966,9 +982,11 @@ describe('deployment model options at startup', () => {
       kind: 'error',
       description: 'deploymentSwitcher.lookupUnavailableDetail',
       duration: Number.POSITIVE_INFINITY,
-      action: { label: 'deploymentSwitcher.reload' }
+      actions: [
+        { label: 'deploymentSwitcher.reload', onClick: expect.any(Function) }
+      ]
     })
-    toast?.action?.onClick()
+    toast?.actions[0]?.onClick()
     expect(reload).toHaveBeenCalledOnce()
     store.bootDeployment = {
       deployment_id: 'dep-1',
@@ -977,6 +995,7 @@ describe('deployment model options at startup', () => {
       build_name: 'Build',
       release_version: 1,
       status: 'ready',
+      can_start: false,
       created_at: ''
     }
     await nextTick()
@@ -1033,6 +1052,7 @@ describe('deployment model options at startup', () => {
       build_name: 'Build',
       release_version: 1,
       status: 'ready',
+      can_start: false,
       created_at: ''
     } as const
     vi.spyOn(store, 'loadOnce').mockReturnValue(

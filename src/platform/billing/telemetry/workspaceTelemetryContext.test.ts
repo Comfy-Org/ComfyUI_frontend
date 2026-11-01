@@ -156,6 +156,7 @@ describe('useBillingCapabilities workspace scope mismatch', () => {
     resolvedWorkspaceId: string
   ): BillingCapabilitiesResponse {
     return {
+      auto_top_up_enabled: false,
       resolved_for: {
         user_id: 'canonical-user-1',
         workspace_id: resolvedWorkspaceId

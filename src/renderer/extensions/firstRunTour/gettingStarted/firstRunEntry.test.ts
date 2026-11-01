@@ -1,6 +1,6 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import * as VueUse from '@vueuse/core'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'

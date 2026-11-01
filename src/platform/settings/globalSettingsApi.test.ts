@@ -3,14 +3,12 @@ vi.mock(import('@/services/dialogService'))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
+import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
 import { api } from '@/scripts/api'
-import { useAuthStore } from '@/stores/authStore'
 
 import {
   GlobalSettingsApiError,
   getGlobalSetting,
-  getGlobalSettingsAuthHeader,
   setGlobalSetting
 } from './globalSettingsApi'
 
@@ -140,26 +138,6 @@ describe('Global Settings transport', () => {
     ).rejects.toMatchObject({ status: 500 })
   })
 
-  it.for([
-    { cloud: true, expected: 'Bearer workspace-token' },
-    { cloud: false, expected: 'Bearer user-token' }
-  ])(
-    'authenticates Cloud=$cloud with $expected',
-    async ({ cloud, expected }) => {
-      distribution.isCloud = cloud
-      const authStore = useAuthStore()
-      vi.mocked(authStore.getWorkspaceAuthHeader).mockResolvedValue({
-        Authorization: 'Bearer workspace-token'
-      })
-      vi.mocked(authStore.getUserAuthHeader).mockResolvedValue({
-        Authorization: 'Bearer user-token'
-      })
-
-      await expect(getGlobalSettingsAuthHeader()).resolves.toEqual({
-        Authorization: expected
-      })
-    }
-  )
   describe('on the web session', () => {
     const unavailable = () => new Response(null, { status: 503 })
 

@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { CommandMenuItem } from '@/stores/menuItemStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 

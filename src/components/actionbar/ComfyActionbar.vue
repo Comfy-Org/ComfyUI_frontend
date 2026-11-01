@@ -115,7 +115,7 @@ import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQu
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
@@ -442,7 +442,7 @@ const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto',
     isDragging.value && 'pointer-events-none select-none',
-    !isDocked.value && 'fixed z-1300 floating-panel'
+    !isDocked.value && 'fixed z-1 floating-panel'
   )
 )
 </script>

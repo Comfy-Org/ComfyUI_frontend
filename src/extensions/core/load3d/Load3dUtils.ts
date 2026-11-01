@@ -108,6 +108,17 @@ class Load3dUtils {
     return `/view?${params}`
   }
 
+  static isSameResourceURL(a: string | null, b: string): boolean {
+    if (!a) return false
+    const withoutRand = (url: string) => {
+      const parsed = new URL(url, window.location.origin)
+      parsed.searchParams.delete('rand')
+      parsed.searchParams.sort()
+      return parsed.toString()
+    }
+    return withoutRand(a) === withoutRand(b)
+  }
+
   static async uploadMultipleFiles(files: FileList, subfolder: string = '3d') {
     const uploadPromises = Array.from(files).map((file) =>
       this.uploadFile(file, subfolder)

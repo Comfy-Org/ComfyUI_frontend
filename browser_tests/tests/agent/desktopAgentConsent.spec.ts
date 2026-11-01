@@ -159,6 +159,52 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
     })
   }
 
+  test.describe('without a workspace credential', () => {
+    test.use({ desktopWorkspaceToken: null })
+
+    test('refuses to write consent with the personal credential', async ({
+      comfyPage,
+      agentPanel,
+      desktopConsentSignIn,
+      agentConsentWrites,
+      postedMessages
+    }) => {
+      const signIn = comfyPage.page.getByTestId('desktop-host-sso')
+      const message = 'Keep this draft when the workspace credential is missing'
+      const semanticGraphBefore = await comfyPage.page.evaluate(() =>
+        JSON.stringify(window.app!.graph.serialize())
+      )
+
+      await agentPanel.consentRejectButton.click()
+      await agentPanel.composer.fill(message)
+      await agentPanel.sendButton.click()
+      await expect(agentPanel.consentDialog).toBeVisible()
+      await agentPanel.consentDialog
+        .getByRole('button', {
+          name: enMessages.agent.consent.agreeAndContinue
+        })
+        .click()
+      await expect(signIn).toBeVisible()
+      await signIn.click()
+      await expect.poll(() => desktopConsentSignIn.requests).toBe(1)
+      desktopConsentSignIn.complete()
+
+      await expect(agentPanel.consentDialog).toHaveCount(0)
+      await expect(agentPanel.root).toBeVisible()
+      await expect(agentPanel.composer).toBeVisible()
+      expect(agentConsentWrites).toEqual([])
+      expect(postedMessages).toEqual([])
+      expect(desktopConsentSignIn.consentAuthorizationHeaders).toEqual([])
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() =>
+            JSON.stringify(window.app!.graph.serialize())
+          )
+        )
+        .toBe(semanticGraphBefore)
+    })
+  })
+
   test('sends the original signed-out submission once after sign-in and confirmed consent persistence', async ({
     comfyPage,
     agentPanel,
@@ -170,6 +216,9 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
   }) => {
     const signIn = comfyPage.page.getByTestId('desktop-host-sso')
     const message = 'Continue this Desktop submission after sign-in'
+    const semanticGraphBefore = await comfyPage.page.evaluate(() =>
+      JSON.stringify(window.app!.graph.serialize())
+    )
     let releaseSave = () => {}
     agentConsentSave.pending = new Promise<void>((resolve) => {
       releaseSave = resolve
@@ -202,6 +251,16 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
         await expect.poll(() => agentConsentWrites).toEqual([true])
         await expect(signIn).toHaveCount(0)
         await expect(agentPanel.consentDialog).toHaveCount(0)
+        expect(desktopConsentSignIn.consentAuthorizationHeaders).toEqual([
+          'Bearer mock-workspace-token'
+        ])
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() =>
+              JSON.stringify(window.app!.graph.serialize())
+            )
+          )
+          .toBe(semanticGraphBefore)
         expect(postedMessages).toEqual([])
       })
 
@@ -221,6 +280,16 @@ test.describe('Desktop Agent consent', { tag: ['@desktop', '@ui'] }, () => {
         await expect(agentPanel.sendButton).toBeVisible()
         await expect(agentPanel.consentDialog).toHaveCount(0)
         expect(agentConsentWrites).toEqual([true])
+        expect(desktopConsentSignIn.consentAuthorizationHeaders).toEqual([
+          'Bearer mock-workspace-token'
+        ])
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() =>
+              JSON.stringify(window.app!.graph.serialize())
+            )
+          )
+          .toBe(semanticGraphBefore)
         expect(postedMessages).toHaveLength(1)
       })
     } finally {

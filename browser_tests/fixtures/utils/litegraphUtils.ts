@@ -405,6 +405,13 @@ export class NodeReference {
       [this.id, prop] as const
     )
   }
+  /** Source of the node's first preview image once decoded, otherwise null. */
+  async getDecodedPreviewImageSrc(): Promise<string | null> {
+    return await this.comfyPage.page.evaluate((id) => {
+      const img = window.app!.canvas.graph!.getNodeById(id)?.imgs?.[0]
+      return img?.complete && img.naturalWidth > 0 ? img.src : null
+    }, this.id)
+  }
   async getOutput(index: number) {
     return new NodeSlotReference('output', index, this)
   }

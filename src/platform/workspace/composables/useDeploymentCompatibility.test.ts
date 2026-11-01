@@ -109,6 +109,7 @@ function deployment(id: string): WorkspaceDeployment {
     deployment_id: id,
     release_id: `r-${id}`,
     status: 'ready',
+    can_start: false,
     created_at: '2026-10-01T00:00:00Z'
   }
 }
@@ -501,10 +502,10 @@ describe('useDeploymentCompatibility', () => {
       moved: { ...deployment('dep-building'), release_id: 'r-new' }
     },
     {
-      change: 'finishes building',
-      moved: { ...deployment('dep-building'), status: 'running' }
+      change: 'stops',
+      moved: { ...deployment('dep-building'), status: 'stopped' }
     }
-  ])(
+  ] satisfies { change: string; moved: WorkspaceDeployment }[])(
     'asks again and shows the new answer when a deployment $change',
     async ({ moved }) => {
       const { markFor } = setup()
@@ -649,7 +650,7 @@ describe('useDeploymentCompatibility', () => {
     setup()
 
     await vi.waitFor(() =>
-      expect(workspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+      expect(workspaceApi.listDeployments).toHaveBeenCalledWith('ws-1', [])
     )
     await vi.waitFor(() =>
       expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledOnce()

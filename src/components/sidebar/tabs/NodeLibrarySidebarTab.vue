@@ -299,7 +299,7 @@ import {
   DEFAULT_SORTING_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

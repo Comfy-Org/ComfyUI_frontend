@@ -1,7 +1,7 @@
 {
   "id": "design-system",
   "capability": "Shared UI component library",
-  "description": "App-side remainder of the design system: the Reka-based primitives, media, charts, color picker, tags, modal layout, navigation, and generic common/ widgets now live in packages/design-system and are imported from @comfyorg/design-system. This domain keeps the app-owned pieces that still depend on app stores, i18n, or services: the toast queue store, the loader kit, the App-prefixed wrappers, lazy image, and the value editors for curves, ranges, and palette swatches with their pure interpolation math. Feature-owned files in the same directories stay with their features: settings form fields, system stats, node library tree explorers and bookmark customization, workflow actions, node-search filter chips, credit display, the team-plan credit slider, asset download progress toasts, subgraph breadcrumbs, the execution error overlay, workflow template dialogs, and the node widget adapters WidgetCurve, WidgetRange, and WidgetColors.",
+  "description": "The @comfyorg/design-system package (the Reka-based primitives, media, charts, color picker, tags, modal layout, navigation, and generic common/ widgets) with its color math from @comfyorg/shared-frontend-utils, and the app-owned pieces that still depend on app stores, i18n, or services: the toast queue store, the loader kit, the App-prefixed wrappers, lazy image, and the value editors for curves, ranges, and palette swatches with their pure interpolation math. Feature-owned files in the same directories stay with their features: settings form fields, system stats, node library tree explorers and bookmark customization, workflow actions, node-search filter chips, credit display, the team-plan credit slider, asset download progress toasts, subgraph breadcrumbs, the execution error overlay, workflow template dialogs, and the node widget adapters WidgetCurve, WidgetRange, and WidgetColors.",
   "modules": [
     {
       "path": "src/components/common/**",
@@ -10,10 +10,6 @@
     {
       "path": "src/components/curve/**",
       "role": "domain"
-    },
-    {
-      "path": "src/components/curve/CurveEditor.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/components/curve/CurveEditor.vue",
@@ -32,16 +28,8 @@
       "role": "domain"
     },
     {
-      "path": "src/components/range/RangeEditor.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/range/RangeEditor.vue",
       "role": "presentation"
-    },
-    {
-      "path": "src/components/ui/toast/toastStore.test.ts",
-      "role": "application"
     },
     {
       "path": "src/components/ui/toast/toastStore.ts",
@@ -60,10 +48,6 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useCurveEditor.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useCurveEditor.ts",
       "role": "application"
     },
@@ -76,20 +60,12 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useRangeEditor.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useRangeEditor.ts",
       "role": "application"
     },
     {
       "path": "src/composables/useTreeExpansion.ts",
       "role": "application"
-    },
-    {
-      "path": "src/services/mediaCacheService.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/services/mediaCacheService.ts",
@@ -108,15 +84,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/utils/histogramUtil.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/histogramUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/treeUtil.test.ts",
       "role": "domain"
     },
     {
@@ -128,17 +96,27 @@
       "role": "domain"
     },
     {
-      "path": "src/utils/zodTypedSchema.test.ts",
+      "path": "src/utils/zodTypedSchema.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/utils/zodTypedSchema.ts",
-      "role": "infrastructure"
+      "path": "packages/design-system/src/**",
+      "role": "presentation"
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/colorUtil.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": ["agent", "billing", "bounding-boxes"],
+  "allowedConsumers": [
+    "agent",
+    "billing",
+    "bounding-boxes",
+    "extension-manager",
+    "keybindings"
+  ],
   "characterizationScenarios": [
     {
       "name": "Form controls preserve value binding, validation state, and accessible semantics",

@@ -23,7 +23,7 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
-import { defaultGraph } from '@/scripts/defaultGraph'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useDialogService } from '@/services/dialogService'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -55,6 +55,7 @@ export { ComfyWorkflow, type LoadedComfyWorkflow }
 registerWorkflowRuntime({
   createChangeTracker: (workflow, initialState) =>
     new ChangeTrackerAccess(workflow, initialState),
+  graphEqual: (a, b) => ChangeTrackerAccess.graphEqual(a, b),
   getDraft: (path) => useWorkflowDraftStoreV2().getDraft(path),
   removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
   markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),
@@ -275,7 +276,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     })
     workflow.legacyId = getLegacyWorkflowId(workflowData?.id)
 
-    const initialWorkflowData = ensureWorkflowId(workflowData ?? defaultGraph)
+    const initialWorkflowData = ensureWorkflowId(
+      workflowData ?? getDefaultWorkflow()
+    )
     workflow.originalContent = workflow.content =
       JSON.stringify(initialWorkflowData)
 
@@ -582,6 +585,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  const tabsRestored = ref(false)
+  const markTabsRestored = () => {
+    tabsRestored.value = true
+  }
+
   /** @see WorkflowStore.isSubgraphActive */
   const isSubgraphActive = ref(false)
 
@@ -786,6 +794,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isSyncLoading,
     loadWorkflows,
 
+    tabsRestored: computed(() => tabsRestored.value),
+    markTabsRestored,
     isSubgraphActive,
     activeSubgraph,
     updateActiveGraph,

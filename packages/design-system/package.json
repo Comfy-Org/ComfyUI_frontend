@@ -50,18 +50,22 @@
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
     "./button.variants": {
+      "@comfyorg/design-system": "./src/button.variants.ts",
       "types": "./dist-types/button.variants.d.ts",
       "default": "./src/button.variants.ts"
     },
     "./select.variants": {
+      "@comfyorg/design-system": "./src/select.variants.ts",
       "types": "./dist-types/select.variants.d.ts",
       "default": "./src/select.variants.ts"
     },
     "./tag.variants": {
+      "@comfyorg/design-system": "./src/tag.variants.ts",
       "types": "./dist-types/tag.variants.d.ts",
       "default": "./src/tag.variants.ts"
     },
     "./workspaceAvatar": {
+      "@comfyorg/design-system": "./src/workspaceAvatar.ts",
       "types": "./dist-types/workspaceAvatar.d.ts",
       "default": "./src/workspaceAvatar.ts"
     }
@@ -174,6 +178,7 @@
         "default": "./dist/tree/treeStyles.js"
       },
       "./components.css": "./dist/components.css",
+      "./css/style.css": "./src/css/published.css",
       "./css/*": "./src/css/*",
       "./icons/*": "./src/icons/*",
       "./button.variants": {
@@ -208,8 +213,6 @@
     "@iconify/tailwind4": "catalog:",
     "@iconify/tools": "catalog:",
     "@iconify/utils": "catalog:",
-    "@vueuse/core": "catalog:",
-    "@vueuse/integrations": "catalog:",
     "chart.js": "^4.5.0",
     "clsx": "^2.1.1",
     "cva": "catalog:",
@@ -229,6 +232,8 @@
     "@testing-library/vue": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "@vueuse/core": "catalog:",
+    "@vueuse/integrations": "catalog:",
     "happy-dom": "catalog:",
     "reka-ui": "catalog:",
     "storybook": "catalog:",
@@ -241,12 +246,20 @@
     "vue-component-type-helpers": "catalog:"
   },
   "peerDependencies": {
-    "reka-ui": "^2.11.0",
+    "@vueuse/core": "^14.4.0",
+    "@vueuse/integrations": "^14.4.0",
+    "reka-ui": "^2.10.5",
     "tailwindcss": "^4.1.0",
     "vue": "^3.5.40",
     "vue-component-type-helpers": "^3.3.0"
   },
   "peerDependenciesMeta": {
+    "@vueuse/core": {
+      "optional": true
+    },
+    "@vueuse/integrations": {
+      "optional": true
+    },
     "reka-ui": {
       "optional": true
     },

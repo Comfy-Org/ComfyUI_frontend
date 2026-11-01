@@ -116,6 +116,7 @@ function createDeferred<T>() {
 }
 
 const activeStatus = {
+  ended_at: null,
   is_active: true,
   max_seats: 73,
   occupied_seats: 72,
@@ -651,6 +652,30 @@ describe('useWorkspaceBilling', () => {
       expect(billing.occupiedSeats.value).toBe(75)
     })
 
+    it('stops treating a cached Agent grant as authoritative after the current read fails', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce({
+        ...activeStatus,
+        billing_rail: 'stripe',
+        scoped_has_funds: { agent: true }
+      })
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      const statusRead = createDeferred<BillingStatusResponse>()
+      mockWorkspaceApi.getBillingStatus.mockReturnValueOnce(statusRead.promise)
+      const refresh = billing.fetchStatus()
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        true
+      )
+
+      statusRead.reject(new Error('status unavailable'))
+      await expect(refresh).rejects.toThrow('status unavailable')
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        false
+      )
+      expect(billing.subscription.value?.agentScopedHasFunds).toBe(true)
+    })
+
     it('accepts missing seat capacity and clears the last known value', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce(activeStatus)
       const billing = setupBilling()
@@ -795,6 +820,56 @@ describe('useWorkspaceBilling', () => {
       await olderRequest
 
       expect(billing.balance.value?.amountMicros).toBe(5_000_000)
+    })
+
+    it('settles an older failed balance read quietly once a newer read replaced it', async () => {
+      const olderBalance = createDeferred<typeof zeroBalance>()
+      mockWorkspaceApi.getBillingBalance
+        .mockReturnValueOnce(olderBalance.promise)
+        .mockResolvedValueOnce(positiveBalance)
+      const billing = setupBilling()
+
+      const olderRequest = billing.fetchBalance()
+      await billing.fetchBalance()
+      olderBalance.reject(new Error('stale balance failed'))
+
+      await expect(olderRequest).resolves.toBeUndefined()
+      expect(billing.error.value).toBeNull()
+      expect(billing.balance.value?.amountMicros).toBe(5_000_000)
+    })
+
+    it('settles a failed balance read quietly once the workspace changed', async () => {
+      const balanceRead = createDeferred<typeof zeroBalance>()
+      mockWorkspaceApi.getBillingBalance.mockReturnValueOnce(
+        balanceRead.promise
+      )
+      const billing = setupBilling()
+
+      const read = billing.fetchBalance()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { id: 'workspace-2' }
+      })
+      balanceRead.reject(new Error('stale workspace balance failed'))
+
+      await expect(read).resolves.toBeUndefined()
+      expect(billing.error.value).toBeNull()
+    })
+
+    it('does not keep a balance from a stale workspace response', async () => {
+      const balanceRead = createDeferred<typeof zeroBalance>()
+      mockWorkspaceApi.getBillingBalance.mockReturnValueOnce(
+        balanceRead.promise
+      )
+      const billing = setupBilling()
+
+      const read = billing.fetchBalance()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { id: 'workspace-2' }
+      })
+      balanceRead.resolve(zeroBalance)
+      await read
+
+      expect(billing.balance.value).toBeNull()
     })
   })
 

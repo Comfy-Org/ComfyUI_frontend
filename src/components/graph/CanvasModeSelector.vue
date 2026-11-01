@@ -103,7 +103,7 @@ import {
   menuContentClass
 } from '@comfyorg/design-system/lib/menu/menuStyles'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 interface Props {

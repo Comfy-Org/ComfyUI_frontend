@@ -1,6 +1,6 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'

@@ -64,6 +64,7 @@ import {
   isAttachmentKind,
   normalizeAgentTranscript
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
 import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
@@ -193,14 +194,20 @@ const HYDRATION_MAILBOX_MS = 5 * 60_000
 const MAX_HYDRATION_EVENTS = 256
 const MAX_HYDRATION_MAILBOXES = 32
 
-/**
- * After a reconnect the server may still be finishing the turn, and its
- * terminal event may or may not reach the new socket. Poll the persisted row
- * with backoff; once the schedule is exhausted the socket alone is trusted.
- */
-const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 /** Upper bound on one recovery job, including any history fetch still in flight. */
 const TURN_RECOVERY_DEADLINE_MS = 60_000
+const THREAD_MISSING_CONFIRMATION_INTERVAL_MS = 1000
+/** How long a restored ask waits for its own broadcast before it counts as lost. */
+const LATE_ASK_FRAME_GRACE_MS = 2000
+
+/**
+ * Why a recovery job is running, which is what separates an ask the socket
+ * genuinely dropped from one that merely had not been published when a
+ * hydrate's history fetch went out. Only the former is a defect.
+ */
+type RecoveryCause = 'reconnect' | 'hydrate'
+
+type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
 
 type TurnOutcome =
   | {
@@ -209,8 +216,19 @@ type TurnOutcome =
       ending: 'completed' | 'failed'
     }
   | { kind: 'thread-missing' }
-  | { kind: 'streaming' }
-  | { kind: 'error'; message: string }
+  | { kind: 'streaming'; pendingAsk: PendingAsk | undefined }
+  | { kind: 'error'; cause: unknown }
+
+function streamingPendingAskId(outcome: TurnOutcome): string | undefined {
+  return outcome.kind === 'streaming' ? outcome.pendingAsk?.ask_id : undefined
+}
+
+function isTransientMissingTurn(
+  outcome: TurnOutcome,
+  consecutiveThreadMissing: number
+): boolean {
+  return outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2
+}
 
 function isTerminalTurnStatus(
   status: AgentMessages[number]['status']
@@ -271,10 +289,7 @@ function recoveryKey(turn: LiveTurn): string {
 function turnOutcomeFromError(error: unknown): TurnOutcome {
   if (error instanceof AgentApiError && error.status === 404)
     return { kind: 'thread-missing' }
-  return {
-    kind: 'error',
-    message: error instanceof Error ? error.message : String(error)
-  }
+  return { kind: 'error', cause: error }
 }
 
 const NON_RETRYABLE_REQUEST_STATUSES = new Set([
@@ -352,6 +367,7 @@ function classifyAnswerFailure(error: unknown): AnswerFailure {
  * the shared 60s request deadline it replaces.
  */
 const ANSWER_RETRY_BACKOFF_MS = [300]
+const MAX_DELIVERED_ASKS = 128
 
 /**
  * A rejected fetch never reached the server, and 5xx is the status the server
@@ -386,6 +402,15 @@ function diffAnswers(
     other_text_changed:
       (submitted.other_text || undefined) !== committed.otherText
   }
+}
+
+function isSupersededAnswer(
+  submitted: AgentAnswerRequest,
+  committed: Extract<AskUserResolution, { status: 'answered' }>,
+  selectionKnown: boolean
+): boolean {
+  const changes = diffAnswers(submitted, committed, selectionKnown)
+  return changes.selection_changed || changes.other_text_changed
 }
 
 let sessionGeneration = 0
@@ -602,9 +627,138 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
+  let unsubscribeSnapshotSettled: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
-  const recoveringTurns = new Map<string, AbortController>()
+  let receivedStatusSnapshot = false
+  let resolutionChannelEpoch = 0
+  interface RunningRecovery {
+    controller: AbortController
+    cause: RecoveryCause
+    rerun: boolean
+    rerunCause: RecoveryCause
+    automaticRerun: boolean
+  }
+  interface MissingThreadObservation {
+    count: number
+    observedAt: number
+  }
+  const recoveringTurns = new Map<string, RunningRecovery>()
+  interface PendingAskObservation {
+    pendingAskId: string | undefined
+    deliveredAskIds: Set<string>
+    observedAt: number
+  }
+  const recoveryPendingAskObservations = new Map<
+    string,
+    PendingAskObservation
+  >()
+  const recoveryThreadMissingCounts = new Map<
+    string,
+    MissingThreadObservation
+  >()
+  /**
+   * Asks recovery must not re-deliver: one it already restored, one a frame
+   * has delivered, and any the user has answered or the server has resolved.
+   * Without the latter, a poll whose snapshot predates the answer would
+   * resurrect a card the user is done with, splitting the reply that has
+   * since resumed streaming. Deliberately outlives `newChat`/`loadThread`:
+   * an `ask_id` carries its `message_id`, so it is never reused.
+   */
+  const deliveredAsks = new Set<string>()
+  const observedDeliveredAsks = new Set<string>()
+  const supersededAnswerReports = new Set<string>()
+  const acceptedUnconfirmedReports = new Set<string>()
+  const conflictUnconfirmedReports = new Set<string>()
+  const lateAskReports = new Map<
+    string,
+    {
+      threadId: string
+      messageId: string
+      timer: ReturnType<typeof setTimeout>
+    }
+  >()
+
+  function recordDeliveredAsk(askId: string): void {
+    observedDeliveredAsks.delete(askId)
+    observedDeliveredAsks.add(askId)
+    deliveredAsks.delete(askId)
+    deliveredAsks.add(askId)
+    for (const ledger of [deliveredAsks, observedDeliveredAsks]) {
+      if (ledger.size <= MAX_DELIVERED_ASKS) continue
+      const oldest = ledger.values().next().value
+      if (oldest !== undefined) ledger.delete(oldest)
+    }
+  }
+
+  function recordAnswerReport(reports: Set<string>, askId: string): boolean {
+    if (reports.has(askId)) return false
+    reports.add(askId)
+    if (reports.size > MAX_DELIVERED_ASKS) {
+      const oldest = reports.values().next().value
+      if (oldest !== undefined) reports.delete(oldest)
+    }
+    return true
+  }
+
+  function recordPendingAskObservation(
+    key: string,
+    pendingAskId: string | undefined,
+    deliveredAskIds: Set<string>
+  ): PendingAskObservation {
+    const observation = {
+      pendingAskId,
+      deliveredAskIds,
+      observedAt: Date.now()
+    }
+    recoveryPendingAskObservations.delete(key)
+    recoveryPendingAskObservations.set(key, observation)
+    if (recoveryPendingAskObservations.size > MAX_DELIVERED_ASKS) {
+      const oldest = recoveryPendingAskObservations.keys().next().value
+      if (oldest !== undefined) recoveryPendingAskObservations.delete(oldest)
+    }
+    return observation
+  }
+
+  function recordThreadAvailability(key: string, outcome: TurnOutcome): number {
+    const previous = recoveryThreadMissingCounts.get(key)
+    if (outcome.kind === 'thread-missing') {
+      const observedAt = Date.now()
+      const consecutive =
+        previous === undefined ||
+        observedAt - previous.observedAt > TURN_RECOVERY_DEADLINE_MS
+          ? 1
+          : observedAt - previous.observedAt >=
+              THREAD_MISSING_CONFIRMATION_INTERVAL_MS
+            ? previous.count + 1
+            : previous.count
+      recoveryThreadMissingCounts.delete(key)
+      recoveryThreadMissingCounts.set(key, { count: consecutive, observedAt })
+      return consecutive
+    }
+    recoveryThreadMissingCounts.delete(key)
+    return previous?.count ?? 0
+  }
+
+  function pruneRecoveryLedgers(): void {
+    while (recoveryThreadMissingCounts.size > MAX_DELIVERED_ASKS) {
+      const oldest = recoveryThreadMissingCounts.keys().next().value
+      if (oldest === undefined) break
+      recoveryThreadMissingCounts.delete(oldest)
+    }
+  }
+
+  function lateAskReportKey(threadId: string, askId: string): string {
+    return `${threadId}\u0000${askId}`
+  }
+
+  function clearLateAskReports(threadId?: string): void {
+    for (const [key, scheduled] of lateAskReports) {
+      if (threadId !== undefined && scheduled.threadId !== threadId) continue
+      clearTimeout(scheduled.timer)
+      lateAskReports.delete(key)
+    }
+  }
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -654,6 +808,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = null
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
+    receivedStatusSnapshot = false
     const surviving = conversationStore.threadId
     const stored =
       conversationStore.messages.length === 0
@@ -663,6 +818,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
+    unsubscribeSnapshotSettled = conversationStore.onSnapshotTurnSettled(
+      (turn) => void reconcileSettledSnapshotTurn(turn)
+    ).off
     if (!restore) return
     if (initialThreadId === null) {
       onThreadActivated?.(null)
@@ -894,7 +1052,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (conversationStore.threadId !== threadId || !isCurrent()) return false
     conversationStore.hydrate(history)
     rememberSnapshotTurn(conversationStore.activeTurnId)
-    reconcileLiveTurns()
+    reconcileLiveTurns('hydrate')
     readyThreadId.value = threadId
     drainHydration(buffer)
     const workflowReady = await workflow?.restored?.(
@@ -979,10 +1137,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = null
     unsubscribe?.()
     unsubscribeStatus?.()
+    unsubscribeSnapshotSettled?.()
     unsubscribe = null
     unsubscribeStatus = null
-    for (const recovery of recoveringTurns.values()) recovery.abort()
+    unsubscribeSnapshotSettled = null
+    for (const running of recoveringTurns.values()) running.controller.abort()
     recoveringTurns.clear()
+    recoveryPendingAskObservations.clear()
+    recoveryThreadMissingCounts.clear()
+    clearLateAskReports()
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
@@ -1048,24 +1211,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId?: string
   ): PostMessageInput {
     const draft = workflow?.draft?.(origin)
-    const unboundTarget = isUnboundTarget(wfContext, boundWorkflowId.value)
-    // Resolved here rather than at the call site: `buildPostInput` runs after
-    // `prepareWorkflow()`, so a tab whose cloud id was still unresolved on
-    // mount has one by now (QAF-19).
+    const tabs = workflow?.tabs?.(origin)
+    const unboundTarget = isUnboundTarget(
+      wfContext,
+      boundWorkflowId.value,
+      draft,
+      tabs
+    )
     const selectedWorkflowId = selectionWorkflowId?.()
     return {
       content: serializeWorkflowReferences(text, workflowReferences ?? []),
-      tabs: workflow?.tabs?.(origin),
+      tabs,
       workflowReferences: serializeReferencedWorkflows(
         workflowReferences,
         wfContext?.id
       ),
       selection: selectedNodes(tags, selectedWorkflowId),
       attachments: attachments?.map((attachment) => attachment.ref),
-      // Carried through untouched so the server can echo it onto
-      // agent_turn_started: it is the same id this send reports on its own
-      // app:agent_message_sent event, and the only value that can appear on both
-      // sides of the message -> turn step.
       clientMessageId,
       ...buildTargetFields(threadId, wfContext, draft, unboundTarget)
     }
@@ -1106,33 +1268,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return threadId === 'new' || wfContext?.id !== undefined || unboundTarget
   }
 
-  // current_tab_unbound's own contract (see its generated doc comment) is
-  // a tab-level fact: this tab has no cloud id yet. wfContext with no id
-  // is exactly that (a saved tab whose cloud id failed to resolve makes
-  // wfContext undefined entirely instead - see targetWorkflowTurnContext).
-  //
-  // boundWorkflowId === null narrows WHEN we assert that fact, and is a
-  // client-side policy choice, not part of the field's own meaning: the
-  // server has no way yet to tell "this thread's remembered workflow is
-  // itself my own prior unbound mint for this same tab" apart from "an
-  // unrelated workflow from a different tab" (see
-  // TestPostMessageUnboundCurrentTabMintsInsteadOfReusingTheThreadWorkflow
-  // in the agent service), so asserting the flag on every turn a still-
-  // unbound tab is asked about would mint a fresh, contentless workflow
-  // each time. Once any turn this session has bound a workflow, that
-  // binding (or the thread's own remembered workflow) is a safer target
-  // than minting again. Telling the server this is a selected-but-unbound
-  // tab, not "nothing selected", is what keeps the seed from telling the
-  // model no workflow is selected - see PM-1429/PM-1430.
   function isUnboundTarget(
     wfContext: WorkflowTurnContext | undefined,
-    boundWorkflowId: string | null
+    boundWorkflowId: string | null,
+    draft: DraftSnapshot | undefined,
+    tabs: OpenTabsSnapshot | undefined
   ): boolean {
-    return (
-      wfContext !== undefined &&
-      wfContext.id === undefined &&
-      boundWorkflowId === null
-    )
+    if (wfContext === undefined || wfContext.id !== undefined) return false
+    if (boundWorkflowId === null) return true
+    return draft !== undefined && isOpenInATab(boundWorkflowId, tabs)
+  }
+
+  function isOpenInATab(
+    workflowId: string,
+    tabs: OpenTabsSnapshot | undefined
+  ): boolean {
+    return (tabs?.open_tabs ?? []).some((tab) => tab.workflow_id === workflowId)
   }
 
   function buildTargetFields(
@@ -1613,44 +1764,178 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function answerAsk(
     askId: string,
-    answer: AgentAnswerRequest
+    answer: AgentAnswerRequest | 'run' | 'cancel'
   ): Promise<boolean> {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
-      reportError(new Error('agent ask answered with no thread to send on'), {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_unroutable'
-      })
-      pushError(i18n.global.t('agent.runApproval.answerFailed'))
-      conversationStore.retireAsk(askId, { status: 'retired' })
+      failUnroutableAsk(askId)
       return false
     }
     if (answeringAskIds.value.has(askId)) return false
-    conversationStore.recordAskAnswer(askId, answer)
+    const legacyRunApprovalAnswer = typeof answer === 'string'
+    const runApprovalAnswer =
+      legacyRunApprovalAnswer ||
+      conversationStore.askKind(askId) === 'runApproval'
+    const normalizedAnswer = legacyRunApprovalAnswer
+      ? { selected: [answer] }
+      : answer
+    conversationStore.recordAskAnswer(askId, normalizedAnswer, currentThreadId)
     conversationStore.setAskAnswering(askId, true)
+    const answerChannelEpoch = resolutionChannelEpoch
+    const answerStartedBeforeFirstOpen = connection === 'initial'
+    const answerStartedDropped = connection === 'dropped'
+    const resolutionChannelDropped = () =>
+      answerStartedDropped || resolutionChannelEpoch !== answerChannelEpoch
+    const resolutionChannelWasLost = () =>
+      answerStartedBeforeFirstOpen || resolutionChannelDropped()
     try {
-      const receipt = await sendAnswer(currentThreadId, askId, answer)
-      const committed = toAskResolution(receipt)
-      reportSupersededAnswer(askId, receipt)
-      conversationStore.commitAsk(askId, currentThreadId, committed)
-      return true
+      const receipt = await sendAnswer(currentThreadId, askId, normalizedAnswer)
+      return commitAskReceipt({
+        askId,
+        answer: normalizedAnswer,
+        currentThreadId,
+        receipt,
+        runApprovalAnswer,
+        resolutionChannelDropped
+      })
     } catch (error) {
       if (answeringAskIds.value.has(askId))
-        handleAnswerFailure(error, askId, currentThreadId)
+        return handleAnswerFailure(
+          error,
+          askId,
+          currentThreadId,
+          runApprovalAnswer,
+          resolutionChannelWasLost()
+        )
       return false
     }
+  }
+
+  function commitAskReceipt({
+    askId,
+    answer,
+    currentThreadId,
+    receipt,
+    runApprovalAnswer,
+    resolutionChannelDropped
+  }: {
+    askId: string
+    answer: AgentAnswerRequest
+    currentThreadId: string
+    receipt: AgentAnswerReceipt
+    runApprovalAnswer: boolean
+    resolutionChannelDropped: () => boolean
+  }): boolean {
+    if (!receiptNamesCommittedAnswer(receipt, runApprovalAnswer))
+      return commitStatusOnlyAskReceipt({
+        askId,
+        answer,
+        currentThreadId,
+        resolutionChannelDropped
+      })
+    const committed = toAskResolution(receipt)
+    conversationStore.clearAskAwaitingResolution(askId)
+    const superseded =
+      committed.status === 'answered' &&
+      isSupersededAnswer(answer, committed, Array.isArray(receipt.selected))
+    reportSupersededAnswer(askId, receipt)
+    recordDeliveredAsk(askId)
+    conversationStore.commitAsk(askId, currentThreadId, committed)
+    return !superseded
+  }
+
+  function receiptNamesCommittedAnswer(
+    receipt: {
+      status?: string
+      selected?: string[] | null
+      other_text?: string
+    },
+    runApprovalAnswer = false
+  ): boolean {
+    if (receipt.status !== undefined && receipt.status !== 'answered')
+      return false
+    if (receipt.other_text !== undefined) return true
+    if (receipt.selected === undefined || receipt.selected === null)
+      return false
+    return !runApprovalAnswer || receipt.selected.length > 0
+  }
+
+  function commitStatusOnlyAskReceipt({
+    askId,
+    answer,
+    currentThreadId,
+    resolutionChannelDropped
+  }: {
+    askId: string
+    answer: AgentAnswerRequest
+    currentThreadId: string
+    resolutionChannelDropped: () => boolean
+  }): boolean {
+    const channelDropped = resolutionChannelDropped()
+    const resolutionStillPending =
+      conversationStore.submittedAskAnswer(askId) !== undefined
+    if (resolutionStillPending)
+      reportAcceptedRecoveredAnswer(askId, channelDropped)
+    recordDeliveredAsk(askId)
+    conversationStore.commitAsk(askId, currentThreadId, { status: 'retired' })
+    if (resolutionStillPending && !channelDropped) {
+      conversationStore.recordAskAnswer(askId, answer, currentThreadId)
+      conversationStore.markAskAwaitingResolution(askId, 'accepted')
+    }
+    return !supersededAnswerReports.has(askId)
+  }
+
+  function failUnroutableAsk(askId: string): void {
+    reportError(new Error('agent ask answered with no thread to send on'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_unroutable'
+    })
+    pushError(i18n.global.t('agent.runApproval.answerFailed'))
+    recordDeliveredAsk(askId)
+    conversationStore.retireAsk(askId, { status: 'retired' })
+  }
+
+  function reportAcceptedRecoveredAnswer(
+    askId: string,
+    resolutionChannelWasLost: boolean
+  ): void {
+    if (
+      !resolutionChannelWasLost ||
+      !recordAnswerReport(acceptedUnconfirmedReports, askId)
+    )
+      return
+    reportError(new Error('accepted restored approval cannot be verified'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_winner_unconfirmed'
+    })
+    pushError(i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed'))
+  }
+
+  function reportUnconfirmedConflict(askId: string): void {
+    if (!recordAnswerReport(conflictUnconfirmedReports, askId)) return
+    reportError(new Error('restored approval conflict cannot be verified'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_unconfirmed'
+    })
+    pushError(i18n.global.t('agent.runApproval.answerUncertain'))
   }
 
   function handleAnswerFailure(
     error: unknown,
     askId: string,
-    threadId: string
-  ): void {
+    threadId: string,
+    runApprovalAnswer: boolean,
+    resolutionChannelWasLost = connection === 'dropped'
+  ): boolean {
+    conversationStore.clearAskAwaitingResolution(askId)
     if (error instanceof AgentApiError && error.status === 409) {
-      const conflict = zAgentAskConflict.safeParse(error.body).data ?? {}
-      reportSupersededAnswer(askId, conflict)
-      conversationStore.retireAsk(askId, toAskResolution(conflict), threadId)
-      return
+      return handleConflictAnswerFailure(
+        error,
+        askId,
+        threadId,
+        runApprovalAnswer,
+        resolutionChannelWasLost
+      )
     }
     const failure = classifyAnswerFailure(error)
     reportError(error, {
@@ -1662,6 +1947,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
     const settle: Record<AnswerFailure, () => void> = {
       rejected: () => {
+        deliveredAsks.delete(askId)
         conversationStore.takeSubmittedAskAnswer(askId)
         conversationStore.setAskAnswering(askId, false)
         pushError(i18n.global.t('agent.askUser.answerRejected'))
@@ -1671,11 +1957,88 @@ export function useAgentSession(deps: AgentSessionDeps) {
         conversationStore.retireAsk(askId, { status: 'retired' }, threadId)
       },
       unconfirmed: () => {
+        recordDeliveredAsk(askId)
         conversationStore.retireAsk(askId, { status: 'unconfirmed' }, threadId)
         pushError(i18n.global.t('agent.runApproval.answerUncertain'))
       }
     }
     settle[failure]()
+    return false
+  }
+
+  function handleConflictAnswerFailure(
+    error: AgentApiError,
+    askId: string,
+    threadId: string,
+    runApprovalAnswer: boolean,
+    resolutionChannelWasLost: boolean
+  ): boolean {
+    const conflict = zAgentAskConflict.safeParse(error.body)
+    if (
+      conflict.success &&
+      conflict.data.status !== undefined &&
+      conflict.data.status !== 'answered'
+    ) {
+      conversationStore.retireAsk(
+        askId,
+        toAskResolution(conflict.data),
+        threadId
+      )
+      return false
+    }
+    const submitted = conversationStore.submittedAskAnswer(askId)
+    if (
+      conflict.success &&
+      receiptNamesCommittedAnswer(conflict.data, runApprovalAnswer)
+    ) {
+      const committed = toAskResolution(conflict.data)
+      const superseded =
+        submitted !== undefined &&
+        committed.status === 'answered' &&
+        isSupersededAnswer(
+          submitted,
+          committed,
+          Array.isArray(conflict.data.selected)
+        )
+      reportSupersededAnswer(askId, conflict.data)
+      conversationStore.retireAsk(askId, committed, threadId)
+      return !superseded
+    }
+    retireUnknownConflict(
+      error,
+      askId,
+      threadId,
+      submitted,
+      resolutionChannelWasLost
+    )
+    return false
+  }
+
+  function retireUnknownConflict(
+    error: AgentApiError,
+    askId: string,
+    threadId: string,
+    submitted: AgentAnswerRequest | undefined,
+    resolutionChannelWasLost: boolean
+  ): void {
+    recordDeliveredAsk(askId)
+    conversationStore.retireAsk(
+      askId,
+      { status: resolutionChannelWasLost ? 'unconfirmed' : 'retired' },
+      threadId
+    )
+    if (!resolutionChannelWasLost) {
+      if (submitted) {
+        conversationStore.recordAskAnswer(askId, submitted, threadId)
+        conversationStore.markAskAwaitingResolution(askId, 'conflict')
+      }
+      return
+    }
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_unconfirmed'
+    })
+    pushError(i18n.global.t('agent.runApproval.answerUncertain'))
   }
 
   function reportSupersededAnswer(
@@ -1688,8 +2051,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
     if (submitted === undefined) return
     const selectionKnown = Array.isArray(source.selected)
-    const changes = diffAnswers(submitted, committed, selectionKnown)
-    if (!changes.selection_changed && !changes.other_text_changed) return
+    const changes = diffAnswers(submitted.answer, committed, selectionKnown)
+    if (
+      (!changes.selection_changed && !changes.other_text_changed) ||
+      !recordAnswerReport(supersededAnswerReports, askId)
+    )
+      return
     reportError(new Error('agent ask resolved with a different answer'), {
       surface: 'agent',
       errorType: 'agent_ask_answer_superseded',
@@ -1699,7 +2066,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         committed_selected_count: selectionKnown
           ? committed.selected.length
           : undefined,
-        submitted_selected_count: submitted.selected.length
+        submitted_selected_count: submitted.answer.selected.length,
+        ask_kind: submitted.kind
       }
     })
     pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
@@ -1924,25 +2292,41 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (messageId !== undefined) snapshotTurns.delete(toTurnId(messageId))
   }
 
+  function handleResolvedAsk(
+    event: Extract<AgentWsEvent, { type: 'agent_ask_resolved' }>
+  ): void {
+    conversationStore.clearAskAwaitingResolution(event.data.ask_id)
+    const resolution = toAskResolution(event.data)
+    reportSupersededAnswer(event.data.ask_id, event.data)
+    // The owning transport may already be gone, so retire the ask explicitly
+    // before ingest can otherwise leave its card enabled.
+    conversationStore.retireAsk(
+      event.data.ask_id,
+      resolution,
+      event.data.thread_id
+    )
+    recordDeliveredAsk(event.data.ask_id)
+    onAskResolved?.(event.data.ask_id)
+  }
+
+  function observeSkillEvent(event: AgentWsEvent): void {
+    for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
+    if (event.type !== 'agent_message_done') return
+    finishSkillTurn({
+      threadId: event.data.thread_id,
+      messageId: toTurnId(event.data.message_id)
+    })
+  }
+
   function handleAgentEvent(event: AgentWsEvent): void {
     if (heldForHydration(event)) return
     observeLiveDelivery(event)
-    if (event.type === 'agent_ask_resolved') {
-      const resolution = toAskResolution(event.data)
-      reportSupersededAnswer(event.data.ask_id, event.data)
-      conversationStore.retireAsk(
-        event.data.ask_id,
-        resolution,
-        event.data.thread_id
-      )
-      onAskResolved?.(event.data.ask_id)
-    }
-    for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
-    if (event.type === 'agent_message_done') {
-      finishSkillTurn({
-        threadId: event.data.thread_id,
-        messageId: toTurnId(event.data.message_id)
-      })
+    if (event.type === 'agent_ask_resolved') handleResolvedAsk(event)
+    observeSkillEvent(event)
+    if (event.type === 'agent_ask') {
+      deliverAsk(event)
+      for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
+      return
     }
     conversationStore.ingest(event)
     for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
@@ -1965,33 +2349,69 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function onStatus(live: boolean): void {
     if (!live) {
+      if (connection === 'initial' && !receivedStatusSnapshot) {
+        receivedStatusSnapshot = true
+        return
+      }
+      receivedStatusSnapshot = true
+      if (connection === 'dropped') return
       connection = 'dropped'
+      resolutionChannelEpoch += 1
+      for (const awaiting of conversationStore.asksAwaitingResolution())
+        if (awaiting.kind === 'accepted')
+          reportAcceptedRecoveredAnswer(awaiting.askId, true)
+        else reportUnconfirmedConflict(awaiting.askId)
       return
     }
+    receivedStatusSnapshot = true
     const reconnected = connection === 'dropped'
+    const firstLive = connection === 'initial'
     connection = 'live'
-    if (!reconnected) return
-    reconcileLiveTurns()
+    if (reconnected) reconcileLiveTurns('reconnect')
+    else if (firstLive) reconcileLiveTurns('hydrate')
   }
 
-  function reconcileLiveTurns(): void {
-    const turns = conversationStore
-      .liveTurns()
-      .filter((turn) => !recoveringTurns.has(recoveryKey(turn)))
-    for (const turn of turns) void reconcileTurn(turn)
+  function reconcileLiveTurns(cause: RecoveryCause): void {
+    for (const turn of conversationStore.liveTurns())
+      void reconcileTurn(turn, cause)
   }
 
-  async function reconcileTurn(turn: LiveTurn): Promise<void> {
+  async function reconcileTurn(
+    turn: LiveTurn,
+    cause: RecoveryCause,
+    isAutomaticRerun = false
+  ): Promise<void> {
     observeSkillTurn(turn)
     const key = recoveryKey(turn)
+    if (deferToRunningRecovery(key, cause)) return
     const recovery = new AbortController()
-    recoveringTurns.set(key, recovery)
-    const deadline = setTimeout(
-      () => recovery.abort(),
-      TURN_RECOVERY_DEADLINE_MS
-    )
+    const state = {
+      controller: recovery,
+      cause,
+      rerun: false,
+      rerunCause: cause,
+      automaticRerun: false
+    }
+    recoveringTurns.set(key, state)
+    const deadline = setTimeout(() => {
+      if (recoveringTurns.get(key)?.controller !== recovery) return
+      recoveringTurns.delete(key)
+      recovery.abort()
+      if (!isTurnLive(turn, ownedGeneration)) return
+      if (state.rerun)
+        void reconcileTurn(turn, state.rerunCause, state.automaticRerun)
+    }, TURN_RECOVERY_DEADLINE_MS)
     try {
-      await recoverTurn(turn, ownedGeneration, recovery.signal)
+      const needsRerun = await recoverTurn(
+        turn,
+        cause,
+        ownedGeneration,
+        recovery.signal
+      )
+      if (needsRerun && !isAutomaticRerun && !state.rerun) {
+        state.rerun = true
+        state.automaticRerun = true
+      }
     } catch (error) {
       // `onStatus` floats this job (`void reconcileTurn(turn)`), so a rethrow
       // would land as an `unhandledrejection` the session never sees. Abort is
@@ -2004,27 +2424,352 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
     } finally {
       clearTimeout(deadline)
-      if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
+      finishRecovery(key, recovery, state, turn)
     }
+  }
+
+  async function fetchSettledTurnOutcome(
+    turn: LiveTurn,
+    generation: number,
+    signal: AbortSignal
+  ): Promise<TurnOutcome> {
+    let outcome = await fetchTurnOutcome(turn, signal)
+    for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
+      if (outcome.kind !== 'streaming' || generation !== sessionGeneration)
+        return outcome
+      await delay(ms, { signal })
+      outcome = await fetchTurnOutcome(turn, signal)
+    }
+    return outcome
+  }
+
+  async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
+    const generation = ownedGeneration
+    const key = recoveryKey(turn)
+    recoveringTurns.get(key)?.controller.abort()
+    const recovery = new AbortController()
+    const state: RunningRecovery = {
+      controller: recovery,
+      cause: 'hydrate',
+      rerun: false,
+      rerunCause: 'hydrate',
+      automaticRerun: false
+    }
+    recoveringTurns.set(key, state)
+    const deadline = setTimeout(
+      () => recovery.abort(),
+      TURN_RECOVERY_DEADLINE_MS
+    )
+    try {
+      const outcome = await fetchSettledTurnOutcome(
+        turn,
+        generation,
+        recovery.signal
+      )
+      if (generation !== sessionGeneration) return
+      if (outcome.kind === 'error') {
+        reportError(outcome.cause, {
+          surface: 'agent',
+          errorType: 'failure_recovering_agent_turn'
+        })
+        return
+      }
+      if (outcome.kind !== 'terminal') return
+      conversationStore.reconcileSettledTurn(turn, outcome.parts)
+    } catch (error) {
+      if (!recovery.signal.aborted)
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_recovering_agent_turn'
+        })
+    } finally {
+      clearTimeout(deadline)
+      if (
+        generation === sessionGeneration &&
+        recoveringTurns.get(key) === state
+      )
+        conversationStore.reconcileSettledTurn(turn, undefined)
+      finishRecovery(key, recovery, state, turn)
+      recoveryPendingAskObservations.delete(key)
+      recoveryThreadMissingCounts.delete(key)
+    }
+  }
+
+  function deferToRunningRecovery(key: string, cause: RecoveryCause): boolean {
+    const running = recoveringTurns.get(key)
+    if (running === undefined) return false
+    if (cause !== 'reconnect') {
+      running.rerun = true
+      return true
+    }
+    if (running.cause === 'reconnect') {
+      running.rerun = true
+      running.rerunCause = 'reconnect'
+      return true
+    }
+    running.controller.abort()
+    return false
+  }
+
+  function finishRecovery(
+    key: string,
+    recovery: AbortController,
+    state: RunningRecovery,
+    turn: LiveTurn
+  ): void {
+    if (recoveringTurns.get(key)?.controller !== recovery) return
+    recoveringTurns.delete(key)
+    if (state.rerun && isTurnLive(turn, ownedGeneration))
+      void reconcileTurn(turn, state.rerunCause, state.automaticRerun)
   }
 
   async function recoverTurn(
     turn: LiveTurn,
+    cause: RecoveryCause,
     generation: number,
     signal: AbortSignal
-  ): Promise<void> {
-    let consecutiveThreadMissing = 0
+  ): Promise<boolean> {
+    const key = recoveryKey(turn)
+    let previousObservation = recentPendingAskObservation(key)
+    let hasUnconfirmedObservation = false
+    let sawStreamingObservation = false
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
-      if (!isTurnLive(turn, generation)) return
+      if (!isTurnLive(turn, generation)) return false
+      const deliveredBeforeFetch = new Set(deliveredAsks)
       const outcome = await fetchTurnOutcome(turn, signal)
-      if (!isTurnLive(turn, generation)) return
-      consecutiveThreadMissing =
-        outcome.kind === 'thread-missing' ? consecutiveThreadMissing + 1 : 0
-      if (outcome.kind === 'thread-missing' && consecutiveThreadMissing < 2)
+      signal.throwIfAborted()
+      if (!isTurnLive(turn, generation)) return false
+      const consecutiveThreadMissing = recordThreadAvailability(key, outcome)
+      pruneRecoveryLedgers()
+      if (isTransientMissingTurn(outcome, consecutiveThreadMissing)) {
+        hasUnconfirmedObservation = true
         continue
-      if (settleFinishedTurn(turn, outcome)) return
+      }
+      if (settleFinishedTurn(turn, outcome)) {
+        recoveryPendingAskObservations.delete(key)
+        recoveryThreadMissingCounts.delete(key)
+        return false
+      }
+      if (outcome.kind !== 'streaming') {
+        hasUnconfirmedObservation = true
+        continue
+      }
+      sawStreamingObservation = true
+      const pendingAskId = streamingPendingAskId(outcome)
+      const pendingAskConfirmed =
+        previousObservation !== undefined &&
+        previousObservation.pendingAskId === pendingAskId
+      hasUnconfirmedObservation = !pendingAskConfirmed
+      const deliveredSincePreviousObservation = new Set(
+        [...deliveredAsks].filter(
+          (askId) => !previousObservation?.deliveredAskIds.has(askId)
+        )
+      )
+      reconcileStreamingApproval(
+        turn,
+        outcome,
+        cause,
+        pendingAskConfirmed,
+        deliveredSincePreviousObservation
+      )
+      previousObservation = recordPendingAskObservation(
+        key,
+        pendingAskId,
+        deliveredBeforeFetch
+      )
     }
+    return hasUnconfirmedObservation && sawStreamingObservation
+  }
+
+  function recentPendingAskObservation(
+    key: string
+  ): PendingAskObservation | undefined {
+    const observation = recoveryPendingAskObservations.get(key)
+    if (
+      observation === undefined ||
+      Date.now() - observation.observedAt <= TURN_RECOVERY_DEADLINE_MS
+    )
+      return observation
+    recoveryPendingAskObservations.delete(key)
+    return undefined
+  }
+
+  function reconcileStreamingApproval(
+    turn: LiveTurn,
+    outcome: TurnOutcome,
+    cause: RecoveryCause,
+    pendingAskConfirmed: boolean,
+    deliveredDuringPoll: ReadonlySet<string>
+  ): void {
+    if (outcome.kind !== 'streaming') return
+    if (pendingAskConfirmed)
+      reconcileConfirmedApproval(turn, outcome, deliveredDuringPoll)
+    if (
+      !pendingAskConfirmed &&
+      outcome.pendingAsk !== undefined &&
+      !conversationStore.isAskShown(turn, outcome.pendingAsk.ask_id) &&
+      conversationStore.hasApprovalShown(turn)
+    )
+      return
+    restoreMissingApproval(turn, outcome.pendingAsk, cause)
+  }
+
+  function reconcileConfirmedApproval(
+    turn: LiveTurn,
+    outcome: Extract<TurnOutcome, { kind: 'streaming' }>,
+    deliveredDuringPoll: ReadonlySet<string>
+  ): void {
+    if (outcome.pendingAsk)
+      conversationStore.confirmAskPending(
+        outcome.pendingAsk.ask_id,
+        turn.threadId
+      )
+    const hiddenAskIds = conversationStore.reconcileApprovalParts(
+      turn,
+      outcome.pendingAsk?.ask_id,
+      deliveredDuringPoll
+    )
+    for (const askId of hiddenAskIds) deliveredAsks.delete(askId)
+  }
+
+  /**
+   * PM-1738: a turn parked on a tool-call approval stays `streaming` until the
+   * user answers, so a socket drop that swallowed the `agent_ask` frame leaves
+   * the server waiting on a card the panel never drew -- the turn reads as
+   * hung and every follow-up post comes back 409. The polled row still carries
+   * the unanswered ask, so re-deliver it through the store, which routes it to
+   * the same transport the lost frame would have reached, and mirror the one
+   * other thing the socket branch does with an ask.
+   *
+   * Reported at `error` only after a reconnect, where the frame really is
+   * gone. A hydrate's poll can instead be racing a broadcast the server had
+   * not published when its history fetch went out, so that reads as a warning.
+   */
+  function restoreMissingApproval(
+    turn: LiveTurn,
+    pendingAsk: PendingAsk | undefined,
+    cause: RecoveryCause
+  ): void {
+    if (!pendingAsk) return
+    if (deliveredAsks.has(pendingAsk.ask_id)) return
+    if (
+      conversationStore.submittedAskAnswer(pendingAsk.ask_id) !== undefined ||
+      answeringAskIds.value.has(pendingAsk.ask_id)
+    )
+      return
+    if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)) return
+    if (conversationStore.isAskShown(turn, pendingAsk.ask_id)) return
+    const wasDeliveredBefore = observedDeliveredAsks.has(pendingAsk.ask_id)
+    conversationStore.ingest({
+      type: 'agent_ask',
+      data: {
+        ...pendingAsk,
+        thread_id: turn.threadId,
+        message_id: turn.messageId
+      }
+    })
+    if (!conversationStore.isAskShown(turn, pendingAsk.ask_id)) return
+    recordDeliveredAsk(pendingAsk.ask_id)
+    if (!wasDeliveredBefore)
+      reportRestoredApproval(turn, pendingAsk.ask_id, cause)
+  }
+
+  /**
+   * The server writes the ask row before it publishes the frame, so a poll
+   * can restore an ask whose broadcast is merely in flight. Only a reconnect
+   * claims a frame was lost, and only once its own broadcast has had a grace
+   * window to turn up -- `withdrawLateAskReport` cancels this when it does.
+   * A hydrate races the same way but never had a dropped socket to blame, so
+   * it files as a warning immediately.
+   */
+  function reportRestoredApproval(
+    turn: LiveTurn,
+    askId: string,
+    cause: RecoveryCause
+  ): void {
+    const lostFrame = cause === 'reconnect' || connection === 'dropped'
+    if (!lostFrame) {
+      sendRestoredApprovalReport(turn, askId, cause, 'warning')
+      return
+    }
+    const key = lateAskReportKey(turn.threadId, askId)
+    withdrawLateAskReport(turn.threadId, askId)
+    lateAskReports.set(key, {
+      threadId: turn.threadId,
+      messageId: turn.messageId,
+      timer: setTimeout(() => {
+        lateAskReports.delete(key)
+        sendRestoredApprovalReport(turn, askId, cause, 'error')
+      }, LATE_ASK_FRAME_GRACE_MS)
+    })
+  }
+
+  /**
+   * Routes an inbound `agent_ask`. One already in the ledger is an ask
+   * recovery has supplied, or one the user has finished with; dropping it on
+   * the id rather than on the rendered parts is what stops a frame delayed
+   * past its own resolution from drawing a card over a resumed reply.
+   *
+   * A frame is only ledgered once its card is actually on screen. `ingest`
+   * has nowhere to route one that arrives before its turn is in memory -- the
+   * window between subscribing and the first history fetch landing -- and
+   * ledgering a frame the store dropped would convince recovery the ask had
+   * been delivered, leaving the panel with no card at all.
+   */
+  function deliverAsk(
+    event: Extract<AgentWsEvent, { type: 'agent_ask' }>
+  ): void {
+    const askId = event.data.ask_id
+    if (conversationStore.isAskRetired(askId, event.data.thread_id)) {
+      withdrawLateAskReport(event.data.thread_id, askId)
+      return
+    }
+    const turn = {
+      threadId: event.data.thread_id,
+      messageId: toTurnId(event.data.message_id)
+    }
+    if (
+      deliveredAsks.has(askId) &&
+      (conversationStore.isAskShown(turn, askId) ||
+        conversationStore.submittedAskAnswer(askId) !== undefined)
+    ) {
+      withdrawLateAskReport(event.data.thread_id, askId)
+      return
+    }
+    conversationStore.ingest(event)
+    withdrawLateAskReport(event.data.thread_id, askId)
+    if (conversationStore.isAskShown(turn, askId)) recordDeliveredAsk(askId)
+  }
+
+  function withdrawLateAskReport(threadId: string, askId: string): void {
+    const key = lateAskReportKey(threadId, askId)
+    const scheduled = lateAskReports.get(key)
+    if (scheduled === undefined) return
+    clearTimeout(scheduled.timer)
+    lateAskReports.delete(key)
+  }
+
+  function sendRestoredApprovalReport(
+    turn: LiveTurn,
+    askId: string,
+    cause: RecoveryCause,
+    level: 'error' | 'warning'
+  ): void {
+    reportError(
+      new Error('Agent approval ask was missing from the panel when polled'),
+      {
+        surface: 'agent',
+        errorType: 'failure_delivering_agent_approval_ask',
+        level,
+        tags: {
+          feature_area: 'agent',
+          operation: 'recovery',
+          recovery_cause: cause
+        },
+        context: { threadId: turn.threadId, messageId: turn.messageId, askId }
+      }
+    )
   }
 
   function isTurnLive(turn: LiveTurn, generation: number): boolean {
@@ -2039,21 +2784,34 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function markRecoveredSkillUse(
+    turn: LiveTurn,
+    parts: Extract<TurnOutcome, { kind: 'terminal' }>['parts']
+  ): void {
+    if (
+      !parts?.some((part) => part.type === 'tool' && part.name === 'load_skill')
+    )
+      return
+    observeSkillTurn(turn)
+    const usage = skillTurnUsage.get(recoveryKey(turn))
+    if (usage) usage.used = true
+  }
+
+  function settleTerminalTurn(
+    turn: LiveTurn,
+    parts: Extract<TurnOutcome, { kind: 'terminal' }>['parts'],
+    ending: Extract<TurnOutcome, { kind: 'terminal' }>['ending']
+  ): void {
+    markRecoveredSkillUse(turn, parts)
+    finishSkillTurn(turn)
+    conversationStore.settleTurn(turn, parts, ending)
+    markStoppedTurnReady(turn)
+  }
+
   function settleFinishedTurn(turn: LiveTurn, outcome: TurnOutcome): boolean {
     switch (outcome.kind) {
       case 'terminal':
-        if (
-          outcome.parts?.some(
-            (part) => part.type === 'tool' && part.name === 'load_skill'
-          )
-        ) {
-          observeSkillTurn(turn)
-          const usage = skillTurnUsage.get(recoveryKey(turn))
-          if (usage) usage.used = true
-        }
-        finishSkillTurn(turn)
-        conversationStore.settleTurn(turn, outcome.parts, outcome.ending)
-        markStoppedTurnReady(turn)
+        settleTerminalTurn(turn, outcome.parts, outcome.ending)
         return true
       case 'thread-missing':
         forgetDeletedThread(turn)
@@ -2090,15 +2848,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const anchor = history.find(
         (entry) => entry.role === 'assistant' && entry.id === turn.messageId
       )
-      if (!anchor) return { kind: 'streaming' }
+      if (!anchor)
+        return { kind: 'error', cause: new Error('turn row is not visible') }
       const rows = history
         .filter(
           (entry) =>
             entry.role === 'assistant' && entry.turn_id === anchor.turn_id
         )
         .sort((a, b) => a.seq - b.seq)
-      if (rows.some((row) => !isTerminalTurnStatus(row.status)))
-        return { kind: 'streaming' }
+      const latest = rows.at(-1)
+      if (latest && !isTerminalTurnStatus(latest.status))
+        return {
+          kind: 'streaming',
+          pendingAsk: rows.findLast(
+            (row) =>
+              !isTerminalTurnStatus(row.status) && row.pending_ask !== undefined
+          )?.pending_ask
+        }
       return {
         kind: 'terminal',
         parts: terminalRecoveryParts(rows),
@@ -2112,6 +2878,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function forgetDeletedThread(turn: LiveTurn): void {
     skillTurnUsage.delete(recoveryKey(turn))
+    recoveryPendingAskObservations.delete(recoveryKey(turn))
+    recoveryThreadMissingCounts.delete(recoveryKey(turn))
+    clearLateAskReports(turn.threadId)
     if (conversationStore.threadId !== turn.threadId) {
       conversationStore.settleTurn(turn, undefined, 'failed')
       return

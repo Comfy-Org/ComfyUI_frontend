@@ -3,14 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import * as graphTraversalUtil from '@/utils/graphTraversalUtil'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
@@ -37,7 +39,8 @@ const createMockOutputs = (
 ): ExecutedWsMessage['output'] => ({ images })
 
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
+  executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id),
+  getNodeByLocatorId: vi.fn(() => ({}))
 }))
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
@@ -279,6 +282,118 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     app.nodePreviewImages['5'] = ['blob:legacy']
 
     expect(store.getNodePreviews(node)).toEqual(['blob:canonical'])
+  })
+})
+
+describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved execution id', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+  })
+
+  it('reports the execution id and output filenames instead of dropping the output silently', () => {
+    vi.mocked(
+      graphTraversalUtil.executionIdToNodeLocatorId
+    ).mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+    const outputs = createMockOutputs([
+      { filename: 'contact_sheet_00001_.png' }
+    ])
+
+    store.setNodeOutputsByExecutionId(executionId, outputs)
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'No live node resolves the executed output'
+      }),
+      expect.objectContaining({
+        surface: 'graph',
+        errorType: 'failure_resolving_node_output_execution_id',
+        level: 'warning',
+        tags: { executionId },
+        context: { filenames: ['contact_sheet_00001_.png'] }
+      })
+    )
+  })
+
+  it('omits filenames when the output carries none', () => {
+    vi.mocked(
+      graphTraversalUtil.executionIdToNodeLocatorId
+    ).mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(executionId, createMockOutputs())
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: { executionId },
+        context: { filenames: undefined }
+      })
+    )
+  })
+
+  it('omits filenames when the output carries an empty image list', () => {
+    vi.mocked(
+      graphTraversalUtil.executionIdToNodeLocatorId
+    ).mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(executionId, createMockOutputs([]))
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: { executionId },
+        context: { filenames: undefined }
+      })
+    )
+  })
+
+  it('reports a top-level execution id whose node was deleted', () => {
+    vi.mocked(graphTraversalUtil.getNodeByLocatorId).mockReturnValueOnce(null)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'deleted-node.png' }])
+    )
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: { executionId },
+        context: { filenames: ['deleted-node.png'] }
+      })
+    )
+    expect(store.nodeOutputs[executionId]).toBeUndefined()
+  })
+
+  it('stores top-level output while the root graph is being initialized', () => {
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValueOnce(undefined)
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+    const outputs = createMockOutputs([{ filename: 'restored.png' }])
+
+    store.setNodeOutputsByExecutionId(executionId, outputs)
+
+    expect(reportError).not.toHaveBeenCalled()
+    expect(store.nodeOutputs[executionId]).toEqual(outputs)
+  })
+
+  it('does not report when the execution id resolves to a node', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(63)])
+
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'resolved.png' }])
+    )
+
+    expect(reportError).not.toHaveBeenCalled()
   })
 })
 
@@ -1023,6 +1138,55 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
 
     expect(node.images).toBe(images)
     expect(node.images).not.toBe(store.nodeOutputs['5']?.images)
+  })
+
+  it.for([
+    {
+      value: 'sky.exr',
+      preview: { filename: 'sky.exr', subfolder: '', type: 'input' as const }
+    },
+    {
+      value: 'renders/sky.exr [output]',
+      preview: {
+        filename: 'sky.exr',
+        subfolder: 'renders',
+        type: 'output' as const
+      }
+    }
+  ])(
+    'keeps the resolved preview of $value when the widget path writes it again',
+    ({ value, preview }) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 5 })
+      const resolved = { ...preview, preview_id: 'preview-1' }
+      store.nodeOutputs['5'] = { images: [resolved] }
+
+      store.setNodeOutputs(node, value)
+
+      expect(store.nodeOutputs['5']?.images).toEqual([resolved])
+      expect(app.nodeOutputs['5']?.images).toEqual([resolved])
+    }
+  )
+
+  it('replaces a resolved preview when the widget path writes another value', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.nodeOutputs['5'] = {
+      images: [
+        { filename: 'sky.exr', subfolder: '', type: 'output', preview_id: 'p' }
+      ]
+    }
+
+    store.setNodeOutputs(node, 'other.exr [output]')
+
+    const previewUrl = new URL(
+      store.getNodeImageUrls(node)?.[0] ?? '',
+      window.location.origin
+    )
+    expect(store.nodeOutputs['5']?.images).toHaveLength(1)
+    expect(store.nodeOutputs['5']?.images?.[0]?.preview_id).toBeUndefined()
+    expect(previewUrl.searchParams.get('filename')).toBe('other.exr')
+    expect(previewUrl.searchParams.get('type')).toBe('output')
   })
 
   it('should skip empty array of filenames after createOutputs', () => {

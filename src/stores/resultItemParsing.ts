@@ -1,8 +1,8 @@
 import type {
   NodeExecutionOutput,
   ResultItem
-} from '@/platform/remote/comfyui/execution/types'
-import { resultItemType } from '@/schemas/resultItemTypeSchema'
+} from '@comfyorg/api-client/executionTypes'
+import { resultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const METADATA_KEYS = new Set(['animated', 'text'])

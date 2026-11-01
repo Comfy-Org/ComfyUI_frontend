@@ -169,7 +169,7 @@ const {
   contentPadding = 'default',
   headerPadding = 'default',
   closeButtonVariant,
-  closeIcon = 'icon-[lucide--x] scale-150'
+  closeIcon = 'icon-[lucide--x]'
 } = defineProps<{
   contentTitle: string
   labels: {

@@ -54,7 +54,7 @@
               </span>
             </div>
             <i
-              class="icon-[lucide--chevron-down] size-3.5 scale-150 text-muted-foreground"
+              class="icon-[lucide--chevron-down] size-3.5 text-muted-foreground"
             />
           </Button>
         </PopoverTrigger>
@@ -268,6 +268,7 @@ import {
 
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
 import SubscribeButton from '@/platform/billing/subscription/components/SubscribeButton.vue'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
@@ -450,6 +451,6 @@ const handleCreateWorkspace = () => {
 }
 
 onMounted(() => {
-  if (!accountActionsOnly) void fetchBalance()
+  if (!accountActionsOnly) void refreshBalanceInBackground(fetchBalance)
 })
 </script>

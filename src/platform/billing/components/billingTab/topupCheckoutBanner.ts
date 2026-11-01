@@ -47,15 +47,6 @@ function bannerForCheckout(
   }
 }
 
-export function addCreditsEmphasis(
-  availableCents: number | null,
-  banner: TopupCheckoutBanner | null
-): 'secondary' | 'inverted' {
-  return availableCents === 0 && banner?.kind === 'failed'
-    ? 'inverted'
-    : 'secondary'
-}
-
 export function topupCheckoutBannerKey(banner: TopupCheckoutBanner): string {
   return `${banner.sessionId}:${banner.kind}`
 }

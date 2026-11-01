@@ -83,6 +83,7 @@
     "copyMarkdown": "Copiar como markdown",
     "copyUnavailable": "Somente a conversa atual pode ser copiada nesta versão",
     "creditTransitionNotice": "Você usou seus créditos gratuitos do agente. As atividades futuras do agente usam os créditos do seu espaço de trabalho, que podem incluir créditos pagos.",
+    "creditsUsed": "O agente usou {credits} crédito | O agente usou {credits} créditos",
     "currentTab": "Aba atual",
     "delete": "Excluir",
     "deleteApproval": {
@@ -5863,7 +5864,6 @@
           "off": "Desativada",
           "on": "Ativada",
           "onHold": "Em espera",
-          "paused": "Pausada",
           "turnedOff": "Desativada"
         },
         "title": "Recarga automática",
@@ -5926,7 +5926,6 @@
         },
         "scheduledChange": "Mudará para {plan} em {date}.",
         "stayConfirm": {
-          "body": "Seu plano não mudará para {plan} em {date}. Você pode agendar uma mudança novamente a qualquer momento.",
           "title": "Cancelar sua alteração para o plano {plan}?"
         },
         "unknown": {

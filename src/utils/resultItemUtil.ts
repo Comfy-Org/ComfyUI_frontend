@@ -1,5 +1,5 @@
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
-import { resultItemType } from '@/schemas/resultItemTypeSchema'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import { resultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 
 /**
  * A result item that can be resolved to a `/view` URL. `subfolder` and `type`

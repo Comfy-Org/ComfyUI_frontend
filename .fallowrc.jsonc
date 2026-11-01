@@ -8,9 +8,22 @@
     "conditions": [
       "@comfyorg/account-core",
       "@comfyorg/account-ui",
+      "@comfyorg/api-client",
+      "@comfyorg/billing-contract",
+      "@comfyorg/billing-core",
+      "@comfyorg/design-system",
+      "@comfyorg/graph-model",
+      "@comfyorg/ingest-types",
+      "@comfyorg/keybindings",
       "@comfyorg/layer-editor",
       "@comfyorg/mask-editor",
       "@comfyorg/object-info-parser",
+      "@comfyorg/registry-types",
+      "@comfyorg/settings-core",
+      "@comfyorg/shared-frontend-utils",
+      "@comfyorg/tailwind-utils",
+      "@comfyorg/telemetry",
+      "@comfyorg/test-utils",
       "@comfyorg/viewport3d"
     ]
   },
@@ -25,7 +38,7 @@
       "name": "comfyui-support-entry-points",
       "enablers": ["fallow"],
       "entryPoints": [
-        "**/.storybook/{main,preview}.ts",
+        "**/.storybook/{main.ts,preview.ts,style.css}",
         "packages/ingest-types/openapi-ts.config.ts",
         "scripts/**/*.{js,ts}"
       ],
@@ -36,7 +49,7 @@
       "enablers": ["@playwright/test"],
       "entryPoints": [
         "browser_tests/global{Setup,Teardown}.ts",
-        "packages/design-system/tests/consumer/{main,runtime,verifyStyles}.ts",
+        "packages/design-system/tests/{consumer,css-consumer}/{main,runtime,verifyStyles}.ts",
         "playwright.session.config.ts",
         "{src,packages}/**/__mocks__/**/*.ts"
       ],
@@ -130,7 +143,7 @@
     },
     // Generated OpenAPI client types (mirrors knip ignore).
     {
-      "file": "src/workbench/extensions/manager/types/generatedManagerTypes.ts",
+      "file": "packages/api-client/src/generatedManagerTypes.ts",
       "exports": ["*"]
     },
     // Loaded dynamically: cloud onboarding routes, cloud telemetry provider, and

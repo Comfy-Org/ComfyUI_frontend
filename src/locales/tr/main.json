@@ -83,6 +83,7 @@
     "copyMarkdown": "Markdown olarak kopyala",
     "copyUnavailable": "Bu sürümde yalnızca geçerli konuşma kopyalanabilir",
     "creditTransitionNotice": "Ücretsiz ajan kredilerinizi kullandınız. Sonraki ajan etkinlikleri, ücretli kredileri içerebilecek çalışma alanı kredilerinizi kullanır.",
+    "creditsUsed": "Ajan {credits} kredi kullandı | Ajan {credits} kredi kullandı",
     "currentTab": "Geçerli sekme",
     "delete": "Sil",
     "deleteApproval": {
@@ -5863,7 +5864,6 @@
           "off": "Kapalı",
           "on": "Açık",
           "onHold": "Beklemede",
-          "paused": "Duraklatıldı",
           "turnedOff": "Kapatıldı"
         },
         "title": "Otomatik kredi yükleme",
@@ -5926,7 +5926,6 @@
         },
         "scheduledChange": "{date} tarihinde {plan} planına geçilecek.",
         "stayConfirm": {
-          "body": "Planınız {date} tarihinde {plan} planına geçmeyecek. İstediğiniz zaman tekrar değişiklik planlayabilirsiniz.",
           "title": "{plan} planındaki değişiklik iptal edilsin mi?"
         },
         "unknown": {

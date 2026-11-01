@@ -278,7 +278,7 @@ import type {
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import type { Plan } from '@comfyorg/billing-core'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 

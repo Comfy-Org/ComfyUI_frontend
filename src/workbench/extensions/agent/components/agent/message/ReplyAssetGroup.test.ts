@@ -1,4 +1,10 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -123,20 +129,107 @@ describe('ReplyAssetGroup', () => {
 
     expect(screen.getAllByTestId('reply-video-affordance')).toHaveLength(1)
     expect(
-      within(screen.getByRole('button', { name: 'clip.mp4' })).getByTestId(
-        'reply-video-affordance'
-      )
+      within(
+        screen.getByRole('button', { name: 'Open video: clip.mp4' })
+      ).getByTestId('reply-video-affordance')
+    ).toBeInTheDocument()
+  })
+
+  it('PM-1895 announces a video name containing markup characters literally', () => {
+    renderGroup([
+      { ...video, url: 'https://x/a&b.mp4', filename: "a&b <Tom's>.mp4" },
+      { ...image(1), url: 'https://x/a&b.png', filename: "a&b <Tom's>.png" }
+    ])
+
+    expect(
+      screen.getByRole('button', { name: "Open video: a&b <Tom's>.mp4" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: "a&b <Tom's>.png" })
     ).toBeInTheDocument()
   })
 
   it('T-09 / PM-652 / FE-1326 opens inspect view at the clicked visual asset', async () => {
     renderGroup([image(1), video])
 
-    await userEvent.click(screen.getByRole('button', { name: 'clip.mp4' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Open video: clip.mp4' })
+    )
 
     const lightbox = screen.getByTestId('lightbox')
     expect(lightbox.dataset.active).toBe('1')
     expect(lightbox.dataset.count).toBe('2')
+  })
+
+  it('PM-1895 clears the play badge while the hover preview is playing', async () => {
+    renderGroup([video, image(1)])
+    const element = screen.getByTestId('reply-video-preview')
+
+    await userEvent.hover(element)
+    expect(screen.queryByTestId('reply-video-affordance')).toBeNull()
+
+    await userEvent.unhover(element)
+    expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
+  })
+
+  it('PM-1895 shows a tile badge while that tile buffers or pauses, not on loop restarts or another tile', async () => {
+    const second: ReplyAsset = {
+      url: 'https://x/clip2.mp4',
+      filename: 'clip2.mp4',
+      kind: 'video'
+    }
+    renderGroup([video, second])
+    const [first, other] = screen.getAllByTestId('reply-video-preview')
+    const playingTile = screen.getByRole('button', {
+      name: 'Open video: clip.mp4'
+    })
+
+    await fireEvent(first, new Event('playing'))
+    expect(
+      within(playingTile).queryByTestId('reply-video-affordance')
+    ).toBeNull()
+
+    await fireEvent(other, new Event('pause'))
+    expect(
+      within(playingTile).queryByTestId('reply-video-affordance')
+    ).toBeNull()
+
+    await fireEvent(other, new Event('waiting'))
+    expect(
+      within(playingTile).queryByTestId('reply-video-affordance')
+    ).toBeNull()
+
+    Object.defineProperty(first, 'seeking', { value: true, configurable: true })
+    await fireEvent(first, new Event('waiting'))
+    expect(
+      within(playingTile).queryByTestId('reply-video-affordance')
+    ).toBeNull()
+
+    Object.defineProperty(first, 'seeking', { value: false })
+    await fireEvent(first, new Event('waiting'))
+    expect(
+      within(playingTile).getByTestId('reply-video-affordance')
+    ).toBeInTheDocument()
+
+    await fireEvent(first, new Event('playing'))
+    expect(
+      within(playingTile).queryByTestId('reply-video-affordance')
+    ).toBeNull()
+
+    await fireEvent(first, new Event('pause'))
+    expect(
+      within(playingTile).getByTestId('reply-video-affordance')
+    ).toBeInTheDocument()
+  })
+
+  it('PM-1895 keeps the play badge when the browser refuses the preview', async () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(
+      new Error('NotAllowedError')
+    )
+    renderGroup([video])
+
+    await userEvent.hover(screen.getByTestId('reply-video-preview'))
+    expect(screen.getByTestId('reply-video-affordance')).toBeInTheDocument()
   })
 
   it('renders an audio card per audio asset outside the visual grid', () => {

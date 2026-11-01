@@ -48,6 +48,15 @@
     },
     {
       "path": "./packages/telemetry/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/keybindings/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/settings-core/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/api-client/tsconfig.declarations.json"
     }
   ]
 }

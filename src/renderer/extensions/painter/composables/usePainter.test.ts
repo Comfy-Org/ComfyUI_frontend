@@ -6,17 +6,27 @@ import { defineComponent, nextTick, ref, toRaw } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { LocatedWidget } from '@/composables/widgetHistoryScope'
 import {
   ExecutableNodeDTO,
   LGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
+import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import { usePainter } from './usePainter'
 
@@ -45,9 +55,6 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-const mockIsInputConnected = vi.fn(() => false)
-const mockGetInputNode = vi.fn(() => null)
-
 interface PaintWidgetSpec {
   name: string
   type: 'number' | 'string' | 'color'
@@ -64,8 +71,6 @@ function makePaintNode(widgets: PaintWidgetSpec[] = []) {
     callbacks[name] = callback
     node.addWidget(type, name, value, callback)
   }
-  node.isInputConnected = mockIsInputConnected
-  node.getInputNode = mockGetInputNode
   const rootGraph = app.canvas.graph
   if (!(rootGraph instanceof LGraph)) throw new Error('Expected a root graph')
   vi.spyOn(rootGraph, 'getNodeById').mockReturnValue(node)
@@ -95,6 +100,28 @@ function storedValue(name: string): unknown {
   return id ? useWidgetValueStore().getWidget(id)?.value : undefined
 }
 
+function hostedPainterWithImageSource() {
+  const rootGraph = app.rootGraph
+  vi.mocked(rootGraph.getNodeById).mockRestore()
+  const subgraph = createTestSubgraph({
+    rootGraph,
+    inputs: [{ name: 'image', type: 'IMAGE' }]
+  })
+  rootGraph.subgraphs.set(subgraph.id, subgraph)
+  const host = createTestSubgraphNode(subgraph)
+  rootGraph.add(host)
+  const source = new LGraphNode('LoadImage')
+  source.addOutput('IMAGE', 'IMAGE')
+  rootGraph.add(source)
+  source.connect(0, host, 0)
+  const interior = new LGraphNode('Painter')
+  const imageInput = interior.addInput('image', 'IMAGE')
+  subgraph.add(interior)
+  subgraph.inputNode.slots[0].connect(imageInput, interior)
+  useNodeOutputStore().setNodeOutputs(source, 'photo.png')
+  return { subgraph, host, interior }
+}
+
 type PainterResult = ReturnType<typeof usePainter>
 
 /**
@@ -102,7 +129,9 @@ type PainterResult = ReturnType<typeof usePainter>
  */
 function mountPainter(
   nodeId: NodeId = toNodeId('test-node'),
-  initialModelValue = ''
+  initialModelValue = '',
+  widget: LocatedWidget = { name: 'mask' },
+  historyScope?: () => WidgetHistoryScope | null
 ) {
   let painter!: PainterResult
   const canvasEl = ref<HTMLCanvasElement | null>(null)
@@ -112,9 +141,11 @@ function mountPainter(
   const Wrapper = defineComponent({
     setup() {
       painter = usePainter(nodeId, {
+        widget,
         canvasEl,
         cursorEl,
-        modelValue
+        modelValue,
+        historyScope
       })
       return {}
     },
@@ -123,8 +154,8 @@ function mountPainter(
     }
   })
 
-  render(Wrapper, { global: { plugins: [i18n] } })
-  return { painter, canvasEl, cursorEl, modelValue }
+  const { unmount } = render(Wrapper, { global: { plugins: [i18n] } })
+  return { painter, canvasEl, cursorEl, modelValue, unmount }
 }
 
 describe('usePainter', () => {
@@ -138,8 +169,6 @@ describe('usePainter', () => {
       stop: vi.fn()
     }))
     makePaintNode()
-    mockIsInputConnected.mockReturnValue(false)
-    mockGetInputNode.mockReturnValue(null)
   })
 
   describe('canvas size projections', () => {
@@ -153,6 +182,21 @@ describe('usePainter', () => {
 
       expect(painter.canvasWidth.value).toBe(1024)
       expect(painter.canvasHeight.value).toBe(768)
+    })
+
+    it('reads the interior node when the widget is promoted out of a subgraph', () => {
+      const subgraph = createTestSubgraph({ rootGraph: app.rootGraph })
+      app.rootGraph.subgraphs.set(subgraph.id, subgraph)
+      const interior = new LGraphNode('Painter')
+      subgraph.add(interior)
+      interior.addWidget('number', 'width', 300, () => {})
+
+      const { painter } = mountPainter(toNodeId('host-node'), '', {
+        name: 'mask',
+        nodeLocatorId: createNodeLocatorId(subgraph.id, interior.id)
+      })
+
+      expect(painter.canvasWidth.value).toBe(300)
     })
 
     it('defaults to 512 when widgets are missing', () => {
@@ -239,7 +283,7 @@ describe('usePainter', () => {
   })
 
   describe('restoreSettingsFromProperties', () => {
-    it('restores tool and brush settings from node properties on init', () => {
+    it('restores tool and brush settings from node properties on init', async () => {
       const { node } = makePaintNode()
       node.properties.painterTool = 'eraser'
       node.properties.painterBrushSize = 42
@@ -256,7 +300,7 @@ describe('usePainter', () => {
       expect(painter.brushHardness.value).toBe(0.8)
     })
 
-    it('restores backgroundColor from the bg_color widget', () => {
+    it('restores backgroundColor from the bg_color widget', async () => {
       makePaintNode([{ name: 'bg_color', type: 'color', value: '#123456' }])
 
       const { painter } = mountPainter()
@@ -333,7 +377,10 @@ describe('usePainter', () => {
     it('sets isImageInputConnected to true when input is connected', () => {
       const { node } = makePaintNode()
       node.addInput('image', 'IMAGE')
-      mockIsInputConnected.mockReturnValue(true)
+      const source = new LGraphNode('LoadImage')
+      source.addOutput('IMAGE', 'IMAGE')
+      node.graph?.add(source)
+      source.connect(0, node, 0)
 
       const { painter } = mountPainter()
 
@@ -344,13 +391,41 @@ describe('usePainter', () => {
       const { node } = makePaintNode()
       node.addInput('mask', 'MASK')
       node.addInput('image', 'IMAGE')
-      mockIsInputConnected.mockReturnValue(true)
+      const source = new LGraphNode('LoadImage')
+      source.addOutput('IMAGE', 'IMAGE')
+      node.graph?.add(source)
+      source.connect(0, node, 1)
+      useNodeOutputStore().setNodeOutputs(source, 'photo.png')
 
       const { painter } = mountPainter()
 
       expect(painter.isImageInputConnected.value).toBe(true)
-      expect(mockIsInputConnected).toHaveBeenCalledWith(1)
-      expect(mockGetInputNode).toHaveBeenCalledWith(1)
+      expect(painter.inputImageUrl.value).toContain('filename=photo.png')
+    })
+
+    it('shows the image fed into the subgraph input of a promoted painter', () => {
+      const { subgraph, host, interior } = hostedPainterWithImageSource()
+
+      const { painter } = mountPainter(host.id, '', {
+        name: 'mask',
+        nodeLocatorId: createNodeLocatorId(subgraph.id, interior.id)
+      })
+
+      expect(painter.inputImageUrl.value).toContain('filename=photo.png')
+    })
+
+    it('reports a promoted painter disconnected once the subgraph node input is unlinked', () => {
+      const { subgraph, host, interior } = hostedPainterWithImageSource()
+      const { painter } = mountPainter(host.id, '', {
+        name: 'mask',
+        nodeLocatorId: createNodeLocatorId(subgraph.id, interior.id)
+      })
+      expect(painter.isImageInputConnected.value).toBe(true)
+
+      host.disconnectInput(0)
+
+      expect(painter.isImageInputConnected.value).toBe(false)
+      expect(painter.inputImageUrl.value).toBeNull()
     })
   })
 
@@ -624,6 +699,202 @@ describe('usePainter', () => {
       painter.handleClear()
 
       expect(modelValue.value).toBe('')
+    })
+  })
+
+  describe('node history', () => {
+    const historyScope: WidgetHistoryScope = {
+      rootGraphId: 'root',
+      widgetId: widgetId('root', toNodeId('test-node'), 'mask')
+    }
+
+    function mountWithHistory(mask = '') {
+      makePaintNode([
+        { name: 'mask', type: 'string', value: '' },
+        { name: 'width', type: 'number', value: 2 },
+        { name: 'height', type: 'number', value: 2 }
+      ])
+      const painted: { width: number; height: number; x: number; y: number }[] =
+        []
+      const ctx = fromPartial<CanvasRenderingContext2D>({
+        save: vi.fn(),
+        restore: vi.fn(),
+        clearRect: vi.fn(),
+        drawImage: fromAny<CanvasRenderingContext2D['drawImage'], unknown>(
+          (image: HTMLCanvasElement, x: number, y: number) => {
+            painted.push({ width: image.width, height: image.height, x, y })
+          }
+        )
+      })
+      const mounted = mountPainter(
+        toNodeId('test-node'),
+        mask,
+        { name: 'mask' },
+        () => historyScope
+      )
+      const canvas = fromPartial<HTMLCanvasElement>({
+        width: 2,
+        height: 2,
+        getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(() => ctx)
+      })
+      Object.assign(ctx, { canvas })
+      mounted.canvasEl.value = canvas
+      const createElement = document.createElement.bind(document)
+      vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
+        tag === 'canvas'
+          ? fromPartial<HTMLCanvasElement>({
+              width: 0,
+              height: 0,
+              getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(
+                () =>
+                  fromPartial<CanvasRenderingContext2D>({ drawImage: vi.fn() })
+              )
+            })
+          : createElement(tag)
+      )
+      return { ...mounted, painted }
+    }
+
+    it('undoes a clear by repainting the whole canvas', async () => {
+      const { painter, painted } = mountWithHistory()
+
+      painter.handleClear()
+      expect(painter.canUndo.value).toBe(true)
+
+      await painter.undo()
+      expect(painted).toContainEqual({ width: 2, height: 2, x: 0, y: 0 })
+      expect(painter.canRedo.value).toBe(true)
+    })
+
+    it('undoes a stroke by repainting only the area it covered', async () => {
+      const { painter, canvasEl, painted } = mountWithHistory()
+      const drawingCtx = fromPartial<CanvasRenderingContext2D>({
+        save: vi.fn(),
+        restore: vi.fn(),
+        clearRect: vi.fn(),
+        drawImage: vi.fn(),
+        beginPath: vi.fn(),
+        arc: vi.fn(),
+        fill: vi.fn(),
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
+        stroke: vi.fn()
+      })
+      vi.spyOn(document, 'createElement').mockImplementation(() =>
+        fromPartial<HTMLCanvasElement>({
+          width: 0,
+          height: 0,
+          getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(
+            () => drawingCtx
+          )
+        })
+      )
+      const canvas = canvasEl.value!
+      canvas.width = 100
+      canvas.height = 100
+      canvas.getBoundingClientRect = () =>
+        fromPartial<DOMRect>({ left: 0, top: 0, width: 100, height: 100 })
+      painter.brushSize.value = 10
+      const target = {
+        setPointerCapture: vi.fn(),
+        releasePointerCapture: vi.fn()
+      }
+      const pointer = (type: string, at: number) => {
+        const event = new PointerEvent(type, {
+          button: 0,
+          clientX: at,
+          clientY: at
+        })
+        Object.defineProperty(event, 'target', { value: target })
+        return event
+      }
+
+      painter.handlePointerDown(pointer('pointerdown', 50))
+      painter.handlePointerMove(pointer('pointermove', 60))
+      painter.handlePointerUp(pointer('pointerup', 60))
+      await painter.undo()
+
+      expect(painted).toContainEqual({ width: 20, height: 20, x: 45, y: 45 })
+    })
+
+    it('ignores a stroke started while an undo is still running', async () => {
+      const { painter, canvasEl } = mountWithHistory()
+      canvasEl.value!.getBoundingClientRect = () =>
+        fromPartial<DOMRect>({ left: 0, top: 0, width: 2, height: 2 })
+      painter.handleClear()
+      const event = new PointerEvent('pointerdown', { button: 0 })
+      Object.defineProperty(event, 'target', {
+        value: { setPointerCapture: vi.fn() }
+      })
+
+      const undoing = painter.undo()
+      painter.handlePointerDown(event)
+      await undoing
+
+      expect(painter.canUndo.value).toBe(false)
+      expect(painter.canRedo.value).toBe(true)
+    })
+
+    it('drops the history when the mask is replaced from outside', async () => {
+      const { painter, modelValue } = mountWithHistory()
+      painter.handleClear()
+
+      modelValue.value = 'painter/other.png [input]'
+      await nextTick()
+
+      expect(painter.canUndo.value).toBe(false)
+    })
+
+    it.for([
+      { case: 'the same mask', mask: 'painter/a.png [input]' },
+      { case: 'a replacement mask', mask: 'painter/b.png [input]' }
+    ])('has nothing to undo after remounting with $case', async ({ mask }) => {
+      const first = mountWithHistory('painter/a.png [input]')
+      first.painter.handleClear()
+      first.unmount()
+
+      const second = mountWithHistory(mask)
+      await second.painter.undo()
+
+      expect(second.painter.canUndo.value).toBe(false)
+      expect(second.painted).toEqual([])
+    })
+
+    it('frees the history of an unmounted painter', () => {
+      const { painter, unmount } = mountWithHistory()
+      painter.handleClear()
+
+      unmount()
+
+      expect(useWidgetHistoryStore().canUndo(historyScope)).toBe(false)
+    })
+
+    it('leaves the history of a painter mounted alongside it', async () => {
+      const first = mountWithHistory()
+      first.painter.handleClear()
+
+      const second = mountWithHistory()
+      await second.painter.undo()
+
+      expect(second.painted).toEqual([])
+      expect(first.painter.canUndo.value).toBe(true)
+    })
+
+    it('drops the history when the canvas size changes', async () => {
+      const { painter } = mountWithHistory()
+      painter.handleClear()
+      vi.spyOn(document, 'createElement').mockReturnValue(
+        fromPartial<HTMLCanvasElement>({
+          getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(() =>
+            fromPartial<CanvasRenderingContext2D>({ drawImage: vi.fn() })
+          )
+        })
+      )
+
+      painter.canvasWidth.value = 4
+      await nextTick()
+
+      expect(painter.canUndo.value).toBe(false)
     })
   })
 

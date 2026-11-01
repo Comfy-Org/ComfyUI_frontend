@@ -5,9 +5,12 @@ import { isEqual } from 'es-toolkit'
 import { getActivePinia } from 'pinia'
 import { ref, toRaw, watch } from 'vue'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import type { ModelStats } from '@comfyorg/viewport3d/load3d/modelStats'
 import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
 import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
@@ -40,7 +43,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { removeLoad3d } from '@/extensions/core/load3d/load3dInstances'
+import { keepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
 
 type Load3dReadyCallback = (load3d: Load3d) => void
 export const nodeToLoad3dMap = new Map<LGraphNode, Load3d>()
@@ -88,15 +91,58 @@ const pendingCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
 const persistentReadyCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
 
 const nodesWithCleanup = new WeakSet<LGraphNode>()
+const rootGraphOfRemovedNodes = new WeakMap<LGraphNode, string>()
+
+const rootGraphIdOf = (node: LGraphNode) => node.graph?.rootGraph.id
 
 const ensureNodeCleanupChained = (node: LGraphNode): void => {
   if (nodesWithCleanup.has(node)) return
   nodesWithCleanup.add(node)
   node.onRemoved = useChainCallback(node.onRemoved, () => {
-    removeLoad3d(node)
+    const rootGraphId = rootGraphIdOf(node)
+    if (rootGraphId) rootGraphOfRemovedNodes.set(node, rootGraphId)
     pendingCallbacks.delete(node)
     persistentReadyCallbacks.delete(node)
   })
+}
+
+const isReloadedCopy = (node: LGraphNode, previous: LGraphNode) =>
+  node.type === previous.type &&
+  rootGraphIdOf(node) !== undefined &&
+  rootGraphOfRemovedNodes.get(previous) === rootGraphIdOf(node)
+
+const reattachedNodes = new WeakSet<LGraphNode>()
+
+const hasGizmoTransform = ({ position, rotation, scale }: GizmoConfig) =>
+  [position.x, position.y, position.z, rotation.x, rotation.y, rotation.z].some(
+    (value) => value !== 0
+  ) || [scale.x, scale.y, scale.z].some((value) => value !== 1)
+
+const invokePersistentReadyCallback = (
+  node: LGraphNode,
+  callback: Load3dReadyCallback,
+  instance: Load3d
+): void => {
+  if (reattachedNodes.has(node))
+    keepingLoadedModel(instance, () => invokeReadyCallback(callback, instance))
+  else invokeReadyCallback(callback, instance)
+}
+
+const nodeShowing = (instance: Load3d): LGraphNode | null => {
+  for (const [node, shown] of nodeToLoad3dMap) {
+    if (shown === instance) return node
+  }
+  return null
+}
+
+const dimensionsOf = (
+  node: LGraphNode | null
+): { width: number; height: number } | null => {
+  const width = node?.widgets?.find((w) => w.name === 'width')?.value
+  const height = node?.widgets?.find((w) => w.name === 'height')?.value
+  return typeof width === 'number' && typeof height === 'number'
+    ? { width, height }
+    : null
 }
 
 const invokeReadyCallback = (
@@ -173,6 +219,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const sceneConfig = ref<SceneConfig>(defaultSceneConfig())
   const modelConfig = ref<ModelConfig>(defaultModelConfig())
   const hasSkeleton = ref(false)
+  const modelStats = ref<ModelStats | null>(null)
+  let modelStatsAbort: AbortController | null = null
   const cameraConfig = ref<CameraConfig>(defaultCameraConfig())
   const lightConfig = ref<LightConfig>(defaultLightConfig())
   const lastNonHdriLightIntensity = ref(lightConfig.value.intensity)
@@ -205,7 +253,37 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     'wireframe'
   ])
 
-  const initializeLoad3d = async (containerRef: HTMLElement | null) => {
+  const createNodeLoad3d = (
+    container: HTMLElement,
+    node: LGraphNode
+  ): Load3d => {
+    let instance: Load3d | null = null
+    const shownNode = () => (instance && nodeShowing(instance)) ?? node
+    const dimensions = dimensionsOf(node)
+    instance = createLoad3d(container, load3dHost, {
+      width: dimensions?.width,
+      height: dimensions?.height,
+      getDimensions: dimensions ? () => dimensionsOf(shownNode()) : undefined,
+      getZoomScale: () => {
+        return app.canvas.ds.scale
+      },
+      onContextMenu: (event) => {
+        const target = shownNode()
+        const menuOptions = app.canvas.getNodeMenuOptions(target)
+        new LiteGraph.ContextMenu(menuOptions, {
+          event,
+          title: target.type,
+          extra: target
+        })
+      }
+    })
+    return instance
+  }
+
+  const initializeLoad3dKeeping = async (
+    containerRef: HTMLElement | null,
+    kept: Load3d | null
+  ) => {
     viewerContainer = containerRef
     const rawNode = toRaw(nodeRef.value)
     if (!containerRef || !rawNode) return
@@ -213,44 +291,26 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     const node = rawNode
 
     try {
-      const widthWidget = node.widgets?.find((w) => w.name === 'width')
-      const heightWidget = node.widgets?.find((w) => w.name === 'height')
       const comfyClass = node.constructor.comfyClass
       const isPreviewClass =
         typeof comfyClass === 'string' &&
         (isLoad3dResultViewerNode(comfyClass) ||
           comfyClass.startsWith('Preview'))
 
-      if (isPreviewClass || !(widthWidget && heightWidget)) {
+      if (isPreviewClass || !dimensionsOf(node)) {
         isPreview.value = true
       }
 
-      load3d = createLoad3d(containerRef, load3dHost, {
-        width: widthWidget?.value as number | undefined,
-        height: heightWidget?.value as number | undefined,
-        getDimensions:
-          widthWidget && heightWidget
-            ? () => ({
-                width: widthWidget.value as number,
-                height: heightWidget.value as number
-              })
-            : undefined,
-        getZoomScale: () => {
-          return app.canvas.ds.scale
-        },
-        onContextMenu: (event) => {
-          const menuOptions = app.canvas.getNodeMenuOptions(node)
-          new LiteGraph.ContextMenu(menuOptions, {
-            event,
-            title: node.type,
-            extra: node
-          })
-        }
-      })
+      if (kept) reattachedNodes.add(node)
+      load3d = kept ?? createNodeLoad3d(containerRef, node)
 
-      const viewer = load3d
-      await restoreConfigurationsFromNode(viewer, node)
-      if (!isCurrentInitialization(viewer, node)) return
+      const instance = load3d
+      await restoreConfigurationsFromNode(instance, node)
+      if (!isCurrentInitialization(instance, node)) return
+      if (kept) {
+        applyEntireGizmoConfig(kept)
+        refreshModelStats()
+      }
 
       node.onMouseEnter = useChainCallback(node.onMouseEnter, () => {
         load3d?.refreshViewport()
@@ -293,7 +353,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const persistent = persistentReadyCallbacks.get(node)
       if (persistent) {
         persistent.forEach((callback) => {
-          invokeReadyCallback(callback, initializedLoad3d)
+          invokePersistentReadyCallback(node, callback, initializedLoad3d)
         })
       }
     } catch (error) {
@@ -301,6 +361,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       useToast().warning(t('toastMessages.failedToInitializeLoad3dViewer'))
     }
   }
+
+  const initializeLoad3d = (containerRef: HTMLElement | null) =>
+    initializeLoad3dKeeping(containerRef, null)
 
   const savedSceneConfigOf = (node: LGraphNode): SceneConfig => {
     const saved = node.properties['Scene Config'] as
@@ -344,20 +407,20 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
-  const restoreSceneConfig = (node: LGraphNode, viewer: Load3d) => {
+  const restoreSceneConfig = (node: LGraphNode, instance: Load3d) => {
     const next = savedSceneConfigOf(node)
     const backgroundImageWatched =
       sceneConfig.value.backgroundImage !== next.backgroundImage
     replaceConfig(sceneConfig, next)
     if (!backgroundImageWatched && next.backgroundImage)
-      void viewer.setBackgroundImage(next.backgroundImage)
+      void instance.setBackgroundImage(next.backgroundImage)
   }
 
-  const isCurrentInitialization = (viewer: Load3d, node: LGraphNode) =>
-    load3d === viewer && toRaw(nodeRef.value) === node
+  const isCurrentInitialization = (instance: Load3d, node: LGraphNode) =>
+    load3d === instance && toRaw(nodeRef.value) === node
 
   const restoreHdri = async (
-    viewer: Load3d,
+    instance: Load3d,
     node: LGraphNode,
     enable: boolean
   ) => {
@@ -370,9 +433,12 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       )
     )
     try {
-      await viewer.loadHDRI(hdriUrl)
+      if (
+        !Load3dUtils.isSameResourceURL(instance.hdriManager.loadedUrl, hdriUrl)
+      )
+        await instance.loadHDRI(hdriUrl)
     } catch (error) {
-      if (!isCurrentInitialization(viewer, node)) return
+      if (!isCurrentInitialization(instance, node)) return
       console.warn('Failed to restore HDRI:', error)
       lightConfig.value = {
         ...lightConfig.value,
@@ -380,7 +446,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       }
       return
     }
-    if (enable && isCurrentInitialization(viewer, node)) {
+    if (enable && isCurrentInitialization(instance, node)) {
       lightConfig.value = {
         ...lightConfig.value,
         hdri: { ...lightConfig.value.hdri!, enabled: true }
@@ -389,10 +455,10 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   }
 
   const restoreConfigurationsFromNode = async (
-    viewer: Load3d,
+    instance: Load3d,
     node: LGraphNode
   ) => {
-    restoreSceneConfig(node, viewer)
+    restoreSceneConfig(node, instance)
     replaceConfig(modelConfig, savedModelConfigOf(node))
     replaceConfig(
       cameraConfig,
@@ -402,8 +468,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     const savedLight = savedLightConfigOf(node)
     replaceConfig(lightConfig, savedLight.config)
     lastNonHdriLightIntensity.value = lightConfig.value.intensity
-    await restoreHdri(viewer, node, savedLight.hdriEnabled)
-    if (!isCurrentInitialization(viewer, node)) return
+    await restoreHdri(instance, node, savedLight.hdriEnabled)
+    if (!isCurrentInitialization(instance, node)) return
 
     applySceneConfigToLoad3d()
     applyLightConfigToLoad3d()
@@ -421,21 +487,22 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
   }
 
+  const applyEntireGizmoConfig = (instance: Load3d) => {
+    const { gizmo } = modelConfig.value
+    if (!gizmo) return
+    const { position, rotation, scale } = hasGizmoTransform(gizmo)
+      ? gizmo
+      : instance.getGizmoManager().getInitialTransform()
+    instance.applyGizmoTransform(position, rotation, scale)
+    instance.setGizmoEnabled(gizmo.enabled)
+    instance.setGizmoMode(gizmo.mode)
+  }
+
   const applyGizmoConfigToLoad3d = () => {
     if (!load3d) return
     const gizmo = modelConfig.value.gizmo
     if (!gizmo) return
-    const hasTransform =
-      gizmo.position.x !== 0 ||
-      gizmo.position.y !== 0 ||
-      gizmo.position.z !== 0 ||
-      gizmo.rotation.x !== 0 ||
-      gizmo.rotation.y !== 0 ||
-      gizmo.rotation.z !== 0 ||
-      gizmo.scale.x !== 1 ||
-      gizmo.scale.y !== 1 ||
-      gizmo.scale.z !== 1
-    if (hasTransform) {
+    if (hasGizmoTransform(gizmo)) {
       load3d.applyGizmoTransform(gizmo.position, gizmo.rotation, gizmo.scale)
     }
     if (gizmo.enabled) {
@@ -502,7 +569,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     ensureNodeCleanupChained(node)
 
     const existingInstance = nodeToLoad3dMap.get(node)
-    if (existingInstance) invokeReadyCallback(callback, existingInstance)
+    if (existingInstance)
+      invokePersistentReadyCallback(node, callback, existingInstance)
   }
 
   watch(
@@ -956,6 +1024,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     modelLoadingStart: () => {
       loadingMessage.value = t('load3d.loadingModel')
       loading.value = true
+      clearModelStats()
       if (!isFirstModelLoad) {
         modelConfig.value = {
           upDirection: 'original',
@@ -971,6 +1040,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         }
       }
     },
+    modelCleared: () => clearModelStats(),
     modelLoadingEnd: () => {
       loadingMessage.value = ''
       loading.value = false
@@ -989,6 +1059,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         'wireframe'
       ]
       hasSkeleton.value = load3d?.hasSkeleton() ?? false
+      refreshModelStats()
       applyGizmoConfigToLoad3d()
       syncSceneModels()
       isFirstModelLoad = false
@@ -1120,24 +1191,61 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     })
   }
 
-  const releaseLoad3d = (node: LGraphNode | null) => {
-    handleEvents('remove')
-
-    if (!node) return
-    if (nodeToLoad3dMap.get(node) === load3d) {
-      nodeToLoad3dMap.delete(node)
-    }
-
-    load3d?.remove()
-    load3d = null
+  const abortModelStats = () => {
+    modelStatsAbort?.abort()
+    modelStatsAbort = null
   }
 
-  const cleanup = () => releaseLoad3d(toRaw(nodeRef.value))
+  const clearModelStats = () => {
+    abortModelStats()
+    modelStats.value = null
+  }
+
+  const refreshModelStats = () => {
+    abortModelStats()
+    const controller = new AbortController()
+    modelStatsAbort = controller
+    void load3d
+      ?.getModelStats(controller.signal)
+      .then((stats) => {
+        if (modelStatsAbort !== controller) return
+        modelStats.value = stats
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return
+        reportError(error, {
+          errorType: 'error_computing_load3d_model_stats',
+          surface: 'graph'
+        })
+      })
+  }
+
+  const releaseLoad3d = (keep = false): Load3d | null => {
+    if (keep) abortModelStats()
+    else clearModelStats()
+    handleEvents('remove')
+    const released = load3d
+    load3d = null
+    if (!released) return null
+
+    const shownBy = nodeShowing(released)
+    if (shownBy) nodeToLoad3dMap.delete(shownBy)
+    if (keep) return released
+    released.remove()
+    return null
+  }
+
+  const cleanup = () => releaseLoad3d()
 
   watch(nodeRef, (node, previous) => {
-    if (previous) releaseLoad3d(toRaw(previous))
+    const current = node ? toRaw(node) : null
+    const replaced = previous ? toRaw(previous) : null
+    const kept = replaced
+      ? releaseLoad3d(!!current && isReloadedCopy(current, replaced))
+      : null
     if (!node) viewerContainer = null
-    else if (viewerContainer) void initializeLoad3d(viewerContainer)
+    else if (viewerContainer)
+      void initializeLoad3dKeeping(viewerContainer, kept)
   })
 
   return {
@@ -1158,6 +1266,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     canExport,
     materialModes,
     hasSkeleton,
+    modelStats,
     hasRecording,
     recordingDuration,
     animations,

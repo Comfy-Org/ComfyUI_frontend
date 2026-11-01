@@ -15,6 +15,20 @@ interface SceneConfig {
 
 let cachedNodeToLoad3dMap: Map<LGraphNode, Load3d> | null = null
 let cachedSkeletonUtils: SkeletonUtilsModule | null = null
+const load3dsKeepingModel = new WeakSet<Load3d>()
+
+export function keepingLoadedModel(load3d: Load3d, run: () => void): void {
+  load3dsKeepingModel.add(load3d)
+  try {
+    run()
+  } finally {
+    load3dsKeepingModel.delete(load3d)
+  }
+}
+
+export function isKeepingLoadedModel(load3d: Load3d): boolean {
+  return load3dsKeepingModel.has(load3d)
+}
 
 /** Returns null until `useLoad3dService().getLoad3dAsync` has loaded the map. */
 export function getNodeToLoad3dMapSync(): Map<LGraphNode, Load3d> | null {
