@@ -6,6 +6,7 @@
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"
+    @pointercancel="handlePointerUp"
     @pointerleave="handlePointerLeave"
     @pointerenter="handlePointerEnter"
     @touchstart="handleTouchStart"
