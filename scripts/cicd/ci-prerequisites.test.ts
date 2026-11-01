@@ -59,6 +59,15 @@ it.for([
   )
 })
 
+it.for(['comment-on-pr-start', 'deploy-and-comment'])(
+  '%s does not write the PR report after its run is cancelled',
+  (job) => {
+    const condition = pipeline.jobs[job].if ?? ''
+    expect(condition).toMatch(/!cancelled\(\)/)
+    expect(condition).not.toMatch(/\balways\(\)/)
+  }
+)
+
 function lockfileWithPlaywright(catalogVersion: string, rootVersion: string) {
   return [
     'catalogs:',
