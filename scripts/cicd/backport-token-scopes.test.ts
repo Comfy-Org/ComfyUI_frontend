@@ -185,10 +185,10 @@ describe('backport workflow token scopes', () => {
       '${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}'
     )
     expect(run).toMatch(
-      /LABELS=\$\(gh api[^\n]*\/labels"[^\n]*\|\| GH_TOKEN="\$\{FALLBACK_TOKEN\}" gh api[^\n]*\/labels"/
+      /LABELS=\$\((gh api --paginate "[^"]*\/labels" --jq '[^']*') \|\| GH_TOKEN="\$\{FALLBACK_TOKEN\}" \1\)/
     )
     expect(run).toMatch(
-      /gh api --silent --method DELETE[^\n]*\|\| GH_TOKEN="\$\{FALLBACK_TOKEN\}" gh api --silent --method DELETE/
+      /(gh api --silent --method DELETE "[^"]*\/labels\/needs-backport") \|\| GH_TOKEN="\$\{FALLBACK_TOKEN\}" \1$/m
     )
   })
 
@@ -218,7 +218,7 @@ describe('backport workflow token scopes', () => {
     )
 
     expect(stripComments(step?.run ?? '')).toMatch(
-      /LABELS=\$\(gh api[^\n]*\/labels"[^\n]*\|\| GH_TOKEN="\$\{POST_TOKEN\}" gh api[^\n]*\/labels"/
+      /LABELS=\$\((gh api --paginate "[^"]*\/labels" --jq '[^']*') \|\| GH_TOKEN="\$\{POST_TOKEN\}" \1\)/
     )
   })
 
