@@ -1542,6 +1542,33 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return adoptedActiveTurn
   }
 
+  async function recoverFailedSend({
+    error,
+    text,
+    sentContext,
+    accepted,
+    threadAtSend,
+    generation
+  }: {
+    error: unknown
+    text: string
+    sentContext: WorkflowTurnContext | undefined
+    accepted: boolean
+    threadAtSend: string
+    generation: number
+  }): Promise<false> {
+    releaseDisownedWorkflow(sentContext, error)
+    if (generation !== loadGeneration) return false
+    const reattached = await reattachRefusedTurn(
+      error,
+      threadAtSend,
+      generation
+    )
+    if (generation !== loadGeneration) return false
+    recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
+    return false
+  }
+
   async function performSend(
     text: string,
     attachments?: SentAttachment[],
@@ -1593,16 +1620,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       rememberMint(input, wfContext, ack.workflow_id)
       return true
     } catch (error) {
-      releaseDisownedWorkflow(sentContext, error)
-      if (generation !== loadGeneration) return false
-      const reattached = await reattachRefusedTurn(
+      return recoverFailedSend({
         error,
+        text,
+        sentContext,
+        accepted,
         threadAtSend,
         generation
-      )
-      if (generation !== loadGeneration) return false
-      recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
-      return false
+      })
     }
   }
 
