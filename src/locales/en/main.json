@@ -1475,6 +1475,7 @@
     "downloadPsd": "Download PSD"
   },
   "maskEditor": {
+    "toolFailed": "{tool} failed. Select another tool or reopen the editor.",
     "title": "Mask Editor",
     "openMaskEditor": "Open in Mask Editor",
     "invert": "Invert",

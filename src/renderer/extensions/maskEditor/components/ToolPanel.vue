@@ -9,7 +9,9 @@
         :class="
           cn(
             'maskEditor_toolPanelContainer hover:bg-accent',
-            currentTool === tool && 'maskEditor_toolPanelContainerSelected'
+            !extensionTools?.active.value &&
+              currentTool === tool &&
+              'maskEditor_toolPanelContainerSelected'
           )
         "
         @click="onToolSelect(tool)"
@@ -19,6 +21,29 @@
         </div>
         <div class="maskEditor_toolPanelIndicator"></div>
       </div>
+      <button
+        v-for="tool in extensionTools?.tools.value"
+        :key="tool.id"
+        type="button"
+        :aria-label="tool.label"
+        :aria-pressed="extensionTools?.active.value?.tool.id === tool.id"
+        :title="tool.label"
+        :data-tool="tool.id"
+        :class="
+          cn(
+            'maskEditor_toolPanelContainer hover:bg-accent',
+            extensionTools?.active.value?.tool.id === tool.id &&
+              'maskEditor_toolPanelContainerSelected'
+          )
+        "
+        @click="extensionTools?.activate(tool.id)"
+      >
+        <i
+          :class="cn('size-6', tool.icon ?? 'icon-[lucide--puzzle]')"
+          aria-hidden="true"
+        />
+        <span class="maskEditor_toolPanelIndicator" />
+      </button>
     </div>
 
     <div
@@ -45,9 +70,11 @@ import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 import type { Tools } from '@comfyorg/mask-editor/types'
 import { allTools } from '@comfyorg/mask-editor/types'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import type { MaskEditorExtensionTools } from '@/renderer/extensions/maskEditor/composables/useMaskEditorExtensionTools'
 
-const { toolManager } = defineProps<{
+const { toolManager, extensionTools } = defineProps<{
   toolManager: ReturnType<typeof useToolManager>
+  extensionTools?: MaskEditorExtensionTools
 }>()
 
 const { t } = useI18n()

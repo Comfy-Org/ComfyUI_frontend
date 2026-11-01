@@ -1,7 +1,11 @@
 <template>
   <div class="maskEditor_sidePanel">
     <div class="maskEditor_sidePanelContainer">
-      <component :is="currentPanelComponent" />
+      <ExtensionToolPanel
+        v-if="extensionTools?.active.value"
+        :runtime="extensionTools.active.value.runtime"
+      />
+      <component :is="currentPanelComponent" v-else />
     </div>
   </div>
 </template>
@@ -16,6 +20,12 @@ import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import BrushSettingsPanel from './BrushSettingsPanel.vue'
 import ColorSelectSettingsPanel from './ColorSelectSettingsPanel.vue'
 import PaintBucketSettingsPanel from './PaintBucketSettingsPanel.vue'
+import ExtensionToolPanel from './ExtensionToolPanel.vue'
+import type { MaskEditorExtensionTools } from '@/renderer/extensions/maskEditor/composables/useMaskEditorExtensionTools'
+
+const { extensionTools } = defineProps<{
+  extensionTools?: MaskEditorExtensionTools
+}>()
 
 const currentPanelComponent = computed<Component>(() => {
   const tool = useMaskEditorStore().currentTool
