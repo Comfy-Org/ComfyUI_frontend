@@ -1213,7 +1213,8 @@ export class ComfyApp implements IComfyApp {
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
-      useWorkflowService().beforeLoadNewGraph(clean)
+      const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
+      replaceCanvas()
       ChangeTracker.isLoadingGraph = true
       useExecutionErrorStore().setActiveGraph(null)
 
@@ -2257,7 +2258,9 @@ export class ComfyApp implements IComfyApp {
                   'beforeLoadGraph'
                 )
                 lifecycle.started = true
-                useWorkflowService().beforeLoadNewGraph(false)
+                const replaceCanvas =
+                  useWorkflowService().beforeLoadNewGraph(false)
+                replaceCanvas()
               } finally {
                 useMissingNodesErrorStore().setMissingNodeTypes([])
               }
@@ -2451,7 +2454,8 @@ export class ComfyApp implements IComfyApp {
     try {
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
       lifecycleStarted = true
-      useWorkflowService().beforeLoadNewGraph(false)
+      const replaceCanvas = useWorkflowService().beforeLoadNewGraph(false)
+      replaceCanvas()
       releaseCaptureSuppression = beginChangeCaptureSuppression()
       this.canvas.setGraph(this.rootGraph)
       withGraphIntentSource('load', () => this.clean())

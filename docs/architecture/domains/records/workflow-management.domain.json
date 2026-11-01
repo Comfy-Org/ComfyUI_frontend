@@ -88,6 +88,10 @@
       "role": "domain"
     },
     {
+      "path": "src/platform/workflow/core/canvasTrackerOwnership.ts",
+      "role": "application"
+    },
+    {
       "path": "src/utils/syncUtil.ts",
       "role": "application"
     }
