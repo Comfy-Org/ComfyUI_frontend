@@ -12,6 +12,7 @@
         @loadedmetadata="handleLoadedMetadata"
         @timeupdate="handleTimeUpdate"
         @ended="handleEnded"
+        @play="handlePlay"
         @pause="handlePause"
         @error="handleError"
       />
@@ -263,6 +264,12 @@ const handleTimeUpdate = () => {
   }
 }
 
+const handlePlay = () => {
+  if (!audioRef.value || audioRef.value.paused) return
+  isPlaying.value = true
+  toast.dismiss(playbackErrorToastId)
+}
+
 const handlePause = () => {
   if (audioRef.value?.paused) isPlaying.value = false
 }
@@ -335,15 +342,11 @@ const menuItems = computed(() => [
   }
 ])
 
-watch(modelValue, (value) => {
+watch(modelValue, () => {
   playAttempt++
   isPlaying.value = false
   toast.dismiss(playbackErrorToastId)
   audioRef.value?.pause()
-  if (value) {
-    audioRef.value?.load()
-    return
-  }
   currentTime.value = 0
   duration.value = 0
 })
