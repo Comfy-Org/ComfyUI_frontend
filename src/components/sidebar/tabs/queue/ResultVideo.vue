@@ -5,7 +5,11 @@
     :autoplay="autoplay"
     class="max-h-[90vh] max-w-[90vw]"
   >
-    <source :src="url" :type="htmlVideoType" />
+    <source
+      data-testid="result-video-source"
+      :src="url"
+      :type="htmlVideoType"
+    />
     {{ $t('g.videoFailedToLoad') }}
   </video>
 </template>
@@ -40,8 +44,12 @@ onActivated(() => {
 const settingStore = useSettingStore()
 const { isExtensionInstalled, isExtensionEnabled } = useExtensionStore()
 
+/* VHS `/viewvideo` looks the file up by filename and subfolder. An item that
+   already carries a resolved `url` (an Assets panel item, whose filename is
+   only a display name) must play that url, as its grid card does. */
 const vhsAdvancedPreviews = computed(() => {
   return (
+    props.result.url === undefined &&
     isExtensionInstalled('VideoHelperSuite.Core') &&
     isExtensionEnabled('VideoHelperSuite.Core') &&
     settingStore.get('VHS.AdvancedPreviews') &&
