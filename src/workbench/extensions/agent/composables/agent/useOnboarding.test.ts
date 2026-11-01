@@ -327,6 +327,7 @@ describe('useOnboarding settings write failures', () => {
     async ({ fail, report }) => {
       fail()
 
+      expect(localStorage.getItem(KEY)).toBeNull()
       const tour = onboarding.useOnboarding(STEPS, KEY)
       await nextTick()
       expect(storeSetting).not.toHaveBeenCalled()
