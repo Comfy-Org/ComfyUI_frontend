@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { nextTick, reactive } from 'vue'
+import { useCanvasHistory } from './useCanvasHistory'
 
 import { usePanAndZoom } from './usePanAndZoom'
 import { useMaskEditorStore } from './maskEditorStore'
@@ -162,6 +165,67 @@ describe('usePanAndZoom', () => {
         parseFloat(container.style.width) / parseFloat(container.style.height)
       ).toBe(0.75)
       expect([rgbCanvas.width, rgbCanvas.height]).toEqual([600, 800])
+    })
+
+    it('refits a rotated document and measures wheel zoom from the new fit', async () => {
+      const { pz, canvas } = await initComposable()
+      const container = mockStore.canvasContainer!
+      Object.defineProperty(canvas, 'clientWidth', {
+        get: () => parseFloat(container.style.width)
+      })
+      const context = fromPartial<CanvasRenderingContext2D>({
+        getImageData: vi.fn(
+          (_x: number, _y: number, width: number, height: number) =>
+            fromPartial<ImageData>({ width, height })
+        )
+      })
+      mockStore.rgbCanvas = createMockCanvas(800, 600)
+      mockStore.imgCanvas = createMockCanvas(800, 600)
+      vi.mocked(canvas.getContext).mockReturnValue(context)
+      vi.mocked(mockStore.rgbCanvas.getContext).mockReturnValue(context)
+      vi.mocked(mockStore.imgCanvas.getContext).mockReturnValue(context)
+      mockStore.maskCtx = context
+      mockStore.rgbCtx = context
+      mockStore.imgCtx = context
+      mockStore.canvasHistory = reactive(useCanvasHistory(mockStore))
+      mockStore.canvasHistory.saveInitialState()
+      await nextTick()
+      mockStore.maskCanvas!.width = 600
+      mockStore.maskCanvas!.height = 800
+      mockStore.rgbCanvas.width = 600
+      mockStore.rgbCanvas.height = 800
+      mockStore.imgCanvas.width = 600
+      mockStore.imgCanvas.height = 800
+
+      mockStore.canvasHistory.saveState()
+      expect(mockStore.canvasHistory.dimensions).toEqual({
+        width: 600,
+        height: 800
+      })
+      await nextTick()
+
+      expect(container.style).toMatchObject({
+        width: '600px',
+        height: '800px',
+        left: '222px',
+        top: '0px'
+      })
+      expect(mockStore.displayZoomRatio).toBe(1)
+
+      await pz.zoom(
+        fromPartial<WheelEvent>({ clientX: 400, clientY: 300, deltaY: -100 })
+      )
+
+      expect(mockStore.displayZoomRatio).toBeCloseTo(1.1)
+      mockStore.resetZoomTrigger++
+      await vi.advanceTimersByTimeAsync(600)
+      expect(container.style).toMatchObject({
+        width: '600px',
+        height: '800px',
+        left: '222px',
+        top: '0px'
+      })
+      expect(mockStore.displayZoomRatio).toBe(1)
     })
 
     it('sets isPanning on the store', () => {
