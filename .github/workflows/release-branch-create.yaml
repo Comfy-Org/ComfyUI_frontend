@@ -187,38 +187,8 @@ jobs:
             echo "✅ Ensured label $LABEL"
           done
 
-          MIN_LABELS_TO_KEEP=3
-          MAX_LABELS_TO_FETCH=200
-
-          for PREFIX in core cloud; do
-            mapfile -t LABELS < <(
-              gh label list \
-                --json name \
-                --limit "$MAX_LABELS_TO_FETCH" \
-                --jq '.[].name' |
-              grep -E "^${PREFIX}/[0-9]+\.[0-9]+$" |
-              sort -t/ -k2,2V
-            )
-
-            TOTAL=${#LABELS[@]}
-
-            if (( TOTAL <= MIN_LABELS_TO_KEEP )); then
-              echo "ℹ️  Nothing to prune for $PREFIX labels"
-              continue
-            fi
-
-            REMOVE_COUNT=$((TOTAL - MIN_LABELS_TO_KEEP))
-
-            if (( REMOVE_COUNT > 1 )); then
-              REMOVE_COUNT=1
-            fi
-
-            for ((i=0; i<REMOVE_COUNT; i++)); do
-              OLD_LABEL="${LABELS[$i]}"
-              gh label delete "$OLD_LABEL" --yes
-              echo "🗑️ Removed old label $OLD_LABEL"
-            done
-          done
+          # Old lines are retired by release-label-retire.yaml once their
+          # product moves past them, not here at cut time.
 
       - name: Post summary
         if: always() && steps.check_version.outputs.is_minor_bump == 'true'
