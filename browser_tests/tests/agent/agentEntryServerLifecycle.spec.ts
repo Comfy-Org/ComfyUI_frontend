@@ -10,7 +10,7 @@ const test = mergeTests(agentTest, webSocketFixture)
 test.describe(
   "Agent entry button follows ComfyUI's agent",
   {
-    tag: '@cloud',
+    tag: ['@agent', '@ui'],
     annotation: {
       type: 'issue',
       description:
