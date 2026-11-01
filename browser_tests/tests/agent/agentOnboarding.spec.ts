@@ -175,6 +175,14 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
         '2 of 3'
       )
       await expect(agentPanel.tourSkipButton(workflow)).toHaveCount(1)
+      // The card's copy points at the workflow name at the top of the
+      // message box, so the golden keeps both in frame.
+      await expectRegionScreenshot(
+        page,
+        [workflow, page.locator('#agent-composer')],
+        'agent-tour-workflow-card.png',
+        { padding: 16 }
+      )
       await workflow.getByRole('button', { name: enMessages.g.next }).click()
 
       const history = await agentPanel.expectTourCard(
