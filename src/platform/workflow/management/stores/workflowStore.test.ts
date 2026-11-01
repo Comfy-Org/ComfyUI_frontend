@@ -553,6 +553,29 @@ describe('useWorkflowStore', () => {
       expect(workflow.isModified).toBe(false)
     })
 
+    it('marks a saved workflow modified when its draft only changes app mode', async () => {
+      enableWorkflowPersistence()
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'a.json', modified: 100, size: 1 }
+      ])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      const draftGraph = JSON.parse(defaultGraphJSON)
+      draftGraph.extra = { ...draftGraph.extra, linearMode: true }
+      saveV2Draft(workflow.path, {
+        data: JSON.stringify(draftGraph),
+        name: 'a.json'
+      })
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+
+      await workflow.load()
+
+      expect(workflow.activeState?.extra?.linearMode).toBe(true)
+      expect(workflow.isModified).toBe(true)
+    })
+
     it('should discard a stale V2 draft when the remote workflow is newer', async () => {
       enableWorkflowPersistence()
       const remoteModifiedAt = Date.now() + 60_000

@@ -1042,28 +1042,37 @@ test.describe('Workflow Persistence', () => {
       await comfyPage.menu.topbar.saveWorkflow(name)
     }
 
-    // Visit every tab without editing: each switch writes the outgoing
-    // tab's draft.
-    for (const name of names) {
-      await comfyPage.menu.topbar.getWorkflowTab(name).click()
-      await comfyPage.workflow.waitForWorkflowIdle()
-      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
-    }
-    await waitForWorkflowTabState(comfyPage, names.length)
-    await expect
-      .poll(async () => (await comfyPage.workflow.getDraftWorkflows()).length)
-      .toBeGreaterThanOrEqual(2)
+    await test.step('visit every tab without editing, leaving drafts behind', async () => {
+      for (const name of names) {
+        await comfyPage.menu.topbar.getWorkflowTab(name).click()
+        await comfyPage.workflow.waitForWorkflowIdle()
+        expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
+      }
+      await waitForWorkflowTabState(comfyPage, names.length)
+      await expect
+        .poll(async () => (await comfyPage.workflow.getDraftWorkflows()).length)
+        .toBeGreaterThanOrEqual(2)
+    })
 
     await comfyPage.workflow.reloadAndWaitForApp()
 
-    for (const name of names.slice(0, 2)) {
-      await comfyPage.menu.topbar.getWorkflowTab(name).click()
-      await comfyPage.workflow.waitForWorkflowIdle()
+    await test.step('the tab active at reload is restored as saved', async () => {
       await expect
         .poll(() => comfyPage.menu.topbar.getActiveTabName())
-        .toBe(name)
+        .toBe(names[2])
       expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
-      await expect.poll(() => comfyPage.page.title()).not.toMatch(/^\*/)
+    })
+
+    for (const name of names.slice(0, 2)) {
+      await test.step(`restored tab ${name} reopens as saved`, async () => {
+        await comfyPage.menu.topbar.getWorkflowTab(name).click()
+        await comfyPage.workflow.waitForWorkflowIdle()
+        await expect
+          .poll(() => comfyPage.menu.topbar.getActiveTabName())
+          .toBe(name)
+        expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
+        expect(await comfyPage.page.title()).not.toMatch(/^\*/)
+      })
     }
   })
 

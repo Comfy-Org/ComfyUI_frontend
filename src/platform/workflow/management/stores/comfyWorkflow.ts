@@ -82,6 +82,8 @@ export interface WorkflowRuntime {
     workflow: ComfyWorkflow,
     initialState: ComfyWorkflowJSON
   ): WorkflowChangeTracker
+  /** `ChangeTracker.graphEqual`: the comparison that decides unsaved changes. */
+  graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON): boolean
   getDraft(path: string): WorkflowDraft | null
   removeDraft(path: string): void
   markDraftUsed(path: string): void
@@ -365,9 +367,7 @@ export class ComfyWorkflow extends UserFile {
     if (draft?.state && draft.content) {
       this.changeTracker.activeState = draft.state
       this.content = draft.content
-      this._isModified = true
-      // Saved-workflow draft overlay path; direct persisted-draft restores
-      // are touched in workflowDraftStoreV2.loadDraft().
+      this._isModified = !runtime.graphEqual(initialState, draft.state)
       runtime.markDraftUsed(this.path)
     }
     return this as this & LoadedComfyWorkflow
