@@ -85,7 +85,7 @@ jobs:
       # warn: a run whose shards failed uploads nothing, and that has to leave
       # unit out of the report rather than turn the notifier red.
       - name: Download current unit coverage
-        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        uses: dawidd6/action-download-artifact@eab87c9830c39eff17e5a6eadb20bfb4bc880477 # v27
         with:
           run_id: ${{ github.event.workflow_run.id }}
           name: unit-coverage
@@ -98,7 +98,7 @@ jobs:
       - name: Download ancestor unit coverage
         if: steps.unit-baseline.outputs.run-id != ''
         continue-on-error: true
-        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        uses: dawidd6/action-download-artifact@eab87c9830c39eff17e5a6eadb20bfb4bc880477 # v27
         with:
           run_id: ${{ steps.unit-baseline.outputs.run-id }}
           name: unit-coverage
@@ -107,7 +107,7 @@ jobs:
 
       - name: Download latest E2E coverage
         continue-on-error: true
-        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        uses: dawidd6/action-download-artifact@eab87c9830c39eff17e5a6eadb20bfb4bc880477 # v27
         with:
           branch: main
           workflow: ci-tests-e2e-coverage.yaml
@@ -117,7 +117,7 @@ jobs:
 
       - name: Download previous E2E coverage baseline
         continue-on-error: true
-        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        uses: dawidd6/action-download-artifact@eab87c9830c39eff17e5a6eadb20bfb4bc880477 # v27
         with:
           branch: main
           workflow: coverage-slack-notify.yaml
@@ -197,7 +197,7 @@ jobs:
           success() && steps.e2e-meta.outputs.complete == 'true' &&
           steps.e2e-order.outputs.usable == 'true' &&
           hashFiles('temp/e2e-coverage/coverage.lcov') != ''
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-coverage-baseline
           # The whole directory, so the baseline keeps the sourceSha that lets

@@ -37,7 +37,7 @@ jobs:
         uses: ./.github/actions/resolve-pr-from-workflow-run
 
       - name: Download packaged coverage data
-        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        uses: dawidd6/action-download-artifact@eab87c9830c39eff17e5a6eadb20bfb4bc880477 # v27
         with:
           run_id: ${{ github.event.workflow_run.id }}
           name: e2e-coverage
@@ -56,7 +56,7 @@ jobs:
 
       - name: Upload merged coverage data
         if: steps.coverage.outputs.has-coverage == 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-coverage
           path: coverage/playwright/
@@ -80,7 +80,7 @@ jobs:
 
       - name: Download packaged HTML report
         if: steps.coverage.outputs.has-coverage == 'true'
-        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        uses: dawidd6/action-download-artifact@eab87c9830c39eff17e5a6eadb20bfb4bc880477 # v27
         with:
           run_id: ${{ github.event.workflow_run.id }}
           name: e2e-coverage-html
@@ -89,7 +89,7 @@ jobs:
 
       - name: Upload HTML report artifact
         if: steps.coverage.outputs.has-coverage == 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-coverage-html
           path: coverage/html/
