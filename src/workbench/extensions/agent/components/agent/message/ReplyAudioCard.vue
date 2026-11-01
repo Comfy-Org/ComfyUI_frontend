@@ -27,7 +27,11 @@ const {
   volumeIcon,
   toggleMute,
   seekToRatio
-} = useWaveAudioPlayer({ src: toRef(() => asset.url), waveform: false })
+} = useWaveAudioPlayer({
+  src: toRef(() => asset.url),
+  surface: 'agent',
+  waveform: false
+})
 
 function onScrub(value: number[] | undefined): void {
   if (value?.length) seekToRatio(value[0] / 100)
