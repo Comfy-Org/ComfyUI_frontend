@@ -93,16 +93,10 @@ export interface OpSenderDeps {
   baseVersion(): number
   /** The highest Lamport counter in the document the follower holds. */
   observedCounter(): number | undefined
-  /**
-   * Terminal per-batch report: 'acknowledged' carries the host's result;
-   * 'unacknowledged' means one resend after silence also drew no result;
-   * 'unconfirmed' means the transport carried it at least once but its doc
-   * was unbound before any result arrived, so the host may or may not have
-   * applied it; 'undeliverable' means the transport never carried it within
-   * the retry budget or no doc was bound. `workflowId` is the batch's
-   * admission-time target, null when no doc was bound.
-   */
-  onBatchSettled(outcome: BatchOutcome, workflowId: string | null): void
+  onBatchSettled(
+    outcome: BatchOutcome,
+    admissionWorkflowId: string | null
+  ): void
 }
 
 export type BatchOutcome =
