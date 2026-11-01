@@ -841,6 +841,29 @@ const {
   }
 })
 
+const selectionModeNodeKeys = ref<Set<string>>(new Set())
+watch(
+  selectionTags,
+  (tags, previousTags) => {
+    const stagedKeys = new Set(tags.map(selectedNodeKey))
+    const nextKeys = new Set(
+      [...selectionModeNodeKeys.value].filter((key) => stagedKeys.has(key))
+    )
+    if (canvasStore.isPickingNodes) {
+      const previousKeys = new Set(previousTags.map(selectedNodeKey))
+      for (const tag of tags) {
+        const key = selectedNodeKey(tag)
+        if (!previousKeys.has(key)) nextKeys.add(key)
+      }
+    }
+    selectionModeNodeKeys.value = nextKeys
+  },
+  { deep: true, flush: 'sync' }
+)
+const hasNodeSelectionModeAddition = computed(
+  () => selectionModeNodeKeys.value.size > 0
+)
+
 let nodeReferenceWorkflow = selectionTags.value.length
   ? selectedTarget.value
   : null
@@ -2511,6 +2534,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         provisionalTitle
       "
       :selection-tags="selectionTags"
+      :has-node-selection-mode-addition="hasNodeSelectionModeAddition"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
       :select-workflow-reference="onSelectWorkflowReference"
       :saving-reference="savingReference"

@@ -94,10 +94,9 @@ describe('EmptyState', () => {
     ])
   })
 
-  it('keeps the treatment prompt in the same slot without a selection', () => {
+  it('keeps the winning Cloud prompt in the same slot without a selection', () => {
     distribution.isCloud = true
     render(EmptyState, {
-      props: { assignment: 'test', attributeExperiment: true },
       global: { plugins: [i18n] }
     })
 

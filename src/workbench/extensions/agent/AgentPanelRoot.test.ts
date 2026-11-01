@@ -9373,9 +9373,9 @@ describe('AgentPanelRoot workflow binding', () => {
         {
           prompt_id: 'slot_2',
           prompt_index: 1,
-          prompt_count: 4,
+          prompt_count: 5,
           // Nothing is hidden at this width, so both counts agree here.
-          visible_prompt_count: 4,
+          visible_prompt_count: 5,
           prompt_text_hash: expect.stringMatching(/^[0-9a-f]{8}$/),
           locale: 'en',
           click_id: 'client-message-1',
@@ -15411,6 +15411,26 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByTestId('node-reference-chip')).toHaveTextContent(
       'KSampler'
     )
+  })
+
+  it('reveals the selected-node prompt only after a node-selection-mode addition', async () => {
+    distribution.isCloud = false
+    makeTab('wf-42')
+    const state = setupNodeSelectionCanvas()
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+    const prompt = i18n.global.t('agent.suggestedPrompts.local.2')
+
+    expect(screen.queryByRole('button', { name: prompt })).toBeNull()
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    expect(screen.queryByRole('button', { name: prompt })).toBeNull()
+
+    await enterNodeSelectionMode()
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+
+    expect(await screen.findByRole('button', { name: prompt })).toBeVisible()
   })
 
   it('excludes referenced nodes from the mention picker', async () => {

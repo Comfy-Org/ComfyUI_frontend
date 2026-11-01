@@ -9,10 +9,7 @@ import { isCloud } from '@/platform/distribution/types'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 
-const {
-  userName,
-  hasSelection = false
-} = defineProps<{
+const { userName, hasSelection = false } = defineProps<{
   userName?: string
   hasSelection?: boolean
 }>()
@@ -118,9 +115,7 @@ function onPromptClick(text: string, index: number): void {
           @click="onPromptClick(suggestion.text, suggestion.index)"
         >
           <i
-            :class="
-              cn('size-3 text-muted-foreground', suggestion.icon)
-            "
+            :class="cn('size-3 text-muted-foreground', suggestion.icon)"
             aria-hidden="true"
           />
           <span class="truncate">{{ suggestion.text }}</span>
