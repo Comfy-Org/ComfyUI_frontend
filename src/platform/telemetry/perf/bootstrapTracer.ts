@@ -127,16 +127,7 @@ function untracedMs(rows: BootstrapPhaseTiming[], totalMs: number): number {
   return totalMs - tracedMs
 }
 
-/**
- * Wall-clock time the document spends hidden during startup.
- *
- * Chromium throttles timers in a hidden tab and pauses animation frames, so a
- * start that began or moved to a background tab can run for minutes while no
- * one is waiting on it. Reporting the hidden share keeps those starts
- * distinguishable from slow starts a user watched, without dropping them.
- *
- * Time before the tracer exists is counted in the state seen at construction.
- */
+// Chromium throttles hidden tabs, so a slow start may have had no one waiting.
 class HiddenTimeMeter {
   private _hiddenMs = 0
   private _hiddenSince: number | undefined
@@ -144,20 +135,28 @@ class HiddenTimeMeter {
 
   constructor() {
     if (typeof document === 'undefined') return
-    if (document.visibilityState === 'hidden') this._hiddenSince = 0
+    const buffered = performance.getEntriesByType('visibility-state')
+    if (buffered.length > 0) {
+      for (const entry of buffered)
+        this._record(entry.name === 'hidden', entry.startTime)
+    } else if (document.visibilityState === 'hidden') {
+      this._hiddenSince = 0
+    }
     document.addEventListener(
       'visibilitychange',
-      () => {
-        const now = performance.now()
-        if (document.visibilityState === 'hidden') {
-          this._hiddenSince ??= now
-        } else if (this._hiddenSince !== undefined) {
-          this._hiddenMs += now - this._hiddenSince
-          this._hiddenSince = undefined
-        }
-      },
+      () =>
+        this._record(document.visibilityState === 'hidden', performance.now()),
       { signal: this._listening.signal }
     )
+  }
+
+  private _record(hidden: boolean, atMs: number): void {
+    if (hidden) {
+      this._hiddenSince ??= atMs
+    } else if (this._hiddenSince !== undefined) {
+      this._hiddenMs += atMs - this._hiddenSince
+      this._hiddenSince = undefined
+    }
   }
 
   stop(): void {

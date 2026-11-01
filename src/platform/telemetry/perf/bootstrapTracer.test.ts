@@ -202,7 +202,32 @@ describe('bootstrapTracer', () => {
 
     const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
       .calls[0][0]
-    expect(metadata.hidden_ms).toBe(metadata.total_ms - 100)
+    expect(metadata).toMatchObject({ total_ms: 200, hidden_ms: 100 })
+  })
+
+  it('reads visibility changes from before the tracer existed when the browser buffers them', async () => {
+    const telemetry = sharedUseTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    await vi.advanceTimersByTimeAsync(100)
+    const entries = vi
+      .spyOn(performance, 'getEntriesByType')
+      .mockImplementation((type) =>
+        type === 'visibility-state'
+          ? [
+              fromPartial<PerformanceEntry>({ name: 'hidden', startTime: 0 }),
+              fromPartial<PerformanceEntry>({ name: 'visible', startTime: 70 })
+            ]
+          : []
+      )
+    const tracer = new BootstrapTracer()
+    entries.mockRestore()
+
+    await vi.advanceTimersByTimeAsync(100)
+    tracer.complete()
+
+    const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
+      .calls[0][0]
+    expect(metadata).toMatchObject({ total_ms: 200, hidden_ms: 70 })
   })
 
   it('reports a failed startup, closing phases still open', () => {
