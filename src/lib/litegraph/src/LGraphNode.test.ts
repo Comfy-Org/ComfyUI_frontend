@@ -76,6 +76,31 @@ describe('LGraphNode', () => {
     Object.assign(LiteGraph, origLiteGraph)
   })
 
+  test.each([
+    { requestedId: 7, nextId: 41 },
+    { requestedId: 83, nextId: 84 }
+  ])(
+    'honours requested link $requestedId and next mints $nextId',
+    ({ requestedId, nextId }) => {
+      const graph = new LGraph()
+      const target = new LGraphNode('Target')
+      node.addOutput('image', 'IMAGE')
+      target.addInput('image', 'IMAGE')
+      target.addInput('other', 'IMAGE')
+      graph.add(node)
+      graph.add(target)
+      graph.state.lastLinkId = toLinkId(40)
+
+      const link = node.connect(0, target, 0, undefined, {
+        requestedId: toLinkId(requestedId)
+      })
+
+      expect(link?.id).toBe(toLinkId(requestedId))
+      expect(target.getInputLink(0)).toBe(link)
+      expect(node.connect(0, target, 1)?.id).toBe(toLinkId(nextId))
+    }
+  )
+
   test.for([
     LGraphEventMode.ALWAYS,
     LGraphEventMode.ON_EVENT,
