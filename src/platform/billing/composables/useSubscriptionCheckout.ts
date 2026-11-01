@@ -18,20 +18,20 @@ import { getTeamPlanSlug } from '@/platform/billing/subscription/constants/teamP
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import type {
   Plan,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { openHostedBillingTab } from '@/platform/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
@@ -43,9 +43,9 @@ import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useSubscriptionRail } from '@/platform/billing/composables/useSubscriptionRail'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import {
   bindOperationToCheckoutJourney,
   getActiveCheckoutJourney,
@@ -159,10 +159,10 @@ export function useSubscriptionCheckout(
   const { shouldUseWorkspaceBilling } = useBillingRouting()
   const { canSubscribeSelfServe, canChangeSeats, canDowngradeToPersonal } =
     useBillingCapabilities()
-  const { permissions, canReactivatePlan } = useWorkspaceUI()
+  const { permissions, canReactivatePlan } = useBillingUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const subscriptionRail = useSubscriptionRail()
 
   const checkoutStep = ref<CheckoutStep>('pricing')
@@ -524,7 +524,7 @@ export function useSubscriptionCheckout(
       }
       if (outcome.status === 'error') throw outcome.error
     }
-    const { url } = await workspaceApi.getPaymentPortalUrl(returnUrl)
+    const { url } = await billingApi.getPaymentPortalUrl(returnUrl)
     return { url, billingClient: 'legacy' }
   }
 
@@ -541,7 +541,7 @@ export function useSubscriptionCheckout(
       try {
         const status =
           readRail === null
-            ? await workspaceApi.getBillingStatus()
+            ? await billingApi.getBillingStatus()
             : await readOnRail(readRail.readStatus, 'getBillingStatus')
         requiresRecovery =
           status?.billing_status === 'payment_failed' ||
@@ -1353,17 +1353,17 @@ export function useSubscriptionCheckout(
 
     savePendingCheckout(response.billing_op_id, context)
 
-    let initialActionUrl: string | undefined
+    let checkoutPaymentMethodUrl: string | undefined
     if (response.status === 'needs_payment_method') {
       if (!response.payment_method_url) {
         throw new Error(t('subscription.preview.stripeUnavailable'))
       }
-      initialActionUrl = response.payment_method_url
+      checkoutPaymentMethodUrl = response.payment_method_url
       // The open runs after `await subscribe(...)`, so it's not a direct user
       // gesture and can be popup-blocked; offer a button click as a retry
       // gesture instead of failing silently.
-      if (!openBillingUrl(initialActionUrl)) {
-        const paymentMethodUrl = initialActionUrl
+      if (!openBillingUrl(checkoutPaymentMethodUrl)) {
+        const paymentMethodUrl = checkoutPaymentMethodUrl
         const opId = response.billing_op_id
         paymentRecoveryToasts.push(
           toast.warning(t('g.warning'), {
@@ -1383,7 +1383,7 @@ export function useSubscriptionCheckout(
     await advanceToSuccessOnOperation(
       response.billing_op_id,
       context,
-      initialActionUrl,
+      checkoutPaymentMethodUrl,
       mutationToken
     )
   }
@@ -1433,7 +1433,7 @@ export function useSubscriptionCheckout(
   async function advanceToSuccessOnOperation(
     opId: string,
     context: SubscriptionOutcomeContext,
-    initialActionUrl: string | undefined,
+    paymentMethodUrl: string | undefined,
     mutationToken: number
   ) {
     activeCheckoutOperationId.value = opId
@@ -1442,16 +1442,14 @@ export function useSubscriptionCheckout(
       cycle: context.cycle,
       checkoutType: context.checkoutType,
       paymentIntentSource,
-      attemptStartedAt: context.attemptStartedAt
+      attemptStartedAt: context.attemptStartedAt,
+      paymentMethodUrl
     }
-    const terminalOperation = initialActionUrl
-      ? billingOperationStore.startOperation(
-          opId,
-          'subscription',
-          metadata,
-          initialActionUrl
-        )
-      : billingOperationStore.startOperation(opId, 'subscription', metadata)
+    const terminalOperation = billingOperationStore.startOperation(
+      opId,
+      'subscription',
+      metadata
+    )
     isSubscribing.value = false
     finishCheckoutMutation(mutationToken)
     const operation = await terminalOperation

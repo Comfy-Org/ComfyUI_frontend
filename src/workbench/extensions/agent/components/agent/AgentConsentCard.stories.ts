@@ -31,8 +31,17 @@ const meta: Meta<typeof AgentConsentCard> = {
     videoSources: VIDEO_SOURCES,
     posterSrc: POSTER_SRC,
     docsUrl: AGENT_DOCS_URL,
+    requiresSignIn: false,
+    accepting: false,
+    error: '',
     onAccept: fn(),
     onReject: fn()
+  },
+  argTypes: {
+    error: {
+      control: 'select',
+      options: ['', 'save', 'load', 'signIn']
+    }
   },
   decorators: [
     () => ({
@@ -61,7 +70,12 @@ export const Loading: Story = {
 }
 
 export const Error: Story = {
-  args: { error: enMessages.agent.consent.saveError }
+  args: { error: 'save' }
+}
+
+export const SignInError: Story = {
+  ...SignedOut,
+  args: { ...SignedOut.args, error: 'signIn' }
 }
 
 export const InLightApp: Story = {
@@ -80,15 +94,21 @@ export const LongCopy: Story = {
   args: { paragraphs: [...paragraphs, ...paragraphs] }
 }
 
-/**
- * The card responds to its container, not the viewport, so it stacks inside a
- * narrow agent panel even on a wide screen.
- */
+const narrowPanel = () => ({
+  template:
+    '<div class="grid place-items-center bg-background p-8"><div class="w-[380px]"><story /></div></div>'
+})
+
 export const InNarrowPanel: Story = {
-  decorators: [
-    () => ({
-      template:
-        '<div class="grid place-items-center bg-background p-8"><div class="w-[380px]"><story /></div></div>'
-    })
-  ]
+  decorators: [narrowPanel]
+}
+
+export const SignedOutInNarrowPanel: Story = {
+  ...SignedOut,
+  decorators: [narrowPanel]
+}
+
+export const ErrorInNarrowPanel: Story = {
+  ...Error,
+  decorators: [narrowPanel]
 }

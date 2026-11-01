@@ -4,11 +4,8 @@ import type {
 } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  markErrorReported,
-  reportError
-} from '@/platform/telemetry/reportError'
-import type { AuthCredential, AuthScheme } from '@/types/authTypes'
+import { markErrorReported, reportError } from '@comfyorg/telemetry/reportError'
+import type { AuthCredential, AuthScheme } from '@comfyorg/api-client/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
@@ -20,7 +17,6 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./agentAuth'))
 
 import {
@@ -647,7 +643,7 @@ describe('postMessage wire body', () => {
     const parsed = JSON.parse(init.body as string) as Record<string, unknown>
     expect(parsed).toEqual({
       content: 'build it',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
       attachments: ['a1'],
@@ -665,7 +661,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'add a node',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       current_tab_unbound: true,
       client_version: buildVersion
     })
@@ -677,7 +673,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'just text',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       client_version: buildVersion
     })
   })
@@ -695,7 +691,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'build it',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
       client_version: buildVersion
     })
@@ -721,7 +717,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'run it',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       client_id: 'tab-socket-id',
       client_version: buildVersion
     })
@@ -745,7 +741,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval', 'paused'],
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } },
       client_version: buildVersion
     })
@@ -1666,37 +1662,47 @@ describe('user auth on agent requests', () => {
     })
   })
 
-  const calls: [
-    string,
-    (client: AgentRestClient) => Promise<unknown>,
-    unknown
-  ][] = [
-    [
-      'POST messages',
-      (c) => c.postMessage('new', { content: 'hi' }),
-      turnAccepted
-    ],
-    ['GET messages', (c) => c.getMessages('t1'), []],
-    [
-      'POST answer',
-      (c) => c.answerAsk('t1', 'ask-1', { selected: ['allow'] }),
-      { status: 'answered' }
-    ],
-    ['the credential refresh', (c) => c.refreshCredential(), emptyThreadPage]
-  ]
+  it('hands the request its own method, headers and body to be authorized', async () => {
+    respond(jsonResponse(202, turnAccepted))
 
-  it.for(calls)(
-    'sends the user auth header with %s',
-    async ([, call, body]) => {
-      respond(jsonResponse(200, body))
+    await makeClient().postMessage('new', { content: 'hi' })
 
-      await call(makeClient())
+    expect(withAgentAuth).toHaveBeenCalledOnce()
+    const [authorizing] = vi.mocked(withAgentAuth).mock.calls[0]
+    expect(authorizing.method).toBe('POST')
+    expect(new Headers(authorizing.headers).get('Content-Type')).toBe(
+      'application/json'
+    )
+    expect(JSON.parse(String(authorizing.body))).toMatchObject({
+      content: 'hi'
+    })
+  })
 
-      expect(new Headers(lastCall().init.headers).get('Authorization')).toBe(
-        'Bearer id-token'
-      )
-    }
-  )
+  it('fetches with the authorized init rather than rebuilding one', async () => {
+    respond(jsonResponse(200, []))
+
+    await makeClient().getMessages('t1')
+
+    expect(lastCall().init).toBe(
+      await vi.mocked(withAgentAuth).mock.results[0].value
+    )
+    expect(new Headers(lastCall().init.headers).get('Authorization')).toBe(
+      'Bearer id-token'
+    )
+  })
+
+  it('refreshes the credential with the cheapest authorized request', async () => {
+    respond(jsonResponse(200, emptyThreadPage))
+
+    await makeClient().refreshCredential()
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/threads?limit=1')
+    expect(init.method).toBe('GET')
+    expect(new Headers(init.headers).get('Authorization')).toBe(
+      'Bearer id-token'
+    )
+  })
 
   it('sends no auth header for a signed-out user', async () => {
     vi.mocked(withAgentAuth).mockImplementation(async (init) => init)

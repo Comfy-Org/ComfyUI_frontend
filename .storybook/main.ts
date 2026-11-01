@@ -89,6 +89,10 @@ const config: StorybookConfig = {
         tsconfigPaths: true,
         alias: [
           {
+            find: '@comfyorg/design-system/css/style.css',
+            replacement: process.cwd() + '/.storybook/style.css'
+          },
+          {
             find: '@/composables/queue/useJobList',
             replacement: process.cwd() + '/src/storybook/mocks/useJobList.ts'
           },
@@ -96,6 +100,10 @@ const config: StorybookConfig = {
             find: '@/platform/billing/composables/useBillingContext',
             replacement:
               process.cwd() + '/src/storybook/mocks/useBillingContext.ts'
+          },
+          {
+            find: '@/platform/billing/composables/useBillingUI',
+            replacement: process.cwd() + '/src/storybook/mocks/useBillingUI.ts'
           },
           {
             find: '@/composables/useFeatureFlags',

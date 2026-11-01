@@ -1,12 +1,10 @@
 <template>
   <div class="flex items-center gap-2 p-4 text-sm font-normal">
-    <i v-if="icon" :class="cn(icon, 'size-4')" aria-hidden="true" />
+    <i v-if="icon" :class="icon" aria-hidden="true" />
     <span v-if="title" class="flex-auto">{{ title }}</span>
   </div>
 </template>
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
 defineProps<{
   title?: string
   icon?: string

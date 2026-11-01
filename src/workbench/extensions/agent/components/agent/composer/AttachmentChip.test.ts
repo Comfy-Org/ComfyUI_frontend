@@ -35,11 +35,7 @@ function renderChip(props: {
 }
 
 function iconMarker(container: Element): string {
-  return container.querySelector(
-    'span[class*="lucide--"], span[class*="icon-"]'
-  )
-    ? (container.querySelector('span[class*="lucide--"]')?.className ?? '')
-    : ''
+  return container.querySelector('[class*="lucide--"]')?.className ?? ''
 }
 
 describe('AttachmentChip', () => {

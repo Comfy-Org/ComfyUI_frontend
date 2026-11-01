@@ -46,6 +46,12 @@ const SUBSCRIPTION_REQUIRED_MESSAGES = new Set([
   'User has no active subscription. Please subscribe to a plan to continue.',
   'Subscription required to queue workflows'
 ])
+const EXECUTE_PROMPT_SUBSCRIPTION_TYPES = new Set([
+  'CLOUD_SUBSCRIPTION_REQUIRED',
+  'FREE_TIER_EXHAUSTED',
+  'PARTNER_NODE_PAYMENT_REQUIRED',
+  'MODEL_PAYMENT_REQUIRED'
+])
 const SUBSCRIPTION_UPGRADE_REQUIRED_PREFIX =
   'the following private models require a subscription upgrade:'
 const TIMEOUT_MESSAGES = new Set(['Job execution time exceeded maximum limit'])
@@ -399,6 +405,11 @@ export function resolveRuntimeCatalogMatch(
   info: RuntimeErrorInfo
 ): RuntimeCatalogMatch | undefined {
   const message = info.exceptionMessage.trim()
+
+  if (EXECUTE_PROMPT_SUBSCRIPTION_TYPES.has(info.exceptionType)) {
+    return catalogMatch(SUBSCRIPTION_REQUIRED_CATALOG_ID)
+  }
+  if (info.exceptionType === 'FREE_TIER_UNAVAILABLE') return undefined
 
   for (const rule of RUNTIME_MATCH_RULES) {
     if (rule.matches(info, message)) return rule.resolve(info, message)

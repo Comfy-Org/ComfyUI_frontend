@@ -4,9 +4,9 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { assert, describe, expect, it } from 'vitest'
 
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 
 import type { LGraphState } from '@/lib/litegraph/src/LGraph'
@@ -16,7 +16,7 @@ import type {
   ISerialisedNode,
   SerialisableLLink,
   SerialisableReroute
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 import {
   deduplicateSubgraphGroupIds,

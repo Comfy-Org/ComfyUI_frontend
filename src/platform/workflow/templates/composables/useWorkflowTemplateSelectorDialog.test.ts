@@ -1,7 +1,7 @@
 import { useDialogService } from '@/services/dialogService'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 let mockDialogStore: ReturnType<typeof useDialogStore>
 
@@ -15,7 +15,7 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => mockNewUserService
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(
   import('@/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue'),

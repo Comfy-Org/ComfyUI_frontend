@@ -76,7 +76,7 @@
         role="alert"
         class="m-0 px-8 pt-4 text-sm text-destructive"
       >
-        {{ $t('credits.topUp.checkoutOpenFailed') }}
+        {{ checkoutRefusal ?? $t('credits.topUp.checkoutOpenFailed') }}
       </p>
     </template>
 
@@ -95,7 +95,7 @@
         role="alert"
         class="m-0 text-sm text-destructive"
       >
-        {{ $t('credits.topUp.checkoutOpenFailed') }}
+        {{ checkoutRefusal ?? $t('credits.topUp.checkoutOpenFailed') }}
       </p>
     </div>
 
@@ -138,85 +138,17 @@
       </div>
     </template>
 
-    <!-- Preset amount buttons -->
-    <div v-if="step === 'amount'" class="px-8">
-      <h3 class="m-0 text-sm font-normal text-muted-foreground">
-        {{ $t('credits.topUp.selectAmount') }}
-      </h3>
-      <div class="flex gap-2 pt-3">
-        <Button
-          v-for="amount in TOPUP_AMOUNT_PRESETS_USD"
-          :key="amount"
-          :autofocus="amount === 50"
-          variant="secondary"
-          size="lg"
-          :class="
-            cn(
-              'h-10 w-full text-base focus-visible:ring-ring',
-              selectedPreset === amount && 'bg-muted'
-            )
-          "
-          @click="handlePresetClick(amount)"
-        >
-          ${{ amount }}
-        </Button>
-      </div>
-      <p
-        v-if="planCreditCopy"
-        class="m-0 pt-3 text-sm text-muted-foreground"
-        data-testid="top-up-plan-credit-line"
-      >
-        {{ planCreditCopy }}
-      </p>
-    </div>
-    <!-- Amount (USD) / Credits -->
-    <div v-if="step === 'amount'" class="flex gap-2 px-8 pt-8">
-      <!-- You Pay -->
-      <div
-        class="flex min-w-0 flex-1 flex-col gap-3"
-        data-testid="top-up-pay-amount"
-      >
-        <div class="text-sm text-muted-foreground">
-          {{ $t('credits.topUp.youPay') }}
-        </div>
-        <FormNumberField
-          class="w-full"
-          :aria-label="$t('credits.topUp.youPay')"
-          input-class="text-lg font-medium"
-          :model-value="payAmount"
-          :min="0"
-          :max="MAX_AMOUNT"
-          :step="getStepAmount(payAmount)"
-          :format-options="{ maximumFractionDigits: 0 }"
-          @update:model-value="handlePayAmountChange"
-        >
-          <template #prefix>
-            <span class="shrink-0 text-base font-semibold">$</span>
-          </template>
-        </FormNumberField>
-      </div>
-
-      <!-- You Get -->
-      <div class="flex min-w-0 flex-1 flex-col gap-3">
-        <div class="text-sm text-muted-foreground">
-          {{ $t('credits.topUp.youGet') }}
-        </div>
-        <FormNumberField
-          v-model="creditsModel"
-          class="w-full"
-          :aria-label="$t('credits.topUp.youGet')"
-          input-class="text-lg font-medium"
-          :min="0"
-          :max="usdToCredits(MAX_AMOUNT)"
-          :step="getCreditsStepAmount(creditsModel)"
-          :format-options="{ maximumFractionDigits: 0 }"
-        >
-          <template #prefix>
-            <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
-          </template>
-        </FormNumberField>
-      </div>
-    </div>
+    <TopUpAmountFields
+      v-if="step === 'amount'"
+      :pay-amount
+      :credits="creditsModel"
+      :selected-preset
+      :max-amount="MAX_AMOUNT"
+      :plan-credit-copy
+      @preset="handlePresetClick"
+      @pay-amount="handlePayAmountChange"
+      @credits="creditsModel = $event"
+    />
 
     <!-- Warnings -->
 
@@ -236,7 +168,7 @@
       v-if="isBelowMin && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-destructive"
     >
-      <i class="icon-[lucide--coins] size-4" />
+      <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.minRequired', {
           credits: formatNumber(usdToCredits(MIN_AMOUNT))
@@ -247,7 +179,7 @@
       v-if="showCeilingWarning && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-warning"
     >
-      <i class="icon-[lucide--coins] size-4" />
+      <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.maxAllowed', {
           credits: formatNumber(usdToCredits(MAX_AMOUNT))
@@ -315,7 +247,7 @@
           @click="reopenCheckout"
         >
           {{ $t('credits.topUp.reopenCheckout') }}
-          <i class="icon-[lucide--external-link] size-4" />
+          <i class="icon-[lucide--external-link]" />
         </Button>
       </div>
       <Button
@@ -327,7 +259,7 @@
         @click="retryBlockedCheckout"
       >
         {{ $t('credits.topUp.openCheckout') }}
-        <i class="icon-[lucide--external-link] size-4" />
+        <i class="icon-[lucide--external-link]" />
       </Button>
       <Button
         v-else-if="step === 'defaultCardBlocked' && blockedDefaultCardUrl"
@@ -341,7 +273,7 @@
         @click="followBlockedDefaultCardLink"
       >
         {{ $t('credits.topUp.openPaymentPage') }}
-        <i class="icon-[lucide--external-link] size-4" />
+        <i class="icon-[lucide--external-link]" />
       </Button>
       <div v-else class="flex flex-col gap-2">
         <div
@@ -352,7 +284,7 @@
         >
           <div class="flex items-center gap-2">
             <i
-              class="icon-[lucide--circle-alert] size-4 shrink-0 text-muted-foreground"
+              class="icon-[lucide--circle-alert] text-muted-foreground"
               aria-hidden="true"
             />
             <span class="text-sm text-foreground">{{
@@ -363,6 +295,10 @@
             {{ $t('credits.topUp.paymentProcessingBody') }}
           </p>
         </div>
+        <TopUpAutoTopUpCard
+          v-if="step === 'amount' && !processingPayment"
+          class="mb-2"
+        />
         <Button
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
@@ -380,7 +316,7 @@
           @click="continueToCheckout"
         >
           {{ $t('credits.topUp.continueToCheckout') }}
-          <i class="icon-[lucide--external-link] size-4" />
+          <i class="icon-[lucide--external-link]" />
         </Button>
         <Button
           v-else
@@ -421,7 +357,7 @@
           class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           {{ $t('credits.topUp.viewPricing') }}
-          <i class="icon-[lucide--external-link] size-4" />
+          <i class="icon-[lucide--external-link]" />
         </a>
       </div>
     </div>
@@ -434,7 +370,7 @@ import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import {
   getTopupAmountPreset,
-  TOPUP_AMOUNT_PRESETS_USD
+  PURCHASE_REFUSAL_SERVER_CODES
 } from '@comfyorg/account-core/billing'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -448,22 +384,21 @@ import {
 } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import FormNumberField from '@/components/common/FormNumberField.vue'
+import TopUpAmountFields from './TopUpAmountFields.vue'
+import TopUpAutoTopUpCard from './TopUpAutoTopUpCard.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import type { CreateTopupResponse } from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import type { BillingTab } from '@/platform/billing/billingTab'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
@@ -473,7 +408,7 @@ import { UncreditedTopupResponse } from '@/platform/billing/sdk/topupOperationVi
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import {
   bindOperationToCheckoutJourney,
   clearCheckoutJourney,
@@ -489,8 +424,7 @@ import {
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@/utils/errorUtil'
-import { cn } from '@comfyorg/tailwind-utils'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
@@ -526,7 +460,7 @@ const planCreditCopy = useTopUpPlanCreditCopy()
 const billingCapabilities = useBillingCapabilities()
 const { canTopUp } = billingCapabilities
 
-const workspaceStore = useTeamWorkspaceStore()
+const workspaceStore = useWorkspaceIdentity()
 
 function enterTopupJourney(): void {
   const workspaceId = workspaceStore.activeWorkspaceId
@@ -630,6 +564,7 @@ watch(suggestedAmount, (amount) => {
 const loading = ref(false)
 const paymentSubmitted = ref(false)
 const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
+const checkoutRefusal = ref<string | null>(null)
 const blockedDefaultCardUrl = ref<string | null>(null)
 const checkoutReopenFailed = ref(false)
 const stepBeforeCheckoutBlocked = ref<'confirm' | 'checkoutOpened'>('confirm')
@@ -711,18 +646,6 @@ watch(
 // Utility functions
 function formatNumber(num: number): string {
   return num.toLocaleString('en-US')
-}
-
-// Step amount functions
-function getStepAmount(currentAmount: number): number {
-  if (currentAmount < 100) return 5
-  if (currentAmount < 1000) return 50
-  return 100
-}
-
-function getCreditsStepAmount(currentCredits: number): number {
-  const usdAmount = creditsToUsd(currentCredits)
-  return usdToCredits(getStepAmount(usdAmount))
 }
 
 // Event handlers
@@ -1010,7 +933,7 @@ async function setDefaultCard() {
   const portalTab = reserveBillingTab()
   openingDefaultCardPortal.value = true
   try {
-    const { url } = await workspaceApi.getPaymentPortalUrl(
+    const { url } = await billingApi.getPaymentPortalUrl(
       window.location.href,
       'payment_method_update'
     )
@@ -1073,6 +996,7 @@ async function reopenCheckout() {
 async function openCheckoutInReservedTab(): Promise<
   'opened' | 'blocked' | 'failed' | 'abandoned'
 > {
+  checkoutRefusal.value = null
   const returnUrl = topupCheckoutReturnUrl()
   if (!returnUrl) return 'failed'
   const checkoutTab = reserveBillingTab()
@@ -1103,6 +1027,7 @@ async function openCheckoutInReservedTab(): Promise<
   } catch (error) {
     checkoutTab.close()
     console.error('Hosted top-up checkout failed to open', error)
+    checkoutRefusal.value = purchaseRefusalMessage(error)
     return unmounted || scope.signal.aborted ? 'abandoned' : 'failed'
   } finally {
     if (checkoutScope === scope) checkoutScope = null
@@ -1178,7 +1103,17 @@ function reportTerminal(
   })
 }
 
+function purchaseRefusalMessage(error: unknown): string | null {
+  return error instanceof WorkspaceApiError &&
+    error.code !== undefined &&
+    PURCHASE_REFUSAL_SERVER_CODES.includes(error.code)
+    ? error.message
+    : null
+}
+
 function purchaseErrorDetail(error?: unknown): string {
+  const refusal = purchaseRefusalMessage(error)
+  if (refusal !== null) return refusal
   const code = error instanceof WorkspaceApiError ? error.code : undefined
   // Only one billing operation is open at a time, so this refusal means the
   // previous purchase has not settled or expired yet — not that anything failed.

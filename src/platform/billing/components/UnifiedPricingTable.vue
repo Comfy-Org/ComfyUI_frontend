@@ -149,7 +149,7 @@
                 :key="feature"
                 class="flex items-start gap-2"
               >
-                <i class="pi pi-check mt-0.5 text-xs" />
+                <i class="mt-0.5 icon-[lucide--check] size-3" />
                 <span class="text-sm font-normal text-muted-foreground">
                   {{ feature }}
                 </span>
@@ -160,10 +160,7 @@
                  card bottom so the figures align across tiers. -->
             <div class="mt-auto flex flex-col gap-1">
               <div class="flex items-center gap-2">
-                <i
-                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
-                  aria-hidden="true"
-                />
+                <i class="icon-[lucide--coins] bg-credit" aria-hidden="true" />
                 <span class="text-sm/normal font-bold tabular-nums">
                   {{ n(creditsForTier(tier)) }}
                 </span>
@@ -242,7 +239,7 @@
               <div class="flex flex-col gap-1">
                 <div class="flex items-center gap-2">
                   <i
-                    class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
+                    class="icon-[lucide--coins] bg-credit"
                     aria-hidden="true"
                   />
                   <span class="text-sm/normal font-bold tabular-nums">
@@ -297,7 +294,7 @@
                   :key="perk"
                   class="flex items-start gap-2"
                 >
-                  <i class="pi pi-check mt-0.5 text-xs" />
+                  <i class="mt-0.5 icon-[lucide--check] size-3" />
                   <span class="text-sm font-normal text-muted-foreground">
                     {{ perk }}
                   </span>
@@ -309,7 +306,7 @@
                   {{ t('subscription.teamPlan.comingSoonLabel') }}
                 </span>
                 <div class="flex items-start gap-2">
-                  <i class="pi pi-clock mt-0.5 text-xs" />
+                  <i class="mt-0.5 icon-[lucide--clock] size-3" />
                   <span class="text-sm font-normal">
                     {{ t('subscription.teamPlan.perkProjectAssets') }}
                   </span>
@@ -358,10 +355,7 @@
         data-testid="pricing-past-due-notice"
         class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
       >
-        <i
-          class="icon-[lucide--info] size-4 shrink-0 bg-background"
-          aria-hidden="true"
-        />
+        <i class="icon-[lucide--info] bg-background" aria-hidden="true" />
         <span>
           {{
             t(
@@ -387,10 +381,7 @@
         role="status"
         class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
       >
-        <i
-          class="icon-[lucide--info] size-4 shrink-0 bg-background"
-          aria-hidden="true"
-        />
+        <i class="icon-[lucide--info] bg-background" aria-hidden="true" />
         <span>
           {{
             t('subscription.scheduledChangeNotice', {
@@ -490,12 +481,12 @@ import {
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type { Plan } from '@comfyorg/billing-core'
 import { formatSubscriptionDate } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -529,7 +520,7 @@ const emit = defineEmits<{
 
 const { t, n, locale } = useI18n()
 const capabilities = useBillingCapabilities()
-const { permissions } = useWorkspaceUI()
+const { permissions } = useBillingUI()
 
 // Every CTA here resolves to a billing write the server authorizes on its own,
 // so each catalog asks whether any write that reaches it is permitted instead of

@@ -26,7 +26,7 @@
             v-if="command.expandable"
             :class="
               cn(
-                'icon-[lucide--chevron-right] size-4 shrink-0 text-muted-foreground transition-transform',
+                'icon-[lucide--chevron-right] text-muted-foreground transition-transform',
                 expanded && 'rotate-90'
               )
             "
@@ -39,7 +39,7 @@
             "
           >
             <TooltipTrigger as-child>
-              <i class="icon-[lucide--triangle-alert] shrink-0 text-warning" />
+              <i class="icon-[lucide--triangle-alert] text-warning" />
             </TooltipTrigger>
             <TooltipContent>{{
               $t('g.browserReservedKeybindingTooltip')
@@ -157,8 +157,8 @@ import TableRow from '@comfyorg/design-system/table/TableRow'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import type { ComfyCommandImpl } from '@/stores/commandStore'
+import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
 
 import KeybindingList from './KeybindingList.vue'
 import KeyComboDisplay from './KeyComboDisplay.vue'

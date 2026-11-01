@@ -5,7 +5,7 @@
   >
     <NoResultsPlaceholder
       class="pb-0"
-      icon="pi pi-exclamation-circle"
+      icon="icon-[lucide--circle-alert]"
       :message="message"
       text-class="break-words max-w-[60vw]"
     >
@@ -59,7 +59,7 @@
         data-testid="error-dialog-copy-report"
         @click="copyReportToClipboard"
       >
-        <i class="pi pi-copy" />
+        <i class="icon-[lucide--copy]" />
         {{ $t('g.copyToClipboard') }}
       </Button>
     </div>
@@ -71,17 +71,17 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
 import type { RunErrorMessageSource } from '@/platform/workflowErrors/errorCatalog/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { generateErrorReport } from '@/utils/errorReportUtil'
 import type { ErrorReportData } from '@/utils/errorReportUtil'

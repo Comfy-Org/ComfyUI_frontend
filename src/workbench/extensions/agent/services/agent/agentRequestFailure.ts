@@ -1,7 +1,7 @@
 import type {
   AgentRequestErrorName,
   AgentRequestPath
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 /**
  * Route templates a failed agent request can be attributed to.
@@ -13,7 +13,7 @@ import type {
  * (PM-1903), and a template keeps the diagnostic value without reintroducing
  * the leak.
  *
- * `/other` mirrors `getFetchRouteTemplate` in `src/scripts/api.ts`: an
+ * `/other` mirrors `getFetchRouteTemplate` in `@comfyorg/api-client/fetchRouteTemplate`: an
  * allowlist with a closed fallback, never a regex over whatever the caller
  * happened to request.
  */

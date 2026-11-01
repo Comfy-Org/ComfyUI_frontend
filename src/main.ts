@@ -10,6 +10,7 @@ import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxy
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
+import { provideTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
@@ -22,13 +23,15 @@ import {
   markStoresReady
 } from '@/platform/telemetry/storeReadiness'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
-import { flushErrorReports } from '@/platform/telemetry/reportError'
+import '@/platform/telemetry/initErrorReporter'
+import { flushErrorReports } from '@comfyorg/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import '@/lib/litegraph/public/css/litegraph.css'
 import { createAppRouter } from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { createToastId } from '@/types/toastId'
 import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { api } from '@/scripts/api'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -37,7 +40,7 @@ import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
 import './assets/css/style.css'
-import { i18n } from './i18n'
+import { i18n, t } from './i18n'
 
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
@@ -72,20 +75,35 @@ async function startTelemetry(): Promise<void> {
   }
 }
 
-async function startLocalAuthSession(): Promise<void> {
-  if (isCloud) return
-  await bootstrapTracer.settle('startup/local-auth', async () => {
+async function startLocalAuthSession(): Promise<boolean> {
+  if (isCloud) return false
+  return bootstrapTracer.settle('startup/local-auth', async () => {
     const desktopHostAuth = window.__comfyDesktop2?.Auth
     if (desktopHostAuth) {
       const { startDesktopHostSession } =
         await import('@/platform/auth/desktopHost/desktopHostSession')
       await startDesktopHostSession(desktopHostAuth)
-    } else {
-      const { startLocalWebSession } =
-        await import('@/platform/auth/localWeb/localWebSession')
-      await startLocalWebSession()
+      return false
     }
+    const { startLocalWebSession } =
+      await import('@/platform/auth/localWeb/localWebSession')
+    const signInNotice = createToastId()
+    const started = await startLocalWebSession({
+      onPopupBlocked: () =>
+        useToast().error(t('auth.desktopHost.popupBlocked'), {
+          id: signInNotice
+        }),
+      onSignInFailed: () =>
+        useToast().error(t('auth.desktopHost.signInFailed'), {
+          id: signInNotice
+        })
+    })
+    return started === 'sign-in-failed'
   })
+}
+
+function showLocalSignInFailure(pinia: Pinia, failed: boolean): void {
+  if (failed) useToast(pinia).error(t('auth.desktopHost.signInFailed'))
 }
 
 function initFirebaseIdentity(): void {
@@ -147,6 +165,11 @@ async function bootstrap(): Promise<void> {
     installCloudApiAuth()
   }
   installWorkspaceApiAuth()
+  provideTeamWorkspaceDialog(async (onConfirm) => {
+    const { useWorkspaceDialogs } =
+      await import('@/platform/account/composables/useWorkspaceDialogs')
+    return useWorkspaceDialogs().showTeamWorkspacesDialog(onConfirm)
+  })
 
   bootstrapTracer.armWatchdog()
 
@@ -155,7 +178,7 @@ async function bootstrap(): Promise<void> {
   markStoresPending()
 
   await startTelemetry()
-  await startLocalAuthSession()
+  const localSignInFailed = await startLocalAuthSession()
   initFirebaseIdentity()
 
   const pinia = createPinia()
@@ -167,6 +190,8 @@ async function bootstrap(): Promise<void> {
   app.use(router).use(pinia).use(i18n)
 
   markStoresReady()
+
+  showLocalSignInFailure(pinia, localSignInFailed)
 
   if (isCloud && hasHostTelemetryBridge) {
     syncHostUserIdWithFirebaseAuth()

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { i18n } from '@/i18n'
-import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import type { PreviewSubscribeResponse } from '@comfyorg/billing-core'
 import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
 
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'

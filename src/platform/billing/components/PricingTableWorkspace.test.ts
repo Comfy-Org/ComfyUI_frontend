@@ -1,4 +1,4 @@
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import enMessages from '@/locales/en/main.json'
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type { Plan } from '@comfyorg/billing-core'
 import PricingTableWorkspace from '@/platform/billing/components/PricingTableWorkspace.vue'
 
 const state = vi.hoisted(() => ({ plans: [] as Plan[] }))

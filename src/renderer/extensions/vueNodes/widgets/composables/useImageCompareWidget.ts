@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IImageCompareWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IImageCompareWidget } from '@comfyorg/graph-model/widgets'
 import type {
   ImageCompareInputSpec,
   InputSpec as InputSpecV2

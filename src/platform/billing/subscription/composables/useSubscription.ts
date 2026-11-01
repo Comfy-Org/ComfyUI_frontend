@@ -1,3 +1,4 @@
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import {
   createSharedComposable,
@@ -13,28 +14,26 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
+import { webSessionResourceHeader } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError as reportTelemetryError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError as reportTelemetryError } from '@comfyorg/telemetry/reportError'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import type {
   CheckoutAttributionMetadata,
   ResubscribeClickMetadata,
   SubscriptionSuccessMetadata
-} from '@/platform/telemetry/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/telemetry/types'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import {
   PaymentPopupBlockedError,
   categorizeBillingApiError
 } from '@/platform/telemetry/utils/billingFailureCategory'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { toTierKey } from '@/platform/billing/subscription/constants/tierPricing'
@@ -53,6 +52,7 @@ import {
   persistPendingSubscriptionCheckoutAttempt
 } from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
 import type { ReportedCheckoutAttemptInput } from '@/platform/billing/subscription/utils/subscriptionCheckoutUtil'
+import type { BillingStatusReadOptions } from '@/platform/billing/composables/types'
 import {
   missingCheckoutUrlError,
   runReportedCheckoutAttempt
@@ -118,7 +118,7 @@ function useSubscriptionInternal() {
   const { reportError, accessBillingPortalDirect } = useAuthActions()
 
   const authStore = useAuthStore()
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const { getFirebaseAuthHeader, fetchWithCustomerRecovery } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
@@ -884,18 +884,31 @@ function useSubscriptionInternal() {
     if (inFlightStatusRead?.promise === fetchPromise) inFlightStatusRead = null
   }
 
-  function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
+  const sharedStatusRead = (
+    ownerId: string | null,
+    workspaceId: string | null,
+    pendingAttemptId: string | null
+  ): Promise<BillingStatusResponse | null> | null =>
+    inFlightStatusRead?.ownerId === ownerId &&
+    inFlightStatusRead.workspaceId === workspaceId &&
+    inFlightStatusRead.pendingAttemptId === pendingAttemptId
+      ? inFlightStatusRead.promise
+      : null
+
+  function fetchSubscriptionStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<BillingStatusResponse | null> {
     const ownerId = authStore.userId ?? null
     const workspaceId = workspaceStore.activeWorkspaceId
     const pendingAttemptId =
       getPendingSubscriptionCheckoutAttempt()?.attempt_id ?? null
     observeStatusScope(ownerId, workspaceId)
-    if (
-      inFlightStatusRead?.ownerId === ownerId &&
-      inFlightStatusRead.workspaceId === workspaceId &&
-      inFlightStatusRead.pendingAttemptId === pendingAttemptId
-    ) {
-      return inFlightStatusRead.promise
+    const shared = sharedStatusRead(ownerId, workspaceId, pendingAttemptId)
+    if (shared) {
+      if (!options?.fresh) return shared
+      return shared
+        .catch(() => null)
+        .then(() => fetchSubscriptionStatus(options))
     }
 
     const sequence = ++nextStatusFetchSequence
@@ -932,7 +945,7 @@ function useSubscriptionInternal() {
     try {
       const status = rail
         ? await readOnRail(rail.readStatus, 'getBillingStatus')
-        : await workspaceApi.getBillingStatus()
+        : await billingApi.getBillingStatus()
       return status
     } catch (error) {
       const status =
@@ -997,7 +1010,7 @@ function useSubscriptionInternal() {
     lastPendingCheckoutStatus = statusData
     subscriptionStatus.value = statusData
     if (workspaceId && statusData.billing_rail) {
-      workspaceStore.setWorkspaceBillingRail(
+      useWorkspaceBillingStateStore().setWorkspaceBillingRail(
         workspaceId,
         statusData.billing_rail
       )

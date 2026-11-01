@@ -17,8 +17,8 @@ import {
   reportRemoteDynamicGroupRowMismatch
 } from '@/core/graph/widgets/dynamicGroupDiagnostics'
 import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
-import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
@@ -30,25 +30,26 @@ import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
   ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
-import { reportError } from '@/platform/telemetry/reportError'
-import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { zComfyNode } from '@comfyorg/graph-model/workflowSchema'
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import type { LinkId } from '@/types/linkId'
-import { parseLinkId, toLinkId } from '@/types/linkId'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
+import { withLiveAgentTurnWrites } from './agentRemoteProvenance'
 import {
   allSubgraphDefinitions,
   readSubgraphDefinitions,
   readSubgraphInteriorWidgets
 } from './agentSubgraphDefinitions'
-import type { PlacementRect } from './batchPlacement'
+import type { Bounds as PlacementRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { placementOffset } from './batchPlacement'
 
 export type NodeChange = 'add' | 'update' | 'delete'
@@ -584,7 +585,6 @@ function overflowWidget(
   node: LGraphNode,
   name: string
 ): IBaseWidget | undefined {
-  if (!supportsDynamicWidgetOverflow(node)) return undefined
   const overflowIndex = overflowWidgetIndex(name)
   return overflowIndex === null
     ? undefined
@@ -606,6 +606,44 @@ function supersededOverflowAlias(
   if (node.widgets?.some((widget) => widget.name === name)) return false
   const positional = overflowWidget(node, name)
   return positional !== undefined && Object.hasOwn(document, positional.name)
+}
+
+function closestController(
+  node: LGraphNode,
+  name: string
+): IBaseWidget | undefined {
+  let controller: IBaseWidget | undefined
+  for (const widget of node.widgets ?? []) {
+    if (!isDynamicGroupController(widget)) continue
+    if (!name.startsWith(`${widget.name}.`)) continue
+    if (!controller || widget.name.length > controller.name.length)
+      controller = widget
+  }
+  return controller
+}
+
+function hiddenRowController(
+  node: LGraphNode,
+  name: string
+): IBaseWidget | undefined {
+  const controller = closestController(node, name)
+  if (!controller) return undefined
+  const [index, ...field] = name.slice(controller.name.length + 1).split('.')
+  if (!/^(0|[1-9]\d*)$/.test(index) || !field.length || !field.every(Boolean))
+    return undefined
+  const count = controller.value
+  return typeof count === 'number' && Number(index) >= count
+    ? controller
+    : undefined
+}
+
+function regrownRow(
+  node: LGraphNode,
+  name: string,
+  names: ReadonlySet<string>
+): boolean {
+  const controller = hiddenRowController(node, name)
+  return controller !== undefined && names.has(controller.name)
 }
 
 function deferredRowCounts(
@@ -724,6 +762,10 @@ export class LiveGraphApplier {
   private readonly reported = new Set<string>()
   private readonly interiorIds = new Map<string, Map<string, NodeId>>()
   private readonly failureCounts: number[] = []
+  private readonly unappliedRegrownRows = new WeakMap<
+    LGraphNode,
+    ReadonlySet<string>
+  >()
 
   constructor(deps: LiveGraphApplierDeps) {
     this.deps = deps
@@ -816,7 +858,10 @@ export class LiveGraphApplier {
     return withActor(context.actor, () => {
       this.deps.getCanvas?.()?.emitBeforeChange()
       try {
-        return withGraphIntentSource('agent-remote', fn)
+        return withLiveAgentTurnWrites(
+          { isLiveAgentTurn: context.liveAgentTurn === true },
+          () => withGraphIntentSource('agent-remote', fn)
+        )
       } finally {
         graph.setDirtyCanvas(true, true)
         this.deps.getCanvas?.()?.emitAfterChange()
@@ -1118,14 +1163,30 @@ export class LiveGraphApplier {
       return
     }
     if (!widgets) return
+    const regrown = this.regrownRows(node, Object.keys(widgets), names)
     this.applyWidgets(
       node,
       Object.fromEntries(
-        Object.entries(widgets).filter(([name]) => changed(node, name, names))
+        Object.entries(widgets).filter(
+          ([name]) => changed(node, name, names) || regrown.has(name)
+        )
       ),
       mode,
       { documentWidgets: widgets }
     )
+  }
+
+  private regrownRows(
+    node: LGraphNode,
+    keys: readonly string[],
+    names: ReadonlySet<string>
+  ): ReadonlySet<string> {
+    const regrown = new Set(this.unappliedRegrownRows.get(node))
+    for (const name of keys) {
+      if (regrownRow(node, name, names)) regrown.add(name)
+    }
+    if (regrown.size > 0) this.unappliedRegrownRows.set(node, regrown)
+    return regrown
   }
 
   private applyInteriors(
@@ -1219,8 +1280,11 @@ export class LiveGraphApplier {
       this.applyWidgets(live, widgets as DocNode['widgets'], mode)
       return
     }
+    const regrown = this.regrownRows(live, Object.keys(widgets), names)
     const filtered = Object.fromEntries(
-      Object.entries(widgets).filter(([name]) => names.has(name))
+      Object.entries(widgets).filter(
+        ([name]) => names.has(name) || regrown.has(name)
+      )
     )
     if (Object.keys(filtered).length === 0) return
     this.applyWidgets(live, filtered, mode, {
@@ -1269,6 +1333,7 @@ export class LiveGraphApplier {
     }
     if (Array.isArray(widgets)) {
       this.applyPositionalWidgets(node, widgets)
+      this.unappliedRegrownRows.delete(node)
       return
     }
     const { documentWidgets = widgets, reportMissing = true } = options
@@ -1281,10 +1346,11 @@ export class LiveGraphApplier {
       )
       if (!resolved) {
         this.reportMissingWidgets(node, unresolved, reportMissing)
-        return
+        break
       }
       pending = unresolved
     }
+    this.unappliedRegrownRows.delete(node)
   }
 
   private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {
@@ -1338,6 +1404,7 @@ export class LiveGraphApplier {
     reportMissing: boolean
   ): void {
     for (const [name] of unresolved) {
+      if (hiddenRowController(node, name)) continue
       if (reportMissing || overflowWidgetIndex(name) !== null)
         this.reportMissingWidget(node, name)
     }

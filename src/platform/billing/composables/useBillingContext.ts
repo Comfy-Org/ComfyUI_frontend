@@ -1,3 +1,6 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
@@ -14,19 +17,20 @@ import { isCloud } from '@/platform/distribution/types'
 import type {
   PreviewSubscribeOptions,
   SubscribeOptions
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 import {
   onBillingRefresh,
   provideCheckoutOperationReader
 } from '@/platform/billing/billingRefresh'
 import type { BillingRefreshScope } from '@/platform/billing/billingRefresh'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 import type {
   BalanceInfo,
   BillingActions,
   BillingContext,
   BillingPortalOutcome,
+  BillingStatusReadOptions,
   CancelRail,
   BillingState,
   SubscriptionInfo
@@ -100,7 +104,7 @@ function isTeamPlanSlug(planSlug: string | null | undefined): boolean {
  * ```
  */
 function useBillingContextInternal(): BillingContext {
-  const store = useTeamWorkspaceStore()
+  const store = useWorkspaceIdentity()
   const { type, shouldUseUnifiedPricing } = useBillingRouting()
 
   const legacyBillingRef = shallowRef<(BillingState & BillingActions) | null>(
@@ -122,6 +126,7 @@ function useBillingContextInternal(): BillingContext {
     return workspaceBillingRef.value
   }
 
+  let freshStatusReadOwed = false
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -242,7 +247,8 @@ function useBillingContextInternal(): BillingContext {
     (sub) => {
       if (!sub) return
 
-      store.updateActiveWorkspace({
+      if (!store.activeWorkspaceId) return
+      useWorkspaceBillingStateStore().updateSummary(store.activeWorkspaceId, {
         isSubscribed: sub.isActive && !sub.isCancelled,
         subscriptionPlan: sub.planSlug
       })
@@ -274,9 +280,23 @@ function useBillingContextInternal(): BillingContext {
       } catch (err) {
         console.error('Failed to initialize billing context:', err)
       }
+      await runOwedFreshStatusRead()
     },
     { immediate: true }
   )
+
+  async function runOwedFreshStatusRead(): Promise<void> {
+    if (!freshStatusReadOwed || type.value === 'unknown') return
+    freshStatusReadOwed = false
+    try {
+      await activeContext.value.fetchStatus({ fresh: true })
+    } catch (err) {
+      reportError(err, {
+        surface: 'agent',
+        errorType: 'error_refreshing_agent_billing_status'
+      })
+    }
+  }
 
   // Rejects on timeout. Resolves false when the user switched workspace during
   // the wait, so the caller stops silently.
@@ -338,11 +358,20 @@ function useBillingContextInternal(): BillingContext {
     }
   }
 
-  // Passive reads do nothing while unknown; the watcher above re-initializes
-  // once the workspace type loads.
-  async function fetchStatus(): Promise<void> {
-    if (type.value === 'unknown') return
-    return activeContext.value.fetchStatus()
+  function deferFreshReadUntilRoutingKnown(
+    options?: BillingStatusReadOptions
+  ): void {
+    freshStatusReadOwed ||= options?.fresh === true
+  }
+
+  async function fetchStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<void> {
+    if (type.value === 'unknown') {
+      deferFreshReadUntilRoutingKnown(options)
+      return
+    }
+    return activeContext.value.fetchStatus(options)
   }
 
   async function fetchBalance(): Promise<void> {

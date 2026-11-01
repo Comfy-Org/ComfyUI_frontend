@@ -14,8 +14,8 @@
 </template>
 
 <script setup lang="ts">
-import { someNodeTypeInSelection } from '@/components/rightSidePanel/errors/selectionEmphasis'
-import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import { someNodeTypeInSelection } from '@/platform/workflowErrors/panel/selectionEmphasis'
+import type { SwapNodeGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 import SwapNodeGroupRow from '@/platform/workflowErrors/nodeReplacement/components/SwapNodeGroupRow.vue'
 
 const { swapNodeGroups } = defineProps<{

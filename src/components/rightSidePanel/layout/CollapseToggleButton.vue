@@ -19,12 +19,9 @@
       >
         <i
           :class="
-            cn(
-              'size-4',
-              isAllCollapsed
-                ? 'icon-[lucide--list-tree]'
-                : 'icon-[lucide--list-collapse]'
-            )
+            isAllCollapsed
+              ? 'icon-[lucide--list-tree]'
+              : 'icon-[lucide--list-collapse]'
           "
         />
       </Button>
@@ -34,7 +31,6 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@comfyorg/design-system/button/Button'
 
 const { t } = useI18n()

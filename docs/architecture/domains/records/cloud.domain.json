@@ -4,10 +4,6 @@
   "description": "Cloud-only distribution capability: onboarding and sign-in views, OAuth consent, desktop cloud notification, cloud telemetry providers, cloud session and API auth adapters, and cloud bootstrap extensions. Subcapabilities (onboarding, OAuth, notification, telemetry, session) may be split into separate records later. Shared auth, billing, workspace, telemetry, router, and app bootstrap remain external.",
   "modules": [
     {
-      "path": "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue",
       "role": "presentation"
     },
@@ -17,10 +13,6 @@
     },
     {
       "path": "src/extensions/core/cloudBadges.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/cloudFeedbackTopbarButton.test.ts",
       "role": "integration"
     },
     {
@@ -64,16 +56,8 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/cloud/oauth/OAuthConsentView.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/cloud/oauth/OAuthConsentView.vue",
       "role": "presentation"
-    },
-    {
-      "path": "src/platform/cloud/oauth/useOAuthPostLoginRedirect.test.ts",
-      "role": "application"
     },
     {
       "path": "src/platform/cloud/oauth/useOAuthPostLoginRedirect.ts",
@@ -84,20 +68,12 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/cloud/onboarding/auth.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/cloud/onboarding/auth.ts",
       "role": "infrastructure"
     },
     {
       "path": "src/platform/cloud/onboarding/composables/**",
       "role": "application"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/composables/useDocumentDarkTheme.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/platform/cloud/onboarding/composables/useDocumentDarkTheme.ts",
@@ -108,23 +84,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/cloud/onboarding/composables/useVideoCarousel.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/cloud/onboarding/composables/useVideoCarousel.ts",
       "role": "presentation"
     },
     {
-      "path": "src/platform/cloud/onboarding/desktopLoginRedemption.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/platform/cloud/onboarding/desktopLoginRedemption.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/onboardingCloudRoutes.test.ts",
       "role": "integration"
     },
     {
@@ -136,19 +100,11 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/cloud/onboarding/sso/ssoReentry.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/cloud/onboarding/sso/ssoReentry.ts",
       "role": "application"
     },
     {
       "path": "src/platform/cloud/onboarding/survey/defaultSurveySchema.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/cloud/onboarding/survey/surveySchema.test.ts",
       "role": "domain"
     },
     {
@@ -172,16 +128,16 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/utils/textCaseUtil.test.ts",
+      "path": "src/utils/textCaseUtil.ts",
       "role": "domain"
     },
     {
-      "path": "src/utils/textCaseUtil.ts",
-      "role": "domain"
+      "path": "packages/shared-frontend-utils/src/piiUtil.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["telemetry"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

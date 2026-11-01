@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   validateComfyWorkflow,
   zClipboardItems
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'
@@ -445,7 +445,7 @@ describe('zClipboardItems', () => {
     }
   )
 
-  it('preserves named-record widget values as named values', () => {
+  it('keeps named-record widget values for custom nodes that read them back', () => {
     const node = {
       ...structuredClone(defaultGraph.nodes[0]),
       widgets_values: { seed: 42, steps: 20 }
@@ -455,7 +455,10 @@ describe('zClipboardItems', () => {
 
     expect(result.success).toBe(true)
     if (!result.success) throw result.error
-    expect(result.data.nodes?.[0].widgets_values).toBeUndefined()
+    expect(result.data.nodes?.[0].widgets_values).toEqual({
+      seed: 42,
+      steps: 20
+    })
     expect(result.data.nodes?.[0].widgets_values_named).toEqual({
       seed: 42,
       steps: 20

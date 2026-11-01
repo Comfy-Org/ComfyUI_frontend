@@ -70,10 +70,11 @@ const toggleLabel = computed(() =>
     >
       <i :class="icon" :data-testid="isPhysical ? 'icon-link' : 'icon-eye'" />
     </Button>
-    <div
+    <i
       v-if="isDraggable"
+      aria-hidden="true"
       data-testid="subgraph-widget-drag-handle"
-      class="pointer-events-none icon-[lucide--grip-vertical] size-4"
+      class="pointer-events-none icon-[lucide--grip-vertical]"
     />
   </div>
 </template>

@@ -11,7 +11,7 @@ import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import {
   isDownloadCancelled,
@@ -75,6 +75,15 @@ const outcomeLabel = computed(() => {
       count: failedJobs.value.length
     })
   if (cancelledJobs.value.length > 0) return t('electronFileDownload.cancelled')
+  if (downloadJobs.value.every((job) => job.source === 'upload'))
+    return t(
+      'progressToast.uploadsInLibrary',
+      {
+        name: downloadJobs.value[0]?.assetName,
+        count: downloadJobs.value.length
+      },
+      downloadJobs.value.length
+    )
   return t('progressToast.allDownloadsCompleted')
 })
 
@@ -142,7 +151,7 @@ async function cancelDownload(taskId: TaskId) {
                 size="md"
                 class="gap-1.5 px-2"
               >
-                <i class="icon-[lucide--list-filter] size-4" />
+                <i class="icon-[lucide--list-filter]" />
                 <span>{{ activeFilterLabel }}</span>
                 <i class="icon-[lucide--chevron-down] size-3" />
               </Button>
@@ -218,25 +227,19 @@ async function cancelDownload(taskId: TaskId) {
             </span>
           </template>
           <template v-else-if="failedJobs.length > 0">
-            <i
-              class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive"
-            />
+            <i class="icon-[lucide--circle-alert] text-destructive" />
             <span class="min-w-0 truncate font-bold">
               {{ outcomeLabel }}
             </span>
           </template>
           <template v-else-if="cancelledJobs.length > 0">
-            <i
-              class="icon-[lucide--circle-x] size-4 shrink-0 text-muted-foreground"
-            />
+            <i class="icon-[lucide--circle-x] text-muted-foreground" />
             <span class="min-w-0 truncate font-bold">
               {{ outcomeLabel }}
             </span>
           </template>
           <template v-else>
-            <i
-              class="icon-[lucide--check-circle] size-4 shrink-0 text-success"
-            />
+            <i class="icon-[lucide--check-circle] text-success" />
             <span class="min-w-0 truncate font-bold">
               {{ outcomeLabel }}
             </span>
@@ -267,12 +270,9 @@ async function cancelDownload(taskId: TaskId) {
             >
               <i
                 :class="
-                  cn(
-                    'size-4',
-                    isExpanded
-                      ? 'icon-[lucide--chevron-down]'
-                      : 'icon-[lucide--chevron-up]'
-                  )
+                  isExpanded
+                    ? 'icon-[lucide--chevron-down]'
+                    : 'icon-[lucide--chevron-up]'
                 "
               />
             </Button>
@@ -284,7 +284,7 @@ async function cancelDownload(taskId: TaskId) {
               :aria-label="t('g.close')"
               @click.stop="closeDialog"
             >
-              <i class="icon-[lucide--x] size-4" />
+              <i class="icon-[lucide--x]" />
             </Button>
           </div>
         </div>

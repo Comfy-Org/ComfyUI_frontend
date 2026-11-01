@@ -2,7 +2,7 @@ import type { SubscriptionCommandResult } from '@comfyorg/account-core/billing'
 import { describe, expect, it } from 'vitest'
 
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import {
   failedOperation,

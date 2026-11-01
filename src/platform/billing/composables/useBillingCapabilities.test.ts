@@ -1,5 +1,5 @@
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -12,11 +12,9 @@ import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabilitiesView'
-import { attachCapabilityRevisionInterceptor } from '@/platform/billing/api/capabilityRevision'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import { attachCapabilityRevisionInterceptor } from '@/platform/remote/ingest/capabilityRevision'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
 import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
@@ -31,9 +29,9 @@ beforeEach(() => {
 const mockReportError = vi.hoisted(() => vi.fn())
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -63,6 +61,7 @@ function capabilitiesResponse(
   overrides: Partial<BillingCapabilitiesResponse['capabilities']> = {}
 ): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
     resolved_for: {
       user_id: 'canonical-user-1',
       workspace_id: workspaceId
@@ -180,7 +179,7 @@ function capabilityReadsThroughInterceptor() {
 }
 
 beforeEach(() => {
-  vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValue(
+  vi.mocked(billingApi.getBillingCapabilities).mockRejectedValue(
     new Error('Unconfigured billing capabilities request')
   )
   Object.assign(useTeamWorkspaceStore(), {
@@ -207,7 +206,7 @@ describe('useBillingCapabilities', () => {
   afterEach(() => scope.stop())
 
   it('renders plan_kind as received', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce({
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce({
       ...capabilitiesResponse(true),
       plan_kind: 'sales_managed'
     })
@@ -218,7 +217,7 @@ describe('useBillingCapabilities', () => {
   })
 
   it('leaves plan_kind unset when the snapshot omits it', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
       capabilitiesResponse(true)
     )
 
@@ -262,7 +261,7 @@ describe('useBillingCapabilities', () => {
       const registry = new TelemetryRegistry()
       registry.registerProvider({ trackBillingEvent: record })
       setTelemetryRegistry(registry)
-      vi.mocked(workspaceApi.getBillingCapabilities).mockImplementationOnce(
+      vi.mocked(billingApi.getBillingCapabilities).mockImplementationOnce(
         response
       )
       await billingCapabilities.initialize()
@@ -281,7 +280,7 @@ describe('useBillingCapabilities', () => {
 
   it('denies Cloud actions while loading, then applies the server capability', async () => {
     let resolveRequest!: (value: BillingCapabilitiesResponse) => void
-    vi.mocked(workspaceApi.getBillingCapabilities).mockImplementationOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockImplementationOnce(
       () =>
         new Promise<BillingCapabilitiesResponse>((resolve) => {
           resolveRequest = resolve
@@ -318,7 +317,7 @@ describe('useBillingCapabilities', () => {
   })
 
   it('applies denied server capabilities without client-side inference', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
       capabilitiesResponse(
         true,
         'workspace-1',
@@ -350,7 +349,7 @@ describe('useBillingCapabilities', () => {
     'renders can_manage_subscription %s as served',
     async (served) => {
       expect(billingCapabilities.canManageSubscription.value).toBe(false)
-      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
         capabilitiesResponse(
           true,
           'workspace-1',
@@ -375,9 +374,7 @@ describe('useBillingCapabilities', () => {
       { can_delete_workspace: false }
     )
     response.denied_reasons = { can_delete_workspace: 'plan_not_ended' }
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
-      response
-    )
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(response)
 
     expect(billingCapabilities.canDeleteWorkspace.value).toBe(false)
     expect(billingCapabilities.deleteWorkspaceDenial.value).toBeUndefined()
@@ -402,9 +399,7 @@ describe('useBillingCapabilities', () => {
       }
     )
     response.denied_reasons = { can_top_up: 'payment_past_due' }
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
-      response
-    )
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(response)
 
     expect(billingCapabilities.topUpDenial.value).toBeUndefined()
     expect(billingCapabilities.canManageBilling.value).toBe(false)
@@ -425,7 +420,7 @@ describe('useBillingCapabilities', () => {
     async ({ served, expected }) => {
       const response = capabilitiesResponse(true, 'workspace-1', true)
       response.payment_recovery_available = served
-      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
         response
       )
 
@@ -435,8 +430,26 @@ describe('useBillingCapabilities', () => {
     }
   )
 
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false }
+  ])(
+    'renders auto_top_up_enabled $served as $expected',
+    async ({ served, expected }) => {
+      const response = capabilitiesResponse(true, 'workspace-1', true)
+      response.auto_top_up_enabled = served
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
+        response
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.autoTopUpEnabled.value).toBe(expected)
+    }
+  )
+
   it('offers workspace editing only when the server does', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
       capabilitiesResponse(
         true,
         'workspace-1',
@@ -456,7 +469,7 @@ describe('useBillingCapabilities', () => {
   })
 
   it('grants delete only when the server does', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
       capabilitiesResponse(
         true,
         'workspace-1',
@@ -475,9 +488,7 @@ describe('useBillingCapabilities', () => {
   it('does not infer member management from an older response', async () => {
     const response = capabilitiesResponse(true)
     Reflect.deleteProperty(response.capabilities, 'can_manage_members')
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
-      response
-    )
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(response)
 
     await billingCapabilities.initialize()
 
@@ -489,9 +500,7 @@ describe('useBillingCapabilities', () => {
   it('treats an omitted parked-payment fact as not parked', async () => {
     const response = capabilitiesResponse(true)
     Reflect.deleteProperty(response, 'has_parked_billing_operation')
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
-      response
-    )
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(response)
 
     await billingCapabilities.initialize()
 
@@ -499,7 +508,7 @@ describe('useBillingCapabilities', () => {
   })
 
   it('maps an explicit parked-payment fact to parked', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce({
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce({
       ...capabilitiesResponse(true),
       has_parked_billing_operation: true
     })
@@ -510,7 +519,7 @@ describe('useBillingCapabilities', () => {
   })
 
   it('applies changed capabilities when the current scope is refreshed', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(capabilitiesResponse(false, 'workspace-1', true))
       .mockResolvedValueOnce(capabilitiesResponse(true, 'workspace-1', false))
 
@@ -525,19 +534,19 @@ describe('useBillingCapabilities', () => {
 
   it('forwards the initialization signal to the capability request', async () => {
     const controller = new AbortController()
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
       capabilitiesResponse(true)
     )
 
     await billingCapabilities.initialize(controller.signal)
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledWith(
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledWith(
       expect.any(AbortSignal)
     )
   })
 
   it('withholds top-up from owners when the endpoint is unavailable', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValueOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(
       new Error('unavailable')
     )
 
@@ -561,7 +570,7 @@ describe('useBillingCapabilities', () => {
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspace: { id: 'workspace-1', role: 'member' }
     })
-    vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValueOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(
       new Error('unavailable')
     )
 
@@ -574,7 +583,7 @@ describe('useBillingCapabilities', () => {
   })
 
   it('fails closed when the endpoint denies the current actor', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValueOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(
       new WorkspaceApiError('Forbidden', 403)
     )
 
@@ -589,7 +598,7 @@ describe('useBillingCapabilities', () => {
 
   it('does not fail open when capability loading is aborted', async () => {
     const controller = new AbortController()
-    vi.mocked(workspaceApi.getBillingCapabilities).mockImplementationOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockImplementationOnce(
       (signal?: AbortSignal) =>
         new Promise<BillingCapabilitiesResponse>((_, reject) => {
           signal?.addEventListener(
@@ -613,13 +622,13 @@ describe('useBillingCapabilities', () => {
   })
 
   it('discards a response resolved for a different workspace', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
       capabilitiesResponse(false, 'workspace-2')
     )
 
     await billingCapabilities.initialize()
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.canCancel.value).toBe(false)
@@ -632,7 +641,7 @@ describe('useBillingCapabilities', () => {
 
   it('discards a stale response after the active workspace changes', async () => {
     let resolveFirstRequest!: (value: BillingCapabilitiesResponse) => void
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockImplementationOnce(
         () =>
           new Promise<BillingCapabilitiesResponse>((resolve) => {
@@ -651,7 +660,7 @@ describe('useBillingCapabilities', () => {
     resolveFirstRequest(capabilitiesResponse(true, 'workspace-1', true))
     await firstInitialization
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
   })
@@ -667,13 +676,13 @@ describe('useBillingCapabilities', () => {
         activeWorkspace: { id: 'workspace-1', role }
       })
       await nextTick()
-      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
         capabilitiesResponse(served)
       )
 
       await billingCapabilities.initialize()
 
-      expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
       expect(billingCapabilities.canTopUp.value).toBe(served)
       expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
     }
@@ -681,7 +690,7 @@ describe('useBillingCapabilities', () => {
 
   it('withholds every capability on local when the read fails', async () => {
     mockIsCloud.value = false
-    vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValueOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(
       new Error('unavailable')
     )
 
@@ -703,7 +712,7 @@ describe('useBillingCapabilities', () => {
 
   it('applies the served capabilities for a legacy-rail workspace on local', async () => {
     mockIsCloud.value = false
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce({
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce({
       ...capabilitiesResponse(
         true,
         'workspace-1',
@@ -735,7 +744,7 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(false)
-    expect(workspaceApi.getBillingCapabilities).not.toHaveBeenCalled()
+    expect(billingApi.getBillingCapabilities).not.toHaveBeenCalled()
   })
 
   describe('for an API-key-only local session', () => {
@@ -755,13 +764,13 @@ describe('useBillingCapabilities', () => {
     it.for([true, false])(
       'reaches the ready state with the served top-up capability (%s)',
       async (served) => {
-        vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+        vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
           capabilitiesResponse(served, 'workspace-1', false)
         )
 
         await billingCapabilities.initialize()
 
-        expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+        expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
         expect(billingCapabilities.isReady.value).toBe(true)
         expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
         expect(billingCapabilities.canTopUp.value).toBe(served)
@@ -770,7 +779,7 @@ describe('useBillingCapabilities', () => {
     )
 
     it('reaches the ready state with every capability withheld when the server denies the key', async () => {
-      vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValueOnce(
+      vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(
         new WorkspaceApiError('Workspace context required', 401)
       )
 
@@ -786,7 +795,7 @@ describe('useBillingCapabilities', () => {
       { name: 'a different owner', nextOwner: 'key-owner-2' },
       { name: 'the same owner', nextOwner: 'key-owner-1' }
     ])('rereads for a replacement key held by $name', async ({ nextOwner }) => {
-      vi.mocked(workspaceApi.getBillingCapabilities)
+      vi.mocked(billingApi.getBillingCapabilities)
         .mockResolvedValueOnce(capabilitiesResponse(true))
         .mockResolvedValueOnce(capabilitiesResponse(false))
       await billingCapabilities.initialize()
@@ -801,13 +810,13 @@ describe('useBillingCapabilities', () => {
       await nextTick()
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
       expect(billingCapabilities.isReady.value).toBe(true)
       expect(billingCapabilities.canTopUp.value).toBe(false)
     })
 
     it('hides the key owner snapshot from a Firebase user who signs in over it', async () => {
-      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
         capabilitiesResponse(true)
       )
       await billingCapabilities.initialize()
@@ -824,7 +833,7 @@ describe('useBillingCapabilities', () => {
   })
 
   it('accepts a canonical server user ID distinct from the Firebase UID', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
       capabilitiesResponse(false)
     )
 
@@ -834,7 +843,7 @@ describe('useBillingCapabilities', () => {
   })
 
   it('refetches the capability snapshot once the server snapshot expires', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(false, 'workspace-1', true, {
           expiresAt: expiresIn(30_000)
@@ -851,7 +860,7 @@ describe('useBillingCapabilities', () => {
 
     await vi.advanceTimersByTimeAsync(30_000)
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
@@ -859,7 +868,7 @@ describe('useBillingCapabilities', () => {
     const visibility = vi
       .spyOn(document, 'visibilityState', 'get')
       .mockReturnValue('hidden')
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(false, 'workspace-1', true, {
           expiresAt: expiresIn(30_000)
@@ -869,13 +878,13 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
     await vi.advanceTimersByTimeAsync(120_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     visibility.mockReturnValue('visible')
     document.dispatchEvent(new Event('visibilitychange'))
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
@@ -883,7 +892,7 @@ describe('useBillingCapabilities', () => {
     const visibility = vi
       .spyOn(document, 'visibilityState', 'get')
       .mockReturnValue('visible')
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(false, 'workspace-1', true, {
           expiresAt: expiresIn(30_000)
@@ -901,14 +910,14 @@ describe('useBillingCapabilities', () => {
     document.dispatchEvent(new Event('visibilitychange'))
 
     await vi.advanceTimersByTimeAsync(19_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('retimes the refresh for the new workspace after a workspace switch', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(false, 'workspace-1', true, {
           expiresAt: expiresIn(30_000)
@@ -931,18 +940,18 @@ describe('useBillingCapabilities', () => {
     await vi.waitFor(() =>
       expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
     )
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(60_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(65_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
   it('stops refreshing once the shared composable scope is disposed', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(false, 'workspace-1', true, {
           expiresAt: expiresIn(30_000)
@@ -956,16 +965,16 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
     await vi.advanceTimersByTimeAsync(30_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     scope.stop()
     await vi.advanceTimersByTimeAsync(300_000)
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('refetches when a mutation reports a different capability revision', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(false, 'workspace-1', true, { revision: 4 })
       )
@@ -978,12 +987,12 @@ describe('useBillingCapabilities', () => {
 
     await emitMutationRevision('5')
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
   it('refetches when a failed mutation reports a different capability revision', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(false, 'workspace-1', true, { revision: 4 })
       )
@@ -995,12 +1004,12 @@ describe('useBillingCapabilities', () => {
 
     await emitMutationRevision('5', 402)
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
   it('ignores a mutation that reports the cached capability revision', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(false, 'workspace-1', true, { revision: 4 })
       )
@@ -1011,14 +1020,14 @@ describe('useBillingCapabilities', () => {
     await billingCapabilities.initialize()
 
     await emitMutationRevision('4')
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await emitMutationRevision('6')
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('ignores a mutation whose response omits the revision header', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(false, 'workspace-1', true, { revision: 4 })
       )
@@ -1029,16 +1038,16 @@ describe('useBillingCapabilities', () => {
     await billingCapabilities.initialize()
 
     await emitMutationRevision(undefined)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(false)
 
     await emitMutationRevision('6')
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('keeps the resolved snapshot readable while a background refresh is in flight', async () => {
     let resolveRefresh!: (value: BillingCapabilitiesResponse) => void
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(true, 'workspace-1', true, {
           expiresAt: expiresIn(30_000)
@@ -1055,7 +1064,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(true)
 
     await vi.advanceTimersByTimeAsync(30_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
     expect(billingCapabilities.isReady.value).toBe(true)
@@ -1072,7 +1081,7 @@ describe('useBillingCapabilities', () => {
   })
 
   it('keeps the last good snapshot when a background refresh fails', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(true, 'workspace-1', true, {
           expiresAt: expiresIn(30_000)
@@ -1083,7 +1092,7 @@ describe('useBillingCapabilities', () => {
     await billingCapabilities.initialize()
     await vi.advanceTimersByTimeAsync(30_000)
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
     expect(billingCapabilities.isReady.value).toBe(true)
@@ -1091,7 +1100,7 @@ describe('useBillingCapabilities', () => {
   })
 
   it('retries on a fixed interval after a background refresh fails', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(true, 'workspace-1', true, {
           expiresAt: expiresIn(30_000)
@@ -1106,18 +1115,18 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
     await vi.advanceTimersByTimeAsync(30_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(59_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
     expect(billingCapabilities.canTopUp.value).toBe(false)
   })
 
   it('replaces the snapshot when a background refresh is denied', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(true, 'workspace-1', true, {
           expiresAt: expiresIn(30_000)
@@ -1134,24 +1143,24 @@ describe('useBillingCapabilities', () => {
   })
 
   it('paces the refresh on a fixed interval when the snapshot arrives expired', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValue(
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValue(
       capabilitiesResponse(true, 'workspace-1', true, {
         expiresAt: expiresIn(-60_000)
       })
     )
 
     await billingCapabilities.initialize()
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(59_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('bounds the refresh interval when the client clock lags the server', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValue(
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValue(
       capabilitiesResponse(true, 'workspace-1', true, {
         expiresAt: expiresIn(7 * 24 * 60 * 60 * 1000)
       })
@@ -1161,29 +1170,29 @@ describe('useBillingCapabilities', () => {
 
     await vi.advanceTimersByTimeAsync(60 * 60 * 1000 + 1_000)
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('paces the refresh on a fixed interval when the snapshot expiry is unparseable', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValue(
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValue(
       capabilitiesResponse(true, 'workspace-1', true, {
         expiresAt: 'not-a-timestamp'
       })
     )
 
     await billingCapabilities.initialize()
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(59_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('refetches a read that a mutation invalidated while it was in flight', async () => {
     let resolveRefresh!: (value: BillingCapabilitiesResponse) => void
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockResolvedValueOnce(
         capabilitiesResponse(false, 'workspace-1', true, {
           revision: 4,
@@ -1205,10 +1214,10 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
     await vi.advanceTimersByTimeAsync(30_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await emitMutationRevision('5')
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     // Serialized after the mutation stamped its header, so it carries a higher
     // revision than the mutation despite having read pre-mutation data.
@@ -1220,16 +1229,16 @@ describe('useBillingCapabilities', () => {
     )
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
     expect(billingCapabilities.canTopUp.value).toBe(true)
 
     await vi.advanceTimersByTimeAsync(600_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
   })
 
   it('refetches when a mutation invalidates the initial read', async () => {
     let resolveInitial!: (value: BillingCapabilitiesResponse) => void
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockImplementationOnce(
         () =>
           new Promise<BillingCapabilitiesResponse>((resolve) => {
@@ -1242,7 +1251,7 @@ describe('useBillingCapabilities', () => {
 
     const initialization = billingCapabilities.initialize()
     await emitMutationRevision('5')
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     resolveInitial(
       capabilitiesResponse(false, 'workspace-1', true, { revision: 7 })
@@ -1250,15 +1259,13 @@ describe('useBillingCapabilities', () => {
     await initialization
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
   it('does not refetch a read whose own response reports its revision', async () => {
     const reads = capabilityReadsThroughInterceptor()
-    vi.mocked(workspaceApi.getBillingCapabilities).mockImplementation(
-      reads.read
-    )
+    vi.mocked(billingApi.getBillingCapabilities).mockImplementation(reads.read)
 
     const initialization = billingCapabilities.initialize()
     await reads.release(
@@ -1266,19 +1273,17 @@ describe('useBillingCapabilities', () => {
     )
     await initialization
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
   it('refetches an interceptor-served read that a mutation invalidated in flight', async () => {
     const reads = capabilityReadsThroughInterceptor()
-    vi.mocked(workspaceApi.getBillingCapabilities).mockImplementation(
-      reads.read
-    )
+    vi.mocked(billingApi.getBillingCapabilities).mockImplementation(reads.read)
 
     const initialization = billingCapabilities.initialize()
     await emitMutationRevision('5')
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     // Serialized after the mutation stamped its header, so it carries a higher
     // revision than the mutation despite having read pre-mutation data.
@@ -1286,19 +1291,19 @@ describe('useBillingCapabilities', () => {
       capabilitiesResponse(false, 'workspace-1', true, { revision: 7 })
     )
     await initialization
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await reads.release(
       capabilitiesResponse(true, 'workspace-1', true, { revision: 8 })
     )
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
   it('retries an unreadable endpoint until the read succeeds', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockRejectedValueOnce(new Error('unavailable'))
       .mockResolvedValueOnce(capabilitiesResponse(true))
 
@@ -1307,36 +1312,36 @@ describe('useBillingCapabilities', () => {
 
     await vi.advanceTimersByTimeAsync(31_000)
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
   })
 
   it('backs off between retries and reports the outage once', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
-    vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValue(
+    vi.mocked(billingApi.getBillingCapabilities).mockRejectedValue(
       new Error('unavailable')
     )
 
     await billingCapabilities.initialize()
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(29_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(58_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
 
     await vi.advanceTimersByTimeAsync(118_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(4)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(4)
 
     expect(mockReportError).toHaveBeenCalledOnce()
   })
@@ -1344,7 +1349,7 @@ describe('useBillingCapabilities', () => {
   it('keeps top-up withheld from owners while a retry is in flight', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
     let resolveRetry!: (value: BillingCapabilitiesResponse) => void
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockRejectedValueOnce(new Error('unavailable'))
       .mockImplementationOnce(
         () =>
@@ -1357,7 +1362,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(false)
 
     await vi.advanceTimersByTimeAsync(31_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
 
@@ -1371,33 +1376,33 @@ describe('useBillingCapabilities', () => {
     const visibility = vi
       .spyOn(document, 'visibilityState', 'get')
       .mockReturnValue('hidden')
-    vi.mocked(workspaceApi.getBillingCapabilities)
+    vi.mocked(billingApi.getBillingCapabilities)
       .mockRejectedValueOnce(new Error('unavailable'))
       .mockResolvedValueOnce(capabilitiesResponse(true))
 
     await billingCapabilities.initialize()
     await vi.advanceTimersByTimeAsync(600_000)
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     visibility.mockReturnValue('visible')
     document.dispatchEvent(new Event('visibilitychange'))
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
   })
 
   it('does not retry a denial', async () => {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValue(
+    vi.mocked(billingApi.getBillingCapabilities).mockRejectedValue(
       new WorkspaceApiError('Forbidden', 403)
     )
 
     await billingCapabilities.initialize()
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(600_000)
 
-    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(false)
   })
 })
@@ -1433,7 +1438,7 @@ describe('useBillingCapabilities on the SDK rail', () => {
       signal: expect.any(AbortSignal),
       forceRefresh: false
     })
-    expect(workspaceApi.getBillingCapabilities).not.toHaveBeenCalled()
+    expect(billingApi.getBillingCapabilities).not.toHaveBeenCalled()
   })
 
   it('keeps the denial reasons the server sent for an owner personal workspace', async () => {
@@ -1591,7 +1596,7 @@ describe('useBillingCapabilities capability gates', () => {
     mockIsCloud.value = true
     railState.rail = null
     response = capabilitiesResponse(true)
-    vi.mocked(workspaceApi.getBillingCapabilities).mockImplementation(() =>
+    vi.mocked(billingApi.getBillingCapabilities).mockImplementation(() =>
       Promise.resolve(structuredClone(response))
     )
   })

@@ -1,22 +1,29 @@
-import type {
-  LGraph,
-  LGraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { toSelectableKey } from '@/core/selection/selectionState'
 import { EMPTY_MEMBERSHIP, useRerouteStore } from '@/stores/rerouteStore'
 import type { RerouteMembership } from '@/stores/rerouteStore'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
-import type { GraphScope } from '@/types/graphScopeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import {
+  graphScopeOf,
+  toOwningGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import { zeroUuid } from '@/utils/uuid'
-import type { FloatingRerouteSlot, RerouteChain } from '@/types/rerouteChain'
-import type { RerouteId } from '@/types/rerouteId'
+import type {
+  FloatingRerouteSlot,
+  RerouteChain
+} from '@comfyorg/graph-model/rerouteChain'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { UUID } from '@/utils/uuid'
-import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
+import type {
+  Point2D as LayoutPoint,
+  PointTuple as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 function isPointLike(value: unknown): value is ArrayLike<number> {
   return (
@@ -35,23 +42,30 @@ function hasPointLength(value: unknown): boolean {
 import { LGraphBadge } from './LGraphBadge'
 
 import { LLink } from './LLink'
-import type { LinkId } from '@/types/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { createMutationView } from './infrastructure/createMutationView'
 import type {
   CanvasColour,
   LinkSegment,
-  Point,
-  Positionable,
-  ReadOnlyRect
-} from './interfaces'
-import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
-import type { LinkNetwork, ReadonlyLinkNetwork } from './types/linkNetwork'
+  Positionable
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type {
+  LinkNetwork,
+  ReadonlyLinkNetwork
+} from '@comfyorg/graph-model/linkNetwork'
 import { litegraph } from './litegraphInstance'
 import { distance, isPointInRect } from './measure'
-import type { Serialisable, SerialisableReroute } from './types/serialisation'
+import type {
+  Serialisable,
+  SerialisableReroute
+} from '@comfyorg/graph-model/serialisation'
 
-export type { FloatingRerouteSlot } from '@/types/rerouteChain'
-export type { RerouteId } from '@/types/rerouteId'
+export type { FloatingRerouteSlot } from '@comfyorg/graph-model/rerouteChain'
+export type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
 /**
  * Represents an additional point on the graph that a link path will travel through.  Used for visual organisation only.
@@ -905,6 +919,6 @@ export function unregisterAllRerouteChains(
 
 type RegisteredReroute = Reroute
 
-declare module './types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface Reroute extends RegisteredReroute {}
 }

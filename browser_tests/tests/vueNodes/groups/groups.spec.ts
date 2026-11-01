@@ -3,7 +3,6 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
@@ -321,7 +320,12 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
 
     const toggleBypass = () =>
-      comfyPage.page.getByTestId(TestIds.selectionToolbox.bypass).click()
+      comfyPage.selectionToolbox
+        .getByRole('button', {
+          name: 'Bypass/Unbypass Selected Nodes',
+          exact: true
+        })
+        .click()
     const bypassCount = () =>
       comfyPage.page.evaluate(
         () => graph!.nodes.filter((node) => node.mode === 4).length

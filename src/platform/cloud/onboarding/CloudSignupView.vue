@@ -112,7 +112,7 @@ import {
   CLOUD_AUTH_FIELD_CLASS,
   CLOUD_AUTH_LINK_BUTTON_CLASS
 } from '@/platform/cloud/onboarding/constants/authClasses'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { SignUpData } from '@/schemas/signInSchema'
 
 const { t } = useI18n()

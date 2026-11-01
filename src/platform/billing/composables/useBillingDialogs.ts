@@ -14,8 +14,9 @@ import { provideBillingDialogs } from '@/platform/billing/subscription/composabl
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import type { CancellationFlowDialogOptions } from '@/platform/billing/subscription/launchCancellationFlow'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import InsufficientCreditsMemberDialog from '@/platform/billing/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -23,9 +24,9 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 export function useBillingDialogs() {
   const dialogStore = useDialogStore()
@@ -81,44 +82,42 @@ export function useBillingDialogs() {
 
   async function showSubscriptionRequiredDialog(
     options?: SubscriptionDialogOptions
-  ) {
-    if (!isCloud) return
+  ): Promise<boolean> {
+    if (!isCloud) return false
 
-    // A caller (e.g. the agent panel's paywall card) can fire this before the
-    // bootstrap /features fetch resolves, most likely right after a fresh
-    // load. window.__CONFIG__ is then still empty and the flag check below
-    // would silently swallow the click. Await one fresh fetch before
-    // deciding, rather than trusting a config snapshot that was never taken.
-    if (!window.__CONFIG__?.subscription_required) {
-      const { remoteConfigState } =
-        await import('@/platform/remoteConfig/remoteConfig')
-      if (remoteConfigState.value === 'unloaded') {
-        const { refreshRemoteConfig } =
-          await import('@/platform/remoteConfig/refreshRemoteConfig')
-        await refreshRemoteConfig()
-      }
-    }
-
-    if (!window.__CONFIG__?.subscription_required) {
-      // This gate closing is never expected to be reachable from a cloud
-      // surface with subscriptions enabled. Report it instead of returning
-      // silently, so a caller's "Subscribe" button failing to do anything
-      // shows up in telemetry rather than only in a user's bug report.
-      const { reportError } = await import('@/platform/telemetry/reportError')
-      reportError(
-        new Error(
-          'showSubscriptionRequiredDialog: subscription_required gate closed'
-        ),
-        {
-          surface: 'billing',
-          errorType: 'error_opening_subscription_dialog_gate_closed'
+    try {
+      if (!window.__CONFIG__?.subscription_required) {
+        const { remoteConfigState } =
+          await import('@/platform/remoteConfig/remoteConfig')
+        if (remoteConfigState.value === 'unloaded') {
+          const { refreshRemoteConfig } =
+            await import('@/platform/remoteConfig/refreshRemoteConfig')
+          await refreshRemoteConfig()
         }
-      )
-      return
-    }
+      }
 
-    const { show } = useSubscriptionDialog()
-    show(options)
+      if (!window.__CONFIG__?.subscription_required) {
+        reportError(
+          new Error(
+            'showSubscriptionRequiredDialog: subscription_required gate closed'
+          ),
+          {
+            surface: 'billing',
+            errorType: 'error_opening_subscription_dialog_gate_closed'
+          }
+        )
+        return false
+      }
+
+      const { show } = useSubscriptionDialog()
+      return await show(options)
+    } catch (error) {
+      reportError(error, {
+        surface: 'billing',
+        errorType: 'error_opening_subscription_dialog'
+      })
+      return false
+    }
   }
 
   function showBillingComingSoonDialog() {
@@ -185,7 +184,7 @@ export function useBillingDialogs() {
   }
 
   async function showCancelSubscriptionFlow(cancelAt?: string) {
-    const launchWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+    const launchWorkspaceId = useWorkspaceIdentity().activeWorkspaceId
     const cancellationFlow =
       await import('@/platform/billing/subscription/launchCancellationFlow')
     return cancellationFlow.launchCancellationFlow({

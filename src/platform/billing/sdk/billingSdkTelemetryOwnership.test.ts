@@ -1,3 +1,4 @@
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import {
   BILLING_STATUS_ROUTE,
   CANCEL_SUBSCRIPTION_ROUTE,
@@ -26,16 +27,14 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@/platform/telemetry'
-import type {
-  Plan,
-  WorkspaceWithRole
-} from '@/platform/workspace/api/workspaceApi'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { Plan } from '@comfyorg/billing-core'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useDowngradeToPersonal } from '@/platform/billing/composables/useDowngradeToPersonal'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
 import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -44,11 +43,11 @@ import {
   stubFirebaseAuthHarness
 } from '@/utils/__tests__/stubAccountIdentityPort'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 vi.mock(import('firebase/auth'))
 vi.mock<unknown>(
@@ -139,6 +138,7 @@ const DOWNGRADE_PREVIEW = {
 }
 
 const STATUS = {
+  ended_at: null,
   billing_rail: 'stripe',
   has_funds: true,
   is_active: true,
@@ -149,6 +149,7 @@ const STATUS = {
 }
 
 const CAPABILITIES = {
+  auto_top_up_enabled: false,
   capabilities: {
     can_cancel: true,
     can_change_seats: false,
@@ -338,7 +339,10 @@ async function driveCheckoutSubscribe() {
 }
 
 async function driveLegacyStripeCheckoutSubscribe() {
-  useTeamWorkspaceStore().setWorkspaceBillingRail('ws-1', 'legacy_stripe')
+  useWorkspaceBillingStateStore().setWorkspaceBillingRail(
+    'ws-1',
+    'legacy_stripe'
+  )
   await driveCheckoutSubscribe()
 }
 
@@ -349,8 +353,8 @@ async function driveDowngrade() {
     previewSubscribe: billing.previewSubscribe,
     subscription: computed(() => ACTIVE_SUBSCRIPTION)
   })
-  const { permissions } = useWorkspaceUI()
-  useWorkspaceUI().permissions = computed(() => ({
+  const { permissions } = useBillingUI()
+  useBillingUI().permissions = computed(() => ({
     ...permissions.value,
     canDowngradeToPersonal: true
   }))

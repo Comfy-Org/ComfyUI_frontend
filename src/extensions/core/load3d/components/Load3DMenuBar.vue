@@ -17,9 +17,9 @@
             :aria-label="compact ? activeLabel : undefined"
             data-testid="load3d-category-menu"
           >
-            <i v-if="compact" :class="cn(activeIcon, 'size-4')" />
+            <i v-if="compact" :class="activeIcon" />
             <template v-else>{{ activeLabel }}</template>
-            <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
+            <i class="icon-[lucide--chevron-down] opacity-70" />
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" :side-offset="8" :class="menuPanelClass">
@@ -36,7 +36,7 @@
             :aria-pressed="activeCategory === c.key"
             @click="selectCategory(c.key)"
           >
-            <i :class="cn(c.icon, 'size-4')" />
+            <i :class="c.icon" />
             {{ c.label }}
           </button>
         </PopoverContent>
@@ -90,6 +90,10 @@
 
     <div class="relative min-h-0 flex-1 overflow-hidden">
       <slot />
+      <ModelStatsOverlay
+        v-if="modelStats && hasGeometry(modelStats)"
+        :stats="modelStats"
+      />
       <div
         v-if="isRecording"
         class="pointer-events-none absolute inset-0 border-2 border-primary"
@@ -139,7 +143,7 @@
           :aria-label="t('load3d.fitToViewer')"
           @click="emit('fitToViewer')"
         >
-          <i class="icon-[lucide--scan] size-4" />
+          <i class="icon-[lucide--scan]" />
         </Button>
         <Button
           v-if="canCenterCameraOnModel"
@@ -150,7 +154,7 @@
           :aria-label="t('load3d.centerCameraOnModel')"
           @click="emit('centerCamera')"
         >
-          <i class="icon-[lucide--crosshair] size-4" />
+          <i class="icon-[lucide--crosshair]" />
         </Button>
         <PopoverRoot v-if="canExport" v-model:open="exportOpen">
           <PopoverTrigger as-child>
@@ -161,7 +165,7 @@
               type="button"
               :aria-label="t('load3d.export')"
             >
-              <i class="icon-[lucide--download] size-4" />
+              <i class="icon-[lucide--download]" />
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -204,6 +208,7 @@ import {
   menuPanelClass
 } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import ModelMenuGroup from '@/extensions/core/load3d/components/menubar/ModelMenuGroup.vue'
+import ModelStatsOverlay from '@/extensions/core/load3d/components/menubar/ModelStatsOverlay.vue'
 import RecordMenuControl from '@/extensions/core/load3d/components/menubar/RecordMenuControl.vue'
 import SceneMenuGroup from '@/extensions/core/load3d/components/menubar/SceneMenuGroup.vue'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
@@ -215,7 +220,9 @@ import {
   selectedMenuButtonClass
 } from '@comfyorg/design-system/lib/menu/menuStyles'
 import { getExportFormatOptions } from '@comfyorg/viewport3d/load3d/constants'
+import { hasGeometry } from '@comfyorg/viewport3d/load3d/modelStats'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ModelStats } from '@comfyorg/viewport3d/load3d/modelStats'
 import type {
   AnimationItem,
   CameraConfig,
@@ -241,6 +248,7 @@ const {
   node = null,
   materialModes = ['original', 'clay', 'normal', 'wireframe'],
   hasSkeleton = false,
+  modelStats = null,
   sourceFormat = null
 } = defineProps<{
   animations?: AnimationItem[]
@@ -257,6 +265,7 @@ const {
   node?: LGraphNode | null
   materialModes?: readonly MaterialMode[]
   hasSkeleton?: boolean
+  modelStats?: ModelStats | null
   sourceFormat?: string | null
 }>()
 

@@ -1,18 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import type { CreateTopupResponse } from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import {
   fakeBillingSdk,
   pendingTopup,
   serverCode,
   settledTopup
 } from '@/platform/billing/sdk/billingSdkTestUtils'
-import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
+import type { BillingSdk } from '@comfyorg/billing-core/sdk'
 import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
@@ -43,10 +41,10 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
-vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
+vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 
@@ -209,7 +207,7 @@ describe('useTopupOperation', () => {
         rail: 'legacy',
         flagOn: false,
         mint: (outcomes: Array<string | Refusal>) => {
-          const mint = vi.spyOn(workspaceApi, 'createTopupCheckout')
+          const mint = vi.spyOn(billingApi, 'createTopupCheckout')
           for (const outcome of outcomes) {
             if (typeof outcome === 'string') {
               mint.mockResolvedValueOnce({ checkout_url: outcome })

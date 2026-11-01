@@ -7,7 +7,7 @@ import type {
   SubscriptionDuration,
   TeamCreditStops,
   TeamCreditStopSummary
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 export interface NextInvoiceInputs {
   subscription: SubscriptionInfo | null

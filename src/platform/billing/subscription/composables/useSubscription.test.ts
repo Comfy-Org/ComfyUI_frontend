@@ -1,3 +1,4 @@
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,10 +9,10 @@ import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
-import { useTelemetry } from '@/platform/telemetry'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import { webSessionResourceHeader } from '@comfyorg/api-client/webSessionFetch'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import {
@@ -117,11 +118,11 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: vi.fn(() => mockCurrentUser)
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportTelemetryError
 }))
 
@@ -148,7 +149,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 
 /** Null is the legacy client; a rail is what the SDK store would hand back. */
 const railState = vi.hoisted(() => ({
@@ -161,13 +162,14 @@ vi.mock<unknown>(
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
+vi.mock(import('@comfyorg/api-client/webSessionFetch'), { spy: true })
 
 const mockReadStatus = vi.fn<BillingReadRail['readStatus']>()
 
 const buildStatus = (
   overrides: Partial<BillingStatusResponse> = {}
 ): BillingStatusResponse => ({
+  ended_at: null,
   is_active: true,
   has_funds: true,
   max_seats: 1,
@@ -230,7 +232,7 @@ beforeEach(() => {
         throw error
       }
     }
-  vi.mocked(workspaceApi.getBillingStatus).mockImplementation(
+  vi.mocked(billingApi.getBillingStatus).mockImplementation(
     mockGetBillingStatus
   )
   Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
@@ -442,7 +444,7 @@ describe('useSubscription', () => {
 
         expect(subscriptionStatus.value).toEqual(status)
         expect(
-          useTeamWorkspaceStore().setWorkspaceBillingRail
+          useWorkspaceBillingStateStore().setWorkspaceBillingRail
         ).toHaveBeenCalledWith('workspace-123', 'stripe')
         // One transport per read: the rail a read is on is the only client it
         // asks, or the panels read one thing and the rail settled another.
@@ -633,10 +635,10 @@ describe('useSubscription', () => {
         billing_rail: 'legacy_stripe'
       })
       expect(
-        useTeamWorkspaceStore().setWorkspaceBillingRail
+        useWorkspaceBillingStateStore().setWorkspaceBillingRail
       ).toHaveBeenCalledOnce()
       expect(
-        useTeamWorkspaceStore().setWorkspaceBillingRail
+        useWorkspaceBillingStateStore().setWorkspaceBillingRail
       ).toHaveBeenCalledWith('workspace-456', 'legacy_stripe')
     })
 
@@ -682,6 +684,53 @@ describe('useSubscription', () => {
       await Promise.all([first, second])
 
       expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
+    })
+
+    it('reads again after the shared read when a caller asks for a fresh answer', async () => {
+      let resolveStartup!: (status: BillingStatusResponse) => void
+      mockGetBillingStatus.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStartup = resolve
+        })
+      )
+      mockGetBillingStatus.mockResolvedValueOnce(
+        buildStatus({ is_active: true, renewal_date: 'after-consent' })
+      )
+      const { fetchStatusDirect, subscriptionStatus } =
+        useSubscriptionWithScope()
+
+      const startup = fetchStatusDirect()
+      const fresh = fetchStatusDirect({ fresh: true })
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
+      resolveStartup(
+        buildStatus({ is_active: true, renewal_date: 'before-consent' })
+      )
+      await Promise.all([startup, fresh])
+
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
+      expect(subscriptionStatus.value?.renewal_date).toBe('after-consent')
+    })
+
+    it('keeps the shared answer when the fresh read after it fails', async () => {
+      let resolveStartup!: (status: BillingStatusResponse) => void
+      mockGetBillingStatus.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStartup = resolve
+        })
+      )
+      mockGetBillingStatus.mockRejectedValueOnce(new Error('status down'))
+      const { fetchStatusDirect, subscriptionStatus } =
+        useSubscriptionWithScope()
+
+      const startup = fetchStatusDirect()
+      const fresh = fetchStatusDirect({ fresh: true })
+      resolveStartup(
+        buildStatus({ is_active: true, renewal_date: 'before-consent' })
+      )
+      await startup
+      await expect(fresh).rejects.toThrow('status down')
+
+      expect(subscriptionStatus.value?.renewal_date).toBe('before-consent')
     })
 
     it('does not downgrade known-good status on a failed fetch', async () => {
@@ -1271,6 +1320,7 @@ describe('useSubscription', () => {
     })
 
     it('reports at the deadline without another lifecycle event', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({

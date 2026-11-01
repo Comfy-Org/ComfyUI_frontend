@@ -22,6 +22,7 @@ import {
 } from 'vitest'
 import * as Y from 'yjs'
 
+import { markDynamicGroupController } from '@/core/graph/widgets/dynamicGroupDiagnostics'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -33,10 +34,10 @@ import type {
   ISerialisedNode,
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { followedDoc } from './__fixtures__/followedDoc'
@@ -46,8 +47,6 @@ import type {
   RemoteApplyContext
 } from './liveGraphApplier'
 import { changesForRejectedOps } from './rejectedOpChanges'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {
   constructor() {
@@ -196,6 +195,46 @@ class TestNestedGrowing extends LGraphNode {
   }
 }
 
+/** Grows and shrinks its rows from the row-count controller's own setter. */
+class TestPlainDynamicGroup extends LGraphNode {
+  constructor() {
+    super('Test Plain Dynamic Group')
+    this.addWidget('number', 'before', 1, () => {})
+    const rows = this.addWidget('number', 'rows', 1, () => {})
+    markDynamicGroupController(rows, 1)
+    this.addWidget('number', 'after', 9, () => {})
+    let count = 1
+    Object.defineProperty(rows, 'value', {
+      configurable: true,
+      get: () => count,
+      set: (next: unknown) => {
+        if (typeof next !== 'number') return
+        count = next
+        const kept = this.widgets?.filter(({ name }) =>
+          name.startsWith('rows.')
+        )
+        this.widgets = this.widgets?.filter(
+          ({ name }) => !name.startsWith('rows.')
+        )
+        const tail = this.widgets?.pop()
+        for (let index = 0; index < count; index++) {
+          const row = kept?.[index]
+          if (row) this.widgets?.push(row)
+          else
+            this.addWidget(
+              'number',
+              `rows.${index}.value`,
+              50 + index,
+              () => {}
+            )
+        }
+        if (tail) this.widgets?.push(tail)
+      }
+    })
+    this.serialize_widgets = true
+  }
+}
+
 /** A live widget whose own name is alias-shaped, at a position that is not its index. */
 class TestAliasNamedWidget extends LGraphNode {
   constructor() {
@@ -272,6 +311,7 @@ const CATALOG: WidgetCatalog = {
     // value under the positional alias `_extra_2`.
     TestTwoGrowing: { widget_order: ['mode', 'mode.a'] },
     TestNestedGrowing: { widget_order: ['mode', 'mode.inner', 'mode.inner.x'] },
+    TestPlainDynamicGroup: { widget_order: ['before', 'rows'] },
     TestAliasNamedWidget: { widget_order: ['first', 'second', '_extra_1'] },
     TestPrototypeNamedWidget: { widget_order: ['known'] },
     // The catalog names one widget TWICE, which schema v5 stores as one
@@ -338,6 +378,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestGrowingWidgets', TestGrowingWidgets)
   LiteGraph.registerNodeType('TestTwoGrowing', TestTwoGrowing)
   LiteGraph.registerNodeType('TestNestedGrowing', TestNestedGrowing)
+  LiteGraph.registerNodeType('TestPlainDynamicGroup', TestPlainDynamicGroup)
   LiteGraph.registerNodeType('TestAliasNamedWidget', TestAliasNamedWidget)
   LiteGraph.registerNodeType(
     'TestPrototypeNamedWidget',
@@ -365,7 +406,7 @@ beforeEach(() => {
 })
 
 describe('LiveGraphApplier', () => {
-  it('rejects a positional alias on a node without a dynamic combo', () => {
+  it('applies a positional alias on a node without a dynamic combo', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [
         {
@@ -388,16 +429,11 @@ describe('LiveGraphApplier', () => {
 
     expect(
       graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
-    ).toEqual([11, 20])
-    expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
-      }),
-      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
-    )
+    ).toEqual([11, 99])
+    expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('rejects an initial positional alias on a node without a dynamic combo', () => {
+  it('applies an initial positional alias on a node without a dynamic combo', () => {
     const { graph, applyCollected } = setup({
       nodes: [
         {
@@ -415,13 +451,70 @@ describe('LiveGraphApplier', () => {
 
     expect(
       graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+    ).toEqual([11, 99])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('still reports a positional alias past the end of a plain node', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('_extra_7', 99)
+    })
+
+    expect(
+      graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
     ).toEqual([11, 20])
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: "Node 1 (TestPlainWidgets) has no widget '_extra_1'"
+        message: "Node 1 (TestPlainWidgets) has no widget '_extra_7'"
       }),
       expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
     )
+  })
+
+  it('places every aliased row of a grown DynamicGroup on a plain node', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainDynamicGroup',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [7, 2, 55, 65, 8]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'before', value: 7 },
+      { name: 'rows', value: 2 },
+      { name: 'rows.0.value', value: 55 },
+      { name: 'rows.1.value', value: 65 },
+      { name: 'after', value: 8 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   /**

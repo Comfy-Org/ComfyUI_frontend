@@ -8,10 +8,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/builder/builderViewOptions.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/builder/builderViewOptions.ts",
       "role": "application"
     },
@@ -20,15 +16,7 @@
       "role": "domain"
     },
     {
-      "path": "src/components/builder/useAppModeWidgetResizing.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/builder/useAppModeWidgetResizing.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/builder/useBuilderSave.test.ts",
       "role": "application"
     },
     {
@@ -40,23 +28,11 @@
       "role": "application"
     },
     {
-      "path": "src/components/builder/useEnterBuilder.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/builder/useEnterBuilder.ts",
       "role": "application"
     },
     {
-      "path": "src/components/builder/useLoaderDropIndicator.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/builder/useLoaderDropIndicator.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/builder/useResolvedSelectedInputs.test.ts",
       "role": "application"
     },
     {

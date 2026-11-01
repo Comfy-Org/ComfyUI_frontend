@@ -737,8 +737,7 @@ test(
   'Can promote multiple previews',
   { tag: ['@vue-nodes'] },
   async ({ comfyPage }) => {
-    await comfyPage.menu.topbar.newWorkflowButton.click()
-    await comfyPage.nextFrame()
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
     await test.step('Add and rename a Load Image node', async () => {
       const position = { x: 300, y: 300 }
@@ -764,6 +763,18 @@ test(
     const subgraph = await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
 
     await test.step('Promote both image previews', async () => {
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() =>
+            window.app!.graph.nodes.flatMap((node) =>
+              node.isSubgraphNode()
+                ? node.subgraph.nodes.map((inner) => inner.imgs?.length ?? 0)
+                : []
+            )
+          )
+        )
+        .toEqual([1, 1])
+
       await editor.togglePromotion(subgraph.root, {
         nodeId: '1',
         widgetName: '$$canvas-image-preview',

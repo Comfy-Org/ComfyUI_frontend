@@ -11,6 +11,9 @@ import SubscriptionRequiredDialogContentUnified from './SubscriptionRequiredDial
 const mockHandleSubscribeTeamClick = vi.fn()
 const mockHandleBackToPricing = vi.fn()
 const mockHandleSubscribeClick = vi.fn()
+const mockHandleTeamSubscribe = vi.fn()
+const mockHandleAddCreditCard = vi.fn()
+const mockHandleConfirmTransition = vi.fn()
 
 const mockCheckoutStep = ref('pricing')
 const mockPreviewVariant = ref<string | null>(null)
@@ -63,9 +66,9 @@ vi.mock<unknown>(
         handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
         handleBackToPricing: mockHandleBackToPricing,
         handleSuccessClose: vi.fn(),
-        handleAddCreditCard: vi.fn(),
-        handleConfirmTransition: vi.fn(),
-        handleTeamSubscribe: vi.fn(),
+        handleAddCreditCard: mockHandleAddCreditCard,
+        handleConfirmTransition: mockHandleConfirmTransition,
+        handleTeamSubscribe: mockHandleTeamSubscribe,
         handleResubscribe: vi.fn()
       }
     }
@@ -109,17 +112,23 @@ function renderComponent(props: Record<string, unknown> = {}) {
     global: {
       plugins: [i18n],
       stubs: {
+        CreditsLockedNotice: {
+          template: '<div data-testid="credits-locked-notice" />'
+        },
         UnifiedPricingTable: UnifiedPricingTableStub,
         SubscriptionAddPaymentPreviewWorkspace: {
           name: 'SubscriptionAddPaymentPreviewWorkspace',
           props: ['previewData', 'teamPlan'],
           template: `<div data-testid="add-payment-preview">
             {{ previewData?.amount_due_cents ?? "no-quote" }}
+            <button @click="$emit('addCreditCard')">Add card</button>
             <button aria-label="Back" @click="$emit('back')">Back</button>
           </div>`
         },
         SubscriptionTransitionPreviewWorkspace: {
-          template: '<div data-testid="transition-preview" />'
+          template: `<div data-testid="transition-preview">
+            <button @click="$emit('confirm')">Confirm</button>
+          </div>`
         },
         SubscriptionSuccessWorkspace: { template: '<div />' }
       }
@@ -150,6 +159,42 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
       '129500'
     )
   })
+
+  it.for([
+    {
+      variant: 'team-new',
+      button: 'Add card',
+      command: mockHandleTeamSubscribe
+    },
+    {
+      variant: 'team-change',
+      button: 'Confirm',
+      command: mockHandleTeamSubscribe
+    },
+    {
+      variant: 'personal-new',
+      button: 'Add card',
+      command: mockHandleAddCreditCard
+    },
+    {
+      variant: 'personal-change',
+      button: 'Confirm',
+      command: mockHandleConfirmTransition
+    }
+  ])(
+    'submits the selected checkout for $variant',
+    async ({ variant, button, command }) => {
+      mockCheckoutStep.value = 'preview'
+      mockPreviewVariant.value = variant
+      mockSelectedTeamStop.value = TEAM_PAYLOAD.stop
+      mockPreviewData.value = { amount_due_cents: 129_500, currency: 'usd' }
+      renderComponent()
+
+      await userEvent.click(screen.getByRole('button', { name: button }))
+
+      expect(command).toHaveBeenCalledOnce()
+    }
+  )
 
   it('advances to team checkout from a team workspace', async () => {
     const user = userEvent.setup()
@@ -255,6 +300,20 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     await userEvent.keyboard('{Backspace}')
 
     expect(mockHandleBackToPricing).toHaveBeenCalledOnce()
+  })
+
+  it('explains locked credits only on the pricing step', async () => {
+    renderComponent({ creditsLocked: true })
+    expect(screen.getByTestId('credits-locked-notice')).toBeInTheDocument()
+
+    mockCheckoutStep.value = 'preview'
+    await nextTick()
+    expect(screen.queryByTestId('credits-locked-notice')).toBeNull()
+  })
+
+  it('shows no locked-credits line by default', () => {
+    renderComponent()
+    expect(screen.queryByTestId('credits-locked-notice')).toBeNull()
   })
 
   it('gives checkout the surface, not the copy reason', () => {

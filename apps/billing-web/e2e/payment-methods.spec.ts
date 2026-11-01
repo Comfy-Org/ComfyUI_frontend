@@ -3,30 +3,26 @@ import { entryPath, expect, test } from './fixtures/test'
 
 const PAYMENT_METHODS = entryPath('payment-methods')
 
-test('lists the saved cards the server holds and marks the default', async ({
+test('hands the visitor to the payment portal as soon as the page opens', async ({
   page,
   signIn
 }) => {
   await signIn(PAYMENT_METHODS)
 
-  const card = page.getByRole('listitem').filter({ hasText: 'visa •••• 4242' })
-  await expect(card).toBeVisible()
-  await expect(card.getByText('Default')).toBeVisible()
+  await page.waitForURL(PORTAL_URL)
 })
 
-test('says when no card is saved and still offers the portal', async ({
+test('stays put after the portal sends the visitor back and offers it again', async ({
   page,
-  cloud,
   signIn
 }) => {
-  cloud.scenario.paymentMethods = []
-  await signIn(PAYMENT_METHODS)
+  await signIn(entryPath('payment-methods', { portal: 'return' }))
 
-  await expect(
-    page.getByText('No payment method is saved for this workspace.')
-  ).toBeVisible()
+  const manage = page.getByRole('button', { name: 'Manage payment methods' })
+  await expect(manage).toBeVisible()
+  await expect(page).not.toHaveURL(/portal=return/)
 
-  await page.getByRole('button', { name: 'Manage payment methods' }).click()
+  await manage.click()
 
   await page.waitForURL(PORTAL_URL)
 })

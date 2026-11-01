@@ -11,12 +11,10 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
 import type { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import type {
-  BillingSubscriptionStatus,
-  Plan
-} from '@/platform/workspace/api/workspaceApi'
+import type { BillingSubscriptionStatus, Plan } from '@comfyorg/billing-core'
 import UnifiedPricingTable from '@/platform/billing/components/UnifiedPricingTable.vue'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 type PlanDecision = Pick<
   Plan,
@@ -83,7 +81,7 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
 vi.mock(
   import('@/platform/billing/composables/usePaymentRecoveryDialog'),
@@ -156,11 +154,19 @@ beforeEach(() => {
     () => mockCurrentTeamCreditStop.value
   )
   vi.mocked(useBillingContext).mockReturnValue(billingContext)
-  const workspaceUI = vi.mocked(useWorkspaceUI())
+  const workspaceUI = vi.mocked(useBillingUI())
   const defaultPermissions = workspaceUI.permissions.value
   workspaceUI.permissions = computed(() => ({
     ...defaultPermissions,
-    ...mockPermissions.value
+    ...mockPermissions.value,
+    canManageSubscription: receiveServerFact(
+      'can_manage_subscription',
+      mockPermissions.value.canManageSubscription
+    ),
+    canManageSubscriptionLifecycle: receiveServerFact(
+      'can_manage_subscription',
+      mockPermissions.value.canManageSubscriptionLifecycle
+    )
   }))
 })
 

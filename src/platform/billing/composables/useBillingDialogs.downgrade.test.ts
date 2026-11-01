@@ -40,7 +40,7 @@ const {
 
 vi.mock(import('@/i18n'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 beforeEach(() => {
   useDowngradeToPersonal.mockReturnValue({

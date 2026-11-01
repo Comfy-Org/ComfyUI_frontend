@@ -4,8 +4,8 @@ import type {
   GraphScope,
   OwningGraphId,
   RootGraphId
-} from '@/types/graphScopeId'
-import type { NodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export const useExecutionOrderStore = defineStore('executionOrder', () => {
   const orders = new Map<RootGraphId, Map<OwningGraphId, Map<NodeId, number>>>()

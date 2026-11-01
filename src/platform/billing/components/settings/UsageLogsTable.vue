@@ -68,7 +68,7 @@
                 size="icon-sm"
                 :aria-label="$t('credits.additionalInfo')"
               >
-                <i class="pi pi-info-circle" />
+                <i class="icon-[lucide--info]" />
               </Button>
             </TableCell>
           </TableRow>
@@ -101,13 +101,17 @@ import TableCell from '@comfyorg/design-system/table/TableCell'
 import TableHead from '@comfyorg/design-system/table/TableHead'
 import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
-import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
+import {
+  formatCredits,
+  isSubCreditCharge,
+  microUsdToCredits
+} from '@/base/credits/comfyCredits'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useTelemetry } from '@/platform/telemetry'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
@@ -141,11 +145,14 @@ function eventAmount(event: AuditLog) {
 }
 
 function formatChargeCredits(microUsd: number) {
-  const amount = formatCreditsFromUsd({
-    usd: microUsd / 1_000_000,
-    locale: locale.value,
-    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
-  })
+  const credits = microUsdToCredits(microUsd)
+  const amount = isSubCreditCharge(credits)
+    ? t('credits.lessThanOne')
+    : formatCredits({
+        value: credits,
+        locale: locale.value,
+        numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+      })
   return `${amount} ${t('credits.credits')}`
 }
 
@@ -171,7 +178,7 @@ let latestLoadToken = 0
 const readWorkspaceEvents = (params: { page: number; limit: number }) => {
   const rail = useBillingReadRail()
   return rail === null
-    ? workspaceApi.getBillingEvents(params)
+    ? billingApi.getBillingEvents(params)
     : readOnRail(() => rail.readEvents(params), 'getBillingEvents')
 }
 
@@ -271,7 +278,7 @@ const refresh = async () => {
   await loadEvents()
 }
 
-const workspaceStore = useTeamWorkspaceStore()
+const workspaceStore = useWorkspaceIdentity()
 
 // The active workspace is watched alongside the billing mode: a switch between
 // two workspaces on the same mode leaves this table mounted, and without this

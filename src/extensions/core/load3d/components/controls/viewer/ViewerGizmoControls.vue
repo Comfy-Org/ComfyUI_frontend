@@ -41,7 +41,7 @@
 
       <div>
         <Button variant="secondary" @click="$emit('reset-transform')">
-          <i class="pi pi-refresh" />
+          <i class="icon-[lucide--rotate-cw]" />
           {{ $t('load3d.gizmo.reset') }}
         </Button>
       </div>
