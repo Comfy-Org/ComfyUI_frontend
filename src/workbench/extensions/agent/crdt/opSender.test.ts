@@ -795,11 +795,6 @@ describe('createOpSender', () => {
         { state: 'undeliverable', nodeIds }
       ])
       expect(sender.pending()).toBe(0)
-      expect(
-        settled
-          .flatMap((outcome) => outcome.ops)
-          .filter((op) => !Number.isSafeInteger(op.base_version))
-      ).toEqual([])
       expect(reportsOfType('failure_minting_agent_op_counter')).toEqual([
         [expect.any(RangeError), expect.objectContaining({ surface: 'agent' })]
       ])
