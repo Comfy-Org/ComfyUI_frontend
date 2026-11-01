@@ -1,5 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
 
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
@@ -648,7 +650,7 @@ test.describe(
         const response = await fetch(
           `/api/userdata/${encodeURIComponent(path)}`
         )
-        return (await response.json()) as { nodes: { type: string }[] }
+        return (await response.json()) as ComfyWorkflowJSON
       }, workflowSelection.savedPaths[0])
       expect(savedGraph.nodes.map(({ type }) => type)).toContain('Note')
     })
