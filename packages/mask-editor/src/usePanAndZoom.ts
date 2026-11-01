@@ -49,6 +49,7 @@ export function usePanAndZoom() {
 
   const image = ref<HTMLImageElement | null>(null)
   const imageRootWidth = ref(0)
+  let needsFit = false
 
   const cursorPoint = ref<Point>({ x: 0, y: 0 })
   const penPointerIdList = ref<number[]>([])
@@ -69,6 +70,8 @@ export function usePanAndZoom() {
       console.warn('Missing required properties for pan/zoom')
       return
     }
+
+    if (needsFit) fitCanvasToViewport(currentImage.width, currentImage.height)
 
     const styles = calculatePanZoomStyles(
       currentImage.width,
@@ -243,6 +246,9 @@ export function usePanAndZoom() {
     }
     if (!maskCanvas.value) return
 
+    if (needsFit) await invalidatePanZoom()
+    if (!imageRootWidth.value) return
+
     const rect = maskCanvas.value.getBoundingClientRect()
     const focalX = cursorPosition.x - rect.left
     const focalY = cursorPosition.y - rect.top
@@ -331,6 +337,7 @@ export function usePanAndZoom() {
   }
 
   function fitCanvasToViewport(width: number, height: number): void {
+    needsFit = true
     const root = rootElement.value
     if (!root) return
     const { sidePanelWidth, toolPanelWidth } = getPanelDimensions()
@@ -355,6 +362,7 @@ export function usePanAndZoom() {
     pan_offset.value = fitResult.panOffset
     interpolatedZoomRatio.value = 1
     store.displayZoomRatio = 1
+    needsFit = false
   }
 
   const initializeCanvasPanZoom = async (
