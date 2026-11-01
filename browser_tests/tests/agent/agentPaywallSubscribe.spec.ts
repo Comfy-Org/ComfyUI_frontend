@@ -8,18 +8,21 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
-// Regression e2e coverage for the fix in dialogService.showSubscriptionRequiredDialog:
+// Regression e2e coverage for useBillingDialogs.showSubscriptionRequiredDialog:
 // clicking the agent panel paywall's "Subscribe" action must always open the
-// subscription dialog (or at least report a failure), never silently no-op.
-// The unit test (dialogService.subscriptionRequired.test.ts) proves the exact
-// timing race deterministically (a config fetch still `unloaded` at click
-// time); this file drives the real chat panel end to end, through a real
-// no-funds turn rejection surfacing the paywall card, and a real click.
+// pricing dialog (or at least report a failure), never silently no-op.
+// The unit test (useBillingDialogs.subscriptionRequired.test.ts) pins the
+// bounded /features retry when the config snapshot is still `unloaded` at click
+// time. That is a guard, not a confirmed cause of the production dead click.
+// This file drives the real chat panel end to end, through a real no-funds
+// turn rejection surfacing the paywall card, a real click, and the pricing
+// content the dialog renders.
 
 const NO_FUNDS_ERROR = zAgentAdmissionError.parse({
   error: {
@@ -33,10 +36,11 @@ const NO_FUNDS_ERROR = zAgentAdmissionError.parse({
 const DIALOG_SELECTOR = '[data-dialog-key="subscription-required"]'
 
 /**
- * Re-mocks `/features` (the subscription gate) and `/billing/capabilities`
+ * Re-mocks `/features` (the subscription gate), `/billing/capabilities`
  * (what makes the agent paywall card render a "subscriptionRequired"
- * presentation, independent of the gate above) and reloads so the fresh
- * values apply from a clean boot - the same "remock then reload" pattern
+ * presentation, independent of the gate above) and `/billing/plans` (so the
+ * pricing dialog has a real plan to render) and reloads so the fresh values
+ * apply from a clean boot - the same "remock then reload" pattern
  * `subscription.spec.ts` uses for `window.__CONFIG__`-driven surfaces.
  */
 async function reconfigureBilling(
@@ -58,6 +62,21 @@ async function reconfigureBilling(
       jsonRoute(createBillingCapabilities('ws-personal', { can_top_up: false }))
     )
   })
+  await page.route('**/api/billing/plans', (route) =>
+    route.fulfill(
+      jsonRoute({
+        plans: [
+          createPlan({
+            slug: 'creator-monthly',
+            tier: 'CREATOR',
+            duration: 'MONTHLY',
+            priceCents: 3_500,
+            monthlyCredits: 7_400
+          })
+        ]
+      })
+    )
+  )
   await page.reload()
   await waitForCloudApp(page)
 }
@@ -125,6 +144,11 @@ agentTest.describe(
 
         const dialog = page.locator(DIALOG_SELECTOR)
         await expect(dialog).toBeVisible()
+        // An open but empty shell would still pass the check above; the
+        // pricing table must actually render the plan the user can pick.
+        await expect(
+          dialog.getByText(enMessages.subscription.tiers.creator.name).first()
+        ).toBeVisible()
 
         await testInfo.attach('subscription-dialog-opened', {
           body: await page.screenshot({ animations: 'disabled' }),
