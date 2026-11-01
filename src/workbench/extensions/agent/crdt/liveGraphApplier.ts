@@ -35,6 +35,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { zComfyNode } from '@comfyorg/graph-model/workflowSchema'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
@@ -1605,7 +1606,7 @@ export class LiveGraphApplier {
       return
     }
     const applied = applyRemoteDynamicGroupRowCount(node, () =>
-      this.setWidgetValue(node, widget, value)
+      this.assignWidgetValue(node, widget, value)
     )
     if (applied && reachesDynamicGroupRowCount(widget, value)) return
     this.reportDynamicGroupRowMismatch(node, widget, value)
@@ -1624,6 +1625,28 @@ export class LiveGraphApplier {
   }
 
   private setWidgetValue(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue
+  ) {
+    if (widget.type === 'button' || Object.is(widget.value, value)) return
+    if (!(widget instanceof BaseWidget)) {
+      this.assignWidgetValue(node, widget, value)
+      return
+    }
+    const rollback = captureWidgetValue(node, widget)
+    try {
+      widget.setValue(value, {
+        node,
+        canvas: this.deps.getCanvas?.() ?? undefined
+      })
+    } catch (error) {
+      rollback()
+      throw error
+    }
+  }
+
+  private assignWidgetValue(
     node: LGraphNode,
     widget: IBaseWidget,
     value: WidgetValue
@@ -1918,28 +1941,36 @@ function hostWidgetEntries(
   return Object.entries(widgets ?? {})
 }
 
-/** Writes a widget value and its mirrored node property; returns the undo. */
+function captureWidgetValue(
+  node: LGraphNode,
+  widget: IBaseWidget,
+  mirrorProperty = true
+): () => void {
+  const previous = widget.value
+  const property = widget.options.property
+  if (!mirrorProperty || !property || node.properties[property] === undefined)
+    return () => {
+      widget.value = previous
+    }
+  const previousProperty = node.properties[property]
+  return () => {
+    widget.value = previous
+    node.setProperty(property, previousProperty)
+  }
+}
+
 function writeWidgetValue(
   node: LGraphNode,
   widget: IBaseWidget,
   value: WidgetValue,
   mirrorProperty = true
 ): () => void {
-  const previous = widget.value
+  const rollback = captureWidgetValue(node, widget, mirrorProperty)
   const property = widget.options.property
-  if (!mirrorProperty || !property || node.properties[property] === undefined) {
-    widget.value = value
-    return () => {
-      widget.value = previous
-    }
-  }
-  const previousProperty = node.properties[property]
   widget.value = value
-  node.setProperty(property, value)
-  return () => {
-    widget.value = previous
-    node.setProperty(property, previousProperty)
-  }
+  if (mirrorProperty && property && node.properties[property] !== undefined)
+    node.setProperty(property, value)
+  return rollback
 }
 
 function applyFlags(
