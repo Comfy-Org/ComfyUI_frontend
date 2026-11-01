@@ -3,13 +3,11 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
-const EXTENSION_CHANGE_CASE = 'repro/pm-2147-extension-change-card'
-
 test.describe(
   'Agent node pack change card',
   { tag: ['@cloud', '@vue-nodes'] },
   () => {
-    test.use({ conversationCase: EXTENSION_CHANGE_CASE })
+    test.use({ conversationCase: 'repro/pm-2147-extension-change-card' })
 
     test(
       'shows which pack the agent turned off and that a restart applies it',
