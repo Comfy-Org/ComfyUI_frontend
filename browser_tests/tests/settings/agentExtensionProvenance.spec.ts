@@ -17,16 +17,16 @@ test.describe(
         tag: '@screenshot'
       },
       async ({ comfyPage, page }) => {
-        await page.evaluate(() => {
-          window.app!.registerExtension({ name: 'Manual.Toolbar' })
-          window.app!.registerExtension({
+        await comfyPage.extensions.register(
+          { name: 'Manual.Toolbar' },
+          {
             name: 'agent.cushions.toolbar',
             provenance: {
               createdBy: 'comfy-agent',
               summary: 'Adds cushion controls'
             }
-          })
-        })
+          }
+        )
 
         await test.step('Open Extensions and see agent attribution', async () => {
           await comfyPage.settingDialog.open()
@@ -81,14 +81,11 @@ test.describe(
     )
 
     test('disables the bulk action when every agent extension is read-only', async ({
-      comfyPage,
-      page
+      comfyPage
     }) => {
-      await page.evaluate(() => {
-        window.app!.registerExtension({
-          name: 'pysssss.Locking',
-          provenance: { createdBy: 'comfy-agent' }
-        })
+      await comfyPage.extensions.register({
+        name: 'pysssss.Locking',
+        provenance: { createdBy: 'comfy-agent' }
       })
 
       await comfyPage.settingDialog.open()
@@ -100,17 +97,14 @@ test.describe(
     })
 
     test('announces a newly registered agent extension with both actions', async ({
-      comfyPage,
-      page
+      comfyPage
     }) => {
-      await page.evaluate(() => {
-        window.app!.registerExtension({
-          name: 'agent.cushions.notices',
-          provenance: {
-            createdBy: 'comfy-agent',
-            summary: 'Adds cushion controls'
-          }
-        })
+      await comfyPage.extensions.register({
+        name: 'agent.cushions.notices',
+        provenance: {
+          createdBy: 'comfy-agent',
+          summary: 'Adds cushion controls'
+        }
       })
 
       const notice = comfyPage.toast.withText(
@@ -147,14 +141,12 @@ test.describe(
         await comfyPage.settingDialog.goToAboutPanel()
       })
 
-      await page.evaluate(() => {
-        window.app!.registerExtension({
-          name: 'agent.cushions.routing',
-          provenance: {
-            createdBy: 'comfy-agent',
-            summary: 'Adds cushion controls'
-          }
-        })
+      await comfyPage.extensions.register({
+        name: 'agent.cushions.routing',
+        provenance: {
+          createdBy: 'comfy-agent',
+          summary: 'Adds cushion controls'
+        }
       })
 
       const notice = comfyPage.toast.withText(
@@ -173,11 +165,9 @@ test.describe(
         await comfyPage.settingDialog.goToAboutPanel()
         await expect(page.locator('.about-container')).toBeVisible()
 
-        await page.evaluate(() => {
-          window.app!.registerExtension({
-            name: 'agent.cushions.rerouting',
-            provenance: { createdBy: 'comfy-agent' }
-          })
+        await comfyPage.extensions.register({
+          name: 'agent.cushions.rerouting',
+          provenance: { createdBy: 'comfy-agent' }
         })
         await comfyPage.toast
           .withText('Your agent added agent.cushions.rerouting')
