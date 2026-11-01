@@ -16,12 +16,13 @@
     v-model="modelValue"
     :component="WidgetSelectDefault"
     :widget="widget as SelectControlWidget"
+    :filename-summary
   />
-  <WidgetSelectDefault v-else v-model="modelValue" :widget />
+  <WidgetSelectDefault v-else v-model="modelValue" :widget :filename-summary />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
@@ -37,6 +38,7 @@ import type {
   WidgetValue
 } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 
 type SelectControlWidget = SimplifiedControlWidget<WidgetValue>
 
@@ -46,6 +48,15 @@ const props = defineProps<{
 }>()
 
 const modelValue = defineModel<WidgetValue>()
+const unifiedRows = inject(UnifiedWidgetRowsKey, false)
+const filenameSummary = computed(
+  () =>
+    unifiedRows &&
+    assetService.isAssetBrowserEligible(
+      props.widget.nodeType ?? props.nodeType ?? '',
+      props.widget.name
+    )
+)
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {
   if (props.widget.spec && isComboInputSpec(props.widget.spec)) {

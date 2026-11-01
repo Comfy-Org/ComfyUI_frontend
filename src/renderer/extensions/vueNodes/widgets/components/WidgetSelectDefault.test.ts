@@ -5,6 +5,7 @@ import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
@@ -15,7 +16,9 @@ const i18n = createI18n({
     en: {
       g: {
         noResultsFound: 'No results found',
-        search: 'Search'
+        search: 'Search',
+        previous: 'Previous',
+        next: 'Next'
       }
     }
   }
@@ -48,7 +51,9 @@ describe('WidgetSelectDefault', () => {
   function renderComponent(
     widget: SimplifiedWidget<string | undefined>,
     modelValue?: WidgetValue,
-    slots?: Record<string, string>
+    slots?: Record<string, string>,
+    filenameSummary = false,
+    unifiedRows = false
   ) {
     const onUpdate = vi.fn()
     const user = userEvent.setup()
@@ -56,11 +61,13 @@ describe('WidgetSelectDefault', () => {
       props: {
         widget,
         modelValue,
+        filenameSummary,
         'onUpdate:modelValue': onUpdate
       },
       slots,
       global: {
         plugins: [i18n],
+        provide: { [UnifiedWidgetRowsKey as symbol]: unifiedRows },
         stubs: {
           WidgetLayoutField: WidgetLayoutFieldStub
         }
@@ -78,6 +85,76 @@ describe('WidgetSelectDefault', () => {
 
   const optionLabels = () =>
     screen.queryAllByRole('option').map((option) => option.textContent.trim())
+
+  it.for([
+    {
+      raw: 'studio/models/portrait.safetensors',
+      summary: 'portrait.safetensors',
+      filenameSummary: true
+    },
+    {
+      raw: 'C:\\models\\portrait.safetensors',
+      summary: 'portrait.safetensors',
+      filenameSummary: true
+    },
+    {
+      raw: 'schedule/custom',
+      summary: 'schedule/custom',
+      filenameSummary: false
+    }
+  ])('displays $raw as $summary', ({ raw, summary, filenameSummary }) => {
+    renderComponent(createWidget([raw]), raw, undefined, filenameSummary)
+    expect(screen.getByRole('combobox').textContent.trim()).toBe(summary)
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('title')
+  })
+
+  it.for([
+    { current: 42, action: 'Next', expected: 89 },
+    { current: 42, action: 'Previous', expected: 11 },
+    { current: 89, action: 'Next', expected: 11 },
+    { current: 11, action: 'Previous', expected: 89 }
+  ])(
+    'cycles $action from $current to raw value $expected',
+    async ({ current, action, expected }) => {
+      const { user, onUpdate } = renderComponent(
+        createWidget([11, 42, 89]),
+        current,
+        undefined,
+        false,
+        true
+      )
+      await user.click(
+        screen.getByRole('button', { name: `test_combo: ${action}` })
+      )
+      expect(onUpdate).toHaveBeenCalledWith(expected)
+    }
+  )
+
+  it('keeps custom labels intact when filename summaries are requested', () => {
+    renderComponent(
+      createWidget(['studio/model.safetensors'], {
+        getOptionLabel: () => 'Studio / approved'
+      }),
+      'studio/model.safetensors',
+      undefined,
+      true
+    )
+    expect(screen.getByRole('combobox')).toHaveTextContent('Studio / approved')
+  })
+
+  it('distinguishes duplicate filenames by full path and emits the selected raw path', async () => {
+    const first = 'studio/models/portrait.safetensors'
+    const second = 'archive/models/portrait.safetensors'
+    const { user, onUpdate } = renderComponent(
+      createWidget([first, second]),
+      first,
+      undefined,
+      true
+    )
+    await openDropdown(user)
+    await user.click(screen.getByRole('option', { name: second }))
+    expect(onUpdate).toHaveBeenCalledWith(second)
+  })
 
   async function expectHighlightedOption(name: string) {
     await waitFor(() => {

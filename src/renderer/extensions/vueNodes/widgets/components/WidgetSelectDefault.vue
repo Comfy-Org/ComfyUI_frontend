@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget>
+  <WidgetLayoutField :widget :value-text="selectedSummary">
     <ComboboxRoot
       :open="isOpen"
       :model-value="selectedOption ?? null"
@@ -30,7 +30,7 @@
               type="button"
               role="combobox"
               aria-haspopup="listbox"
-              :aria-label="widget.label || widget.name"
+              :aria-label="widgetLabel"
               :aria-invalid="isInvalid || undefined"
               :aria-expanded="isOpen"
               :disabled
@@ -39,12 +39,32 @@
               class="flex min-w-0 flex-1 cursor-pointer items-center overflow-hidden border-none bg-transparent p-0 outline-none disabled:cursor-default"
             >
               <span class="min-w-[4ch] flex-1 truncate pr-1 pl-2 text-left">
-                {{ selectedLabel || placeholder || '\u00a0' }}
+                {{ selectedSummary || placeholder || '\u00a0' }}
               </span>
             </button>
           </ComboboxTrigger>
           <slot />
+          <template v-if="unifiedRows">
+            <button
+              v-for="button in stepperButtons"
+              :key="button.direction"
+              type="button"
+              tabindex="-1"
+              :aria-label="`${widgetLabel}: ${$t(button.labelKey)}`"
+              :disabled="disabled || !normalizedOptions.length"
+              :class="
+                cn(
+                  'flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none hover:bg-muted disabled:cursor-default disabled:opacity-30',
+                  button.className
+                )
+              "
+              @click="cycleOption(button.direction)"
+            >
+              <i :class="button.icon" aria-hidden="true" />
+            </button>
+          </template>
           <button
+            v-else
             type="button"
             tabindex="-1"
             aria-hidden="true"
@@ -173,12 +193,13 @@ import {
   ComboboxTrigger,
   ComboboxVirtualizer
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -187,6 +208,7 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 interface Props {
   widget: SimplifiedWidget<string | undefined>
+  filenameSummary?: boolean
 }
 
 interface SelectOption {
@@ -199,9 +221,25 @@ type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
   filterPlaceholder?: string
 }
 
-const { widget } = defineProps<Props>()
+const { widget, filenameSummary = false } = defineProps<Props>()
+const unifiedRows = inject(UnifiedWidgetRowsKey, false)
+const widgetLabel = computed(() => widget.label || widget.name)
 
 const MAX_VISIBLE_OPTIONS = 7
+const stepperButtons = [
+  {
+    direction: -1,
+    labelKey: 'g.previous',
+    icon: 'icon-[lucide--chevron-left] text-muted-foreground',
+    className: 'absolute inset-y-0 left-0'
+  },
+  {
+    direction: 1,
+    labelKey: 'g.next',
+    icon: 'icon-[lucide--chevron-right] text-muted-foreground',
+    className: ''
+  }
+] as const
 
 function resolveRawValues(values: unknown): unknown[] {
   try {
@@ -349,6 +387,12 @@ const selectedLabel = computed(() => {
   return ''
 })
 
+const selectedSummary = computed(() =>
+  filenameSummary && !widgetOptions.value?.getOptionLabel
+    ? selectedLabel.value.split(/[/\\]/).at(-1)
+    : selectedLabel.value
+)
+
 function selectOption(option: SelectOption | null) {
   if (!option) return
 
@@ -356,6 +400,20 @@ function selectOption(option: SelectOption | null) {
   useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   searchQuery.value = ''
   isOpen.value = false
+}
+
+function cycleOption(direction: -1 | 1) {
+  refreshOptions()
+  const options = normalizedOptions.value
+  const index = selectedOption.value
+    ? options.indexOf(selectedOption.value)
+    : direction === 1
+      ? -1
+      : 0
+  const option = options.at(
+    (index + direction + options.length) % options.length
+  )
+  if (option) selectOption(option)
 }
 
 function focusSearchInput() {

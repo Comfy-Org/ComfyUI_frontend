@@ -4,7 +4,8 @@
     :class="
       cn(
         'flex overflow-hidden rounded-md bg-input text-xs text-foreground',
-        useWidgetHeight()
+        useWidgetHeight(),
+        edgeButtons && 'static overflow-visible'
       )
     "
   >
@@ -13,7 +14,12 @@
       v-if="!hideButtons"
       :aria-label="t('g.decrement')"
       data-testid="decrement"
-      class="aspect-square h-full rounded-none p-0 hover:bg-muted disabled:opacity-30"
+      :class="
+        cn(
+          'aspect-square h-full rounded-none p-0 hover:bg-muted disabled:opacity-30',
+          edgeButtons && 'absolute inset-y-0 left-0 w-6'
+        )
+      "
       variant="muted-textonly"
       size="unset"
       :disabled="!canDecrement"
@@ -87,6 +93,7 @@ const {
   step = 1,
   disabled = false,
   hideButtons = false,
+  edgeButtons = false,
   displayValue,
   parseValue
 } = defineProps<{
@@ -95,6 +102,7 @@ const {
   step?: number
   disabled?: boolean
   hideButtons?: boolean
+  edgeButtons?: boolean
   displayValue?: string
   parseValue?: (raw: string) => number | undefined
   inputAttrs?: Record<string, unknown>

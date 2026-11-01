@@ -1,0 +1,549 @@
+{
+  "config": {},
+  "extra": {
+    "ds": {
+      "offset": [70, 120],
+      "scale": 0.85
+    },
+    "reconstruction": "Narrow variant reconstructed from supplied screenshots. Nodes use Nodes2 minimum width225. Referenced weights are not installed."
+  },
+  "groups": [],
+  "id": "cb76d942-eb66-4d99-a899-f58a6abb4166",
+  "last_link_id": 10,
+  "last_node_id": 71,
+  "links": [
+    [1, 66, 0, 69, 0, "MODEL"],
+    [2, 69, 0, 70, 0, "MODEL"],
+    [3, 62, 0, 67, 1, "CLIP"],
+    [4, 62, 0, 71, 1, "CLIP"],
+    [5, 67, 0, 70, 6, "CONDITIONING"],
+    [6, 71, 0, 70, 7, "CONDITIONING"],
+    [7, 68, 0, 70, 8, "LATENT"],
+    [8, 70, 0, 65, 0, "LATENT"],
+    [9, 63, 0, 65, 1, "VAE"],
+    [10, 65, 0, 9, 0, "IMAGE"]
+  ],
+  "nodes": [
+    {
+      "flags": {},
+      "id": 66,
+      "inputs": [
+        {
+          "link": null,
+          "localized_name": "unet_name",
+          "name": "unet_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "unet_name"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "weight_dtype",
+          "name": "weight_dtype",
+          "type": "COMBO",
+          "widget": {
+            "name": "weight_dtype"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 0,
+      "outputs": [
+        {
+          "links": [1],
+          "localized_name": "MODEL",
+          "name": "MODEL",
+          "type": "MODEL"
+        }
+      ],
+      "pos": [30, 40],
+      "properties": {
+        "Node name for S&R": "UNETLoader"
+      },
+      "size": [225, 170],
+      "type": "UNETLoader",
+      "widgets_values": [
+        "Comfy-Org/z_image_turbo/diffusion_models/z_image_turbo_bf16.safetensors",
+        "default"
+      ],
+      "widgets_values_named": {
+        "unet_name": "Comfy-Org/z_image_turbo/diffusion_models/z_image_turbo_bf16.safetensors",
+        "weight_dtype": "default"
+      }
+    },
+    {
+      "flags": {},
+      "id": 69,
+      "inputs": [
+        {
+          "link": 1,
+          "localized_name": "model",
+          "name": "model",
+          "type": "MODEL"
+        },
+        {
+          "link": null,
+          "localized_name": "shift",
+          "name": "shift",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "sampling",
+          "name": "sampling",
+          "shape": 7,
+          "type": "COMBO",
+          "widget": {
+            "name": "sampling"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 4,
+      "outputs": [
+        {
+          "links": [2],
+          "localized_name": "MODEL",
+          "name": "MODEL",
+          "type": "MODEL"
+        }
+      ],
+      "pos": [470, 40],
+      "properties": {
+        "Node name for S&R": "ModelSamplingAuraFlow"
+      },
+      "size": [225, 145],
+      "type": "ModelSamplingAuraFlow",
+      "widgets_values": [3, "flow"],
+      "widgets_values_named": {
+        "sampling": "flow",
+        "shift": 3
+      }
+    },
+    {
+      "flags": {},
+      "id": 62,
+      "inputs": [
+        {
+          "link": null,
+          "localized_name": "clip_name",
+          "name": "clip_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "clip_name"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "type",
+          "name": "type",
+          "type": "COMBO",
+          "widget": {
+            "name": "type"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "device",
+          "name": "device",
+          "shape": 7,
+          "type": "COMBO",
+          "widget": {
+            "name": "device"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 1,
+      "outputs": [
+        {
+          "links": [3, 4],
+          "localized_name": "CLIP",
+          "name": "CLIP",
+          "type": "CLIP"
+        }
+      ],
+      "pos": [30, 365],
+      "properties": {
+        "Node name for S&R": "CLIPLoader"
+      },
+      "size": [225, 190],
+      "type": "CLIPLoader",
+      "widgets_values": [
+        "Comfy-Org/z_image_turbo/text_encoders/qwen_3_4b.safetensors",
+        "lumina2",
+        "default"
+      ],
+      "widgets_values_named": {
+        "clip_name": "Comfy-Org/z_image_turbo/text_encoders/qwen_3_4b.safetensors",
+        "device": "default",
+        "type": "lumina2"
+      }
+    },
+    {
+      "flags": {},
+      "id": 67,
+      "inputs": [
+        {
+          "link": null,
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          }
+        },
+        {
+          "link": 3,
+          "localized_name": "clip",
+          "name": "clip",
+          "type": "CLIP"
+        }
+      ],
+      "mode": 0,
+      "order": 5,
+      "outputs": [
+        {
+          "links": [5],
+          "localized_name": "CONDITIONING",
+          "name": "CONDITIONING",
+          "type": "CONDITIONING"
+        }
+      ],
+      "pos": [420, 235],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "size": [410, 220],
+      "type": "CLIPTextEncode",
+      "widgets_values": [
+        "anime RPG game style, cute anime girl with gigantic fennec ears and a big fluffy fox tail with long wavy blonde hair and large blue eyes blonde colored eyelashes wearing a pink sweater a large oversized gold trimmed black winter coat and a long blue maxi skirt and a red scarf, she is sitting beside a campfire in the wilderness at night playing guitar with a milky way galaxy sky"
+      ],
+      "widgets_values_named": {
+        "text": "anime RPG game style, cute anime girl with gigantic fennec ears and a big fluffy fox tail with long wavy blonde hair and large blue eyes blonde colored eyelashes wearing a pink sweater a large oversized gold trimmed black winter coat and a long blue maxi skirt and a red scarf, she is sitting beside a campfire in the wilderness at night playing guitar with a milky way galaxy sky"
+      }
+    },
+    {
+      "flags": {},
+      "id": 71,
+      "inputs": [
+        {
+          "link": null,
+          "localized_name": "text",
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          }
+        },
+        {
+          "link": 4,
+          "localized_name": "clip",
+          "name": "clip",
+          "type": "CLIP"
+        }
+      ],
+      "mode": 0,
+      "order": 6,
+      "outputs": [
+        {
+          "links": [6],
+          "localized_name": "CONDITIONING",
+          "name": "CONDITIONING",
+          "type": "CONDITIONING"
+        }
+      ],
+      "pos": [420, 495],
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "size": [410, 180],
+      "type": "CLIPTextEncode",
+      "widgets_values": [
+        "low quality, bad anatomy, extra digits, missing digits, extra limbs, missing limbs"
+      ],
+      "widgets_values_named": {
+        "text": "low quality, bad anatomy, extra digits, missing digits, extra limbs, missing limbs"
+      }
+    },
+    {
+      "flags": {},
+      "id": 68,
+      "inputs": [
+        {
+          "link": null,
+          "localized_name": "width",
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "height",
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "batch_size",
+          "name": "batch_size",
+          "type": "INT",
+          "widget": {
+            "name": "batch_size"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 2,
+      "outputs": [
+        {
+          "links": [7],
+          "localized_name": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT"
+        }
+      ],
+      "pos": [570, 725],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "size": [260, 180],
+      "type": "EmptySD3LatentImage",
+      "widgets_values": [1024, 1024, 1],
+      "widgets_values_named": {
+        "batch_size": 1,
+        "height": 1024,
+        "width": 1024
+      }
+    },
+    {
+      "flags": {},
+      "id": 70,
+      "inputs": [
+        {
+          "link": 2,
+          "localized_name": "model",
+          "name": "model",
+          "type": "MODEL"
+        },
+        {
+          "link": null,
+          "localized_name": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "steps",
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "cfg",
+          "name": "cfg",
+          "type": "FLOAT",
+          "widget": {
+            "name": "cfg"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "sampler_name",
+          "name": "sampler_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "sampler_name"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "scheduler",
+          "name": "scheduler",
+          "type": "COMBO",
+          "widget": {
+            "name": "scheduler"
+          }
+        },
+        {
+          "link": 5,
+          "localized_name": "positive",
+          "name": "positive",
+          "type": "CONDITIONING"
+        },
+        {
+          "link": 6,
+          "localized_name": "negative",
+          "name": "negative",
+          "type": "CONDITIONING"
+        },
+        {
+          "link": 7,
+          "localized_name": "latent_image",
+          "name": "latent_image",
+          "type": "LATENT"
+        },
+        {
+          "link": null,
+          "localized_name": "denoise",
+          "name": "denoise",
+          "type": "FLOAT",
+          "widget": {
+            "name": "denoise"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 7,
+      "outputs": [
+        {
+          "links": [8],
+          "localized_name": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT"
+        }
+      ],
+      "pos": [910, 265],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "size": [225, 365],
+      "type": "KSampler",
+      "widgets_values": [42, "fixed", 8, 1, "res_multistep", "simple", 1],
+      "widgets_values_named": {
+        "cfg": 1,
+        "control_after_generate": "fixed",
+        "denoise": 1,
+        "sampler_name": "res_multistep",
+        "scheduler": "simple",
+        "seed": 42,
+        "steps": 8
+      }
+    },
+    {
+      "flags": {},
+      "id": 63,
+      "inputs": [
+        {
+          "link": null,
+          "localized_name": "vae_name",
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 3,
+      "outputs": [
+        {
+          "links": [9],
+          "localized_name": "VAE",
+          "name": "VAE",
+          "type": "VAE"
+        }
+      ],
+      "pos": [910, 725],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "size": [225, 140],
+      "type": "VAELoader",
+      "widgets_values": ["Comfy-Org/z_image_turbo/vae/ae.safetensors"],
+      "widgets_values_named": {
+        "vae_name": "Comfy-Org/z_image_turbo/vae/ae.safetensors"
+      }
+    },
+    {
+      "flags": {},
+      "id": 65,
+      "inputs": [
+        {
+          "link": 8,
+          "localized_name": "samples",
+          "name": "samples",
+          "type": "LATENT"
+        },
+        {
+          "link": 9,
+          "localized_name": "vae",
+          "name": "vae",
+          "type": "VAE"
+        }
+      ],
+      "mode": 0,
+      "order": 8,
+      "outputs": [
+        {
+          "links": [10],
+          "localized_name": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE"
+        }
+      ],
+      "pos": [1280, 265],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "size": [225, 130],
+      "type": "VAEDecode"
+    },
+    {
+      "flags": {},
+      "id": 9,
+      "inputs": [
+        {
+          "link": 10,
+          "localized_name": "images",
+          "name": "images",
+          "type": "IMAGE"
+        },
+        {
+          "link": null,
+          "localized_name": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 9,
+      "outputs": [
+        {
+          "links": null,
+          "localized_name": "images",
+          "name": "images",
+          "type": "IMAGE"
+        }
+      ],
+      "pos": [1560, 265],
+      "properties": {},
+      "size": [300, 470],
+      "type": "SaveImage",
+      "widgets_values": ["ComfyUI"],
+      "widgets_values_named": {
+        "filename_prefix": "ComfyUI"
+      }
+    }
+  ],
+  "revision": 0,
+  "version": 0.4
+}
