@@ -74,6 +74,7 @@ const runApproval = (
       thread_id: 'th',
       ask_id: askId,
       kind: 'run_approval',
+      context: { workflow_id: 'workflow-1' },
       prompt: 'Run workflow?',
       options: [
         { id: 'run', label: 'Run' },

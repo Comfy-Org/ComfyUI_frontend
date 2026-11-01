@@ -1,5 +1,8 @@
 import { preferArrayContaining } from './arrayContaining.ts'
-import { noDuplicateIngestType } from './comfyIngestTypes.ts'
+import {
+  noAgentIngestPassthrough,
+  noDuplicateIngestType
+} from './comfyIngestTypes.ts'
 import {
   noComfyPageSetupCall,
   preferInitialSettings
@@ -48,6 +51,7 @@ import { noRenderInWatchEffect } from './watchEffectRendering.ts'
 export default {
   meta: { name: 'comfy' },
   rules: {
+    'no-agent-ingest-passthrough': noAgentIngestPassthrough,
     'no-comfy-page-setup-call': noComfyPageSetupCall,
     'no-deprecated-api-schema': noDeprecatedApiSchema,
     'no-direct-selection-write': noDirectSelectionWrite,

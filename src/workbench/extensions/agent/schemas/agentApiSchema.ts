@@ -1,8 +1,9 @@
 import {
   zAgentAdmissionError,
   zAgentAnswerAccepted,
+  zAgentAskFrame,
   zAgentAskKind,
-  zAgentAskResolvedData,
+  zAgentAskResolvedFrame,
   zAgentAttachmentRejected,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
@@ -16,6 +17,7 @@ import {
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
   zAgentTurnUsage as zGeneratedAgentTurnUsage,
   zToolCallSummary,
+  zWorkflowResponse,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
 import type {
@@ -30,6 +32,8 @@ import { z } from 'zod'
 
 import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+
 export { zAgentAdmissionError, zAgentCancelAccepted }
 export type {
   AgentAnswerAccepted,
@@ -38,24 +42,16 @@ export type {
   AgentThreadSummary
 }
 
-/**
- * The 202 from the answer route. A backend that predates the committed-answer
- * body sends only `status`, so `selected` is optional here.
- */
-export const zAgentAnswerReceipt = zAgentAnswerAccepted.partial({
-  selected: true
-})
+export const zAgentAnswerReceipt = zAgentAnswerAccepted
 export type AgentAnswerReceipt = z.infer<typeof zAgentAnswerReceipt>
 
 const zTurnId = z.string().brand<'TurnId'>()
 export type TurnId = z.infer<typeof zTurnId>
 export const toTurnId = (value: string): TurnId => zTurnId.parse(value)
 
-export const zAgentTurnAccepted = zGeneratedAgentTurnAccepted
-  .extend({
-    workflow_id: z.string().optional()
-  })
-  .passthrough()
+export const zAgentTurnAccepted = zGeneratedAgentTurnAccepted.extend({
+  workflow_id: z.string().optional()
+})
 export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
   workflow_id?: string
 }
@@ -109,98 +105,38 @@ const zSkillName = z
   .transform((skill) => Array.from(skill).slice(0, SKILL_NAME_MAX).join(''))
   .nullish()
 
-/**
- * One entry of a persisted assistant row's `content.tool_calls` (see
- * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
- * to the live WebSocket's `zAgentToolCallData` above. Sourced from the
- * generated `ToolCallSummary` schema (Comfy-Org/cloud#10360), but relaxed:
- * the generated schema requires `tool_call_id`, narrows `status` to the
- * closed `'success' | 'error'` wire vocabulary, and requires `duration_ms`
- * to be an integer, which is only true for rows persisted after that
- * backend change landed. Real historical rows can still carry a bare `id`
- * with no `tool_call_id`, a `status` of `'ok'` (an older success alias —
- * see `toolCallOk` in `agentTranscript.ts`), or a non-finite/negative
- * `duration_ms`. `parseToolCallEntry` picks only the fields it actually
- * reads from this, so an unrelated field (e.g. a strict
- * `started_at`/`finished_at` datetime) never gates the entry.
- */
 export const zPersistedToolCallSummary = zToolCallSummary.extend({
-  id: z.string(),
-  // `.nullish()`, matching `zSkillName` above: a Go pointer field serialized
-  // without `omitempty` sends an explicit `null` rather than omitting the
-  // key, and `.optional()` alone rejects that, failing this entry's
-  // `safeParse` and dropping the whole tool-call row.
-  tool_call_id: z.string().nullish(),
-  status: z.string().nullish(),
-  // `z.custom`, not `z.number()`: Zod 4's `z.number()` also rejects
-  // `Infinity`/`-Infinity` (Zod 3 only rejected `NaN`), which would fail
-  // this entry's `safeParse` and drop the whole tool-call row over a bad
-  // `duration_ms` alone. `NaN` stays rejected here, matching the
-  // pre-existing Zod 3 behavior; `parseDurationMs` in `agentTranscript.ts`
-  // already does the real finite/non-negative check and omits the field
-  // for `Infinity`/`-Infinity` instead of failing the whole entry.
-  duration_ms: z
-    .custom<number>((val) => typeof val === 'number' && !Number.isNaN(val))
-    .nullish(),
   skill: zSkillName
 })
 export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
-/**
- * One persisted `content.thinking` entry: a model round's thinking text,
- * anchored to that round's first tool call when it made one.
- */
 export const zPersistedThinkingEntry = zAgentThinkingEntry
   .pick({ text: true })
   .extend({ tool_call_id: z.string().nullish() })
 
-/**
- * The message-parse boundary's `content.tool_calls` field is deliberately
- * `z.array(z.unknown())`, not the stricter `zPersistedToolCallSummary`
- * above: `agentRestClient.ts`'s `request()` calls `.parse()` (throws) on
- * the whole `AgentMessages` array, so a single non-conforming historical
- * tool-call row must never fail the entire conversation-history load.
- * `agentTranscript.ts`'s `parseToolCallEntry` runs its own `safeParse`
- * per entry and degrades just that one row instead.
- *
- * The generated `AgentMessage.content` schema also keeps a
- * `[key: string]: unknown` index signature on its TS type but no matching
- * `.passthrough()` on its zod schema — the `.passthrough()` below re-widens
- * it so a persisted row's other `content` fields (`text`, `attachments`,
- * `attachment_refs`, `workflow_references`, ...; see `agentTranscript.ts`)
- * keep parsing.
- */
-const zAgentMessageContent = z
-  .object({
-    // `z.unknown()`, not `z.array(z.unknown())`: a Go nil slice persisted
-    // without `omitempty` sends `tool_calls: null`, and any other historical
-    // row could carry a non-array value here too. `zAgentMessages.parse()`
-    // throws on the whole history for a schema mismatch, so this field must
-    // accept anything; `agentTranscript.ts`'s `parseToolCalls` already
-    // guards with `Array.isArray` and degrades just that one row's tool
-    // calls instead.
+const zAgentMessageContent = zGeneratedAgentMessage.shape.content
+  .unwrap()
+  .extend({
+    text: z.unknown().optional(),
+    attachments: z.unknown().optional(),
+    workflow_references: z.unknown().optional(),
     tool_calls: z.unknown().optional()
   })
-  .passthrough()
 
-export const zAgentMessage = zGeneratedAgentMessage
-  .extend({
-    content: zAgentMessageContent.optional(),
-    pending_ask: zTolerantPendingAsk.optional()
-  })
-  .passthrough()
+export const zAgentMessage = zGeneratedAgentMessage.extend({
+  content: zAgentMessageContent.optional(),
+  pending_ask: zTolerantPendingAsk.optional()
+})
 
 export const zAgentMessages = z.array(zAgentMessage)
 export type AgentMessages = z.infer<typeof zAgentMessages>
 
-export const zAgentThreads = zGeneratedAgentThreadListResponse.passthrough()
+export const zAgentThreads = zGeneratedAgentThreadListResponse
 
 export const zCloudWorkflowIndex = zWorkflowListResponse
   .pick({ pagination: true })
   .extend({
-    data: z.array(
-      z.object({ id: z.string(), name: z.string().optional() }).passthrough()
-    )
+    data: z.array(zWorkflowResponse.pick({ id: true, name: true }))
   })
 export type CloudWorkflowEntry = z.infer<
   typeof zCloudWorkflowIndex
@@ -252,31 +188,29 @@ const zAgentThinkingData = z
   })
   .passthrough()
 
-const zAgentToolCallData = zGeneratedAgentToolCallData
-  .extend({
-    skill: zSkillName,
-    args: z.never().optional(),
-    workflow_id: zGeneratedAgentToolCallData.shape.workflow_id.catch(undefined),
-    op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),
-    doc_seq: zGeneratedAgentToolCallData.shape.doc_seq.catch(undefined),
-    doc_lineage_seq:
-      zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined),
-    job_id: z
-      .string()
-      .min(1)
-      .max(128)
-      .refine(
-        (value) =>
-          !value.includes('\u0000') &&
-          !value.includes('\n') &&
-          !value.includes('\r') &&
-          !value.includes('\t')
-      )
-      .optional()
-      .catch(undefined),
-    job_workflow_id: z.string().min(1).optional().catch(undefined)
-  })
-  .passthrough()
+const zAgentToolCallData = zGeneratedAgentToolCallData.extend({
+  skill: zSkillName,
+  args: z.never().optional(),
+  workflow_id: zGeneratedAgentToolCallData.shape.workflow_id.catch(undefined),
+  op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),
+  doc_seq: zGeneratedAgentToolCallData.shape.doc_seq.catch(undefined),
+  doc_lineage_seq:
+    zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined),
+  job_id: z
+    .string()
+    .min(1)
+    .max(128)
+    .refine(
+      (value) =>
+        !value.includes('\u0000') &&
+        !value.includes('\n') &&
+        !value.includes('\r') &&
+        !value.includes('\t')
+    )
+    .optional()
+    .catch(undefined),
+  job_workflow_id: z.string().min(1).optional().catch(undefined)
+})
 
 const zAgentMessageDeltaData = z
   .object({
@@ -365,14 +299,8 @@ const zAgentActiveTabEvent = z.object({
   data: zAgentActiveTabData
 })
 
-const zAgentAskEvent = z.object({
-  type: z.literal('agent_ask'),
+const zAgentAskEvent = zAgentAskFrame.extend({
   data: zTolerantPendingAsk.extend({ thread_id: z.string() })
-})
-
-const zAgentAskResolvedEvent = z.object({
-  type: z.literal('agent_ask_resolved'),
-  data: zAgentAskResolvedData
 })
 
 export const zAgentWsEvent = z.discriminatedUnion('type', [
@@ -384,12 +312,14 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,
-  zAgentAskResolvedEvent
+  zAgentAskResolvedFrame
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 
 const AGENT_WS_EVENT_TYPES: ReadonlySet<AgentWsEvent['type']> = new Set(
-  zAgentWsEvent.options.map((option) => option.shape.type.value)
+  zAgentWsEvent.options.flatMap(({ shape: { type } }) =>
+    'value' in type ? [type.value] : type.options
+  )
 )
 
 export function isAgentEvent(type: string): type is AgentWsEvent['type'] {
@@ -399,7 +329,7 @@ export function isAgentEvent(type: string): type is AgentWsEvent['type'] {
 export function parseAgentWsEvent(
   value: unknown
 ): z.ZodSafeParseResult<AgentWsEvent> {
-  return zAgentWsEvent.safeParse(value)
+  return zAgentWsEvent.safeParse(pendingServerFact('BE-20403', value))
 }
 
 export const zAgentIdentity = zGeneratedAgentIdentity.extend({
