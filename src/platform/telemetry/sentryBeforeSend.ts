@@ -2,6 +2,7 @@ import type { ErrorEvent, EventHint } from '@sentry/vue'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 
+import { tagSentryEvaluatedCommandCaller } from './sentryEvaluatedCommandCaller'
 import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
 import { addVueDirectiveDiagnostics } from './vueDirectiveErrorDiagnostics'
 
@@ -40,6 +41,10 @@ export function sentryBeforeSend(
 ): ErrorEvent | null {
   const kept = sentryThirdPartyErrorFilter(event, hint)
   return (
-    kept && groupWorkspaceApiError(addVueDirectiveDiagnostics(kept, hint), hint)
+    kept &&
+    groupWorkspaceApiError(
+      tagSentryEvaluatedCommandCaller(addVueDirectiveDiagnostics(kept, hint)),
+      hint
+    )
   )
 }
