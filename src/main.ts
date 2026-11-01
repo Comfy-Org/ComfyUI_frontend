@@ -28,6 +28,7 @@ import { flushErrorReports } from '@comfyorg/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import '@/lib/litegraph/public/css/litegraph.css'
 import { createAppRouter } from '@/router'
+import { captureSafeExtensionBoot } from '@/platform/customNodes/customNodeScripts'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -159,6 +160,7 @@ function installSubgraphGraphHooks(): void {
 async function bootstrap(): Promise<void> {
   bootstrapTracer.recordSinceTimeOrigin('startup/entry-modules')
   api.captureLaunchContext()
+  captureSafeExtensionBoot()
 
   if (isCloud) {
     stripPaymentReturnParams()

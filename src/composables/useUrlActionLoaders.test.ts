@@ -202,39 +202,6 @@ describe('useUrlActionLoaders', () => {
     expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
   })
 
-  // `?safe` skips custom extensions for the boot that read it. Left in the URL,
-  // every later reload of the tab would stay in safe mode with no sign of it.
-  it.for([true, false])(
-    'drops the safe-boot flag once the boot has read it (cloud: %s)',
-    async (cloud) => {
-      mockIsCloud.value = cloud
-      await router.replace({
-        path: '/',
-        query: { safe: '1', workflow: 'keep-me' },
-        hash: '#graph'
-      })
-
-      const { runUrlActionLoaders } = useUrlActionLoaders()
-      await runUrlActionLoaders()
-
-      expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
-      expect(router.currentRoute.value.hash).toBe('#graph')
-    }
-  )
-
-  it('keeps the safe-boot flag when a switch reload is in flight', async () => {
-    await router.replace({ path: '/', query: { workspace: 'w-1', safe: '' } })
-    mocks.loadWorkspace.mockResolvedValueOnce(true)
-
-    const { runUrlActionLoaders } = useUrlActionLoaders()
-    await runUrlActionLoaders()
-
-    expect(router.currentRoute.value.query).toEqual({
-      workspace: 'w-1',
-      safe: ''
-    })
-  })
-
   it('does not instantiate or run any loader off cloud', async () => {
     mockIsCloud.value = false
 

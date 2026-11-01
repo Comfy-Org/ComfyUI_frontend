@@ -1,7 +1,7 @@
 import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
 import {
   getExtensionPath,
-  isSafeExtensionBoot,
+  isSafeExtensionBootActive,
   loadCustomNodeScripts,
   shouldLoadCustomNodeScript
 } from '@/platform/customNodes/customNodeScripts'
@@ -28,7 +28,7 @@ export async function loadExtensions(
   const disabledExtensionPaths = settingStore.get(
     'Comfy.Extension.DisabledPacks'
   )
-  const disableAllCustomExtensions = isSafeExtensionBoot(window.location.search)
+  const disableAllCustomExtensions = isSafeExtensionBootActive()
 
   const firstCpuServerReading = lateLoadingApplies()
     ? askCpuServer()
