@@ -1,19 +1,6 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-
-const CASE = 'agent-rec-text-only-answer'
-const LOADED_NODE_ID = '3'
-const LOADED_WIDGET = 'steps'
-const EXTENSION_VALUE = '47'
-
-async function enableCrdtDebugPanel(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
-    localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
-  })
-}
 
 test.describe(
   'PM-2438: afterConfigureGraph widget provenance',
@@ -25,9 +12,11 @@ test.describe(
     }
   },
   () => {
-    test.use({ conversationCase: CASE, humanOpsHost: 'apply' })
-
-    test.beforeEach(async ({ page }) => enableCrdtDebugPanel(page))
+    test.use({
+      conversationCase: 'agent-rec-text-only-answer',
+      humanOpsHost: 'apply',
+      crdtDebugEnabled: true
+    })
 
     test('keeps a load-time extension widget write out of the bound Agent document', async ({
       agentConversation,
@@ -53,10 +42,10 @@ test.describe(
 
       await expect(
         agentConversation.vueNodes
-          .getNodeLocator(LOADED_NODE_ID)
-          .getByLabel(LOADED_WIDGET, { exact: true })
+          .getNodeLocator('3')
+          .getByLabel('steps', { exact: true })
           .getByRole('spinbutton')
-      ).toHaveValue(EXTENSION_VALUE)
+      ).toHaveValue('47')
 
       await page.getByTestId('crdt-dev-panel-tab-log').click()
       await page
