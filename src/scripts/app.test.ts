@@ -788,6 +788,71 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('applies synchronous afterConfigureGraph widget writes as load provenance', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      class KSampler extends LGraphNode {
+        constructor(title = 'KSampler') {
+          super(title)
+          this.addWidget('number', 'steps', 20, () => {})
+          this.serialize_widgets = true
+        }
+      }
+      LiteGraph.registerNodeType('KSampler', KSampler)
+      const intents: GraphIntentEvent[] = []
+      const unsubscribe = onGraphIntent((event) => {
+        if (event.type === 'set_widget') intents.push(event)
+      })
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook !== 'afterConfigureGraph') return
+          const steps = app.rootGraph
+            .findNodesByType('KSampler')[0]
+            ?.widgets?.find((widget) => widget.name === 'steps')
+          if (steps) steps.value = 47
+        }
+      )
+
+      try {
+        await app.loadGraphData(
+          {
+            ...createWorkflowGraphData(),
+            last_node_id: 1,
+            nodes: [
+              {
+                id: 1,
+                type: 'KSampler',
+                pos: [0, 0],
+                size: [200, 100],
+                flags: {},
+                order: 0,
+                mode: 0,
+                properties: {},
+                widgets_values: [20]
+              }
+            ]
+          },
+          false
+        )
+      } finally {
+        unsubscribe()
+        LiteGraph.unregisterNodeType('KSampler')
+      }
+
+      expect(app.rootGraph.getNodeById(toNodeId(1))?.widgets?.[0]?.value).toBe(
+        47
+      )
+      expect(intents).toContainEqual(
+        expect.objectContaining({
+          source: 'load',
+          name: 'steps',
+          value: 47,
+          previous: 20
+        })
+      )
+      expect(intents.map(({ source }) => source)).not.toContain('local')
+    })
+
     it('notifies extensions once on each side of a graph load, in order', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
@@ -1218,6 +1283,89 @@ describe('ComfyApp', () => {
         )
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
     })
+
+    it.for([
+      {
+        format: 'API JSON',
+        load: () =>
+          app.loadApiJson(
+            { '1': { class_type: 'KSampler', inputs: { steps: 20 } } },
+            'sampler.json'
+          )
+      },
+      {
+        format: 'A1111',
+        load: async () => {
+          vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+            parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+          })
+          mockImportA1111.mockImplementation(
+            async (incomingGraph, _parameters, beforeGraphClear) => {
+              await beforeGraphClear?.()
+              incomingGraph.clear()
+              const sampler = LiteGraph.createNode('KSampler')
+              assert(sampler)
+              incomingGraph.add(sampler)
+              return 'imported'
+            }
+          )
+          await app.handleFile(createTestFile('a1111.png', 'image/png'))
+        }
+      }
+    ])(
+      'applies synchronous afterConfigureGraph widget writes as load provenance for $format imports',
+      async ({ load }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        })
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        class KSampler extends LGraphNode {
+          constructor(title = 'KSampler') {
+            super(title)
+            this.addWidget('number', 'steps', 20, () => {})
+            this.serialize_widgets = true
+          }
+        }
+        LiteGraph.registerNodeType('KSampler', KSampler)
+        const intents: GraphIntentEvent[] = []
+        const unsubscribe = onGraphIntent((event) => {
+          if (event.type === 'set_widget') intents.push(event)
+        })
+        mockExtensionService.invokeExtensionsAsync.mockImplementation(
+          async (hook) => {
+            if (hook !== 'afterConfigureGraph') return
+            const steps = app.rootGraph
+              .findNodesByType('KSampler')[0]
+              ?.widgets?.find((widget) => widget.name === 'steps')
+            if (steps) steps.value = 47
+          }
+        )
+
+        try {
+          await load()
+        } finally {
+          unsubscribe()
+          LiteGraph.unregisterNodeType('KSampler')
+        }
+
+        expect(
+          app.rootGraph.findNodesByType('KSampler')[0]?.widgets?.[0]?.value
+        ).toBe(47)
+        expect(intents).toContainEqual(
+          expect.objectContaining({
+            source: 'load',
+            name: 'steps',
+            value: 47,
+            previous: 20
+          })
+        )
+        expect(intents.map(({ source }) => source)).not.toContain('local')
+      }
+    )
 
     it('closes a failed API JSON lifecycle and resumes undo capture', async () => {
       app.canvasElRef.value = document.createElement('canvas')
