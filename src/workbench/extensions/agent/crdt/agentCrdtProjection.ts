@@ -239,12 +239,14 @@ export class AgentCrdtProjection {
   }
 
   /**
-   * Puts the registers a rejected human batch claimed back the way the
-   * document has them. Only those registers are touched: the rejection says
-   * nothing about the rest of the live graph.
+   * Ends the local-write holds of a rejected human batch and puts the
+   * registers it claimed back the way the document has them. Only those
+   * registers are touched: the rejection says nothing about the rest of the
+   * live graph.
    * @returns the apply result for the rejected operations.
    */
   revertRejected(workflowId: string, ops: readonly Op[]): FrameOutcome {
+    this.localWrites.settle(ops)
     const target = this.targets.get(workflowId)
     if (!target || ops.length === 0 || !this.getGraph())
       return { applied: false, nodes: EMPTY_DELTA }
