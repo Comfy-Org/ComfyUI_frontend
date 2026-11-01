@@ -94,7 +94,10 @@ describe('AudioPreviewPlayer', () => {
       expect(pause).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledWith(
         expect.any(DOMException),
-        expect.objectContaining({ errorType: 'error_playing_audio' })
+        expect.objectContaining({
+          errorType: 'error_playing_audio',
+          level: 'warning'
+        })
       )
       expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
@@ -142,6 +145,51 @@ describe('AudioPreviewPlayer', () => {
       await fireEvent(screen.getByTestId('audio-preview'), new Event('pause'))
 
       expect(button).toHaveAttribute('aria-pressed', 'false')
+    })
+
+    it('follows playback that started from outside the player', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
+        false
+      )
+
+      renderPlayer('http://example.com/audio.mp3')
+      const button = screen.getByRole('button', { name: 'g.playPause' })
+      expect(button).toHaveAttribute('aria-pressed', 'false')
+
+      await fireEvent(screen.getByTestId('audio-preview'), new Event('play'))
+
+      expect(button).toHaveAttribute('aria-pressed', 'true')
+    })
+
+    it('does not reload the previous file when the source is replaced', async () => {
+      const loadedSources: string[] = []
+      vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(
+        function (this: HTMLMediaElement) {
+          loadedSources.push(this.src)
+        }
+      )
+      vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+
+      const { rerender } = renderPlayer('http://example.com/a.mp3')
+      await rerender({ modelValue: 'http://example.com/b.mp3' })
+
+      expect(screen.getByTestId('audio-preview')).toHaveAttribute(
+        'src',
+        'http://example.com/b.mp3'
+      )
+      expect(loadedSources).not.toContain('http://example.com/a.mp3')
+    })
+
+    it('stays silent when the source fails to load while paused', async () => {
+      renderPlayer('http://example.com/audio.mp3')
+      vi.spyOn(HTMLMediaElement.prototype, 'error', 'get').mockReturnValue(
+        fromPartial<MediaError>({ code: 4 })
+      )
+
+      await fireEvent.error(screen.getByTestId('audio-preview'))
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('reports the native media diagnostics when playback fails after it started', async () => {
@@ -211,6 +259,45 @@ describe('AudioPreviewPlayer', () => {
       await rerender({ modelValue: undefined })
 
       expect(screen.getByText('0:00 / 0:00')).toBeInTheDocument()
+    })
+
+    it('does not show the previous file length after the source is replaced', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'duration', 'get').mockReturnValue(
+        90
+      )
+      vi.spyOn(
+        HTMLMediaElement.prototype,
+        'currentTime',
+        'get'
+      ).mockReturnValue(27)
+      vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+
+      const { rerender } = renderPlayer('http://example.com/a.mp3')
+      await fireEvent.loadedMetadata(screen.getByTestId('audio-preview'))
+      await fireEvent.timeUpdate(screen.getByTestId('audio-preview'))
+      expect(screen.getByText('0:27 / 1:30')).toBeInTheDocument()
+
+      await rerender({ modelValue: 'http://example.com/b.mp3' })
+
+      expect(screen.getByText('0:00 / 0:00')).toBeInTheDocument()
+    })
+
+    it('dismisses the error toast when playback is resumed from outside the player', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(
+        notSupported()
+      )
+      const user = userEvent.setup()
+
+      renderPlayer('http://example.com/audio.mp3')
+      await user.click(screen.getByRole('button', { name: 'g.playPause' }))
+      expect(useToast().toasts).toHaveLength(1)
+
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
+        false
+      )
+      await fireEvent(screen.getByTestId('audio-preview'), new Event('play'))
+
+      expect(useToast().toasts).toEqual([])
     })
 
     it.for([
