@@ -43,6 +43,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
+import { withLiveAgentTurnWrites } from './agentRemoteProvenance'
 import {
   allSubgraphDefinitions,
   readSubgraphDefinitions,
@@ -239,6 +240,7 @@ interface MalformedDocNode {
 const MAX_SHAPED_ELEMENTS = 16
 const MAX_DIAGNOSTIC_CHARS = 1024
 const OMISSION_MARKER_CHARS = 8
+const MAX_DIAGNOSTIC_LIST_CHARS = 320
 
 interface DiagnosticString {
   path: readonly (string | number)[]
@@ -261,6 +263,19 @@ function valueShape(value: unknown): string {
   }
   if (typeof value === 'object') return `object:${Object.keys(value).length}`
   return typeof value
+}
+
+function diagnosticWidgetNames(widgets: readonly IBaseWidget[]): string[] {
+  const names: string[] = []
+  let usedChars = 0
+  for (const widget of widgets.slice(0, MAX_SHAPED_ELEMENTS)) {
+    if (usedChars + widget.name.length > MAX_DIAGNOSTIC_LIST_CHARS) break
+    names.push(widget.name)
+    usedChars += widget.name.length
+  }
+  const omitted = widgets.length - names.length
+  if (omitted > 0) names.push(`+${omitted}`)
+  return names
 }
 
 function diagnosticStrings(
@@ -584,7 +599,6 @@ function overflowWidget(
   node: LGraphNode,
   name: string
 ): IBaseWidget | undefined {
-  if (!supportsDynamicWidgetOverflow(node)) return undefined
   const overflowIndex = overflowWidgetIndex(name)
   return overflowIndex === null
     ? undefined
@@ -858,7 +872,10 @@ export class LiveGraphApplier {
     return withActor(context.actor, () => {
       this.deps.getCanvas?.()?.emitBeforeChange()
       try {
-        return withGraphIntentSource('agent-remote', fn)
+        return withLiveAgentTurnWrites(
+          { isLiveAgentTurn: context.liveAgentTurn === true },
+          () => withGraphIntentSource('agent-remote', fn)
+        )
       } finally {
         graph.setDirtyCanvas(true, true)
         this.deps.getCanvas?.()?.emitAfterChange()
@@ -1408,11 +1425,27 @@ export class LiveGraphApplier {
   }
 
   private reportMissingWidget(node: LGraphNode, name: string): void {
+    const overflowIndex = overflowWidgetIndex(name)
     this.reportOnce(
       `widget:${String(node.id)}:${name}`,
       `Node ${String(node.id)} (${node.type}) has no widget '${name}'`,
       'agent_graph_widget_missing',
-      { nodeId: node.id, type: node.type, name }
+      {
+        nodeId: node.id,
+        type: node.type,
+        name,
+        availableWidgetNames: diagnosticWidgetNames(node.widgets ?? []),
+        ...(overflowIndex === null
+          ? {}
+          : {
+              overflowIndex,
+              supportsDynamicWidgetOverflow:
+                supportsDynamicWidgetOverflow(node),
+              serializableWidgetNames: diagnosticWidgetNames(
+                serializableWidgets(node)
+              )
+            })
+      }
     )
   }
 

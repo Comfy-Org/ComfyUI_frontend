@@ -201,6 +201,10 @@ export function useErrorOverlayState() {
 
   const overlayTitle = computed(() => overlayCopy.value?.title ?? '')
 
+  const overlayGroupKeys = computed(() =>
+    allErrorGroups.value.map((group) => group.groupKey)
+  )
+
   const isVisible = computed(
     () =>
       isErrorOverlayOpen.value &&
@@ -214,6 +218,7 @@ export function useErrorOverlayState() {
     hasMissingNodes,
     isVisible,
     overlayMessage,
-    overlayTitle
+    overlayTitle,
+    overlayGroupKeys
   }
 }

@@ -290,12 +290,9 @@ describe('UsageLogsTable', () => {
       expect(infoButtons.length).toBeGreaterThan(0)
     })
 
-    it('shows each event param on its own tooltip line', async () => {
-      vi.mocked(useCustomerEventsService().formatJsonKey).mockImplementation(
-        (key) => `key(${key})`
-      )
-      vi.mocked(useCustomerEventsService().formatJsonValue).mockImplementation(
-        (value) => `value(${String(value)})`
+    it('shows the service tooltip content with one param per line', async () => {
+      vi.mocked(useCustomerEventsService().getTooltipContent).mockReturnValue(
+        'Amount: 1,000\nModel: test-model'
       )
       await renderLoaded()
 
@@ -305,43 +302,36 @@ describe('UsageLogsTable', () => {
       await userEvent.hover(firstInfoButton)
 
       expect((await screen.findByRole('tooltip')).textContent).toBe(
-        'key(amount): value(1000)\nkey(transaction_id): value(txn-123)'
+        'Amount: 1,000\nModel: test-model'
       )
     })
 
-    it.for([
-      { charge: 33_044, expected: 'Charge: 7 Credits' },
-      { charge: '36209', expected: 'Charge: 8 Credits' },
-      { charge: 10_000_000_000, expected: 'Charge: 2,110,000 Credits' },
-      { charge: 0, expected: 'Charge: 0 Credits' },
-      { charge: 1, expected: 'Charge: <1 Credits' },
-      { charge: 1_000, expected: 'Charge: <1 Credits' },
-      { charge: 3_318, expected: 'Charge: <1 Credits' },
-      { charge: 4_740, expected: 'Charge: 1 Credit' },
-      { charge: 6_636, expected: 'Charge: 1 Credit' },
-      { charge: 'n/a', expected: 'charge_micro_usd: n/a' }
-    ])(
-      'shows charge_micro_usd $charge as $expected',
-      async ({ charge, expected }) => {
-        vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
-          makeEventsResponse([
-            {
-              event_id: 'agent-1',
-              event_type: 'agent_usage',
-              params: { charge_micro_usd: charge },
-              createdAt: '2024-01-03T10:00:00Z'
-            }
-          ])
-        )
-        await renderLoaded()
+    it('keeps params outside the allowlist out of the tooltip', async () => {
+      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+        makeEventsResponse([
+          {
+            event_id: 'event-4',
+            event_type: EventType.API_USAGE_COMPLETED,
+            params: {
+              api_name: 'Chat',
+              model: 'test-model',
+              input_tokens: 42,
+              prompt: 'secret prompt text'
+            },
+            createdAt: '2024-01-01T10:00:00Z'
+          }
+        ])
+      )
+      await renderLoaded()
 
-        await userEvent.hover(
-          screen.getByRole('button', { name: 'Additional Info' })
-        )
+      await userEvent.hover(
+        screen.getByRole('button', { name: 'Additional Info' })
+      )
 
-        expect((await screen.findByRole('tooltip')).textContent).toBe(expected)
-      }
-    )
+      const tooltip = await screen.findByRole('tooltip')
+      expect(tooltip).toHaveTextContent('input_tokens: 42')
+      expect(tooltip).not.toHaveTextContent('secret prompt text')
+    })
 
     it('does not render info buttons when no additional info', async () => {
       vi.mocked(useCustomerEventsService().hasAdditionalInfo).mockReturnValue(
