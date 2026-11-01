@@ -8,9 +8,12 @@
       <audio
         ref="audioRef"
         :src="modelValue"
+        data-testid="audio-preview"
         @loadedmetadata="handleLoadedMetadata"
         @timeupdate="handleTimeUpdate"
         @ended="handleEnded"
+        @pause="handlePause"
+        @error="handleError"
       />
 
       <!-- Left Actions -->
@@ -20,6 +23,7 @@
           variant="textonly"
           size="unset"
           :aria-label="$t('g.playPause')"
+          :aria-pressed="isPlaying"
           class="size-6 rounded-sm"
           @click="togglePlayPause"
         >
@@ -127,11 +131,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { whenever } from '@vueuse/core'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { reportError } from '@/platform/telemetry/reportError'
+import { createToastId } from '@/types/toastId'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
@@ -169,17 +174,54 @@ const showVolumeTwo = computed(() => !isMuted.value && volume.value > 0.5)
 const showVolumeOne = computed(() => !isMuted.value && volume.value > 0)
 
 // Playback controls
-const togglePlayPause = () => {
-  if (!audioRef.value || !audioRef.value.src) {
+let playAttempt = 0
+const playbackErrorToastId = createToastId()
+
+onUnmounted(() => {
+  playAttempt++
+  toast.dismiss(playbackErrorToastId)
+})
+
+const togglePlayPause = async () => {
+  const audio = audioRef.value
+  if (!audio || !audio.src) {
     return
   }
 
+  const attempt = ++playAttempt
   if (isPlaying.value) {
-    audioRef.value.pause()
-  } else {
-    void audioRef.value.play()
+    audio.pause()
+    isPlaying.value = false
+    toast.dismiss(playbackErrorToastId)
+    return
   }
-  isPlaying.value = !isPlaying.value
+
+  isPlaying.value = true
+  try {
+    if (audio.error) audio.load()
+    await audio.play()
+    if (attempt === playAttempt) toast.dismiss(playbackErrorToastId)
+  } catch (error) {
+    if (attempt !== playAttempt) return
+    isPlaying.value = false
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      toast.dismiss(playbackErrorToastId)
+      return
+    }
+    showPlaybackError(error)
+  }
+}
+
+function showPlaybackError(error: unknown) {
+  reportError(error, {
+    errorType: 'error_playing_audio',
+    surface: 'graph',
+    level: 'warning'
+  })
+  toast.error(t('g.error'), {
+    id: playbackErrorToastId,
+    description: t('g.audioPlaybackFailed')
+  })
 }
 
 const handleDownload = () => {
@@ -219,6 +261,24 @@ const handleTimeUpdate = () => {
   if (audioRef.value) {
     currentTime.value = audioRef.value.currentTime
   }
+}
+
+const handlePause = () => {
+  if (audioRef.value?.paused) isPlaying.value = false
+}
+
+const toPlaybackError = (error: MediaError | null | undefined) =>
+  new Error(
+    `Audio playback failed (MediaError ${error?.code ?? 'unknown'}): ${
+      error?.message || 'no message'
+    }`
+  )
+
+const handleError = () => {
+  if (!isPlaying.value) return
+  playAttempt++
+  isPlaying.value = false
+  showPlaybackError(toPlaybackError(audioRef.value?.error))
 }
 
 const handleEnded = () => {
@@ -275,13 +335,16 @@ const menuItems = computed(() => [
   }
 ])
 
-whenever(
-  modelValue,
-  () => {
-    isPlaying.value = false
-    audioRef.value?.pause()
-    void audioRef.value?.load()
-  },
-  { immediate: true }
-)
+watch(modelValue, (value) => {
+  playAttempt++
+  isPlaying.value = false
+  toast.dismiss(playbackErrorToastId)
+  audioRef.value?.pause()
+  if (value) {
+    audioRef.value?.load()
+    return
+  }
+  currentTime.value = 0
+  duration.value = 0
+})
 </script>
