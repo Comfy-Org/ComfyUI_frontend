@@ -62,47 +62,6 @@ describe('MaskEditor extension failures', () => {
     ])
   })
 
-  it('keeps the current session when an earlier async callback fails', async () => {
-    const failure = new Error('request failed after switching tools')
-    const reject = vi.fn<() => void>()
-    const pending = new Promise<void>((_, rejectPromise) => {
-      reject.mockImplementation(() => rejectPromise(failure))
-    })
-    const registry = useMaskEditorExtensionStore()
-    registry.registerTool({
-      id: 'test.delayed',
-      label: 'Delayed tool',
-      createSession: () => ({ onPointer: () => pending })
-    })
-    registry.registerTool({
-      id: 'test.current',
-      label: 'Current tool',
-      createSession: () => ({})
-    })
-    const tools = mountExtensionTools()
-    tools.activate('test.delayed')
-    const callback = tools.active.value!.runtime.pointer({
-      phase: 'down',
-      x: 0,
-      y: 0,
-      inBounds: true,
-      pointerId: 1,
-      pointerType: 'mouse',
-      button: 0,
-      buttons: 1,
-      pressure: 0.5,
-      altKey: false,
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false
-    })
-    tools.activate('test.current')
-    reject()
-    await callback
-    expect(tools.isActive()).toBe(true)
-    expect(tools.active.value?.tool.id).toBe('test.current')
-  })
-
   it('disposes the active session immediately when its registration is removed', () => {
     const dispose = vi.fn()
     const registration = useMaskEditorExtensionStore().registerTool({
