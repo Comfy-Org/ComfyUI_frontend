@@ -245,7 +245,16 @@ export const useAppModeStore = defineStore('appMode', () => {
       const graph = useApp().rootGraph
       const extra = graph.extra
       extra.linearData = {
-        inputs: [...data.inputs],
+        inputs: data.inputs.map(
+          ([id, name, config]): LinearInput =>
+            config
+              ? [
+                  id,
+                  name,
+                  JSON.parse(JSON.stringify(config)) as InputWidgetConfig
+                ]
+              : [id, name]
+        ),
         outputs: [...data.outputs]
       }
       workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
