@@ -1616,7 +1616,7 @@ describe('LiveGraphApplier', () => {
       expect.objectContaining({
         errorType: 'agent_graph_apply_failed',
         context: {
-          actor: 'agent',
+          actor: 'agent:test',
           opIds: ['op-1'],
           omittedOpIdCount: 0
         }
@@ -1738,7 +1738,7 @@ describe('LiveGraphApplier', () => {
     )
   })
 
-  it('reports apply context and node type when a created node collides with an id already registered in a sibling subgraph', () => {
+  it('reports bounded apply context and owner scope when a created node collides with an id in a sibling subgraph', () => {
     const graph = new LGraph()
     const subgraph = createTestSubgraph({ rootGraph: graph, inputs: [] })
     graph.subgraphs.set(subgraph.id, subgraph)
@@ -1753,14 +1753,16 @@ describe('LiveGraphApplier', () => {
       CATALOG
     )
 
-    const opIds = Array.from(
-      { length: 10 },
-      (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`
-    )
+    const firstOpId = 'a'.repeat(128)
+    const secondOpId = 'b'.repeat(128)
+    const thirdOpId = 'c'.repeat(128)
+    const fourthOpId = 'd'.repeat(128)
+    const omittedOpId = 'e'.repeat(128)
+    const opIds = [firstOpId, secondOpId, thirdOpId, fourthOpId, omittedOpId]
     new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
       doc,
       collector.take(),
-      { actor: 'agent:test', opIds, liveAgentTurn: true }
+      { actor: 'agent:private-thread:private-turn', opIds }
     )
 
     const created = graph._nodes.find((node) => node.type === 'TestSource')
@@ -1781,9 +1783,9 @@ describe('LiveGraphApplier', () => {
           existingOwnerKind: 'subgraph',
           existingOwnerGraphId: subgraph.id,
           actor: 'agent',
-          opIds: opIds.slice(0, 8),
-          omittedOpIdCount: 2,
-          liveAgentTurn: true
+          opIds: [firstOpId, secondOpId, thirdOpId, fourthOpId],
+          omittedOpIdCount: 1,
+          liveAgentTurn: false
         })
       })
     )

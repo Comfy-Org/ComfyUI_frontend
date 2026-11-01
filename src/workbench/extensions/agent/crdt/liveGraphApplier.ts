@@ -238,7 +238,7 @@ interface MalformedDocNode {
 
 const MAX_SHAPED_ELEMENTS = 16
 const MAX_DIAGNOSTIC_CHARS = 1024
-const MAX_REPORTED_OP_IDS = 8
+const MAX_REPORTED_OP_IDS = 4
 const OMISSION_MARKER_CHARS = 8
 
 interface DiagnosticString {
@@ -368,19 +368,23 @@ function actorKind(actor: unknown): ActorKind {
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
 }
 
+function diagnosticActor(actor: string): string {
+  const kind = actorKind(actor)
+  return kind !== 'unknown' && actor.split(':').length === 3 ? kind : actor
+}
+
 function diagnosticApplyContext(context: RemoteApplyContext) {
   const opIds = context.opIds.slice(0, MAX_REPORTED_OP_IDS)
-  return {
-    actor: actorKind(context.actor),
+  return boundedContext({
+    actor: diagnosticActor(context.actor),
     opIds,
     omittedOpIdCount: context.opIds.length - opIds.length
-  }
+  })
 }
 
 function diagnosticNodeOwner(graph: LGraph, nodeId: NodeId) {
   const owner = [graph.rootGraph, ...graph.rootGraph.subgraphs.values()].find(
-    (candidate) =>
-      candidate._nodes.some((node) => String(node.id) === String(nodeId))
+    (candidate) => candidate.getNodeById(nodeId) !== null
   )
   if (owner === undefined) return { existingOwnerKind: 'unknown' }
   return {
@@ -1046,9 +1050,9 @@ export class LiveGraphApplier {
       info.widgets_values = docNode.widgetRecord as unknown as WidgetValue[]
     detachSerialisedLinks(info)
     node.pos = [info.pos[0], info.pos[1]]
-    const existingOwner = diagnosticNodeOwner(graph, node.id)
     graph.add(node)
     if (node.id !== toNodeId(docNode.id)) {
+      const existingOwner = diagnosticNodeOwner(graph, toNodeId(docNode.id))
       this.reportOnce(
         `node-id:${docNode.id}`,
         `Live graph reminted node ${docNode.id} as ${String(node.id)}`,
@@ -1060,7 +1064,7 @@ export class LiveGraphApplier {
           mode,
           ...existingOwner,
           ...diagnosticApplyContext(context),
-          liveAgentTurn: context.liveAgentTurn
+          liveAgentTurn: context.liveAgentTurn === true
         }
       )
     }
