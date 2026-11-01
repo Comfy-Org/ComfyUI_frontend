@@ -58,7 +58,14 @@ const runWaitStep = (remaining: number, secondsUntilReset: number) => {
     writeStub(
       binDir,
       'gh',
-      `[[ "$1 $2 $3" == "api rate_limit --jq" ]] || exit 1\necho "${remaining} ${now + secondsUntilReset}"`
+      `[[ "$1 $2 $3" == "api rate_limit --jq" ]] || exit 1\njq -r "$4" <<<'${JSON.stringify(
+        {
+          resources: {
+            core: { remaining, reset: now + secondsUntilReset },
+            search: { remaining: 0, reset: now + 3600 }
+          }
+        }
+      )}'`
     )
     execFileSync('bash', ['-e', '-c', waitStep.run ?? ''], {
       env: { PATH: `${binDir}:${process.env.PATH}` }
