@@ -40,6 +40,9 @@ watch(controlModel, props.widget.controlWidget.update)
               :mode="controlModel"
               :variant="unifiedRows ? 'button' : 'badge'"
               class="mr-1 self-center"
+              @pointerdown.stop
+              @pointermove.stop
+              @pointerup.stop
             />
           </PopoverTrigger>
           <PopoverContent

@@ -103,8 +103,21 @@ describe('WidgetWithControl', () => {
           }
         }
       }
-      render(WidgetWithControl, {
-        props: { widget, component, modelValue: 1 },
+      const onNodePointer = vi.fn()
+      const Harness = defineComponent({
+        components: { WidgetWithControl },
+        setup: () => ({ widget, component, onNodePointer }),
+        template: `
+          <div
+            @pointerdown="onNodePointer"
+            @pointermove="onNodePointer"
+            @pointerup="onNodePointer"
+          >
+            <WidgetWithControl :widget :component :model-value="1" />
+          </div>
+        `
+      })
+      render(Harness, {
         global: {
           plugins: [
             createI18n({ legacy: false, locale: 'en', messages: { en } })
@@ -114,7 +127,13 @@ describe('WidgetWithControl', () => {
       })
       const user = userEvent.setup()
 
-      await user.click(screen.getByTestId('value-control'))
+      const control = screen.getByTestId('value-control')
+      await user.pointer([
+        { target: control, keys: '[MouseLeft>]', coords: { x: 10, y: 10 } },
+        { target: control, coords: { x: 30, y: 10 } },
+        { target: control, keys: '[/MouseLeft]' }
+      ])
+      expect(onNodePointer).not.toHaveBeenCalled()
       await user.click(await screen.findByRole('radio', { name: /fixed/i }))
 
       expect(mode).toBe('fixed')
