@@ -1641,6 +1641,7 @@
           "src/lib/litegraph/src/LGraphNode.stateProjection.test.ts",
           "src/lib/litegraph/src/LGraphNode.test.ts",
           "src/lib/litegraph/src/LGraphNode.titleButtons.test.ts",
+          "src/lib/litegraph/src/LGraphNode.widgetFormProof.test.ts",
           "src/lib/litegraph/src/LGraphNode.widgetLabelRename.regression.test.ts",
           "src/lib/litegraph/src/LGraphNode.widgetOrder.test.ts",
           "src/lib/litegraph/src/LLink.ts",
