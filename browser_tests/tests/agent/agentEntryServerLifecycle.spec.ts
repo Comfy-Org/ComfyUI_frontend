@@ -21,16 +21,10 @@ test.describe(
     test.use({
       agentFlagEnabled: false,
       connectWebSocketToServer: false,
-      // A signed-out local user sees the "Meet Comfy Agent" introduction on
-      // first open. That flow has its own tests; mark it answered here so the
-      // ready step reaches the panel.
-      initialLocalStorage: {
-        'Comfy.AgentPanel.activationVisits': '2',
-        'Comfy.AgentConsent.IntroductionResponded.signed-out': 'true'
-      }
+      initialLocalStorage: { 'Comfy.AgentPanel.activationVisits': '2' }
     })
 
-    test('stays inert while the agent starts or fails, then opens once it is ready', async ({
+    test('stays inert while the agent starts or fails, then offers it once it is ready', async ({
       page,
       agentPanel,
       getWebSocket
@@ -71,16 +65,25 @@ test.describe(
         await expect(failed).toHaveAttribute('aria-pressed', 'false')
       })
 
-      await test.step('a ready agent opens the panel', async () => {
+      // A signed-out local user is asked to agree and sign in before the
+      // panel opens, so the click lands on that card, not the panel.
+      await test.step('a ready agent offers itself to a signed-out user', async () => {
         const status: AgentServerFeature = { state: 'ready', reason: null }
         publish('agent_status', status)
         await expect(agentPanel.openButton).not.toHaveAttribute(
           'aria-disabled',
           'true'
         )
-        await expect(agentPanel.root).toHaveCount(0)
+        await expect(agentPanel.consentDialog).toHaveCount(0)
         await agentPanel.openButton.click()
-        await expect(agentPanel.root).toBeVisible()
+        await expect(agentPanel.consentDialog).toBeVisible()
+        await expect(
+          agentPanel.consentDialog.getByRole('button', {
+            name: enMessages.agent.consent.agreeAndContinue,
+            exact: true
+          })
+        ).toBeVisible()
+        await expect(agentPanel.root).toHaveCount(0)
       })
     })
   }
