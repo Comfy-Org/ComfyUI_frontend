@@ -94,7 +94,8 @@
     "extension-runtime",
     "graph-model",
     "node-widgets",
-    "workflow-management"
+    "workflow-management",
+    "workflow-persistence"
   ],
   "characterizationScenarios": [
     {

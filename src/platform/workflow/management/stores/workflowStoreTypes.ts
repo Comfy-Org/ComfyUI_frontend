@@ -20,6 +20,7 @@ export interface WorkflowStore {
     left?: string[]
     right?: string[]
   }) => void
+  resetForIdentityChange: () => void
   isOpen: (workflow: ComfyWorkflow) => boolean
   isBusy: boolean
   closeWorkflow: (workflow: ComfyWorkflow) => Promise<void>

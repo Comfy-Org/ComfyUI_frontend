@@ -43,7 +43,8 @@ export function useContinueWithSso(context: () => SsoRequiredContext) {
       ssoTarget ??
       router.resolve({ name: 'cloud-login', query: SSO_ENTRY_OPEN_QUERY }).href
     try {
-      if (authStore.currentUser) await authStore.logout()
+      if (authStore.currentUser)
+        await authStore.logout(authStore.currentUserIdentity())
     } catch (error) {
       leaving.value = false
       toastErrorHandler(error)

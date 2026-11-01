@@ -94,13 +94,15 @@
     "error-reporting",
     "extension-manager",
     "keybindings",
-    "telemetry"
+    "telemetry",
+    "workflow-persistence"
   ],
   "allowedConsumers": [
     "agent",
     "error-reporting",
     "extension-manager",
-    "selection-toolbox"
+    "selection-toolbox",
+    "workflow-persistence"
   ],
   "characterizationScenarios": [
     {

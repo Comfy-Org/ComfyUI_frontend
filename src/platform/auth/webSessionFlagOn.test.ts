@@ -86,7 +86,7 @@ import { createDisposablePinia } from '@/testing/pinia'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
-import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
+import { resolveStorageScope } from '@/platform/workflow/persistence/base/storageKeys'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import {
@@ -427,7 +427,7 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
     await vi.advanceTimersByTimeAsync(1_000)
     expect(server.requests).toEqual([])
 
-    await useAuthStore().logout()
+    await useAuthStore().logout(useAuthStore().currentUserIdentity())
     expect(server.requests).toEqual([
       { method: 'DELETE', authorization: null, credentials: 'include' }
     ])
@@ -1566,13 +1566,19 @@ describe('live updates and media on the shared web session', () => {
 
   it('keeps each workspace its own workflow drafts', async () => {
     await bootOnSession()
+    const authStore = useAuthStore()
     const workspaceAuth = useWorkspaceAuthStore()
+    const currentScope = () =>
+      resolveStorageScope(
+        authStore.userId ?? null,
+        workspaceAuth.currentWorkspace?.id ?? null
+      )
 
     await workspaceAuth.switchWorkspace('ws-team')
-    expect(getWorkspaceId()).toBe('ws-team')
+    expect(currentScope()).toBe('cloud:user-a:ws-team')
 
     await workspaceAuth.switchWorkspace('ws-personal')
-    expect(getWorkspaceId()).toBe('personal')
+    expect(currentScope()).toBe('cloud:user-a:ws-personal')
   })
 
   it('opens the socket on the cookie and reconnects it into each workspace without minting a token', async () => {
@@ -1675,7 +1681,7 @@ describe('live updates and media on the shared web session', () => {
     const sessionSocket = api.socket
     assert.instanceOf(sessionSocket, FakeSocket)
 
-    await useAuthStore().logout()
+    await useAuthStore().logout(useAuthStore().currentUserIdentity())
     expect(sessionSocket.readyState).toBe(FakeSocket.CLOSED)
 
     sessionSocket.closeFromServer()
@@ -1868,7 +1874,7 @@ describe('comfy-api calls on the shared web session', () => {
 
     const pending = webSessionResourceHeader().catch((error: unknown) => error)
     await vi.waitFor(() => expect(ingest.heldMints).toBe(1))
-    await useAuthStore().logout()
+    await useAuthStore().logout(useAuthStore().currentUserIdentity())
     release()
     const rejection = await pending
 
@@ -1905,7 +1911,7 @@ describe('comfy-api calls on the shared web session', () => {
     assert(requests)
     const scope = await requests.scope()
     assert(scope)
-    await useAuthStore().logout()
+    await useAuthStore().logout(useAuthStore().currentUserIdentity())
 
     const rejection = await requests
       .authorizeResource(scope)
@@ -2322,7 +2328,8 @@ describe.for([{ unified: false }, { unified: true }])(
     it.for([
       {
         name: 'is signed out',
-        change: () => useAuthStore().logout(),
+        change: () =>
+          useAuthStore().logout(useAuthStore().currentUserIdentity()),
         code: 'NO_SESSION'
       },
       {
@@ -2369,7 +2376,7 @@ describe.for([{ unified: false }, { unified: true }])(
     it('resolves undefined and mints nothing after sign-out', async () => {
       const ingest = await boot()
       const authStore = useAuthStore()
-      await authStore.logout()
+      await authStore.logout(authStore.currentUserIdentity())
 
       await expect(authStore.getWorkspaceAuthToken()).resolves.toBeUndefined()
       expect(ingest.mints).toBe(0)
@@ -2841,7 +2848,7 @@ describe.for([{ unified: false }, { unified: true }])(
     it('signs out on the session alone', async () => {
       const { server, authStore } = await bootSessionOnly()
 
-      await authStore.logout()
+      await authStore.logout(authStore.currentUserIdentity())
 
       expect(server.requests).toEqual([
         { method: 'DELETE', authorization: null, credentials: 'include' }
@@ -3258,7 +3265,7 @@ describe.for([{ unified: false }, { unified: true }])(
         it('leaves the navigation of a sign-out in this tab to the sign-out flow', async () => {
           const { started } = await enterAppRecordingNavigations()
 
-          await useAuthStore().logout()
+          await useAuthStore().logout(useAuthStore().currentUserIdentity())
           await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
 
           expect(started).toEqual([])
@@ -3642,7 +3649,7 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
       await loadPage(SSO_SESSION)
       expect(readSsoHint()).not.toBeNull()
 
-      await useAuthStore().logout()
+      await useAuthStore().logout(useAuthStore().currentUserIdentity())
 
       expect(readSsoHint()).toBeNull()
     })
@@ -3761,7 +3768,7 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     await loadPage(SSO_SESSION)
     await visit('/user-select')
 
-    await useAuthStore().logout()
+    await useAuthStore().logout(useAuthStore().currentUserIdentity())
     await router.push('/cloud/login')
     const { query } = await visit('/user-select')
 
@@ -4068,7 +4075,7 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
       await bootCloudIdentity()
       expect(authStore.isAuthenticated).toBe(true)
 
-      await authStore.logout()
+      await authStore.logout(authStore.currentUserIdentity())
 
       expect(authStore.isAuthenticated).toBe(false)
       expect(useApiKeyAuthStore().getApiKey()).toBe(

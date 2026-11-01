@@ -6,6 +6,8 @@ import type {
   AgentRestClient,
   ThreadListing
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentChatHistoryRefresh } from './useAgentChatHistoryRefresh'
 
@@ -40,6 +42,9 @@ function deferredListing() {
 }
 
 function setup() {
+  vi.spyOn(storageIO, 'getStorageScope').mockReturnValue(
+    unsafeStorageScope('personal')
+  )
   const scope = effectScope()
   onTestFinished(() => scope.stop())
   const history = useAgentChatHistoryStore()
@@ -134,6 +139,53 @@ describe('useAgentChatHistoryRefresh', () => {
       expect(onFailure).not.toHaveBeenCalled()
     }
   )
+
+  it('ignores an in-flight listing after its storage scope is replaced', async () => {
+    const { history, listThreads, onFailure, refreshHistory } = setup()
+    const pending = deferredListing()
+    vi.mocked(storageIO.getStorageScope).mockReturnValue(
+      unsafeStorageScope('cloud:user-a:workspace-a')
+    )
+    listThreads.mockReturnValueOnce(pending.promise)
+    const refresh = refreshHistory()
+
+    history.replaceAll([])
+    vi.mocked(storageIO.getStorageScope).mockReturnValue(
+      unsafeStorageScope('cloud:user-b:workspace-b')
+    )
+    pending.resolve(completedListing('user-a-thread'))
+
+    await expect(refresh).resolves.toBe('superseded')
+    expect(history.sessions).toEqual([])
+    expect(onFailure).not.toHaveBeenCalled()
+  })
+
+  it('does not list history without a resolved storage owner', async () => {
+    const { listThreads, refreshHistory } = setup()
+    vi.mocked(storageIO.getStorageScope).mockReturnValue(null)
+
+    await expect(refreshHistory()).resolves.toBe('superseded')
+
+    expect(listThreads).not.toHaveBeenCalled()
+  })
+
+  it('preserves an in-flight failure across an ownerless no-op for the same scope', async () => {
+    const { listThreads, onFailure, refreshHistory } = setup()
+    const pending = deferredListing()
+    listThreads.mockReturnValueOnce(pending.promise)
+    const refresh = refreshHistory('none')
+
+    vi.mocked(storageIO.getStorageScope).mockReturnValue(null)
+    await expect(refreshHistory('none')).resolves.toBe('superseded')
+    vi.mocked(storageIO.getStorageScope).mockReturnValue(
+      unsafeStorageScope('personal')
+    )
+    pending.resolve(requestFailure)
+
+    await expect(refresh).resolves.toBe('failed')
+    expect(listThreads).toHaveBeenCalledTimes(1)
+    expect(onFailure).toHaveBeenCalledExactlyOnceWith(requestFailure, 'none')
+  })
 
   it('applies an older successful refresh after a newer refresh fails', async () => {
     const { history, listThreads, onFailure, refreshHistory } = setup()

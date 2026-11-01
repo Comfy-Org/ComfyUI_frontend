@@ -1,55 +1,34 @@
-import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
 
+import type { StorageScope } from './draftTypes'
 import { hashPath } from './hashUtil'
 
-/**
- * Gets the current workspace ID from sessionStorage.
- * Returns 'personal' for personal workspace or when no workspace is set.
- *
- * NOTE: This is called fresh each time rather than cached at module load,
- * because the workspace auth store may not have set sessionStorage yet
- * when this module is first imported.
- */
-export function getWorkspaceId(): string {
-  if (!isCloud) return 'personal'
-
-  try {
-    const json = sessionStorage.getItem(
-      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
-    )
-    if (!json) return 'personal'
-
-    const workspace = JSON.parse(json)
-    if (workspace.type === 'personal' || !workspace.id) return 'personal'
-    return workspace.id
-  } catch {
-    return 'personal'
-  }
+export function resolveStorageScope(
+  userId: string | null,
+  workspaceId: string | null
+): StorageScope | null {
+  if (!isCloud) return 'personal' as StorageScope
+  return userId && workspaceId
+    ? (`cloud:${encodeURIComponent(userId)}:${encodeURIComponent(workspaceId)}` as StorageScope)
+    : null
 }
 
-/**
- * Storage key generators for V2 workflow persistence.
- *
- * localStorage keys are scoped by workspaceId.
- * sessionStorage keys are scoped by clientId.
- */
 export const StorageKeys = {
   /**
    * Draft index key for localStorage.
    * Contains LRU order and metadata for all drafts.
    */
-  draftIndex(workspaceId: string): string {
-    return `Comfy.Workflow.DraftIndex.v2:${workspaceId}`
+  draftIndex(scope: StorageScope): string {
+    return `Comfy.Workflow.DraftIndex.v2:${scope}`
   },
 
   /**
    * Individual draft payload key for localStorage.
    * @param path - Workflow path (will be hashed to create key)
    */
-  draftPayload(path: string, workspaceId: string): string {
+  draftPayload(path: string, scope: StorageScope): string {
     const draftKey = hashPath(path)
-    return `Comfy.Workflow.Draft.v2:${workspaceId}:${draftKey}`
+    return `Comfy.Workflow.Draft.v2:${scope}:${draftKey}`
   },
 
   /**
@@ -75,20 +54,20 @@ export const StorageKeys = {
     return `Comfy.Workflow.OpenPaths:${clientId}`
   },
 
-  agentThread(workspaceId: string): string {
-    return `Comfy.Agent.ThreadId:${workspaceId}`
+  agentThread(scope: StorageScope): string {
+    return `Comfy.Agent.ThreadId:${scope}`
   },
 
-  agentWorkflowTabBindings(workspaceId: string): string {
-    return `Comfy.Agent.WorkflowTabBindings:${workspaceId}`
+  agentWorkflowTabBindings(scope: StorageScope): string {
+    return `Comfy.Agent.WorkflowTabBindings:${scope}`
   },
 
-  agentChatTitles(workspaceId: string): string {
-    return `Comfy.Agent.ChatTitles:${workspaceId}`
+  agentChatTitles(scope: StorageScope): string {
+    return `Comfy.Agent.ChatTitles:${scope}`
   },
 
-  agentDeletedThreads(workspaceId: string): string {
-    return `Comfy.Agent.DeletedThreads:${workspaceId}`
+  agentDeletedThreads(scope: StorageScope): string {
+    return `Comfy.Agent.DeletedThreads:${scope}`
   },
 
   /**
@@ -96,12 +75,12 @@ export const StorageKeys = {
    * sessionStorage is per-tab (correct for in-session use) but lost
    * on browser restart; these keys preserve the last-written state.
    */
-  lastActivePath(workspaceId: string): string {
-    return `Comfy.Workflow.LastActivePath:${workspaceId}`
+  lastActivePath(scope: StorageScope): string {
+    return `Comfy.Workflow.LastActivePath:${scope}`
   },
 
-  lastOpenPaths(workspaceId: string): string {
-    return `Comfy.Workflow.LastOpenPaths:${workspaceId}`
+  lastOpenPaths(scope: StorageScope): string {
+    return `Comfy.Workflow.LastOpenPaths:${scope}`
   },
 
   /**

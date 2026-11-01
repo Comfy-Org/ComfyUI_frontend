@@ -6,6 +6,7 @@ import type {
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
 
@@ -25,7 +26,7 @@ export async function seedAgentDraftLineage(
       data: JSON.stringify(app.rootGraph.serialize())
     }
   })
-  const scope = `${encodeURIComponent('test-user-e2e')}:personal`
+  const scope = unsafeStorageScope('cloud:test-user-e2e:ws-personal')
   const draftKey = hashPath(draft.path)
   const now = Date.now()
   const index: DraftIndexV2 = {

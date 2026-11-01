@@ -14,7 +14,7 @@ const otherPayloadKey = `Comfy.Workflow.Draft.v2:personal:${hashPath('workflows/
 const subjectPayloadKey = `Comfy.Workflow.Draft.v2:user-1:personal:${hashPath(path)}`
 const otherSubjectPayloadKey = `Comfy.Workflow.Draft.v2:user-2:personal:${hashPath(path)}`
 
-function captureDraftReadiness(subject?: string) {
+function captureDraftReadiness(workspaceId = 'personal') {
   const expected = zComfyWorkflow.parse(nativeWorkflow)
   const lora = expected.nodes.find((node) => node.type === 'LoadLoraModel')
   assert.exists(lora)
@@ -25,18 +25,14 @@ function captureDraftReadiness(subject?: string) {
       api: { clientId: 'draft-readiness-test' }
     })
   )
-  sessionStorage.setItem(
-    pointerKey,
-    JSON.stringify({ path, workspaceId: 'personal' })
-  )
+  sessionStorage.setItem(pointerKey, JSON.stringify({ path, workspaceId }))
   return {
     expected,
     isReady: () =>
       nativeLoraDraftReady({
         path,
         draftKey: hashPath(path),
-        expected,
-        subject
+        expected
       })
   }
 }
@@ -51,7 +47,7 @@ describe('native LoRA draft widget readiness', () => {
   })
 
   it('accepts the edited values from a subject-scoped cloud draft', () => {
-    const { expected, isReady } = captureDraftReadiness('user-1')
+    const { expected, isReady } = captureDraftReadiness('user-1:personal')
     localStorage.setItem(
       subjectPayloadKey,
       JSON.stringify({ data: JSON.stringify(expected), updatedAt: 1 })
@@ -61,7 +57,7 @@ describe('native LoRA draft widget readiness', () => {
   })
 
   it('does not accept another subject draft with the same edited values', () => {
-    const { expected, isReady } = captureDraftReadiness('user-1')
+    const { expected, isReady } = captureDraftReadiness('user-1:personal')
     localStorage.setItem(
       otherSubjectPayloadKey,
       JSON.stringify({ data: JSON.stringify(expected), updatedAt: 1 })

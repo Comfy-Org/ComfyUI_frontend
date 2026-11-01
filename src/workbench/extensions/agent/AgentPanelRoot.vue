@@ -37,6 +37,7 @@ import {
   useWorkflowService,
   writeWorkflowDraftLineage
 } from '@/platform/workflow/core/services/workflowService'
+import { getStorageScope } from '@/platform/workflow/persistence/base/storageIO'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -1876,6 +1877,9 @@ const { refreshHistory } = useAgentChatHistoryRefresh({
 
 const provisionalTitle = ref<string>()
 
+watch(getStorageScope, (scope, previousScope) => {
+  if (scope !== null && previousScope === null) void refreshHistory()
+})
 void refreshHistory()
 
 const currentChatReady = computed(

@@ -18,6 +18,10 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  setStorageIdentity,
+  setStorageWorkspaceId
+} from '@/platform/workflow/persistence/base/storageIO'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -288,6 +292,8 @@ beforeEach(() => {
     stop: () => {}
   })
   useAuthStore().currentUser = fromPartial<User>({ uid: 'account-a' })
+  setStorageIdentity('account-a')
+  setStorageWorkspaceId('personal')
   vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue({
     Authorization: 'Bearer id-token'
   })
@@ -356,6 +362,8 @@ beforeEach(() => {
 
 afterEach(() => {
   stopTracker()
+  setStorageIdentity(null)
+  setStorageWorkspaceId(null)
 })
 
 describe('AgentPanelRoot tab activity across chats', () => {

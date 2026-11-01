@@ -765,15 +765,15 @@ export const useAgentConversationStore = defineStore(
     }
 
     function discardDetachedAskState(): void {
-      const retainedThreads = new Set(
+      const backgroundThreads = new Set(
         [...backgroundTurns.values()].map((turn) => turn.threadId)
       )
       for (const owner of retiredAsks.keys())
-        if (!retainedThreads.has(owner)) retiredAsks.delete(owner)
+        if (!backgroundThreads.has(owner)) retiredAsks.delete(owner)
       for (const owner of provisionalRetiredAsks.keys())
-        if (!retainedThreads.has(owner)) provisionalRetiredAsks.delete(owner)
+        if (!backgroundThreads.has(owner)) provisionalRetiredAsks.delete(owner)
       for (const [askId, submitted] of submittedAskAnswers)
-        if (!retainedThreads.has(submitted.owner))
+        if (!backgroundThreads.has(submitted.owner))
           submittedAskAnswers.delete(askId)
     }
 
@@ -1528,6 +1528,16 @@ export const useAgentConversationStore = defineStore(
       clearActive()
     }
 
+    function resetForStorageOwnerTransition(): void {
+      retiredAsks.clear()
+      dropBackgroundTurns()
+      for (const askId of askResolutionWatchdogs.keys())
+        clearAskResolutionWatchdog(askId)
+      submittedAskAnswers.clear()
+      answeringAskIds.value = new Set()
+      reset()
+    }
+
     function reapplyRetiredAsks(
       transcript: ReturnType<typeof normalizeAgentTranscript>
     ): void {
@@ -1831,6 +1841,7 @@ export const useAgentConversationStore = defineStore(
       isAskShown,
       hasApprovalShown,
       reset,
+      resetForStorageOwnerTransition,
       hydrate
     }
   }

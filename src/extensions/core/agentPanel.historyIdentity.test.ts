@@ -9,6 +9,10 @@ import { computed, defineComponent, h, nextTick } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import type * as DistributionTypes from '@/platform/distribution/types'
+import {
+  setStorageIdentity,
+  setStorageWorkspaceId
+} from '@/platform/workflow/persistence/base/storageIO'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -102,6 +106,12 @@ describe('AgentPanel history during account transitions', () => {
       const accountA = fromPartial<User>({
         uid: 'account-a',
         getIdToken: vi.fn(async () => 'test-token')
+      })
+      setStorageIdentity('account-a')
+      setStorageWorkspaceId('personal')
+      onTestFinished(() => {
+        setStorageIdentity(null)
+        setStorageWorkspaceId(null)
       })
       const identity = replayIdentityPort(() => accountA, 'sync')
       vi.spyOn(firebaseIdentity, 'onUserChanged').mockImplementation(

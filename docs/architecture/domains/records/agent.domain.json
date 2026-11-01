@@ -459,7 +459,8 @@
     "keybindings",
     "settings",
     "workbench-shell",
-    "workflow-management"
+    "workflow-management",
+    "workflow-persistence"
   ],
   "allowedConsumers": [],
   "characterizationScenarios": [

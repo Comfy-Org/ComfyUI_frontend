@@ -8,11 +8,14 @@ import type {
   ActivePathPointer,
   DraftIndexV2,
   DraftPayloadV2,
-  OpenPathsPointer
+  OpenPathsPointer,
+  StorageScope
 } from './draftTypes'
-import { StorageKeys } from './storageKeys'
+import { ref } from 'vue'
+import { StorageKeys, resolveStorageScope } from './storageKeys'
 
 type StorageAvailability = 'available' | 'unavailable'
+type StorageWriteGate = 'open' | 'deferred' | 'closed'
 type WorkflowStorageState =
   | { status: 'ready'; availability: StorageAvailability }
   | {
@@ -31,7 +34,35 @@ let workflowStorageState: WorkflowStorageState = {
   status: 'ready',
   availability: 'available'
 }
+const storageIdentity = ref<string | null>(null)
+const storageWorkspaceId = ref<string | null>(null)
+const storageScopeRevision = ref(0)
 const pendingPersistenceFlushes = new Set<() => void>()
+
+export function setStorageIdentity(userId: string | null): void {
+  storageIdentity.value = userId
+}
+
+export function getStorageIdentity(): string | null {
+  return storageIdentity.value
+}
+
+export function setStorageWorkspaceId(workspaceId: string | null): void {
+  storageWorkspaceId.value = workspaceId
+}
+
+export function getStorageScope(): StorageScope | null {
+  void storageScopeRevision.value
+  if (workflowStorageState.status === 'transitioning') return null
+  return resolveStorageScope(storageIdentity.value, storageWorkspaceId.value)
+}
+
+export function getStorageWriteGate(): StorageWriteGate {
+  void storageScopeRevision.value
+  if (workflowStorageState.status === 'transitioning') return 'deferred'
+  if (getStorageScope() === null) return 'deferred'
+  return workflowStorageState.availability === 'available' ? 'open' : 'closed'
+}
 
 export function registerWorkflowPersistenceFlush(
   flush: () => void
@@ -51,10 +82,7 @@ function flushPendingWorkflowPersistence(): void {
 }
 
 export function isStorageAvailable(): boolean {
-  return (
-    workflowStorageState.status === 'ready' &&
-    workflowStorageState.availability === 'available'
-  )
+  return getStorageWriteGate() === 'open'
 }
 
 export function markStorageUnavailable(): void {
@@ -100,11 +128,11 @@ function isValidIndex(value: unknown): value is DraftIndexV2 {
 /**
  * Reads and parses the draft index from localStorage.
  */
-export function readIndex(workspaceId: string): DraftIndexV2 | null {
+export function readIndex(scope: StorageScope): DraftIndexV2 | null {
   if (!isStorageReadable()) return null
 
   try {
-    const key = StorageKeys.draftIndex(workspaceId)
+    const key = StorageKeys.draftIndex(scope)
     const json = localStorage.getItem(key)
     if (!json) return null
 
@@ -120,11 +148,11 @@ export function readIndex(workspaceId: string): DraftIndexV2 | null {
 /**
  * Writes the draft index to localStorage.
  */
-export function writeIndex(workspaceId: string, index: DraftIndexV2): boolean {
+export function writeIndex(scope: StorageScope, index: DraftIndexV2): boolean {
   if (!isStorageAvailable()) return false
 
   try {
-    const key = StorageKeys.draftIndex(workspaceId)
+    const key = StorageKeys.draftIndex(scope)
     localStorage.setItem(key, JSON.stringify(index))
     return true
   } catch (error) {
@@ -137,13 +165,13 @@ export function writeIndex(workspaceId: string, index: DraftIndexV2): boolean {
  * Reads a draft payload from localStorage.
  */
 export function readPayload(
-  workspaceId: string,
+  scope: StorageScope,
   draftKey: string
 ): DraftPayloadV2 | null {
   if (!isStorageReadable()) return null
 
   try {
-    const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
+    const key = `${StorageKeys.prefixes.draftPayload}${scope}:${draftKey}`
     const json = localStorage.getItem(key)
     if (!json) return null
 
@@ -157,14 +185,14 @@ export function readPayload(
  * Writes a draft payload to localStorage.
  */
 export function writePayload(
-  workspaceId: string,
+  scope: StorageScope,
   draftKey: string,
   payload: DraftPayloadV2
 ): boolean {
   if (!isStorageAvailable()) return false
 
   try {
-    const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
+    const key = `${StorageKeys.prefixes.draftPayload}${scope}:${draftKey}`
     localStorage.setItem(key, JSON.stringify(payload))
     return true
   } catch (error) {
@@ -176,9 +204,9 @@ export function writePayload(
 /**
  * Deletes a draft payload from localStorage.
  */
-export function deletePayload(workspaceId: string, draftKey: string): void {
+export function deletePayload(scope: StorageScope, draftKey: string): void {
   try {
-    const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
+    const key = `${StorageKeys.prefixes.draftPayload}${scope}:${draftKey}`
     localStorage.removeItem(key)
   } catch {
     // Ignore errors during deletion
@@ -188,19 +216,19 @@ export function deletePayload(workspaceId: string, draftKey: string): void {
 /**
  * Deletes multiple draft payloads from localStorage.
  */
-export function deletePayloads(workspaceId: string, draftKeys: string[]): void {
+export function deletePayloads(scope: StorageScope, draftKeys: string[]): void {
   for (const draftKey of draftKeys) {
-    deletePayload(workspaceId, draftKey)
+    deletePayload(scope, draftKey)
   }
 }
 
 /**
  * Gets all draft payload keys for a workspace from localStorage.
  */
-export function getPayloadKeys(workspaceId: string): string[] {
+export function getPayloadKeys(scope: StorageScope): string[] {
   if (!isStorageReadable()) return []
 
-  const prefix = `${StorageKeys.prefixes.draftPayload}${workspaceId}:`
+  const prefix = `${StorageKeys.prefixes.draftPayload}${scope}:`
   const keys: string[] = []
 
   try {
@@ -221,15 +249,15 @@ export function getPayloadKeys(workspaceId: string): string[] {
  * Deletes orphan payloads that are not in the index.
  */
 export function deleteOrphanPayloads(
-  workspaceId: string,
+  scope: StorageScope,
   indexKeys: Set<string>
 ): number {
-  const payloadKeys = getPayloadKeys(workspaceId)
+  const payloadKeys = getPayloadKeys(scope)
   let deleted = 0
 
   for (const key of payloadKeys) {
     if (!indexKeys.has(key)) {
-      deletePayload(workspaceId, key)
+      deletePayload(scope, key)
       deleted++
     }
   }
@@ -240,7 +268,7 @@ export function deleteOrphanPayloads(
 function findAndMigratePointer<T extends { workspaceId: string }>(
   newKey: string,
   prefix: string,
-  targetWorkspaceId: string,
+  targetScope: StorageScope,
   isValid: (value: unknown) => value is T,
   previousKey: string | null
 ): T | null {
@@ -255,7 +283,7 @@ function findAndMigratePointer<T extends { workspaceId: string }>(
   for (const storageKey of candidateKeys) {
     if (storageKey === newKey) continue
     const pointer = readSessionValue(storageKey, isValid)
-    if (pointer?.workspaceId !== targetWorkspaceId) continue
+    if (pointer?.workspaceId !== targetScope) continue
     sessionStorage.setItem(newKey, JSON.stringify(pointer))
     sessionStorage.removeItem(storageKey)
     return pointer
@@ -266,7 +294,7 @@ function findAndMigratePointer<T extends { workspaceId: string }>(
 function readSessionPointer<T extends { workspaceId: string }>(
   key: string,
   prefix: string,
-  targetWorkspaceId: string | undefined,
+  targetScope: StorageScope,
   isValid: (value: unknown) => value is T,
   previousKey: string | null
 ): T | null {
@@ -276,27 +304,14 @@ function readSessionPointer<T extends { workspaceId: string }>(
       const pointer: unknown = JSON.parse(json)
       if (!isValid(pointer)) {
         sessionStorage.removeItem(key)
-      } else if (
-        targetWorkspaceId &&
-        pointer.workspaceId !== targetWorkspaceId
-      ) {
+      } else if (pointer.workspaceId !== targetScope) {
         sessionStorage.removeItem(key)
       } else {
         return pointer
       }
     }
 
-    if (targetWorkspaceId) {
-      return findAndMigratePointer(
-        key,
-        prefix,
-        targetWorkspaceId,
-        isValid,
-        previousKey
-      )
-    }
-
-    return null
+    return findAndMigratePointer(key, prefix, targetScope, isValid, previousKey)
   } catch {
     return null
   }
@@ -366,26 +381,26 @@ function readSessionValue<T>(
  */
 export function readActivePath(
   clientId: string | null,
-  targetWorkspaceId?: string,
+  targetScope: StorageScope,
   previousClientId: string | null = null
 ): ActivePathPointer | null {
-  return (
+  const pointer =
     (clientId
       ? readSessionPointer<ActivePathPointer>(
           StorageKeys.activePath(clientId),
           StorageKeys.prefixes.activePath,
-          targetWorkspaceId,
+          targetScope,
           isValidActivePathPointer,
           previousClientId ? StorageKeys.activePath(previousClientId) : null
         )
       : null) ??
-    (targetWorkspaceId
-      ? readLocalPointer<ActivePathPointer>(
-          StorageKeys.lastActivePath(targetWorkspaceId),
-          isValidActivePathPointer
-        )
-      : null)
-  )
+    readLocalPointer<ActivePathPointer>(
+      StorageKeys.lastActivePath(targetScope),
+      isValidActivePathPointer
+    )
+  return pointer?.workspaceId === targetScope
+    ? { ...pointer, workspaceId: targetScope }
+    : null
 }
 
 /**
@@ -411,16 +426,16 @@ export function writeActivePath(
 }
 
 /** Inverse of {@link writeActivePath}: drops both pointers it writes. */
-export function clearActivePath(clientId: string, workspaceId: string): void {
+export function clearActivePath(clientId: string, scope: StorageScope): void {
   try {
     sessionStorage.removeItem(StorageKeys.activePath(clientId))
-    localStorage.removeItem(StorageKeys.lastActivePath(workspaceId))
+    localStorage.removeItem(StorageKeys.lastActivePath(scope))
   } catch {
     return
   }
   removeSessionPointers(
     StorageKeys.prefixes.activePath,
-    workspaceId,
+    scope,
     isValidActivePathPointer,
     null
   )
@@ -433,26 +448,26 @@ export function clearActivePath(clientId: string, workspaceId: string): void {
  */
 export function readOpenPaths(
   clientId: string | null,
-  targetWorkspaceId?: string,
+  targetScope: StorageScope,
   previousClientId: string | null = null
 ): OpenPathsPointer | null {
-  return (
+  const pointer =
     (clientId
       ? readSessionPointer<OpenPathsPointer>(
           StorageKeys.openPaths(clientId),
           StorageKeys.prefixes.openPaths,
-          targetWorkspaceId,
+          targetScope,
           isValidOpenPathsPointer,
           previousClientId ? StorageKeys.openPaths(previousClientId) : null
         )
       : null) ??
-    (targetWorkspaceId
-      ? readLocalPointer<OpenPathsPointer>(
-          StorageKeys.lastOpenPaths(targetWorkspaceId),
-          isValidOpenPathsPointer
-        )
-      : null)
-  )
+    readLocalPointer<OpenPathsPointer>(
+      StorageKeys.lastOpenPaths(targetScope),
+      isValidOpenPathsPointer
+    )
+  return pointer?.workspaceId === targetScope
+    ? { ...pointer, workspaceId: targetScope }
+    : null
 }
 
 /**
@@ -530,12 +545,29 @@ const legacyLocalRestoreKeys = [
   'workflow'
 ]
 
+const legacyLocalRestorePointerKeys = [
+  'Comfy.OpenWorkflowsPaths',
+  'Comfy.ActiveWorkflowIndex',
+  'Comfy.PreviousWorkflow',
+  'workflow'
+]
+
 const legacyAgentKeys = [
   'Comfy.Agent.ThreadId',
   'Comfy.Agent.WorkflowTabBindings',
   'Comfy.Agent.WorkflowTabBindings.v2',
   'Comfy.Agent.ChatTitles',
   'Comfy.Agent.DeletedThreads'
+]
+
+const preIdentityCloudScopePrefixes = [
+  StorageKeys.prefixes.draftIndex,
+  StorageKeys.prefixes.lastActivePath,
+  StorageKeys.prefixes.lastOpenPaths,
+  StorageKeys.prefixes.agentThread,
+  StorageKeys.prefixes.agentWorkflowTabBindings,
+  StorageKeys.prefixes.agentChatTitles,
+  StorageKeys.prefixes.agentDeletedThreads
 ]
 
 const sessionRestorePrefixes = [
@@ -578,6 +610,35 @@ function removeStorageKeys(
   }
 }
 
+function isPreIdentityCloudStorageKey(key: string): boolean {
+  if (key.startsWith(StorageKeys.prefixes.draftPayload)) {
+    const suffix = key.slice(StorageKeys.prefixes.draftPayload.length)
+    return suffix.split(':').length === 2
+  }
+
+  return preIdentityCloudScopePrefixes.some((prefix) => {
+    if (!key.startsWith(prefix)) return false
+    const scope = key.slice(prefix.length)
+    return scope.length > 0 && !scope.includes(':')
+  })
+}
+
+function removePreIdentityCloudStorageKeys(): void {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (!key || !isPreIdentityCloudStorageKey(key)) continue
+      try {
+        localStorage.removeItem(key)
+      } catch {
+        continue
+      }
+    }
+  } catch {
+    return
+  }
+}
+
 export function clearLegacyAgentStorage(): void {
   removeStorageKeys(localStorage, legacyAgentKeys)
 }
@@ -598,6 +659,7 @@ export function prepareWorkflowWorkspaceTransition(): () => void {
       resumeAvailability: workflowStorageState.availability,
       ownerId
     }
+    storageScopeRevision.value++
   }
   clearWorkflowRestoreState()
 
@@ -613,6 +675,7 @@ export function prepareWorkflowWorkspaceTransition(): () => void {
       status: 'ready',
       availability: workflowStorageState.resumeAvailability
     }
+    storageScopeRevision.value++
   }
 }
 
@@ -625,6 +688,7 @@ export function prepareWorkflowLogoutTransition(): void {
         ? workflowStorageState.resumeAvailability
         : workflowStorageState.availability
   }
+  storageScopeRevision.value++
 }
 
 export function completeWorkflowLogoutTransition(): void {
@@ -638,6 +702,7 @@ export function completeWorkflowLogoutTransition(): void {
     status: 'ready',
     availability: workflowStorageState.resumeAvailability
   }
+  storageScopeRevision.value++
 }
 
 export function clearAllWorkflowStorage(): void {
@@ -667,4 +732,22 @@ export function clearAllWorkspaceStorage(): void {
       StorageKeys.prefixes.agentDeletedThreads
     ]
   )
+}
+
+export function clearWorkflowStorageForScope(scope: StorageScope): void {
+  const localKeys = [
+    StorageKeys.draftIndex(scope),
+    StorageKeys.lastActivePath(scope),
+    StorageKeys.lastOpenPaths(scope),
+    StorageKeys.agentThread(scope),
+    StorageKeys.agentWorkflowTabBindings(scope),
+    StorageKeys.agentChatTitles(scope),
+    StorageKeys.agentDeletedThreads(scope),
+    ...legacyLocalRestorePointerKeys
+  ]
+  const localPrefixes = [`${StorageKeys.prefixes.draftPayload}${scope}:`]
+
+  removeStorageKeys(localStorage, localKeys, localPrefixes)
+  removePreIdentityCloudStorageKeys()
+  removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
 }

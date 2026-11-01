@@ -11,7 +11,8 @@ interface AuthStoreAccess {
   readonly userEmail: string | null | undefined
   getIdToken(): Promise<string | undefined>
   createCustomer(): Promise<CreateCustomerResponse>
-  logout(): Promise<void>
+  currentUserIdentity(): string | null
+  logout(expectedIdentity: string | null): Promise<void>
   notifyTokenRefreshed(): void
 }
 

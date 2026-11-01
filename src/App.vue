@@ -31,10 +31,12 @@ import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
+import { useStorageScopeLifecycle } from '@/platform/workflow/persistence/composables/useStorageScopeLifecycle'
 
 registerExtensionDialogService(createExtensionDialogService())
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()
+useStorageScopeLifecycle()
 
 const conflictDetection = useConflictDetection()
 useAgentExtensionNotices()

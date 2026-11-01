@@ -1,4 +1,5 @@
 import type { Page, Route } from '@playwright/test'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import type {
   AgentRunMode,
@@ -15,7 +16,7 @@ import {
   AGENT_ONBOARDED_SCOPES_SETTING_ID
 } from '@/platform/settings/constants/agent'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -273,7 +274,9 @@ export const restoredTargetlessAgentThreadTest =
       await page.addInitScript(
         ({ key, threadId }) => localStorage.setItem(key, threadId),
         {
-          key: StorageKeys.agentThread('personal'),
+          key: StorageKeys.agentThread(
+            unsafeStorageScope('cloud:test-user-e2e:ws-personal')
+          ),
           threadId: AGENT_COMPOSER_THREAD_ID
         }
       )

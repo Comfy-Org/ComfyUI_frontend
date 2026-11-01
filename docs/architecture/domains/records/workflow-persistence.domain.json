@@ -29,8 +29,14 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["keybindings"],
-  "allowedConsumers": [],
+  "allowedDependencies": [
+    "app-host",
+    "authentication",
+    "error-reporting",
+    "keybindings",
+    "workspace"
+  ],
+  "allowedConsumers": ["agent", "app-host", "authentication", "workspace"],
   "characterizationScenarios": [
     {
       "name": "Draft cache keeps a bounded, collision-safe LRU index of workflow drafts",

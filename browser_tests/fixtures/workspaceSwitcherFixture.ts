@@ -1,5 +1,6 @@
 import type { ListMembersResponse } from '@comfyorg/ingest-types'
 
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -14,6 +15,8 @@ import {
   WORKSPACE_SWITCHER_REMOTE_CONFIG,
   WORKSPACE_SWITCHER_WORKSPACES
 } from '@e2e/fixtures/data/workspaceSwitcher'
+import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { WorkspaceAuthHelper } from '@e2e/fixtures/helpers/WorkspaceAuthHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 
@@ -28,11 +31,24 @@ interface WorkspaceSwitchTokenGate {
 }
 
 export const workspaceSwitcherTest = comfyPageFixture.extend<{
+  workspaceAuth: WorkspaceAuthHelper
   workspaceSwitchTokenGate: WorkspaceSwitchTokenGate
+  workspaceSwitcherRemoteConfig: RemoteConfig
 }>({
-  page: async ({ page }, use) => {
+  workspaceSwitcherRemoteConfig: [{}, { option: true }],
+  page: async ({ page, workspaceSwitcherRemoteConfig }, use) => {
+    if (workspaceSwitcherRemoteConfig['agent-in-app-experience'] === true) {
+      await new FeatureFlagHelper(page).seedServerFlags({
+        agent: { state: 'ready' }
+      })
+    }
     await page.route('**/api/features', (route) =>
-      route.fulfill(jsonRoute(WORKSPACE_SWITCHER_REMOTE_CONFIG))
+      route.fulfill(
+        jsonRoute({
+          ...WORKSPACE_SWITCHER_REMOTE_CONFIG,
+          ...workspaceSwitcherRemoteConfig
+        })
+      )
     )
 
     await mockWorkspaceList(page, WORKSPACE_SWITCHER_WORKSPACES)
@@ -103,6 +119,9 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
     })
 
     await use(page)
+  },
+  workspaceAuth: async ({ page }, use) => {
+    await use(new WorkspaceAuthHelper(page))
   },
   workspaceSwitchTokenGate: async ({ page }, use) => {
     let markRequestReceived: () => void = () => {}

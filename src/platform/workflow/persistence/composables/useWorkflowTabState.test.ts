@@ -10,6 +10,14 @@ describe('useWorkflowTabState', () => {
     const { api } = await import('@/scripts/api')
     api.clientId = 'test-client-id'
     api.initialClientId = 'test-client-id'
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'personal', id: null })
+    )
+    const { setStorageIdentity, setStorageWorkspaceId } =
+      await import('@/platform/workflow/persistence/base/storageIO')
+    setStorageIdentity('user-a')
+    setStorageWorkspaceId('personal')
   })
 
   describe('activePath', () => {
@@ -33,6 +41,9 @@ describe('useWorkflowTabState', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: 'ws-1' })
       )
+      const { setStorageWorkspaceId: setInitialStorageWorkspaceId } =
+        await import('@/platform/workflow/persistence/base/storageIO')
+      setInitialStorageWorkspaceId('ws-1')
       const { useWorkflowTabState } = await import('./useWorkflowTabState')
       const { setActivePath } = useWorkflowTabState()
       setActivePath('workflows/test.json')
@@ -42,6 +53,10 @@ describe('useWorkflowTabState', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: 'ws-2' })
       )
+      const { setStorageIdentity, setStorageWorkspaceId } =
+        await import('@/platform/workflow/persistence/base/storageIO')
+      setStorageIdentity('user-a')
+      setStorageWorkspaceId('ws-2')
 
       const { useWorkflowTabState: useWorkflowTabState2 } =
         await import('./useWorkflowTabState')
@@ -77,6 +92,9 @@ describe('useWorkflowTabState', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: 'ws-1' })
       )
+      const { setStorageWorkspaceId: setInitialStorageWorkspaceId } =
+        await import('@/platform/workflow/persistence/base/storageIO')
+      setInitialStorageWorkspaceId('ws-1')
       const { useWorkflowTabState } = await import('./useWorkflowTabState')
       const { setOpenPaths } = useWorkflowTabState()
       setOpenPaths(['workflows/test.json'], 0)
@@ -86,6 +104,10 @@ describe('useWorkflowTabState', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: 'ws-2' })
       )
+      const { setStorageIdentity, setStorageWorkspaceId } =
+        await import('@/platform/workflow/persistence/base/storageIO')
+      setStorageIdentity('user-a')
+      setStorageWorkspaceId('ws-2')
 
       const { useWorkflowTabState: useWorkflowTabState2 } =
         await import('./useWorkflowTabState')
@@ -99,6 +121,9 @@ describe('useWorkflowTabState', () => {
         'Comfy.Workspace.Current',
         JSON.stringify({ type: 'team', id: 'ws-1' })
       )
+      const { setStorageWorkspaceId } =
+        await import('@/platform/workflow/persistence/base/storageIO')
+      setStorageWorkspaceId('ws-1')
       const { useWorkflowTabState } = await import('./useWorkflowTabState')
       const { setOpenPaths, getOpenPaths } = useWorkflowTabState()
 
@@ -122,6 +147,10 @@ describe('useWorkflowTabState', () => {
     const { api } = await import('@/scripts/api')
     api.clientId = undefined
     api.initialClientId = null
+    const { setStorageIdentity, setStorageWorkspaceId } =
+      await import('@/platform/workflow/persistence/base/storageIO')
+    setStorageIdentity('user-a')
+    setStorageWorkspaceId('personal')
     const { useWorkflowTabState: useRestartedTabState } =
       await import('./useWorkflowTabState')
     const reader = useRestartedTabState()
@@ -137,7 +166,7 @@ describe('useWorkflowTabState', () => {
     sessionStorage.setItem(
       'Comfy.Workflow.OpenPaths:older-load',
       JSON.stringify({
-        workspaceId: 'personal',
+        workspaceId: 'cloud:user-a:personal',
         paths: ['workflows/a.json', 'workflows/b.json'],
         activeIndex: 0
       })
@@ -145,7 +174,7 @@ describe('useWorkflowTabState', () => {
     sessionStorage.setItem(
       'Comfy.Workflow.OpenPaths:previous-load',
       JSON.stringify({
-        workspaceId: 'personal',
+        workspaceId: 'cloud:user-a:personal',
         paths: ['workflows/b.json'],
         activeIndex: 0
       })

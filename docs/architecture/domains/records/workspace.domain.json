@@ -97,8 +97,8 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["ingest-api", "server-facts"],
-  "allowedConsumers": ["account"],
+  "allowedDependencies": ["ingest-api", "server-facts", "workflow-persistence"],
+  "allowedConsumers": ["account", "workflow-persistence"],
   "characterizationScenarios": [
     {
       "name": "Team workspace store and API list, switch, create, and leave workspaces",
