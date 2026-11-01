@@ -142,7 +142,7 @@ test.describe(
         await expect(otherInput).toHaveValue(otherDefault)
       })
 
-      await test.step('a positional alias on a class with no dynamic combo is refused the same way', async () => {
+      await test.step('a positional alias past the live widget list is refused the same way', async () => {
         hostSocket.send(
           host.setDocumentWidget(
             missingWidgetNodeId,

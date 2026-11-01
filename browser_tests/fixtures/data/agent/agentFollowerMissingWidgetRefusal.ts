@@ -13,7 +13,7 @@ export const dottedMarkerId = 812
 export const overflowMarkerId = 813
 
 export const absentDottedWidget = 'reference.image'
-export const absentOverflowAlias = '_extra_1'
+export const absentOverflowAlias = '_extra_7'
 
 export const keptValue = 'kept by the canvas'
 export const otherDefault = 'left on its definition default'
