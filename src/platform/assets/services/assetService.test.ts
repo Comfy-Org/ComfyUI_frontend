@@ -1439,6 +1439,18 @@ describe(assetService.getAssetsPageForNodeType, () => {
 })
 
 describe(assetService.getAssetsForNodeType, () => {
+  it('asks for public models explicitly instead of relying on the server default', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-1' })])
+    )
+
+    await assetService.getAssetsForNodeType('CheckpointLoaderSimple')
+
+    const requestedUrl = vi.mocked(api.fetchApi).mock.calls[0]?.[0]
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_public')).toBe('true')
+  })
+
   it('returns just the assets array from the page response', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildAssetListResponse([validAsset({ id: 'ckpt-1' })], { hasMore: true })
