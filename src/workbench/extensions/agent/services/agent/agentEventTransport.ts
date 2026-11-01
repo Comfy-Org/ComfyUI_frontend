@@ -92,6 +92,11 @@ export interface AgentEventTransport {
   dispose: () => void
 }
 
+const TOOLS_THAT_KEEP_ANSWER_DRAFT: ReadonlySet<string> = new Set([
+  'remember',
+  'forget'
+])
+
 function updateSkill(part: ToolPart, skill: string | null | undefined): void {
   if (skill) part.skill = skill
 }
@@ -110,6 +115,7 @@ export function createAgentEventTransport(
 ): AgentEventTransport {
   let openText: TextPart | null = null
   let draft: TextPart | null = null
+  let answerToolRunning = false
   let openThinking: ThinkingPart | null = null
   let openThinkingStartedAt = 0
   const tools = new Map<string, ToolPart>(
@@ -294,6 +300,19 @@ export function createAgentEventTransport(
     }
   }
 
+  function handleToolCallFrame(data: AgentToolCallEvent['data']): void {
+    if (TOOLS_THAT_KEEP_ANSWER_DRAFT.has(data.tool_name)) {
+      answerToolRunning = data.status === 'running'
+    } else {
+      dropDraft()
+    }
+    closeOpenText()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    handleToolCallEvent(data)
+  }
+
   function handleActiveTabEvent(data: AgentActiveTabEvent['data']): boolean {
     const targetKey = `${data.workflow_id}\u0000${data.node_locator_id ?? ''}`
     if (lastTabTargetKey === targetKey) return false
@@ -326,7 +345,7 @@ export function createAgentEventTransport(
     }
     const part = toAskOrNoticePart(data)
     if (part.type === 'askUnavailable') reportUnrenderedAsk(data)
-    dropDraft()
+    if (!answerToolRunning) dropDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
@@ -434,12 +453,7 @@ export function createAgentEventTransport(
         handleThinkingEvent(event.data)
         return true
       case 'agent_tool_call':
-        dropDraft()
-        closeOpenText()
-        closeOpenThinking()
-        message.thinking = false
-        message.thinkingText = undefined
-        handleToolCallEvent(event.data)
+        handleToolCallFrame(event.data)
         return true
       case 'agent_active_tab':
         return handleActiveTabEvent(event.data)
