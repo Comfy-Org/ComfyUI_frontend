@@ -769,6 +769,11 @@ export type AgentComposerDropReason =
   | 'no_target'
   | 'empty'
   | 'attachment_uploading'
+/**
+ * The session refused a submitted send: `send_busy` while another is in
+ * flight, `target_unavailable` when its workflow target changed or has no canvas.
+ */
+export type AgentSessionRefusalReason = 'send_busy' | 'target_unavailable'
 /** `not_completed`: the consent flow ended without accept, decline or dismiss. */
 export type AgentConsentDropReason =
   | 'declined'
@@ -793,6 +798,13 @@ type AgentSendGateOutcome =
       outcome: 'dropped'
       reason: AgentComposerDropReason
       client_message_id: null
+      held_ms: null
+    }
+  | {
+      gate: 'composer'
+      outcome: 'dropped'
+      reason: AgentSessionRefusalReason
+      client_message_id: string | null
       held_ms: null
     }
   | {
