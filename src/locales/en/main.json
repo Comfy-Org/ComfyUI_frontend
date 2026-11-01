@@ -3092,7 +3092,8 @@
       "apiUsage": "API Usage",
       "gpuUsage": "GPU Usage",
       "apiNodeUsage": "Partner Node Usage",
-      "agentUsage": "Agent Usage"
+      "agentUsage": "Agent Usage",
+      "routerUsage": "Router Usage"
     },
     "unified": {
       "message": "Credits have been unified",
