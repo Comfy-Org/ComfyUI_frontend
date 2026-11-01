@@ -353,7 +353,6 @@ const loading = computed(() => toValue(currentAssets.value.isLoading))
 const mediaAssets = computed(() => toValue(currentAssets.value.items))
 
 const galleryActiveIndex = ref(-1)
-const currentGalleryAssetId = ref<string | null>(null)
 
 const DEFAULT_SKELETON_COUNT = 6
 const skeletonCount = computed(() =>
@@ -444,21 +443,19 @@ const showEmptyState = computed(
 )
 
 watch(visibleAssets, (newAssets) => {
-  // Alternative: keep hidden selections and surface them in UI; for now prune
-  // so selection stays consistent with what this view can act on.
   reconcileSelection(newAssets)
-  if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
-    const newIndex = previewableVisibleAssets.value.findIndex(
-      (asset) => asset.id === currentGalleryAssetId.value
-    )
-    galleryActiveIndex.value = newIndex
-  }
 })
 
-watch(galleryActiveIndex, (index) => {
-  if (index === -1) {
-    currentGalleryAssetId.value = null
-  }
+watch(previewableVisibleAssets, (nextAssets, previousAssets) => {
+  const index = galleryActiveIndex.value
+  if (index === -1) return
+
+  const activeId = previousAssets?.[index]?.id
+  if (!activeId) return
+
+  galleryActiveIndex.value = nextAssets.findIndex(
+    (asset) => asset.id === activeId
+  )
 })
 
 const galleryItems = computed<AugmentedResultItem[]>(() => {
@@ -655,7 +652,6 @@ const handleZoomClick = (asset: AssetItem) => {
     return
   }
 
-  currentGalleryAssetId.value = asset.id
   const index = previewableVisibleAssets.value.findIndex(
     (a) => a.id === asset.id
   )

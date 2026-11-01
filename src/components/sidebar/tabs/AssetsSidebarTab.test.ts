@@ -7,6 +7,7 @@ import {
   within
 } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -91,7 +92,13 @@ const i18n = createI18n({
   messages: {
     en: {
       assetBrowser: { jobId: 'Job ID' },
-      g: { copyJobId: 'Copy Job ID' },
+      g: {
+        copyJobId: 'Copy Job ID',
+        gallery: 'Gallery',
+        close: 'Close',
+        previous: 'Previous',
+        next: 'Next'
+      },
       sideToolbar: {
         backToAssets: 'Back to all assets',
         closeSidebar: 'Close sidebar',
@@ -124,7 +131,12 @@ const assetsGridStub = {
         @click="$emit('output-count-click', assets[0])"
         @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
       />
-      <button aria-label="Zoom" @click="$emit('zoom', assets[0])" />
+      <button
+        v-for="asset in assets"
+        :key="asset.id"
+        :aria-label="\`Preview \${asset.name}\`"
+        @click="$emit('zoom', asset)"
+      />
     </div>
   `
 }
@@ -134,7 +146,7 @@ const mediaLightboxStub = {
   template: `<div data-testid="lightbox-url">{{ allGalleryItems[activeIndex]?.url }}</div>`
 }
 
-function renderTab({ realTemplate = false } = {}) {
+function renderTab({ realTemplate = false, realLightbox = false } = {}) {
   return render(AssetsSidebarTab, {
     global: {
       plugins: [i18n],
@@ -144,7 +156,7 @@ function renderTab({ realTemplate = false } = {}) {
         AssetsSidebarListView: true,
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
-        MediaLightbox: mediaLightboxStub
+        ...(realLightbox ? {} : { MediaLightbox: mediaLightboxStub })
       }
     }
   })
@@ -202,7 +214,9 @@ it('gives the lightbox a playable URL for a video without a preview_url', async 
   ]
   renderTab()
 
-  await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Preview clip.mp4' })
+  )
 
   expect(screen.getByTestId('lightbox-url').textContent).toBeTruthy()
 })
@@ -333,5 +347,39 @@ describe('AssetsSidebarTab tab panel', () => {
       'tabindex',
       '0'
     )
+  })
+})
+
+describe('AssetsSidebarTab gallery selection', () => {
+  const pngAsset = (id: string, name: string) => ({
+    ...folderAsset,
+    id,
+    name,
+    preview_url: `/api/assets/${id}/content`
+  })
+
+  it('stays on the viewed asset when a new output is prepended', async () => {
+    const newest = pngAsset('a', 'a.png')
+    const second = pngAsset('b', 'b.png')
+    const oldest = pngAsset('c', 'c.png')
+    useAssetsStore().outputAssets.items = [newest, second, oldest]
+
+    renderTab({ realLightbox: true })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Preview b.png' }))
+    expect(await screen.findByAltText('b.png')).toBeInTheDocument()
+
+    await userEvent.keyboard('{ArrowRight}')
+    expect(screen.getByAltText('c.png')).toBeInTheDocument()
+
+    useAssetsStore().outputAssets.items = [
+      pngAsset('d', 'd.png'),
+      newest,
+      second,
+      oldest
+    ]
+    await nextTick()
+
+    expect(screen.getByAltText('c.png')).toBeInTheDocument()
   })
 })

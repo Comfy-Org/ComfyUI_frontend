@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -18,6 +18,11 @@ const i18n = createI18n({
         gallery: 'Gallery',
         previous: 'Previous',
         next: 'Next',
+        play: 'Play',
+        pause: 'Pause',
+        volume: 'Volume',
+        skipToStart: 'Skip to start',
+        skipToEnd: 'Skip to end',
         videoFailedToLoad: 'Video failed to load',
         textFailedToLoad: 'Text failed to load'
       }
@@ -160,6 +165,93 @@ describe('MediaLightbox', () => {
     await nextTick()
 
     expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
+  })
+
+  describe('focus management', () => {
+    const renderHost = (
+      activeIndex: number,
+      options: {
+        items?: MockResultItem[]
+        components?: Record<string, unknown>
+      } = {}
+    ) => {
+      const galleryItems = ref<MockResultItem[]>([
+        ...(options.items ?? mockGalleryItems)
+      ])
+      const index = ref(activeIndex)
+      const Host = defineComponent({
+        components: { MediaLightbox },
+        setup: () => ({ galleryItems, index }),
+        template:
+          '<MediaLightbox v-model:active-index="index" :all-gallery-items="galleryItems" />'
+      })
+      const user = userEvent.setup()
+      render(Host, {
+        global: {
+          plugins: [i18n],
+          components: {
+            ComfyImage: mockComfyImage,
+            ResultVideo: mockResultVideo,
+            ResultAudio: mockResultAudio,
+            ...options.components
+          }
+        }
+      })
+      return { user, galleryItems, index }
+    }
+
+    it('focuses the dialog when the gallery opens', async () => {
+      const { index } = renderHost(-1)
+      await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
+      index.value = 0
+
+      await vi.waitFor(() => expect(screen.getByRole('dialog')).toHaveFocus())
+    })
+
+    it('keeps focus on the selected control when a prepend shifts the index', async () => {
+      const { user, galleryItems, index } = renderHost(1)
+      const next = await screen.findByLabelText('Next')
+      await user.click(next)
+      expect(next).toHaveFocus()
+
+      galleryItems.value = [
+        { ...mockGalleryItems[0], filename: 'prepended.jpg', id: '0' },
+        ...mockGalleryItems
+      ]
+      index.value = 3
+      await nextTick()
+      await nextTick()
+
+      expect(screen.getByLabelText('Next')).toBe(next)
+      expect(next).toHaveFocus()
+      expect(screen.getByRole('dialog')).not.toHaveFocus()
+    })
+
+    it('restores dialog focus when navigation removes the focused control', async () => {
+      const audioItem: MockResultItem = {
+        filename: 'clip.mp3',
+        subfolder: '',
+        type: 'output',
+        nodeId: '8',
+        mediaType: 'audio',
+        url: 'clip.mp3',
+        id: 'audio'
+      }
+      const { index } = renderHost(0, {
+        items: [audioItem, mockGalleryItems[0]]
+      })
+      const volume = await screen.findByRole('button', { name: 'Volume' })
+      await vi.waitFor(() => expect(volume).toBeEnabled())
+      volume.focus()
+      expect(volume).toHaveFocus()
+
+      index.value = 1
+      await nextTick()
+      await nextTick()
+
+      expect(screen.getByRole('dialog')).toHaveFocus()
+    })
   })
 
   it('keeps failed text media actionable until the viewer closes', async () => {
