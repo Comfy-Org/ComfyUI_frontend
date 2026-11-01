@@ -171,7 +171,6 @@ export const useCustomerEventsService = () => {
       locale: i18n.global.locale.value,
       numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
     })
-    // The unit agrees with the whole number shown, so 1 reads "1 Credit".
     return `${amount} ${t('credits.creditUnit', Math.round(credits))}`
   }
 
