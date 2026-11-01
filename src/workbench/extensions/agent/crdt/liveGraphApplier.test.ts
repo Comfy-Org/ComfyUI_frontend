@@ -2261,6 +2261,35 @@ describe('LiveGraphApplier change bracket', () => {
     }
   )
 
+  it('drops the groups a replacement document no longer holds', () => {
+    const { graph, applier, applyCollected } = setup({
+      nodes: [],
+      links: [],
+      groups: [
+        { id: 5, title: 'Dropped', bounding: [0, 0, 100, 100] },
+        { id: 6, title: 'Kept', bounding: [200, 0, 100, 100] }
+      ]
+    })
+    applyCollected()
+    const replacement = followedDoc(
+      {
+        nodes: [],
+        links: [],
+        groups: [{ id: 6, title: 'Kept', bounding: [200, 0, 100, 100] }]
+      },
+      CATALOG
+    )
+
+    applier.applyChanges(
+      replacement.doc,
+      replacement.collector.take(),
+      CONTEXT,
+      'replace'
+    )
+
+    expect(graph.groups.map((group) => group.title)).toEqual(['Kept'])
+  })
+
   it('brackets a catch-up frame and a lineage replacement once each, and never without a graph', () => {
     const { canvas, events } = recordingCanvas()
     const { graph, doc, collector, applier } = setup(seed, {

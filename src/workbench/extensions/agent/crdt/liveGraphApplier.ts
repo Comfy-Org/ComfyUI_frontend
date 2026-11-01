@@ -839,6 +839,13 @@ export class LiveGraphApplier {
       if (docLinks.has(String(id))) continue
       this.try(context, () => graph.removeLink(id))
     }
+    const docGroups = readDocGroups(doc.getMap<unknown>('meta').get('groups'))
+    const absentGroups = graph.groups.filter(
+      (group) => !docGroups.has(String(group.id))
+    )
+    for (const group of absentGroups) {
+      this.try(context, () => graph.remove(group))
+    }
   }
 
   private write<T>(graph: LGraph, context: RemoteApplyContext, fn: () => T): T {
