@@ -9,6 +9,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { api } from '@/scripts/api'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import '@/scripts/changeTracker'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
@@ -154,6 +155,7 @@ describe('useWorkflowPersistenceV2', () => {
 
   beforeEach(() => {
     useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
+    useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] = true
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
     api.clientId = 'test-client'
@@ -821,6 +823,85 @@ describe('useWorkflowPersistenceV2', () => {
       extra: { marker: 'final-edit' }
     })
   })
+
+  it('persists a viewport-only change when the page is unloaded', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = {
+      nodes: [],
+      extra: { ds: { scale: 1.55, offset: [10, 20] } }
+    }
+
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+
+    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+    expect(JSON.parse(payload.data).extra.ds).toEqual({
+      scale: 1.55,
+      offset: [10, 20]
+    })
+  })
+
+  it('persists a saved active workflow without a change tracker on page unload', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = workflowStore.createTemporary('Untracked.json')
+    workflow.size = 100
+    workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = {
+      nodes: [],
+      extra: { ds: { scale: 1.55, offset: [10, 20] } }
+    }
+
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+
+    expect(
+      localStorage.getItem(StorageKeys.draftPayload(workflow.path, 'personal'))
+    ).not.toBeNull()
+  })
+
+  it.for([
+    { viewport: 'moved', viewRestore: true, keepsDraft: true },
+    { viewport: 'saved', viewRestore: true, keepsDraft: false },
+    { viewport: 'moved', viewRestore: false, keepsDraft: false }
+  ] as const)(
+    'keeps an unmodified saved workflow draft only when its restorable viewport differs ($viewport, view restore $viewRestore)',
+    async ({ viewport, viewRestore, keepsDraft }) => {
+      useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+        viewRestore
+      const workflowStore = useWorkflowStore()
+      const workflow = await workflowStore.createTemporary('Saved.json').load()
+      workflow.size = 100
+      workflowStore.activeWorkflow = workflow
+      mountWorkflowPersistence()
+      await nextTick()
+
+      mocks.state.currentGraph = {
+        nodes: [],
+        extra: {
+          ds:
+            viewport === 'moved'
+              ? { scale: 1.55, offset: [10, 20] }
+              : workflow.initialState.extra?.ds
+        }
+      }
+
+      window.dispatchEvent(new PageTransitionEvent('pagehide'))
+
+      expect(workflow.isModified).toBe(false)
+      expect(
+        localStorage.getItem(
+          StorageKeys.draftPayload(workflow.path, 'personal')
+        ) !== null
+      ).toBe(keepsDraft)
+    }
+  )
 
   it('does not flush a pending workflow edit after disposal', async () => {
     const workflowStore = useWorkflowStore()
