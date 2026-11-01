@@ -53,9 +53,7 @@
     },
     {
       "name": "Mask PNG encoding round-trips through the decoder fixture",
-      "checks": [
-        "src/utils/pngEncodeUtil.test.ts"
-      ]
+      "checks": ["src/utils/pngEncodeUtil.test.ts"]
     },
     {
       "name": "Core extensions register the clipspace and mask editor and open the editor from node menus",
@@ -67,9 +65,7 @@
     },
     {
       "name": "Clipspace copies and pastes node images",
-      "checks": [
-        "src/scripts/clipspace.test.ts"
-      ]
+      "checks": ["src/scripts/clipspace.test.ts"]
     },
     {
       "name": "The stroke engine and editor store keep their contract for the painter and undo commands",

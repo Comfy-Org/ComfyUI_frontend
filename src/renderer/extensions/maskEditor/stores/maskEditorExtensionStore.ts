@@ -17,10 +17,14 @@ const toolSchema = z.object({
   )
 })
 
-function parseTool(tool: MaskEditorTool) {
+function prepareTool(tool: MaskEditorTool) {
   try {
     const result = toolSchema.safeParse(tool)
-    return result.success ? result.data : undefined
+    if (!result.success) return undefined
+    return {
+      ...result.data,
+      createSession: result.data.createSession.bind(tool)
+    }
   } catch (error) {
     reportError(error, {
       errorType: 'failure_registering_mask_editor_tool',
@@ -36,15 +40,12 @@ export const useMaskEditorExtensionStore = defineStore(
     const tools = shallowRef<readonly MaskEditorTool[]>([])
 
     function registerTool(tool: MaskEditorTool): MaskEditorToolRegistration {
-      const parsed = parseTool(tool)
-      if (!parsed) return { ok: false, reason: 'invalid-tool' }
-      if (tools.value.some((entry) => entry.id === parsed.id)) {
+      const prepared = prepareTool(tool)
+      if (!prepared) return { ok: false, reason: 'invalid-tool' }
+      if (tools.value.some((entry) => entry.id === prepared.id)) {
         return { ok: false, reason: 'duplicate-id' }
       }
-      const registration = Object.freeze({
-        ...parsed,
-        createSession: parsed.createSession.bind(tool)
-      })
+      const registration = Object.freeze(prepared)
       tools.value = [...tools.value, registration]
       return {
         ok: true,
