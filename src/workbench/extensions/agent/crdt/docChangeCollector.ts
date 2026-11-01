@@ -7,7 +7,7 @@ import * as Y from 'yjs'
 
 import { definitionsObserverRoot } from './agentSubgraphDefinitions'
 import type { FrameChanges, NodeChange } from './liveGraphApplier'
-import { metaMap, readDocGroups, SYNCED_NODE_FIELDS } from './liveGraphApplier'
+import { readDocGroups, SYNCED_NODE_FIELDS } from './liveGraphApplier'
 
 /**
  * Collects what the Y observers on one follower document report between two
@@ -37,7 +37,7 @@ export class DocChangeCollector {
     this.nodesMap = nodesMap(doc)
     this.linksMap = linksMap(doc)
     this.definitionsMap = definitionsObserverRoot(doc)
-    this.metaMap = metaMap(doc)
+    this.metaMap = doc.getMap<unknown>('meta')
     this.nodesMap.observeDeep(this.onNodesChanged)
     this.linksMap.observe(this.onLinksChanged)
     this.definitionsMap.observeDeep(this.onDefinitionsChanged)

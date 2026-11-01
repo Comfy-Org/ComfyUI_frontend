@@ -226,11 +226,6 @@ const zDocNodeFields = zComfyNode
 
 const zDocGroup = zGroup.extend({ id: z.number() })
 
-/** The document root holding `groups` among its passthrough keys. */
-export function metaMap(doc: Y.Doc): Y.Map<unknown> {
-  return doc.getMap<unknown>('meta')
-}
-
 /** The `meta.groups` records that configure a canvas group, keyed by id. */
 export function readDocGroups(groups: unknown): Map<string, ISerialisedGroup> {
   const parsed = new Map<string, ISerialisedGroup>()
@@ -967,7 +962,7 @@ export class LiveGraphApplier {
     context: RemoteApplyContext
   ): LGraphGroup[] {
     if (!ids?.size) return []
-    const docGroups = readDocGroups(metaMap(doc).get('groups'))
+    const docGroups = readDocGroups(doc.getMap<unknown>('meta').get('groups'))
     const created: LGraphGroup[] = []
     for (const id of ids) {
       this.try(context, () => {
