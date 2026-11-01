@@ -5,12 +5,8 @@ import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixtu
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
-// The reply filter itself lives in the Cloud agent and is tested there
-// (Comfy-Org/cloud services/agent/internal/loop/scrub_code_test.go). This spec
-// feeds the already-filtered reply text and covers the panel's half: markdown
-// rendering and history hydration must show the commands exactly, once.
 test.describe(
-  'Cloud Agent panel renders local command replies exactly',
+  'Cloud Agent reply rendering and persistence',
   {
     tag: ['@cloud', '@agent', '@ui'],
     annotation: {
@@ -20,7 +16,7 @@ test.describe(
     }
   },
   () => {
-    test('keeps exact user-local commands visible after history hydration', async ({
+    test('keeps exact server reply text through streaming and history hydration', async ({
       agentPanel,
       promptHistory,
       workflowSelection
@@ -43,11 +39,13 @@ test.describe(
         workflowSelection.finishSave(true)
         await agentPanel.sendMessage('Show me the local setup commands.')
         await expect.poll(() => promptHistory.requests.length).toBe(1)
-        await promptHistory.finishLatestTurn(replyText, 0)
+        await promptHistory.streamLatestTurn(replyText)
       })
 
-      await test.step('show every affected command and model name exactly', async () => {
-        const reply = agentPanel.root.getByTestId('markdown-stream').last()
+      await test.step('show every affected string exactly while streaming', async () => {
+        const replies = agentPanel.root.getByTestId('markdown-stream')
+        await expect(replies).toHaveCount(1)
+        const reply = replies.first()
         await expect(reply).toBeVisible()
         await expect(
           reply.getByText('cd ~/ComfyUI/models', { exact: true })
@@ -72,12 +70,14 @@ test.describe(
         ).toBeVisible()
       })
 
-      let repliesBeforeReload = 0
+      await test.step('persist and finish one copy of the reply', async () => {
+        await promptHistory.persistAndFinishLatestTurn(replyText, 0)
+        await expect(
+          agentPanel.root.getByTestId('markdown-stream')
+        ).toHaveCount(1)
+      })
 
       await test.step('reload the panel from persisted history', async () => {
-        repliesBeforeReload = await agentPanel.root
-          .getByTestId('markdown-stream')
-          .count()
         const historyReadsBeforeReload = promptHistory.historyReads()
         await agentPanel.reload()
         await expect
@@ -86,10 +86,9 @@ test.describe(
       })
 
       await test.step('keep the hydrated reply text exact', async () => {
-        await expect(
-          agentPanel.root.getByTestId('markdown-stream')
-        ).toHaveCount(repliesBeforeReload)
-        const reply = agentPanel.root.getByTestId('markdown-stream').last()
+        const replies = agentPanel.root.getByTestId('markdown-stream')
+        await expect(replies).toHaveCount(1)
+        const reply = replies.first()
         await expect(reply).toBeVisible()
         await expect(
           reply.getByText('cd ~/ComfyUI/models', { exact: true })
