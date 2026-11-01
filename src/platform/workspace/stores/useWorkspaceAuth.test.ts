@@ -1065,6 +1065,43 @@ describe('useWorkspaceAuthStore', () => {
       expect(fetch).toHaveBeenCalledTimes(1)
     })
 
+    it.for([
+      { failure: 'a 500', status: 500, reports: 1 },
+      { failure: 'a 403', status: 403, reports: 0 }
+    ])(
+      'reports $failure during recovery as a transient failure $reports time(s)',
+      async ({ status, reports }) => {
+        vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+          'firebase-token-xyz'
+        )
+        respondToFetch(TOKEN_URL, () =>
+          Response.json({ message: 'nope' }, { status })
+        )
+
+        const store = useWorkspaceAuthStore()
+        await store.ensureWorkspaceToken('workspace-123')
+
+        const transientReports = vi
+          .mocked(reportError)
+          .mock.calls.filter(
+            ([, options]) =>
+              options.errorType === 'workspace_token_recovery_failure'
+          )
+        expect(transientReports).toEqual(
+          Array.from({ length: reports }, () => [
+            expect.objectContaining({ code: 'TOKEN_EXCHANGE_FAILED' }),
+            {
+              surface: 'auth',
+              errorType: 'workspace_token_recovery_failure',
+              level: 'warning',
+              tags: { failure_code: 'TOKEN_EXCHANGE_FAILED' },
+              logToConsole: false
+            }
+          ])
+        )
+      }
+    )
+
     it('forgets the revoked active workspace on a permanent workspace-selection failure', async () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'

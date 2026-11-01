@@ -31,7 +31,8 @@ function makeDeps(): LegacyWorkspaceTokenRailDeps {
     endWorkspaceSession: vi.fn(() => false),
     persistWorkspaceIdentity: vi.fn(),
     clearSessionStorage: vi.fn(),
-    surfacePermanentAuthError: vi.fn()
+    surfacePermanentAuthError: vi.fn(),
+    reportTransientRecoveryFailure: vi.fn()
   }
 }
 
