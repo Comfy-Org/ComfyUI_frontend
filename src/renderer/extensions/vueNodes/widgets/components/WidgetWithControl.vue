@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends WidgetValue">
-import { defineAsyncComponent, inject, ref, watch } from 'vue'
+import { inject, ref, watch } from 'vue'
 import type { Component } from 'vue'
 
 import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
@@ -12,10 +12,7 @@ import type {
 import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 
 import ValueControlButton from './ValueControlButton.vue'
-
-const ValueControlPopover = defineAsyncComponent(
-  () => import('./ValueControlPopover.vue')
-)
+import ValueControlPopover from './ValueControlPopover.vue'
 
 const props = defineProps<{
   widget: SimplifiedControlWidget<T>
