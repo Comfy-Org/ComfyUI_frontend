@@ -228,6 +228,10 @@
       "role": "application"
     },
     {
+      "path": "src/platform/billing/composables/readWorkspaceBillingEvents.ts",
+      "role": "application"
+    },
+    {
       "path": "src/platform/billing/composables/useBillingBanner.ts",
       "role": "application"
     },
@@ -312,20 +316,12 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/billing/subscription/utils/checkoutAttributionLoader.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/billing/subscription/utils/paymentReturnUrl.ts",
       "role": "infrastructure"
     },
     {
       "path": "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.ts",
-      "role": "application"
     },
     {
       "path": "src/platform/billing/utils/**",
@@ -479,7 +475,6 @@
         "src/platform/billing/subscription/constants/tierPricing.test.ts",
         "src/platform/billing/subscription/utils/subscriptionTierRank.test.ts",
         "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.test.ts",
-        "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts",
         "src/platform/billing/subscription/utils/retentionOffer.test.ts",
         "src/platform/billing/subscription/composables/useSubscription.test.ts",
         "src/platform/billing/subscription/launchCancellationFlow.test.ts",

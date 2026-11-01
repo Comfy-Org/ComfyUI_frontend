@@ -189,19 +189,7 @@ export const useSubscriptionDialog = () => {
         return true
       }
 
-      dialogService.showLayoutDialog({
-        key: DIALOG_KEY,
-        component: (
-          await import('@/platform/billing/subscription/components/SubscriptionRequiredDialogContent.vue')
-        ).default,
-        props: {
-          ...dialogProps,
-          onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
-        },
-        dialogComponentProps: legacyPricingDialogProps
-      })
-      trackEntry()
-      return true
+      return false
     } catch (error) {
       reportError(error, {
         surface: 'billing',

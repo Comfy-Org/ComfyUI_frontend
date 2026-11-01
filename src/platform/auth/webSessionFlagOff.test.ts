@@ -790,7 +790,7 @@ describe.for([
     remoteConfig.value = {}
   })
 
-  it('sends balance, top-up, portal and the 409 recovery on the Firebase token and mints nothing', async () => {
+  it('sends the 409 recovery on the Firebase token and mints nothing', async () => {
     const recorder = installFetchRecorder(features)
     await refreshRemoteConfig({ useAuth: false })
     const authStore = useAuthStore()
@@ -800,22 +800,21 @@ describe.for([
     )
     recorder.take()
 
-    await authStore.fetchBalance()
-    await authStore.initiateCreditPurchase({
-      amount_micros: 5_000_000,
-      currency: 'usd'
-    })
-    await authStore.accessBillingPortal()
     recorder.loseCustomer()
-    await authStore.fetchBalance()
+    await authStore.fetchWithCustomerRecovery(
+      `${getComfyApiBaseUrl()}/customers/me`,
+      {
+        headers: {
+          ...(await authStore.getUserAuthHeader()),
+          'Content-Type': 'application/json'
+        }
+      }
+    )
 
     expect(recorder.take()).toEqual([
-      onFirebaseToken('GET', '/customers/balance'),
-      onFirebaseToken('POST', '/customers/credit'),
-      onFirebaseToken('POST', '/customers/billing'),
-      onFirebaseToken('GET', '/customers/balance'),
+      onFirebaseToken('GET', '/customers/me'),
       onFirebaseToken('POST', '/customers'),
-      onFirebaseToken('GET', '/customers/balance')
+      onFirebaseToken('GET', '/customers/me')
     ])
   })
 })

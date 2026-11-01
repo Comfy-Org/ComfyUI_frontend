@@ -103,9 +103,7 @@ import TableHeader from '@comfyorg/design-system/table/TableHeader'
 import TableRow from '@comfyorg/design-system/table/TableRow'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { billingApi } from '@/platform/billing/api/billingApi'
-import { readOnRail } from '@/platform/billing/composables/readOnRail'
-import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
+import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { toFiniteNumber } from '@/services/customerEventParams'
@@ -139,13 +137,6 @@ function eventAmount(event: AuditLog) {
 // the latest may mutate state, so a superseded response is discarded.
 let latestLoadToken = 0
 
-const readWorkspaceEvents = (params: { page: number; limit: number }) => {
-  const rail = useBillingReadRail()
-  return rail === null
-    ? billingApi.getBillingEvents(params)
-    : readOnRail(() => rail.readEvents(params), 'getBillingEvents')
-}
-
 const loadEvents = async () => {
   const loadToken = ++latestLoadToken
   loading.value = true
@@ -156,13 +147,11 @@ const loadEvents = async () => {
       page: pagination.value.page,
       limit: pagination.value.limit
     }
-    const response = shouldUseWorkspaceBilling.value
-      ? await readWorkspaceEvents(params)
-      : await customerEventService.getMyEvents(params)
+    const response = await readWorkspaceBillingEvents(params)
 
     // Completion telemetry must run even when a mid-checkout route flip
-    // supersedes this load, since legacy and workspace backends emit different
-    // top-up events and the winning fetch may not carry the completion yet.
+    // supersedes this load, since the winning fetch may not carry the
+    // completion yet.
     const completedTopup = usePendingTopup().consumeCompletedTopup(
       response?.events
     )
@@ -206,10 +195,7 @@ const loadEvents = async () => {
         pagination.value.total = response.total
       }
     } else {
-      const legacyError = shouldUseWorkspaceBilling.value
-        ? null
-        : customerEventService.error.value
-      error.value = legacyError || t('credits.loadEventsError')
+      error.value = t('credits.loadEventsError')
     }
   } catch (err) {
     if (loadToken !== latestLoadToken) return
@@ -252,6 +238,14 @@ watch(
   ([, workspaceId], previous) => {
     if (previous !== undefined && previous[1] !== workspaceId) {
       dropRenderedEvents()
+    }
+    if (!shouldUseWorkspaceBilling.value) {
+      // Routing is not known yet: invalidate any read in flight and wait.
+      latestLoadToken++
+      dropRenderedEvents()
+      error.value = null
+      loading.value = true
+      return
     }
     refresh().catch((error) => {
       console.error('Error loading events:', error)

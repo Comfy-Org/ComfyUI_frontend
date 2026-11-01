@@ -106,10 +106,7 @@ describe('UsageLogsTable', () => {
   ])
 
   beforeEach(() => {
-    setWorkspaceBilling(false)
-    vi.when(useCustomerEventsService().getMyEvents)
-      .calledWith({ page: 1, limit: 7 })
-      .thenResolve(mockEventsResponse)
+    setWorkspaceBilling(true)
     vi.mocked(billingApi.getBillingEvents).mockResolvedValue(mockEventsResponse)
     mockBillingReadRail.readEvents.mockResolvedValue({
       status: 'ok',
@@ -138,19 +135,31 @@ describe('UsageLogsTable', () => {
     it('loads activity on mount without an external refresh', async () => {
       await renderLoaded()
 
-      expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledTimes(1)
+      expect(billingApi.getBillingEvents).toHaveBeenCalledTimes(1)
     })
 
-    it('loads activity on mount on the workspace billing rail', async () => {
-      setWorkspaceBilling(true)
+    it('loads nothing until workspace routing is known', async () => {
+      const workspaceBilling = ref(false)
+      useBillingRouting().shouldUseWorkspaceBilling = computed(
+        () => workspaceBilling.value
+      )
 
-      await renderLoaded()
+      renderComponent()
+      await flushMicrotasks()
 
+      expect(billingApi.getBillingEvents).not.toHaveBeenCalled()
+      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+
+      workspaceBilling.value = true
+
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument()
+      })
       expect(billingApi.getBillingEvents).toHaveBeenCalledTimes(1)
     })
 
     it('shows a loading spinner while the initial load is in flight', () => {
-      vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
+      vi.mocked(billingApi.getBillingEvents).mockReturnValue(
         new Promise(() => {})
       )
 
@@ -160,19 +169,8 @@ describe('UsageLogsTable', () => {
       expect(screen.queryByRole('table')).not.toBeInTheDocument()
     })
 
-    it('shows error message when service returns null', async () => {
-      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(null)
-      useCustomerEventsService().error.value = 'Failed to load events'
-
-      renderComponent()
-
-      await waitFor(() => {
-        expect(screen.getByText('Failed to load events')).toBeInTheDocument()
-      })
-    })
-
     it('shows a localized fallback instead of a raw Error message', async () => {
-      vi.mocked(useCustomerEventsService().getMyEvents).mockRejectedValue(
+      vi.mocked(billingApi.getBillingEvents).mockRejectedValue(
         new Error('Network error')
       )
 
@@ -188,9 +186,8 @@ describe('UsageLogsTable', () => {
       expect(screen.queryByText('Network error')).not.toBeInTheDocument()
     })
 
-    it('shows a localized fallback when the service reports no message', async () => {
-      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(null)
-      useCustomerEventsService().error.value = null
+    it('shows a localized fallback when the read returns nothing', async () => {
+      vi.mocked(billingApi.getBillingEvents).mockResolvedValue(null as never)
 
       renderComponent()
 
@@ -202,7 +199,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('shows data table without a paginator when one page holds every event', async () => {
-      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+      vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
         makeEventsResponse(mockEventsResponse.events, { total: 7 })
       )
 
@@ -225,7 +222,7 @@ describe('UsageLogsTable', () => {
     it.for([1000, '1000'])(
       'renders credit added details with the formatted amount %j',
       async (amount) => {
-        vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+        vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
           makeEventsResponse([
             {
               event_id: 'event-1',
@@ -253,7 +250,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('renders account created details', async () => {
-      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+      vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'event-3',
@@ -307,7 +304,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('keeps params outside the allowlist out of the tooltip', async () => {
-      vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+      vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'event-4',
@@ -347,28 +344,10 @@ describe('UsageLogsTable', () => {
   })
 
   describe('pagination', () => {
-    it('calls getMyEvents with initial page params', async () => {
-      await renderLoaded()
-
-      expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledWith({
-        page: 1,
-        limit: 7
-      })
-    })
-
     const pagedResponse = (page?: number) =>
       makeEventsResponse(mockEventsResponse.events, { page, total: 20 })
 
     it.for([
-      {
-        workspaceBilling: false,
-        rail: false,
-        source: 'getMyEvents',
-        mockReader: () =>
-          vi
-            .mocked(useCustomerEventsService().getMyEvents)
-            .mockImplementation(async (params) => pagedResponse(params?.page))
-      },
       {
         workspaceBilling: true,
         rail: false,
@@ -413,52 +392,52 @@ describe('UsageLogsTable', () => {
 
   describe('billing events source', () => {
     it('uses billingApi.getBillingEvents on the workspace billing flow', async () => {
-      setWorkspaceBilling(true)
-
       await renderLoaded()
 
       expect(billingApi.getBillingEvents).toHaveBeenCalledWith({
         page: 1,
         limit: 7
       })
-      expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
     })
 
-    it('discards a stale legacy response when routing flips mid-fetch', async () => {
-      const workspaceBilling = ref(false)
+    it('discards a stale response when routing flips mid-fetch', async () => {
+      const workspaceBilling = ref(true)
       useBillingRouting().shouldUseWorkspaceBilling = computed(
         () => workspaceBilling.value
       )
-      let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
-      vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
-        new Promise((resolve) => {
-          resolveLegacy = resolve
-        })
-      )
-      vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
-        makeEventsResponse([
-          {
-            event_id: 'workspace-1',
-            event_type: EventType.API_USAGE_COMPLETED,
-            params: { api_name: 'WorkspaceAPI', model: 'workspace-model' },
-            createdAt: '2024-02-01T10:00:00Z'
-          }
-        ])
-      )
+      let resolveStale!: (value: ReturnType<typeof makeEventsResponse>) => void
+      vi.mocked(billingApi.getBillingEvents)
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveStale = resolve
+          })
+        )
+        .mockResolvedValue(
+          makeEventsResponse([
+            {
+              event_id: 'workspace-1',
+              event_type: EventType.API_USAGE_COMPLETED,
+              params: { api_name: 'WorkspaceAPI', model: 'workspace-model' },
+              createdAt: '2024-02-01T10:00:00Z'
+            }
+          ])
+        )
 
       renderComponent()
 
+      workspaceBilling.value = false
+      await nextTick()
       workspaceBilling.value = true
       await waitFor(() => {
         expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
       })
 
-      resolveLegacy(
+      resolveStale(
         makeEventsResponse([
           {
-            event_id: 'legacy-1',
+            event_id: 'stale-1',
             event_type: EventType.API_USAGE_COMPLETED,
-            params: { api_name: 'LegacyAPI', model: 'legacy-model' },
+            params: { api_name: 'StaleAPI', model: 'stale-model' },
             createdAt: '2024-01-01T10:00:00Z'
           }
         ])
@@ -467,54 +446,57 @@ describe('UsageLogsTable', () => {
       await flushMicrotasks()
 
       expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
-      expect(screen.queryByText('LegacyAPI')).not.toBeInTheDocument()
+      expect(screen.queryByText('StaleAPI')).not.toBeInTheDocument()
     })
 
     it('runs top-up completion telemetry for a superseded response', async () => {
-      const workspaceBilling = ref(false)
+      const workspaceBilling = ref(true)
       useBillingRouting().shouldUseWorkspaceBilling = computed(
         () => workspaceBilling.value
       )
       mockPendingTopup.consumeCompletedTopup.mockReturnValue({
         startedAtMs: Date.now()
       })
-      let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
-      vi.mocked(useCustomerEventsService().getMyEvents).mockReturnValue(
-        new Promise((resolve) => {
-          resolveLegacy = resolve
-        })
-      )
-      vi.mocked(billingApi.getBillingEvents).mockResolvedValue(
-        makeEventsResponse([
-          {
-            event_id: 'workspace-1',
-            event_type: EventType.API_USAGE_COMPLETED,
-            params: { api_name: 'WorkspaceAPI', model: 'workspace-model' },
-            createdAt: '2024-02-01T10:00:00Z'
-          }
-        ])
-      )
+      let resolveStale!: (value: ReturnType<typeof makeEventsResponse>) => void
+      vi.mocked(billingApi.getBillingEvents)
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveStale = resolve
+          })
+        )
+        .mockResolvedValue(
+          makeEventsResponse([
+            {
+              event_id: 'workspace-1',
+              event_type: EventType.API_USAGE_COMPLETED,
+              params: { api_name: 'WorkspaceAPI', model: 'workspace-model' },
+              createdAt: '2024-02-01T10:00:00Z'
+            }
+          ])
+        )
 
       renderComponent()
 
+      workspaceBilling.value = false
+      await nextTick()
       workspaceBilling.value = true
       await waitFor(() => {
         expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
       })
 
-      const legacyResponse = makeEventsResponse([
+      const staleResponse = makeEventsResponse([
         {
-          event_id: 'legacy-1',
+          event_id: 'stale-1',
           event_type: EventType.CREDIT_ADDED,
           params: { amount: 1000 },
           createdAt: '2024-01-01T10:00:00Z'
         }
       ])
-      resolveLegacy(legacyResponse)
+      resolveStale(staleResponse)
 
       await waitFor(() => {
         expect(mockPendingTopup.consumeCompletedTopup).toHaveBeenCalledWith(
-          legacyResponse.events
+          staleResponse.events
         )
         expect(useTelemetry()?.trackApiCreditTopupSucceeded).toHaveBeenCalled()
       })
@@ -522,7 +504,7 @@ describe('UsageLogsTable', () => {
 
     it.for([
       {
-        name: 'a completed legacy top-up closes as succeeded, measured from its start',
+        name: 'a completed top-up closes as succeeded, measured from its start',
         completedTopup: { startedAtMs: CONFIRMED_AT_MS - 90_000 },
         expectedEvents: [
           [
@@ -584,7 +566,6 @@ describe('UsageLogsTable', () => {
     )
 
     const readers = {
-      legacy: () => useCustomerEventsService().getMyEvents,
       workspaceApi: () => billingApi.getBillingEvents,
       rail: () => mockBillingReadRail.readEvents
     }
@@ -601,8 +582,6 @@ describe('UsageLogsTable', () => {
     }
 
     it.for([
-      { workspaceBilling: false, rail: false, serves: 'legacy' },
-      { workspaceBilling: false, rail: true, serves: 'legacy' },
       { workspaceBilling: true, rail: false, serves: 'workspaceApi' },
       { workspaceBilling: true, rail: true, serves: 'rail' }
     ] as const)(
@@ -620,7 +599,7 @@ describe('UsageLogsTable', () => {
       }
     )
 
-    it('renders the reader page the way the legacy rail renders its own', async () => {
+    it('renders the reader page', async () => {
       onTheRail()
 
       await renderLoaded()

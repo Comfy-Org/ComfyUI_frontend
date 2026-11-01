@@ -45,10 +45,6 @@ vi.mock(
   import('@/platform/billing/components/SubscriptionRequiredDialogContentUnified.vue'),
   () => ({ default: defineComponent({ setup: () => () => null }) })
 )
-vi.mock(
-  import('@/platform/billing/subscription/components/SubscriptionRequiredDialogContent.vue'),
-  () => ({ default: defineComponent({ setup: () => () => null }) })
-)
 
 const mockShowLayoutDialog = vi.fn()
 const mockShowTeamWorkspacesDialog = vi.fn()
@@ -350,31 +346,16 @@ describe('useSubscriptionDialog', () => {
       expect(props.initialPlanMode).toBe('personal')
     })
 
-    it('keeps personal checkout deep links table-only on the legacy billing flow', async () => {
-      Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
+    it('opens nothing while the workspace is not yet known', async () => {
+      useBillingRouting().shouldUseUnifiedPricing = computed(() => false)
       const { showPricingTable } = useSubscriptionDialog()
 
-      await showPricingTable({
-        reason: 'deep_link',
-        initialCheckout: {
-          planMode: 'personal',
-          tierKey: 'creator',
-          billingCycle: 'monthly'
-        }
-      })
+      await expect(showPricingTable()).resolves.toBe(false)
 
-      const props = mockShowLayoutDialog.mock.calls[0][0].props
-      expect(props).toHaveProperty('onChooseTeam')
-      expect(props).not.toHaveProperty('initialCheckout')
-      const { dialogComponentProps } = mockShowLayoutDialog.mock.calls[0][0]
-      expect(dialogComponentProps.dismissOnPointerDownOutside).toBe(false)
-      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
-        'modal_opened',
-        expect.objectContaining({ reason: 'deep_link' })
-      )
+      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     })
 
-    it('uses the unified table when pricing is unified but billing remains legacy', async () => {
+    it('uses the unified table in a personal workspace', async () => {
       useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
       const { showPricingTable } = useSubscriptionDialog()
@@ -624,7 +605,7 @@ describe('useSubscriptionDialog', () => {
         })
       })
 
-      it('carries it to the legacy pricing table', async () => {
+      it('carries it to the pricing table', async () => {
         const { showPricingTable } = useSubscriptionDialog()
 
         await showPricingTable({
