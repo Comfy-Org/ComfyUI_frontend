@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { i18n } from '@/i18n'
+
 import { toolGlyph, toolLabel } from './agentToolGlyph'
 
 const asKey = (key: string) => key
@@ -62,5 +64,17 @@ describe('toolLabel', () => {
     expect(toolGlyph('constructor', 'done', { ok: true })).toBe(
       'icon-[lucide--wrench]'
     )
+  })
+})
+
+describe('node pack tool labels', () => {
+  const translate = (key: string) => i18n.global.t(key)
+
+  it.for([
+    ['set_extension_enabled', 'Switching a node pack', 'Switched a node pack'],
+    ['remove_extension', 'Removing a node pack', 'Removed a node pack']
+  ])('reads %s as "%s" then "%s"', ([name, running, done]) => {
+    expect(toolLabel(name, 'streaming', translate)).toBe(running)
+    expect(toolLabel(name, 'done', translate)).toBe(done)
   })
 })

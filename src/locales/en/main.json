@@ -6070,7 +6070,6 @@
       "disabled": "Turned off the node pack {pack}",
       "enabled": "Turned on the node pack {pack}",
       "removed": "Removed the node pack {pack}",
-      "removedHint": "It was moved out of custom_nodes, not deleted, so it can be restored.",
       "restartHint": "This takes effect after ComfyUI restarts. Reload this page after the restart."
     },
     "askUser": {

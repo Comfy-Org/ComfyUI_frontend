@@ -5,7 +5,7 @@
     "suite": "agent",
     "case_id": "pm-2147-extension-change-card",
     "response_side": "synthesized",
-    "note": "SYNTHESIZED, not a cloud capture: hand-authored for PM-2147 / FRONT-3476. The local agent turns off a node pack it made with set_extension_enabled, which broadcasts agent_extension_changed between the reply's two text parts (cloud services/agent/internal/loop/extensiontoggle.go). No graph operations, so the workflow seed is empty. Lives under conversations/repro/ so listRecordedConversations() does not pick it up."
+    "note": "SYNTHESIZED, not a cloud capture: hand-authored for PM-2147 / FRONT-3476. The local agent turns off a node pack it made with set_extension_enabled, which broadcasts agent_extension_changed between the tool call and the reply text. No graph operations, so the workflow seed is empty. Lives under conversations/repro/ so listRecordedConversations() does not pick it up."
   },
   "workflow": {
     "id": "6c1f0e9a-3b2d-4c5e-8f7a-1d2e3f4a5b6c",

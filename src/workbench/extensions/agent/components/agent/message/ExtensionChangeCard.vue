@@ -48,12 +48,6 @@ const title = computed(() =>
       <span v-if="part.agentCreated" class="text-xs text-muted-foreground">
         {{ t('g.createdByAgent') }}
       </span>
-      <span
-        v-if="part.action === 'removed'"
-        class="text-xs text-muted-foreground"
-      >
-        {{ t('agent.extensionChange.removedHint') }}
-      </span>
       <span v-if="part.restartRequired" class="text-xs text-muted-foreground">
         {{ t('agent.extensionChange.restartHint') }}
       </span>

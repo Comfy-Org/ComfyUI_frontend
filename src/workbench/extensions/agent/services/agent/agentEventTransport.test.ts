@@ -2438,6 +2438,11 @@ describe('agent_extension_changed', () => {
   it.for([
     { name: 'an unknown action', data: { action: 'paused' } },
     { name: 'an empty pack name', data: { pack: '' } },
+    {
+      name: 'a bidi override in the pack name',
+      data: { pack: 'evil\u202Epack' }
+    },
+    { name: 'a newline in the pack name', data: { pack: 'two\nlines' } },
     { name: 'no restart flag', data: { restart_required: undefined } }
   ])('rejects a frame with $name', ({ data }) => {
     const parsed = zAgentWsEvent.safeParse({

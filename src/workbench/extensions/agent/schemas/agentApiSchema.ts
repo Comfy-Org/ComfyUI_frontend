@@ -375,7 +375,6 @@ const zAgentAskResolvedEvent = z.object({
   data: zAgentAskResolvedData
 })
 
-/** Local agent turned a node pack off, on, or removed it (live only). */
 const zAgentExtensionChangedEvent = z.object({
   type: z.literal('agent_extension_changed'),
   data: z
@@ -383,7 +382,11 @@ const zAgentExtensionChangedEvent = z.object({
       thread_id: z.string(),
       message_id: z.string(),
       action: z.enum(['enabled', 'disabled', 'removed']),
-      pack: z.string().min(1).max(256),
+      pack: z
+        .string()
+        .min(1)
+        .max(256)
+        .refine((pack) => !/[\p{Cc}\p{Cf}]/u.test(pack)),
       agent_created: z.boolean(),
       restart_required: z.boolean()
     })

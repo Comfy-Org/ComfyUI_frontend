@@ -44,12 +44,10 @@ describe('ExtensionChangeCard', () => {
     expect(screen.getByRole('status')).not.toHaveTextContent('restarts')
   })
 
-  it('marks a pack the agent made, and says a removed pack can come back', () => {
+  it('marks a pack the agent made', () => {
     renderCard({ action: 'removed', agentCreated: true })
 
-    const card = screen.getByRole('status')
-    expect(card).toHaveTextContent('Created by agent')
-    expect(card).toHaveTextContent('moved out of custom_nodes, not deleted')
+    expect(screen.getByRole('status')).toHaveTextContent('Created by agent')
   })
 
   it('does not claim the agent made a pack it did not', () => {
