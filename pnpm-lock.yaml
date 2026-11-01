@@ -1176,6 +1176,15 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
+  packages/comfyui-api-types:
+    devDependencies:
+      '@hey-api/openapi-ts':
+        specifier: 0.97.3
+        version: 0.97.3(magicast@0.5.4)(typescript@6.0.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   packages/design-system:
     dependencies:
       '@iconify-json/lucide':
