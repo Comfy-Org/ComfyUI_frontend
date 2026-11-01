@@ -12,7 +12,8 @@ import { dynamicPromptsExtension as extension } from './dynamicPrompts'
 
 function createDynamicNode(
   dynamicPrompts: boolean | undefined,
-  multiline = false
+  multiline = false,
+  widgetType?: string
 ) {
   const graph = new LGraph()
   vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
@@ -22,11 +23,16 @@ function createDynamicNode(
   graph.add(node)
   const text: InputSpec = [
     'STRING',
-    { default: 'hello /*hidden*/world', multiline, dynamicPrompts }
+    { default: 'hello /*hidden*/world', multiline, dynamicPrompts, widgetType }
   ]
   const secondText: InputSpec = [
     'STRING',
-    { default: 'second /*hidden*/option', multiline, dynamicPrompts }
+    {
+      default: 'second /*hidden*/option',
+      multiline,
+      dynamicPrompts,
+      widgetType
+    }
   ]
   useLitegraphService().addNodeInput(
     node,
@@ -131,6 +137,65 @@ describe('dynamic prompt serialization', () => {
       'mode.text': 'second /*hidden*/option'
     })
   })
+
+  it.for([
+    { name: 'enabled', dynamicPrompts: true, expected: 'second option' },
+    {
+      name: 'disabled',
+      dynamicPrompts: false,
+      expected: 'custom serialization'
+    },
+    {
+      name: 'ordinary',
+      dynamicPrompts: undefined,
+      expected: 'custom serialization'
+    }
+  ])(
+    'preserves $name custom serialization after repeated reconstruction and queues',
+    async ({ dynamicPrompts, expected }) => {
+      useWidgetStore().registerCustomWidgets({
+        CUSTOM_DYNAMIC_OPTION: (target, name, inputData) => {
+          const widget = target.addWidget(
+            'text',
+            name,
+            inputData[1]?.default ?? '',
+            () => {},
+            {}
+          )
+          widget.dynamicPrompts = dynamicPrompts
+          widget.serializeValue = () => 'custom serialization'
+          return widget
+        }
+      })
+      const { graph, node, combo } = createDynamicNode(
+        dynamicPrompts,
+        false,
+        'CUSTOM_DYNAMIC_OPTION'
+      )
+      combo.value = 'second'
+      combo.value = 'first'
+      combo.value = 'second'
+
+      const firstQueue = await graphToPrompt(graph)
+      const secondQueue = await graphToPrompt(graph)
+
+      expect(firstQueue.output[String(node.id)].inputs).toEqual({
+        mode: 'second',
+        'mode.text': expected
+      })
+      expect(secondQueue.output[String(node.id)].inputs).toEqual({
+        mode: 'second',
+        'mode.text': expected
+      })
+      expect(
+        node.widgets?.find((widget) => widget.name === 'mode.text')?.value
+      ).toBe('second /*hidden*/option')
+      expect(secondQueue.workflow.nodes[0].widgets_values).toEqual([
+        'second',
+        'second /*hidden*/option'
+      ])
+    }
+  )
 
   it.for([
     { dynamicPrompts: true, expected: 'hello world' },

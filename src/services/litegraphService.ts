@@ -11,6 +11,7 @@ import {
   addWidgetPromotionOptions,
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
+import { bindDynamicPromptSerializer } from '@/core/graph/widgets/dynamicPromptSerializer'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
@@ -301,10 +302,6 @@ export const useLitegraphService = () => {
     }
   }
 
-  /**
-   * @internal Add a widget to the node. For both primitive types and custom widgets
-   * (unless `socketless`), an input socket is also added.
-   */
   function addInputWidget(
     node: LGraphNode,
     inputSpec: InputSpec,
@@ -335,7 +332,7 @@ export const useLitegraphService = () => {
     const { minWidth = 1, minHeight = 1 } = wrappedResult ?? {}
     const returnedWidget = result && 'type' in result ? result : result?.widget
     if (returnedWidget) {
-      // oxlint-disable-next-line typescript/no-unnecessary-condition -- extension widgets may omit options at runtime
+      // oxlint-disable-next-line typescript/no-unnecessary-condition
       returnedWidget.options ??= {}
     }
     const widget =
@@ -346,6 +343,10 @@ export const useLitegraphService = () => {
             (!returnedWidget || candidate.name === returnedWidget.name))
       ) ?? (returnedWidget ? toConcreteWidget(returnedWidget, node) : undefined)
     if (!widget) return
+
+    if (widget.dynamicPrompts) {
+      bindDynamicPromptSerializer(widget)
+    }
 
     widget.label = resolveLabel(
       widget.label ?? widgetInputSpec.display_name ?? inputName
