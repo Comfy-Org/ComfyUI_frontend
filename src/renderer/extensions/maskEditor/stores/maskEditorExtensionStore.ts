@@ -10,6 +10,7 @@ import type {
 const toolSchema = z.object({
   id: z.string().regex(/^[\w.-]+$/),
   label: z.string().regex(/\S/),
+  icon: z.string().optional(),
   createSession: z.custom<MaskEditorTool['createSession']>(
     (value) => typeof value === 'function'
   )
