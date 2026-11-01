@@ -1262,6 +1262,109 @@ describe('agentEventTransport reply drafts', () => {
     expect(toolParts(message).map((p) => p.name)).toEqual(['run'])
   })
 
+  it('keeps the answer on screen while a remember call waits on its approval card', () => {
+    const message = drive([
+      draft('Here is the full answer'),
+      toolCall('remember', 'running'),
+      runApproval('turn-1:call-remember', 'ask_user')
+    ])
+
+    expect(textParts(message).map((p) => p.text)).toEqual([
+      'Here is the full answer'
+    ])
+    expect(parts(message).map((p) => p.type)).toEqual([
+      'text',
+      'tool',
+      expect.not.stringMatching(/^text$/)
+    ])
+  })
+
+  it.for(['remember', 'forget'])(
+    'keeps the answer on screen through a finished %s call',
+    (tool) => {
+      const message = drive([
+        draft('Here is the full answer'),
+        toolCall(tool, 'running'),
+        toolCall(tool, 'success')
+      ])
+
+      expect(textParts(message).map((p) => p.text)).toEqual([
+        'Here is the full answer'
+      ])
+    }
+  )
+
+  it('lets the next round replace the kept answer instead of adding to it', () => {
+    const message = drive([
+      draft('Here is the full answer'),
+      toolCall('remember', 'success'),
+      draft('Here is the full answer\n\nSaved.'),
+      delta('Here is the full answer\n\nSaved.')
+    ])
+
+    expect(textParts(message).map((p) => p.text)).toEqual([
+      'Here is the full answer\n\nSaved.'
+    ])
+  })
+
+  it('moves a kept answer out of the reply once real tool work shows it was narration', () => {
+    const message = drive([
+      draft('Noted, I will use SDXL.'),
+      toolCall('remember', 'success'),
+      thinking('Noted, I will use SDXL.'),
+      toolCall('add_node', 'running')
+    ])
+
+    expect(textParts(message)).toEqual([])
+  })
+
+  it("drops a later round's draft at a run card once the remember call has finished", () => {
+    const message = drive([
+      draft('Saved, generating now.'),
+      toolCall('remember', 'running'),
+      toolCall('remember', 'success'),
+      draft('Saved, generating now. Validates clean.'),
+      runApproval()
+    ])
+
+    expect(textParts(message)).toEqual([])
+  })
+
+  it('keeps a draft that streamed after the remember call started', () => {
+    const message = drive([
+      toolCall('remember', 'running'),
+      draft('Here is the full answer'),
+      runApproval('turn-1:call-remember', 'ask_user')
+    ])
+
+    expect(textParts(message).map((p) => p.text)).toEqual([
+      'Here is the full answer'
+    ])
+  })
+
+  it('drops narration at a run card once the remember call has finished', () => {
+    const message = drive([
+      draft('Saved, generating now.'),
+      toolCall('remember', 'success'),
+      thinking('Saved, generating now.'),
+      runApproval()
+    ])
+
+    expect(textParts(message)).toEqual([])
+  })
+
+  it('still drops the draft at an ask no answer tool is waiting on', () => {
+    const message = drive([
+      draft('Validates clean.'),
+      toolCall('remember', 'success'),
+      toolCall('run', 'running'),
+      draft('Generating now.'),
+      runApproval()
+    ])
+
+    expect(textParts(message)).toEqual([])
+  })
+
   it('drops the draft when the round stops for run approval', () => {
     const message = drive([
       draft('Validates clean and ready to run.'),

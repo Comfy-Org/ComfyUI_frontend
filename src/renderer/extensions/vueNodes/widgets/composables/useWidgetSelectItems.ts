@@ -235,7 +235,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       .filter((value) => !missing.has(String(value)))
       .map((value, index) => ({
         id: `input-${index}`,
-        preview_url: getMediaUrl(String(value), 'input', kind),
+        preview_url: getAnnotatedValueMediaUrl(String(value), kind),
         name: String(value),
         label: getDisplayLabel(String(value), labelFn)
       }))
@@ -282,7 +282,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
             : isHdrImageFilename(asset.name)
               ? getHdrOutputPreviewUrl(asset)
               : asset.preview_url ||
-                getMediaUrl(filenameForUrl, 'output', kind),
+                getMediaUrl(filenameForUrl, rootFolder, kind, subfolder),
         name: annotatedPath,
         label: getDisplayLabel(displayLabel, labelFn)
       })

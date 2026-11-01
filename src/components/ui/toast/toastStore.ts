@@ -18,6 +18,20 @@ export interface Toast {
   description?: string
 }
 
+const isAction = (candidate: unknown): candidate is ToastAction =>
+  typeof candidate === 'object' &&
+  candidate !== null &&
+  'label' in candidate &&
+  typeof candidate.label === 'string' &&
+  'onClick' in candidate &&
+  typeof candidate.onClick === 'function'
+
+function toActions(options: ToastOptions): ToastAction[] {
+  const supplied: unknown[] = [options.action]
+  if (Array.isArray(options.actions)) supplied.push(...options.actions)
+  return supplied.filter(isAction)
+}
+
 export const useToast = defineStore('toast', () => {
   const toasts = ref<Toast[]>([])
   const held = ref(false)
@@ -28,10 +42,7 @@ export const useToast = defineStore('toast', () => {
     toasts.value = [
       ...toasts.value.filter((toast) => toast.id !== id),
       {
-        actions: [
-          ...(options.action ? [options.action] : []),
-          ...(options.actions ?? [])
-        ],
+        actions: toActions(options),
         closable: options.closable ?? true,
         description: options.description,
         duration: options.duration ?? Number.POSITIVE_INFINITY,

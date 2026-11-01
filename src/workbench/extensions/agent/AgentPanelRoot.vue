@@ -151,6 +151,7 @@ import {
   describeAgentRequestFailure
 } from './services/agent/agentRequestFailure'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import { setAgentTabTitlePrefix } from './services/agent/agentTabTitlePrefix'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import {
@@ -697,8 +698,14 @@ const coachDeferredBy = computed(() =>
         ? 'dialog_open'
         : null
 )
-const sendGates = useAgentSendGates(() => threadId.value)
+const sendGates = useAgentSendGates(
+  () => threadId.value,
+  (gate) => {
+    agentPanelStore.heldSendGate = gate
+  }
+)
 const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
+let coachReleaseRevoked = false
 function releaseCoachCompletionWaiters(
   holdEnd: CoachHoldEnd,
   proceed = true
@@ -760,9 +767,10 @@ async function waitForCoachCompletion(
   sendHeldByCoach.value = true
   sendGates.hold('coach', clientMessageId)
   try {
-    return await new Promise<boolean>((resolve) =>
+    const proceed = await new Promise<boolean>((resolve) =>
       coachCompletionWaiters.add(resolve)
     )
+    return proceed && !coachReleaseRevoked
   } finally {
     sendHeldByCoach.value = false
   }
@@ -1326,8 +1334,9 @@ watch(
   { immediate: true, flush: 'sync' }
 )
 watch(
-  () => conversationStore.awaitingApproval,
-  (awaiting) => tabActivity.setAgentAwaitingApproval(awaiting),
+  () =>
+    conversationStore.awaitingApproval ? t('g.agentInputNeededShort') : null,
+  setAgentTabTitlePrefix,
   { immediate: true, flush: 'sync' }
 )
 
@@ -1687,11 +1696,13 @@ onBeforeUnmount(() => {
           outcome: 'released',
           reason: `deferred_${deferredBy}`
         })
-      else
+      else {
+        coachReleaseRevoked = true
         releaseCoachCompletionWaiters(
           { outcome: 'dropped', reason: 'panel_closed' },
           false
         )
+      }
     },
     invalidateConsentHeldSubmission: () => {
       if (
@@ -1722,7 +1733,7 @@ onBeforeUnmount(() => {
     },
     clearAgentTurnTabs: () => {
       tabActivity.setAgentTurnTabs([])
-      tabActivity.setAgentAwaitingApproval(false)
+      setAgentTabTitlePrefix(null)
     },
     resetTurnTabResolver: () => {
       conversationStore.setTurnTabResolver(() => ({ status: 'unknown' }))
@@ -1967,25 +1978,21 @@ function onCopyMarkdown(id: string): void {
 
 const coachSteps = computed<CoachStep[]>(() => [
   {
+    card: 'intro',
     target: '#agent-panel-root',
     placement: 'left-center',
     title: t('agent.coachTitle'),
     body: t('agent.coachBody')
   },
   {
+    card: 'workflow',
     target: '#agent-composer',
     placement: 'left-end',
     title: t('agent.coachWorkflowTitle'),
     body: t('agent.coachWorkflowBody')
   },
   {
-    target: '.graph-canvas-panel',
-    placement: 'graph-bottom',
-    toolbarTarget: '.graph-canvas-panel [role="toolbar"]',
-    title: t('agent.coachGraphTitle'),
-    body: t('agent.coachGraphBody')
-  },
-  {
+    card: 'history',
     target: '#agent-chat-history',
     placement: 'left-start',
     tooltip: t('agent.showChatHistory'),
