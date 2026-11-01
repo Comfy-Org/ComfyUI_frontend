@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -17,6 +18,37 @@ const REFUSED_FILE = {
   type: 'application/pdf',
   contents: '%PDF'
 }
+
+const WORKFLOW_FILE = {
+  name: 'dropped.json',
+  type: 'application/json',
+  contents: JSON.stringify({
+    last_node_id: 1,
+    last_link_id: 0,
+    nodes: [
+      {
+        id: 1,
+        type: 'PreviewImage',
+        pos: [40, 40],
+        size: [210, 250],
+        flags: {},
+        order: 0,
+        mode: 0,
+        inputs: [{ name: 'images', type: 'IMAGE', link: null }],
+        outputs: [],
+        properties: {}
+      }
+    ],
+    links: [],
+    groups: [],
+    config: {},
+    extra: {},
+    version: 0.4
+  })
+}
+
+const graphNodeCount = (page: Page): Promise<number> =>
+  page.evaluate(() => window.app?.graph.nodes.length ?? 0)
 
 const FENCED_ROUTES = [
   '**/api/agent/threads?*',
@@ -52,8 +84,11 @@ test.describe(
       await expect(agentPanel.chatControls).toHaveAttribute('inert', '')
       await expect(agentPanel.footer).toHaveAttribute('inert', '')
 
+      const nodesBeforeDrop = await graphNodeCount(page)
       await agentPanel.dispatchFileDrop(REFUSED_FILE)
+      await agentPanel.dispatchFileDrop(WORKFLOW_FILE)
       await expect(agentPanel.attachmentChips).toHaveCount(0)
+      await expect.poll(() => graphNodeCount(page)).toBe(nodesBeforeDrop)
       await expect(agentPanel.hostFenceNotice).toBeVisible()
 
       await expect

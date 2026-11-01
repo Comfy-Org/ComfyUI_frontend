@@ -2478,13 +2478,18 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
 }
 
 function onPanelDragOver(event: DragEvent): void {
-  if (hostFenced.value) return
   if (isAttachableDrag(event)) event.preventDefault()
 }
 
 async function onPanelDrop(event: DragEvent): Promise<void> {
   clearAssetDrag()
-  if (hostFenced.value) return
+  // Swallow the drop rather than returning: `document` loads an uncancelled
+  // one as a workflow or canvas input (`src/scripts/app.ts`).
+  if (hostFenced.value) {
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
   if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
     event.preventDefault()
     void attachDroppedAsset(event).then((attached) => {
