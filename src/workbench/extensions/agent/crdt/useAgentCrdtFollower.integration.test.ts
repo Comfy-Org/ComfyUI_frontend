@@ -1,5 +1,9 @@
 import { mint, readSchemaVersion } from '@comfyorg/comfy-multi-player'
-import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
+import type {
+  DocResetData,
+  DocSubscribedData,
+  DocUpdateData
+} from '@comfyorg/ingest-types'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
@@ -139,6 +143,102 @@ describe('useAgentCrdtFollower over a live graph', () => {
       expect(graph.value?.getNodeById(toNodeId(99))?.type).toBe('Sink')
     } finally {
       view.unmount()
+    }
+  })
+
+  it('sends a held edit once an empty reset is acknowledged while its projection still cannot retry', async () => {
+    vi.useFakeTimers()
+    const failingGraph = new LGraph()
+    vi.spyOn(failingGraph, 'add').mockImplementation(() => {
+      throw new Error('custom node failed to construct')
+    })
+    const graph = shallowRef<LGraph | null>(failingGraph)
+    const host = mint(
+      { nodes: [{ id: 99, type: 'Sink' }], links: [] },
+      { types: {} }
+    )
+    const recoveredHost = mint(
+      { nodes: [{ id: 7, type: 'Sink' }], links: [] },
+      { types: {} }
+    )
+    let follower!: ReturnType<typeof useAgentCrdtFollower>
+    const view = render(
+      defineComponent({
+        setup() {
+          follower = useAgentCrdtFollower(ref(WORKFLOW_ID), {
+            transport: agentSocket.transport,
+            getGraph: () => graph.value
+          })
+          return () => null
+        }
+      }),
+      { global: { plugins: [getActivePinia()!] } }
+    )
+    const sentOps = () =>
+      sent.filter((frame) => JSON.parse(frame).type === 'doc_ops')
+
+    try {
+      agentSocket.open()
+      deliver('doc_subscribed', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        ok: true,
+        seq: 1,
+        lineage_seq: 1
+      } satisfies DocSubscribedData)
+      deliver('doc_update', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 1,
+        lineage_seq: 1,
+        update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
+      } satisfies DocUpdateData)
+      expect(follower.status.value.canvasMayBeStale).toBe(true)
+
+      graph.value = null
+      agentSocket.drop()
+      agentSocket.open()
+      deliver('doc_reset', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 0,
+        lineage_seq: 2
+      } satisfies DocResetData)
+
+      follower.enqueueHumanOperations([
+        { op: 'set_widget', node_id: '99', widget: 'cfg', value: 4.5 }
+      ])
+      await Promise.resolve()
+      vi.advanceTimersByTime(10_000)
+      expect(sentOps()).toHaveLength(0)
+
+      deliver('doc_subscribed', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        ok: true,
+        seq: 0,
+        lineage_seq: 2
+      } satisfies DocSubscribedData)
+
+      expect(sentOps()).toHaveLength(1)
+      expect(follower.status.value.canvasMayBeStale).toBe(true)
+
+      graph.value = new LGraph()
+      deliver('doc_update', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 1,
+        lineage_seq: 2,
+        update_b64: encodeBase64(Y.encodeStateAsUpdate(recoveredHost))
+      } satisfies DocUpdateData)
+
+      expect(graph.value.getNodeById(toNodeId(7))?.type).toBe('Sink')
+      expect(follower.status.value.canvasMayBeStale).toBe(false)
+    } finally {
+      view.unmount()
+      host.destroy()
+      recoveredHost.destroy()
+      vi.useRealTimers()
     }
   })
 })

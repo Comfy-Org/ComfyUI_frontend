@@ -3109,34 +3109,6 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('releases a held edit when a reconnect is integrated but its projection cannot retry', async () => {
-    vi.useFakeTimers()
-    const { enqueue, status, unmount } = mountFollower('wf-1')
-    dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
-    agentSocket.drop()
-    agentSocket.open()
-    clientState.sendOps.mockClear()
-
-    enqueue([{ op: 'set_widget', node_id: '1', widget: 'cfg', value: 4.5 }])
-    await Promise.resolve()
-    vi.advanceTimersByTime(10_000)
-    expect(clientState.sendOps).not.toHaveBeenCalled()
-
-    bridge().isSubscribeBaselineIntegrated = true
-    projectionState.hasPendingFailure.mockReturnValue(true)
-    dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
-
-    expect(clientState.sendOps).toHaveBeenCalledOnce()
-    expect(status().canvasMayBeStale).toBe(true)
-
-    projectionState.hasPendingFailure.mockReturnValue(false)
-    projectionState.retryFailed.mockReturnValueOnce(projectionState.applied())
-    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: false })
-
-    expect(status().canvasMayBeStale).toBe(false)
-    unmount()
-  })
-
   it('marks the workflow unsynced when counter exhaustion refuses an edit during admission', async () => {
     const workflowId = 'wf-counter-exhausted'
     const { enqueue, unmount } = mountFollower(workflowId)
