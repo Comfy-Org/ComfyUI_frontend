@@ -52,6 +52,7 @@ export { ComfyWorkflow, type LoadedComfyWorkflow }
 registerWorkflowRuntime({
   createChangeTracker: (workflow, initialState) =>
     new ChangeTrackerAccess(workflow, initialState),
+  graphEqual: (a, b) => ChangeTrackerAccess.graphEqual(a, b),
   getDraft: (path) => useWorkflowDraftStoreV2().getDraft(path),
   removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
   markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),
