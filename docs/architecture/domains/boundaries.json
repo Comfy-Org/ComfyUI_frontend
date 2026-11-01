@@ -44,6 +44,16 @@
         "patterns": ["src/platform/keybindings/composables/useShortcutsTab.ts"]
       },
       {
+        "name": "mask-editor/domain/public",
+        "patterns": ["packages/mask-editor/src/extensionTypes.ts"]
+      },
+      {
+        "name": "mask-editor/application/public",
+        "patterns": [
+          "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.ts"
+        ]
+      },
+      {
         "name": "node-definition/domain/public",
         "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
       },
@@ -2107,13 +2117,16 @@
         ]
       },
       {
+        "name": "mask-editor/domain",
+        "patterns": ["packages/mask-editor/src/extensionTypes.ts"]
+      },
+      {
         "name": "mask-editor/application",
         "patterns": [
           "src/renderer/extensions/maskEditor/composables/**",
           "src/renderer/extensions/maskEditor/stores/**",
           "src/scripts/clipspace.ts",
-          "src/scripts/clipspace.test.ts",
-          "packages/mask-editor/src/**"
+          "src/scripts/clipspace.test.ts"
         ]
       },
       {
@@ -3884,6 +3897,10 @@
         "patterns": ["src/renderer/extensions/linearMode/**"]
       },
       {
+        "name": "mask-editor/application/outer-1",
+        "patterns": ["packages/mask-editor/src/**"]
+      },
+      {
         "name": "media-metadata/infrastructure/outer-1",
         "patterns": ["src/scripts/metadata/**"]
       },
@@ -4230,6 +4247,26 @@
           "error-handling/application/outer-1",
           "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/domain/public",
+        "allow": [
+          "mask-editor/domain/public",
+          "mask-editor/domain",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/application/public",
+        "allow": [
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
+          "mask-editor/domain",
+          "mask-editor/application",
+          "mask-editor/infrastructure",
+          "mask-editor/application/outer-1",
           "unclassified"
         ]
       },
@@ -5781,6 +5818,7 @@
       {
         "from": "extension-runtime/domain",
         "allow": [
+          "mask-editor/domain/public",
           "error-reporting/domain",
           "extension-manager/domain",
           "extension-runtime/domain",
@@ -5797,6 +5835,8 @@
         "from": "extension-runtime/application",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "remote-config/infrastructure/public",
           "error-reporting/domain",
           "error-reporting/application",
@@ -5829,6 +5869,8 @@
         "from": "extension-runtime/infrastructure",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "remote-config/infrastructure/public",
           "error-reporting/domain",
           "error-reporting/application",
@@ -5861,6 +5903,8 @@
         "from": "extension-runtime/presentation",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "extension-manager/domain",
@@ -5892,6 +5936,8 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/integration/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "remote-config/infrastructure/public",
           "webcam-capture/integration/public",
           "error-reporting/domain",
@@ -6656,36 +6702,60 @@
         "allow": ["markdown-rendering/infrastructure", "unclassified"]
       },
       {
+        "from": "mask-editor/domain",
+        "allow": [
+          "mask-editor/domain/public",
+          "mask-editor/domain",
+          "unclassified"
+        ]
+      },
+      {
         "from": "mask-editor/application",
         "allow": [
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
+          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
+          "mask-editor/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "mask-editor/infrastructure",
         "allow": [
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
+          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
+          "mask-editor/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "mask-editor/presentation",
         "allow": [
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
+          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/presentation",
+          "mask-editor/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "mask-editor/integration",
         "allow": [
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
+          "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
           "mask-editor/presentation",
           "mask-editor/integration",
+          "mask-editor/application/outer-1",
           "unclassified"
         ]
       },
@@ -7961,6 +8031,7 @@
       {
         "from": "workbench-shell/domain",
         "allow": [
+          "mask-editor/domain/public",
           "extension-manager/domain",
           "keybindings/domain",
           "telemetry/domain",
@@ -7975,6 +8046,8 @@
         "from": "workbench-shell/application",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
@@ -7998,6 +8071,8 @@
         "from": "workbench-shell/infrastructure",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "keybindings/domain",
@@ -8021,6 +8096,8 @@
         "from": "workbench-shell/presentation",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
@@ -8047,6 +8124,8 @@
         "allow": [
           "keybindings/application/public",
           "keybindings/integration/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "extension-manager/domain",
           "extension-manager/infrastructure",
           "extension-manager/presentation",
@@ -9071,6 +9150,8 @@
         "from": "extension-runtime/infrastructure/outer-1",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "remote-config/infrastructure/public",
           "error-reporting/domain",
           "error-reporting/application",
@@ -9103,6 +9184,8 @@
         "from": "extension-runtime/presentation/outer-1",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "extension-manager/domain",
@@ -9311,6 +9394,18 @@
           "keybindings/domain/outer-1",
           "keybindings/application/outer-1",
           "linear-mode/presentation/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "mask-editor/application/outer-1",
+        "allow": [
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
+          "mask-editor/domain",
+          "mask-editor/application",
+          "mask-editor/infrastructure",
+          "mask-editor/application/outer-1",
           "unclassified"
         ]
       },
@@ -9959,6 +10054,8 @@
         "from": "workbench-shell/presentation/outer-2",
         "allow": [
           "keybindings/application/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "extension-manager/domain",
           "extension-manager/presentation",
           "keybindings/domain",
@@ -10034,6 +10131,8 @@
           "ingest-api/infrastructure/public",
           "keybindings/application/public",
           "keybindings/integration/public",
+          "mask-editor/domain/public",
+          "mask-editor/application/public",
           "node-definition/domain/public",
           "remote-config/infrastructure/public",
           "server-facts/domain/public",
