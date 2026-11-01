@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { changedSchemas, referencedSchemas } from './sdk-release-plan'
+import {
+  changedManifestFields,
+  changedSchemas,
+  referencedSchemas
+} from './sdk-release-plan'
 
 const RELEASED = `
 export const zCredits = z.object({ amount: z.number() })
@@ -59,5 +63,38 @@ describe('changedSchemas', () => {
     expect(changedSchemas(RELEASED, current, ['zPlan', 'zStatus'])).toEqual(
       expected
     )
+  })
+})
+
+describe('changedManifestFields', () => {
+  const released = JSON.stringify({
+    version: '0.1.0-alpha.1',
+    dependencies: { zod: '^3.0.0' },
+    peerDependencies: { firebase: '^11.0.0' },
+    exports: { '.': './src/index.ts' },
+    publishConfig: { exports: { '.': './dist/index.js' } }
+  })
+  const withChange = (change: object) =>
+    JSON.stringify({ ...JSON.parse(released), ...change })
+
+  it.for([
+    { change: {}, fields: [] },
+    { change: { version: '0.1.0-alpha.2' }, fields: [] },
+    { change: { exports: { '.': './src/main.ts' } }, fields: [] },
+    { change: { dependencies: { zod: '^4.0.0' } }, fields: ['dependencies'] },
+    {
+      change: { peerDependencies: { firebase: '^12.0.0' } },
+      fields: ['peerDependencies']
+    },
+    {
+      change: {
+        publishConfig: {
+          exports: { '.': './dist/index.js', './vue': './dist/vue.js' }
+        }
+      },
+      fields: ['publishConfig.exports']
+    }
+  ])('reports $fields for $change', ({ change, fields }) => {
+    expect(changedManifestFields(released, withChange(change))).toEqual(fields)
   })
 })

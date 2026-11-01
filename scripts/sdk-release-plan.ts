@@ -26,6 +26,12 @@ const TEST_FILE = /(\.test\.ts|\.spec\.ts|\/__fixtures__\/|\/__mocks__\/)/
 
 type Package = (typeof SDK_PACKAGES)[number] | 'ingest-types'
 
+interface Manifest {
+  dependencies?: Record<string, string>
+  peerDependencies?: Record<string, string>
+  publishConfig?: { exports?: unknown }
+}
+
 export interface ReleaseReason {
   package: Package
   reasons: string[]
@@ -125,12 +131,31 @@ function changedSourceFiles(name: Package, since: string): string[] {
     .filter((file) => file && !TEST_FILE.test(file))
 }
 
-function dependenciesChanged(name: Package, since: string): boolean {
+/** The published manifest fields that differ between two `package.json` texts. */
+export function changedManifestFields(
+  released: string,
+  current: string
+): string[] {
+  const before = JSON.parse(released)
+  const after = JSON.parse(current)
+  const fields = {
+    dependencies: (manifest: Manifest) => manifest.dependencies,
+    peerDependencies: (manifest: Manifest) => manifest.peerDependencies,
+    'publishConfig.exports': (manifest: Manifest) =>
+      manifest.publishConfig?.exports
+  }
+  return Object.entries(fields)
+    .filter(
+      ([, read]) => JSON.stringify(read(before)) !== JSON.stringify(read(after))
+    )
+    .map(([field]) => field)
+}
+
+function changedManifest(name: Package, since: string): string[] {
   const manifest = `packages/${name}/package.json`
-  const read = (raw: string) => JSON.stringify(JSON.parse(raw).dependencies)
-  return (
-    read(git('show', `${since}:${manifest}`)) !==
-    read(readFileSync(manifest, 'utf8'))
+  return changedManifestFields(
+    git('show', `${since}:${manifest}`),
+    readFileSync(manifest, 'utf8')
   )
 }
 
@@ -157,8 +182,10 @@ export function planRelease(): ReleaseReason[] {
 
   for (const name of SDK_PACKAGES) {
     const released = releasedCommit(name)
-    const reasons = changedSourceFiles(name, released)
-    if (dependenciesChanged(name, released)) reasons.push('dependencies')
+    const reasons = [
+      ...changedSourceFiles(name, released),
+      ...changedManifest(name, released)
+    ]
     if (reasons.length > 0) plan.push({ package: name, reasons })
   }
   return plan

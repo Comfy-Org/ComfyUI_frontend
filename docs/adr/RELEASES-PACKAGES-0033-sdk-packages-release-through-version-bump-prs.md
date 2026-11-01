@@ -251,7 +251,8 @@ and an exact pin is the lockfile conflict this ADR rejects below.
 > that set its current version. `ingest-types` is bumped (patch) only when a
 > schema an SDK package imports, or one it is built from, changed; endpoints
 > no SDK package reads ship nothing. The hand-written packages get an `alpha`
-> prerelease bump when their published source or dependencies changed. The
+> prerelease bump when their published source, `dependencies`,
+> `peerDependencies` or `publishConfig.exports` changed. The
 > bumps land in one `Release`-labelled PR on `sdk-release/auto`, refreshed on
 > every push, so a release is still a reviewed merge. The on-merge publish now
 > runs its matrix one package at a time in dependency order (`ingest-types`
@@ -259,17 +260,10 @@ and an exact pin is the lockfile conflict this ADR rejects below.
 > dependent that needs it. Platform's own direct imports of `ingest-types`
 > are outside the gate.
 
-- **`ingest-types` regeneration does not bump the version.** The generator
-  lives in the Cloud repository, not here; the bot opens
-  `[chore] Update Ingest API types from cloud@<sha>` PRs on the
-  `update-ingest-types` branch. The change needed there is one step in the
-  generating job, after the types are written and before the PR is opened:
-  `pnpm -C packages/ingest-types version <patch|minor|major> --no-git-tag-version`,
-  with the `Release` label added to the PR it opens. Until that lands, a
-  regeneration ships to npm only if someone runs the bump workflow afterwards.
-  Picking the increment is the human judgement described under Versioning
-  policy, so the safe default for the bot is `patch` with a reviewer free to
-  raise it on the PR.
+- **Picking the `ingest-types` increment stays a human judgement.** The
+  planner always proposes `patch` for a regeneration; a reviewer raises it on
+  the release PR when the schema change warrants `minor` or `major`, per the
+  Versioning policy.
 - **Pre-merge snapshots ship separately.** A `pull_request` run executes the
   workflow definition from the pull request's own merge ref, so a publish step
   triggered that way is PR-authored code holding `NPM_TOKEN`. This would be
