@@ -91,7 +91,7 @@ test.describe(
         // The graph behind the nudge comes from the server's template package,
         // so hide it: the snapshot pins placement, not template content.
         await page.addStyleTag({
-          content: `#graph-canvas, .dom-widget, [data-testid="transform-pane"], [data-testid="minimap-container"] { visibility: hidden !important; }`
+          content: `#graph-canvas, [data-testid="transform-pane"], [data-testid="minimap-container"] { visibility: hidden !important; }`
         })
 
         await expectRegionScreenshot(
