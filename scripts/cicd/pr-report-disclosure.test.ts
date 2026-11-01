@@ -31,6 +31,7 @@ function runExplainCheck(
   inputs: {
     slug: string
     status: string
+    headline?: string
     detailsFile?: string
     reproduce?: string
     docs?: string
@@ -57,7 +58,7 @@ function runExplainCheck(
       INPUT_TITLE: 'Test check',
       INPUT_ICON: '',
       INPUT_STATUS: inputs.status,
-      INPUT_HEADLINE: 'Check summary.',
+      INPUT_HEADLINE: inputs.headline ?? 'Check summary.',
       INPUT_DETAILS_FILE: inputs.detailsFile ?? details,
       INPUT_REPRODUCE: inputs.reproduce ?? 'pnpm check',
       INPUT_DOCS: inputs.docs ?? 'docs/check.md',
@@ -110,6 +111,22 @@ describe('shared PR report disclosure', () => {
     expect(result.status).toBe(0)
     expect(readFileSync(join(dir.root, 'summary'), 'utf8')).toBe(
       '##  Test check: ✅ Passed\n\n<details>\n<summary>Findings and check details</summary>\n\nCheck summary.\n\n</details>\n'
+    )
+  })
+
+  it('collapses a docs link when the check has no headline or findings', () => {
+    using dir = fixture()
+    const result = runExplainCheck(dir.root, {
+      slug: 'test',
+      status: 'pass',
+      headline: '',
+      detailsFile: '',
+      reproduce: ''
+    })
+
+    expect(result.status).toBe(0)
+    expect(readFileSync(join(dir.root, 'summary'), 'utf8')).toBe(
+      '##  Test check: ✅ Passed\n\n<details>\n<summary>Findings and check details</summary>\n\nFull docs: docs/check.md\n\n</details>\n'
     )
   })
 
