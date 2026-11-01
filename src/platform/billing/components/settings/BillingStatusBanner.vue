@@ -366,12 +366,18 @@ const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
   planChange: planChangeView
 }
 
+function forBillingTab(view: BannerView): BannerView {
+  return {
+    ...view,
+    action: view.action === 'resubscribe' ? null : view.action,
+    dismissible: false
+  }
+}
+
 const banner = computed<BannerView | null>(() => {
   if (!kind.value || isHiddenOnSection.value) return null
   const view = bannerViews[kind.value]()
-  return view && section === 'billing'
-    ? { ...view, action: null, dismissible: false }
-    : view
+  return view && section === 'billing' ? forBillingTab(view) : view
 })
 
 function handleAddCredits() {

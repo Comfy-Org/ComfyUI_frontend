@@ -300,7 +300,8 @@ describe('BillingStatusBanner', () => {
             endDate: '2026-10-28T00:00:00Z'
           }
         },
-        text: 'Your Team plan ends on'
+        text: 'Your Team plan ends on',
+        buttons: ['Resume plan']
       },
       {
         name: 'a scheduled change while out of credits',
@@ -308,7 +309,8 @@ describe('BillingStatusBanner', () => {
           scheduledFor('pro-annual')
           state.subscription = { ...state.subscription!, hasFunds: false }
         },
-        text: 'Your plan changes to'
+        text: 'Your plan changes to',
+        buttons: []
       },
       {
         name: 'plan ending while out of credits',
@@ -320,7 +322,8 @@ describe('BillingStatusBanner', () => {
             endDate: '2026-10-28T00:00:00Z'
           }
         },
-        text: 'Your Team plan ends on'
+        text: 'Your Team plan ends on',
+        buttons: ['Resume plan']
       },
       {
         name: 'plan ended',
@@ -336,16 +339,24 @@ describe('BillingStatusBanner', () => {
             tier: 'PRO'
           }
         },
-        text: 'Your Team plan ended on September 12, 2026'
+        text: 'Your Team plan ended on September 12, 2026',
+        buttons: []
       }
-    ])('shows $name with no buttons', ({ enter, text }) => {
-      enter()
-      renderBanner('billing')
+    ])(
+      'shows $name with its plan action and no Dismiss',
+      ({ enter, text, buttons }) => {
+        enter()
+        renderBanner('billing')
 
-      const banner = screen.getByRole('status')
-      expect(banner).toHaveTextContent(text)
-      expect(within(banner).queryAllByRole('button')).toEqual([])
-    })
+        const banner = screen.getByRole('status')
+        expect(banner).toHaveTextContent(text)
+        expect(
+          within(banner)
+            .queryAllByRole('button')
+            .map((button) => button.textContent.trim())
+        ).toEqual(buttons)
+      }
+    )
 
     it.for([
       {
@@ -376,6 +387,23 @@ describe('BillingStatusBanner', () => {
       renderBanner('billing')
 
       expect(screen.getByRole('status')).toBeInTheDocument()
+    })
+
+    it('hides Resume plan when the server withholds it', () => {
+      state.subscription = {
+        ...state.subscription!,
+        isCancelled: true,
+        endDate: '2026-10-28T00:00:00Z'
+      }
+      state.canReactivatePlan = false
+      renderBanner('billing')
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your Team plan ends on'
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Resume plan' })
+      ).not.toBeInTheDocument()
     })
 
     it.for([
