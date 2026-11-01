@@ -8,16 +8,12 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/sidebar/SidebarHelpCenterIcon.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/sidebar/SidebarHelpCenterIcon.vue",
       "role": "presentation"
     },
     {
       "path": "src/composables/useHelpCenter.ts",
-      "role": "application"
+      "role": "presentation"
     },
     {
       "path": "src/stores/helpCenterStore.ts",

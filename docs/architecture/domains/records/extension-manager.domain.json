@@ -4,14 +4,6 @@
   "description": "Custom-node pack discovery, compatibility checks, installation queues, and manager dialogs. Registry access, workflow state, and host dialog services remain external dependencies.",
   "modules": [
     {
-      "path": "src/composables/useServerLogs.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/composables/useServerLogs.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/customNodes/manager/**",
       "role": "application"
     },
@@ -20,23 +12,43 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/customNodes/manager/services/comfyManagerService.ts",
+      "path": "src/platform/customNodes/manager/components/ManagerProgressToast.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/customNodes/manager/components/manager/ManagerDialog.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/dialogs/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/dialogs/useManagerDialog.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/nodePack/usePackInstall.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/useImportFailedDetection.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/manager/composables/workflowErrorManager.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/platform/customNodes/manager/services/**",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/customNodes/manager/types/comfyManagerTypes.ts",
-      "role": "domain"
+      "path": "src/platform/customNodes/manager/stores/comfyManagerStore.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/platform/customNodes/manager/types/compatibility.types.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/customNodes/manager/types/conflictDetectionTypes.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/customNodes/manager/types/generatedManagerTypes.ts",
+      "path": "src/platform/customNodes/manager/types/**",
       "role": "domain"
     },
     {
@@ -48,23 +60,7 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/customNodes/manager/utils/packUpdateStatus.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/customNodes/manager/utils/packUpdateStatus.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/utils/mapperUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/packUtils.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/packUtils.ts",
+      "path": "packages/api-client/src/generatedManagerTypes.ts",
       "role": "domain"
     }
   ],
@@ -83,6 +79,7 @@
     "extension-runtime",
     "help-center",
     "node-definition",
+    "node-library",
     "subgraphs",
     "workbench-shell",
     "workflow-errors"
@@ -100,7 +97,7 @@
       "name": "Queued pack operations and dialog lifecycle preserve manager behavior",
       "checks": [
         "src/platform/customNodes/manager/composables/useManagerQueue.test.ts",
-        "src/platform/customNodes/manager/composables/useManagerDialog.test.ts",
+        "src/platform/customNodes/manager/composables/dialogs/useManagerDialog.test.ts",
         "src/platform/customNodes/manager/stores/comfyManagerStore.test.ts"
       ]
     },
@@ -108,8 +105,8 @@
       "name": "Registry requests are cached, pack ids normalised, and install logs streamed",
       "checks": [
         "src/composables/useCachedRequest.test.ts",
-        "src/utils/packUtils.test.ts",
-        "src/composables/useServerLogs.test.ts"
+        "src/platform/customNodes/manager/utils/packUtils.test.ts",
+        "src/platform/customNodes/manager/services/useServerLogs.test.ts"
       ]
     }
   ],

@@ -3,7 +3,7 @@ import { computed, onMounted } from 'vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/platform/customNodes/manager/composables/nodePack/useInstalledPacks'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
-import { getPackUpdateStatus } from '@/platform/customNodes/manager/utils/packUpdateStatus'
+import { getPackUpdateStatus } from '@/platform/customNodes/manager/composables/nodePack/packUpdateStatus'
 
 /**
  * Composable to find NodePacks that have updates available

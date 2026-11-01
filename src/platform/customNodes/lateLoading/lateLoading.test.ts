@@ -966,11 +966,11 @@ describe('late custom node loading', () => {
         kind: 'warning',
         title: "Some custom nodes didn't start",
         description: 'Reload the page to turn on: a-pack',
-        action: expect.objectContaining({ label: 'Reload' })
+        actions: [expect.objectContaining({ label: 'Reload' })]
       })
     ])
     expect(reload).not.toHaveBeenCalled()
-    useToast().toasts[0].action?.onClick()
+    useToast().toasts[0].actions[0]?.onClick()
     expect(reload).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledOnce()
     expect(vi.mocked(reportError).mock.calls[0][1].context?.failures).toEqual([

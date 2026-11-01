@@ -1,11 +1,11 @@
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
-import { authCredentialOf } from '@/platform/auth/authCredential'
+import { authCredentialOf } from '@comfyorg/api-client/authCredential'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 
 type AgentRequestInit = NonNullable<Parameters<typeof api.fetchApi>[1]>
 

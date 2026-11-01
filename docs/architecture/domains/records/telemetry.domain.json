@@ -1,12 +1,8 @@
 {
   "id": "telemetry",
   "capability": "Product telemetry",
-  "description": "Application adapters for the shared telemetry package: desktop host routing, enablement and identity sync, provider readiness, event tracking, and metadata enrichment. Cloud vendor providers belong to the cloud record; error reporting and startup tracing are separate records.",
+  "description": "The @comfyorg/telemetry dispatcher, registry, and event types, and their application adapters: desktop host routing, enablement and identity sync, provider readiness, event tracking, and metadata enrichment. Cloud vendor providers belong to the cloud record; error reporting and startup tracing are separate records.",
   "modules": [
-    {
-      "path": "src/composables/useRunButtonTelemetry.test.ts",
-      "role": "application"
-    },
     {
       "path": "src/composables/useRunButtonTelemetry.ts",
       "role": "application"
@@ -20,15 +16,7 @@
       "role": "application"
     },
     {
-      "path": "src/platform/telemetry/hostUserIdSync.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/platform/telemetry/hostUserIdSync.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/telemetry/initHostTelemetry.test.ts",
       "role": "integration"
     },
     {
@@ -49,10 +37,6 @@
     },
     {
       "path": "src/platform/telemetry/searchQuery/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/storeReadiness.test.ts",
       "role": "application"
     },
     {
@@ -80,15 +64,7 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/telemetry/utils/getActionbarDockState.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/telemetry/utils/getActionbarDockState.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/telemetry/utils/getAgentPanelOpen.test.ts",
       "role": "infrastructure"
     },
     {
@@ -96,20 +72,20 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/telemetry/utils/getExecutionContext.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/telemetry/utils/getExecutionContext.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/utils/getShellLayoutSnapshot.test.ts",
       "role": "application"
     },
     {
       "path": "src/platform/telemetry/utils/getShellLayoutSnapshot.ts",
       "role": "application"
+    },
+    {
+      "path": "packages/telemetry/src/**",
+      "role": "application"
+    },
+    {
+      "path": "packages/telemetry/src/types.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

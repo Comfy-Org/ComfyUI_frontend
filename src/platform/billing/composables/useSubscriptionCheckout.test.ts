@@ -422,8 +422,8 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 
 function latestPaymentRecoveryAction() {
   const toast = useToast().toasts.at(-1)
-  assert(toast?.kind === 'warning' && toast.action)
-  return toast.action.onClick
+  assert(toast?.kind === 'warning' && toast.actions[0])
+  return toast.actions[0].onClick
 }
 
 const i18n = createI18n({
@@ -1227,7 +1227,7 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          action: { label: 'Try again', onClick: expect.any(Function) },
+          actions: [{ label: 'Try again', onClick: expect.any(Function) }],
           description: 'Payment popup blocked',
           kind: 'warning',
           title: 'Warning'
@@ -1376,7 +1376,10 @@ describe('useSubscriptionCheckout', () => {
         'SUBSCRIPTION_PAYMENT_REQUIRED'
       )
       expect(useToast().toasts).toEqual([
-        expect.objectContaining({ action: expect.any(Object), kind: 'warning' })
+        expect.objectContaining({
+          actions: [expect.any(Object)],
+          kind: 'warning'
+        })
       ])
 
       checkout.handleBackToPricing()
@@ -1404,7 +1407,10 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'yearly'
       })
       expect(useToast().toasts).toEqual([
-        expect.objectContaining({ action: expect.any(Object), kind: 'warning' })
+        expect.objectContaining({
+          actions: [expect.any(Object)],
+          kind: 'warning'
+        })
       ])
 
       unmount()
@@ -4443,7 +4449,7 @@ describe('useSubscriptionCheckout', () => {
 
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          action: { label: 'Try again', onClick: expect.any(Function) },
+          actions: [{ label: 'Try again', onClick: expect.any(Function) }],
           description: 'Payment popup blocked',
           kind: 'warning',
           title: 'Warning'
@@ -4452,8 +4458,7 @@ describe('useSubscriptionCheckout', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-blocked',
         'subscription',
-        expect.any(Object),
-        'https://stripe.com/pay'
+        expect.objectContaining({ paymentMethodUrl: 'https://stripe.com/pay' })
       )
 
       const onAction = latestPaymentRecoveryAction()
@@ -4863,9 +4868,9 @@ describe('useSubscriptionCheckout', () => {
           cycle: 'yearly',
           checkoutType: 'new',
           paymentIntentSource: undefined,
-          attemptStartedAt: expect.any(Number)
-        },
-        'https://stripe.com/pay'
+          attemptStartedAt: expect.any(Number),
+          paymentMethodUrl: 'https://stripe.com/pay'
+        }
       )
       expect(checkout.checkoutStep.value).toBe('success')
       openSpy.mockRestore()

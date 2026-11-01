@@ -18,39 +18,58 @@ const telemetry = () => vi.mocked(useTelemetry())!
 const KEY = 'coach-test'
 const STEPS: CoachStep[] = [
   {
+    card: 'intro',
     target: '#panel',
     title: 'Meet the agent',
     body: 'Build and run workflows.',
     placement: 'left-center'
   },
   {
+    card: 'workflow',
     target: '#composer',
     title: 'Choose a workflow',
     body: 'Choose what to edit.',
     placement: 'left-end'
   },
   {
-    target: '#graph',
-    title: 'Keep editing',
-    body: 'Work alongside the agent.',
-    placement: 'graph-bottom',
-    toolbarTarget: '#toolbar'
-  },
-  {
+    card: 'history',
     target: '#history',
     title: 'Previous chats',
     body: 'Continue an earlier chat.',
     placement: 'left-start'
   }
 ]
+const LAST = STEPS.length - 1
 const rectangles: Record<string, DOMRect> = {
   panel: new DOMRect(950, 60, 420, 700),
   composer: new DOMRect(966, 600, 388, 144),
-  graph: new DOMRect(60, 60, 880, 700),
-  toolbar: new DOMRect(650, 700, 260, 40),
   history: new DOMRect(970, 104, 24, 24)
 }
 const tooltipRect = new DOMRect(998, 105, 84, 22)
+const ARROW_SIZE = 12
+
+function cardPlacement(card: HTMLElement, target: DOMRect) {
+  const left = parseFloat(card.style.left)
+  const top = parseFloat(card.style.top)
+  const right = left + card.offsetWidth
+  const bottom = top + card.offsetHeight
+  return {
+    inViewport:
+      left >= 8 &&
+      top >= 8 &&
+      right <= window.innerWidth - 8 &&
+      bottom <= window.innerHeight - 8,
+    besideTarget:
+      right <= target.left && top < target.bottom && bottom > target.top
+  }
+}
+
+async function expectCard(step: CoachStep, progress: string) {
+  const dialog = await screen.findByRole('dialog', { name: step.title })
+  expect(dialog).toHaveAccessibleDescription(step.body)
+  await waitFor(() => expect(screen.getByText(progress)).toBeVisible())
+  expect(localStorage.getItem(KEY)).toBe('false')
+}
 
 function mount(steps = STEPS) {
   return render(
@@ -66,7 +85,7 @@ function mount(steps = STEPS) {
         }
       },
       template:
-        '<button>Outside tour</button><div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" data-testid="history" /><button data-testid="coach-restart" @click="replay" /><OnboardingCoach ref="coach" :steps="steps" :storage-key="storageKey" />'
+        '<button>Outside tour</button><div id="panel" /><div id="composer" /><div id="history" data-testid="history" /><button data-testid="coach-restart" @click="replay" /><OnboardingCoach ref="coach" :steps="steps" :storage-key="storageKey" />'
     },
     { global: { plugins: [i18n] } }
   )
@@ -74,11 +93,14 @@ function mount(steps = STEPS) {
 
 beforeEach(() => {
   localStorage.clear()
+  vi.mocked(fetch).mockImplementation(async () => Response.json([]))
   telemetry().trackAgentOnboardingShown.mockClear()
   telemetry().trackAgentOnboardingStep.mockClear()
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
     function (this: HTMLElement) {
       if (this.getAttribute('role') === 'tooltip') return tooltipRect
+      if (this.dataset.testid === 'agent-coach-arrow')
+        return new DOMRect(0, 0, ARROW_SIZE, ARROW_SIZE)
       return (
         rectangles[this.id] ??
         new DOMRect(
@@ -107,21 +129,15 @@ beforeEach(() => {
 })
 
 describe('OnboardingCoach', () => {
-  it('presents all four cards in order, keeps Skip available and finishes with Done', async () => {
+  it('presents every card in order and finishes with Done', async () => {
     const user = userEvent.setup()
     const { unmount } = mount()
-    for (const [index, step] of STEPS.entries()) {
-      const dialog = await screen.findByRole('dialog', { name: step.title })
-      expect(dialog).toHaveAccessibleDescription(step.body)
-      await waitFor(() =>
-        expect(screen.getByText(`${index + 1} of 4`)).toBeVisible()
-      )
-      expect(screen.getByRole('button', { name: 'Skip' })).toBeVisible()
-      expect(localStorage.getItem(KEY)).toBe('false')
-      await user.click(
-        screen.getByRole('button', { name: index === 3 ? 'Done' : 'Next' })
-      )
-    }
+    await expectCard(STEPS[0], '1 of 3')
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await expectCard(STEPS[1], '2 of 3')
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await expectCard(STEPS[2], '3 of 3')
+    await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(localStorage.getItem(KEY)).toBe('true')
     unmount()
@@ -130,7 +146,22 @@ describe('OnboardingCoach', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it.for([0, 1, 2, 3])(
+  it('offers only Done on the last card', async () => {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[1].title })
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[LAST].title })
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Done' })).toBeVisible()
+    )
+    expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
+  })
+
+  it.for([...STEPS.keys()].slice(0, LAST))(
     'dismisses through Skip from card index %i',
     async (index) => {
       const user = userEvent.setup()
@@ -200,47 +231,150 @@ describe('OnboardingCoach', () => {
     for (const [index, step] of STEPS.entries()) {
       const dialog = await screen.findByRole('dialog', { name: step.title })
       const targetRect = rectangles[step.target.slice(1)]
-      await waitFor(() => {
-        const left = parseFloat(dialog.style.left)
-        const top = parseFloat(dialog.style.top)
-        const right = left + dialog.offsetWidth
-        const bottom = top + dialog.offsetHeight
-        expect(left).toBeGreaterThanOrEqual(8)
-        expect(top).toBeGreaterThanOrEqual(8)
-        expect(right).toBeLessThanOrEqual(window.innerWidth - 8)
-        expect(bottom).toBeLessThanOrEqual(window.innerHeight - 8)
-        if (step.placement === 'graph-bottom') {
-          const center = targetRect.left + targetRect.width / 2
-          expect(left).toBeLessThan(center)
-          expect(right).toBeGreaterThan(center)
-          expect(top).toBeGreaterThanOrEqual(targetRect.top)
-          expect(bottom).toBeLessThanOrEqual(rectangles.toolbar.top)
-        } else {
-          expect(right).toBeLessThanOrEqual(targetRect.left)
-          expect(top).toBeLessThan(targetRect.bottom)
-          expect(bottom).toBeGreaterThan(targetRect.top)
-        }
-      })
+      await waitFor(() =>
+        expect(cardPlacement(dialog, targetRect)).toEqual({
+          inViewport: true,
+          besideTarget: true
+        })
+      )
       const spotlight = screen.getByTestId('agent-coach-spotlight')
       expect(parseFloat(spotlight.style.left)).toBe(targetRect.left)
       expect(parseFloat(spotlight.style.top)).toBe(targetRect.top)
       expect(parseFloat(spotlight.style.width)).toBe(targetRect.width)
-      if (index < 3)
+      if (index < LAST)
         await user.click(screen.getByRole('button', { name: 'Next' }))
     }
+  })
+
+  it.for(STEPS)(
+    'points the $placement card arrow at the middle of its target',
+    async (step) => {
+      mount([step])
+      const dialog = await screen.findByRole('dialog', { name: step.title })
+      const arrow = screen.getByTestId('agent-coach-arrow')
+      const targetRect = rectangles[step.target.slice(1)]
+
+      expect(dialog).toContainElement(arrow)
+      await waitFor(() =>
+        expect(
+          parseFloat(dialog.style.top) +
+            parseFloat(arrow.style.top) +
+            ARROW_SIZE / 2
+        ).toBeCloseTo(targetRect.top + targetRect.height / 2, 0)
+      )
+      expect(arrow).not.toHaveStyle({ visibility: 'hidden' })
+    }
+  )
+
+  it('hides the arrow when the target center is outside the arrow reach', async () => {
+    const panel = rectangles.panel
+    rectangles.panel = new DOMRect(950, 0, 420, 24)
+    try {
+      mount([STEPS[0]])
+      const dialog = await screen.findByRole('dialog', {
+        name: STEPS[0].title
+      })
+      await waitFor(() => expect(dialog.style.opacity).toBe('1'))
+      expect(
+        parseFloat(dialog.style.left) + dialog.offsetWidth
+      ).toBeLessThanOrEqual(rectangles.panel.left)
+      expect(screen.getByTestId('agent-coach-arrow')).toHaveStyle({
+        visibility: 'hidden'
+      })
+    } finally {
+      rectangles.panel = panel
+    }
+  })
+
+  it('keeps the arrow when a small shift still leaves a gap beside the target', async () => {
+    const panel = rectangles.panel
+    rectangles.panel = new DOMRect(330, 60, 420, 700)
+    try {
+      mount([STEPS[0]])
+      const dialog = await screen.findByRole('dialog', {
+        name: STEPS[0].title
+      })
+      await waitFor(() => expect(dialog.style.opacity).toBe('1'))
+      expect(parseFloat(dialog.style.left)).toBe(8)
+      expect(screen.getByTestId('agent-coach-arrow')).not.toHaveStyle({
+        visibility: 'hidden'
+      })
+    } finally {
+      rectangles.panel = panel
+    }
+  })
+
+  it('draws attention to the card and focuses it when the user clicks the dimmed screen or the highlighted area', async () => {
+    const user = userEvent.setup()
+    mount()
+    const dialog = await screen.findByRole('dialog', { name: STEPS[0].title })
+    expect(dialog).not.toHaveAttribute('data-nudged')
+
+    await user.click(screen.getByTestId('agent-coach-scrim'))
+
+    expect(dialog).toHaveAttribute('data-nudged')
+    expect(dialog).toHaveFocus()
+    expect(screen.getByRole('dialog', { name: STEPS[0].title })).toBe(dialog)
+    expect(localStorage.getItem(KEY)).toBe('false')
+    expect(telemetry().trackAgentOnboardingStep).not.toHaveBeenCalled()
+  })
+
+  it('stops drawing attention to the card when the user moves to the next card', async () => {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    await user.click(screen.getByTestId('agent-coach-scrim'))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+
+    const second = await screen.findByRole('dialog', { name: STEPS[1].title })
+    expect(second).not.toHaveAttribute('data-nudged')
+  })
+
+  it('hides the arrow when there is no room beside the target and the card overlaps it', async () => {
+    const panel = rectangles.panel
+    rectangles.panel = new DOMRect(100, 60, 1290, 700)
+    try {
+      mount([STEPS[0]])
+      const dialog = await screen.findByRole('dialog', {
+        name: STEPS[0].title
+      })
+      await waitFor(() => expect(dialog.style.opacity).toBe('1'))
+      expect(
+        parseFloat(dialog.style.left) + dialog.offsetWidth
+      ).toBeGreaterThan(rectangles.panel.left)
+      expect(screen.getByTestId('agent-coach-arrow')).toHaveStyle({
+        visibility: 'hidden'
+      })
+    } finally {
+      rectangles.panel = panel
+    }
+  })
+
+  it('stops drawing attention to the card shortly after the click', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mount()
+    const dialog = await screen.findByRole('dialog', {
+      name: STEPS[0].title
+    })
+    await user.click(screen.getByTestId('agent-coach-scrim'))
+    expect(dialog).toHaveAttribute('data-nudged')
+
+    await vi.advanceTimersByTimeAsync(2_000)
+
+    expect(dialog).not.toHaveAttribute('data-nudged')
   })
 
   it('shows the target in its hover state with its tooltip inside the spotlight', async () => {
     const user = userEvent.setup()
     const steps = STEPS.map((step, index) =>
-      index === 3 ? { ...step, tooltip: 'Show chat history' } : step
+      index === LAST ? { ...step, tooltip: 'Show chat history' } : step
     )
     mount(steps)
     const history = screen.getByTestId('history')
     await screen.findByRole('dialog', { name: STEPS[0].title })
-    for (let i = 0; i < 3; i++)
+    for (let i = 0; i < LAST; i++)
       await user.click(screen.getByRole('button', { name: 'Next' }))
-    await screen.findByRole('dialog', { name: STEPS[3].title })
+    await screen.findByRole('dialog', { name: STEPS[LAST].title })
 
     expect(screen.getByRole('tooltip')).toHaveTextContent('Show chat history')
     expect(history).toHaveAttribute('data-coach-hover')
@@ -257,7 +391,7 @@ describe('OnboardingCoach', () => {
     })
 
     await user.click(screen.getByRole('button', { name: 'Back' }))
-    await screen.findByRole('dialog', { name: STEPS[2].title })
+    await screen.findByRole('dialog', { name: STEPS[LAST - 1].title })
     expect(screen.queryByRole('tooltip')).toBeNull()
     expect(history).not.toHaveAttribute('data-coach-hover')
   })
@@ -303,7 +437,7 @@ describe('OnboardingCoach', () => {
         components: { OnboardingCoach },
         setup: () => ({ steps: STEPS, holdNotice }),
         template:
-          '<div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" /><OnboardingCoach :steps="steps" storage-key="coach-hold" :hold-notice="holdNotice" />'
+          '<div id="panel" /><div id="composer" /><div id="history" /><OnboardingCoach :steps="steps" storage-key="coach-hold" :hold-notice="holdNotice" />'
       },
       { global: { plugins: [i18n] } }
     )
@@ -374,7 +508,7 @@ describe('OnboardingCoach', () => {
     await screen.findByRole('dialog', { name: STEPS[0].title })
     for (const index of STEPS.keys())
       await user.click(
-        screen.getByRole('button', { name: index === 3 ? 'Done' : 'Next' })
+        screen.getByRole('button', { name: index === LAST ? 'Done' : 'Next' })
       )
     expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
 
@@ -392,21 +526,22 @@ describe('OnboardingCoach', () => {
     await screen.findByRole('dialog', { name: STEPS[0].title })
     for (const index of STEPS.keys())
       await user.click(
-        screen.getByRole('button', { name: index === 3 ? 'Done' : 'Next' })
+        screen.getByRole('button', { name: index === LAST ? 'Done' : 'Next' })
       )
     expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
   })
 
   it.for([
-    { advance: 0, dismiss: 'Next', step: 1, action: 'next' },
-    { advance: 2, dismiss: 'Next', step: 3, action: 'next' },
-    { advance: 3, dismiss: 'Done', step: 4, action: 'finish' },
-    { advance: 0, dismiss: 'Skip', step: 1, action: 'skip' },
-    { advance: 2, dismiss: 'Skip', step: 3, action: 'skip' },
-    { advance: 1, dismiss: 'Escape', step: 2, action: 'skip' }
+    { advance: 0, dismiss: 'Next', step: 1, card: 'intro', action: 'next' },
+    { advance: 1, dismiss: 'Next', step: 2, card: 'workflow', action: 'next' },
+    { advance: 2, dismiss: 'Done', step: 3, card: 'history', action: 'finish' },
+    { advance: 0, dismiss: 'Skip', step: 1, card: 'intro', action: 'skip' },
+    { advance: 1, dismiss: 'Skip', step: 2, card: 'workflow', action: 'skip' },
+    { advance: 2, dismiss: 'Escape', step: 3, card: 'history', action: 'skip' },
+    { advance: 1, dismiss: 'Escape', step: 2, card: 'workflow', action: 'skip' }
   ])(
     'reports $dismiss on card $step as action $action',
-    async ({ advance, dismiss, step, action }) => {
+    async ({ advance, dismiss, step, card, action }) => {
       const user = userEvent.setup()
       mount()
       await screen.findByRole('dialog', { name: STEPS[0].title })
@@ -418,7 +553,7 @@ describe('OnboardingCoach', () => {
       else await user.click(screen.getByRole('button', { name: dismiss }))
 
       expect(telemetry().trackAgentOnboardingStep.mock.calls).toEqual([
-        [{ step, action }]
+        [{ step, card, total: STEPS.length, action }]
       ])
     }
   )
@@ -458,7 +593,7 @@ describe('OnboardingCoach', () => {
         components: { OnboardingCoach },
         setup: () => ({ steps, storageKey, onFinished }),
         template:
-          '<div id="panel" /><div id="composer" /><div id="graph"><div id="toolbar" /></div><div id="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" @finished="onFinished" />'
+          '<div id="panel" /><div id="composer" /><div id="history" /><OnboardingCoach :steps="steps" :storage-key="storageKey" @finished="onFinished" />'
       },
       { global: { plugins: [i18n] } }
     )
@@ -481,7 +616,7 @@ describe('OnboardingCoach', () => {
     await waitFor(() => expect(onFinished).toHaveBeenCalled())
     await nextTick()
 
-    expect(onFinished).toHaveBeenCalledOnce()
+    expect(onFinished).toHaveBeenCalledExactlyOnceWith('elsewhere')
   })
 
   it('reports finished once when the user skips', async () => {

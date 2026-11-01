@@ -1,5 +1,10 @@
 import { installTouchPointerGuards } from '@/extensions/core/touchPointerGuards'
-import { loadCustomNodeScripts } from '@/platform/customNodes/customNodeScripts'
+import {
+  getExtensionPath,
+  loadCustomNodeScripts,
+  shouldLoadCustomNodeScript
+} from '@/platform/customNodes/customNodeScripts'
+import { isSafeExtensionBootActive } from '@/platform/customNodes/safeExtensionBoot'
 import { askCpuServer } from '@/platform/customNodes/lateLoading/cpuServerStep'
 import { lateLoadingApplies } from '@/platform/customNodes/lateLoading/lateLoading'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
@@ -16,14 +21,32 @@ export async function loadExtensions(
   signal: AbortSignal = new AbortController().signal
 ) {
   const extensionStore = useExtensionStore()
+  const settingStore = useSettingStore()
   extensionStore.loadDisabledExtensionNames(
-    useSettingStore().get('Comfy.Extension.Disabled')
+    settingStore.get('Comfy.Extension.Disabled')
   )
+  const disabledExtensionPaths = settingStore.get(
+    'Comfy.Extension.DisabledPacks'
+  )
+  const disableAllCustomExtensions = isSafeExtensionBootActive()
 
   const firstCpuServerReading = lateLoadingApplies()
     ? askCpuServer()
     : undefined
   const extensions = await api.getExtensions()
+  extensionStore.loadExtensionPaths(
+    extensions
+      .filter((extension) =>
+        shouldLoadCustomNodeScript(extension, {
+          isCloudBuild: __DISTRIBUTION__ === 'cloud'
+        })
+      )
+      .flatMap((extension) => {
+        const extensionPath = getExtensionPath(extension)
+        return extensionPath === undefined ? [] : [extensionPath]
+      }),
+    disabledExtensionPaths
+  )
 
   installErrorNodeWidgets()
   installTouchPointerGuards()
@@ -32,5 +55,8 @@ export async function loadExtensions(
     await registerCoreExtensions()
   })
   extensionStore.captureCoreExtensions()
-  await loadCustomNodeScripts(extensions, signal, firstCpuServerReading)
+  await loadCustomNodeScripts(extensions, signal, firstCpuServerReading, {
+    disabledExtensionPaths,
+    disableAllCustomExtensions
+  })
 }

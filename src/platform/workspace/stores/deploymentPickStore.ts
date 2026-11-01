@@ -206,27 +206,50 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   let latestRequest = 0
   let lastApplied = 0
   let reportedLoadFailure = false
+  let requestBeforeStart: ReadonlyMap<string, number> = new Map()
 
   function load(): Promise<void> {
     return loadListing([])
   }
 
   /**
-   * Load the listing, retrying a failure with no definite answer after each
-   * of `retryDelaysMs` while this workspace is still the active one.
+   * Name a deployment whose start the server took on every listing, until one
+   * asked for after the start offers Start on it again or no longer lists it.
    */
+  function followStart(deploymentId: string) {
+    requestBeforeStart = new Map(requestBeforeStart).set(
+      deploymentId,
+      latestRequest
+    )
+  }
+
+  function forgetSettledStarts(
+    request: number,
+    deployments: readonly WorkspaceDeployment[]
+  ) {
+    requestBeforeStart = new Map(
+      [...requestBeforeStart].filter(([deploymentId, beforeStart]) => {
+        if (request <= beforeStart) return true
+        const listed = deployments.find((d) => d.deployment_id === deploymentId)
+        return listed?.can_start === false
+      })
+    )
+  }
+
   async function loadListing(retryDelaysMs: readonly number[]): Promise<void> {
     const id = workspaceStore.workspaceId
     if (!id) return
     const request = ++latestRequest
     const event = await listingEvent(
       id,
+      [...requestBeforeStart.keys()],
       retryDelaysMs,
       () => workspaceStore.workspaceId === id,
       (err) => noteLoadFailure(id, err)
     )
     const workspaceChangedMeanwhile = workspaceStore.workspaceId !== id
     if (workspaceChangedMeanwhile) return
+    if (event.type === 'loaded') forgetSettledStarts(request, event.deployments)
     applyAnswer(id, request, event)
   }
 
@@ -266,7 +289,11 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     reportedLoadFailure = true
     reportError(err, {
       surface: 'workspace',
-      errorType: 'error_loading_deployment_listing'
+      errorType: 'error_loading_deployment_listing',
+      ...(isSessionRefused(err) && {
+        level: 'warning',
+        tags: { status: 401, outcome: 'denied' }
+      })
     })
   }
 
@@ -542,6 +569,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     switcherOpenAsks,
     load,
     loadOnce,
+    followStart,
     bootOnComfyCloud,
     pick,
     pickFromLink,
@@ -554,13 +582,16 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
 
 async function listingEvent(
   workspaceId: string,
+  startedDeploymentIds: readonly string[],
   retryDelaysMs: readonly number[],
   stillWanted: () => boolean,
   onFailure: (err: unknown) => void
 ): Promise<DeploymentPickEvent> {
   for (let attempt = 0; ; attempt++) {
     try {
-      return loadedEvent(await workspaceApi.listDeployments(workspaceId))
+      return loadedEvent(
+        await workspaceApi.listDeployments(workspaceId, startedDeploymentIds)
+      )
     } catch (err) {
       const retriesLeft = attempt < retryDelaysMs.length
       if (!retriesLeft || !isTransient(err) || !stillWanted()) {
@@ -569,7 +600,6 @@ async function listingEvent(
       await new Promise((resolve) =>
         setTimeout(resolve, retryDelaysMs[attempt])
       )
-      // Another workspace took over: this answer would be dropped anyway.
       if (!stillWanted()) return { type: 'loadFailed' }
     }
   }
@@ -586,6 +616,10 @@ function isTransient(err: unknown): boolean {
   return (
     status === undefined || status === 408 || status === 429 || status >= 500
   )
+}
+
+function isSessionRefused(err: unknown): boolean {
+  return err instanceof WorkspaceApiError && err.status === 401
 }
 
 function loadFailure(

@@ -75,7 +75,7 @@ import {
   ManagerUIState,
   useManagerState
 } from '@/platform/customNodes/manager/composables/useManagerState'
-import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 
 import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
