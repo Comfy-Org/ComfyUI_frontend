@@ -685,8 +685,6 @@
           "src/platform/billing/composables/useBillingDialogs.topUpCredits.test.ts",
           "src/platform/billing/composables/useBillingRouting.ts",
           "src/platform/billing/composables/useBillingRouting.test.ts",
-          "src/platform/billing/composables/useLegacyBilling.ts",
-          "src/platform/billing/composables/useLegacyBilling.test.ts",
           "src/platform/billing/composables/useNextInvoice.ts",
           "src/platform/billing/composables/useNextInvoice.test.ts",
           "src/platform/billing/composables/usePendingTopup.ts",

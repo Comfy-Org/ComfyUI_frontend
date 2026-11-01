@@ -3182,7 +3182,6 @@
     },
     "cancelDialog": {
       "endOfBillingPeriod": "the end of your billing period",
-      "finishOnStripe": "Your subscription isn't cancelled yet. Finish cancelling on the Stripe page that just opened. Until you do, your plan will renew as usual.",
       "failed": "Failed to cancel subscription",
       "workspaceChanged": "Your active workspace changed. Switch back and try again."
     },
