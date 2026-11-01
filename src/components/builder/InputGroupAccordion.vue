@@ -10,10 +10,7 @@ import { useI18n } from 'vue-i18n'
 
 import InputGroupContent from '@/components/builder/InputGroupContent.vue'
 import UngroupConfirmDialog from '@/components/builder/UngroupConfirmDialog.vue'
-import {
-  autoGroupName,
-  resolveGroupItems
-} from '@/components/builder/useInputGroups'
+import { autoGroupName, resolveGroupItems } from '@/components/builder/useInputGroups'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import EditableText from '@comfyorg/design-system/common/EditableText'
 import Button from '@comfyorg/design-system/button/Button'
@@ -158,7 +155,11 @@ function handleDissolve() {
     </div>
 
     <CollapsibleContent>
-      <InputGroupContent :group-id="group.id" :items="resolvedItems" :builder-mode :mobile />
+      <InputGroupContent
+        :items="resolvedItems"
+        :builder-mode
+        :mobile
+      />
     </CollapsibleContent>
   </CollapsibleRoot>
 </template>

@@ -5049,8 +5049,7 @@
     "queue": {
       "clickToClear": "Click to clear queue",
       "clear": "Clear queue"
-    }
-  ,
+    },
     "groups": {
       "untitled": "Untitled group",
       "createGroup": "Create group",

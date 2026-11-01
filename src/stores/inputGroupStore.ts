@@ -45,13 +45,15 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
         if (item.pairId)
           pairCounts.set(item.pairId, (pairCounts.get(item.pairId) ?? 0) + 1)
       }
-      return [{
-        id: group.id,
-        name: group.name,
-        items: items.map(({ key, pairId }) =>
-          pairId && pairCounts.get(pairId) === 2 ? { key, pairId } : { key }
-        )
-      }]
+      return [
+        {
+          id: group.id,
+          name: group.name,
+          items: items.map(({ key, pairId }) =>
+            pairId && pairCounts.get(pairId) === 2 ? { key, pairId } : { key }
+          )
+        }
+      ]
     })
   }
 

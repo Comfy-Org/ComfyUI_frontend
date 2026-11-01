@@ -8,7 +8,10 @@ import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import InputGroupAccordion from '@/components/builder/InputGroupAccordion.vue'
-import { groupPosition, resolveGroupItems } from '@/components/builder/useInputGroups'
+import {
+  groupPosition,
+  resolveGroupItems
+} from '@/components/builder/useInputGroups'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
