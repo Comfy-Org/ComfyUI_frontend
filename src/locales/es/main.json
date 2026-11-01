@@ -307,7 +307,7 @@
     "workflowReferenceUnavailableReason": "Este flujo de trabajo referenciado ya no está disponible o no tienes acceso a él.",
     "workflowSyncFailedDetail": "Este flujo de trabajo se creó con una versión de documento incompatible. Tu lienzo no se ha modificado.",
     "workflowSyncFailedDetailCatalogMismatch": "Un nodo de este flujo de trabajo ha cambiado desde la última vez que el agente lo vio. Tu lienzo se ha dejado sin cambios. Tu próximo mensaje envía tu lienzo para que el agente pueda reconstruir su copia del flujo de trabajo.",
-    "workflowSyncFailedDetailStaleClient": "Esta página no está actualizada, por lo que no se pueden mostrar los cambios del agente. Recarga la página para verlos.",
+    "workflowSyncFailedDetailStaleClient": "Esta página no puede mostrar la versión actual de este documento, por lo que los cambios del agente no se pueden mostrar aquí. Se conservan. Recargar puede solucionar esto; si no es así, la actualización aún no ha llegado a tu aplicación.",
     "workflowSyncFailedTitle": "Este flujo de trabajo no se puede sincronizar",
     "workflows": "Flujos de trabajo",
     "working": "Trabajando..."
@@ -2028,6 +2028,7 @@
     "arrangeVertically": "Organizar verticalmente",
     "asset": "{count} recurso | {count} recursos",
     "audioFailedToLoad": "No se pudo cargar el audio",
+    "audioPlaybackFailed": "No se pudo reproducir este audio. Inténtalo de nuevo o descárgalo para reproducirlo en otra aplicación.",
     "audioProgress": "Progreso de audio",
     "author": "Autor",
     "back": "Atrás",

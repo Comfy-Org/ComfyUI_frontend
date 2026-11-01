@@ -307,7 +307,7 @@
     "workflowReferenceUnavailableReason": "参照されているこのワークフローは利用できなくなったか、アクセス権がありません。",
     "workflowSyncFailedDetail": "このワークフローは互換性のないドキュメントバージョンで作成されています。キャンバスは変更されていません。",
     "workflowSyncFailedDetailCatalogMismatch": "このワークフロー内のノードは、エージェントが最後に確認してから変更されています。キャンバスは変更されていません。次のメッセージでキャンバスがエージェントに送信され、エージェントはワークフローのコピーを再構築できます。",
-    "workflowSyncFailedDetailStaleClient": "このページは最新ではないため、エージェントの変更を表示できません。表示するにはページを再読み込みしてください。",
+    "workflowSyncFailedDetailStaleClient": "このページではこのドキュメントの現在のバージョンを表示できないため、エージェントによる変更をここに表示できません。変更は保持されています。再読み込みすると解決する場合があります。解決しない場合は、更新がまだアプリに届いていません。",
     "workflowSyncFailedTitle": "このワークフローは同期できません",
     "workflows": "ワークフロー",
     "working": "処理中..."
@@ -2028,6 +2028,7 @@
     "arrangeVertically": "縦に配置",
     "asset": "{count} 個のアセット | {count} 個のアセット",
     "audioFailedToLoad": "オーディオの読み込みに失敗しました",
+    "audioPlaybackFailed": "この音声を再生できませんでした。もう一度試すか、ダウンロードして別のアプリで再生してください。",
     "audioProgress": "オーディオの進捗",
     "author": "作者",
     "back": "戻る",
