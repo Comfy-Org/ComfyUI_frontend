@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { slotId } from '@comfyorg/graph-model/slotId'
@@ -42,6 +43,32 @@ describe('syncSlotOffsets', () => {
       layoutStore.getSlotOffset(GRAPH_ID, nodeId, 1, 'output', 'expanded')
     ).toEqual({ x: 200, y: 24 })
   })
+
+  it.for([
+    { noTitle: false, expectedY: 12 - LiteGraph.NODE_TITLE_HEIGHT },
+    { noTitle: true, expectedY: 12 }
+  ])(
+    'measures offsets from where the body starts (noTitle $noTitle)',
+    ({ noTitle, expectedY }) => {
+      const nodeId = toNodeId('title-mode')
+      const node = document.createElement('div')
+      node.dataset.nodeId = String(nodeId)
+      if (noTitle) node.dataset.noTitle = ''
+      Object.defineProperty(node, 'offsetWidth', { value: 75 })
+      setRect(node, new DOMRect(100, 200, 75, 26))
+
+      const input = document.createElement('div')
+      input.dataset.slotKey = slotId(nodeId, 'input', 0)
+      setRect(input, new DOMRect(94, 206, 12, 12))
+      node.append(input)
+
+      syncSlotOffsets(node, GRAPH_ID, nodeId)
+
+      expect(
+        layoutStore.getSlotOffset(GRAPH_ID, nodeId, 0, 'input', 'expanded')
+      ).toEqual({ x: 0, y: expectedY })
+    }
+  )
 
   it('stores collapsed offsets separately from expanded geometry', () => {
     const nodeId = toNodeId('collapsed')
