@@ -10,6 +10,10 @@ interface ChangeTrackerClass {
     initialState: ComfyWorkflowJSON
   ): WorkflowChangeTracker
   readonly isLoadingGraph: boolean
+  graphEqual(
+    a: ComfyWorkflowJSON | null | undefined,
+    b: ComfyWorkflowJSON | null | undefined
+  ): boolean
 }
 
 /** `ChangeTracker` for the stores it imports, which cannot import it back. */
