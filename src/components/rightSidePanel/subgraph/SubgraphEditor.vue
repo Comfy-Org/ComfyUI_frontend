@@ -82,6 +82,8 @@ function refreshPromotedRows() {
   promotedRows.value = node ? buildPromotedRows(node) : []
 }
 watch(activeNode, refreshPromotedRows, { immediate: true })
+
+const promotionVersion = ref(0)
 useEventListener(
   () => activeNode.value?.subgraph.events,
   [
@@ -91,7 +93,10 @@ useEventListener(
     'removing-input',
     'inputs-reordered'
   ],
-  refreshPromotedRows
+  () => {
+    refreshPromotedRows()
+    promotionVersion.value++
+  }
 )
 
 function promotedRowSource(row: PromotedRow): PromotedSource | undefined {
@@ -158,6 +163,7 @@ function updateActivePromotedRows(
 const interiorWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
+  void promotionVersion.value
   const { updatePreviews } = useLitegraphService()
   const interiorNodes = node.subgraph.nodes
   for (const node of interiorNodes) {

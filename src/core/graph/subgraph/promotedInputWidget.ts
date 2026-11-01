@@ -101,3 +101,37 @@ export function promotedInputWidgets(node: LGraphNode): IBaseWidget[] {
     return widget ? [widget] : []
   })
 }
+
+interface ImmediatePromotedWidgetSource {
+  sourceNode: LGraphNode
+  sourceWidget: IBaseWidget
+}
+
+export function resolveImmediatePromotedWidgetSource(
+  node: LGraphNode,
+  widget: IBaseWidget
+): ImmediatePromotedWidgetSource | undefined {
+  if (!node.isSubgraphNode()) return undefined
+
+  const input = inputForWidget(node, widget)
+  if (!input) return undefined
+
+  const source = promotedInputSource(node, input)
+  if (!source) return undefined
+
+  const sourceNode = node.subgraph.getNodeById(source.nodeId)
+  if (!sourceNode) return undefined
+
+  if (sourceNode.isSubgraphNode()) {
+    const sourceInput = sourceNode.inputs.find(
+      (entry) => entry.name === source.widgetName
+    )
+    const sourceWidget = sourceInput && promotedInputWidget(sourceInput)
+    return sourceWidget ? { sourceNode, sourceWidget } : undefined
+  }
+
+  const sourceWidget = sourceNode.widgets?.find(
+    (entry) => entry.name === source.widgetName
+  )
+  return sourceWidget ? { sourceNode, sourceWidget } : undefined
+}

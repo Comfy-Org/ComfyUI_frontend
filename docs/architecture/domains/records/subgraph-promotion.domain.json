@@ -82,7 +82,7 @@
       "name": "Promoted widgets behave on the canvas end to end",
       "checks": [
         "browser_tests/tests/subgraph/subgraphPromotion.spec.ts",
-        "browser_tests/tests/subgraphPromotedWidgetPanel.spec.ts"
+        "browser_tests/tests/subgraph/subgraphPromotedWidgetPanel.spec.ts"
       ]
     },
     {
