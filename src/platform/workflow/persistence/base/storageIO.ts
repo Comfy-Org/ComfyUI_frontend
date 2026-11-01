@@ -308,6 +308,56 @@ function readSessionPointer<T extends { workspaceId: string }>(
 }
 
 /**
+ * Writes a session pointer and drops this workspace's pointers under other
+ * client ids. sessionStorage belongs to one browser tab, so those are earlier
+ * page loads of this tab; Cloud assigns a new client id on every load. Left in
+ * place, {@link findAndMigratePointer} could restore one of them instead of the
+ * latest after the next reload.
+ */
+function writeSessionPointer(
+  key: string,
+  prefix: string,
+  workspaceId: string,
+  json: string
+): void {
+  if (!isStorageAvailable()) return
+
+  try {
+    sessionStorage.setItem(key, json)
+  } catch {
+    // Best effort — keep the older pointers if this one could not be saved
+    return
+  }
+
+  try {
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const storageKey = sessionStorage.key(i)
+      if (!storageKey?.startsWith(prefix) || storageKey === key) continue
+      if (
+        readPointerWorkspaceId(sessionStorage.getItem(storageKey)) !==
+        workspaceId
+      )
+        continue
+      sessionStorage.removeItem(storageKey)
+    }
+  } catch {
+    // Pruning is best effort; the pointer itself is saved
+  }
+}
+
+function readPointerWorkspaceId(json: string | null): string | null {
+  if (!json) return null
+  try {
+    const value: unknown = JSON.parse(json)
+    if (typeof value !== 'object' || value === null) return null
+    const { workspaceId } = value as Record<string, unknown>
+    return typeof workspaceId === 'string' ? workspaceId : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Reads the active path pointer from sessionStorage.
  * Falls back to workspace-based search when clientId changes after reload,
  * then to localStorage when sessionStorage is empty (browser restart).
@@ -343,7 +393,12 @@ export function writeActivePath(
   pointer: ActivePathPointer
 ): void {
   const json = JSON.stringify(pointer)
-  writeStorage(sessionStorage, StorageKeys.activePath(clientId), json)
+  writeSessionPointer(
+    StorageKeys.activePath(clientId),
+    StorageKeys.prefixes.activePath,
+    pointer.workspaceId,
+    json
+  )
   writeStorage(
     localStorage,
     StorageKeys.lastActivePath(pointer.workspaceId),
@@ -397,7 +452,12 @@ export function writeOpenPaths(
   pointer: OpenPathsPointer
 ): void {
   const json = JSON.stringify(pointer)
-  writeStorage(sessionStorage, StorageKeys.openPaths(clientId), json)
+  writeSessionPointer(
+    StorageKeys.openPaths(clientId),
+    StorageKeys.prefixes.openPaths,
+    pointer.workspaceId,
+    json
+  )
   writeStorage(
     localStorage,
     StorageKeys.lastOpenPaths(pointer.workspaceId),

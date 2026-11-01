@@ -275,6 +275,57 @@ describe('storageIO', () => {
       )
       expect(JSON.parse(raw!).workspaceId).toBe('ws-B')
     })
+
+    describe('when the client id changes on every page load', () => {
+      // Cloud assigns a new client id per page load. Until the socket
+      // connects, a page reads and writes under the previous page's id;
+      // afterwards it writes under its own. The next page load must
+      // restore the latest list, not an older one.
+      const workspaceId = 'ws-reload'
+
+      it('restores the open tabs written last, not an older list', () => {
+        writeOpenPaths('load-1', {
+          workspaceId,
+          paths: ['workflows/a.json', 'workflows/b.json', 'workflows/c.json'],
+          activeIndex: 0
+        })
+
+        const latest = {
+          workspaceId,
+          paths: ['workflows/c.json', 'workflows/a.json'],
+          activeIndex: 0
+        }
+        writeOpenPaths('load-2', latest)
+
+        expect(readOpenPaths('load-3', workspaceId)).toEqual(latest)
+      })
+
+      it('restores the active tab written last, not an older one', () => {
+        writeActivePath('load-1', { workspaceId, path: 'workflows/a.json' })
+        writeActivePath('load-2', { workspaceId, path: 'workflows/c.json' })
+
+        expect(readActivePath('load-3', workspaceId)).toEqual({
+          workspaceId,
+          path: 'workflows/c.json'
+        })
+      })
+
+      it('keeps another workspace’s tabs when writing this one', () => {
+        const other = {
+          workspaceId: 'ws-other',
+          paths: ['workflows/other.json'],
+          activeIndex: 0
+        }
+        writeOpenPaths('load-1', other)
+        writeOpenPaths('load-2', {
+          workspaceId,
+          paths: ['workflows/a.json'],
+          activeIndex: 0
+        })
+
+        expect(readOpenPaths('load-3', 'ws-other')).toEqual(other)
+      })
+    })
   })
 
   describe('clearAllWorkflowStorage', () => {
