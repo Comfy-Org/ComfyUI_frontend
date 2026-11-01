@@ -470,6 +470,30 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     expect(useAgentComposerStore().errorContext).toBeNull()
   })
 
+  it('keeps an attached chip with its workflow when the user switches tabs before sending', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: runningTab
+    }
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).not.toBeNull()
+    )
+
+    await useWorkflowService().openWorkflow(other)
+
+    await vi.waitFor(() =>
+      expect(workflowStore.activeWorkflow?.path).toBe(otherTab)
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
+    expect(useAgentComposerStore().errorContext).not.toBeNull()
+  })
+
   it('starts a new chat on the errored workflow when it has none', async () => {
     const other = addBoundTab(otherTab, 'wf-other')
     respondWithChats([
