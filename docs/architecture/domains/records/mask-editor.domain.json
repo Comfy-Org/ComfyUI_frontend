@@ -38,11 +38,18 @@
     {
       "path": "packages/mask-editor/src/**",
       "role": "application"
+    },
+    {
+      "path": "packages/mask-editor/src/extensionTypes.ts",
+      "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
+  "publicEntryPoints": [
+    "packages/mask-editor/src/extensionTypes.ts",
+    "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.ts"
+  ],
+  "allowedDependencies": ["error-reporting"],
+  "allowedConsumers": ["extension-runtime", "workbench-shell"],
   "characterizationScenarios": [
     {
       "name": "Drawing operations preserve brush and canvas-history behavior",
@@ -61,9 +68,17 @@
     {
       "name": "Mask PNG encoding round-trips through the decoder fixture",
       "checks": ["src/utils/pngEncodeUtil.test.ts"]
+    },
+    {
+      "name": "External tool registration validates descriptors and releases registrations",
+      "checks": [
+        "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.test.ts"
+      ]
     }
   ],
-  "adrs": [],
+  "adrs": [
+    "docs/adr/MASKEDITOR-EXTENSIONS-0001-session-scoped-external-tools.md"
+  ],
   "compatibilityPromises": [
     "The core extension remains the host integration seam for opening the editor.",
     "Image widget values and layer output remain covered by loader and saver characterization tests."

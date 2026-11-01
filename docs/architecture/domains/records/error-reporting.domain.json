@@ -93,6 +93,7 @@
     "dialog-host",
     "extension-runtime",
     "graph-model",
+    "mask-editor",
     "node-widgets",
     "workflow-management"
   ],
