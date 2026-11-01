@@ -629,8 +629,17 @@ function createAssetService() {
     }
 
     // Fetch assets for this category using same API pattern as getAssetModels
+    // Model pickers need the shared catalog; ask for it explicitly so the
+    // server can stop defaulting include_public to true (BE-20085).
     return await handleAssetRequest(
-      { includeTags: [MODELS_TAG, category], limit, offset, after, signal },
+      {
+        includeTags: [MODELS_TAG, category],
+        limit,
+        offset,
+        after,
+        includePublic: true,
+        signal
+      },
       `assets for ${nodeType}`
     )
   }

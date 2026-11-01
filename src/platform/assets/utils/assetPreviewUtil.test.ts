@@ -144,6 +144,20 @@ describe('findOutputAsset', () => {
     expect(result).toEqual(localAsset)
   })
 
+  it("only searches the user's own assets, never the public catalog", async () => {
+    mockFetchEmpty()
+    mockFetchEmpty()
+
+    await findOutputAsset('ComfyUI_00081_.glb')
+
+    const urls = vi.mocked(api.fetchApi).mock.calls.map(([url]) => url)
+    expect(urls).toHaveLength(2)
+    for (const url of urls) {
+      const params = new URL(url, 'http://localhost').searchParams
+      expect(params.get('include_public')).toBe('false')
+    }
+  })
+
   it('returns undefined when no asset matches', async () => {
     mockFetchEmpty()
     mockFetchEmpty()

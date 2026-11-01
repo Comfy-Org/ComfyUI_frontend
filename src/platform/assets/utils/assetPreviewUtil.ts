@@ -24,7 +24,8 @@ export function isAssetPreviewSupported(): boolean {
 async function fetchAssets(
   params: Record<string, string>
 ): Promise<AssetRecord[]> {
-  const query = new URLSearchParams(params)
+  // Outputs are always the user's own; never match a public catalog asset.
+  const query = new URLSearchParams({ ...params, include_public: 'false' })
   const res = await api.fetchApi(`/assets?${query}`)
   if (!res.ok) return []
   const data = await res.json()
