@@ -94,10 +94,10 @@ test.describe(
       })
     })
 
-    test(
-      'an attachment preview closes before the active turn is cancelled',
-      { tag: '@ui' },
-      async ({ agentPanel, postedMessages, page }) => {
+    test.describe('with an attachment preview', () => {
+      let cancelled: string[]
+
+      test.beforeEach(async ({ page }) => {
         const uploaded: UploadImageResponse = {
           name: ATTACHMENT,
           subfolder: '',
@@ -109,7 +109,7 @@ test.describe(
         await page.route(`**/view?filename=${ATTACHMENT}&type=input`, (route) =>
           route.fulfill({ path: assetPath(ATTACHMENT) })
         )
-        const cancelled: string[] = []
+        cancelled = []
         await page.route(
           '**/api/agent/threads/*/messages/*/cancel',
           (route) => {
@@ -117,29 +117,35 @@ test.describe(
             return route.fallback()
           }
         )
+      })
 
-        await agentPanel.open()
-        await agentPanel.selectWorkflow()
-        await agentPanel.composer.fill(PROMPT)
-        await agentPanel.sendButton.click()
-        await expect.poll(() => postedMessages.length).toBe(1)
-        await expect(agentPanel.stopButton).toBeVisible()
+      test(
+        'an attachment preview closes before the active turn is cancelled',
+        { tag: '@ui' },
+        async ({ agentPanel, postedMessages, page }) => {
+          await agentPanel.open()
+          await agentPanel.selectWorkflow()
+          await agentPanel.composer.fill(PROMPT)
+          await agentPanel.sendButton.click()
+          await expect.poll(() => postedMessages.length).toBe(1)
+          await expect(agentPanel.stopButton).toBeVisible()
 
-        await agentPanel.fileInput.setInputFiles(assetPath(ATTACHMENT))
-        const trigger = agentPanel.previewAssetButton(ATTACHMENT)
-        const preview = agentPanel.assetPreview(ATTACHMENT)
-        await expect(trigger).toBeVisible()
-        await trigger.hover()
-        await expect(preview).toBeVisible()
+          await agentPanel.fileInput.setInputFiles(assetPath(ATTACHMENT))
+          const trigger = agentPanel.previewAssetButton(ATTACHMENT)
+          const preview = agentPanel.assetPreview(ATTACHMENT)
+          await expect(trigger).toBeVisible()
+          await trigger.hover()
+          await expect(preview).toBeVisible()
 
-        await page.keyboard.press('Escape')
-        await expect(preview).toHaveCount(0)
-        expect(cancelled).toHaveLength(0)
-        await expect(agentPanel.stopButton).toBeVisible()
+          await page.keyboard.press('Escape')
+          await expect(preview).toHaveCount(0)
+          expect(cancelled).toHaveLength(0)
+          await expect(agentPanel.stopButton).toBeVisible()
 
-        await page.keyboard.press('Escape')
-        await expect.poll(() => cancelled.length).toBe(1)
-      }
-    )
+          await page.keyboard.press('Escape')
+          await expect.poll(() => cancelled.length).toBe(1)
+        }
+      )
+    })
   }
 )
