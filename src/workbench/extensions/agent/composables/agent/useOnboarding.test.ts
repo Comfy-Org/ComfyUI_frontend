@@ -327,7 +327,11 @@ describe('useOnboarding settings write failures', () => {
     async ({ fail, report }) => {
       fail()
 
-      onboarding.useOnboarding(STEPS, KEY).finish()
+      const tour = onboarding.useOnboarding(STEPS, KEY)
+      await nextTick()
+      expect(storeSetting).not.toHaveBeenCalled()
+
+      tour.finish()
       await vi.waitFor(() =>
         expect(reportFailure).toHaveBeenCalledWith(report, expect.anything())
       )
