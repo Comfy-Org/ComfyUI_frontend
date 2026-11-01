@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { nextTick, reactive } from 'vue'
-import { useCanvasHistory } from './useCanvasHistory'
+import { nextTick } from 'vue'
 
 import { usePanAndZoom } from './usePanAndZoom'
 import { useMaskEditorStore } from './maskEditorStore'
@@ -152,7 +151,7 @@ describe('usePanAndZoom', () => {
         mockStore.maskCtx = context
         mockStore.rgbCtx = context
         mockStore.imgCtx = context
-        mockStore.canvasHistory = reactive(useCanvasHistory(mockStore))
+        mockStore.canvasHistory.clearStates()
         mockStore.canvasContainer = createMockElement()
         Object.defineProperty(canvas, 'clientWidth', {
           get: () => canvas.width * mockStore.zoomRatio
@@ -264,7 +263,7 @@ describe('usePanAndZoom', () => {
       mockStore.maskCtx = context
       mockStore.rgbCtx = context
       mockStore.imgCtx = context
-      mockStore.canvasHistory = reactive(useCanvasHistory(mockStore))
+      mockStore.canvasHistory.clearStates()
       mockStore.canvasHistory.saveInitialState()
       await nextTick()
       mockStore.maskCanvas!.width = 600
