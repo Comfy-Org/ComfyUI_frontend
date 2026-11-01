@@ -2258,7 +2258,6 @@ export class ComfyApp implements IComfyApp {
                   'beforeLoadGraph'
                 )
                 lifecycle.started = true
-                // false: final destination; no later load republishes the hash.
                 const replaceCanvas =
                   useWorkflowService().beforeLoadNewGraph(false)
                 replaceCanvas()
@@ -2455,7 +2454,6 @@ export class ComfyApp implements IComfyApp {
     try {
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
       lifecycleStarted = true
-      // false: no workflow load follows to republish the hash.
       const replaceCanvas = useWorkflowService().beforeLoadNewGraph(false)
       replaceCanvas()
       releaseCaptureSuppression = beginChangeCaptureSuppression()
