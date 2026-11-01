@@ -6,8 +6,9 @@
     v-else
     :class="cn('lg-node-header w-full min-w-0 p-1 text-xs', headerShapeClass)"
     :data-testid="`node-header-${nodeData?.id || ''}`"
-    @pointerdown="recordPressPosition"
-    @pointermove="trackPressDrift"
+    @pointerdown="trackPress"
+    @pointermove="trackPressMove"
+    @pointerup="trackRelease"
     @dblclick="handleDoubleClick"
   >
     <div class="flex min-w-0 items-center justify-between gap-1">
@@ -82,6 +83,14 @@ import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import type {
+  GestureEvent,
+  GestureState
+} from '@/lib/litegraph/src/canvas/reduceGesture'
+import {
+  idleGesture,
+  reduceGesture
+} from '@/lib/litegraph/src/canvas/reduceGesture'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -173,28 +182,46 @@ const handleCollapse = () => {
   emit('collapse')
 }
 
-let pressPosition: { x: number; y: number } | undefined
-let draggedSincePress = false
+let gesture: GestureState = idleGesture
+let releasedAfterDrag = false
 
-const recordPressPosition = (event: PointerEvent) => {
-  pressPosition = { x: event.clientX, y: event.clientY }
-  draggedSincePress = false
+const trackGesture = (gestureEvent: GestureEvent) => {
+  const result = reduceGesture(gesture, gestureEvent)
+  gesture = result.state
+  return result.effects
 }
 
-const exceedsClickDrift = (event: MouseEvent) =>
-  pressPosition !== undefined &&
-  Math.hypot(event.clientX - pressPosition.x, event.clientY - pressPosition.y) >
-    CanvasPointer.maxClickDrift
-
-const trackPressDrift = (event: PointerEvent) => {
-  if (event.buttons & 1 && exceedsClickDrift(event)) draggedSincePress = true
+const trackPress = (event: PointerEvent) => {
+  if (event.button !== 0) return
+  releasedAfterDrag = false
+  gesture = idleGesture
+  trackGesture({
+    type: 'down',
+    position: { x: event.clientX, y: event.clientY },
+    timeStamp: event.timeStamp,
+    policy: CanvasPointer.gesturePolicy()
+  })
 }
 
-const releasedAfterDrag = (event: MouseEvent) =>
-  draggedSincePress || exceedsClickDrift(event)
+const trackPressMove = (event: PointerEvent) => {
+  if (event.buttons & 1)
+    trackGesture({
+      type: 'move',
+      position: { x: event.clientX, y: event.clientY }
+    })
+}
 
-const handleDoubleClick = (event: MouseEvent) => {
-  if (releasedAfterDrag(event)) return
+const trackRelease = (event: PointerEvent) => {
+  if (event.button !== 0) return
+  releasedAfterDrag = trackGesture({
+    type: 'up',
+    position: { x: event.clientX, y: event.clientY },
+    acceptsDoubleClick: false
+  }).includes('endDrag')
+}
+
+const handleDoubleClick = () => {
+  if (releasedAfterDrag) return
   isEditing.value = true
 }
 
