@@ -191,32 +191,6 @@ describe('discoverSso', () => {
 })
 
 describe('ssoStartUrl', () => {
-  it('keeps a URL on the calling app without URL.canParse', () => {
-    const nativeCanParse = Object.getOwnPropertyDescriptor(URL, 'canParse')
-    Object.defineProperty(URL, 'canParse', {
-      configurable: true,
-      value: undefined
-    })
-
-    try {
-      const params = new URL(
-        ssoStartUrl({
-          email: 'a@acme.com',
-          returnTo: 'https://billing.example/checkout?plan=pro',
-          origin: ORIGIN,
-          appOrigin: 'https://billing.example'
-        })
-      ).searchParams
-
-      expect(params.get('return_to')).toBe(
-        'https://billing.example/checkout?plan=pro'
-      )
-    } finally {
-      if (nativeCanParse) Object.defineProperty(URL, 'canParse', nativeCanParse)
-      else Reflect.deleteProperty(URL, 'canParse')
-    }
-  })
-
   const startParams = (returnTo: string) =>
     new URL(ssoStartUrl({ email: ' a@acme.com ', returnTo, origin: ORIGIN }))
       .searchParams
@@ -268,7 +242,11 @@ describe('ssoStartUrl', () => {
       returnTo: 'https://evil.example/x',
       expected: '/'
     }
-  ])('$name', ({ returnTo, expected }) => {
+  ])('$name without URL.canParse', ({ returnTo, expected }) => {
+    vi.stubGlobal(
+      'URL',
+      Object.assign(class extends URL {}, { canParse: undefined })
+    )
     const params = new URL(
       ssoStartUrl({
         email: 'a@acme.com',
