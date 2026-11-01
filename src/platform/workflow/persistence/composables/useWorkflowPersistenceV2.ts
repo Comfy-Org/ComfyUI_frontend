@@ -104,10 +104,8 @@ export function useWorkflowPersistenceV2() {
     const workflowJson = JSON.stringify(graphData)
     const workflowPath = activeWorkflow.path
 
-    // Skip if unchanged
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
 
-    // Save to V2 draft store
     const saved = draftStore.saveDraft(workflowPath, workflowJson, {
       name: activeWorkflow.key,
       isTemporary: activeWorkflow.isTemporary
@@ -120,7 +118,6 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
-    // Update session pointer
     tabState.setActivePath(workflowPath)
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson
