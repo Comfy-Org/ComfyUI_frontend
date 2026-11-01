@@ -110,3 +110,63 @@ export const CustomSizingWithArrow: Story = {
     })
   }
 }
+
+/** Verify both dismissal paths restore focus to the trigger. */
+export const DismissalAndFocusRestore: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(canvasElement.ownerDocument.body)
+    const trigger = canvas.getByRole('button', { name: 'Open popover' })
+
+    await userEvent.click(trigger)
+    await waitFor(() => expect(body.getByRole('dialog')).toBeVisible())
+    await userEvent.click(body.getByRole('button', { name: 'Last action' }))
+    await waitFor(async () => {
+      await expect(body.queryByRole('dialog')).not.toBeInTheDocument()
+      await expect(trigger).toHaveFocus()
+    })
+
+    await userEvent.click(trigger)
+    await waitFor(() => expect(body.getByRole('dialog')).toBeVisible())
+    await userEvent.keyboard('{Escape}')
+    await waitFor(async () => {
+      await expect(body.queryByRole('dialog')).not.toBeInTheDocument()
+      await expect(trigger).toHaveFocus()
+    })
+  }
+}
+
+/** Confirmation layout for reviewing the destructive-action affordance. */
+export const Confirmation: Story = {
+  render: () => ({
+    components: { Button, PopoverContent, PopoverRoot, PopoverTrigger },
+    template: `
+      <div class="p-4">
+        <PopoverRoot>
+          <template #default="{ close }">
+            <PopoverTrigger as-child>
+              <Button variant="secondary">Remove input</Button>
+            </PopoverTrigger>
+            <PopoverContent align="start">
+              <div class="flex w-64 flex-col gap-3">
+                <p class="m-0 text-sm text-foreground">Remove this input from the app?</p>
+                <div class="flex justify-end gap-2">
+                  <Button variant="secondary" @click="close">Cancel</Button>
+                  <Button variant="destructive" @click="close">Remove</Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </template>
+        </PopoverRoot>
+      </div>
+    `
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove input' }))
+    await waitFor(() => expect(body.getByRole('dialog')).toBeVisible())
+    await expect(body.getByRole('button', { name: 'Cancel' })).toBeVisible()
+    await expect(body.getByRole('button', { name: 'Remove', exact: true })).toBeVisible()
+  }
+}
