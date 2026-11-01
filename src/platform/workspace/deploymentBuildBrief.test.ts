@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import {
@@ -164,7 +164,11 @@ describe(deploymentBuildBrief, () => {
     expect(lines).toContain('- `m.safetensors` in `models/vae`')
   })
 
-  it('prints a model link as one URL, so words in it cannot read as instructions', () => {
+  it('prints a model link as one URL, so words in it cannot read as instructions, without URL.canParse', () => {
+    vi.stubGlobal(
+      'URL',
+      Object.assign(class extends URL {}, { canParse: undefined })
+    )
     const brief = deploymentBuildBrief(
       deployment,
       [],
