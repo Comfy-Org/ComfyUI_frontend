@@ -2,6 +2,15 @@ import { describe, expect, it, vi } from 'vitest'
 import type { WatchHandle } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAboutPanelStore } from '@/stores/aboutPanelStore'
+import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
+import { useWidgetStore } from '@/stores/widgetStore'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
@@ -801,5 +810,161 @@ describe('registerExtension auth hooks', () => {
     expect(extension.onAuthTokenRefreshed).toHaveBeenCalledOnce()
     expect(extension.onAuthUserLogout).toHaveBeenCalledOnce()
     expect(useExtensionStore().isExtensionInstalled('auth-hooks')).toBe(true)
+  })
+})
+
+describe('a disabled extension', () => {
+  function extension(name: string) {
+    const getCustomWidgets = vi.fn(async () => ({}))
+    const onAuthUserResolved = vi.fn()
+    const tab: NonNullable<ComfyExtension['bottomPanelTabs']>[number] = {
+      id: `${name}.tab`,
+      type: 'custom',
+      render: () => {}
+    }
+    const topbarBadge = { text: `${name} topbar` }
+    const aboutBadge = { label: `${name} about`, url: 'https://x', icon: 'i' }
+    const ext: ComfyExtension = {
+      name,
+      commands: [{ id: `${name}.cmd`, function: vi.fn() }],
+      keybindings: [{ commandId: `${name}.cmd`, combo: { key: 'k' } }],
+      menuCommands: [{ path: ['Extensions'], commands: [`${name}.cmd`] }],
+      settings: [
+        {
+          id: 'Comfy.Validation.Workflows',
+          name: 'A setting',
+          type: 'boolean',
+          defaultValue: false
+        }
+      ],
+      bottomPanelTabs: [tab],
+      actionBarButtons: [{ icon: 'icon', onClick: vi.fn() }],
+      topbarBadges: [topbarBadge],
+      aboutPageBadges: [aboutBadge],
+      getCustomWidgets,
+      onAuthUserResolved
+    }
+    return { ext, tab, topbarBadge, aboutBadge, onAuthUserResolved }
+  }
+
+  function afterCore(disabled: string[]) {
+    useExtensionStore().captureCoreExtensions()
+    useExtensionStore().loadDisabledExtensionNames(disabled)
+  }
+
+  function resolveUser() {
+    const { onUserResolved } = vi.mocked(useCurrentUser())
+    for (const [callback] of onUserResolved.mock.calls) callback({ id: 'u' })
+  }
+
+  it('adds no commands, keybindings, menu entries, panels, buttons, badges or auth hooks when third-party', async () => {
+    afterCore(['off'])
+    const off = extension('off')
+
+    useExtensionService().registerExtension(off.ext)
+    await Promise.resolve()
+    resolveUser()
+
+    expect(useExtensionStore().isExtensionInstalled('off')).toBe(true)
+    expect(useCommandStore().isRegistered('off.cmd')).toBe(false)
+    expect(useKeybindingStore().getKeybindingByCommandId('off.cmd')).toBe(
+      undefined
+    )
+    expect(useMenuItemStore().menuItems).toEqual([])
+    expect(useBottomPanelStore().panels.terminal.tabs).toEqual([])
+    expect(useActionBarButtonStore().buttons).toEqual([])
+    expect(useTopbarBadgeStore().badges).not.toContainEqual(off.topbarBadge)
+    expect(useAboutPanelStore().badges).not.toContainEqual(off.aboutBadge)
+    expect(off.onAuthUserResolved).not.toHaveBeenCalled()
+  })
+
+  it('keeps its setting definitions and widget types, which saved workflows and core code read', async () => {
+    afterCore(['off'])
+    const widget = () => undefined
+
+    useExtensionService().registerExtension({
+      ...extension('off').ext,
+      getCustomWidgets: async () => ({ DISABLED_EXTENSION_WIDGET: widget })
+    })
+    await Promise.resolve()
+
+    expect(
+      useSettingStore().settingsById['Comfy.Validation.Workflows']
+    ).toBeDefined()
+    expect(useWidgetStore().widgets.get('DISABLED_EXTENSION_WIDGET')).toBe(
+      widget
+    )
+  })
+
+  it('keeps everything for a disabled core extension, whose commands core UI calls', async () => {
+    useExtensionStore().loadDisabledExtensionNames(['core.off'])
+    const core = extension('core.off')
+
+    useExtensionService().registerExtension(core.ext)
+    useExtensionStore().captureCoreExtensions()
+    await Promise.resolve()
+
+    expect(useCommandStore().isRegistered('core.off.cmd')).toBe(true)
+    expect(useActionBarButtonStore().buttons).toHaveLength(1)
+    expect(useTopbarBadgeStore().badges).toContainEqual(core.topbarBadge)
+    expect(useAboutPanelStore().badges).toContainEqual(core.aboutBadge)
+  })
+
+  it('keeps everything for an enabled third-party extension', async () => {
+    afterCore(['off'])
+    const on = extension('on')
+
+    useExtensionService().registerExtension(on.ext)
+    await Promise.resolve()
+    resolveUser()
+
+    expect(useCommandStore().isRegistered('on.cmd')).toBe(true)
+    expect(
+      useKeybindingStore().getKeybindingByCommandId('on.cmd')
+    ).toBeDefined()
+    expect(useMenuItemStore().menuItems).not.toEqual([])
+    expect(useBottomPanelStore().panels.terminal.tabs).toEqual([on.tab])
+    expect(useActionBarButtonStore().buttons).toHaveLength(1)
+    expect(useTopbarBadgeStore().badges).toContainEqual(on.topbarBadge)
+    expect(useAboutPanelStore().badges).toContainEqual(on.aboutBadge)
+    expect(on.onAuthUserResolved).toHaveBeenCalledOnce()
+  })
+
+  it('lets an enabled extension run its own command while its settings and widgets initialize', async () => {
+    afterCore(['off'])
+    const run = vi.fn()
+    const execute = () => useCommandStore().execute('on.cmd')
+
+    useExtensionService().registerExtension({
+      name: 'on',
+      commands: [{ id: 'on.cmd', function: run }],
+      settings: [
+        {
+          id: 'Comfy.Validation.Workflows',
+          name: 'A setting',
+          type: 'boolean',
+          defaultValue: false,
+          onChange: execute
+        }
+      ],
+      getCustomWidgets: async () => {
+        await execute()
+        return {}
+      }
+    })
+    await Promise.resolve()
+
+    expect(run).toHaveBeenCalledTimes(2)
+  })
+
+  it('unregisters on dispose like any other extension', () => {
+    afterCore(['off'])
+    const dispose = useExtensionService().registerExtension(
+      extension('off').ext
+    )
+
+    dispose()
+
+    expect(useExtensionStore().isExtensionInstalled('off')).toBe(false)
   })
 })

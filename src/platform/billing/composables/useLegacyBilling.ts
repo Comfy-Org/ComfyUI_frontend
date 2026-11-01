@@ -20,6 +20,7 @@ import type {
   BillingActions,
   BillingPortalOutcome,
   BillingState,
+  BillingStatusReadOptions,
   SubscriptionInfo
 } from './types'
 
@@ -211,28 +212,35 @@ export function useLegacyBilling(): BillingState & BillingActions {
     if (!result.ok) authActions.reportError(result.cause)
   }
 
-  async function readStatus(): Promise<StatusReadResult> {
+  async function readStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<StatusReadResult> {
     const requestId = ++latestStatusReadId
     isLoading.value = true
     error.value = null
     try {
-      const status = await legacyFetchStatusDirect()
+      const status = await legacyFetchStatusDirect(options)
       if (requestId === latestStatusReadId)
         statusReadAuthoritative.value = status?.billing_rail !== undefined
       return { ok: true }
     } catch (cause) {
-      if (requestId === latestStatusReadId)
+      if (requestId === latestStatusReadId) {
         statusReadAuthoritative.value = false
-      error.value =
-        cause instanceof Error ? cause.message : 'Failed to fetch subscription'
+        error.value =
+          cause instanceof Error
+            ? cause.message
+            : 'Failed to fetch subscription'
+      }
       return { ok: false, cause }
     } finally {
-      isLoading.value = false
+      if (requestId === latestStatusReadId) isLoading.value = false
     }
   }
 
-  async function fetchStatus(): Promise<void> {
-    const result = await readStatus()
+  async function fetchStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<void> {
+    const result = await readStatus(options)
     if (!result.ok) throw result.cause
   }
 

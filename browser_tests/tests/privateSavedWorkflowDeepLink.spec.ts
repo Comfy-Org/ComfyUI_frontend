@@ -109,6 +109,19 @@ async function mockPrivateWorkflow(page: Page, status = 200) {
   return state
 }
 
+const savedFileReloadTest = test.extend<{
+  privateWorkflow: Awaited<ReturnType<typeof mockPrivateWorkflow>>
+}>({
+  privateWorkflow: async ({ page }, use) => {
+    await use(await mockPrivateWorkflow(page))
+  },
+  initialUrl: async ({ privateWorkflow }, use) => {
+    await use(
+      `/?workspace=ws-personal&savedFile=${privateWorkflow.snapshot.id}`
+    )
+  }
+})
+
 test.describe(
   'Private saved workflow deep link',
   { tag: ['@cloud', '@canvas'] },
@@ -203,49 +216,49 @@ test.describe(
       expect(state.pathReads).toBe(0)
     })
 
-    test('restores same-ID dirty saved state after a server rename without reading a replacement path', async ({
-      comfyPage
-    }) => {
-      const state = await mockPrivateWorkflow(comfyPage.page)
-      const link = new URL(
-        `/?workspace=ws-personal&savedFile=${WORKFLOW_ID}`,
-        comfyPage.url
-      ).toString()
-      await comfyPage.page.goto(link)
-      await comfyPage.waitForAppReady()
-      await expect
-        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
-        .toBe(WORKFLOW_PATH)
-      const before = await comfyPage.nodeOps.getGraphNodesCount()
-      await (await comfyPage.nodeOps.getNodeRefByType('KSampler')).delete()
-      await expect
-        .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
-        .toBe(true)
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate((id) => {
-            return Object.keys(localStorage)
-              .filter((key) => key.startsWith('Comfy.Workflow.DraftIndex.v2:'))
-              .some((key) => {
-                const index: unknown = JSON.parse(
-                  localStorage.getItem(key) ?? 'null'
+    savedFileReloadTest(
+      'restores same-ID dirty saved state after a server rename without reading a replacement path',
+      async ({ comfyPage, privateWorkflow: state }) => {
+        const link = new URL(
+          `/?workspace=ws-personal&savedFile=${WORKFLOW_ID}`,
+          comfyPage.url
+        ).toString()
+        await expect
+          .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+          .toBe(WORKFLOW_PATH)
+        const before = await comfyPage.nodeOps.getGraphNodesCount()
+        await (await comfyPage.nodeOps.getNodeRefByType('KSampler')).delete()
+        await expect
+          .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+          .toBe(true)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate((id) => {
+              return Object.keys(localStorage)
+                .filter((key) =>
+                  key.startsWith('Comfy.Workflow.DraftIndex.v2:')
                 )
-                return JSON.stringify(index).includes(id)
-              })
-          }, WORKFLOW_ID)
-        )
-        .toBe(true)
-      state.snapshot.path = 'workflows/renamed-private.json'
-      await comfyPage.page.goto(link)
-      await comfyPage.waitForAppReady()
-      await expect
-        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
-        .toBe(state.snapshot.path)
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(before - 1)
-      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(true)
-      expect(state.pathReads).toBe(0)
-    })
+                .some((key) => {
+                  const index: unknown = JSON.parse(
+                    localStorage.getItem(key) ?? 'null'
+                  )
+                  return JSON.stringify(index).includes(id)
+                })
+            }, WORKFLOW_ID)
+          )
+          .toBe(true)
+        state.snapshot.path = 'workflows/renamed-private.json'
+        await comfyPage.page.goto(link)
+        await comfyPage.waitForAppReady()
+        await expect
+          .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+          .toBe(state.snapshot.path)
+        await expect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBe(before - 1)
+        expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(true)
+        expect(state.pathReads).toBe(0)
+      }
+    )
   }
 )

@@ -52,6 +52,7 @@ import {
   persistPendingSubscriptionCheckoutAttempt
 } from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
 import type { ReportedCheckoutAttemptInput } from '@/platform/billing/subscription/utils/subscriptionCheckoutUtil'
+import type { BillingStatusReadOptions } from '@/platform/billing/composables/types'
 import {
   missingCheckoutUrlError,
   runReportedCheckoutAttempt
@@ -883,18 +884,31 @@ function useSubscriptionInternal() {
     if (inFlightStatusRead?.promise === fetchPromise) inFlightStatusRead = null
   }
 
-  function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
+  const sharedStatusRead = (
+    ownerId: string | null,
+    workspaceId: string | null,
+    pendingAttemptId: string | null
+  ): Promise<BillingStatusResponse | null> | null =>
+    inFlightStatusRead?.ownerId === ownerId &&
+    inFlightStatusRead.workspaceId === workspaceId &&
+    inFlightStatusRead.pendingAttemptId === pendingAttemptId
+      ? inFlightStatusRead.promise
+      : null
+
+  function fetchSubscriptionStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<BillingStatusResponse | null> {
     const ownerId = authStore.userId ?? null
     const workspaceId = workspaceStore.activeWorkspaceId
     const pendingAttemptId =
       getPendingSubscriptionCheckoutAttempt()?.attempt_id ?? null
     observeStatusScope(ownerId, workspaceId)
-    if (
-      inFlightStatusRead?.ownerId === ownerId &&
-      inFlightStatusRead.workspaceId === workspaceId &&
-      inFlightStatusRead.pendingAttemptId === pendingAttemptId
-    ) {
-      return inFlightStatusRead.promise
+    const shared = sharedStatusRead(ownerId, workspaceId, pendingAttemptId)
+    if (shared) {
+      if (!options?.fresh) return shared
+      return shared
+        .catch(() => null)
+        .then(() => fetchSubscriptionStatus(options))
     }
 
     const sequence = ++nextStatusFetchSequence
