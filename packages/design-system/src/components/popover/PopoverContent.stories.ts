@@ -174,5 +174,21 @@ export const Confirmation: Story = {
     await waitFor(() => expect(body.getByRole('dialog')).toBeVisible())
     await expect(body.getByRole('button', { name: 'Cancel' })).toBeVisible()
     await expect(body.getByRole('button', { name: 'Remove' })).toBeVisible()
+
+    await userEvent.click(body.getByRole('button', { name: 'Cancel' }))
+    await waitFor(() =>
+      expect(body.queryByRole('dialog')).not.toBeInTheDocument()
+    )
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove input' }))
+    await waitFor(() => expect(body.getByRole('dialog')).toBeVisible())
+    await userEvent.click(body.getByRole('button', { name: 'Remove' }))
+    await waitFor(() =>
+      expect(body.queryByRole('dialog')).not.toBeInTheDocument()
+    )
+
+    // Keep the confirmation open for Storybook's visual snapshot.
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove input' }))
+    await waitFor(() => expect(body.getByRole('dialog')).toBeVisible())
   }
 }
