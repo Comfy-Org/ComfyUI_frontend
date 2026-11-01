@@ -1460,30 +1460,32 @@ describe('errorMessageResolver', () => {
     })
   })
 
-  it('builds the timeout limits from the pricing-table durations', () => {
-    const { t } = i18n.global
-    const resolved = resolveRunErrorMessage({
-      kind: 'execution',
-      nodeDisplayName: 'KSampler',
-      error: executionError(
-        'ServiceError',
-        'Job execution time exceeded maximum limit'
-      )
+  it('follows the pricing-table durations when they change', () => {
+    const original = enMessages.subscription.maxDuration
+    i18n.global.mergeLocaleMessage('en', {
+      subscription: {
+        maxDuration: { free: '7 min', pro: '2 hr', standard: '45 min' }
+      }
     })
-    const raw = enMessages.errorCatalog.runtimeErrors.timeout.message
+    try {
+      const resolved = resolveRunErrorMessage({
+        kind: 'execution',
+        nodeDisplayName: 'KSampler',
+        error: executionError(
+          'ServiceError',
+          'Job execution time exceeded maximum limit'
+        )
+      })
 
-    expect(raw).toContain('@:subscription.maxDuration.free')
-    expect(raw).toContain('@:subscription.maxDuration.pro')
-    expect(resolved.displayMessage).toContain(
-      `${t('subscription.maxDuration.free')} on Free`
-    )
-    expect(resolved.displayMessage).toContain(
-      `${t('subscription.maxDuration.pro')} on Pro`
-    )
-    expect(resolved.displayMessage).toContain(
-      `${t('subscription.maxDuration.standard')} on all other plans`
-    )
-    expect(resolved.toastMessage).toBe(resolved.displayMessage)
+      expect(resolved.displayMessage).toContain(
+        '(7 min on Free, 2 hr on Pro, 45 min on all other plans)'
+      )
+      expect(resolved.toastMessage).toBe(resolved.displayMessage)
+    } finally {
+      i18n.global.mergeLocaleMessage('en', {
+        subscription: { maxDuration: original }
+      })
+    }
   })
 
   it('does not over-match runtime error lookalikes', () => {
