@@ -4865,7 +4865,6 @@
     "cancelDialog": {
       "endOfBillingPeriod": "您的計費週期結束時",
       "failed": "取消訂閱失敗",
-      "finishOnStripe": "您的訂閱尚未取消。請在剛開啟的 Stripe 頁面完成取消程序。在此之前，您的方案將照常續訂。",
       "workspaceChanged": "您的使用中工作區已變更。請切換回原本的工作區後再試一次。"
     },
     "cancelFlow": {

@@ -9,14 +9,7 @@
     :close-disabled="isClosingBlocked"
     :on-close="onClose"
   >
-    <p
-      v-if="isAwaitingStripe"
-      class="m-0 text-sm/5 text-muted-foreground"
-      role="status"
-    >
-      {{ $t('subscription.cancelDialog.finishOnStripe') }}
-    </p>
-    <template v-else-if="!didCancelSucceed">
+    <template v-if="!didCancelSucceed">
       <p class="m-0 text-sm/5 text-muted-foreground">{{ description }}</p>
       <p class="m-0 text-sm/5">
         {{
@@ -50,14 +43,6 @@
       >
         {{ $t('subscription.cancelFlow.done') }}
       </Button>
-      <Button
-        v-else-if="isAwaitingStripe"
-        variant="secondary"
-        size="lg"
-        @click="onClose"
-      >
-        {{ $t('g.close') }}
-      </Button>
       <template v-else>
         <Button
           variant="textonly"
@@ -81,15 +66,13 @@
 </template>
 
 <script setup lang="ts">
-import { defaultWindow, useEventListener, useThrottleFn } from '@vueuse/core'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@comfyorg/design-system/button/Button'
-import type { CancelRail } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import CancellationStepLayout from '@/platform/billing/subscription/components/CancellationStepLayout.vue'
@@ -122,8 +105,13 @@ const {
 const { t, n } = useI18n()
 const dialogStore = useDialogStore()
 const toast = useToast()
-const { cancelSubscription, fetchStatus, subscription, tier } =
-  useBillingContext()
+const {
+  cancelSubscription,
+  fetchStatus,
+  subscription,
+  tier,
+  whenRoutingKnown
+} = useBillingContext()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { canCancel } = useBillingCapabilities()
 const { permissions } = useBillingUI()
@@ -132,11 +120,6 @@ const telemetry = useTelemetry()
 
 const isLoading = ref(false)
 const didCancelSucceed = ref(false)
-const isAwaitingStripe = ref(false)
-// Last seen `isCancelled` (null until the status loads). A cancel only counts
-// as observed when it turns true after a loaded, not-cancelled reading.
-let lastCancelled: boolean | null = null
-let cancelObserved = false
 const didScopeAbort = ref(false)
 const cancelReport = createCancelFlowReporter(
   telemetry,
@@ -170,9 +153,7 @@ function reportAbandoned() {
   cancelReport.abandoned()
 }
 
-let unmounted = false
 onUnmounted(() => {
-  unmounted = true
   if (didCancelSucceed.value || didScopeAbort.value || isLoading.value) return
   reportAbandoned()
 })
@@ -243,32 +224,6 @@ const lostFeatures = computed(() => {
   ]
 })
 
-function completeObservedCancel() {
-  if (!cancelObserved || didCancelSucceed.value) return
-  if (!isScopeCurrent()) return abortForScopeChange()
-  didCancelSucceed.value = true
-  isAwaitingStripe.value = false
-  telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
-  cancelReport.confirmed({ operationFollows: false })
-}
-
-watch(
-  () => (subscription.value ? !!subscription.value.isCancelled : null),
-  (cancelled) => {
-    if (cancelled === null) return
-    if (cancelled && lastCancelled === false) cancelObserved = true
-    if (!cancelled) cancelObserved = false
-    lastCancelled = cancelled
-    if (cancelObserved && isAwaitingStripe.value) completeObservedCancel()
-  }
-)
-
-// The shared watcher gives up after a few minutes; keep checking on return from Stripe.
-const refreshOnFocus = useThrottleFn(() => {
-  if (isAwaitingStripe.value) fetchStatus().catch(() => {})
-}, 10_000)
-useEventListener(defaultWindow, 'focus', () => void refreshOnFocus())
-
 const isClosingBlocked = computed(
   () => isLoading.value && !didCancelSucceed.value
 )
@@ -293,8 +248,8 @@ function lacksWorkspaceCancelPermission() {
   )
 }
 
-function reportCancelFailure(error: unknown) {
-  if (!shouldUseWorkspaceBilling.value) {
+function reportCancelFailure(error: unknown, confirmedBeforeCall: boolean) {
+  if (!confirmedBeforeCall) {
     telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
     cancelReport.confirmed({ operationFollows: false })
     cancelReport.failed(categorizeBillingApiError(error))
@@ -310,16 +265,6 @@ function reportWorkspaceConfirmed() {
   cancelReport.confirmed({ operationFollows: true })
 }
 
-function awaitStripeCancel() {
-  // Dismissed while the portal call was pending: nothing was observed and no
-  // other terminal event will fire.
-  if (unmounted) return reportAbandoned()
-  isAwaitingStripe.value = true
-  isLoading.value = false
-  // The cancel may have been observed while the portal call was pending.
-  completeObservedCancel()
-}
-
 async function finishWorkspaceCancel() {
   didCancelSucceed.value = true
   try {
@@ -330,15 +275,13 @@ async function finishWorkspaceCancel() {
   isLoading.value = false
 }
 
-function handleCancelError(error: unknown) {
+function handleCancelError(error: unknown, confirmedBeforeCall: boolean) {
   if (!isScopeCurrent()) return abortForScopeChange()
-  reportCancelFailure(error)
+  reportCancelFailure(error, confirmedBeforeCall)
 }
 
-// The rail comes from the cancel call itself; current routing may have flipped since.
-async function finishCancel(rail: CancelRail, confirmedBeforeCall: boolean) {
+async function finishCancel(confirmedBeforeCall: boolean) {
   if (!isScopeCurrent()) return abortForScopeChange()
-  if (rail === 'legacy') return awaitStripeCancel()
   if (!confirmedBeforeCall) reportWorkspaceConfirmed()
   await finishWorkspaceCancel()
 }
@@ -347,19 +290,25 @@ async function onConfirmCancel() {
   if (!isScopeCurrent()) return abortForScopeChange()
   if (lacksWorkspaceCancelPermission()) return
 
-  // The legacy rail only opens the Stripe portal, so it reports `confirmed`
-  // once the cancellation is observed instead of on click.
   const confirmedBeforeCall = shouldUseWorkspaceBilling.value
   if (confirmedBeforeCall) reportWorkspaceConfirmed()
-  lastCancelled = subscription.value ? !!subscription.value.isCancelled : null
-  cancelObserved = false
   isLoading.value = true
-  let rail: CancelRail
   try {
-    rail = await cancelSubscription(isScopeCurrent)
+    if (!confirmedBeforeCall) {
+      if (!(await whenRoutingKnown())) {
+        isLoading.value = false
+        return
+      }
+      if (!isScopeCurrent()) return abortForScopeChange()
+      if (lacksWorkspaceCancelPermission()) {
+        isLoading.value = false
+        return
+      }
+    }
+    await cancelSubscription(isScopeCurrent)
   } catch (error) {
-    return handleCancelError(error)
+    return handleCancelError(error, confirmedBeforeCall)
   }
-  await finishCancel(rail, confirmedBeforeCall)
+  await finishCancel(confirmedBeforeCall)
 }
 </script>
