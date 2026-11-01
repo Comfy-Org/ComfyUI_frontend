@@ -29,6 +29,7 @@
       :credits="creditsModel"
       :selected-preset
       :max-amount="MAX_AMOUNT"
+      :max-credits="usdToCredits(MAX_AMOUNT)"
       :plan-credit-copy
       @preset="handlePresetClick"
       @pay-amount="handlePayAmountChange"
