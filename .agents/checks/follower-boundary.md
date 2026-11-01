@@ -132,7 +132,10 @@ Flag:
   requests authenticate through `fetchApi` alone and the socket takes
   `api.socketAuthParams()` (no socket when no one is signed in); adding the user's own
   header there moves a request out of its workspace. Off-cloud, REST requests carry
-  `getUserAuthHeader()` and the socket carries the same credential as `?token=`. Flag
+  the `getWorkspaceAuthToken()` bearer (an API-key session sends its key) and the socket
+  carries the same credential as `?token=`. A signed-in session without a workspace token
+  fails closed (`getWorkspaceAuthTokenOrThrow()`), as `queuePrompt` does; flag any fallback
+  to `getUserAuthHeader()`. Flag
   credential resolution outside `agentAuth.ts`, or any branch that leaves Local or
   Desktop unauthenticated: they are authenticated product surfaces, not
   "anonymous / model-key-only".
