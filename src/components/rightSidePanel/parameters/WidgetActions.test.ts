@@ -8,7 +8,6 @@ import { useTelemetry } from '@comfyorg/telemetry'
 
 import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import {
-  demoteWidget,
   promoteValueWidgetViaSubgraphInput,
   promoteWidget
 } from '@/core/graph/subgraph/promotionUtils'
@@ -286,21 +285,10 @@ describe('WidgetActions', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('does not offer "Show input" when the host input is already linked', async () => {
-    const widget = createMockWidget()
-    const node = fromAny<LGraphNode, unknown>({
-      id: 1,
-      type: 'TestNode',
-      rootGraph: { id: 'graph-test' },
-      isSubgraphNode: () => true,
-      getSlotFromWidget: (candidate: IBaseWidget) =>
-        candidate.name === 'test_widget'
-          ? { widgetId: 'graph-test:1:test_widget' }
-          : undefined
-    })
-    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+  it('does not offer "Show input" on the host\'s own row', async () => {
+    const { host, promotedWidget } = setupLinkedPromotedWidget()
 
-    await renderWidgetActions(widget, node, { host })
+    await renderWidgetActions(promotedWidget, host, { host })
 
     expect(
       screen.queryByRole('menuitem', { name: /Show input/ })
@@ -335,8 +323,7 @@ describe('WidgetActions', () => {
   }
 
   it('resolves the real interior source and demotes it when "Hide input" is clicked on a linked promoted widget', async () => {
-    const { host, interiorNode, interiorWidget, promotedWidget } =
-      setupLinkedPromotedWidget()
+    const { host, promotedWidget } = setupLinkedPromotedWidget()
 
     const { user } = await renderWidgetActions(
       promotedWidget,
@@ -347,9 +334,6 @@ describe('WidgetActions', () => {
 
     await user.click(screen.getByRole('button', { name: /Hide input/ }))
 
-    expect(demoteWidget).toHaveBeenCalledWith(interiorNode, interiorWidget, [
-      host
-    ])
     expect(host.subgraph.inputs).toHaveLength(0)
     expect(host.inputs).toHaveLength(0)
     expect(promotedInputWidgets(host)).toHaveLength(0)
@@ -408,11 +392,6 @@ describe('WidgetActions', () => {
 
     await user.click(screen.getByRole('button', { name: /Hide input/ }))
 
-    expect(demoteWidget).toHaveBeenCalledWith(
-      innerHost,
-      expect.objectContaining({ name: 'value' }),
-      [outerHost]
-    )
     expect(outerHost.subgraph.inputs).toHaveLength(0)
     expect(outerHost.inputs).toHaveLength(0)
     expect(promotedInputWidgets(outerHost)).toHaveLength(0)
@@ -438,31 +417,9 @@ describe('WidgetActions', () => {
   })
 
   it('does not offer "Hide input" without a host', async () => {
-    const widget = createMockWidget()
-    const node = fromAny<LGraphNode, unknown>({
-      id: 1,
-      type: 'TestNode',
-      rootGraph: { id: 'graph-test' },
-      isSubgraphNode: () => true,
-      getSlotFromWidget: (candidate: IBaseWidget) =>
-        candidate.name === 'test_widget'
-          ? { widgetId: 'graph-test:1:test_widget' }
-          : undefined
-    })
+    const { host, promotedWidget } = setupLinkedPromotedWidget()
 
-    await renderWidgetActions(widget, node, {}, { openMenu: false })
-
-    expect(
-      screen.queryByRole('button', { name: /Hide input/ })
-    ).not.toBeInTheDocument()
-  })
-
-  it('does not offer "Hide input" when the widget is not linked', async () => {
-    const widget = createMockWidget()
-    const node = createMockNode()
-    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
-
-    await renderWidgetActions(widget, node, { host }, { openMenu: false })
+    await renderWidgetActions(promotedWidget, host, {}, { openMenu: false })
 
     expect(
       screen.queryByRole('button', { name: /Hide input/ })

@@ -107,13 +107,6 @@ interface ImmediatePromotedWidgetSource {
   sourceWidget: IBaseWidget
 }
 
-/**
- * Resolves a promoted widget's immediate source: the node/widget pair one
- * level into the subgraph, matching how {@link findHostInputForPromotion}
- * keys a host input. For a promotion nested through another `SubgraphNode`,
- * this is that nested node and its own promoted input widget — not the
- * fully-resolved concrete widget several levels deeper.
- */
 export function resolveImmediatePromotedWidgetSource(
   node: LGraphNode,
   widget: IBaseWidget

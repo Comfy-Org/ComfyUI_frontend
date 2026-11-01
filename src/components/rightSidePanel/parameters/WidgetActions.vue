@@ -44,7 +44,7 @@ const isLinked = computed(() => {
   if (!node.isSubgraphNode()) return false
   return inputForWidget(node, widget)?.widgetId != null
 })
-const canShowInput = computed(() => host != null && !isLinked.value)
+const canShowInput = computed(() => host != null && node !== host)
 const canHideInput = computed(
   () => host != null && node === host && isLinked.value
 )

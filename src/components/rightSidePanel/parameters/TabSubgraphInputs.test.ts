@@ -1,13 +1,11 @@
-import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { h, nextTick } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import {
-  demoteWidget,
-  promoteValueWidgetViaSubgraphInput,
-  promoteWidget
-} from '@/core/graph/subgraph/promotionUtils'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -23,15 +21,39 @@ import TabSubgraphInputs from './TabSubgraphInputs.vue'
 
 vi.mock(import('@/services/litegraphService'))
 
+const { StubWidgetComponent } = vi.hoisted(() => ({
+  StubWidgetComponent: {
+    name: 'StubWidget',
+    props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
+    template: '<button type="button" />'
+  }
+}))
+
+vi.mock(
+  import('@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'),
+  () => ({
+    getComponent: vi.fn(() => StubWidgetComponent),
+    shouldExpand: () => false
+  })
+)
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
+      g: {
+        rename: 'Rename',
+        more: 'More'
+      },
       rightSidePanel: {
         inputs: 'Inputs',
         inputsNone: 'None',
-        advancedInputs: 'Advanced Inputs'
+        advancedInputs: 'Advanced Inputs',
+        showInput: 'Show input',
+        hideInput: 'Hide input',
+        addFavorite: 'Favorite',
+        removeFavorite: 'Unfavorite'
       }
     }
   }
@@ -184,56 +206,87 @@ describe('TabSubgraphInputs', () => {
     expect(seedRow.widget.value).toBe(100)
   })
 
-  it('shows a widget in Advanced Inputs immediately after Hide input, and lets it be re-shown', async () => {
-    const { host, sourceNode } = buildHostWithPromotedSeed()
-    const seedWidget = sourceNode.widgets?.find((w) => w.name === 'seed')
-    if (!seedWidget) throw new Error('Missing seed widget')
+  function buildNestedHostWithPromotedSeed(): {
+    outerHost: SubgraphNode
+    innerHost: SubgraphNode
+  } {
+    const innerSubgraph = createTestSubgraph()
+    const innerHost = createTestSubgraphNode(innerSubgraph)
+    const sourceNode = new LGraphNode('Sampler')
+    const input = sourceNode.addInput('seed', 'INT')
+    const seedWidget = sourceNode.addWidget('number', 'seed', 42, () => {})
+    input.widget = { name: seedWidget.name }
+    innerSubgraph.add(sourceNode)
+    promoteValueWidgetViaSubgraphInput(innerHost, sourceNode, seedWidget)
 
-    const AdvancedAwareSectionWidgetsStub = {
-      props: {
-        widgets: { type: Array, default: () => [] },
-        showNodeName: { type: Boolean, default: false }
-      },
-      setup(props: Record<string, unknown>) {
-        return () =>
-          h(
-            'div',
-            {
-              'data-testid': props.showNodeName
-                ? 'advanced-inputs-section'
-                : 'main-inputs-section'
-            },
-            (props.widgets as { widget: IBaseWidget }[]).map((row) =>
-              h('span', row.widget.name)
-            )
-          )
-      }
-    }
+    const outerSubgraph = createTestSubgraph()
+    outerSubgraph.add(innerHost)
+    const outerHost = createTestSubgraphNode(outerSubgraph)
+    const graph = outerHost.graph as LGraph
+    graph.add(outerHost)
+
+    const innerHostInput = innerHost.inputs.at(0)
+    if (!innerHostInput)
+      throw new Error('Expected a promoted input on inner host')
+    const nestedPromotedWidget = promotedInputWidgets(innerHost).find(
+      (widget) => widget.name === innerHostInput.name
+    )
+    if (!nestedPromotedWidget)
+      throw new Error('Expected a promoted widget on inner host')
+
+    promoteValueWidgetViaSubgraphInput(
+      outerHost,
+      innerHost,
+      nestedPromotedWidget
+    )
+
+    return { outerHost, innerHost }
+  }
+
+  it('hides a two-level nested promotion via Hide input and restores it via Show input', async () => {
+    const { outerHost } = buildNestedHostWithPromotedSeed()
 
     render(TabSubgraphInputs, {
-      props: { node: host },
+      props: { node: outerHost },
       global: {
         plugins: [i18n],
         stubs: {
-          SectionWidgets: AdvancedAwareSectionWidgetsStub,
-          PanelSearchHeader: true,
-          CollapseToggleButton: true
+          CollapseToggleButton: true,
+          EditableText: {
+            props: ['modelValue'],
+            template: '<span>{{ modelValue }}</span>'
+          }
         }
       }
     })
 
-    expect(screen.queryByTestId('advanced-inputs-section')).toBeNull()
+    expect(
+      screen.getByTestId('widget-actions-hide-input-button')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Advanced Inputs')).not.toBeInTheDocument()
 
-    demoteWidget(sourceNode, seedWidget, [host])
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('widget-actions-hide-input-button'))
     await nextTick()
 
-    expect(screen.getByTestId('advanced-inputs-section').textContent).toContain(
-      'seed'
+    expect(
+      screen.queryByTestId('widget-actions-hide-input-button')
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByText('Advanced Inputs'))
+
+    const advancedRowMenuButton = screen.getByTestId(
+      'widget-actions-menu-button'
     )
+    await user.click(advancedRowMenuButton)
 
-    promoteWidget(sourceNode, seedWidget, [host])
+    const menu = await screen.findByRole('menu')
+    await user.click(within(menu).getByRole('menuitem', { name: /Show input/ }))
     await nextTick()
 
-    expect(screen.queryByTestId('advanced-inputs-section')).toBeNull()
+    expect(
+      screen.getByTestId('widget-actions-hide-input-button')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Advanced Inputs')).not.toBeInTheDocument()
   })
 })

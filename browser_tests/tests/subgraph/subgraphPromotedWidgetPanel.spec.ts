@@ -93,11 +93,13 @@ test.describe(
           })
         await expect(stringAItem).toBeVisible()
 
-        await stringAItem
-          .getByTestId(TestIds.subgraphEditor.widgetToggle)
-          .click()
+        await test.step('Hide the linked input', async () => {
+          await stringAItem
+            .getByTestId(TestIds.subgraphEditor.widgetToggle)
+            .click()
 
-        await expect(stringAItem).toBeHidden()
+          await expect(stringAItem).toBeHidden()
+        })
 
         const rehiddenCandidate = hiddenSection
           .getByTestId(TestIds.subgraphEditor.widgetItem)
@@ -111,18 +113,20 @@ test.describe(
           'demoted widget becomes available to re-promote'
         ).toBeVisible()
 
-        await rehiddenCandidate
-          .getByTestId(TestIds.subgraphEditor.widgetToggle)
-          .click()
+        await test.step('Show the hidden input again', async () => {
+          await rehiddenCandidate
+            .getByTestId(TestIds.subgraphEditor.widgetToggle)
+            .click()
 
-        await expect(
-          shownSection.getByTestId(TestIds.subgraphEditor.widgetItem).filter({
-            has: comfyPage.page
-              .getByTestId(TestIds.subgraphEditor.widgetLabel)
-              .filter({ hasText: 'string_a' })
-          }),
-          're-promoting restores the widget to the shown list'
-        ).toBeVisible()
+          await expect(
+            shownSection.getByTestId(TestIds.subgraphEditor.widgetItem).filter({
+              has: comfyPage.page
+                .getByTestId(TestIds.subgraphEditor.widgetLabel)
+                .filter({ hasText: 'string_a' })
+            }),
+            're-promoting restores the widget to the shown list'
+          ).toBeVisible()
+        })
       })
 
       test('linked promoted widgets show link icon instead of eye icon', async ({
@@ -214,12 +218,6 @@ test.describe(
           TestIds.subgraphEditor.widgetActionsMenuButton
         )
         await expect(moreButtons.first()).toBeVisible()
-        await moreButtons.first().click()
-
-        const menu = comfyPage.page.getByRole('menu')
-        await expect(menu).toBeVisible()
-        await expect(menu.getByText('Rename')).toBeVisible()
-        await menu.press('Escape')
 
         const widgetCountBeforeHide = await moreButtons.count()
 

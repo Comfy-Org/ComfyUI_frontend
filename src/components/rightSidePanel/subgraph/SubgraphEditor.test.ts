@@ -287,6 +287,9 @@ describe('SubgraphEditor', () => {
   })
 
   it('re-shows a demoted widget in the hidden section so it can be re-promoted', async () => {
+    i18n.global.mergeLocaleMessage('en', {
+      rightSidePanel: { hideInput: 'Hide input', showInput: 'Show input' }
+    })
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
     const sourceNode = new LGraphNode('SourceNode')
@@ -312,10 +315,15 @@ describe('SubgraphEditor', () => {
     })
 
     const shown = screen.getByTestId('subgraph-editor-shown-section')
-    await userEvent.click(within(shown).getByTestId('subgraph-widget-toggle'))
+    await userEvent.click(
+      within(shown).getByRole('button', { name: 'Hide input' })
+    )
     await nextTick()
 
     const hidden = screen.getByTestId('subgraph-editor-hidden-section')
+    expect(
+      within(hidden).getByRole('button', { name: 'Show input' })
+    ).toBeEnabled()
     expect(
       within(hidden)
         .getAllByTestId('subgraph-widget-label')
