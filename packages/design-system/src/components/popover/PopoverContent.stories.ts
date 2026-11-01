@@ -138,8 +138,13 @@ export const DismissalAndFocusRestore: Story = {
 
 /** Confirmation layout for reviewing the destructive-action affordance. */
 export const Confirmation: Story = {
-  render: () => ({
-    components: { Button, PopoverContent, PopoverRoot, PopoverTrigger },
+  argTypes: {
+    rows: { control: false, table: { disable: true } },
+    wideContent: { control: false, table: { disable: true } }
+  },
+  render: (args) => ({
+    components: { Button, PopoverArrow, PopoverContent, PopoverRoot, PopoverTrigger },
+    setup: () => ({ args }),
     template: `
       <div class="p-4">
         <PopoverRoot>
@@ -147,7 +152,7 @@ export const Confirmation: Story = {
             <PopoverTrigger as-child>
               <Button variant="secondary">Remove input</Button>
             </PopoverTrigger>
-            <PopoverContent align="start">
+            <PopoverContent :class="args.contentClass" align="start">
               <div class="flex w-64 flex-col gap-3">
                 <p class="m-0 text-sm text-foreground">Remove this input from the app?</p>
                 <div class="flex justify-end gap-2">
@@ -155,6 +160,7 @@ export const Confirmation: Story = {
                   <Button variant="destructive" @click="close">Remove</Button>
                 </div>
               </div>
+              <PopoverArrow v-if="args.arrow" class="fill-background stroke-border" />
             </PopoverContent>
           </template>
         </PopoverRoot>
@@ -167,6 +173,6 @@ export const Confirmation: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Remove input' }))
     await waitFor(() => expect(body.getByRole('dialog')).toBeVisible())
     await expect(body.getByRole('button', { name: 'Cancel' })).toBeVisible()
-    await expect(body.getByRole('button', { name: 'Remove', exact: true })).toBeVisible()
+    await expect(body.getByRole('button', { name: 'Remove' })).toBeVisible()
   }
 }
