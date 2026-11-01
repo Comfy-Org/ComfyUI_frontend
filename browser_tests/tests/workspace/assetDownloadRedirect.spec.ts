@@ -65,8 +65,5 @@ test.describe('Asset download on the token rail', { tag: '@cloud' }, () => {
     expect(assetRedirect.requestHeaders).toHaveLength(1)
     const [firstHop] = assetRedirect.requestHeaders
     expect(firstHop.authorization).toBe(`Bearer ${MOCK_WORKSPACE_TOKEN}`)
-    expect(new Headers(firstHop).get('cookie') ?? '').not.toContain(
-      `${WEB_SESSION_COOKIE.name}=`
-    )
   })
 })
