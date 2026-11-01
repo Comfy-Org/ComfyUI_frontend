@@ -5106,7 +5106,9 @@
       "expand": "Expand",
       "runsOn": "Runs on:",
       "andMore": "and {count} more",
-      "noDeploymentRunsIt": "No deployment in this workspace has all of these nodes."
+      "noDeploymentRunsIt": "No deployment in this workspace has all of these nodes.",
+      "unsupportedOnBuild": "Not supported on this build: {cause}",
+      "unsupportedOnBuildNoCause": "Not supported on this build"
     },
     "missingModels": {
       "import": "Import",
