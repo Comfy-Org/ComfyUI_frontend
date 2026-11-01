@@ -295,8 +295,6 @@ describe('redactTelemetryUrls', () => {
   })
 
   it('handles a short dotted non-URL run within a bounded time', () => {
-    // Below MAX_REDACTABLE_TEXT_LENGTH, so this exercises the regex engine
-    // directly rather than the length-cap short-circuit above.
     const text = 'a' + '.'.repeat(70) + '!'
     const start = Date.now()
     expect(redactTelemetryUrls(text)).toBe(text)
