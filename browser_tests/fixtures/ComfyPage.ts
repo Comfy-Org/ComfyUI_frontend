@@ -64,7 +64,6 @@ import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
-import { ExtensionHelper } from '@e2e/fixtures/helpers/ExtensionHelper'
 import { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
@@ -227,7 +226,6 @@ export class ComfyPage {
   public readonly dragDrop: DragDropHelper
   public readonly featureFlags: FeatureFlagHelper
   public readonly command: CommandHelper
-  public readonly extensions: ExtensionHelper
   public readonly bottomPanel: BottomPanel
   public readonly queuePanel: QueuePanel
   public readonly perf: PerformanceHelper
@@ -284,7 +282,6 @@ export class ComfyPage {
     this.dragDrop = new DragDropHelper(page)
     this.featureFlags = new FeatureFlagHelper(page)
     this.command = new CommandHelper(page)
-    this.extensions = new ExtensionHelper(page)
     this.bottomPanel = new BottomPanel(page)
     this.queuePanel = new QueuePanel(page)
     this.perf = new PerformanceHelper(page)
