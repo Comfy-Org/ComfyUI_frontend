@@ -3,6 +3,7 @@ import { test } from '@e2e/fixtures/zipTieFixture'
 
 test.describe('Zip ties', { tag: ['@canvas', '@vue-nodes'] }, () => {
   test.use({
+    trace: 'on',
     initialSettings: {
       'Comfy.Canvas.NavigationMode': 'standard',
       'Comfy.Minimap.Visible': false

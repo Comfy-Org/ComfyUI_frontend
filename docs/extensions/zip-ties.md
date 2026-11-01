@@ -42,3 +42,6 @@ release a tie. They check the workflow saved by the backend and preserve the
 original connections and earlier reroutes. A second test verifies that Escape
 cancels the marquee without changing the graph. Both run in the normal E2E CI
 suite, which also records a video walkthrough for newly added specs.
+Both tests retain a Playwright trace on successful runs. Open the test's trace
+attachment in the report to inspect screenshots, DOM snapshots, actions, network
+requests, and the timeline.
