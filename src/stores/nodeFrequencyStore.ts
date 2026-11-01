@@ -2,6 +2,8 @@ import axios from 'axios'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
   const nodeFrequencyLookup = ref<Record<string, number>>({})
   const nodeNamesByFrequency = computed(() =>
@@ -16,7 +18,10 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
         nodeFrequencyLookup.value = response.data
         isLoaded.value = true
       } catch (error) {
-        console.error('Error loading node frequencies:', error)
+        reportError(error, {
+          errorType: 'node_frequency_load_failure',
+          surface: 'workspace'
+        })
       }
     }
   }

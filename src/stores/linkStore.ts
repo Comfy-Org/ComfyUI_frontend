@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, shallowRef, toRaw } from 'vue'
 
+import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
 import type {
   GraphScope,
   OwningGraphId,
@@ -202,6 +203,11 @@ export const useLinkStore = defineStore('link', () => {
       console.error(
         `Link ${replacement.id} belongs to graph ${incumbent.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
       )
+      reportAssertFailure('Link store ownership conflict', {
+        linkId: replacement.id,
+        incumbentGraphId: incumbent.graphId,
+        owningGraphId: scope.owningGraphId
+      })
       return false
     }
     if (replaced && (!bucket || !ownsPlacement(scope, bucket, replaced))) {
@@ -225,6 +231,10 @@ export const useLinkStore = defineStore('link', () => {
     const existing = bucket?.targetIndex.get(key)
     if (toRaw(existing) !== toRaw(expected)) {
       console.error(`Link target slot ${key} is already occupied`)
+      reportAssertFailure('Link store target slot conflict', {
+        linkId: replacement.id,
+        targetSlotKey: key
+      })
       return false
     }
     return true
