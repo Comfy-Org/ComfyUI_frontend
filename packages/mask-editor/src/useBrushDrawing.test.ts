@@ -322,6 +322,41 @@ describe('drawEnd canvas visibility', () => {
 })
 
 describe('drawEnd', () => {
+  it('keeps a new stroke visible when the previous GPU readback completes', async () => {
+    const gpu = useGPUResources()
+    gpu.hasRenderer.value = true
+    gpu.previewCanvas.value = document.createElement('canvas')
+    type Readback = Awaited<ReturnType<typeof gpu.copyGpuToCanvas>>
+    let finishReadback: ((value: Readback) => void) | undefined
+    const readback = new Promise<Readback>((resolve) => {
+      finishReadback = resolve
+    })
+    vi.mocked(gpu.copyGpuToCanvas).mockReturnValueOnce(readback)
+    const { startDrawing, drawEnd } = setup()
+
+    await startDrawing(makePointerEvent(40, 60, { pointerId: 11 }))
+    const ending = drawEnd(makePointerEvent(50, 65, { pointerId: 11 }))
+    await startDrawing(makePointerEvent(80, 90, { pointerId: 22 }))
+    assert.exists(finishReadback)
+    finishReadback({
+      maskData: new ImageData(200, 200),
+      rgbData: new ImageData(200, 200)
+    })
+    await ending
+
+    expect(gpu.clearPreview).not.toHaveBeenCalled()
+    expect(mockStoreDef.maskCanvas?.style.opacity).toBe('0')
+    expect(gpu.previewCanvas.value.style.opacity).toBe(
+      String(mockStoreDef.maskOpacity)
+    )
+    await drawEnd(makePointerEvent(90, 95, { pointerId: 22 }))
+    expect(gpu.clearPreview).toHaveBeenCalledOnce()
+    expect(mockStoreDef.maskCanvas?.style.opacity).toBe(
+      String(mockStoreDef.maskOpacity)
+    )
+    expect(saveStateSpy).toHaveBeenCalledTimes(2)
+  })
+
   it.for(['pointerup', 'pointercancel'])(
     'finishes the owning stroke on %s outside the pointer zone',
     async (type) => {
