@@ -3,7 +3,7 @@ import { ComfyDialog } from '@/scripts/ui'
 import { $el } from '@/scripts/ui/utils'
 import type { ComfyExtension } from '@/types/comfy'
 
-class ClipspaceDialog extends ComfyDialog {
+export class ClipspaceDialog extends ComfyDialog {
   static items: Array<
     HTMLButtonElement & {
       contextPredicate?: () => boolean
