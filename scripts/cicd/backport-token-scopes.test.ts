@@ -192,6 +192,36 @@ describe('backport workflow token scopes', () => {
     )
   })
 
+  it('defines every token a step swaps into GH_TOKEN', () => {
+    const undefinedTokens = Object.entries(readWorkflow(WORKFLOW).jobs ?? {})
+      .flatMap(([jobName, job]) =>
+        (job.steps ?? []).flatMap((step) =>
+          [
+            ...stripComments(step.run ?? '').matchAll(
+              /GH_TOKEN="\$\{([A-Za-z_]\w*)\}"/g
+            )
+          ]
+            .map((match) => match[1])
+            .filter((name) => !step.env?.[name] && !job.env?.[name])
+            .map((name) => `${jobName} / ${step.name}: ${name}`)
+        )
+      )
+
+    expect(undefinedTokens).toEqual([])
+  })
+
+  it('falls back to the shared token when the warning job cannot read labels', () => {
+    const step = readWorkflow(WORKFLOW).jobs?.[
+      'warn-missing-needs-backport'
+    ].steps?.find(
+      (step) => step.name === 'Comment when release labels lack needs-backport'
+    )
+
+    expect(stripComments(step?.run ?? '')).toMatch(
+      /LABELS=\$\(gh api[^\n]*\/labels"[^\n]*\|\| GH_TOKEN="\$\{POST_TOKEN\}" gh api[^\n]*\/labels"/
+    )
+  })
+
   it('removes needs-backport through the REST labels endpoint, tolerating an already-absent label', () => {
     expect(labelStepViolations(labelStepRun())).toEqual([])
   })

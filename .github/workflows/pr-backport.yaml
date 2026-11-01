@@ -706,7 +706,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          LABELS=$(gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name' || GH_TOKEN="${FALLBACK_TOKEN}" gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name')
+          LABELS=$(gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name' || GH_TOKEN="${POST_TOKEN}" gh api --paginate "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name')
           if grep -qx 'needs-backport' <<<"${LABELS}"; then
             echo "PR #${PR_NUMBER} now has needs-backport; the backport job handles it."
             exit 0
