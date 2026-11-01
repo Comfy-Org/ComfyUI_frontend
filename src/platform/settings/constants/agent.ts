@@ -3,3 +3,5 @@ export const AGENT_CONSENT_SETTING_ID =
 
 export const AGENT_CONSENT_OFFER_DECLINED_SETTING_ID =
   'Comfy.AgentPanel.ConsentOfferDeclined' as const
+export const AGENT_ONBOARDED_SCOPES_SETTING_ID =
+  'Comfy.AgentPanel.OnboardedScopes' as const
