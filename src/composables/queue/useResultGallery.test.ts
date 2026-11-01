@@ -457,12 +457,17 @@ describe('useResultGallery', () => {
       {},
       full
     )
-    completedTask.loadFullOutputs = async () => completedTask
+    let finishLoadingOutputs!: () => void
+    completedTask.loadFullOutputs = () =>
+      new Promise<TaskItemImpl>((resolve) => {
+        finishLoadingOutputs = () => resolve(completedTask)
+      })
     sources.value = [completedTask]
     await nextTick()
-    await nextTick()
+    expect(galleryItems.value).toContain(preview)
 
-    expect(galleryItems.value).toEqual(full)
+    finishLoadingOutputs()
+    await vi.waitFor(() => expect(galleryItems.value).toEqual(full))
   })
 
   it.for(['resolves', 'rejects'])(

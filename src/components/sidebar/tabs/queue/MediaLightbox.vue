@@ -119,12 +119,13 @@ const activeItem = computed(() => props.allGalleryItems[props.activeIndex])
 
 watch(
   () => props.activeIndex,
-  (index) => {
+  (index, previousIndex) => {
     galleryVisible.value = index !== -1
-    if (index !== -1) {
-      previouslyFocusedElement = document.activeElement as HTMLElement | null
-      void nextTick(() => dialogRef.value?.focus())
-    }
+    const isOpening =
+      index !== -1 && (previousIndex === undefined || previousIndex === -1)
+    if (!isOpening) return
+    previouslyFocusedElement = document.activeElement as HTMLElement | null
+    void nextTick(() => dialogRef.value?.focus())
   },
   { immediate: true }
 )

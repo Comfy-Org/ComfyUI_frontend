@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -160,6 +160,59 @@ describe('MediaLightbox', () => {
     await nextTick()
 
     expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
+  })
+
+  describe('focus management', () => {
+    const renderHost = (activeIndex: number) => {
+      const galleryItems = ref<MockResultItem[]>([...mockGalleryItems])
+      const index = ref(activeIndex)
+      const Host = defineComponent({
+        components: { MediaLightbox },
+        setup: () => ({ galleryItems, index }),
+        template:
+          '<MediaLightbox v-model:active-index="index" :all-gallery-items="galleryItems" />'
+      })
+      const user = userEvent.setup()
+      render(Host, {
+        global: {
+          plugins: [i18n],
+          components: {
+            ComfyImage: mockComfyImage,
+            ResultVideo: mockResultVideo,
+            ResultAudio: mockResultAudio
+          }
+        }
+      })
+      return { user, galleryItems, index }
+    }
+
+    it('focuses the dialog when the gallery opens', async () => {
+      const { index } = renderHost(-1)
+      await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
+      index.value = 0
+
+      await vi.waitFor(() => expect(screen.getByRole('dialog')).toHaveFocus())
+    })
+
+    it('keeps focus on the selected control when a prepend shifts the index', async () => {
+      const { user, galleryItems, index } = renderHost(1)
+      const next = await screen.findByLabelText('Next')
+      await user.click(next)
+      expect(next).toHaveFocus()
+
+      galleryItems.value = [
+        { ...mockGalleryItems[0], filename: 'prepended.jpg', id: '0' },
+        ...mockGalleryItems
+      ]
+      index.value = 3
+      await nextTick()
+      await nextTick()
+
+      expect(screen.getByLabelText('Next')).toBe(next)
+      expect(next).toHaveFocus()
+      expect(screen.getByRole('dialog')).not.toHaveFocus()
+    })
   })
 
   it('keeps failed text media actionable until the viewer closes', async () => {
