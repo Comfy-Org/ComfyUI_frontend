@@ -1,49 +1,97 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
+import {
+  vGroupDropTarget,
+  vGroupItemDrag,
+  vGroupItemReorder
+} from '@/components/builder/useGroupDrop'
+import { groupedByPair } from '@/components/builder/useInputGroups'
 import type { resolveGroupItems } from '@/components/builder/useInputGroups'
 
 const {
+  groupId,
   items,
   builderMode = false,
   mobile = false
 } = defineProps<{
+  groupId: string
   items: ReturnType<typeof resolveGroupItems>
   builderMode?: boolean
   mobile?: boolean
 }>()
 
 const { t } = useI18n()
+const rowClasses = { single: '', pair: 'flex gap-2' }
+const builderItemClasses = { single: 'p-1.5', pair: 'min-w-0 flex-1 p-0.5' }
+const appItemClasses = { single: '', pair: 'min-w-0 flex-1 overflow-hidden' }
+const rows = computed(() => groupedByPair(items))
+const itemRows = computed(() =>
+  rows.value.map((row) => ({
+    type: row.type,
+    items: row.type === 'single' ? [row.item] : row.items
+  }))
+)
 </script>
 
 <template>
-  <div v-if="builderMode" class="flex min-h-10 flex-col gap-2 px-2 pb-2">
+  <div
+    v-if="builderMode"
+    v-group-drop-target="{ groupId }"
+    class="flex min-h-10 flex-col gap-3 px-2 pb-2 [&.group-drag-over]:bg-primary/5"
+  >
     <div
-      v-for="item in items"
-      :key="item.key"
-      class="overflow-hidden rounded-lg p-1.5"
+      v-for="row in itemRows"
+      :key="row.items[0].key"
+      :class="rowClasses[row.type]"
     >
-      <AppModeWidgetList
-        :widget-ids="[item.key]"
-        builder-mode
-        :draggable="false"
-      />
+      <div
+        v-for="item in row.items"
+        :key="item.key"
+        v-group-item-drag="{ itemKey: item.key, sourceGroupId: groupId }"
+        v-group-item-reorder="{ itemKey: item.key, groupId }"
+        :class="
+          cn(
+            'overflow-hidden rounded-lg [&_.drag-handle]:cursor-grab [&.pair-indicator]:ring-2 [&.pair-indicator]:ring-primary [&.reorder-after]:border-b-2 [&.reorder-after]:border-b-primary [&.reorder-before]:border-t-2 [&.reorder-before]:border-t-primary',
+            builderItemClasses[row.type]
+          )
+        "
+      >
+        <AppModeWidgetList
+          :widget-ids="[item.key]"
+          builder-mode
+          :draggable="false"
+        />
+      </div>
     </div>
     <div
-      v-if="items.length === 0"
+      v-if="itemRows.length === 0"
       class="flex items-center justify-center py-3 text-xs text-muted-foreground"
     >
       {{ t('linearMode.groups.emptyGroup') }}
     </div>
   </div>
   <div v-else class="flex flex-col gap-4 px-4 pt-2 pb-4">
-    <AppModeWidgetList
-      v-for="item in items"
-      :key="item.key"
-      :widget-ids="[item.key]"
-      :mobile
-      hide-actions
-    />
+    <div
+      v-for="row in itemRows"
+      :key="row.items[0].key"
+      :class="rowClasses[row.type]"
+    >
+      <div
+        v-for="item in row.items"
+        :key="item.key"
+        :class="appItemClasses[row.type]"
+      >
+        <AppModeWidgetList
+          :widget-ids="[item.key]"
+          :mobile
+          hide-actions
+          class="w-full"
+        />
+      </div>
+    </div>
   </div>
 </template>

@@ -8,6 +8,10 @@ import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetR
 import { getLoaderDropIndicator } from '@/components/builder/useLoaderDropIndicator'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import { autoGroupName } from '@/components/builder/useInputGroups'
+import {
+  vGroupItemDrag,
+  vUngroupedItemReorder
+} from '@/components/builder/useGroupDrop'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -19,7 +23,6 @@ import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useM
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { app } from '@/scripts/app'
-import { draggableItemClass } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
@@ -240,7 +243,9 @@ defineExpose({ handleDragDrop })
       description
     } in mappedSelections"
     :key
-    :class="cn(isDraggable && ['pointer-events-auto', draggableItemClass])"
+    v-group-item-drag="isDraggable ? { itemKey: action.widgetId } : undefined"
+    v-ungrouped-item-reorder="isDraggable ? { itemKey: action.widgetId } : undefined"
+    :class="cn(isDraggable && 'pointer-events-auto cursor-grab')"
     :aria-label="
       builderMode
         ? `${action.widget.label ?? action.widget.name} — ${action.node.title}`

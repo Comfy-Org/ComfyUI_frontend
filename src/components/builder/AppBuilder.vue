@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import InputGroupAccordion from '@/components/builder/InputGroupAccordion.vue'
+import { vGroupUngroupTarget } from '@/components/builder/useGroupDrop'
 import { groupPosition } from '@/components/builder/useInputGroups'
 import Button from '@comfyorg/design-system/button/Button'
 import DraggableList from '@/components/common/DraggableList.vue'
@@ -13,9 +14,7 @@ import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
-import { isWidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -55,19 +54,6 @@ const hoveringSelectable = ref(false)
 workflowStore.activeWorkflow?.changeTracker?.reset()
 
 const resolvedInputs = useResolvedSelectedInputs()
-const ungroupedSelectedInputs = computed<LinearInput[]>({
-  get: () =>
-    appModeStore.selectedInputs.filter(
-      ([id]) => !isWidgetId(id) || !inputGroupStore.isGrouped(id)
-    ),
-  set: (inputs) => {
-    const groupedInputs = appModeStore.selectedInputs.filter(
-      ([id]) => isWidgetId(id) && inputGroupStore.isGrouped(id)
-    )
-    appModeStore.selectedInputs = [...inputs, ...groupedInputs]
-  }
-})
-
 const outputsWithState = computed<[NodeId, string][]>(() =>
   appModeStore.selectedOutputs.map((nodeId) => [
     nodeId,
@@ -209,12 +195,13 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     </div>
     <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <template v-if="isArrangeMode">
-        <DraggableList
-          v-model="ungroupedSelectedInputs"
-          class="overflow-x-clip"
+        <div
+          v-group-ungroup-target="isArrangeMode"
+          data-testid="builder-ungrouped-list"
+          class="mt-0.5 min-h-12 space-y-0.5 overflow-x-clip px-2 pb-2"
         >
           <AppModeWidgetList builder-mode />
-        </DraggableList>
+        </div>
         <div v-if="inputGroupStore.inputGroups.length" class="px-2 pb-2">
           <InputGroupAccordion
             v-for="(group, index) in inputGroupStore.inputGroups"
