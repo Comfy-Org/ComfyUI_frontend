@@ -708,6 +708,29 @@ describe('drawConnections hidden links', () => {
     expect(ctx.fillText).not.toHaveBeenCalled()
   })
 
+  it('places badges at the rendered sockets when a Vue node overrides its classic socket positions', () => {
+    LiteGraph.vueNodesMode = true
+    const link = createHiddenLink()
+    const source = graph.getNodeById(link.origin_id)
+    const target = graph.getNodeById(link.target_id)
+    assert.exists(source)
+    assert.exists(target)
+    target.pos = [600, 100]
+    const [outputX, outputY] = source.getOutputPos(link.origin_slot)
+    const [inputX, inputY] = target.getInputPos(link.target_slot)
+    vi.spyOn(source, 'getOutputPos').mockReturnValue([outputX, outputY + 200])
+    vi.spyOn(target, 'getInputPos').mockReturnValue([inputX, inputY + 200])
+
+    canvas.drawConnections(createMockCtx())
+
+    expect(
+      queryLinkBadgeAtPoint(canvas, outputX + BADGE_GAP + 4, outputY)
+    ).toBe(link.id)
+    expect(queryLinkBadgeAtPoint(canvas, inputX - BADGE_GAP - 4, inputY)).toBe(
+      link.id
+    )
+  })
+
   it('reveals on badge hover and clears the reveal on canvas leave', () => {
     const link = createHiddenLink()
     canvas.drawConnections(createMockCtx())
