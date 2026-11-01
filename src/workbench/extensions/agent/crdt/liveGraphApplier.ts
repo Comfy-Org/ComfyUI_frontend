@@ -5,7 +5,7 @@ import {
   readStamps,
   WIDGET_FORM_KEY
 } from '@comfyorg/comfy-multi-player'
-import { isEqual, isPlainObject, omit } from 'es-toolkit'
+import { isEqual, isPlainObject, omit, partition } from 'es-toolkit'
 import * as Y from 'yjs'
 import { z } from 'zod'
 
@@ -725,12 +725,6 @@ function positionalWidgetValues(
   })
 }
 
-function notifyGraphConfigured(graph: LGraph, ids: readonly string[]): void {
-  const nodes = ids.flatMap((id) => graph.getNodeById(toNodeId(id)) ?? [])
-  for (const node of nodes) node.onGraphConfigured?.()
-  for (const node of nodes) node.onAfterGraphConfigured?.()
-}
-
 function configureRemoteNode(node: LGraphNode, info: ISerialisedNode): void {
   applyRemoteDynamicGroupRowCount(node, () => node.configure(info))
 }
@@ -786,6 +780,7 @@ export class LiveGraphApplier {
             if (result === 'created' || result === 'recreated') loaded.push(id)
           })
         }
+        this.connectLoadedLinks(graph, doc, loaded, context)
 
         this.deleteGroups(graph, changes.removedGroups, context)
 
@@ -802,7 +797,7 @@ export class LiveGraphApplier {
         this.applyInteriors(graph, doc, changes, context, mode)
 
         this.applyLinks(graph, doc, [...changes.links], context)
-        this.try(context, () => notifyGraphConfigured(graph, loaded))
+        this.notifyGraphConfigured(graph, loaded, context)
         if (mode === 'merge')
           this.placeBatch(graph, created, {
             moveCollisions: context.liveAgentTurn === true
@@ -979,13 +974,41 @@ export class LiveGraphApplier {
       return 'updated'
     }
     if (live) graph.remove(live)
-    withGraphConfiguring(() => {
-      this.createNode(graph, docNode, mode)
-      for (const link of docLinksIncident(doc, id)) {
-        this.connectLink(graph, doc, link)
-      }
-    })
+    withGraphConfiguring(() => this.createNode(graph, docNode, mode))
     return live ? 'recreated' : 'created'
+  }
+
+  private connectLoadedLinks(
+    graph: LGraph,
+    doc: Y.Doc,
+    ids: readonly string[],
+    context: RemoteApplyContext
+  ): void {
+    const loaded = new Set(ids)
+    for (const id of ids) {
+      this.try(context, () => {
+        const [amongLoaded, toExisting] = partition(
+          docLinksIncident(doc, id),
+          (link) => loaded.has(link.origin) && loaded.has(link.target)
+        )
+        withGraphConfiguring(() => {
+          for (const link of amongLoaded) this.connectLink(graph, doc, link)
+        })
+        for (const link of toExisting) this.connectLink(graph, doc, link)
+      })
+    }
+  }
+
+  private notifyGraphConfigured(
+    graph: LGraph,
+    ids: readonly string[],
+    context: RemoteApplyContext
+  ): void {
+    const nodes = ids.flatMap((id) => graph.getNodeById(toNodeId(id)) ?? [])
+    for (const node of nodes)
+      this.try(context, () => node.onGraphConfigured?.())
+    for (const node of nodes)
+      this.try(context, () => node.onAfterGraphConfigured?.())
   }
 
   private createNode(

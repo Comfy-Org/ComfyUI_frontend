@@ -75,8 +75,7 @@ function sampler(id: number, widgets_values: unknown[]) {
   }
 }
 
-function applyWorkflow(workflow: WorkflowJSON) {
-  const graph = new LGraph()
+function applyWorkflow(workflow: WorkflowJSON, graph = new LGraph()) {
   const { doc, collector } = followedDoc(workflow, CATALOG)
   new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
     doc,
@@ -138,28 +137,42 @@ describe('LiveGraphApplier node creation through loadSerialisedNode', () => {
     expect(loadedGraphNode).toHaveBeenCalledWith(liveNode(graph, 7), useApp())
   })
 
+  const sourceLinkedToSampler: WorkflowJSON = {
+    nodes: [
+      {
+        id: 3,
+        type: 'LifecycleSource',
+        pos: [0, 0],
+        size: [100, 50],
+        outputs: [{ name: 'MODEL', type: 'MODEL', links: [1] }]
+      },
+      {
+        ...sampler(7, []),
+        inputs: [{ name: 'model', type: 'MODEL', link: 1 }]
+      }
+    ],
+    links: [[1, 3, 0, 7, 0, 'MODEL']]
+  }
+
   it('connects created nodes while configuring, then fires the graph-configured callbacks', () => {
-    applyWorkflow({
-      nodes: [
-        {
-          id: 3,
-          type: 'LifecycleSource',
-          pos: [0, 0],
-          size: [100, 50],
-          outputs: [{ name: 'MODEL', type: 'MODEL', links: [1] }]
-        },
-        {
-          ...sampler(7, []),
-          inputs: [{ name: 'model', type: 'MODEL', link: 1 }]
-        }
-      ],
-      links: [[1, 3, 0, 7, 0, 'MODEL']]
-    })
+    applyWorkflow(sourceLinkedToSampler)
 
     expect(lifecycle).toEqual([
       'connect configuring=true',
       'onGraphConfigured',
       'onAfterGraphConfigured links=1'
     ])
+  })
+
+  it('connects a created node to an existing one interactively', () => {
+    const graph = new LGraph()
+    const source = LiteGraph.createNode('LifecycleSource')
+    assert.exists(source)
+    source.id = toNodeId(3)
+    graph.add(source)
+
+    applyWorkflow(sourceLinkedToSampler, graph)
+
+    expect(lifecycle).toEqual(['connect configuring=false'])
   })
 })
