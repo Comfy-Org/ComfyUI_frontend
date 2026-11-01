@@ -1,3 +1,5 @@
+import { useEventListener } from '@vueuse/core'
+
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
@@ -17,6 +19,89 @@ function isExcludedFromDistribution(keybinding: { commandId: string }) {
   )
 }
 
+type KeydownResolution =
+  | { kind: 'unclaimed' }
+  | { kind: 'blockedByModal'; suppressBrowserDefault: boolean }
+  | { kind: 'legacyEscape' }
+  | { kind: 'claimed'; keybinding: KeybindingImpl }
+
+const UNCLAIMED: KeydownResolution = { kind: 'unclaimed' }
+const LEGACY_ESCAPE: KeydownResolution = { kind: 'legacyEscape' }
+
+const CANVAS_CONTAINER_ID = 'graph-canvas-container'
+
+const RUN_COMMAND_IDS = new Set([
+  'Comfy.QueuePrompt',
+  'Comfy.QueuePromptFront',
+  'Comfy.QueueSelectedOutputNodes'
+])
+
+const resolutions = new WeakMap<KeyboardEvent, KeydownResolution>()
+
+function isTextEditingTarget(target: EventTarget | undefined): boolean {
+  if (!(target instanceof Element)) return false
+  if (target instanceof HTMLElement && target.isContentEditable) return true
+  return (
+    target.tagName === 'TEXTAREA' ||
+    target.tagName === 'INPUT' ||
+    (target.tagName === 'SPAN' && target.classList.contains('property_value'))
+  )
+}
+
+function isEscapeOwnedByMenuOrDialog(
+  event: KeyboardEvent,
+  target: EventTarget | undefined
+): boolean {
+  return (
+    event.key === 'Escape' &&
+    target instanceof Element &&
+    target.closest('[role="menu"], [role="menubar"], [role="dialog"]') !== null
+  )
+}
+
+function isLeftToTarget(
+  event: KeyboardEvent,
+  keyCombo: KeyComboImpl,
+  target: EventTarget | undefined
+): boolean {
+  return (
+    keyCombo.isModifier ||
+    event.isComposing ||
+    isEscapeOwnedByMenuOrDialog(event, target) ||
+    (keyCombo.isReservedByTextInput && isTextEditingTarget(target))
+  )
+}
+
+function isWithinTargetElement(
+  keybinding: KeybindingImpl,
+  target: EventTarget | undefined
+): boolean {
+  const targetElementId =
+    keybinding.targetElementId === 'graph-canvas'
+      ? CANVAS_CONTAINER_ID
+      : keybinding.targetElementId
+  if (!targetElementId) return true
+  const container = document.getElementById(targetElementId)
+  return target instanceof Node && container?.contains(target) === true
+}
+
+function isUnmodifiedEscape(event: KeyboardEvent): boolean {
+  return (
+    event.key === 'Escape' && !event.ctrlKey && !event.altKey && !event.metaKey
+  )
+}
+
+function closeLegacyModals() {
+  for (const modal of document.querySelectorAll<HTMLElement>('.comfy-modal')) {
+    const display = window.getComputedStyle(modal).getPropertyValue('display')
+    if (display !== 'none') {
+      modal.style.display = 'none'
+      break
+    }
+  }
+  for (const dialog of document.querySelectorAll('dialog')) dialog.close()
+}
+
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
   const commandStore = useCommandStore()
@@ -30,115 +115,91 @@ export function useKeybindingService() {
       : undefined
   }
 
+  function resolve(event: KeyboardEvent): KeydownResolution {
+    const keyCombo = KeyComboImpl.fromEvent(event)
+    const target = event.composedPath()[0]
+    if (isLeftToTarget(event, keyCombo, target)) return UNCLAIMED
+
+    const keybinding = getExecutableKeybinding(keyCombo)
+    if (!keybinding)
+      return isUnmodifiedEscape(event) ? LEGACY_ESCAPE : UNCLAIMED
+    if (!isWithinTargetElement(keybinding, target)) return UNCLAIMED
+    if (isModalOpen(dialogStore.dialogStack.length)) {
+      return { kind: 'blockedByModal', suppressBrowserDefault: keyCombo.ctrl }
+    }
+    return { kind: 'claimed', keybinding }
+  }
+
+  function resolutionOf(event: KeyboardEvent): KeydownResolution {
+    const resolved = resolutions.get(event)
+    if (resolved) return resolved
+    const resolution = resolve(event)
+    resolutions.set(event, resolution)
+    return resolution
+  }
+
+  function resolveKeydown(event: KeyboardEvent) {
+    resolutions.set(event, resolve(event))
+  }
+
   function executeCanvasKeybinding(event: KeyboardEvent): boolean {
     if (event.type !== 'keydown' || event.repeat) return false
-    if (isModalOpen(dialogStore.dialogStack.length)) return false
 
-    const keybinding = getExecutableKeybinding(KeyComboImpl.fromEvent(event))
-    if (keybinding?.targetElementId !== 'graph-canvas-container') return false
+    const resolution = resolutionOf(event)
+    if (
+      resolution.kind !== 'claimed' ||
+      resolution.keybinding.targetElementId !== CANVAS_CONTAINER_ID
+    ) {
+      return false
+    }
 
-    void commandStore.execute(keybinding.commandId)
+    void commandStore.execute(resolution.keybinding.commandId)
     event.preventDefault()
     event.stopImmediatePropagation()
     return true
   }
 
+  async function executeKeybinding(keybinding: KeybindingImpl) {
+    if (RUN_COMMAND_IDS.has(keybinding.commandId)) {
+      await commandStore.execute(keybinding.commandId, {
+        metadata: { trigger_source: 'keybinding' }
+      })
+      return
+    }
+    await commandStore.execute(keybinding.commandId)
+  }
+
+  async function commitAtWindow(
+    keybinding: KeybindingImpl,
+    event: KeyboardEvent
+  ) {
+    if (event.key === 'Escape' && consultEscapeOverride(event)) {
+      if (!event.defaultPrevented) event.preventDefault()
+      return
+    }
+    event.preventDefault()
+    await executeKeybinding(keybinding)
+  }
+
   async function keybindHandler(event: KeyboardEvent) {
-    const keyCombo = KeyComboImpl.fromEvent(event)
-    if (keyCombo.isModifier) {
-      return
-    }
-
-    const target = event.composedPath()[0] as HTMLElement
-    // Let the active menu own Escape without also triggering the global shortcut.
-    // `target` is usually the focused element, but when nothing has focus some
-    // browsers (e.g. Safari) target the event at `document` instead of
-    // `document.body`, which has no `closest` method.
-    if (
-      event.key === 'Escape' &&
-      target instanceof Element &&
-      target.closest('[role="menu"], [role="menubar"], [role="dialog"]')
-    ) {
-      return
-    }
-
-    if (
-      keyCombo.isReservedByTextInput &&
-      (target.tagName === 'TEXTAREA' ||
-        target.tagName === 'INPUT' ||
-        target.contentEditable === 'true' ||
-        (target.tagName === 'SPAN' &&
-          target.classList.contains('property_value')))
-    ) {
-      return
-    }
-
-    const keybinding = getExecutableKeybinding(keyCombo)
-    if (keybinding) {
-      const targetElementId =
-        keybinding.targetElementId === 'graph-canvas'
-          ? 'graph-canvas-container'
-          : keybinding.targetElementId
-      if (targetElementId) {
-        const container = document.getElementById(targetElementId)
-        if (!container?.contains(target)) {
-          return
-        }
-      }
-      if (isModalOpen(dialogStore.dialogStack.length)) {
-        // Bare keys still have to reach inputs inside the dialog.
-        if (keyCombo.ctrl) {
-          event.preventDefault()
-        }
+    const resolution = resolutionOf(event)
+    switch (resolution.kind) {
+      case 'unclaimed':
         return
-      }
-
-      // A registered override (e.g. the agent composer owning Escape while a
-      // turn is running) wins over the default keybinding, but only once an
-      // open menu or dialog has already had first refusal above - those are
-      // more specific to the moment than "some feature elsewhere is running".
-      if (event.key === 'Escape' && consultEscapeOverride(event)) {
-        if (!event.defaultPrevented) event.preventDefault()
+      case 'blockedByModal':
+        if (resolution.suppressBrowserDefault) event.preventDefault()
         return
-      }
-
-      event.preventDefault()
-      const runCommandIds = new Set([
-        'Comfy.QueuePrompt',
-        'Comfy.QueuePromptFront',
-        'Comfy.QueueSelectedOutputNodes'
-      ])
-      if (runCommandIds.has(keybinding.commandId)) {
-        await commandStore.execute(keybinding.commandId, {
-          metadata: {
-            trigger_source: 'keybinding'
-          }
-        })
-      } else {
-        await commandStore.execute(keybinding.commandId)
-      }
-      return
+      case 'legacyEscape':
+        closeLegacyModals()
+        return
+      case 'claimed':
+        await commitAtWindow(resolution.keybinding, event)
     }
+  }
 
-    if (event.ctrlKey || event.altKey || event.metaKey) {
-      return
-    }
-
-    if (event.key === 'Escape') {
-      const modals = document.querySelectorAll<HTMLElement>('.comfy-modal')
-      for (const modal of modals) {
-        const modalDisplay = window
-          .getComputedStyle(modal)
-          .getPropertyValue('display')
-
-        if (modalDisplay !== 'none') {
-          modal.style.display = 'none'
-          break
-        }
-      }
-
-      for (const d of document.querySelectorAll('dialog')) d.close()
-    }
+  function listenForKeydowns() {
+    useEventListener(window, 'keydown', resolveKeydown, { capture: true })
+    useEventListener(window, 'keydown', keybindHandler)
   }
 
   function registerCoreKeybindings() {
@@ -170,6 +231,7 @@ export function useKeybindingService() {
   }
 
   return {
+    listenForKeydowns,
     executeCanvasKeybinding,
     keybindHandler,
     registerCoreKeybindings,
