@@ -24,4 +24,5 @@ export interface AgentErrorContext {
   label: string
   severity: AgentErrorContextSeverity
   workflowName?: string
+  workflowPath?: string
 }

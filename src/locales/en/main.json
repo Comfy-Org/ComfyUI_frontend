@@ -5199,7 +5199,7 @@
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
     "askAgent": "Ask agent",
-    "askAgentAbout": "Ask the agent about {title}",
+    "askAgentAbout": "Ask agent about {title}",
     "askAgentAboutAll": "Ask agent about all issues ({count})",
     "resetToDefault": "Reset to default",
     "resetAllParameters": "Reset all parameters",
@@ -6131,7 +6131,9 @@
     "errorContext": {
       "remove": "Remove attached issue",
       "problemCount": "{count} problem | {count} problems",
-      "allLabel": "All issues"
+      "allLabel": "All issues",
+      "draftBlocked": "Send or clear your current message first, then ask the agent about these errors.",
+      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached."
     },
     "skills": "Skills",
     "typeToSearch": "type to search",

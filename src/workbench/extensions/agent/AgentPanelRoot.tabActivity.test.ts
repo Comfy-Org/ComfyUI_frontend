@@ -42,6 +42,7 @@ import { registerWorkflowTabActivityTracker } from './services/agent/workflowTab
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -420,6 +421,53 @@ describe('AgentPanelRoot Ask agent about errors', () => {
       expect(useAgentComposerStore().errorContext).toEqual(errorContext)
     )
     expect(useAgentPanelStore().pendingErrorContext).toBeNull()
+  })
+
+  it('keeps a draft and does not attach when the chat it belongs to is for another workflow', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+    useAgentComposerStore().setText('keep this draft')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: otherTab
+    }
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'Send or clear your current message first, then ask the agent about these errors.'
+      )
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
+    expect(useAgentComposerStore().draft).toBe('keep this draft')
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('does not attach diagnostics from a workflow that is no longer active', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: runningTab
+    }
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'The workflow with these errors is no longer open, so nothing was attached.'
+      )
+    )
+    expect(useAgentComposerStore().errorContext).toBeNull()
   })
 
   it('starts a new chat on the errored workflow when it has none', async () => {

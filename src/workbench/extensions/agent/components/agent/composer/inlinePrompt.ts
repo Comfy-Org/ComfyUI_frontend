@@ -315,6 +315,32 @@ export function promptInsertionPoint(
   return { textOffset: promptTextOffset(doc, position), referenceIndex }
 }
 
+export function promptInsertionPosition(
+  doc: Node,
+  point: ComposerInsertionPoint
+): number {
+  let text = 0
+  let references = 0
+  let position: number | undefined
+  doc.forEach((node, offset) => {
+    if (position !== undefined) return
+    const atReference = references === point.referenceIndex
+    if (node.isText) {
+      if (
+        atReference &&
+        point.textOffset >= text &&
+        point.textOffset <= text + node.nodeSize
+      )
+        position = offset + point.textOffset - text
+      text += node.nodeSize
+      return
+    }
+    if (atReference && point.textOffset === text) position = offset
+    references++
+  })
+  return position ?? doc.content.size
+}
+
 export function promptDocumentPosition(doc: Node, textOffset: number): number {
   let text = 0
   let position = 0

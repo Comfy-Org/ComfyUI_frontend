@@ -132,7 +132,7 @@ describe('TabErrors.vue', () => {
             collapse: 'Collapse',
             errorHelp: 'Error help',
             askAgent: 'Ask agent',
-            askAgentAbout: 'Ask the agent about {title}',
+            askAgentAbout: 'Ask agent about {title}',
             askAgentAboutAll:
               'Ask agent about {count} issue | Ask agent about all {count} issues',
             errorLog: 'Error log',

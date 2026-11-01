@@ -25,7 +25,8 @@ export function useComposer(options: UseComposerOptions) {
     prompt,
     workflowReferences,
     promptEpoch,
-    errorContext
+    errorContext,
+    pendingCaret
   } = storeToRefs(store)
   if (getCurrentScope()) onScopeDispose(store.releaseUnusedAssets)
 
@@ -93,6 +94,8 @@ export function useComposer(options: UseComposerOptions) {
     prompt,
     promptEpoch,
     errorContext,
+    pendingCaret,
+    clearPendingCaret: store.clearPendingCaret,
     setErrorContext: store.setErrorContext,
     clearErrorContext: store.clearErrorContext,
     applyEditorPrompt: store.applyEditorPrompt,

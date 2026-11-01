@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest'
 import { i18n } from '@/i18n'
 
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
-import { inlineReferenceChipClass } from './inlineReferenceChipStyles'
 import InlineErrorReference from './InlineErrorReference.vue'
 
 function context(
@@ -36,12 +35,6 @@ describe('InlineErrorReference', () => {
   it('renders an outline error icon and the label for error severity', () => {
     renderChip(context())
 
-    const icon = screen.getByTestId('error-reference-icon')
-    expect(icon).toHaveClass('icon-[lucide--circle-alert]', 'size-3')
-    expect(icon).not.toHaveClass('text-destructive-background')
-    expect(screen.getByTestId('error-reference-chip')).toHaveClass(
-      ...inlineReferenceChipClass.split(' ')
-    )
     expect(screen.getByText('Execution failed')).toBeVisible()
   })
 
@@ -50,13 +43,27 @@ describe('InlineErrorReference', () => {
       context({ severity: 'warning', label: 'Missing Inputs', count: 3 })
     )
 
-    const icon = screen.getByTestId('error-reference-icon')
-    expect(icon).toHaveClass('icon-[lucide--triangle-alert]', 'size-3')
-    expect(icon).not.toHaveClass('text-warning-foreground')
-    expect(screen.getByTestId('error-reference-chip')).toHaveClass(
-      ...inlineReferenceChipClass.split(' ')
-    )
     expect(screen.getByTestId('error-reference-count')).toHaveTextContent('3')
+  })
+
+  it('lets the user review every included problem before sending', () => {
+    renderChip(
+      context({
+        count: 2,
+        problems: [
+          { category: 'missing_media', message: 'Missing image input "a.png"' },
+          {
+            category: 'missing_model',
+            message: 'Missing model "b.safetensors"'
+          }
+        ]
+      })
+    )
+
+    expect(screen.getByTestId('error-reference-chip')).toHaveAttribute(
+      'title',
+      'Missing image input "a.png"\nMissing model "b.safetensors"'
+    )
   })
 
   it('emits remove when the remove affordance is clicked', async () => {

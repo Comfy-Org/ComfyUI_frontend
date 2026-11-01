@@ -20,8 +20,10 @@ import { useI18n } from 'vue-i18n'
 
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
-import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
+import type {
+  ComposerInsertionPoint,
+  ComposerPrompt
+} from '@/workbench/extensions/agent/types/composerPrompt'
 import {
   composerReferenceKey,
   composerReferenceName
@@ -49,6 +51,7 @@ import {
   pastedSkillCommand,
   promptDocument,
   promptDocumentPosition,
+  promptInsertionPosition,
   promptInsertionPoint,
   promptNodeReference,
   promptDraft,
@@ -64,7 +67,8 @@ const {
   historyEpoch = 0,
   editableWorkflowId,
   skillScope = '',
-  searchHint
+  searchHint,
+  caretRequest = null
 } = defineProps<{
   label: string
   expanded?: boolean
@@ -74,12 +78,14 @@ const {
   editableWorkflowId?: string
   skillScope?: string
   searchHint?: string
+  caretRequest?: ComposerInsertionPoint | null
 }>()
 const model = defineModel<ComposerPrompt>({
   default: () => ({ text: '', references: [] })
 })
 const emit = defineEmits<{
   input: []
+  caretRequestHandled: []
   resolveSkillMetadata: [prompt: ComposerPrompt]
   selectionChange: []
   keydown: [event: KeyboardEvent]
@@ -408,18 +414,14 @@ function nodeReferenceView(
   return { dom, stopEvent: () => true, ignoreMutation: () => true }
 }
 
-function pendingErrorChipCaret(doc: Node): number | undefined {
-  const composer = useAgentComposerStore()
-  if (!composer.takePendingErrorCaret()) return
-  return Math.min(
-    promptDocumentPosition(doc, composer.insertionPoint.textOffset),
-    doc.content.size
-  )
+function requestedCaret(doc: Node): number | undefined {
+  if (!caretRequest) return
+  return promptInsertionPosition(doc, caretRequest)
 }
 
-function focusPendingErrorChip(doc: Node): void {
+function focusRequestedCaret(): void {
   if (!view) return
-  const caret = pendingErrorChipCaret(doc)
+  const caret = requestedCaret(view.state.doc)
   if (caret === undefined) return
   view.dispatch(
     view.state.tr
@@ -427,6 +429,7 @@ function focusPendingErrorChip(doc: Node): void {
       .scrollIntoView()
   )
   view.focus()
+  emit('caretRequestHandled')
 }
 
 onMounted(() => {
@@ -665,7 +668,7 @@ onMounted(() => {
       }
     }
   })
-  focusPendingErrorChip(view.state.doc)
+  focusRequestedCaret()
 })
 
 watch(
@@ -676,15 +679,18 @@ watch(
     if (epoch !== previousEpoch) {
       insertions.clear()
       const state = createState()
-      const errorCaret = pendingErrorChipCaret(state.doc)
+      const caret = requestedCaret(state.doc)
       const position =
-        errorCaret ?? Math.min(view.state.selection.head, doc.content.size)
+        caret ?? Math.min(view.state.selection.head, doc.content.size)
       view.updateState(
         state.apply(
           state.tr.setSelection(TextSelection.create(state.doc, position))
         )
       )
-      if (errorCaret !== undefined) view.focus()
+      if (caret !== undefined) {
+        view.focus()
+        emit('caretRequestHandled')
+      }
       emit('selectionChange')
       return
     }

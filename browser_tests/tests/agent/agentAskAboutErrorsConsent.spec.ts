@@ -1,7 +1,5 @@
 import { expect } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -22,19 +20,18 @@ test.describe('Ask agent about errors', { tag: ['@cloud', '@ui'] }, () => {
     agentConsentWrites
   }) => {
     const page = comfyPage.page
-    const panel = page.locator('#agent-panel-root')
-    const dialog = page.getByRole('dialog', {
-      name: enMessages.agent.consent.title
-    })
+    const agentPanel = new AgentPanel(page)
+    const panel = agentPanel.root
+    const dialog = agentPanel.consentDialog
     const overlay = page.getByTestId(TestIds.dialogs.errorOverlay)
     const askAgent = overlay.getByTestId('error-overlay-ask-agent')
     const chip = page.getByTestId('error-reference-chip')
-    const agentPanel = new AgentPanel(page)
 
     await expect(panel).toBeVisible()
     await agentPanel.close()
     await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
     await expect(overlay).toBeVisible()
+    await page.mouse.move(400, 400)
     await expectElementScreenshot(overlay, 'ask-agent-error-toast.png')
 
     await test.step('Skip leaves the panel closed with nothing attached', async () => {
@@ -42,9 +39,7 @@ test.describe('Ask agent about errors', { tag: ['@cloud', '@ui'] }, () => {
       await expect(dialog).toBeVisible()
       await expect(panel).toHaveCount(0)
 
-      await dialog
-        .getByRole('button', { name: enMessages.agent.consent.reject })
-        .click()
+      await agentPanel.consentRejectButton.click()
       await expect(dialog).toHaveCount(0)
       await expect(panel).toHaveCount(0)
       expect(agentConsentWrites).toHaveLength(0)
@@ -54,9 +49,7 @@ test.describe('Ask agent about errors', { tag: ['@cloud', '@ui'] }, () => {
       await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
       await expect(overlay).toBeVisible()
       await askAgent.click()
-      await dialog
-        .getByRole('button', { name: enMessages.agent.consent.accept })
-        .click()
+      await agentPanel.consentAcceptButton.click()
 
       await expect(dialog).toHaveCount(0)
       await expect(panel).toBeVisible()

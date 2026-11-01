@@ -18,14 +18,19 @@ export function useAskAgentAboutIssues() {
     context: AgentErrorContext
   ): Promise<void> {
     if (!panelStore.enabled) return
-    const workflowName =
-      context.workflowName ?? workflowStore.activeWorkflow?.filename
+    const origin = workflowStore.activeWorkflow
+    const request: AgentErrorContext = {
+      ...context,
+      workflowName: context.workflowName ?? origin?.filename,
+      workflowPath: origin?.path
+    }
 
     const attach = (): void => {
       if (!panelStore.enabled) return
       panelStore.view = { screen: 'chat' }
       panelStore.open('error_context')
-      panelStore.pendingErrorContext = { ...context, workflowName }
+      if (workflowStore.activeWorkflow?.path !== origin?.path) return
+      panelStore.pendingErrorContext = request
     }
 
     if (panelStore.isVisible) {

@@ -1,7 +1,7 @@
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { markRaw, nextTick } from 'vue'
+import { computed, markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
@@ -30,12 +30,12 @@ const mockApp = vi.hoisted(() => ({
   }
 }))
 
-vi.mock<unknown>(
+vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'),
   () => ({
     useAskAgentAboutIssues: () => ({
-      canAskAgent: { value: false },
-      askAgentAboutIssues: vi.fn()
+      canAskAgent: computed(() => false),
+      askAgentAboutIssues: vi.fn(() => Promise.resolve())
     })
   })
 )
