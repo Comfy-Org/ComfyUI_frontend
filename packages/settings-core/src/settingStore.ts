@@ -30,7 +30,9 @@ interface AppliedSetting<TValue> {
   writeToken: number
 }
 
-type RevertibleSettingId = 'Comfy.Extension.DisabledPacks'
+type RevertibleSettingId =
+  | 'Comfy.Extension.DisabledPacks'
+  | 'Comfy.AgentPanel.OnboardedScopes'
 
 type SettingWriteOutcome =
   | { status: 'saved' | 'unchanged' }
