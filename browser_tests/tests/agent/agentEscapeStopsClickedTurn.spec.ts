@@ -6,7 +6,11 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
+import {
+  agentTest,
+  pushAgentEvent,
+  thinkingEvent
+} from '@e2e/tests/agent/agentPanelMocks'
 
 // Story 39 of qa/user-story-test-matrix.md (in-app-agent-program):
 // "Escape does not stop the turn -- reproduces specifically for a turn
@@ -122,7 +126,7 @@ test.describe(
       test(
         'an attachment preview closes before the active turn is cancelled',
         { tag: '@ui' },
-        async ({ agentPanel, postedMessages, page }) => {
+        async ({ agentPanel, getAgentSocket, postedMessages, page }) => {
           await agentPanel.open()
           await agentPanel.selectWorkflow()
           await agentPanel.composer.fill(PROMPT)
@@ -139,8 +143,13 @@ test.describe(
 
           await page.keyboard.press('Escape')
           await expect(preview).toHaveCount(0)
-          expect(cancelled).toHaveLength(0)
+          const stillRunning = 'The active turn continued after preview closed.'
+          pushAgentEvent(await getAgentSocket(), thinkingEvent(stillRunning))
+          await expect(
+            agentPanel.root.getByText(stillRunning, { exact: true })
+          ).toBeVisible()
           await expect(agentPanel.stopButton).toBeVisible()
+          expect(cancelled).toHaveLength(0)
 
           await page.keyboard.press('Escape')
           await expect.poll(() => cancelled.length).toBe(1)
