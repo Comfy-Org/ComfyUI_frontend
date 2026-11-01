@@ -1073,6 +1073,42 @@ describe('BillingTab', () => {
     )
   })
 
+  it.for([
+    {
+      case: 'a served end date',
+      endDate: '2026-09-01T00:00:00Z',
+      line: 'Ended September 1.'
+    },
+    { case: 'no end date', endDate: null, line: 'This plan has ended.' }
+  ])('reads an ended plan with $case as "$line"', ({ endDate, line }) => {
+    arrange({
+      subscriptionStatus: 'ended',
+      subscription: { ...activeSubscription, isActive: false, endDate }
+    })
+
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      line
+    )
+    expect(
+      screen.getByRole('link', { name: 'Choose a plan' })
+    ).toBeInTheDocument()
+  })
+
+  it('titles an ended plan with no served plan name as Your plan', () => {
+    arrange({
+      subscriptionStatus: null,
+      subscriptionState: 'ended',
+      subscription: { ...activeSubscription, isActive: false, tier: null }
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'Your plan' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      'This plan has ended.'
+    )
+  })
+
   it('renders an unrecognised plan as Your plan', () => {
     arrange({ subscription: { ...activeSubscription, tier: null } })
 
@@ -1279,6 +1315,45 @@ describe('BillingTab', () => {
       expect(addCreditsVariants()).toEqual(['inverted', 'inverted'])
     })
 
+    it.for([
+      { signal: 'subscription_status', subscriptionStatus: 'ended' as const },
+      { signal: 'subscription_state', subscriptionState: 'ended' as const }
+    ])(
+      'keeps the Credits card the one white Add credits on local ComfyUI when $signal is ended and out of credits',
+      async (scenario) => {
+        vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+        arrange({
+          ...scenario,
+          balance: zeroBalance,
+          subscription: {
+            ...activeSubscription,
+            isActive: false,
+            hasFunds: false
+          }
+        })
+
+        await screen.findByTestId('billing-auto-top-up-status')
+        expect(
+          within(screen.getByTestId('billing-local-credit-banner')).getByRole(
+            'button',
+            { name: 'Add credits' }
+          )
+        ).toHaveAttribute('data-variant', 'secondary')
+        expect(
+          within(screen.getByTestId('billing-credits-card')).getByRole(
+            'button',
+            { name: 'Add credits' }
+          )
+        ).toHaveAttribute('data-variant', 'inverted')
+        expect(
+          [
+            ...screen.queryAllByRole('button'),
+            ...screen.queryAllByRole('link')
+          ].filter((el) => el.dataset.variant === 'inverted')
+        ).toHaveLength(1)
+      }
+    )
+
     it('turns Add credits white at 0 while a top-up payment is processing and auto top-up is off', async () => {
       servedCheckouts(checkout('payment_processing'))
       arrange({ balance: zeroBalance })
@@ -1323,6 +1398,51 @@ describe('BillingTab', () => {
       )
       expect(addCreditsVariants()).toEqual(['secondary'])
     })
+
+    it.for([
+      {
+        surface: 'Cloud',
+        isCloud: true,
+        choosePlan: 'inverted',
+        addCredits: 'secondary',
+        planEndedBanners: 1
+      },
+      {
+        surface: 'local ComfyUI',
+        isCloud: false,
+        choosePlan: 'secondary',
+        addCredits: 'inverted',
+        planEndedBanners: 0
+      }
+    ])(
+      'keeps one white button on $surface when an ended plan is out of credits',
+      async ({ isCloud, choosePlan, addCredits, planEndedBanners }) => {
+        distribution.isCloud = isCloud
+        onTestFinished(() => {
+          distribution.isCloud = false
+        })
+        arrange({
+          balance: zeroBalance,
+          subscriptionStatus: 'ended',
+          subscription: { ...activeSubscription, isActive: false }
+        })
+
+        await screen.findByTestId('billing-auto-top-up-status')
+        expect(
+          screen.getByRole('link', { name: 'Choose a plan' })
+        ).toHaveAttribute('data-variant', choosePlan)
+        expect(addCreditsVariants()).toEqual([addCredits])
+        expect(screen.queryAllByText(/^Your .*plan has ended$/)).toHaveLength(
+          planEndedBanners
+        )
+        expect(
+          [
+            ...screen.queryAllByRole('button'),
+            ...screen.queryAllByRole('link')
+          ].filter((el) => el.dataset.variant === 'inverted')
+        ).toHaveLength(1)
+      }
+    )
 
     it('offers no Add credits on a failed top-up when the server withholds can_top_up', async () => {
       servedCheckouts(checkout('failed'))

@@ -83,6 +83,8 @@ export interface SubscriptionInfo {
   renewalDate: string | null
   /** ISO 8601; format at the display site. */
   endDate: string | null
+  /** Served `ended_at`; absent when the server omits the field. */
+  endedAt?: string | null
   isCancelled: boolean
   hasFunds: boolean
   /** Agent funds across shared credits and the Agent-scoped balance. */

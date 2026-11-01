@@ -207,6 +207,7 @@ describe('useBillingContext', () => {
       scheduledChange: null,
       renewalDate: '2025-01-01T00:00:00Z',
       endDate: null,
+      endedAt: null,
       isCancelled: false,
       hasFunds: true,
       agentHasFunds: true,
