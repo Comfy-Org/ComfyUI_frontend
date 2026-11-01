@@ -1,10 +1,3 @@
-import type { AxiosError, AxiosResponse } from 'axios'
-import axios from 'axios'
-import { ref } from 'vue'
-
-import { webSessionResourceHeader } from '@comfyorg/api-client/webSessionFetch'
-import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import {
   formatCredits,
   isSubCreditCharge,
@@ -16,9 +9,7 @@ import {
   toFiniteNumber
 } from '@/services/customerEventParams'
 import { d, i18n, t } from '@/i18n'
-import { useAuthStore } from '@/stores/authStore'
-import type { components, operations } from '@/types/comfyRegistryTypes'
-import { isAbortError } from '@/utils/typeGuardUtil'
+import type { components } from '@/types/comfyRegistryTypes'
 
 export enum EventType {
   CREDIT_ADDED = 'credit_added',
@@ -27,72 +18,9 @@ export enum EventType {
   API_USAGE_COMPLETED = 'api_usage_completed'
 }
 
-type CustomerEventsResponse =
-  operations['GetCustomerEvents']['responses']['200']['content']['application/json']
-
-type CustomerEventsResponseQuery =
-  operations['GetCustomerEvents']['parameters']['query']
-
 export type AuditLog = components['schemas']['AuditLog']
 
-const customerApiClient = axios.create({
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
-
-attachUnifiedRemintInterceptor(customerApiClient)
-
 export const useCustomerEventsService = () => {
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
-  let latestRequestId = 0
-
-  const describeRequestError = (
-    err: unknown,
-    context: string,
-    routeSpecificErrors?: Record<number, string>
-  ): string | null => {
-    if (isAbortError(err)) return null
-
-    if (!axios.isAxiosError(err)) {
-      return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
-    }
-    const axiosError = err as AxiosError<{ message: string }>
-    const status = axiosError.response?.status
-    if (status && routeSpecificErrors?.[status]) {
-      return routeSpecificErrors[status]
-    }
-    return (
-      axiosError.response?.data.message ??
-      `${context} failed with status ${status}`
-    )
-  }
-
-  const executeRequest = async <T>(
-    requestCall: () => Promise<AxiosResponse<T>>,
-    options: {
-      errorContext: string
-      routeSpecificErrors?: Record<number, string>
-    }
-  ): Promise<{ data: T | null; errorMessage: string | null }> => {
-    const { errorContext, routeSpecificErrors } = options
-
-    try {
-      const response = await requestCall()
-      return { data: response.data, errorMessage: null }
-    } catch (err) {
-      return {
-        data: null,
-        errorMessage: describeRequestError(
-          err,
-          errorContext,
-          routeSpecificErrors
-        )
-      }
-    }
-  }
-
   function formatEventType(eventType: string) {
     switch (eventType) {
       case 'credit_added':
@@ -195,77 +123,7 @@ export const useCustomerEventsService = () => {
     return (amountMicros / 100).toFixed(2)
   }
 
-  async function getMyEvents({
-    page = 1,
-    limit = 10
-  }: CustomerEventsResponseQuery = {}): Promise<CustomerEventsResponse | null> {
-    const errorContext = 'Fetching customer events'
-    const routeSpecificErrors = {
-      400: 'Invalid input, object invalid',
-      404: 'Not found'
-    }
-
-    const authStore = useAuthStore()
-    const requestOwner = authStore.currentUserIdentity()
-    const requestId = ++latestRequestId
-    if (!authStore.hasPersonalWorkspace) {
-      isLoading.value = false
-      error.value = t('toastMessages.noPersonalWorkspace')
-      return null
-    }
-    isLoading.value = true
-    error.value = null
-
-    let authHeaders
-    try {
-      authHeaders =
-        (await webSessionResourceHeader()) ??
-        (await authStore.getUserAuthHeader())
-    } catch (err) {
-      if (requestId !== latestRequestId) return null
-      isLoading.value = false
-      error.value = describeRequestError(err, errorContext)
-      return null
-    }
-    if (requestId !== latestRequestId) {
-      return null
-    }
-    if (authStore.currentUserIdentity() !== requestOwner) {
-      isLoading.value = false
-      return null
-    }
-    if (!authHeaders) {
-      isLoading.value = false
-      error.value = 'Authentication header is missing'
-      return null
-    }
-
-    const { data, errorMessage } = await executeRequest<CustomerEventsResponse>(
-      () =>
-        customerApiClient.get('/customers/events', {
-          baseURL: getComfyApiBaseUrl(),
-          params: { page, limit },
-          headers: authHeaders
-        }),
-      { errorContext, routeSpecificErrors }
-    )
-
-    if (requestId !== latestRequestId) {
-      return null
-    }
-    isLoading.value = false
-    if (authStore.currentUserIdentity() !== requestOwner) {
-      return null
-    }
-    error.value = errorMessage
-    return data
-  }
-
   return {
-    isLoading,
-    error,
-
-    getMyEvents,
     formatEventType,
     getEventSeverity,
     formatAmount,

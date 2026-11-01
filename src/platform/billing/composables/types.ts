@@ -100,7 +100,7 @@ export interface SubscriptionInfo {
 }
 
 /**
- * Balance amounts from `GET /customers/balance` and `GET /api/billing/balance`.
+ * Balance amounts from `GET /api/billing/balance`.
  * Despite the `Micros` suffixes every field is in CENTS: the backend reports
  * Metronome's USD-cents credit balance verbatim, so format with
  * `formatCreditsFromCents` (credits) or `formatMetronomeCurrency` (dollars)

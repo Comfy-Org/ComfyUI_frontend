@@ -2662,15 +2662,11 @@
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
     "legacyMaskEditorDeprecated": "The legacy mask editor is deprecated and will be removed soon.",
     "userNotAuthenticated": "User not authenticated",
-    "failedToFetchBalance": "Failed to fetch balance: {error}",
     "noPersonalWorkspace": "This account has no personal billing. Manage billing from your team workspace.",
     "failedToCreateCustomer": "Failed to create customer: {error}",
-    "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
     "invalidBillingPortalUrl": "Invalid portal URL",
-    "failedToPurchaseCredits": "Failed to purchase credits: {error}",
     "failedToFetchSubscription": "Failed to fetch subscription status: {error}",
-    "failedToInitiateSubscription": "Failed to initiate subscription: {error}",
     "unauthorizedDomain": "Your domain {domain} is not authorized to use this service. Please contact {email} to add your domain to the whitelist.",
     "useApiKeyTip": "Tip: Can't access normal login? Use the Comfy API Key option.",
     "nothingSelected": "Nothing selected",
@@ -3142,8 +3138,6 @@
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
     "teamWorkspace": "Team Workspace",
-    "soloUseOnly": "Solo use only",
-    "needTeamWorkspace": "Need team workspace?",
     "inviteUpTo": "Invite up to",
     "title": "Subscription",
     "titleUnsubscribed": "Subscribe to Comfy Cloud",
@@ -3312,12 +3306,6 @@
     "invoiceHistory": "Invoice history",
     "fullUsageActivity": "Full usage activity",
     "refreshCredits": "Refresh credits",
-    "benefits": {
-      "benefit1": "Monthly credits for Partner Nodes — top up when needed",
-      "benefit1FreeTier": "Monthly credits, top up anytime",
-      "benefit2": "Up to 1 hour runtime per job on Pro",
-      "benefit3": "Bring your own models (Creator & Pro)"
-    },
     "tiers": {
       "free": {
         "name": "Free"
@@ -3343,7 +3331,6 @@
       }
     },
     "required": {
-      "title": "Subscribe to",
       "waitingForSubscription": "Complete your subscription in the new tab. We'll automatically detect when you're done!",
       "subscribe": "Subscribe",
       "pollingSuccess": "Subscription activated successfully!",
@@ -3444,7 +3431,6 @@
     "monthlyCreditsPerMemberLabel": "Monthly credits / member",
     "yearlyCreditsPerMemberLabel": "Yearly credits / member",
     "maxMembersLabel": "Max. members",
-    "yearlyCreditsLabel": "Total yearly credits",
     "memberCount": "{count} member | {count} members",
     "maxDurationLabel": "Max run duration",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",

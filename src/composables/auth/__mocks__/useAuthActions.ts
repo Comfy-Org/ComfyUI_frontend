@@ -6,11 +6,6 @@ import type { useAuthActions as realUseAuthActions } from '@/composables/auth/us
 const actions: ReturnType<typeof realUseAuthActions> = {
   logout: vi.fn(async () => undefined),
   sendPasswordReset: vi.fn(async () => true),
-  purchaseCredits: vi.fn(async () => undefined),
-  purchaseCreditsDirect: vi.fn(async () => undefined),
-  accessBillingPortal: vi.fn(async () => true),
-  accessBillingPortalDirect: vi.fn(async () => true),
-  fetchBalance: vi.fn(async () => null),
   signInWithGoogle: vi.fn(async () => undefined),
   signInWithGithub: vi.fn(async () => undefined),
   signInWithEmail: vi.fn(async () => undefined),

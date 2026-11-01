@@ -7,15 +7,7 @@ import { FirebaseError } from 'firebase/app'
 import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  onTestFinished,
-  vi
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -76,9 +68,6 @@ const mockAuth = fromPartial<Auth>({ currentUser: null })
 
 const CUSTOMERS_URL = /\/customers$/
 const CUSTOMER_POST = { method: 'POST', url: CUSTOMERS_URL }
-const BALANCE_URL = /\/customers\/balance$/
-const CREDIT_URL = /\/customers\/credit$/
-const BILLING_URL = /\/customers\/billing$/
 
 const customerRequestBody = (): Record<string, unknown> | undefined => {
   const body = fetchRequests(CUSTOMERS_URL)[0]?.body
@@ -88,43 +77,6 @@ const customerRequestBody = (): Record<string, unknown> | undefined => {
 }
 
 const createCustomerResponse = () => Response.json({ id: 'test-customer-id' })
-
-const balanceResponse = () => Response.json({ balance: 0 })
-
-const addCreditsResponse = () =>
-  Response.json({ checkout_url: 'https://stripe.test/checkout' })
-
-const accessBillingPortalResponse = () =>
-  Response.json({ billing_portal_url: 'https://billing.stripe.com/test' })
-
-const errorResponse = (status: number, message: string) =>
-  Response.json({ message }, { status, statusText: 'Error' })
-
-function pendingJsonResponse() {
-  let signalRead!: () => void
-  const readStarted = new Promise<void>((resolve) => {
-    signalRead = resolve
-  })
-  let resolveJson!: (value: unknown) => void
-  const json = new Promise<unknown>((resolve) => {
-    resolveJson = resolve
-  })
-  const response = new Response(
-    new ReadableStream<Uint8Array>(
-      {
-        async pull(controller) {
-          signalRead()
-          controller.enqueue(
-            new TextEncoder().encode(JSON.stringify(await json))
-          )
-          controller.close()
-        }
-      },
-      { highWaterMark: 0 }
-    )
-  )
-  return { response, readStarted, resolveJson }
-}
 
 vi.mock(import('firebase/auth'))
 
@@ -178,9 +130,6 @@ describe('useAuthStore', () => {
     )
 
     respondToFetch(CUSTOMERS_URL, createCustomerResponse)
-    respondToFetch(BALANCE_URL, balanceResponse)
-    respondToFetch(CREDIT_URL, addCreditsResponse)
-    respondToFetch(BILLING_URL, accessBillingPortalResponse)
 
     store = useAuthStore()
     await vi.waitFor(() => expect(store.isInitialized).toBe(true))
@@ -265,35 +214,6 @@ describe('useAuthStore', () => {
     await store.login('test@example.com', 'correct-password')
   })
 
-  describe('fetchBalance identity isolation', () => {
-    it('discards a late balance response from the previous account after an A->B switch', async () => {
-      let signalBalanceRequested: () => void = () => {}
-      const balanceRequested = new Promise<void>((resolve) => {
-        signalBalanceRequested = resolve
-      })
-      const balance = pendingJsonResponse()
-      respondToFetch(
-        BALANCE_URL,
-        () => {
-          signalBalanceRequested()
-          return balance.response
-        },
-        { times: 1 }
-      )
-
-      // Request starts while account A is current.
-      const pending = store.fetchBalance()
-      await balanceRequested
-
-      // Firebase transitions directly to account B before the response lands.
-      authStateCallback({ ...mockUser, uid: 'account-b' })
-      balance.resolveJson({ balance: 4242 })
-
-      expect(await pending).toBeNull()
-      expect(store.balance).toBeNull()
-    })
-  })
-
   describe('partner-node session revoke', () => {
     it.for([
       { name: 'sign-out', next: () => null, revokes: 1 },
@@ -311,79 +231,6 @@ describe('useAuthStore', () => {
       authStateCallback(next())
 
       expect(revokeAll).toHaveBeenCalledTimes(revokes)
-    })
-  })
-
-  describe('fetchBalance', () => {
-    it('returns null when the customer record is not found (404)', async () => {
-      respondToFetch(
-        BALANCE_URL,
-        () => new Response(null, { status: 404, statusText: 'Not Found' })
-      )
-
-      const result = await store.fetchBalance()
-
-      expect(result).toBeNull()
-    })
-
-    it('throws with the parsed error message on a non-404 failure', async () => {
-      respondToFetch(BALANCE_URL, () =>
-        errorResponse(500, 'Balance service down')
-      )
-
-      await expect(store.fetchBalance()).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.failedToFetchBalance', {
-          error: 'Balance service down'
-        })
-      })
-    })
-
-    it('keeps the status and code on the thrown error', async () => {
-      respondToFetch(BALANCE_URL, () =>
-        Response.json(
-          { error: 'SERVICE_UNAVAILABLE', message: 'try again' },
-          { status: 503, headers: { 'Retry-After': '3600' } }
-        )
-      )
-
-      await expect(store.fetchBalance()).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        status: 503,
-        code: 'SERVICE_UNAVAILABLE'
-      })
-    })
-
-    it('reports an unknown code when the failure body is not JSON', async () => {
-      respondToFetch(
-        BALANCE_URL,
-        () =>
-          new Response('upstream connect error', {
-            status: 503,
-            headers: { 'Retry-After': '3600' }
-          })
-      )
-
-      await expect(store.fetchBalance()).rejects.toMatchObject({
-        status: 503,
-        code: 'UNKNOWN_ERROR'
-      })
-    })
-
-    it('returns the balance when a 503 clears on retry', async () => {
-      vi.useFakeTimers()
-      let calls = 0
-      respondToFetch(BALANCE_URL, () =>
-        ++calls === 1
-          ? errorResponse(503, 'Balance temporarily unavailable')
-          : balanceResponse()
-      )
-
-      const pending = store.fetchBalance()
-      await vi.advanceTimersByTimeAsync(10_000)
-
-      await expect(pending).resolves.toEqual({ balance: 0 })
-      expect(calls).toBe(2)
     })
   })
 
@@ -460,277 +307,13 @@ describe('useAuthStore', () => {
     })
   })
 
-  describe('user-scoped billing endpoints with API-key sessions', () => {
+  describe('customer provisioning with API-key sessions', () => {
     beforeEach(() => {
       authStateCallback(null)
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'test-api-key'
       })
       vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue('test-api-key')
-    })
-
-    it('fetchBalance sends the stored API key when no Firebase user exists', async () => {
-      const result = await store.fetchBalance()
-
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers/balance'),
-        expect.objectContaining({
-          headers: expect.objectContaining({ 'X-API-KEY': 'test-api-key' })
-        })
-      )
-      expect(result).toEqual({ balance: 0 })
-    })
-
-    it('fetchBalance throws userNotAuthenticated when neither credential exists', async () => {
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
-
-      await expect(store.fetchBalance()).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-      expect(fetch).not.toHaveBeenCalled()
-    })
-
-    it('drops a late balance response after the API key changes mid-flight', async () => {
-      let resolveBalance!: (value: Response) => void
-      vi.mocked(fetch).mockReturnValueOnce(
-        new Promise<Response>((resolve) => {
-          resolveBalance = resolve
-        })
-      )
-
-      const request = store.fetchBalance()
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      resolveBalance(Response.json({ balance: 7 }))
-
-      await expect(request).resolves.toBeNull()
-      expect(store.balance).toBeNull()
-    })
-
-    it('fetchBalance prefers the Firebase token over the API key when signed in', async () => {
-      authStateCallback(mockUser)
-
-      await store.fetchBalance()
-
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers/balance'),
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            Authorization: 'Bearer mock-id-token'
-          })
-        })
-      )
-      expect(useApiKeyAuthStore().getAuthHeader).not.toHaveBeenCalled()
-    })
-
-    it('initiateCreditPurchase sends the stored API key when no Firebase user exists', async () => {
-      await store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers/credit'),
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({ 'X-API-KEY': 'test-api-key' })
-        })
-      )
-    })
-
-    it('accessBillingPortal sends the stored API key when no Firebase user exists', async () => {
-      respondToFetch(BILLING_URL, () =>
-        Response.json({ billing_portal_url: 'https://stripe.test/portal' })
-      )
-
-      await store.accessBillingPortal()
-
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers/billing'),
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({ 'X-API-KEY': 'test-api-key' })
-        })
-      )
-    })
-
-    it('accessBillingPortal gives up on a billing request that hangs for 30 seconds', async () => {
-      vi.useFakeTimers()
-      onTestFinished(() => {
-        vi.useRealTimers()
-      })
-      vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => {
-        const controller = new AbortController()
-        setTimeout(
-          () =>
-            controller.abort(
-              new DOMException('The operation timed out.', 'TimeoutError')
-            ),
-          ms
-        )
-        return controller.signal
-      })
-      respondToFetch(
-        BILLING_URL,
-        (_input, init) =>
-          new Promise<Response>((_resolve, reject) => {
-            init?.signal?.addEventListener('abort', () =>
-              reject(init.signal?.reason)
-            )
-          })
-      )
-
-      const request = store.accessBillingPortal()
-      const settled = vi.fn()
-      request.then(settled, settled)
-      await vi.advanceTimersByTimeAsync(29_999)
-      expect(settled).not.toHaveBeenCalled()
-
-      await vi.advanceTimersByTimeAsync(1)
-      await expect(request).rejects.toMatchObject({ name: 'TimeoutError' })
-    })
-
-    it('accessBillingPortal throws userNotAuthenticated when neither credential exists', async () => {
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
-
-      await expect(store.accessBillingPortal()).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-      expect(fetch).not.toHaveBeenCalled()
-    })
-    it('re-provisions the customer after the API key changes', async () => {
-      const payload = { amount_micros: 5_000_000, currency: 'usd' }
-
-      await store.initiateCreditPurchase(payload)
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      await store.initiateCreditPurchase(payload)
-
-      expect(fetchRequests(CUSTOMER_POST)).toHaveLength(2)
-    })
-
-    it('does not retry with the old API key after a mid-recovery switch', async () => {
-      let resolveCreate!: (value: Response) => void
-      respondToFetch(
-        CUSTOMER_POST,
-        () =>
-          new Promise<Response>((resolve) => {
-            resolveCreate = resolve
-          })
-      )
-      respondToFetch(BILLING_URL, () =>
-        Response.json({ message: 'Failed to find customer' }, { status: 409 })
-      )
-
-      const request = store.accessBillingPortal()
-      await new Promise<void>((resolve) => setTimeout(resolve, 0))
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      resolveCreate(createCustomerResponse())
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-      expect(fetchRequests(BILLING_URL)).toHaveLength(1)
-    })
-
-    it('aborts a credit purchase when the API key changes during recovery', async () => {
-      let resolveCreate!: (value: Response) => void
-      respondToFetch(
-        CUSTOMER_POST,
-        () =>
-          new Promise<Response>((resolve) => {
-            resolveCreate = resolve
-          })
-      )
-
-      const request = store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-      await new Promise<void>((resolve) => setTimeout(resolve, 0))
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      resolveCreate(createCustomerResponse())
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-      expect(fetchRequests(CREDIT_URL)).toEqual([])
-    })
-
-    it('withholds a portal URL that succeeds after an A->B API key switch', async () => {
-      let resolveBilling!: (value: Response) => void
-      const billingRequestStarted = new Promise<void>((requestStarted) => {
-        respondToFetch(BILLING_URL, () => {
-          requestStarted()
-          return new Promise<Response>((resolve) => {
-            resolveBilling = resolve
-          })
-        })
-      })
-
-      const request = store.accessBillingPortal()
-      await billingRequestStarted
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      resolveBilling(
-        Response.json({ billing_portal_url: 'https://stripe.test/portal' })
-      )
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-
-    it('withholds a checkout URL that succeeds after an A->B API key switch', async () => {
-      let resolveCredit!: (value: Response) => void
-      const creditRequestStarted = new Promise<void>((requestStarted) => {
-        respondToFetch(CREDIT_URL, () => {
-          requestStarted()
-          return new Promise<Response>((resolve) => {
-            resolveCredit = resolve
-          })
-        })
-      })
-
-      const request = store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-      await creditRequestStarted
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      resolveCredit(
-        Response.json({ checkout_url: 'https://stripe.test/checkout' })
-      )
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
     })
 
     it('rejects a customer record created before an A->B API key switch', async () => {
@@ -760,47 +343,6 @@ describe('useAuthStore', () => {
       })
     })
 
-    it('withholds a portal URL when the API key changes while the body parses', async () => {
-      const portal = pendingJsonResponse()
-      respondToFetch(BILLING_URL, () => portal.response, { times: 1 })
-
-      const request = store.accessBillingPortal()
-      await portal.readStarted
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      portal.resolveJson({ billing_portal_url: 'https://stripe.test/portal' })
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-
-    it('withholds a checkout URL when the API key changes while the body parses', async () => {
-      const credit = pendingJsonResponse()
-      respondToFetch(CREDIT_URL, () => credit.response, { times: 1 })
-
-      const request = store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-      await credit.readStarted
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      credit.resolveJson({ checkout_url: 'https://stripe.test/checkout' })
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-
     const accountAFailureResponse = () =>
       Response.json(
         { message: 'account A backend error' },
@@ -815,71 +357,6 @@ describe('useAuthStore', () => {
         'X-API-KEY': 'another-api-key'
       })
     }
-
-    it('suppresses a balance error that rejects after an A->B API key switch', async () => {
-      let resolveBalance!: (value: Response) => void
-      const balanceRequestStarted = new Promise<void>((requestStarted) => {
-        respondToFetch(BALANCE_URL, () => {
-          requestStarted()
-          return new Promise<Response>((resolve) => {
-            resolveBalance = resolve
-          })
-        })
-      })
-
-      const request = store.fetchBalance()
-      await balanceRequestStarted
-      switchToAnotherApiKey()
-      resolveBalance(accountAFailureResponse())
-
-      await expect(request).resolves.toBeNull()
-      expect(store.balance).toBeNull()
-    })
-
-    it('withholds a checkout error that rejects after an A->B API key switch', async () => {
-      let resolveCredit!: (value: Response) => void
-      const creditRequestStarted = new Promise<void>((requestStarted) => {
-        respondToFetch(CREDIT_URL, () => {
-          requestStarted()
-          return new Promise<Response>((resolve) => {
-            resolveCredit = resolve
-          })
-        })
-      })
-
-      const request = store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-      await creditRequestStarted
-      switchToAnotherApiKey()
-      resolveCredit(accountAFailureResponse())
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-
-    it('withholds a portal error that rejects after an A->B API key switch', async () => {
-      let resolveBilling!: (value: Response) => void
-      const billingRequestStarted = new Promise<void>((requestStarted) => {
-        respondToFetch(BILLING_URL, () => {
-          requestStarted()
-          return new Promise<Response>((resolve) => {
-            resolveBilling = resolve
-          })
-        })
-      })
-
-      const request = store.accessBillingPortal()
-      await billingRequestStarted
-      switchToAnotherApiKey()
-      resolveBilling(accountAFailureResponse())
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
 
     it('withholds a customer-creation error that rejects after an A->B API key switch', async () => {
       let resolveCreate!: (value: Response) => void
@@ -1775,152 +1252,6 @@ describe('useAuthStore', () => {
     })
   })
 
-  describe('accessBillingPortal', () => {
-    it('should call billing endpoint without body when no targetTier provided', async () => {
-      const result = await store.accessBillingPortal()
-
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers/billing'),
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            Authorization: 'Bearer mock-id-token',
-            'Content-Type': 'application/json'
-          })
-        })
-      )
-
-      const callArgs = vi
-        .mocked(fetch)
-        .mock.calls.find(([url]) => String(url).endsWith('/customers/billing'))
-      expect(callArgs?.[1]).not.toHaveProperty('body')
-      expect(result).toEqual({
-        billing_portal_url: 'https://billing.stripe.com/test'
-      })
-    })
-
-    it('sends cancel_subscription only when requested, and never with a target tier', async () => {
-      const bodyOf = () => fetchRequests(BILLING_URL).at(-1)?.body
-
-      await store.accessBillingPortal(undefined, { cancelSubscription: true })
-      expect(JSON.parse(String(bodyOf()))).toEqual({
-        cancel_subscription: true
-      })
-
-      await expect(
-        store.accessBillingPortal('creator', { cancelSubscription: true })
-      ).rejects.toThrow(/target tier/)
-
-      await store.accessBillingPortal(undefined, { cancelSubscription: false })
-      expect(bodyOf()).toBeUndefined()
-    })
-
-    it('should include target_tier in request body when targetTier provided', async () => {
-      await store.accessBillingPortal('creator')
-
-      const [billingRequest] = fetchRequests(BILLING_URL)
-      expect(billingRequest.body).toBeDefined()
-      expect(JSON.parse(String(billingRequest.body))).toEqual({
-        target_tier: 'creator'
-      })
-    })
-
-    it.for([
-      'standard',
-      'creator',
-      'pro',
-      'standard-yearly',
-      'creator-yearly',
-      'pro-yearly'
-    ] as const)('sends the %s checkout tier format', async (tier) => {
-      await store.accessBillingPortal(tier)
-
-      expect(JSON.parse(String(fetchRequests(BILLING_URL)[0].body))).toEqual({
-        target_tier: tier
-      })
-    })
-
-    it('should throw error when API returns error response', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce(
-        Response.json(
-          { message: 'Billing portal unavailable' },
-          { status: 500 }
-        )
-      )
-
-      await expect(store.accessBillingPortal()).rejects.toThrow()
-    })
-
-    it('surfaces the parsed error message on a failed response', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce(
-        errorResponse(503, 'Billing portal unavailable')
-      )
-
-      await expect(store.accessBillingPortal()).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.failedToAccessBillingPortal', {
-          error: 'Billing portal unavailable'
-        })
-      })
-    })
-
-    it('throws when no authentication method is available', async () => {
-      authStateCallback(null)
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
-
-      await expect(store.accessBillingPortal()).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-  })
-
-  describe('addCredits / initiateCreditPurchase', () => {
-    it('throws when no authentication method is available', async () => {
-      authStateCallback(null)
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
-
-      await expect(
-        store.initiateCreditPurchase({
-          amount_micros: 5_000_000,
-          currency: 'usd'
-        })
-      ).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-
-    it('surfaces the parsed error message on a failed response', async () => {
-      respondToFetch(CREDIT_URL, () => errorResponse(402, 'Card declined'))
-
-      await expect(
-        store.initiateCreditPurchase({
-          amount_micros: 5_000_000,
-          currency: 'usd'
-        })
-      ).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.failedToInitiateCreditPurchase', {
-          error: 'Card declined'
-        }),
-        status: 402
-      })
-    })
-
-    it('skips the customer pre-flight once a customer is known to exist', async () => {
-      await store.createCustomer()
-      vi.mocked(fetch).mockClear()
-
-      await store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-
-      expect(customerRequestBody()).toBeUndefined()
-    })
-  })
-
   describe('getAuthHeaderOrThrow', () => {
     it('returns auth header when authenticated', async () => {
       const header = await store.getAuthHeaderOrThrow()
@@ -2058,49 +1389,10 @@ describe('useAuthStore', () => {
         })
       })
     })
-
-    it('rejects a customer record created before an A->B Firebase identity switch', async () => {
-      let signalCustomerRequested: () => void = () => {}
-      const customerRequested = new Promise<void>((resolve) => {
-        signalCustomerRequested = resolve
-      })
-      const customer = pendingJsonResponse()
-      respondToFetch(
-        CUSTOMERS_URL,
-        () => {
-          signalCustomerRequested()
-          return customer.response
-        },
-        { times: 1 }
-      )
-
-      // The auth header is resolved for account A; only the response body
-      // (fetched below) races the A->B switch.
-      const createPromise = store.createCustomer()
-      await customerRequested
-      authStateCallback({ ...mockUser, uid: 'different-user-id' })
-      customer.resolveJson({ id: 'test-customer-id' })
-
-      await expect(createPromise).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-
-      // A subsequent credit pre-flight must still provision a customer for
-      // this (different) identity rather than trusting the stale flag.
-      vi.mocked(fetch).mockClear()
-
-      await store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-
-      expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
-    })
   })
 
   describe('fetchWithCustomerRecovery', () => {
-    const BALANCE_ENDPOINT = 'https://api.test/customers/balance'
+    const CUSTOMER_ENDPOINT = 'https://api.test/customers/me'
 
     function make409(message: string) {
       return Response.json({ message }, { status: 409, statusText: 'Conflict' })
@@ -2112,16 +1404,6 @@ describe('useAuthStore', () => {
     function countCustomerPosts() {
       return fetchRequests(CUSTOMER_POST).length
     }
-
-    it('should provision the customer and retry once when a /customers/* call returns 409', async () => {
-      respondToFetch(BALANCE_URL, makeConflictResponse, { times: 1 })
-
-      const result = await store.fetchBalance()
-
-      expect(result).toEqual({ balance: 0 })
-      expect(fetchRequests(BALANCE_URL)).toHaveLength(2)
-      expect(countCustomerPosts()).toBe(1)
-    })
 
     it('should deduplicate concurrent recovery attempts into a single customer creation', async () => {
       const seenUrls = new Set<string>()
@@ -2138,7 +1420,7 @@ describe('useAuthStore', () => {
       })
 
       const [first, second] = await Promise.all([
-        store.fetchWithCustomerRecovery('https://api.test/customers/balance'),
+        store.fetchWithCustomerRecovery('https://api.test/customers/me'),
         store.fetchWithCustomerRecovery(
           'https://api.test/customers/cloud-subscription-status'
         )
@@ -2151,13 +1433,13 @@ describe('useAuthStore', () => {
 
     it('should not provision the customer again after a successful recovery', async () => {
       // Endpoint keeps conflicting even after recovery succeeds
-      respondToFetch(BALANCE_ENDPOINT, makeConflictResponse)
+      respondToFetch(CUSTOMER_ENDPOINT, makeConflictResponse)
 
       const first = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
+        'https://api.test/customers/me'
       )
       const second = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
+        'https://api.test/customers/me'
       )
 
       expect(first.status).toBe(409)
@@ -2174,10 +1456,10 @@ describe('useAuthStore', () => {
             statusText: 'Internal Server Error'
           })
       )
-      respondToFetch(BALANCE_ENDPOINT, makeConflictResponse)
+      respondToFetch(CUSTOMER_ENDPOINT, makeConflictResponse)
 
       const response = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
+        'https://api.test/customers/me'
       )
 
       expect(response.status).toBe(409)
@@ -2188,7 +1470,7 @@ describe('useAuthStore', () => {
       vi.mocked(fetch).mockResolvedValueOnce(Response.json({}))
 
       const response = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
+        'https://api.test/customers/me'
       )
 
       expect(response.ok).toBe(true)
@@ -2246,7 +1528,7 @@ describe('useAuthStore', () => {
       )
 
       const response = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
+        'https://api.test/customers/me'
       )
 
       expect(response.status).toBe(409)
@@ -2254,11 +1536,9 @@ describe('useAuthStore', () => {
     })
 
     it('should re-provision after the auth state changes to a different session', async () => {
-      respondToFetch(BALANCE_ENDPOINT, makeConflictResponse)
+      respondToFetch(CUSTOMER_ENDPOINT, makeConflictResponse)
 
-      await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
+      await store.fetchWithCustomerRecovery('https://api.test/customers/me')
       expect(countCustomerPosts()).toBe(1)
 
       // Sign out, then a different account signs in: the memoized recovery
@@ -2266,18 +1546,14 @@ describe('useAuthStore', () => {
       authStateCallback(null)
       authStateCallback(mockUser)
 
-      await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
+      await store.fetchWithCustomerRecovery('https://api.test/customers/me')
       expect(countCustomerPosts()).toBe(2)
     })
 
     it('re-provisions when the active uid changes without an auth-state reset', async () => {
-      respondToFetch(BALANCE_ENDPOINT, makeConflictResponse)
+      respondToFetch(CUSTOMER_ENDPOINT, makeConflictResponse)
 
-      await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
+      await store.fetchWithCustomerRecovery('https://api.test/customers/me')
       expect(countCustomerPosts()).toBe(1)
 
       // A uid change that did not pass through onAuthStateChanged (which would
@@ -2288,38 +1564,21 @@ describe('useAuthStore', () => {
         uid: 'different-uid'
       } as Partial<User> as User
 
-      await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
+      await store.fetchWithCustomerRecovery('https://api.test/customers/me')
       expect(countCustomerPosts()).toBe(2)
     })
 
     it('should return the original 409 when the retry fails at the network level', async () => {
-      respondToFetch(BALANCE_ENDPOINT, () =>
+      respondToFetch(CUSTOMER_ENDPOINT, () =>
         Promise.reject(new TypeError('network down'))
       )
-      respondToFetch(BALANCE_ENDPOINT, makeConflictResponse, { times: 1 })
+      respondToFetch(CUSTOMER_ENDPOINT, makeConflictResponse, { times: 1 })
 
       const response = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
+        'https://api.test/customers/me'
       )
 
       expect(response.status).toBe(409)
-      expect(countCustomerPosts()).toBe(1)
-    })
-
-    it('should share one customer creation between concurrent credit pre-flights', async () => {
-      await Promise.all([
-        store.initiateCreditPurchase({
-          amount_micros: 5_000_000,
-          currency: 'usd'
-        }),
-        store.initiateCreditPurchase({
-          amount_micros: 5_000_000,
-          currency: 'usd'
-        })
-      ])
-
       expect(countCustomerPosts()).toBe(1)
     })
 
@@ -2336,11 +1595,11 @@ describe('useAuthStore', () => {
 
       respondToFetch(CUSTOMER_POST, () => session2CreateP)
       respondToFetch(CUSTOMER_POST, () => session1CreateP, { times: 1 })
-      respondToFetch(BALANCE_ENDPOINT, makeConflictResponse)
+      respondToFetch(CUSTOMER_ENDPOINT, makeConflictResponse)
 
       // Session 1: trigger a recovery whose POST will hang
       const session1Done = store
-        .fetchWithCustomerRecovery('https://api.test/customers/balance')
+        .fetchWithCustomerRecovery('https://api.test/customers/me')
         .then(() => 'session1')
         .catch(() => 'session1-failed')
 
@@ -2353,7 +1612,7 @@ describe('useAuthStore', () => {
 
       // Session 2 recovery — should create a new independent in-flight promise
       const session2Done = store
-        .fetchWithCustomerRecovery('https://api.test/customers/balance')
+        .fetchWithCustomerRecovery('https://api.test/customers/me')
         .then(() => 'session2')
         .catch(() => 'session2-failed')
 
@@ -2378,11 +1637,11 @@ describe('useAuthStore', () => {
       })
 
       respondToFetch(CUSTOMER_POST, () => slowCreateP, { times: 1 })
-      respondToFetch(BALANCE_ENDPOINT, makeConflictResponse)
+      respondToFetch(CUSTOMER_ENDPOINT, makeConflictResponse)
 
       // Session 1 triggers recovery with a slow POST
       const session1Done = store
-        .fetchWithCustomerRecovery('https://api.test/customers/balance')
+        .fetchWithCustomerRecovery('https://api.test/customers/me')
         .catch(() => {})
 
       await new Promise<void>((resolve) => setTimeout(resolve, 0))
@@ -2397,9 +1656,7 @@ describe('useAuthStore', () => {
 
       // A fresh recovery for the new session must POST again;
       // customerCreated must not have been set by the stale resolution.
-      await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
+      await store.fetchWithCustomerRecovery('https://api.test/customers/me')
       expect(countCustomerPosts()).toBe(2)
     })
   })
@@ -2792,30 +2049,6 @@ describe('useAuthStore in local/desktop distribution', () => {
         name: 'AuthStoreError',
         message: i18n.global.t('toastMessages.userNotAuthenticated')
       })
-    })
-
-    it('drops the previous account state when Desktop switches accounts', async () => {
-      const bridge = hostBridge({ status: 'signed_in', userId: 'host-a' })
-      await startDesktopHostSession(bridge)
-      const resetTeams = vi.spyOn(
-        useTeamWorkspaceStore(),
-        'resetForIdentityChange'
-      )
-      const clearWorkspace = vi.spyOn(
-        useWorkspaceAuthStore(),
-        'clearWorkspaceContext'
-      )
-      store.balance = fromPartial<NonNullable<typeof store.balance>>({
-        amount_micros: 5
-      })
-
-      bridge.push({ status: 'signed_in', userId: 'host-b' })
-      await nextTick()
-
-      expect(store.userId).toBe('host-b')
-      expect(resetTeams).toHaveBeenCalledOnce()
-      expect(clearWorkspace).toHaveBeenCalledOnce()
-      expect(store.balance).toBeNull()
     })
 
     it('signs Desktop out on logout and drops an earlier stored API key', async () => {

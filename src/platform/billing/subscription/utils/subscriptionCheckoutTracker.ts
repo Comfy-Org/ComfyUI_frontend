@@ -10,7 +10,6 @@ import type {
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import type {
-  BeginCheckoutMetadata,
   PaymentIntentSource,
   ResubscribeClickMetadata,
   SubscriptionSuccessMetadata
@@ -401,7 +400,7 @@ export const claimPendingCheckoutTerminal = (
 export const hasPendingSubscriptionCheckoutAttempt = (): boolean =>
   getPendingSubscriptionCheckoutAttempt() !== null
 
-export const createPendingSubscriptionCheckoutAttempt = (
+const createPendingSubscriptionCheckoutAttempt = (
   input: PendingSubscriptionCheckoutAttemptInput
 ): PendingSubscriptionCheckoutAttempt => {
   return {
@@ -430,7 +429,7 @@ export const createPendingSubscriptionCheckoutAttempt = (
   }
 }
 
-export const persistPendingSubscriptionCheckoutAttempt = (
+const persistPendingSubscriptionCheckoutAttempt = (
   attempt: PendingSubscriptionCheckoutAttempt
 ): PendingSubscriptionCheckoutAttempt => {
   const storage = getStorage()
@@ -457,14 +456,6 @@ export const recordPendingSubscriptionCheckoutAttempt = (
   persistPendingSubscriptionCheckoutAttempt(
     createPendingSubscriptionCheckoutAttempt(input)
   )
-
-export const withPendingCheckoutAttemptId = (
-  metadata: BeginCheckoutMetadata,
-  attempt: PendingSubscriptionCheckoutAttempt
-): BeginCheckoutMetadata => ({
-  ...metadata,
-  checkout_attempt_id: attempt.attempt_id
-})
 
 const didAttemptSucceed = (
   attempt: PendingSubscriptionCheckoutAttempt,

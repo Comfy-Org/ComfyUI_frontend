@@ -8,7 +8,7 @@ export const AGENT_USAGE_EVENT_TYPE = 'Agent Usage'
 export const PARTNER_NODE_USAGE_EVENT_TYPE = 'Partner Node Usage'
 export const API_USAGE_EVENT_TYPE = 'API Usage'
 
-/** `/customers/events` page with whole, sub-credit and non-numeric `charge_micro_usd`. */
+/** Billing events page with whole, sub-credit and non-numeric `charge_micro_usd`. */
 export const AGENT_USAGE_CUSTOMER_EVENTS = {
   events: [
     {

@@ -22,14 +22,10 @@ function reactiveDefaults() {
 const subscription: ReturnType<typeof realUseSubscription> = {
   ...reactiveDefaults(),
   isSubscriptionEnabled: vi.fn(() => false),
-  subscribe: vi.fn(async () => {}),
-  subscribeDirect: vi.fn(async () => {}),
   fetchStatus: vi.fn(async () => undefined),
   fetchStatusDirect: vi.fn(async () => null),
-  manageSubscription: vi.fn(async () => {}),
   handleViewUsageHistory: vi.fn(),
-  handleLearnMore: vi.fn(),
-  handleInvoiceHistory: vi.fn(async () => {})
+  handleLearnMore: vi.fn()
 }
 
 export const useSubscription = vi.fn(() => {
