@@ -47,6 +47,10 @@ type AgentAskResolvedEvent = Extract<
   AgentChatEvent,
   { type: 'agent_ask_resolved' }
 >
+type AgentNonTerminalEvent = Exclude<
+  AgentChatEvent,
+  { type: 'agent_message_done' }
+>
 type AgentMessageDeltaEvent = Extract<
   AgentChatEvent,
   { type: 'agent_message_delta' }
@@ -485,7 +489,7 @@ export function createAgentEventTransport(
     return part
   }
 
-  function applyChatEvent(event: AgentChatEvent): boolean {
+  function applyChatEvent(event: AgentNonTerminalEvent): boolean {
     switch (event.type) {
       case 'agent_thinking':
         handleThinkingEvent(event.data)
@@ -510,9 +514,6 @@ export function createAgentEventTransport(
       case 'agent_message_draft':
         handleMessageDraftEvent(event.data)
         return true
-      case 'agent_message_done':
-        settle()
-        return false
       case 'agent_thinking_draft':
         handleThinkingDraftEvent(event.data)
         return true
@@ -523,6 +524,10 @@ export function createAgentEventTransport(
     if (settled) {
       if (event.type === 'agent_ask')
         reportUndeliverableAsk(event.data, 'settled-turn')
+      return
+    }
+    if (event.type === 'agent_message_done') {
+      settle()
       return
     }
     if (applyChatEvent(event)) emit(snapshotMessage(message))
