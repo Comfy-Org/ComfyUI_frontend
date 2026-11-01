@@ -171,12 +171,12 @@ bound document's root graph is mintable; an op for another graph, or for the
 interior of a subgraph, is not minted and is reported once per flush. A batch ends in
 exactly one of four outcomes:
 
-| Outcome          | Produced when                                                                                                     | Time bound                                       |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| `acknowledged`   | a result arrives for the batch's op ids (an anonymous failure also counts when a send happened)                   | none, the result decides                         |
-| `unacknowledged` | no result within the result timeout, after one silent resend of the same ops                                      | about 20 seconds from the first send, tab active |
-| `unconfirmed`    | the batch was sent, then the sender was unbound, aborted by a `doc_reset`, detached, or its subscribe was refused | immediate on the event                           |
-| `undeliverable`  | the batch was never sent and its document was unbound, reset or detached                                          | immediate on the event                           |
+| Outcome          | Produced when                                                                                                                | Time bound                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `acknowledged`   | a result arrives for the batch's op ids (an anonymous failure also counts when a send happened)                              | none, the result decides                         |
+| `unacknowledged` | no result within the result timeout, after one silent resend of the same ops                                                 | about 20 seconds from the first send, tab active |
+| `unconfirmed`    | the batch was sent, then the sender was unbound, aborted by a `doc_reset`, detached, or its subscribe was refused            | immediate on the event                           |
+| `undeliverable`  | the batch was never sent and its document was unbound, reset or detached; or admission was refused under `counter_exhausted` | immediate on the event or refused admission      |
 
 A transport that refuses the batch for the whole retry budget (five retries,
 six tries in all, half a second apart) holds it instead of settling it; the
