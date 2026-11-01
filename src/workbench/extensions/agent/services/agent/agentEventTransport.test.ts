@@ -1171,6 +1171,21 @@ describe('agentEventTransport thinking drafts', () => {
     ])
   })
 
+  it('drops an unconfirmed thinking draft at a remember call but keeps the answer', () => {
+    const message = drive([
+      thinkingDraft('half a thought'),
+      draft('Here is the full answer'),
+      toolCall('remember', 'running'),
+      runApproval('turn-1:call-remember', 'ask_user')
+    ])
+
+    expect(thinkingTexts(message)).toEqual([])
+    expect(textParts(message).map((p) => p.text)).toEqual([
+      'Here is the full answer'
+    ])
+    expect(message.thinking).toBe(false)
+  })
+
   it('does not let an answer withdrawal take the thinking draft', () => {
     const message = drive([thinkingDraft('Still thinking'), draft('')])
 
