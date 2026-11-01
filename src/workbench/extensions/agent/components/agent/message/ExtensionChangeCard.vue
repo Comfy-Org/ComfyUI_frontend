@@ -44,7 +44,7 @@ const title = computed(() =>
       <i aria-hidden="true" :class="ACTIONS[part.action].icon" />
     </span>
     <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-      <span class="text-sm/4 break-words text-foreground">{{ title }}</span>
+      <span class="text-sm/4 wrap-break-word text-foreground">{{ title }}</span>
       <span v-if="part.agentCreated" class="text-xs text-muted-foreground">
         {{ t('g.createdByAgent') }}
       </span>
