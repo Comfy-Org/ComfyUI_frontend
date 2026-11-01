@@ -55,7 +55,8 @@ function deployment(id: string, name: string): WorkspaceDeployment {
     release_id: `rel-${id}`,
     release_version: 4,
     status: 'ready',
-    created_at: '2026-10-01T00:00:00Z'
+    created_at: '2026-10-01T00:00:00Z',
+    can_start: false
   }
 }
 

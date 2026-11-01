@@ -52,12 +52,23 @@ export const zWorkspaceMemberCapabilities = z.object({
 export const zWorkspaceDeployment = z.object({
   build_id: z.string().optional(),
   build_name: z.string().optional(),
+  can_start: z.boolean(),
   created_at: z.iso.datetime(),
   deployment_id: z.string(),
   deployment_name: z.string().optional(),
   release_id: z.string(),
   release_version: z.int().optional(),
-  status: z.string()
+  status: z.enum([
+    'queued',
+    'provisioning',
+    'starting',
+    'ready',
+    'unhealthy',
+    'stopping',
+    'stop_failed',
+    'stopped',
+    'failed'
+  ])
 })
 
 /**
@@ -7368,3 +7379,25 @@ export const zGetWebsocketQuery = z.object({
   workspace_id: z.string().optional(),
   clientId: z.string().optional()
 })
+
+/**
+ * The deployment a start was asked for, and its status after the ask.
+ */
+export const zStartWorkspaceDeploymentResult = z.object({
+  deployment_id: z.string(),
+  status: z.string()
+})
+
+export const zListWorkspaceDeploymentsQuery = z.object({
+  started_deployment_id: z.array(z.string()).optional()
+})
+
+export const zStartWorkspaceDeploymentPath = z.object({
+  id: z.string(),
+  deployment_id: z.string()
+})
+
+/**
+ * Accepted; the deployment is starting, or already up
+ */
+export const zStartWorkspaceDeploymentResponse = zStartWorkspaceDeploymentResult

@@ -13,7 +13,8 @@ const deployment: WorkspaceDeployment = {
   build_name: 'video-minimax-h3 copy',
   release_id: 'rel-3',
   status: 'ready',
-  created_at: '2026-10-01T00:00:00Z'
+  created_at: '2026-10-01T00:00:00Z',
+  can_start: false
 }
 
 function section(brief: string, title: string): string {
@@ -204,7 +205,8 @@ describe(deploymentBuildBrief, () => {
         deployment_id: 'dep-1',
         release_id: 'rel-3',
         status: 'ready',
-        created_at: '2026-10-01T00:00:00Z'
+        created_at: '2026-10-01T00:00:00Z',
+        can_start: false
       },
       [],
       [{ name: 'm.safetensors', directory: 'vae' }]

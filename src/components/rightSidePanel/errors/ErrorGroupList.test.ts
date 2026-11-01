@@ -324,7 +324,8 @@ describe('ErrorGroupList selection emphasis', () => {
     build_name: 'video-minimax-h3 copy',
     release_id: 'rel-3',
     status: 'ready',
-    created_at: '2026-10-01T00:00:00Z'
+    created_at: '2026-10-01T00:00:00Z',
+    can_start: false
   }
 
   function showMissingModelOn(bootDeployment: WorkspaceDeployment | null) {
