@@ -39,7 +39,9 @@ const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 const onboardedScopesByPage = new WeakMap<Page, string[]>()
 
-/** The stubbed per-user tour completion list for this page; it survives a reload. */
+export const AGENT_ONBOARDING_SCOPE_KEY =
+  'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+
 export function storedOnboardedScopes(page: Page): readonly string[] {
   return onboardedScopesByPage.get(page) ?? []
 }
