@@ -267,9 +267,14 @@ test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
     await expect(tab.removeFilterButton('Past 7 days')).toHaveCount(0)
   })
 
-  test('Unchecking the active filter restores previously hidden cards', async ({
+  test('Unchecking the active filter restores every hidden preview', async ({
     comfyPage
   }) => {
+    test.fail(
+      true,
+      'The 3D preview card currently remains unmounted after its filter is cleared'
+    )
+
     const tab = comfyPage.menu.assetsTab
     await tab.open()
     await tab.waitForAssets()
@@ -280,14 +285,13 @@ test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
 
     await tab.toggleMediaTypeFilter('image')
 
-    // TODO(#11635): the 3D preview card does not remount after a filter
-    // toggle restores it (only image/video/audio reappear). Image, video,
-    // and audio cover the restoration path; once #11635 is fixed, add the
-    // 3D card back to this assertion list.
     await expect(tab.getAssetCardByName(imageCardName)).toBeVisible({
       timeout: 10_000
     })
     await expect(tab.getAssetCardByName(videoCardName)).toBeVisible()
     await expect(tab.getAssetCardByName(audioCardName)).toBeVisible()
+    const threeDCard = tab.getAssetCardByName(threeDCardName)
+    await expect(threeDCard).toBeVisible()
+    await expect(threeDCard.getByText('3D Model')).toHaveCount(1)
   })
 })
