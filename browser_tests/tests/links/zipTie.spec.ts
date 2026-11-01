@@ -1,9 +1,10 @@
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { test } from '@e2e/fixtures/zipTieFixture'
 
+test.use({ trace: 'on' })
+
 test.describe('Zip ties', { tag: ['@canvas', '@vue-nodes'] }, () => {
   test.use({
-    trace: 'on',
     initialSettings: {
       'Comfy.Canvas.NavigationMode': 'standard',
       'Comfy.Minimap.Visible': false
