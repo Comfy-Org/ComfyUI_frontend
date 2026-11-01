@@ -5,6 +5,10 @@ import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
+import InputGroupAccordion from '@/components/builder/InputGroupAccordion.vue'
+import { vGroupUngroupTarget } from '@/components/builder/useGroupDrop'
+import { groupPosition } from '@/components/builder/useInputGroups'
+import Button from '@comfyorg/design-system/button/Button'
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
@@ -28,12 +32,14 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
+import { useInputGroupStore } from '@/stores/inputGroupStore'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 
 const appModeStore = useAppModeStore()
+const inputGroupStore = useInputGroupStore()
 const canvasInteractions = useCanvasInteractions()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
@@ -48,7 +54,6 @@ const hoveringSelectable = ref(false)
 workflowStore.activeWorkflow?.changeTracker?.reset()
 
 const resolvedInputs = useResolvedSelectedInputs()
-
 const outputsWithState = computed<[NodeId, string][]>(() =>
   appModeStore.selectedOutputs.map((nodeId) => [
     nodeId,
@@ -189,13 +194,33 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
       }}
     </div>
     <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <DraggableList
-        v-if="isArrangeMode"
-        v-model="appModeStore.selectedInputs"
-        class="overflow-x-clip"
-      >
-        <AppModeWidgetList builder-mode />
-      </DraggableList>
+      <template v-if="isArrangeMode">
+        <div
+          v-group-ungroup-target="isArrangeMode"
+          data-testid="builder-ungrouped-list"
+          class="mt-0.5 min-h-12 space-y-0.5 overflow-x-clip px-2 pb-2"
+        >
+          <AppModeWidgetList builder-mode />
+        </div>
+        <div v-if="inputGroupStore.inputGroups.length" class="px-2 pb-2">
+          <InputGroupAccordion
+            v-for="(group, index) in inputGroupStore.inputGroups"
+            :key="group.id"
+            :group
+            builder-mode
+            :position="groupPosition(index, inputGroupStore.inputGroups.length)"
+          />
+        </div>
+        <div class="flex-1" />
+        <Button
+          variant="textonly"
+          class="w-full shrink-0 justify-between rounded-none border-0 border-t p-4"
+          @click="inputGroupStore.createGroup()"
+        >
+          {{ t('linearMode.groups.createGroup') }}
+          <i class="icon-[lucide--plus] size-5 text-muted-foreground" />
+        </Button>
+      </template>
       <PropertiesAccordionItem
         v-if="isSelectInputsMode"
         :label="t('nodeHelpPage.inputs')"
