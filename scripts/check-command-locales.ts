@@ -5,25 +5,6 @@ import ts from 'typescript'
 
 import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 
-/**
- * Every command declared in source must keep an English entry in
- * src/locales/en/commands.json, because SelectionToolbox-style call sites read
- * `commands.<normalized id>.label` and @intlify/vue-i18n/no-missing-keys only
- * fails once such a call site exists.
- *
- * scripts/collect-i18n-general.ts rewrites that catalog from the commands the
- * running app has registered, so a command whose extension had not loaded at
- * collection time is pruned. Nothing fails at that moment: ESLint caches on
- * file content and config, never on catalog content, so the prune can reach a
- * release branch and only surface later as a lint error in an unrelated PR.
- * `Comfy.3DViewer.Open3DViewer` was pruned that way three times — restored by
- * #22130, dropped again by the 1.59.3 bump, and fixed at the source for the
- * lazy 3D extension by #22168 (FE-3637).
- *
- * This guard is the mechanical check that was missing: it reads declared
- * command ids out of the source tree, so it needs neither a browser nor a
- * regeneration run and catches the pruned state on any branch.
- */
 export const COMMAND_SOURCE_GLOB = 'src/**/*.ts'
 
 export const COMMANDS_CATALOG_FILE = 'src/locales/en/commands.json'
@@ -46,7 +27,7 @@ export interface CommandLocaleGap extends DeclaredCommand {
 }
 
 export interface CommandCatalog {
-  [key: string]: { label?: unknown } | unknown
+  [key: string]: unknown
 }
 
 const isGeneratedOrTestFile = (file: string): boolean =>
@@ -64,7 +45,6 @@ export function findCommandSourceFiles(repositoryRoot: string): string[] {
     .sort()
 }
 
-/** Unwraps `[...] as const` and `[...] satisfies T` around a command array. */
 function arrayLiteral(
   expression: ts.Expression | undefined
 ): ts.ArrayLiteralExpression | undefined {
@@ -80,7 +60,6 @@ function propertyName(name: ts.PropertyName): string | undefined {
   if (ts.isIdentifier(name) || ts.isStringLiteral(name)) return name.text
 }
 
-/** The `commands: [...]` of a ComfyExtension, or `const commands = [...]`. */
 function commandArray(node: ts.Node): ts.ArrayLiteralExpression | undefined {
   if (ts.isPropertyAssignment(node) && propertyName(node.name) === 'commands')
     return arrayLiteral(node.initializer)

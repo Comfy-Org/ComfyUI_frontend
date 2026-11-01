@@ -12,7 +12,6 @@ import {
 
 const LOAD3D_FILE = 'src/extensions/core/load3d/load3d.ts'
 
-/** The real lazy extension shape, reduced to what the guard reads. */
 const LAZY_EXTENSION = `
 export const load3dExtension: ComfyExtension = {
   name: 'Comfy.Load3D',
