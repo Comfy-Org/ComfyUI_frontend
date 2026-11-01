@@ -334,6 +334,14 @@ export function usePanAndZoom() {
     const root = rootElement.value
     if (!root) return
     const { sidePanelWidth, toolPanelWidth } = getPanelDimensions()
+    const availableWidth = root.clientWidth - sidePanelWidth - toolPanelWidth
+    if (
+      availableWidth <= 0 ||
+      root.clientHeight <= 0 ||
+      width <= 0 ||
+      height <= 0
+    )
+      return
     const fitResult = calculateFitView({
       rootWidth: root.clientWidth,
       rootHeight: root.clientHeight,
