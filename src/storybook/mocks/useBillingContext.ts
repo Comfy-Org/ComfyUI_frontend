@@ -88,7 +88,7 @@ export function useBillingContext(): BillingContext {
     subscribe: async () => {},
     previewSubscribe: async () => null,
     manageSubscription: async () => ({ ok: true }),
-    cancelSubscription: async () => 'legacy' as const,
+    cancelSubscription: async () => 'workspace' as const,
     resubscribe: async () => {},
     topup: async () => {},
     fetchPlans: async () => {},
