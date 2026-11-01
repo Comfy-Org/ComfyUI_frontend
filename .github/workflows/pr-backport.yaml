@@ -63,11 +63,10 @@ jobs:
             exit 1
           fi
 
-          # Validate PR has needs-backport label
-          if ! gh pr view "${{ inputs.pr_number }}" --json labels --jq '.labels[].name' | grep -q "needs-backport"; then
-            echo "::error::PR #${{ inputs.pr_number }} does not have 'needs-backport' label."
-            exit 1
-          fi
+          # needs-backport is not required here: this workflow removes it once
+          # every target has landed, so requiring it would refuse a re-check of
+          # any finished PR. "Collect backport targets" still fails a PR with
+          # no release label.
         env:
           GH_REPO: ${{ github.repository }}
 
