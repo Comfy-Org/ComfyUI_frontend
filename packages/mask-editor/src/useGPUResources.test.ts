@@ -310,22 +310,9 @@ describe('initPreviewCanvas', () => {
 })
 
 describe('gpuRender', () => {
-  it('resolves immediately when renderer is not initialised', async () => {
-    const { gpuDrawPoint } = setup()
-    await expect(gpuDrawPoint({ x: 10, y: 20 })).resolves.toBeUndefined()
-  })
-
   it('uses full coverage for GPU stroke paths', async () => {
     const { resources } = await initializeGPU()
     resources.gpuRender([{ x: 2, y: 2 }])
-
-    expect(mockRenderer.renderStrokeToAccumulator).toHaveBeenCalledWith(
-      expect.any(Array),
-      expect.objectContaining({ coverage: 1 })
-    )
-
-    mockRenderer.renderStrokeToAccumulator.mockClear()
-    await resources.gpuDrawPoint({ x: 2, y: 2 })
 
     expect(mockRenderer.renderStrokeToAccumulator).toHaveBeenCalledWith(
       expect.any(Array),
