@@ -117,7 +117,7 @@ jobs:
             echo "::group::PR #${pr}"
 
             info=$(GH_TOKEN="$READ_TOKEN" gh pr view "$pr" --repo "$GH_REPO" \
-              --json number,state,isDraft,labels,baseRefName,reviewDecision,mergeStateStatus 2>/dev/null || echo '')
+              --json number,state,isDraft,labels,baseRefName,reviewDecision,mergeStateStatus,headRefOid 2>/dev/null || echo '')
             if [ -z "$info" ]; then
               echo "Could not read PR #${pr} — skipping."; echo "::endgroup::"; continue
             fi
@@ -154,6 +154,17 @@ jobs:
             # by a later event or the next sweep.
             if [ "$review" != "APPROVED" ] || { [ "$merge_state" != "CLEAN" ] && [ "$merge_state" != "UNSTABLE" ]; }; then
               echo "Not yet ready (reviewDecision=$review mergeStateStatus=$merge_state) — will re-check later."
+              echo "::endgroup::"; continue
+            fi
+
+            # Release-branch protection keeps an approval after new commits are
+            # pushed, so reviewDecision can be APPROVED for code nobody reviewed.
+            # Merge only when an approval is on the current head commit.
+            head=$(echo "$info" | jq -r '.headRefOid')
+            approved_at_head=$(GH_TOKEN="$READ_TOKEN" gh api "repos/${GH_REPO}/pulls/${pr}/reviews" --paginate 2>/dev/null \
+              | jq -s --arg head "$head" '[.[][] | select(.state == "APPROVED" and .commit_id == $head)] | length > 0' 2>/dev/null || echo false)
+            if [ "$approved_at_head" != "true" ]; then
+              echo "Approved, but no approval at head ${head} — waiting for a re-approval."
               echo "::endgroup::"; continue
             fi
 
