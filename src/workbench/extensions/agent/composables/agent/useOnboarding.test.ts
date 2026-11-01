@@ -262,13 +262,13 @@ describe('useOnboarding', () => {
 })
 
 describe('useOnboarding settings write failures', () => {
+  const offline = new Error('offline')
   let onboarding: typeof OnboardingModule
   let storeSetting: MockInstance<typeof api.storeSetting>
   let reportFailure: typeof reportError
   let settingValues: () => Record<string, unknown>
 
   beforeEach(async () => {
-    window.localStorage.clear()
     vi.resetModules()
     const { api: freshApi } = await import('@/scripts/api')
     storeSetting = vi
@@ -310,24 +310,47 @@ describe('useOnboarding settings write failures', () => {
     )
   })
 
-  it('sends a completion again on the next mount when its write threw', async () => {
-    storeSetting.mockRejectedValueOnce(new Error('offline'))
+  it.for([
+    {
+      failure: 'its write threw',
+      fail: () => storeSetting.mockRejectedValueOnce(offline),
+      report: offline
+    },
+    {
+      failure: 'the server answered 5xx',
+      fail: () =>
+        storeSetting.mockResolvedValueOnce(new Response(null, { status: 503 })),
+      report: 'Failed to store onboarded scopes (503)'
+    }
+  ])(
+    'sends a completion again on the next mount when $failure',
+    async ({ fail, report }) => {
+      fail()
 
-    onboarding.useOnboarding(STEPS, KEY).finish()
-    await vi.waitFor(() => expect(reportFailure).toHaveBeenCalledTimes(1))
-    expect(settingValues()[AGENT_ONBOARDED_SCOPES_SETTING_ID]).toEqual([KEY])
+      expect(localStorage.getItem(KEY)).toBeNull()
+      const tour = onboarding.useOnboarding(STEPS, KEY)
+      await nextTick()
+      expect(storeSetting).not.toHaveBeenCalled()
 
-    onboarding.useOnboarding(STEPS, KEY)
-    await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(2))
-    expect(storeSetting).toHaveBeenLastCalledWith(
-      AGENT_ONBOARDED_SCOPES_SETTING_ID,
-      [KEY]
-    )
+      tour.finish()
+      await vi.waitFor(() =>
+        expect(reportFailure).toHaveBeenCalledWith(report, expect.anything())
+      )
+      expect(reportFailure).toHaveBeenCalledTimes(1)
+      expect(settingValues()[AGENT_ONBOARDED_SCOPES_SETTING_ID]).toEqual([KEY])
 
-    onboarding.useOnboarding(STEPS, KEY)
-    await nextTick()
-    expect(storeSetting).toHaveBeenCalledTimes(2)
-  })
+      onboarding.useOnboarding(STEPS, KEY)
+      await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(2))
+      expect(storeSetting).toHaveBeenLastCalledWith(
+        AGENT_ONBOARDED_SCOPES_SETTING_ID,
+        [KEY]
+      )
+
+      onboarding.useOnboarding(STEPS, KEY)
+      await nextTick()
+      expect(storeSetting).toHaveBeenCalledTimes(2)
+    }
+  )
 
   it('sends a replay clear again on the next mount when its write threw', async () => {
     Object.assign(settingValues(), {
@@ -343,26 +366,6 @@ describe('useOnboarding settings write failures', () => {
     expect(storeSetting).toHaveBeenLastCalledWith(
       AGENT_ONBOARDED_SCOPES_SETTING_ID,
       []
-    )
-  })
-
-  it('sends a completion again on the next mount when the server answered 5xx', async () => {
-    storeSetting.mockResolvedValueOnce(new Response(null, { status: 503 }))
-
-    onboarding.useOnboarding(STEPS, KEY).finish()
-    await vi.waitFor(() =>
-      expect(reportFailure).toHaveBeenCalledWith(
-        'Failed to store onboarded scopes (503)',
-        expect.anything()
-      )
-    )
-    expect(settingValues()[AGENT_ONBOARDED_SCOPES_SETTING_ID]).toEqual([KEY])
-
-    onboarding.useOnboarding(STEPS, KEY)
-    await vi.waitFor(() => expect(storeSetting).toHaveBeenCalledTimes(2))
-    expect(storeSetting).toHaveBeenLastCalledWith(
-      AGENT_ONBOARDED_SCOPES_SETTING_ID,
-      [KEY]
     )
   })
 
