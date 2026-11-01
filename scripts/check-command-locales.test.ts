@@ -73,13 +73,22 @@ describe('collectDeclaredCommands', () => {
     ])
   })
 
-  test('ignores a menuCommands entry, which references ids instead of declaring them', () => {
+  test('ignores menuCommands entries, which reference ids instead of declaring them', () => {
     const fixture = `
-      const menuCommands = [
-        { path: ['Extensions'], commands: ['Comfy-Desktop.OpenDevTools'] }
-      ]
+      const referencedCommand = 'Comfy-Desktop.OpenUserGuide'
+      const extension = {
+        menuCommands: [
+          {
+            path: ['Extensions'],
+            commands: ['Comfy-Desktop.OpenDevTools', referencedCommand]
+          }
+        ]
+      }
     `
-    expect(collectDeclaredCommands('src/x.ts', fixture).declared).toEqual([])
+    expect(collectDeclaredCommands('src/x.ts', fixture)).toEqual({
+      declared: [],
+      unresolved: []
+    })
   })
 
   test('reports a computed id as unresolved rather than silently dropping it', () => {

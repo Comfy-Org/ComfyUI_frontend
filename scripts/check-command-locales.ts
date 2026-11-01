@@ -59,8 +59,30 @@ function propertyName(name: ts.PropertyName): string | undefined {
   if (ts.isIdentifier(name) || ts.isStringLiteral(name)) return name.text
 }
 
+function isInsideMenuCommands(node: ts.Node): boolean {
+  for (
+    let current = node.parent;
+    !ts.isSourceFile(current);
+    current = current.parent
+  ) {
+    if (
+      (ts.isPropertyAssignment(current) &&
+        propertyName(current.name) === 'menuCommands') ||
+      (ts.isVariableDeclaration(current) &&
+        ts.isIdentifier(current.name) &&
+        current.name.text === 'menuCommands')
+    )
+      return true
+  }
+  return false
+}
+
 function commandArray(node: ts.Node): ts.ArrayLiteralExpression | undefined {
-  if (ts.isPropertyAssignment(node) && propertyName(node.name) === 'commands')
+  if (
+    ts.isPropertyAssignment(node) &&
+    propertyName(node.name) === 'commands' &&
+    !isInsideMenuCommands(node)
+  )
     return arrayLiteral(node.initializer)
   if (
     ts.isVariableDeclaration(node) &&
