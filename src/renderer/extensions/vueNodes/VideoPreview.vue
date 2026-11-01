@@ -41,6 +41,7 @@
       <!-- Main Video -->
       <video
         v-if="!videoError"
+        data-testid="main-video"
         :src="currentVideoUrl"
         :class="
           cn(
@@ -204,8 +205,6 @@ const handleVideoError = () => {
   videoError.value = true
   actualDimensions.value = null
 
-  // Same report as the canvas video preview, so a failure on the Vue node
-  // renderer is countable too. The probe runs behind the error UI.
   const failedUrl = currentVideoUrl.value
   if (!failedUrl) return
   void describeImageLoadFailure(failedUrl).then((metadata) => {

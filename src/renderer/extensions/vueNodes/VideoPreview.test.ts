@@ -8,6 +8,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { useTelemetry } from '@comfyorg/telemetry'
 
+import { resetImageFailureProbesForTest } from '@/platform/telemetry/imageFailureDiagnostics'
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({
@@ -60,18 +61,18 @@ describe('VideoPreview', () => {
 
   describe('load failure telemetry', () => {
     it('reports a failed video load once, attributed to the Vue node preview', async () => {
-      const { container } = renderVideoPreview({
+      resetImageFailureProbesForTest()
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(null, { status: 404 })
+      )
+      renderVideoPreview({
         imageUrls: ['/api/view?filename=broken.mp4&type=output']
       })
 
-      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const videoEl = container.querySelector('video')
-      expect(videoEl).not.toBeNull()
-      await fireEvent.error(videoEl!)
+      await fireEvent.error(screen.getByTestId('main-video'))
       await nextTick()
 
       expect(screen.getByTestId('error-loading-video')).toBeInTheDocument()
-      // The report waits on a diagnostic probe, so it settles after the error UI.
       await vi.waitFor(() =>
         expect(
           useTelemetry()?.trackImageLoadFailed
@@ -79,7 +80,8 @@ describe('VideoPreview', () => {
           expect.objectContaining({
             source: 'node_video_preview',
             resource_kind: 'output',
-            probe_outcome: expect.any(String),
+            probe_outcome: 'probed',
+            status: 404,
             page_age_ms: expect.any(Number)
           })
         )
