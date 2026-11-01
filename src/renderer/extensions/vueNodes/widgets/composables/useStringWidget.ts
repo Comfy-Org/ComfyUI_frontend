@@ -1,3 +1,4 @@
+import { bindDynamicPromptSerializer } from '@/core/graph/widgets/dynamicPromptSerializer'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
@@ -114,6 +115,10 @@ export const useStringWidget = () => {
 
     if (typeof inputSpec.dynamicPrompts === 'boolean') {
       widget.dynamicPrompts = inputSpec.dynamicPrompts
+    }
+
+    if (widget.dynamicPrompts) {
+      bindDynamicPromptSerializer(widget)
     }
 
     return widget
