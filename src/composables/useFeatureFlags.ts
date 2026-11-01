@@ -362,6 +362,13 @@ export function useFeatureFlags() {
         'off'
       )
     },
+    get emailVerificationNudgeEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.EMAIL_VERIFICATION_NUDGE_ENABLED,
+        remoteConfig.value.email_verification_nudge_enabled,
+        false
+      )
+    },
     get supportsModelTypeTags() {
       return resolveFlag(
         ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
@@ -432,6 +439,8 @@ export function startFeatureFlagTelemetry() {
         flags.unifiedBillingSettingsEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
+      [ServerFeatureFlag.EMAIL_VERIFICATION_NUDGE_ENABLED]:
+        flags.emailVerificationNudgeEnabled,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE]:
         flags.agentInAppExperienceEnabled,
