@@ -54,14 +54,7 @@ test.describe(
         .click()
       await expect(selectedNodePrompt).toHaveCount(0)
 
-      const [{ x, y }, { width, height }] = await Promise.all([
-        selectedNode.getPosition(),
-        selectedNode.getSize()
-      ])
-      await comfyPage.canvasOps.mouseClickAt({
-        x: x + width / 2,
-        y: y + height / 2
-      })
+      await selectedNode.click('title')
 
       await expect(selectedNodePrompt).toBeVisible()
     })
