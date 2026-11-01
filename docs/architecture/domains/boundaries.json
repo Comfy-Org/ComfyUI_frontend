@@ -1362,6 +1362,7 @@
           "src/scripts/api.getNodeDefs.test.ts",
           "src/scripts/api.getSettings.test.ts",
           "src/scripts/api.getShareableAssets.test.ts",
+          "src/scripts/api.jobs.test.ts",
           "src/scripts/api.logs.test.ts",
           "src/scripts/api.responses.test.ts",
           "src/scripts/api.sessionOverride.test.ts",
