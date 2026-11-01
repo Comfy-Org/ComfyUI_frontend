@@ -183,7 +183,7 @@ describe('ErrorOverlay', () => {
     )
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'View details' }))
-    expect(emitted('viewErrors')).toEqual([[]])
+    expect(emitted('viewErrors')).toEqual([[['execution:KSampler']]])
   })
 
   it('keeps the app mode button label', async () => {
@@ -217,5 +217,46 @@ describe('ErrorOverlay', () => {
     expect(screen.getByTestId('error-overlay-see-errors')).toHaveTextContent(
       'Show errors in graph'
     )
+  })
+
+  it('scopes view details to the toast groups', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'execution',
+        severity: 'error',
+        groupKey: 'execution:missing_connection',
+        displayTitle: 'Missing connection',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false,
+        cards: [
+          {
+            id: '1',
+            title: 'KSampler',
+            errors: [{ message: 'Required input is missing' }]
+          }
+        ]
+      },
+      {
+        type: 'missing_node',
+        severity: 'missing',
+        groupKey: 'missing_node',
+        displayTitle: 'Missing nodes',
+        count: 1,
+        priority: 1,
+        blockedLastRun: false
+      }
+    ]
+    const { emitted } = renderOverlay()
+    useExecutionErrorStore().showErrorOverlay()
+    await nextTick()
+
+    await userEvent
+      .setup()
+      .click(screen.getByTestId('error-overlay-see-errors'))
+
+    expect(emitted('viewErrors')).toEqual([
+      [['execution:missing_connection', 'missing_node']]
+    ])
   })
 })

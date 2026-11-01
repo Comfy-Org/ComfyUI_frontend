@@ -4,14 +4,13 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 
 import {
+  AGENT_ONBOARDING_SCOPE_KEY as SCOPE_KEY,
   agentTest as test,
   bootAgentApp,
   storedOnboardedScopes
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
-
-const SCOPE_KEY = 'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
 
 test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
   test('returns to the previous card without completing the tour', async ({
@@ -161,6 +160,12 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
         '2 of 3'
       )
       await expect(agentPanel.tourSkipButton(workflow)).toHaveCount(1)
+      await expectRegionScreenshot(
+        page,
+        [workflow, page.locator('#agent-composer')],
+        'agent-tour-workflow-card.png',
+        { padding: 16 }
+      )
       await workflow.getByRole('button', { name: enMessages.g.next }).click()
 
       const history = await agentPanel.expectTourCard(
@@ -201,48 +206,56 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       onboardingCompleted: false
     })
     const agentPanel = new AgentPanel(page)
-    await agentPanel.open()
-    const intro = await agentPanel.expectTourCard(
-      enMessages.agent.coachTitle,
-      enMessages.agent.coachBody,
-      '1 of 3'
-    )
-    await intro.getByRole('button', { name: enMessages.g.next }).click()
 
-    const workflow = await agentPanel.expectTourCard(
-      enMessages.agent.coachWorkflowTitle,
-      enMessages.agent.coachWorkflowBody,
-      '2 of 3'
-    )
-    await workflow.getByRole('button', { name: enMessages.g.next }).click()
+    await test.step('Finish the tour with Escape on the last card', async () => {
+      await agentPanel.open()
+      const intro = await agentPanel.expectTourCard(
+        enMessages.agent.coachTitle,
+        enMessages.agent.coachBody,
+        '1 of 3'
+      )
+      await intro.getByRole('button', { name: enMessages.g.next }).click()
 
-    const history = await agentPanel.expectTourCard(
-      enMessages.agent.coachHistoryTitle,
-      enMessages.agent.coachHistoryBody,
-      '3 of 3'
-    )
-    await expect(agentPanel.tourSkipButton(history)).toHaveCount(0)
+      const workflow = await agentPanel.expectTourCard(
+        enMessages.agent.coachWorkflowTitle,
+        enMessages.agent.coachWorkflowBody,
+        '2 of 3'
+      )
+      await workflow.getByRole('button', { name: enMessages.g.next }).click()
 
-    await page.keyboard.press('Escape')
+      const history = await agentPanel.expectTourCard(
+        enMessages.agent.coachHistoryTitle,
+        enMessages.agent.coachHistoryBody,
+        '3 of 3'
+      )
+      await expect(agentPanel.tourSkipButton(history)).toHaveCount(0)
 
-    await expect(page.getByRole('dialog')).toHaveCount(0)
-    await expect(page.getByTestId('agent-coach-spotlight')).toHaveCount(0)
-    await expect
-      .poll(() => page.evaluate((key) => localStorage.getItem(key), SCOPE_KEY))
-      .toBe('true')
+      await page.keyboard.press('Escape')
 
-    await expect.poll(() => storedOnboardedScopes(page)).toContain(SCOPE_KEY)
-    await page.evaluate((key) => localStorage.removeItem(key), SCOPE_KEY)
+      await expect(page.getByRole('dialog')).toHaveCount(0)
+      await expect(page.getByTestId('agent-coach-spotlight')).toHaveCount(0)
+    })
 
-    await page.reload()
-    await waitForCloudApp(page)
-    await expect(page.locator('#agent-composer')).toBeVisible()
-    await page.evaluate(
-      () =>
-        new Promise((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(resolve))
+    await test.step('Save completion without the local flag', async () => {
+      await expect
+        .poll(() =>
+          page.evaluate((key) => localStorage.getItem(key), SCOPE_KEY)
         )
-    )
-    await expect(page.getByRole('dialog')).toHaveCount(0)
+        .toBe('true')
+      await expect.poll(() => storedOnboardedScopes(page)).toContain(SCOPE_KEY)
+      await page.evaluate((key) => localStorage.removeItem(key), SCOPE_KEY)
+    })
+
+    await test.step('Restore completion after reload', async () => {
+      await agentPanel.reload()
+      await expect(page.locator('#agent-composer')).toBeVisible()
+      await page.evaluate(
+        () =>
+          new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve))
+          )
+      )
+      await expect(page.getByRole('dialog')).toHaveCount(0)
+    })
   })
 })

@@ -40,7 +40,7 @@ export function useWorkflowTabState() {
     const scope = getStorageScope()
     if (!scope) return null
 
-    const pointer = readActivePath(clientId, scope)
+    const pointer = readActivePath(clientId, scope, api.initialClientId)
     return pointer?.path ?? null
   }
 
@@ -77,7 +77,7 @@ export function useWorkflowTabState() {
     const scope = getStorageScope()
     if (!scope) return null
 
-    const pointer = readOpenPaths(clientId, scope)
+    const pointer = readOpenPaths(clientId, scope, api.initialClientId)
     if (!pointer) return null
 
     return { paths: pointer.paths, activeIndex: pointer.activeIndex }
