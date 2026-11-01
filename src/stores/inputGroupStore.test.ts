@@ -176,8 +176,6 @@ describe('inputGroupStore', () => {
       store.findGroup(groupId)?.items.find((item) => item.key === inputIds.b)
         ?.pairId
     ).toBeUndefined()
-
-
   })
 
   it('moves an item into another group and pairs at the center drop zone', () => {
