@@ -73,36 +73,67 @@ async function assertTemporalCli(): Promise<void> {
   }
 }
 
+export interface ContainerService {
+  name: string
+  port: number
+}
+
+export function containerServiceFromDockerPs(
+  stdout: string,
+  portNumber: number,
+  service: string,
+  image: string
+): ContainerService {
+  const containers = stdout
+    .split('\n')
+    .filter((line) => line !== '')
+    .map((line) => line.split(' '))
+    .filter(
+      ([, imageName]) =>
+        imageName.replace(/@.+$/, '').replace(/:[^/]+$/, '') === image
+    )
+    .flatMap(([name, , ...ports]) => {
+      const internalPorts = new Set(
+        ports
+          .join(' ')
+          .split(/,\s*/)
+          .filter((mapping) => mapping.includes(`:${portNumber}->`))
+          .map((mapping) => mapping.match(/->(\d+)(?:\/|$)/)?.[1])
+          .filter((port): port is string => port !== undefined)
+      )
+      return [...internalPorts].map((port) => ({ name, port: Number(port) }))
+    })
+  if (containers.length === 0) {
+    throw new Error(`No ${image} container publishes ${service} ${portNumber}`)
+  }
+  if (containers.length > 1) {
+    throw new Error(
+      `${containers.map(({ name }) => name).join(', ')} all publish ${service} ${portNumber}; stop the ones this recording should not use`
+    )
+  }
+  return containers[0]
+}
+
 // Neither psql nor redis-cli is on PATH here, so each service is reached through its container.
 async function containerFor(
   portNumber: number,
   service: string,
   image: string
-): Promise<string> {
+): Promise<ContainerService> {
   const { stdout } = await execFileAsync('docker', [
     'ps',
     '--format',
     '{{.Names}} {{.Image}} {{.Ports}}'
   ])
-  const names = stdout
-    .split('\n')
-    .filter((line) => line !== '')
-    .map((line) => line.split(' '))
-    .filter(
-      ([, imageName, ...ports]) =>
-        imageName.replace(/@.+$/, '').replace(/:[^/]+$/, '') === image &&
-        ports.join(' ').includes(`:${portNumber}->`)
-    )
-    .map(([name]) => name)
-  if (names.length === 0) {
-    throw new Error(`No ${image} container publishes ${service} ${portNumber}`)
-  }
-  if (names.length > 1) {
-    throw new Error(
-      `${names.join(', ')} all publish ${service} ${portNumber}; stop the ones this recording should not use`
-    )
-  }
-  return names[0]
+  return containerServiceFromDockerPs(stdout, portNumber, service, image)
+}
+
+export function pgContainerExecCommand({ name, port }: ContainerService) {
+  return `docker exec -i ${name} psql -p ${port} -U postgres -d postgres -At -c`
+}
+
+export function redisContainerExecCommand({ name, port }: ContainerService) {
+  return `docker exec -i ${name} redis-cli -p ${port}`
 }
 
 async function pgExecCommand(
@@ -110,13 +141,13 @@ async function pgExecCommand(
   portNumber: number
 ): Promise<string> {
   if (override) return override
-  const name = await containerFor(portNumber, 'Postgres', 'postgres')
-  return `docker exec -i ${name} psql -U postgres -d postgres -At -c`
+  const container = await containerFor(portNumber, 'Postgres', 'postgres')
+  return pgContainerExecCommand(container)
 }
 
 async function redisExecCommand(portNumber: number): Promise<string> {
-  const name = await containerFor(portNumber, 'Redis', 'redis')
-  return `docker exec -i ${name} redis-cli`
+  const container = await containerFor(portNumber, 'Redis', 'redis')
+  return redisContainerExecCommand(container)
 }
 
 // Every value is a module constant, so the statement carries no caller input.
