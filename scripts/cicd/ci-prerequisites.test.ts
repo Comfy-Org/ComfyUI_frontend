@@ -62,9 +62,6 @@ it.for([
 it.for(['comment-on-pr-start', 'deploy-and-comment'])(
   '%s does not write the PR report after its run is cancelled',
   (job) => {
-    // A superseded run is cancelled when a new commit is pushed. If this job
-    // still ran, it would replace the new run's section with the old run's
-    // partial reports ("Report missing").
     const condition = pipeline.jobs[job].if ?? ''
     expect(condition).toMatch(/!cancelled\(\)/)
     expect(condition).not.toMatch(/\balways\(\)/)
