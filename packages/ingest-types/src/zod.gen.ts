@@ -1897,6 +1897,23 @@ export const zNodeInfo = z.object({
 })
 
 /**
+ * The next charge to the card on file, as Stripe's invoice preview reported it, after proration, discounts, tax and account credit.
+ */
+export const zNextCharge = z.object({
+  amount: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  currency: z.string(),
+  date: z.iso.datetime(),
+  reflects_scheduled_change: z.boolean()
+})
+
+/**
  * Where and how the browser sends a model file's bytes (POST /api/assets/uploads).
  */
 export const zModelUploadStarted = z.object({
@@ -3488,6 +3505,7 @@ export const zBillingStatusResponse = z.object({
   is_active: z.boolean(),
   latest_subscription_op_id: z.string().optional(),
   max_seats: z.int(),
+  next_charge: zNextCharge.nullable(),
   next_credit_refill_at: z.iso.datetime().optional(),
   occupied_seats: z.int(),
   payment_intent_client_secret: z.string().optional(),
@@ -4377,6 +4395,16 @@ export const zAutoReloadSettings = z.object({
  * Estimated automatic charge for the proposed settings.
  */
 export const zAutoReloadPreview = z.object({
+  balance_after_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullish(),
+  capped: z.boolean().optional(),
   charge_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -4396,11 +4424,18 @@ export const zAutoReloadPreview = z.object({
     })
     .nullable(),
   charges_now: z.boolean(),
-  not_charging_reason: z.enum([
-    'above_threshold',
-    'monthly_budget',
-    'paused_by_decline'
-  ])
+  monthly_budget_remaining_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  not_charging_reason: z
+    .enum(['above_threshold', 'monthly_budget', 'paused_by_decline'])
+    .nullable()
 })
 
 export const zAuthenticateResponse = z.object({
@@ -4997,7 +5032,9 @@ export const zAgentIdentity = z.object({
  * Error body authored by the comfy-agent service and proxied verbatim through ingest. Errors raised by ingest itself (authentication, an unreachable agent service) use the standard ErrorResponse shape instead.
  */
 export const zAgentError = z.object({
-  error: z.string()
+  code: z.string().optional(),
+  error: z.string(),
+  kind: z.enum(['unauthenticated', 'not_provisioned']).optional()
 })
 
 /**
@@ -6139,6 +6176,7 @@ export const zGetFeaturesResponse = z.object({
     .enum(['control', 'test'])
     .optional()
     .default('control'),
+  agent_gratis_local_arm: z.enum(['control', 'treatment']).optional(),
   billing_web_url: z.string().optional(),
   can_run_partner_nodes: z.boolean().optional(),
   deploy_to_cloud: z.boolean().optional(),
@@ -7278,9 +7316,12 @@ export const zGetCccPublicCacheAuthorityResponse = z.object({
 })
 
 export const zGetCccRevisionItemPath = z.object({
-  rev: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
-    error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-  }),
+  rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
   uid: z.uuid()
 })
 
