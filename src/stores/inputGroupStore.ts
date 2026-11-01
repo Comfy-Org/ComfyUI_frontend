@@ -10,6 +10,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { isWidgetId } from '@comfyorg/graph-model/widgetId'
+import { createUuidv4 } from '@/utils/uuid'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 export const useInputGroupStore = defineStore('inputGroup', () => {
@@ -176,7 +177,6 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
     for (const id of emptied) deleteGroupInternal(id)
   }
 
-
   function reorderWithinGroup(
     groupId: string,
     fromKey: WidgetId,
@@ -203,7 +203,7 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
   ) {
     clearPair(group, first.pairId)
     clearPair(group, second.pairId)
-    const pairId = crypto.randomUUID()
+    const pairId = createUuidv4()
     first.pairId = pairId
     second.pairId = pairId
   }
@@ -246,26 +246,13 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
     if (!target) return
 
     removeItemFromAllGroups(itemKey)
-    const moved = { key: itemKey } as InputGroup['items'][number]
+    const moved: InputGroup['items'][number] = { key: itemKey }
     const targetIndex = group.items.indexOf(target)
     group.items.splice(targetIndex + (position === 'after' ? 1 : 0), 0, moved)
     if (position === 'center') pairItems(group, moved, target)
     persistGroups()
   }
 
-  function unpairItem(groupId: string, itemKey: WidgetId) {
-    const group = findGroup(groupId)
-    const item = group?.items.find((entry) => entry.key === itemKey)
-    if (!group || !item?.pairId) return
-    clearPair(group, item.pairId)
-    persistGroups()
-  }
-
-  /**
-   * One drag operation updates group membership and selected-input ordering.
-   * Defer the history capture to appModeStore's existing selection watcher,
-   * so dropping a grouped widget outside a group creates one undo entry.
-   */
   function moveToUngrouped(
     itemKey: WidgetId,
     targetKey?: WidgetId,
@@ -305,7 +292,6 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
     pairItemsInGroup,
     replaceInPair,
     moveItemToGroupAt,
-    unpairItem,
     moveToUngrouped
   }
 })

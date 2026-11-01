@@ -10,6 +10,7 @@ import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   autoGroupName,
   groupPosition,
+  groupedByPair,
   resolveGroupItems
 } from './useInputGroups'
 

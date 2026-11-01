@@ -128,7 +128,7 @@ test.describe('App builder input groups', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     const groups = new InputGroups(comfyPage.page)
-    await groups.dragWidgetToUngroupedInput('cfg', 'seed')
+    await groups.dragWidgetToUngroupedInput('cfg', 'seed', false, 0.75)
     await expect(comfyPage.appMode.select.previewWidgetLabels).toHaveText([
       'seed', 'cfg', 'steps'
     ])

@@ -177,10 +177,7 @@ describe('inputGroupStore', () => {
         ?.pairId
     ).toBeUndefined()
 
-    store.unpairItem(groupId, inputIds.c)
-    expect(
-      store.findGroup(groupId)?.items.every((item) => !item.pairId)
-    ).toBe(true)
+
   })
 
   it('moves an item into another group and pairs at the center drop zone', () => {

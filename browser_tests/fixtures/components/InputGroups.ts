@@ -2,9 +2,11 @@ import type { Locator, Page } from '@playwright/test'
 
 export class InputGroups {
   readonly all: Locator
+  readonly ungroupDialog: Locator
 
   constructor(private readonly page: Page) {
     this.all = page.getByTestId('input-group')
+    this.ungroupDialog = page.getByRole('dialog', { name: 'Ungroup inputs?' })
   }
 
   group(name: string): Locator {
@@ -67,10 +69,6 @@ export class InputGroups {
       .click()
   }
 
-  get ungroupDialog(): Locator {
-    return this.page.getByRole('dialog', { name: 'Ungroup inputs?' })
-  }
-
   async dragWidgetToEmptyGroup(widget: string, group: string) {
     await this.dragWidget(
       widget,
@@ -81,9 +79,10 @@ export class InputGroups {
   async dragWidgetToUngroupedInput(
     widget: string,
     target: string,
-    cancel = false
+    cancel = false,
+    dropRatio = 0.5
   ) {
-    await this.dragWidget(widget, this.widget(target), cancel)
+    await this.dragWidget(widget, this.widget(target), cancel, dropRatio)
   }
 
   async pairWidgets(source: string, target: string) {
@@ -96,7 +95,7 @@ export class InputGroups {
     return { x: box.x, y: box.y }
   }
 
-  private async dragWidget(widget: string, target: Locator, cancel = false) {
+  private async dragWidget(widget: string, target: Locator, cancel = false, dropRatio = 0.5) {
     const source = this.widget(widget).getByTestId('builder-widget-label')
     await source.scrollIntoViewIfNeeded()
     await target.scrollIntoViewIfNeeded()
@@ -108,7 +107,7 @@ export class InputGroups {
       from.y + from.height / 2
     )
     await this.page.mouse.down()
-    await this.page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, {
+    await this.page.mouse.move(to.x + to.width / 2, to.y + to.height * dropRatio, {
       steps: 20
     })
     if (cancel) await this.page.keyboard.press('Escape')

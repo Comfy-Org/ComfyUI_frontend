@@ -169,7 +169,6 @@ export const vGroupItemReorder: Directive<HTMLElement, GroupItemBinding> = {
   }
 }
 
-/** Drop onto an ungrouped widget: reorder or move out of a group. */
 function registerUngroupedTarget(
   element: HTMLElement,
   value: UngroupedItemBinding
@@ -179,19 +178,19 @@ function registerUngroupedTarget(
   state.cleanup = dropTargetForElements({
     element,
     canDrop: ({ source }) => {
-      const key = activeDragKey(source.data)
-      return key !== null && key !== state.value.itemKey
+      return activeDragKey(source.data) !== null
     },
-    onDrag: ({ location }) =>
-      setIndicator(
-        element,
-        getUngroupedEdge(element, location.current.input.clientY)
-      ),
-    onDragEnter: ({ location }) =>
-      setIndicator(
-        element,
-        getUngroupedEdge(element, location.current.input.clientY)
-      ),
+    onDrag: ({ source, location }) => {
+      if (activeDragKey(source.data) === state.value.itemKey) {
+        clearIndicator(element)
+        return
+      }
+      setIndicator(element, getUngroupedEdge(element, location.current.input.clientY))
+    },
+    onDragEnter: ({ source, location }) => {
+      if (activeDragKey(source.data) === state.value.itemKey) return
+      setIndicator(element, getUngroupedEdge(element, location.current.input.clientY))
+    },
     onDragLeave: () => clearIndicator(element),
     onDrop: ({ source, location }) => {
       clearIndicator(element)
