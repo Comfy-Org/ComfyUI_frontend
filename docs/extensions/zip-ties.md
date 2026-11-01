@@ -3,6 +3,10 @@
 The built-in `Comfy.ZipTie` extension bundles multiple workflow links through a
 shared, draggable cable tie. Each link retains its type and endpoints.
 
+Open `/?template=zip_tie_demo` for a model-free example with three wires already
+bundled. Drag the clasp in the middle of the canvas, or right-click it to release
+the tie. The example opens as a new workflow.
+
 1. Drag a selection marquee across two or more wires in empty canvas space.
 2. Click **Zip tie selected links** in the selection toolbar. Alternatively,
    right-click empty canvas and choose the same action to place the tie there.

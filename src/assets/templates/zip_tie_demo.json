@@ -1,0 +1,194 @@
+{
+  "id": "920941b2-57f8-43e2-a3e5-ad70468bc482",
+  "revision": 0,
+  "last_node_id": 5,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "EmptyLatentImage",
+      "pos": [60, 340],
+      "size": [270, 110],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "title": "Three wires, one zip tie",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [1, 2, 3],
+          "slot_index": 0
+        }
+      ],
+      "properties": {},
+      "widgets_values": [512, 512, 1]
+    },
+    {
+      "id": 2,
+      "type": "LatentUpscaleBy",
+      "pos": [810, 210],
+      "size": [270, 100],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "title": "Branch A",
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {},
+      "widgets_values": ["nearest-exact", 1.5]
+    },
+    {
+      "id": 3,
+      "type": "LatentUpscaleBy",
+      "pos": [810, 390],
+      "size": [270, 100],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "title": "Branch B",
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {},
+      "widgets_values": ["nearest-exact", 1.5]
+    },
+    {
+      "id": 4,
+      "type": "LatentUpscaleBy",
+      "pos": [810, 570],
+      "size": [270, 100],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "title": "Branch C",
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "properties": {},
+      "widgets_values": ["nearest-exact", 1.5]
+    },
+    {
+      "id": 5,
+      "type": "MarkdownNote",
+      "pos": [60, 40],
+      "size": [1020, 120],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "title": "Zip tie demo",
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## Try the zip tie below\nDrag the small clasp in the center to move all three wires together. Right-click the clasp and choose **Release zip tie**.\n\nTo make another tie: select two or more wires, then use the cable icon in the selection toolbar or **Zip tie selected links** in the canvas menu. No model downloads or generation needed."
+      ]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "LATENT"],
+    [2, 1, 0, 3, 0, "LATENT"],
+    [3, 1, 0, 4, 0, "LATENT"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.85,
+      "offset": [30, 25]
+    },
+    "reroutes": [
+      {
+        "id": 1,
+        "pos": [534, 384],
+        "linkIds": [1]
+      },
+      {
+        "id": 2,
+        "pos": [606, 384],
+        "parentId": 1,
+        "linkIds": [1]
+      },
+      {
+        "id": 3,
+        "pos": [534, 390],
+        "linkIds": [2]
+      },
+      {
+        "id": 4,
+        "pos": [606, 390],
+        "parentId": 3,
+        "linkIds": [2]
+      },
+      {
+        "id": 5,
+        "pos": [534, 396],
+        "linkIds": [3]
+      },
+      {
+        "id": 6,
+        "pos": [606, 396],
+        "parentId": 5,
+        "linkIds": [3]
+      }
+    ],
+    "linkExtensions": [
+      {
+        "id": 1,
+        "parentId": 2
+      },
+      {
+        "id": 2,
+        "parentId": 4
+      },
+      {
+        "id": 3,
+        "parentId": 6
+      }
+    ],
+    "zipTies": [
+      {
+        "rerouteIds": [1, 2, 3, 4, 5, 6]
+      }
+    ]
+  },
+  "version": 0.4
+}

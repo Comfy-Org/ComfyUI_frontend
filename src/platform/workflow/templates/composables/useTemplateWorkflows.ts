@@ -36,6 +36,11 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { prepareTemplateInputs } from '@/platform/workflow/templates/services/templateInputService'
 
+const bundledTemplateUrls = import.meta.glob<string>(
+  '/src/assets/templates/*.json',
+  { eager: true, import: 'default', query: '?url&no-inline' }
+)
+
 type TemplateLoadResult = 'loaded' | 'graph-failed' | 'not-started'
 
 export type PreparedWorkflowTemplate = {
@@ -428,10 +433,10 @@ export function useTemplateWorkflows() {
     sourceModule: string,
     signal: AbortSignal
   ): Promise<FetchedTemplate | null> {
-    // Default templates provided by frontend are served on this separate endpoint
     const url =
       sourceModule === 'default'
-        ? api.fileURL(`/templates/${id}.json`)
+        ? (bundledTemplateUrls[`/src/assets/templates/${id}.json`] ??
+          api.fileURL(`/templates/${id}.json`))
         : api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
 
     const response = await fetch(url, { signal })
