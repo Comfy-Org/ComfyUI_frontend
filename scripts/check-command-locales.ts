@@ -154,16 +154,17 @@ function isComfyExtensionObject(node: ts.ObjectLiteralExpression): boolean {
 
 function unresolvedExtensionCommands(
   node: ts.Node
-): ts.PropertyAssignment | undefined {
+): ts.PropertyAssignment | ts.ShorthandPropertyAssignment | undefined {
   if (
-    !ts.isPropertyAssignment(node) ||
+    (!ts.isPropertyAssignment(node) &&
+      !ts.isShorthandPropertyAssignment(node)) ||
     propertyName(node.name) !== 'commands' ||
     isInsideMenuCommands(node) ||
     !ts.isObjectLiteralExpression(node.parent) ||
-    !isComfyExtensionObject(node.parent) ||
-    arrayLiteral(node.initializer)
+    !isComfyExtensionObject(node.parent)
   )
     return
+  if (ts.isPropertyAssignment(node) && arrayLiteral(node.initializer)) return
   return node
 }
 
@@ -246,7 +247,12 @@ export function collectDeclaredCommands(
     if (unresolvedCommands)
       unresolved.push({
         file,
-        line: lineOf(sourceFile, unresolvedCommands.initializer)
+        line: lineOf(
+          sourceFile,
+          ts.isPropertyAssignment(unresolvedCommands)
+            ? unresolvedCommands.initializer
+            : unresolvedCommands.name
+        )
       })
     for (const element of array?.elements ?? []) {
       const found = collectCommandArrayElement(file, sourceFile, element)

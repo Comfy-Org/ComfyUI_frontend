@@ -122,6 +122,17 @@ describe('collectDeclaredCommands', () => {
         }
       `,
       line: 5
+    },
+    {
+      name: 'shorthand property',
+      source: `
+        const commands = buildCommands()
+        const extension: ComfyExtension = {
+          name: 'Comfy.Example',
+          commands
+        }
+      `,
+      line: 5
     }
   ])(
     'reports non-literal commands in a $name as unresolved',
@@ -136,7 +147,11 @@ describe('collectDeclaredCommands', () => {
   )
 
   test('ignores non-literal commands on unrelated objects', () => {
-    const fixture = `const state = { commands: buildCommands() }`
+    const fixture = `
+      const commands = buildCommands()
+      const assigned = { commands: buildCommands() }
+      const shorthand = { commands }
+    `
     expect(collectDeclaredCommands('src/x.ts', fixture)).toEqual({
       declared: [],
       unresolved: []
