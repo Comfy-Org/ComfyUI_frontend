@@ -210,6 +210,16 @@ describe('useLegacyBilling', () => {
       )
       expect(billing.subscription.value?.agentScopedHasFunds).toBe(true)
     })
+
+    it('passes a fresh request through to the shared status read', async () => {
+      const billing = useLegacyBilling()
+
+      await billing.fetchStatus({ fresh: true })
+
+      expect(useSubscription().fetchStatusDirect).toHaveBeenCalledWith({
+        fresh: true
+      })
+    })
   })
 
   describe('initialize', () => {
