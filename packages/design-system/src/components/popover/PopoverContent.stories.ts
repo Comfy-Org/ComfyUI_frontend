@@ -187,7 +187,6 @@ export const Confirmation: Story = {
       expect(body.queryByRole('dialog')).not.toBeInTheDocument()
     )
 
-    // Keep the confirmation open for Storybook's visual snapshot.
     await userEvent.click(canvas.getByRole('button', { name: 'Remove input' }))
     await waitFor(() => expect(body.getByRole('dialog')).toBeVisible())
   }
