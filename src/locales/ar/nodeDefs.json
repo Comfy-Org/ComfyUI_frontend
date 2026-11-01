@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "الوصفات:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (حشو 226 رمزًا)\ncosmos: t5 xxl القديم\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (موصى به) أو t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL أو Music3 Qwen/RVQ",
+    "description": "الوصفات:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (موصى به) أو t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL أو Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "تحميل CLIP",
     "inputs": {
       "clip_name": {
@@ -2953,6 +2953,24 @@
       },
       "model_creativity": {
         "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "قم بترقية فيديو باستخدام Crystal Video Upscaler من Clarity AI، وهو مُرقٍّ عالي الدقة يحافظ على أمانة المصدر. يقتصر الإخراج على 9 ميغابكسل لكل إطار (مثل 4000x2250)، وتُعاد المقاطع الطويلة بدقة أقل. تبلغ تكلفة المقاطع التي تتجاوز 30 إطارًا في الثانية 2x، والتي تتجاوز 60 إطارًا في الثانية 3x، وهكذا.",
+    "display_name": "ترقية فيديو Crystal من Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "النموذج المراد استخدامه."
       },
       "model_scale_factor": {
         "name": "scale_factor"
@@ -5701,7 +5719,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "تحويل النص إلى كلام. يدعم إشارات المشاعر في النص ([happy]، [whispering] في s2.1-pro؛ (happy) في s1) وحوارًا متعدد المتحدثين عبر وسوم {'@'}Voice1/{'@'}Voice2 مع عدة أصوات متصلة.",
+    "description": "يحوّل النص إلى كلام. يدعم إشارات المشاعر في النص ([happy]، [whispering] في s2.1-pro؛ و(happy) في s1)، و[التوجيهات] المكتوبة بلغة طبيعية ووسوم الكلمات `<whisper>...</whisper>` في drama-3، وحوارًا متعدد المتحدثين عبر وسوم {'@'}Voice1/{'@'}Voice2 مع عدة أصوات متصلة.",
     "display_name": "Fish Audio تحويل النص إلى كلام",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5911,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "يُنشئ صورة باستخدام FLUX 3 من موجّه، أو يحرر ويجمع ما يصل إلى 10 صور مرجعية. أشِر إلى المراجع في الموجّه بوصفها الصورة 1 والصورة 2 وهكذا.",
-    "display_name": "صورة Flux 3",
+    "description": "ينشئ صورة باستخدام FLUX 3 Image من موجّه، أو يحرر ويجمع ما يصل إلى 10 صور مرجعية. أشِر إلى المراجع في الموجّه بصيغة image 1 وimage 2 وهكذا.",
+    "display_name": "FLUX 3 Image",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5988,6 +6006,26 @@
       }
     }
   },
+  "Flux3LayoutPrompt": {
+    "description": "يُلحق المربعات من Create Bounding Boxes بموجّه FLUX 3 Image باعتبارها جدول التخطيط الخاص به.",
+    "display_name": "موجّه تخطيط FLUX 3 Image",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "عناصر الموجّه من عقدة Create Bounding Boxes. لا تُستخدم لوحات الألوان، لذا صِف الألوان في الوصف."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "نص الموجّه. أشِر إلى المربع N بصيغة <obj_N> لربط الكلمات به."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "ينتج فيديو مع صوت متزامن من prompt نصي عبر FLUX 3.",
     "display_name": "Flux 3 تحويل نص إلى فيديو",
@@ -6067,7 +6105,7 @@
       },
       "video": {
         "name": "الفيديو",
-        "tooltip": "المقطع المراد استكماله."
+        "tooltip": "المقطع المراد متابعته. تُصغَّر المقاطع التي تتجاوز مساحتها 3840x2160 بكسل لتلائم الحد."
       }
     },
     "outputs": {
@@ -7223,6 +7261,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "يعيد الطول وعدد قنوات الصوت وحجم الدفعة لـ latent صوتي.",
+    "display_name": "الحصول على حجم latent الصوتي",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "الـ latent الصوتي أو الصوتي/الفيديوي المراد فحصه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "length",
+        "tooltip": "طول الـ latent الصوتي."
+      },
+      "1": {
+        "name": "audio_channels",
+        "tooltip": "عدد قنوات الصوت. تحتوي latents التي لا تتضمن بُعد قناة صوتية على قناة واحدة."
+      },
+      "2": {
+        "name": "batch_size",
+        "tooltip": "عدد latents في الدفعة."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "يستخرج معلمات IC-LoRA من بيانات safetensors الوصفية لنموذج LoRA المحمّل ويخرجها لـ LTXVAddGuide (مثل reference_downscale_factor).",
     "display_name": "الحصول على معلمات IC-LoRA",
@@ -7275,6 +7337,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "يعيد العرض والارتفاع وعدد الإطارات وحجم الدفعة لـ latent صورة أو فيديو.",
+    "display_name": "الحصول على حجم latent الصورة/الفيديو",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "الـ latent الصوري أو الفيديوي المراد فحصه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "width",
+        "tooltip": "عرض الـ latent."
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "ارتفاع الـ latent."
+      },
+      "2": {
+        "name": "frames",
+        "tooltip": "عدد إطارات الـ latent. تحتوي latents الصور على إطار واحد."
+      },
+      "3": {
+        "name": "batch_size",
+        "tooltip": "عدد latents في الدفعة."
       }
     }
   },
@@ -8046,6 +8136,67 @@
       }
     }
   },
+  "HeyGenVoiceCloneNode": {
+    "description": "استنسخ صوتًا من تسجيل لمتحدث واحد باستخدام HeyGen Voice 1.0. وصّل voice_id بـ HeyGen Voice 1.0 Text to Speech، أو بـ custom_voice_id في HeyGen Avatar Video وHeyGen Talking Photo.",
+    "display_name": "استنساخ فوري لـ HeyGen Voice 1.0",
+    "inputs": {
+      "audio": {
+        "name": "صوت",
+        "tooltip": "تسجيل لمتحدث واحد. استخدم ما لا يقل عن 10 ثوانٍ من الكلام الواضح؛ لا تُستخدم سوى أول 3 دقائق."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "language": {
+        "name": "اللغة",
+        "tooltip": "اللغة المنطوقة في التسجيل."
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "seed": {
+        "name": "بذرة",
+        "tooltip": "غيّر البذرة لاستنساخ التسجيل مجددًا؛ كل استنساخ يكون صوتًا مختلفًا قليلًا."
+      },
+      "similarity": {
+        "name": "التشابه",
+        "tooltip": "مدى تطابق الصوت مع التسجيل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "انطق النص بصوت مستنسخ باستخدام HeyGen Voice 1.0 Instant Clone.",
+    "display_name": "تحويل النص إلى كلام باستخدام HeyGen Voice 1.0",
+    "inputs": {
+      "model": {
+        "name": "النموذج",
+        "tooltip": "heygen-voice-1-turbo أسرع وتكلفته نصف المقدار."
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "اللغة"
+      },
+      "model_text": {
+        "name": "النص"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "يتم حساب متوسط مخرجات النموذج عبر عدة مواضع لشبكة الباتشات المحوّلة خلال الجزء الأخير من عملية التوليد. يلغي الحواف.",
     "display_name": "تنعيم حواف الباتش HiDream-O1",
@@ -8106,6 +8257,33 @@
       },
       "1": {
         "name": "سلبي",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "أعِد تشكيل فيديو بشخصيات أو مواقع أو أنماط جديدة من صور مرجعية مع الحفاظ على حركته وحركة الكاميرا وتوقيته.",
+    "display_name": "نقل الحركة Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "بذرة"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9263,6 +9441,28 @@
       },
       "rotation": {
         "name": "الدوران"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "وسّع سطوع sRGB إلى HDR بنمط Rec.2020 HLG. احفظ النتيجة مع تحديد مساحة الألوان HDR. تُحفظ قناة ألفا.",
+    "display_name": "تحويل SDR إلى HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "الخوارزمية",
+        "tooltip": "توسيع نسبي بأسلوب Lottes ممزوج بمنحنى كسب لوغاريتمي رتيب مُعاير."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "صورة",
+        "tooltip": "صور SDR بتنسيق sRGB."
       }
     },
     "outputs": {
@@ -10563,6 +10763,41 @@
     "outputs": {
       "0": {
         "name": "مرجع النمط",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "حرّر الصور باستخدام Krea 3، أو ولّد صورة جديدة من النص عند عدم توصيل أي صورة.",
+    "display_name": "صورة Krea 3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_precise_edit": {
+        "name": "تحرير_دقيق"
+      },
+      "model_prompt": {
+        "name": "موجّه"
+      },
+      "model_resolution": {
+        "name": "دقة"
+      },
+      "model_seed": {
+        "name": "بذرة"
+      },
+      "model_thinking_mode": {
+        "name": "وضع_التفكير"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13162,6 +13397,83 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageControl": {
+    "description": "يضيف منطقة الألوان وخرائط العمق لمهايئ تحكم بالألوان/العمق لـ MOSS-Image تم تحميله باستخدام مُحمّل LoRA.",
+    "display_name": "التحكم بالألوان/العمق لـ MOSS-Image",
+    "inputs": {
+      "color_map": {
+        "name": "خريطة_الألوان",
+        "tooltip": "لون مسطح واحد لكل منطقة، بحجم الإخراج. الألوان مجرد معرّفات للمناطق."
+      },
+      "depth_map": {
+        "name": "خريطة_العمق",
+        "tooltip": "خريطة العمق بحجم الإخراج؛ القريب أبيض."
+      },
+      "end_percent": {
+        "name": "نسبة_النهاية",
+        "tooltip": "النسبة المئوية لأخذ العينات التي ينتهي عندها التحكم. الإنهاء مبكرًا يحافظ على التخطيط والعمق، بينما تُرخي بقية الخطوات الأشكال."
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "start_percent": {
+        "name": "نسبة_البداية",
+        "tooltip": "النسبة المئوية لأخذ العينات التي يبدأ عندها التحكم."
+      },
+      "strength": {
+        "name": "القوة",
+        "tooltip": "يضبط مساهمة الخرائط في رموز الصورة. القيمة 0.0 تماثل عدم وجود خرائط، والقيمة 1.0 هي القوة التي تم التدريب عليها."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سلبي",
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "ينشئ موجّه تخطيط لـ MOSS-Image من الموجّه والمربعات من Create Bounding Boxes.",
+    "display_name": "موجّه تخطيط MOSS-Image",
+    "inputs": {
+      "character_boxes": {
+        "name": "مربعات_الشخصيات",
+        "tooltip": "أرقام مربعات الكائنات التي تُوسم كشخصيات بدلًا من كائنات، كما هي معلَّمة في معاينة Create Bounding Boxes، مثلًا: \"1, 3\"."
+      },
+      "element": {
+        "name": "عنصر",
+        "tooltip": "عناصر الموجّه من العقدة Create Bounding Boxes. الوصف هو تسمية المربع، كما تعرض مربعات النصوص نصها أيضًا."
+      },
+      "height": {
+        "name": "الارتفاع",
+        "tooltip": "ارتفاع الصورة المُنشأة؛ توضع المربعات ضمن بكسلاتها."
+      },
+      "prompt": {
+        "name": "موجّه",
+        "tooltip": "وصف الصورة كاملة."
+      },
+      "width": {
+        "name": "العرض",
+        "tooltip": "عرض الصورة المُنشأة؛ توضع المربعات ضمن بكسلاتها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "موجّه",
         "tooltip": null
       }
     }
@@ -18889,7 +19201,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "مقدار الاستدلال الذي ينفقه النموذج قبل الرسم. تحسّن المستويات الأعلى التفاصيل وتستهلك رموزًا أكثر. يُستخدم فقط بواسطة نماذج Arrow 2."
+        "tooltip": "مقدار الاستدلال الذي ينفقه النموذج قبل الرسم. تحسّن المستويات الأعلى التفاصيل وتستهلك رموزًا أكثر."
       },
       "seed": {
         "name": "seed",
@@ -18977,7 +19289,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "مقدار الاستدلال الذي ينفقه النموذج قبل الرسم. تحسّن المستويات الأعلى التفاصيل وتستهلك رموزًا أكثر. يُستخدم فقط بواسطة نماذج Arrow 2."
+        "tooltip": "مقدار الاستدلال الذي ينفقه النموذج قبل الرسم. تحسّن المستويات الأعلى التفاصيل وتستهلك رموزًا أكثر."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19836,6 +20148,42 @@
       }
     }
   },
+  "ReferenceMultiLatent": {
+    "description": "يشفّر الصور المرجعية ويُلحق قيمها الكامنة بالتكييف الإيجابي والسلبي الاختياري لنماذج التحرير.",
+    "display_name": "تعيين المرجع متعدد الكامن",
+    "inputs": {
+      "images": {
+        "name": "الصور"
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "يتم تجاهل الصور المرجعية عند عدم توصيل VAE."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سلبي",
+        "tooltip": "يعيد المخرج الإيجابي عندما لا يكون التكييف السلبي موصولًا."
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "أول latent مرجعي مضروبًا في 0.0، أو latent فارغ مربع بالدقة المحددة."
+      }
+    }
+  },
   "ReferenceTimbreAudio": {
     "description": "تحدد هذه العقدة الصوت المرجعي للـ timbre (لـ ace step 1.5)",
     "display_name": "ReferenceTimbreAudio",
@@ -19950,7 +20298,7 @@
     "inputs": {
       "band": {
         "name": "النطاق",
-        "tooltip": "عرض النطاق الضيق بوحدات voxel. في وضع UDF، يُزيح السطح أيضًا."
+        "tooltip": "عرض النطاق الضيق بوحدات voxel. في وضع udf يُزيح السطح أيضًا؛ وفي وضع solid يكون نصف قطر الإغلاق: تُدوَّر الحواف الحادة وتُجسَر الفجوات بهذا الحجم، ويقع السطح إلى الخارج بمقدار نصف voxel."
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -19977,7 +20325,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: متين مع المدخلات الفوضوية/غير متعددة الشعب. sdf: سطح واحد نظيف مع استعادة المزايا الحادة باستخدام QEF ‏(Quadratic Error Function)، لكنه يتطلب التفافًا متسقًا."
+        "tooltip": "udf: متين أمام الإدخال الفوضوي/غير متعدد الشعب. sdf: سطح واحد نظيف مع استعادة السمات الحادة عبر QEF ‏(دالة الخطأ التربيعية)، لكنه يحتاج إلى اتجاه لفّ متسق. solid: جسم صلب واحد مانع للماء من إدخال فوضوي: يزيل قطع الرسم البياني العام للداخل/الخارج (CelloCut) القشور المزدوجة ويغلق الثقوب الصغيرة. أبطأ."
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"
