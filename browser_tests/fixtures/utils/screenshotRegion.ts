@@ -74,6 +74,9 @@ export async function screenshotRegion(
   { padding = 24 }: RegionOptions = {}
 ): Promise<ScreenshotRegion> {
   if (targets.length === 0) throw new Error('No targets to frame')
+  await page.evaluate(async () => {
+    await document.fonts.ready
+  })
   let clip = await enclosingRect(targets, padding)
   await expect
     .poll(
