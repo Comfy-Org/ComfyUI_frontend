@@ -69,7 +69,8 @@ If an extension callback fails, the editor closes that session, cleans up its
 panel, and reports the failure to the user. Native tools remain available.
 
 `onPointer`, `onDocumentChange`, `dispose`, and the panel's unmount function
-may return promises. Panel mounting itself remains synchronous. Closing a
+may return promises. Panel mounting itself remains synchronous; a promise or
+another invalid cleanup value closes the session at mount time. Closing a
 session aborts its signal and removes its panel immediately; asynchronous
 cleanup does not delay tool switching. Callback failures from an obsolete
 document are ignored. Cleanup failures are still reported, without closing a
