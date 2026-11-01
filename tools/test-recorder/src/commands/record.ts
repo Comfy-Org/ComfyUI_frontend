@@ -48,6 +48,18 @@ const PASTE_SENTINEL = '.'
 const ADD_WORKFLOW_SENTINEL = '__add-workflow__'
 const CUSTOM_DISTRIBUTION_SENTINEL = 'custom'
 
+export type PrCheckoutOutcome = {
+  requestedBranch: string
+  requestedHead: string
+  effectiveBranch: string
+  effectiveHead: string
+  mode: 'verified' | 'explicit-fallback'
+}
+
+export type PrCheckoutOptions = {
+  allowExplicitFallback?: boolean
+}
+
 /**
  * Ctrl+D closes stdin for good, leaving every later prompt unanswerable, so
  * callers are told whether stdin survived the paste.
@@ -143,84 +155,297 @@ function answered<T>(value: T | symbol): T {
   return value
 }
 
-async function preparePrCheckout(
-  pr: string,
-  projectRoot: string
-): Promise<void> {
-  const details = runCommand(
+type CommandResult = ReturnType<typeof runCommand>
+
+type PrDetails = {
+  branch: string
+  head: string
+  title: string
+}
+
+type PrDetailsLookup = { details: PrDetails } | { reason: string }
+
+function commandFailure(
+  result: CommandResult,
+  label: string
+): Error | undefined {
+  if (result.error) return new Error(`${label} failed: ${result.error.message}`)
+  if (result.status !== 0) {
+    return new Error(`${label} exited with status ${result.status}`)
+  }
+  return undefined
+}
+
+function commandOutput(
+  result: CommandResult,
+  label: string,
+  required: boolean
+): string {
+  const failure = commandFailure(result, label)
+  if (failure) throw failure
+  const output = result.stdout?.toString().trim() ?? ''
+  if (required && !output) throw new Error(`${label} returned no output`)
+  return output
+}
+
+function checkoutRevision(projectRoot: string): {
+  branch: string
+  head: string
+} {
+  const branch = commandOutput(
+    runCommand('git', ['branch', '--show-current'], {
+      cwd: projectRoot,
+      stdio: 'pipe'
+    }),
+    'git branch --show-current',
+    false
+  )
+  const head = commandOutput(
+    runCommand('git', ['rev-parse', 'HEAD'], {
+      cwd: projectRoot,
+      stdio: 'pipe'
+    }),
+    'git rev-parse HEAD',
+    true
+  )
+  return { branch, head }
+}
+
+function checkoutIsDirty(projectRoot: string): boolean {
+  return Boolean(
+    commandOutput(
+      runCommand('git', ['status', '--porcelain'], {
+        cwd: projectRoot,
+        stdio: 'pipe'
+      }),
+      'git status --porcelain',
+      false
+    )
+  )
+}
+
+function parsePrDetailOutput(output: string): PrDetailsLookup {
+  if (!output) return { reason: 'gh pr view returned no head revision data' }
+  const [branch, head, title] = output.split('\t')
+  if (!branch || !head || !title) {
+    return { reason: 'gh pr view returned incomplete head revision data' }
+  }
+  return { details: { branch, head, title } }
+}
+
+function parsePrDetails(result: CommandResult): PrDetailsLookup {
+  if (result.error || result.status !== 0) {
+    return {
+      reason:
+        result.error?.message ??
+        `gh pr view exited with status ${result.status}`
+    }
+  }
+  return parsePrDetailOutput(result.stdout?.toString().trim() ?? '')
+}
+
+function lookupPrDetails(pr: string, projectRoot: string): PrDetailsLookup {
+  const result = runCommand(
     'gh',
     [
       'pr',
       'view',
       pr,
       '--json',
-      'headRefName,title,state',
+      'headRefName,headRefOid,title,state',
       '-q',
-      '[.headRefName,.title,.state] | @tsv'
+      '[.headRefName,.headRefOid,.title,.state] | @tsv'
     ],
     { cwd: projectRoot, stdio: 'pipe' }
   )
-  if (details.error || details.status !== 0) {
-    warn(`Could not look up PR #${pr}. Continuing on the current checkout.`)
-    info([`Install or sign in to gh, then run: gh pr checkout ${pr}`])
-    return
+  return parsePrDetails(result)
+}
+
+async function continueWithoutVerifiedPr(
+  pr: string,
+  projectRoot: string,
+  reason: string,
+  allowExplicitFallback: boolean,
+  requestedBranch = '',
+  requestedHead = ''
+): Promise<PrCheckoutOutcome> {
+  if (!allowExplicitFallback) {
+    throw new Error(`PR #${pr} checkout was not verified: ${reason}`)
+  }
+  const continueWithoutPr = await confirm({
+    message: `PR #${pr} could not be verified. Continue on the current checkout without it?`
+  })
+  if (isCancel(continueWithoutPr) || !continueWithoutPr) {
+    throw new Error(`PR #${pr} checkout was not verified: ${reason}`)
   }
 
-  const [prBranch, title] = details.stdout?.toString().trim().split('\t') ?? []
-  if (!prBranch || !title) {
-    warn(`Could not read PR #${pr}. Continuing on the current checkout.`)
-    return
+  const effectiveRevision = checkoutRevision(projectRoot)
+  warn(`Continuing without verified PR #${pr}: ${reason}`)
+  return {
+    requestedBranch,
+    requestedHead,
+    effectiveBranch: effectiveRevision.branch,
+    effectiveHead: effectiveRevision.head,
+    mode: 'explicit-fallback'
   }
-  const currentBranch =
-    runCommand('git', ['branch', '--show-current'], {
-      cwd: projectRoot,
-      stdio: 'pipe'
-    })
-      .stdout?.toString()
-      .trim() ?? ''
-  const dirty =
-    (runCommand('git', ['status', '--porcelain'], {
-      cwd: projectRoot,
-      stdio: 'pipe'
-    })
-      .stdout?.toString()
-      .trim().length ?? 0) > 0
-  const action = decidePrCheckout(currentBranch, prBranch, dirty)
-  if (action === 'already-on-branch') {
-    pass(`Your checkout already has the code for PR #${pr}`, prBranch)
-    return
-  }
-  if (action === 'refuse-dirty') {
-    warn(
-      `PR #${pr} targets "${prBranch}", but this checkout has unsaved changes. ` +
-        `I won't switch and risk losing them. Continuing on "${currentBranch}".`
-    )
-    info([`Save or commit your changes, then run: gh pr checkout ${pr}`])
-    return
-  }
+}
 
-  info([
-    `This test plan targets PR #${pr} — '${title}'.`,
-    `Your checkout is on '${currentBranch}'. I can switch to the PR's code for you.`
-  ])
+function checkoutAction(
+  current: { branch: string; head: string },
+  requested: PrDetails,
+  dirty: boolean
+): ReturnType<typeof decidePrCheckout> {
+  if (current.branch !== requested.branch) {
+    return decidePrCheckout(current.branch, requested.branch, dirty)
+  }
+  if (current.head === requested.head) return 'already-on-branch'
+  return dirty ? 'refuse-dirty' : 'offer-switch'
+}
+
+type PrSwitchResult = { outcome: PrCheckoutOutcome } | { reason: string }
+
+async function confirmPrSwitch(pr: string): Promise<boolean> {
   const shouldSwitch = await confirm({
     message: `Switch to the code for PR #${pr}?`
   })
-  if (isCancel(shouldSwitch) || !shouldSwitch) {
-    warn(`Continuing on "${currentBranch}" instead of PR #${pr}.`)
-    info([`To switch later, run: gh pr checkout ${pr}`])
-    return
-  }
+  return !isCancel(shouldSwitch) && shouldSwitch
+}
+
+function checkoutPr(pr: string, projectRoot: string): string | undefined {
   const checkout = runCommand('gh', ['pr', 'checkout', pr], {
     cwd: projectRoot,
     stdio: 'pipe'
   })
   if (checkout.error || checkout.status !== 0) {
-    warn(`Could not switch to PR #${pr}. Continuing on "${currentBranch}".`)
-    info([`Try manually: gh pr checkout ${pr}`])
-    return
+    return (
+      checkout.error?.message ??
+      `gh pr checkout exited with status ${checkout.status}`
+    )
   }
-  pass(`Switched to the code for PR #${pr}`, prBranch)
+  return undefined
+}
+
+function verifyPrRevision(
+  projectRoot: string,
+  details: PrDetails
+): { revision: { branch: string; head: string } } | { reason: string } {
+  const revision = checkoutRevision(projectRoot)
+  if (revision.branch !== details.branch || revision.head !== details.head) {
+    return {
+      reason:
+        `effective checkout ${revision.branch || '(detached)'}@${revision.head || '(unknown)'} ` +
+        `does not match ${details.branch}@${details.head}`
+    }
+  }
+  return { revision }
+}
+
+async function switchToPrCheckout(
+  pr: string,
+  projectRoot: string,
+  currentBranch: string,
+  details: PrDetails
+): Promise<PrSwitchResult> {
+  info([
+    `This test plan targets PR #${pr} — '${details.title}'.`,
+    `Your checkout is on '${currentBranch}'. I can switch to the PR's code for you.`
+  ])
+  if (!(await confirmPrSwitch(pr))) {
+    return {
+      reason: `switch to PR branch "${details.branch}" was not confirmed`
+    }
+  }
+
+  const checkoutFailure = checkoutPr(pr, projectRoot)
+  if (checkoutFailure) return { reason: checkoutFailure }
+
+  const verification = verifyPrRevision(projectRoot, details)
+  if ('reason' in verification) {
+    return { reason: verification.reason }
+  }
+
+  pass(`Switched to the code for PR #${pr}`, details.branch)
+  return {
+    outcome: {
+      requestedBranch: details.branch,
+      requestedHead: details.head,
+      effectiveBranch: verification.revision.branch,
+      effectiveHead: verification.revision.head,
+      mode: 'verified'
+    }
+  }
+}
+
+async function verifyOrSwitchPrCheckout(
+  pr: string,
+  projectRoot: string,
+  details: PrDetails,
+  allowExplicitFallback: boolean
+): Promise<PrCheckoutOutcome> {
+  const current = checkoutRevision(projectRoot)
+  if (current.branch === details.branch && current.head === details.head) {
+    pass(`Your checkout already has the code for PR #${pr}`, details.branch)
+    return {
+      requestedBranch: details.branch,
+      requestedHead: details.head,
+      effectiveBranch: current.branch,
+      effectiveHead: current.head,
+      mode: 'verified'
+    }
+  }
+
+  const action = checkoutAction(current, details, checkoutIsDirty(projectRoot))
+  if (action === 'refuse-dirty') {
+    return continueWithoutVerifiedPr(
+      pr,
+      projectRoot,
+      `checkout "${current.branch}" has unsaved changes; refusing to switch to "${details.branch}"`,
+      allowExplicitFallback,
+      details.branch,
+      details.head
+    )
+  }
+
+  const result = await switchToPrCheckout(
+    pr,
+    projectRoot,
+    current.branch,
+    details
+  )
+  if ('reason' in result) {
+    return continueWithoutVerifiedPr(
+      pr,
+      projectRoot,
+      result.reason,
+      allowExplicitFallback,
+      details.branch,
+      details.head
+    )
+  }
+  return result.outcome
+}
+
+export async function preparePrCheckout(
+  pr: string,
+  projectRoot: string,
+  options: PrCheckoutOptions = {}
+): Promise<PrCheckoutOutcome> {
+  const allowExplicitFallback = options.allowExplicitFallback ?? false
+  const lookup = lookupPrDetails(pr, projectRoot)
+  if ('reason' in lookup) {
+    return continueWithoutVerifiedPr(
+      pr,
+      projectRoot,
+      lookup.reason,
+      allowExplicitFallback
+    )
+  }
+  return verifyOrSwitchPrCheckout(
+    pr,
+    projectRoot,
+    lookup.details,
+    allowExplicitFallback
+  )
 }
 
 export async function runRecord(
@@ -272,11 +497,18 @@ export async function runRecord(
     let root: string
     try {
       root = findProjectRoot()
-    } catch {
-      warn(`Could not find the checkout for PR #${prefill.pr}. Continuing.`)
-      root = process.cwd()
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'could not locate the project root'
+      const failure = `Could not find the checkout for PR #${prefill.pr}: ${message}`
+      fail(failure)
+      throw new Error(failure, { cause: error })
     }
-    await preparePrCheckout(prefill.pr, root)
+    await preparePrCheckout(prefill.pr, root, {
+      allowExplicitFallback: Boolean(process.stdin.isTTY)
+    })
   }
 
   stepHeader(1, 7, 'Target Distribution')
