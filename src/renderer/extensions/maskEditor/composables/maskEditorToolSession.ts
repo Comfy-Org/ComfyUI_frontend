@@ -161,7 +161,17 @@ export function createMaskEditorToolSession(
     },
     mountPanel: (container: HTMLElement): (() => void) | undefined => {
       if (isDisposed()) return undefined
-      const unmount = call(() => session.mountPanel?.(container))
+      const unmount = call(() => {
+        const candidate = session.mountPanel?.(container)
+        if (candidate === undefined || typeof candidate === 'function')
+          return candidate
+        void Promise.resolve(candidate).catch(() => undefined)
+        fail(
+          new Error(
+            'MaskEditor panel must return a cleanup function synchronously'
+          )
+        )
+      })
       const cleanup = () => {
         if (!panelCleanups.delete(cleanup)) return
         if (unmount) void callAsync(unmount)
