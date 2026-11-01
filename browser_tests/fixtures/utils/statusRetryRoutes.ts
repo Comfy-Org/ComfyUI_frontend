@@ -1,15 +1,17 @@
+import type { ErrorResponse } from '@comfyorg/ingest-types'
 import type { Page, Request, Route } from '@playwright/test'
 
 export const CAPABILITIES_ROUTE = '**/api/billing/capabilities'
 export const STATUS_RETRY_PROBE_ROUTE = '**/api/status-retry-probe'
 
-/** Answers a request with a retryable 503 that asks for an immediate retry. */
+const SERVICE_UNAVAILABLE: ErrorResponse = {
+  code: 'service_unavailable',
+  message: 'Temporarily unavailable, please retry'
+}
+
+/** Answers a request with a retryable 503. */
 export function fulfillUnavailable(route: Route): Promise<void> {
-  return route.fulfill({
-    status: 503,
-    headers: { 'Retry-After': '0' },
-    json: { message: 'Temporarily unavailable, please retry' }
-  })
+  return route.fulfill({ status: 503, json: SERVICE_UNAVAILABLE })
 }
 
 /** Routes GETs on `routeGlob` to 503 for the first `unavailableCount` answers, recording each GET. */
