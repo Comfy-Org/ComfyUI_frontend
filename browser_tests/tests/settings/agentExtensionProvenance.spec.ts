@@ -1,9 +1,7 @@
 import type { GetExtensionsResponse } from '@comfyorg/ingest-types'
 
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
+import { extensionTest as test } from '@e2e/fixtures/extensionFixture'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
@@ -16,8 +14,8 @@ test.describe(
       {
         tag: '@screenshot'
       },
-      async ({ comfyPage, page }) => {
-        await comfyPage.extensions.register(
+      async ({ comfyPage, extensions, page }) => {
+        await extensions.register(
           { name: 'Manual.Toolbar' },
           {
             name: 'agent.cushions.toolbar',
@@ -81,9 +79,10 @@ test.describe(
     )
 
     test('disables the bulk action when every agent extension is read-only', async ({
-      comfyPage
+      comfyPage,
+      extensions
     }) => {
-      await comfyPage.extensions.register({
+      await extensions.register({
         name: 'pysssss.Locking',
         provenance: { createdBy: 'comfy-agent' }
       })
@@ -97,9 +96,10 @@ test.describe(
     })
 
     test('announces a newly registered agent extension with both actions', async ({
-      comfyPage
+      comfyPage,
+      extensions
     }) => {
-      await comfyPage.extensions.register({
+      await extensions.register({
         name: 'agent.cushions.notices',
         provenance: {
           createdBy: 'comfy-agent',
@@ -134,6 +134,7 @@ test.describe(
 
     test('routes an already-open Settings dialog to the extension controls', async ({
       comfyPage,
+      extensions,
       page
     }) => {
       await test.step('Open Settings on another panel first', async () => {
@@ -141,7 +142,7 @@ test.describe(
         await comfyPage.settingDialog.goToAboutPanel()
       })
 
-      await comfyPage.extensions.register({
+      await extensions.register({
         name: 'agent.cushions.routing',
         provenance: {
           createdBy: 'comfy-agent',
@@ -165,7 +166,7 @@ test.describe(
         await comfyPage.settingDialog.goToAboutPanel()
         await expect(page.locator('.about-container')).toBeVisible()
 
-        await comfyPage.extensions.register({
+        await extensions.register({
           name: 'agent.cushions.rerouting',
           provenance: { createdBy: 'comfy-agent' }
         })
