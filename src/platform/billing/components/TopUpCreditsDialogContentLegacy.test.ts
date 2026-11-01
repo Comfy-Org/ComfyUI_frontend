@@ -7,6 +7,15 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import {
+  autoTopUpCardState,
+  loadedAutoTopUp
+} from '@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard'
+import {
+  autoTopUpEnabledFact,
+  canManageAutoTopUpFact
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
@@ -25,6 +34,8 @@ const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+
+vi.mock(import('@/platform/billing/composables/useBillingAutoTopUpCard'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true,
@@ -68,7 +79,8 @@ const i18n = createI18n({
           contactUs: 'Contact us',
           viewPricing: 'View pricing',
           insufficientWorkflowMessage: 'Insufficient credits',
-          buyCredits: 'Continue to payment'
+          buyCredits: 'Continue to payment',
+          autoTopUp: enMessages.credits.topUp.autoTopUp
         }
       }
     }
@@ -236,6 +248,26 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       )
     }
   )
+
+  it('offers auto top-up set-up above Continue to payment when every served fact allows it', () => {
+    const capabilities = useBillingCapabilities()
+    capabilities.autoTopUpEnabled = autoTopUpEnabledFact(true)
+    capabilities.canManageAutoTopUp = canManageAutoTopUpFact(true)
+    capabilities.autoTopUpSetup = computed(() => ({ state: 'ready' as const }))
+    autoTopUpCardState.value = loadedAutoTopUp('off')
+
+    renderDialog()
+
+    const setUp = screen.getByRole('link', { name: 'Set up' })
+    expect(
+      screen.getByText('Running low on credits? Turn on auto top-up.')
+    ).toBeInTheDocument()
+    expect(
+      setUp.compareDocumentPosition(
+        screen.getByRole('button', { name: 'Continue to payment' })
+      ) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
 
   it('shows Plan & Credits after a successful Cloud purchase', async () => {
     renderDialog()

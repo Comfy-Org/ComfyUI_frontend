@@ -134,6 +134,16 @@ declaration gap would bury the signal under every such class in the ecosystem.
   filtered post-hook named-value key set was rewritten by an extension no
   longer gets a form. Positional or private state the Agent wire does not send
   does not suppress the form.
+- Two stricter checks from #22007 were tried and deliberately not adopted.
+  Refusing a form because a class overrides serialization, or because a hook
+  replaced the positional array, finds no wrong form on this wire: the proof
+  already reads the final `node.serialize()` result, a `SubgraphNode` host is a
+  virtual node that goes out positionally and never reaches the proof, and
+  positional data is not sent for a node that declares a form. Refusing would
+  also regress real nodes, because the host rejects named values with no form
+  on a class absent from the pinned catalog (`uncatalogued_widget_write`).
+  Revisit if the wire starts sending positional values for a node that declares
+  a form.
 - Invariant 4 turns "what fraction of the ecosystem declares a form" from an
   unanswerable question into a queryable one: `error_type`
   `agent_widget_form_undeclared`, tagged `node_type` and `reason`,

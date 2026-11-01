@@ -355,14 +355,6 @@ export function useFeatureFlags() {
         remoteConfig.value.unified_billing_settings
       )
     },
-    get autoTopUpEnabled() {
-      if (!isCloud) return false
-
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.AUTO_TOP_UP_ENABLED,
-        remoteConfig.value.auto_top_up_enabled
-      )
-    },
     get v1PaymentRecovery() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.V1_PAYMENT_RECOVERY,
@@ -447,7 +439,6 @@ export function startFeatureFlagTelemetry() {
         flags.billingSdkSubscriptionEnabled,
       [ServerFeatureFlag.UNIFIED_BILLING_SETTINGS]:
         flags.unifiedBillingSettingsEnabled,
-      [ServerFeatureFlag.AUTO_TOP_UP_ENABLED]: flags.autoTopUpEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,

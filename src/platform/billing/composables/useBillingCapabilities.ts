@@ -197,6 +197,12 @@ function useBillingCapabilitiesInternal() {
       capabilities.value?.can_manage_auto_top_up ?? false
     )
   )
+  const autoTopUpEnabled = computed(() =>
+    receiveServerFact(
+      'auto_top_up_enabled',
+      resolvedResponse.value?.auto_top_up_enabled ?? false
+    )
+  )
   const autoTopUpSetup = computed(
     () => resolvedResponse.value?.auto_top_up_setup ?? null
   )
@@ -570,6 +576,7 @@ function useBillingCapabilitiesInternal() {
     canManageSubscription,
     canDowngradeToPersonal,
     canManageAutoTopUp,
+    autoTopUpEnabled,
     autoTopUpSetup,
     canRunWorkflows,
     planKind,
