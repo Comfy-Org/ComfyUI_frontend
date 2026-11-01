@@ -1734,6 +1734,51 @@ describe('LiveGraphApplier', () => {
     )
   })
 
+  it('reports apply context and node type when a created node collides with an id already registered in a sibling subgraph', () => {
+    const graph = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: graph, inputs: [] })
+    const interior = new LGraphNode('Interior')
+    subgraph.add(interior)
+    const host = createTestSubgraphNode(subgraph, { id: 501 })
+    graph.add(host)
+    const collidingId = Number(interior.id)
+
+    const { doc, collector } = followedDoc(
+      { nodes: [sourceNode(collidingId)], links: [] },
+      CATALOG
+    )
+
+    new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
+      doc,
+      collector.take(),
+      { actor: 'agent:test', opIds: ['op-9'], liveAgentTurn: true }
+    )
+
+    const created = graph._nodes.find((node) => node.type === 'TestSource')
+    expect(created).toBeDefined()
+    expect(created?.id).not.toBe(toNodeId(collidingId))
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining(
+          `Live graph reminted node ${collidingId} as`
+        )
+      }),
+      expect.objectContaining({
+        errorType: 'agent_graph_node_id_reminted',
+        context: expect.objectContaining({
+          nodeId: String(collidingId),
+          nodeType: 'TestSource',
+          mode: 'merge',
+          isRootGraph: true,
+          rootGraphId: graph.id,
+          actor: 'agent:test',
+          opIds: ['op-9'],
+          liveAgentTurn: true
+        })
+      })
+    )
+  })
+
   it('routes a promoted host widget once and treats deferred callback writes as local', async () => {
     const graph = new LGraph()
     const subgraph = createTestSubgraph({

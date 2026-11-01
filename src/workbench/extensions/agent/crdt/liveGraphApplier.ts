@@ -795,7 +795,7 @@ export class LiveGraphApplier {
           }
           touchedNodes.add(id)
           this.try(context, () => {
-            const result = this.upsertNode(graph, doc, id, mode)
+            const result = this.upsertNode(graph, doc, id, mode, context)
             if (result === 'created') created.push(toNodeId(id))
             if (result === 'created' || result === 'recreated') {
               for (const link of docLinksIncident(doc, id)) {
@@ -984,7 +984,8 @@ export class LiveGraphApplier {
     graph: LGraph,
     doc: Y.Doc,
     id: string,
-    mode: ApplyMode
+    mode: ApplyMode,
+    context: RemoteApplyContext
   ): 'created' | 'recreated' | 'updated' | 'skipped' {
     const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
@@ -996,14 +997,15 @@ export class LiveGraphApplier {
       return 'updated'
     }
     if (live) graph.remove(live)
-    this.createNode(graph, docNode, mode)
+    this.createNode(graph, docNode, mode, context)
     return live ? 'recreated' : 'created'
   }
 
   private createNode(
     graph: LGraph,
     docNode: DocNode,
-    mode: ApplyMode
+    mode: ApplyMode,
+    context: RemoteApplyContext
   ): LGraphNode {
     const node =
       LiteGraph.createNode(docNode.type, docNode.serialised.title) ??
@@ -1028,7 +1030,17 @@ export class LiveGraphApplier {
         `node-id:${docNode.id}`,
         `Live graph reminted node ${docNode.id} as ${String(node.id)}`,
         'agent_graph_node_id_reminted',
-        { nodeId: docNode.id, liveId: node.id }
+        {
+          nodeId: docNode.id,
+          liveId: node.id,
+          nodeType: docNode.type,
+          mode,
+          isRootGraph: graph === graph.rootGraph,
+          rootGraphId: graph.rootGraph.id,
+          actor: context.actor,
+          opIds: [...context.opIds],
+          liveAgentTurn: context.liveAgentTurn
+        }
       )
     }
     if (node.has_errors) {
