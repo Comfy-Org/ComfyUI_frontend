@@ -238,6 +238,70 @@ describe('CancelSubscriptionDialogContent', () => {
       ).not.toHaveBeenCalledWith('confirmed', expect.anything())
     })
 
+    it('tracks failed, not abandoned, when routing resolves to workspace billing during a cancel that then fails', async () => {
+      setSubscription(null)
+      const workspaceRail = ref(false)
+      useBillingRouting().shouldUseWorkspaceBilling = computed(
+        () => workspaceRail.value
+      )
+      vi.mocked(useBillingContext().cancelSubscription).mockImplementationOnce(
+        async () => {
+          workspaceRail.value = true
+          throw new Error('timed out')
+        }
+      )
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel my plan$/i })
+      )
+
+      await waitFor(() =>
+        expect(
+          useTelemetry()?.trackSubscriptionCancellation
+        ).toHaveBeenCalledWith('failed', expect.anything())
+      )
+      expect(
+        vi
+          .mocked(useTelemetry()!.trackBillingEvent)
+          .mock.calls.map(([event]) => event.stage)
+      ).toContain('failed')
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).not.toHaveBeenCalledWith('abandoned', expect.anything())
+    })
+
+    it('does not cancel when permission is lost while routing resolves', async () => {
+      setSubscription(null)
+      const canCancel = ref(true)
+      const workspaceRail = ref(false)
+      useBillingCapabilities().canCancel = computed(() => canCancel.value)
+      useBillingRouting().shouldUseWorkspaceBilling = computed(
+        () => workspaceRail.value
+      )
+      vi.mocked(useBillingContext().whenRoutingKnown).mockImplementationOnce(
+        async () => {
+          workspaceRail.value = true
+          canCancel.value = false
+          return true
+        }
+      )
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel my plan$/i })
+      )
+
+      await waitFor(() =>
+        expect(useBillingContext().whenRoutingKnown).toHaveBeenCalled()
+      )
+      expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
+      expect(
+        screen.getByRole('button', { name: /^cancel my plan$/i })
+      ).toBeEnabled()
+      expect(useToast().toasts).toEqual([])
+    })
+
     it('leaves workspace terminal failure telemetry to the billing poller', async () => {
       setSubscription(null)
       mockShouldUseWorkspaceBilling.value = true

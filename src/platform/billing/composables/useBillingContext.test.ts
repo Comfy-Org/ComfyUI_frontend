@@ -504,6 +504,16 @@ describe('useBillingContext', () => {
       expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
     })
 
+    it('lets off-Cloud users run workflows before any workspace loads', () => {
+      holdWorkspaceUnloaded('personal')
+      mockIsCloud.value = false
+      const context = useBillingContext()
+
+      expect(context.type.value).toBe('unknown')
+      expect(context.canAccessSubscriptionFeatures.value).toBe(true)
+      expect(context.canRunWorkflows.value).toBe(true)
+    })
+
     it('makes no billing call while unknown, then routes to workspace billing for a team', async () => {
       const loaded = holdWorkspaceUnloaded('team')
       const context = useBillingContext()
