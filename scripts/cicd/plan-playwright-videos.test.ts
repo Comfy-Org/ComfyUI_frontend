@@ -304,9 +304,6 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
       const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
         cwd: root,
         encoding: 'utf8',
-        // Node's default stdin is a socket, and Debian's bash then sources
-        // ~/.bashrc as if run over SSH. A PATH set there would put the real
-        // pnpm ahead of the stub, so give bash a non-socket stdin.
         stdio: ['ignore', 'pipe', 'pipe'],
         env: {
           PATH: `${bin}:/usr/bin:/bin`,
