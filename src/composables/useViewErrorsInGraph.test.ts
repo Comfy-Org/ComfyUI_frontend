@@ -69,7 +69,7 @@ describe('useViewErrorsInGraph', () => {
     canvasStore.canvas = null
     executionErrorStore.showErrorOverlay()
 
-    expect(() => useViewErrorsInGraph().viewErrorsInGraph()).not.toThrow()
+    expect(() => useViewErrorsInGraph().viewErrorsInGraph([])).not.toThrow()
 
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(rightSidePanelStore.isOpen).toBe(true)
