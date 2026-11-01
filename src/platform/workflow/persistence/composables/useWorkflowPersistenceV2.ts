@@ -44,6 +44,7 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { isValidUuid } from '@/utils/formatUtil'
 
 export function useWorkflowPersistenceV2() {
@@ -427,6 +428,17 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
+  const stampWithDraftTime = (
+    restored: ComfyWorkflow,
+    draftPath: string,
+    draftData: ComfyWorkflowJSON,
+    draftUpdatedAt: number
+  ) => {
+    const builtFromThisDraft =
+      restored.path === draftPath && isValidUuid(draftData.id)
+    if (builtFromThisDraft) restored.lastModified = draftUpdatedAt
+  }
+
   const restoreSavedTabs = async () => {
     if (!workflowPersistenceEnabled.value) {
       tabStateRestored = true
@@ -461,13 +473,7 @@ export function useWorkflowPersistenceV2() {
       try {
         const workflowData = JSON.parse(draft.data)
         const restored = workflowStore.createTemporary(draft.name, workflowData)
-        // The tab is built from this draft, so the draft is not older than
-        // the tab. Without this, the first load() treats it as stale and
-        // deletes it while the tab is still unsaved. Skip it when the store
-        // reused another workflow, or gave the graph a new id that the raw
-        // draft would not carry when load() lays it over the tab.
-        if (restored.path === path && isValidUuid(workflowData.id))
-          restored.lastModified = draft.updatedAt
+        stampWithDraftTime(restored, path, workflowData, draft.updatedAt)
       } catch (err) {
         console.warn(
           'Failed to parse workflow draft, creating with default',

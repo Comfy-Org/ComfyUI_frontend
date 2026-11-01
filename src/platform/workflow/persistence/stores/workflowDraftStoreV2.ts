@@ -319,9 +319,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const result = moveEntry(index, oldPath, newPath, name)
 
     if (result) {
-      // Same path: the payload already sits under the target key, and
-      // deleting the "old" key afterwards would delete the draft itself.
-      if (result.oldKey === result.newKey) {
+      const isRenameOntoSelf = result.oldKey === result.newKey
+      if (isRenameOntoSelf) {
         persistIndex(result.index)
         return
       }
