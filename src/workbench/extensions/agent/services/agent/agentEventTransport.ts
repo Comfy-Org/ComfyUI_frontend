@@ -42,7 +42,7 @@ export type AgentChatEvent = Extract<
 >
 type AgentNonTerminalEvent = Exclude<
   AgentChatEvent,
-  { type: 'agent_message_done' }
+  { type: 'agent_message_done' | 'agent_extension_changed' }
 >
 
 type AgentToolCallEvent = Extract<AgentChatEvent, { type: 'agent_tool_call' }>
@@ -546,9 +546,6 @@ export function createAgentEventTransport(
         return handleAskEvent(event.data)
       case 'agent_ask_resolved':
         return handleAskResolvedEvent(event.data)
-      case 'agent_extension_changed':
-        handleExtensionChangedEvent(event.data)
-        return true
       case 'agent_message_delta':
         handleMessageDeltaEvent(event.data)
         return true
@@ -572,6 +569,11 @@ export function createAgentEventTransport(
         event.data.usage?.charge_micro_usd
       )
       settle()
+      return
+    }
+    if (event.type === 'agent_extension_changed') {
+      handleExtensionChangedEvent(event.data)
+      emit(snapshotMessage(message))
       return
     }
     if (applyChatEvent(event)) emit(snapshotMessage(message))

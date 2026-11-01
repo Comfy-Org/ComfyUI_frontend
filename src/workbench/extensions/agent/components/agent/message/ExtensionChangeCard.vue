@@ -8,14 +8,26 @@ const { part } = defineProps<{ part: ExtensionChangePart }>()
 
 const { t } = useI18n()
 
-const ICONS: Record<ExtensionChangePart['action'], string> = {
-  enabled: 'icon-[lucide--toggle-right]',
-  disabled: 'icon-[lucide--toggle-left]',
-  removed: 'icon-[lucide--package-minus]'
+const ACTIONS: Record<
+  ExtensionChangePart['action'],
+  { titleKey: string; icon: string }
+> = {
+  enabled: {
+    titleKey: 'agent.extensionChange.enabled',
+    icon: 'icon-[lucide--toggle-right]'
+  },
+  disabled: {
+    titleKey: 'agent.extensionChange.disabled',
+    icon: 'icon-[lucide--toggle-left]'
+  },
+  removed: {
+    titleKey: 'agent.extensionChange.removed',
+    icon: 'icon-[lucide--package-minus]'
+  }
 }
 
 const title = computed(() =>
-  t(`agent.extensionChange.${part.action}`, { pack: part.pack })
+  t(ACTIONS[part.action].titleKey, { pack: part.pack })
 )
 </script>
 
@@ -29,7 +41,7 @@ const title = computed(() =>
       aria-hidden="true"
       class="flex size-8 shrink-0 items-center justify-center rounded-md border bg-secondary text-muted-foreground"
     >
-      <i aria-hidden="true" :class="ICONS[part.action]" />
+      <i aria-hidden="true" :class="ACTIONS[part.action].icon" />
     </span>
     <span class="flex min-w-0 flex-1 flex-col gap-0.5">
       <span class="text-sm/4 break-words text-foreground">{{ title }}</span>
