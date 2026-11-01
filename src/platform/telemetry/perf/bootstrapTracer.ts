@@ -127,6 +127,49 @@ function untracedMs(rows: BootstrapPhaseTiming[], totalMs: number): number {
   return totalMs - tracedMs
 }
 
+/**
+ * Wall-clock time the document spends hidden during startup.
+ *
+ * Chromium throttles timers in a hidden tab and pauses animation frames, so a
+ * start that began or moved to a background tab can run for minutes while no
+ * one is waiting on it. Reporting the hidden share keeps those starts
+ * distinguishable from slow starts a user watched, without dropping them.
+ *
+ * Time before the tracer exists is counted in the state seen at construction.
+ */
+class HiddenTimeMeter {
+  private _hiddenMs = 0
+  private _hiddenSince: number | undefined
+  private _listening = new AbortController()
+
+  constructor() {
+    if (typeof document === 'undefined') return
+    if (document.visibilityState === 'hidden') this._hiddenSince = 0
+    document.addEventListener(
+      'visibilitychange',
+      () => {
+        const now = performance.now()
+        if (document.visibilityState === 'hidden') {
+          this._hiddenSince ??= now
+        } else if (this._hiddenSince !== undefined) {
+          this._hiddenMs += now - this._hiddenSince
+          this._hiddenSince = undefined
+        }
+      },
+      { signal: this._listening.signal }
+    )
+  }
+
+  stop(): void {
+    this._listening.abort()
+  }
+
+  hiddenMsUntil(nowMs: number): number {
+    const open = this._hiddenSince === undefined ? 0 : nowMs - this._hiddenSince
+    return Math.round(this._hiddenMs + Math.max(0, open))
+  }
+}
+
 export interface BootstrapPhaseTiming {
   name: BootstrapPhase
   startMs: number
@@ -140,6 +183,7 @@ export class BootstrapTracer {
   private _outcome: 'completed' | 'failed' | undefined
   private _timeoutReported = false
   private _watchdog: ReturnType<typeof setTimeout> | undefined
+  private _hidden = new HiddenTimeMeter()
 
   /**
    * Start timing a phase. Returns a handle; call `.stop()` when complete.
@@ -244,6 +288,7 @@ export class BootstrapTracer {
     clearTimeout(this._watchdog)
     for (const phase of Array.from(this._spans.keys())) this._stopPhase(phase)
     this._report(outcome)
+    this._hidden.stop()
   }
 
   /**
@@ -285,6 +330,7 @@ export class BootstrapTracer {
         outcome,
         phase_count: rows.length,
         untraced_ms: untracedMs(rows, totalMs),
+        hidden_ms: this._hidden.hiddenMsUntil(totalMs),
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
         ...(pending?.length ? { pending } : {})
       }

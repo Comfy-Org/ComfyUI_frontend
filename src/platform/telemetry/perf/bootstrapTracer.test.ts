@@ -157,6 +157,54 @@ describe('bootstrapTracer', () => {
     })
   })
 
+  it('reports how long the tab was hidden during startup', async () => {
+    const telemetry = sharedUseTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible')
+    const setVisibility = (state: DocumentVisibilityState) => {
+      visibility.mockReturnValue(state)
+      document.dispatchEvent(new Event('visibilitychange'))
+    }
+    const tracer = new BootstrapTracer()
+
+    await vi.advanceTimersByTimeAsync(30)
+    setVisibility('hidden')
+    await vi.advanceTimersByTimeAsync(120)
+    setVisibility('visible')
+    await vi.advanceTimersByTimeAsync(20)
+    setVisibility('hidden')
+    await vi.advanceTimersByTimeAsync(30)
+    tracer.complete()
+    visibility.mockRestore()
+
+    const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
+      .calls[0][0]
+    expect(metadata).toMatchObject({ total_ms: 200, hidden_ms: 150 })
+  })
+
+  it('counts time before the tracer existed as hidden when startup began hidden', async () => {
+    const telemetry = sharedUseTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    await vi.advanceTimersByTimeAsync(40)
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    const tracer = new BootstrapTracer()
+
+    await vi.advanceTimersByTimeAsync(60)
+    visibility.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await vi.advanceTimersByTimeAsync(100)
+    tracer.complete()
+    visibility.mockRestore()
+
+    const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
+      .calls[0][0]
+    expect(metadata.hidden_ms).toBe(metadata.total_ms - 100)
+  })
+
   it('reports a failed startup, closing phases still open', () => {
     const telemetry = sharedUseTelemetry()
     if (!telemetry) throw new Error('Expected telemetry mock')
