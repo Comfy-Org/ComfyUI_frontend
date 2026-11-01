@@ -15,7 +15,6 @@ export interface DeclaredCommand {
   line: number
 }
 
-/** A declaration whose id is computed, so this guard cannot resolve it. */
 export interface UnresolvedCommand {
   file: string
   line: number
