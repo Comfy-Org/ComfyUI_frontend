@@ -12515,6 +12515,64 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
+  it('agent_active_tab makes an open tab the target of the next message', async () => {
+    const first = makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-other',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+    )
+  })
+
+  it('agent_active_tab makes a tab it opens the target of the next message', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-new',
+      name: 'Fresh',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
+        'workflows/Fresh.json'
+      )
+    )
+  })
+
+  it('agent_active_tab keeps the target when the tab cannot be opened', async () => {
+    const first = makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    telemetry.trackAgentError.mockClear()
+    vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
+
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-other',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({ error_class: 'workflow_open_failed' })
+      )
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+  })
+
   it('agent_active_tab reports when a bound tab cannot be opened', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
@@ -14802,7 +14860,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it('disables target selection for an active turn and ignores agent tab changes for attribution', async () => {
+  it('disables target selection for an active turn and sends the next turn to the tab the agent moved to', async () => {
     makeTab('wf-42')
     const other = addTab('workflows/other.json')
     useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
@@ -14822,7 +14880,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(other)
     )
-    expect(selector).toHaveTextContent('current')
+    await vi.waitFor(() => expect(selector).toHaveTextContent('other'))
 
     dispatchApiEvent('agent_message_done', {
       message_id: 'm-1',
@@ -14831,7 +14889,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Send' })
     await sendFromComposer('second turn')
     expect(bodies[1]).toMatchObject({
-      workflow_id: 'wf-42'
+      workflow_id: 'wf-other'
     })
   })
 

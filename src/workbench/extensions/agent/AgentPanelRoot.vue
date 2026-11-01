@@ -1589,6 +1589,7 @@ async function activateExistingAgentTab(
     return false
   }
   bindingStore.bind(data.workflow_id, bound.path)
+  agentPanelStore.setWorkflowTarget(bound)
   showTurnOn(bound)
   bindWorkflow(data.workflow_id)
   reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
@@ -1633,6 +1634,7 @@ async function createAndActivateAgentTab(
   }
   showTurnOn(tab)
   bindingStore.bind(data.workflow_id, tab.path)
+  agentPanelStore.setWorkflowTarget(tab)
   bindWorkflow(data.workflow_id)
   reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
   useTelemetry()?.trackAgentWorkflowApplied({
