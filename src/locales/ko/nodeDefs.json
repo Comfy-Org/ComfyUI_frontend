@@ -6750,11 +6750,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "FLUX 슈퍼 해상도로 비디오를 1.5~3배 업스케일하며, 원본을 정밀하게 유지하거나 디테일을 창의적으로 향상합니다.",
-    "display_name": "Flux 비디오 업스케일",
+    "display_name": "Flux 비디오 업스케일(레거시)",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "입력 제한에 맞도록 면적이 3840x2160픽셀보다 큰 소스를 자동으로 축소합니다. 종횡비는 유지되며, 더 작은 비디오는 변경되지 않습니다."
+        "tooltip": "입력 제한에 맞추기 위해 면적이 2560x1440픽셀보다 큰 소스를 자동으로 다운스케일합니다. 종횡비는 유지되며, 더 작은 비디오는 변경되지 않습니다."
       },
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -6782,6 +6782,48 @@
       "video": {
         "name": "video",
         "tooltip": "종횡비가 1:4~4:1인 1~20초 길이의 원본 clip입니다. 출력은 24fps로 렌더링되며 프레임당 약 1,440만 화소로 제한됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "FLUX 초해상도를 사용하여 비디오를 1080p, 2K 또는 4K, 혹은 1.5~3배로 업스케일하며, 소스를 정확하게 보존하거나 세부 묘사를 창의적으로 향상합니다.",
+    "display_name": "Flux 비디오 업스케일",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "너무 큰 소스를 거부하는 대신 다운스케일합니다. 면적이 2560x1440픽셀을 초과하거나 대상 해상도의 3분의 2를 초과하는 경우입니다(최소 배율은 1.5x). 종횡비는 유지됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "'creative'는 미세한 디테일을 복원하고 새로 만들어 내며, 생성된 영상, 텍스처 및 풍경에 가장 적합합니다. 'precise'는 얼굴, 제품 및 실제 영상에 맞게 소스를 변경하지 않고 선명하게 합니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "향상된 디테일을 유도하는 clip의 선택적 설명입니다. 중립적인 업스케일을 원하면 비워 두세요."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "검열 허용 수준이며, 0이 가장 엄격합니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. FLUX는 자체 시드를 선택하므로 이 값과 관계없이 실제 결과는 비결정적입니다."
+      },
+      "target_resolution": {
+        "name": "target_resolution",
+        "tooltip": "2K, 4K 및 1080p는 출력을 각각 2560x1440, 3840x2160 또는 1920x1080 내부에 맞춥니다(세로형 clip의 경우 회전됨). 최대 3배로도 이를 채우기에는 소스가 너무 작으면 3배로 업스케일되며 더 작은 크기로 출력됩니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "종횡비가 1:4~4:1인 1~20초 길이의 소스 clip입니다. 출력은 24fps로 렌더링되며 프레임당 약 14.4메가픽셀로 제한됩니다."
       }
     },
     "outputs": {
@@ -9039,7 +9081,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Ideogram 4.5 정밀 편집을 사용하여 텍스트 프롬프트의 안내에 따라 이미지를 편집합니다. 프롬프트에서 요청한 부분만 변경되고, 수정하지 않은 픽셀은 동일하게 유지되며 출력은 이미지 1의 크기를 유지합니다(약 4MP를 초과하는 이미지는 먼저 축소됨). 최대 4개의 참조 이미지를 허용합니다.",
+    "description": "Ideogram 4.5 정밀 편집을 사용하여 텍스트 프롬프트에 따라 이미지를 편집합니다. 프롬프트가 요청한 부분만 변경되고, 손대지 않은 픽셀은 동일하게 유지되며 출력은 이미지 1의 크기를 유지합니다(약 4MP를 초과하는 이미지는 먼저 축소됨). mask 또는 바운딩 박스로 지정한 단일 영역도 편집할 수 있으며, 이미지를 전체 크기로 반환할 수 있습니다. 참조 이미지는 최대 4개까지 허용합니다(context_window_mask 사용 시 3개).",
     "display_name": "Ideogram 4.5 정밀 편집",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9090,9 @@
       "model": {
         "name": "모델",
         "tooltip": "사용할 모델입니다."
+      },
+      "model_context_window": {
+        "name": "context_window"
       },
       "model_prompt": {
         "name": "프롬프트"
@@ -15062,6 +15107,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "MiniMax H3의 컨텍스트 창을 설정합니다. 비디오와 오디오의 동기화를 유지하기 위해 창은 모델의 17프레임 청크에서 시작합니다.",
+    "display_name": "MiniMax H3 컨텍스트 창",
+    "inputs": {
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "실제 프레임 기준 컨텍스트 창의 길이입니다. 17*n + 5여야 합니다."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "실제 프레임 기준 컨텍스트 창의 겹침 길이입니다. 17*n + 5여야 합니다."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "FreeNoise 노이즈 셔플링을 적용할지 여부입니다. 창 블렌딩이 개선됩니다."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "컨텍스트 창을 융합하는 데 사용할 방법입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "샘플링 중 컨텍스트 창을 적용할 모델입니다."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "여러 conditioning(ConditionCombine으로 생성됨)을 영역 인덱스에 따라 각 창으로 분할할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "샘플링 중 컨텍스트 창이 적용된 모델입니다."
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "MiniMax H3 Fun ControlNet을 모델 패치로 텍스트-투-비디오 모델에 적용합니다.",
     "display_name": "MiniMax H3 Fun ControlNet 적용",
@@ -15137,6 +15217,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "latent 업스케일 모델로 MiniMax H3 latent의 비디오 크기를 조정합니다. 오디오는 변경 없이 통과합니다.",
+    "display_name": "MiniMax H3 모델을 사용한 Latent 업스케일",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "samples": {
+        "name": "샘플"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18928,6 +19031,288 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialExtractNode": {
+    "description": "프롬프트를 바탕으로 입력 이미지의 영역에서 자연스럽게 타일링되는 PBR 머티리얼(텍스처 이미지 + PBR 맵)을 추출합니다.",
+    "display_name": "Patina 머티리얼 추출",
+    "inputs": {
+      "basecolor": {
+        "name": "기본 색상",
+        "tooltip": "기본 색상(albedo) 맵을 생성합니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "height": {
+        "name": "높이",
+        "tooltip": "높이/변위 맵을 생성합니다."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "텍스처를 추출할 이미지입니다."
+      },
+      "image_size": {
+        "name": "이미지 크기",
+        "tooltip": "출력 텍스처 크기입니다. 너비/높이를 512~2048 사이로 지정하려면 'custom'을 선택하세요(8K 결과는 맵을 4배 업스케일하여 생성됩니다)."
+      },
+      "metalness": {
+        "name": "금속성",
+        "tooltip": "금속성 맵을 생성합니다."
+      },
+      "normal": {
+        "name": "노멀",
+        "tooltip": "노멀 맵을 생성합니다."
+      },
+      "num_inference_steps": {
+        "name": "추론 단계 수",
+        "tooltip": "텍스처 생성을 위한 노이즈 제거 단계입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지에서 추출할 텍스처를 설명합니다(예: \"벽\")."
+      },
+      "prompt_expansion": {
+        "name": "프롬프트 확장",
+        "tooltip": "더 풍부한 텍스처 세부 묘사를 위해 LLM으로 프롬프트를 확장합니다. 기본값은 꺼짐입니다. 확장은 프롬프트를 사진으로 재구성하며 금속성 맵이 흐려지는 경향이 있습니다."
+      },
+      "roughness": {
+        "name": "거칠기",
+        "tooltip": "거칠기 맵을 생성합니다."
+      },
+      "safety_checker": {
+        "name": "안전성 검사기"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "재현 가능한 생성을 위한 시드입니다."
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "입력 이미지를 변환하는 정도입니다."
+      },
+      "tile_size": {
+        "name": "타일 크기",
+        "tooltip": "latent 공간에서의 타일 크기입니다(64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "타일 스트라이드",
+        "tooltip": "latent 공간에서의 타일 스트라이드입니다."
+      },
+      "tiling_mode": {
+        "name": "타일링 모드",
+        "tooltip": "타일링 방향: 전방향, 가로 또는 세로입니다."
+      },
+      "upscale_factor": {
+        "name": "업스케일 배율",
+        "tooltip": "PBR 맵을 Seamless SeedVR로 업스케일합니다(기본 텍스처는 업스케일되지 않음)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "텍스처",
+        "tooltip": null
+      },
+      "1": {
+        "name": "기본 색상",
+        "tooltip": null
+      },
+      "2": {
+        "name": "법선",
+        "tooltip": null
+      },
+      "3": {
+        "name": "거칠기",
+        "tooltip": null
+      },
+      "4": {
+        "name": "금속성",
+        "tooltip": null
+      },
+      "5": {
+        "name": "높이",
+        "tooltip": null
+      },
+      "6": {
+        "name": "확장된 프롬프트",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "텍스트 프롬프트로부터 최대 8K의 완전한 이음새 없는 타일링 PBR 재질(텍스처 이미지 + PBR 맵)을 생성합니다. 선택적으로 입력 이미지(img2img) 또는 이미지 + mask(inpaint)로 생성 과정을 제어할 수 있습니다.",
+    "display_name": "Patina 재질",
+    "inputs": {
+      "basecolor": {
+        "name": "기본 색상",
+        "tooltip": "기본 색상(albedo) 맵을 생성합니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "height": {
+        "name": "높이",
+        "tooltip": "높이/변위 맵을 생성합니다."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "선택적 소스 이미지입니다. 단독 제공 = img2img, mask와 함께 제공 = inpaint."
+      },
+      "image_size": {
+        "name": "이미지 크기",
+        "tooltip": "출력 텍스처 크기입니다. 512~2048 사이의 너비/높이를 지정하려면 'custom'을 선택하세요(8K 결과는 맵을 4배 업스케일링하여 생성됩니다)."
+      },
+      "mask": {
+        "name": "마스크",
+        "tooltip": "선택적 인페인트 마스크(이미지 필요). 흰색 = 재생성, 검은색 = 유지."
+      },
+      "metalness": {
+        "name": "금속성",
+        "tooltip": "금속성 맵을 생성합니다."
+      },
+      "normal": {
+        "name": "법선",
+        "tooltip": "법선 맵을 생성합니다."
+      },
+      "num_inference_steps": {
+        "name": "추론 단계 수",
+        "tooltip": "텍스처 생성을 위한 노이즈 제거 단계입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "생성할 재질/텍스처를 설명합니다."
+      },
+      "prompt_expansion": {
+        "name": "프롬프트 확장",
+        "tooltip": "더 풍부한 텍스처 세부 묘사를 위해 LLM으로 프롬프트를 확장합니다. 기본적으로 꺼져 있습니다. 확장은 프롬프트를 사진으로 재구성하며 금속성 맵이 흐려지는 경향이 있습니다."
+      },
+      "roughness": {
+        "name": "거칠기",
+        "tooltip": "거칠기 맵을 생성합니다."
+      },
+      "safety_checker": {
+        "name": "안전성 검사기"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "재현 가능한 생성을 위한 시드입니다."
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "입력 이미지를 변환하는 정도입니다. 이미지를 제공한 경우에만 사용됩니다."
+      },
+      "tile_size": {
+        "name": "타일 크기",
+        "tooltip": "latent 공간의 타일 크기입니다(64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "타일 스트라이드",
+        "tooltip": "latent 공간의 타일 스트라이드입니다."
+      },
+      "tiling_mode": {
+        "name": "타일링 모드",
+        "tooltip": "타일링 방향: 모든 방향, 가로 또는 세로."
+      },
+      "upscale_factor": {
+        "name": "업스케일 배율",
+        "tooltip": "PBR 맵을 이음새 없이 SeedVR로 업스케일링합니다(기본 텍스처는 업스케일링되지 않습니다)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "텍스처",
+        "tooltip": null
+      },
+      "1": {
+        "name": "기본 색상",
+        "tooltip": null
+      },
+      "2": {
+        "name": "노멀",
+        "tooltip": null
+      },
+      "3": {
+        "name": "거칠기",
+        "tooltip": null
+      },
+      "4": {
+        "name": "금속성",
+        "tooltip": null
+      },
+      "5": {
+        "name": "높이",
+        "tooltip": null
+      },
+      "6": {
+        "name": "확장된 프롬프트",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "텍스처 이미지에서 PBR 머티리얼 맵(기본 색상, 노멀, 거칠기, 금속성, 높이)을 생성합니다.",
+    "display_name": "파티나 PBR 머티리얼 맵",
+    "inputs": {
+      "auto_downscale": {
+        "name": "자동 축소",
+        "tooltip": "가장 긴 변이 2048px(모델의 입력 제한)를 초과하는 입력 이미지를 종횡비를 유지하며 자동으로 축소합니다. 더 작은 이미지는 그대로 유지됩니다. 비활성화하면 대신 크기가 너무 큰 이미지에서 오류가 발생합니다."
+      },
+      "basecolor": {
+        "name": "기본 색상",
+        "tooltip": "기본 색상(알베도) 맵을 생성합니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "height": {
+        "name": "높이",
+        "tooltip": "높이/변위 맵을 생성합니다."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "PBR 맵을 추출할 입력 사진 또는 렌더입니다."
+      },
+      "metalness": {
+        "name": "금속성",
+        "tooltip": "금속성 맵을 생성합니다."
+      },
+      "normal": {
+        "name": "노멀",
+        "tooltip": "노멀 맵을 생성합니다."
+      },
+      "roughness": {
+        "name": "거칠기",
+        "tooltip": "거칠기 맵을 생성합니다."
+      },
+      "safety_checker": {
+        "name": "안전 검사기"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "재현 가능한 디노이징을 위한 시드입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "기본 색상",
+        "tooltip": null
+      },
+      "1": {
+        "name": "노멀",
+        "tooltip": null
+      },
+      "2": {
+        "name": "거칠기",
+        "tooltip": null
+      },
+      "3": {
+        "name": "금속성",
+        "tooltip": null
+      },
+      "4": {
+        "name": "높이",
         "tooltip": null
       }
     }
@@ -28537,6 +28922,33 @@
       "video": {
         "name": "비디오",
         "tooltip": "음성 사운드트랙이 포함된 30분 미만의 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "VEED를 사용하여 동영상의 음성을 다른 언어로 번역합니다. 각 화자의 음성을 복제하고 입 모양을 번역에 맞춰 동기화합니다.",
+    "display_name": "VEED 더빙",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "standard: 더 저렴한 가격, 모노 오디오; 스페인어는 라틴 아메리카식이고 포르투갈어는 브라질식입니다. pro: 지역 억양 및 스테레오 오디오."
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_source_language": {
+        "name": "원본_언어"
+      },
+      "model_target_language": {
+        "name": "대상_언어"
       }
     },
     "outputs": {

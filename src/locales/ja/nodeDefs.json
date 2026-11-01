@@ -6750,11 +6750,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "FLUX超解像度で動画を1.5～3倍にアップスケールします。ソースを正確に維持するか、細部を創造的に強調できます。",
-    "display_name": "Flux 動画アップスケール",
+    "display_name": "Flux ビデオアップスケール（レガシー）",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "入力上限に合わせるため、面積が3840x2160ピクセルを超えるソースを自動的に縮小します。アスペクト比は維持され、小さい動画は変更されません。"
+        "tooltip": "面積が2560x1440ピクセルを超えるソースを、入力上限に収まるよう自動的にダウンスケールします。アスペクト比は維持され、小さい動画には変更を加えません。"
       },
       "control_after_generate": {
         "name": "生成後の制御"
@@ -6782,6 +6782,48 @@
       "video": {
         "name": "video",
         "tooltip": "アスペクト比が1:4～4:1の、1～20秒のソースclip。出力は24 fpsでレンダリングされ、1フレームあたり約14.4メガピクセルに制限されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "FLUXスーパー解像度を使用して、ソースを忠実に維持するか、ディテールを創造的に強調しながら、動画を1080p、2K、4K、または1.5～3倍にアップスケールします。",
+    "display_name": "Flux ビデオアップスケール",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動ダウンスケール",
+        "tooltip": "大きすぎるソースを拒否する代わりにダウンスケールします。面積が2560x1440ピクセルを超える場合、または対象解像度の3分の2を超える場合です（最小倍率は1.5倍）。アスペクト比は維持されます。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "「creative」は細かなディテールを復元・生成し、生成映像、テクスチャ、風景に最適です。「precise」はソースを変更せずにシャープ化し、顔、製品、実写映像に適しています。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "強調するディテールを導く、任意のクリップ説明です。ニュートラルなアップスケールにするには空欄のままにします。"
+      },
+      "safety_tolerance": {
+        "name": "安全性許容度",
+        "tooltip": "モデレーションの許容度です。0が最も厳格です。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシードです。FLUXは独自のシードを選択するため、この値にかかわらず実際の結果は非決定的です。"
+      },
+      "target_resolution": {
+        "name": "対象解像度",
+        "tooltip": "2K、4K、1080pでは、出力をそれぞれ2560x1440、3840x2160、1920x1080以内に収めます（縦長クリップでは回転されます）。最大3倍でもそのサイズを満たすには小さすぎるソースは、3倍にアップスケールされ、出力サイズはそれより小さくなります。"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "アスペクト比が1:4～4:1の、1～20秒のソースクリップです。出力は24 fpsでレンダリングされ、1フレームあたり約14.4メガピクセルに制限されます。"
       }
     },
     "outputs": {
@@ -9039,7 +9081,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Ideogram 4.5 の精密編集を使用して、テキストプロンプトに従い画像を編集します。プロンプトで指定された部分のみが変更され、変更していないピクセルは同一に保たれ、出力は画像1のサイズを維持します（約4 MPを超える画像は先に縮小されます）。最大4枚の参照画像を受け付けます。",
+    "description": "Ideogram 4.5の高精度編集を使用し、テキストプロンプトに従って画像を編集します。プロンプトが求める部分だけが変更され、変更されていないピクセルは同一に保たれ、出力は画像1のサイズを維持します（約4 MPを超える画像は先に縮小されます）。maskまたはバウンディングボックスで指定した単一領域の編集、およびフルサイズでの画像の返却も可能です。最大4枚の参照画像を受け付けます（context_window_maskを使用する場合は3枚）。",
     "display_name": "Ideogram 4.5 精密編集",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9090,9 @@
       "model": {
         "name": "モデル",
         "tooltip": "使用するモデル。"
+      },
+      "model_context_window": {
+        "name": "コンテキストウィンドウ"
       },
       "model_prompt": {
         "name": "プロンプト"
@@ -15062,6 +15107,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "MiniMax H3のコンテキストウィンドウを設定します。動画と音声の同期を維持するため、ウィンドウはモデルの17フレーム単位で開始されます。",
+    "display_name": "MiniMax H3 コンテキストウィンドウ",
+    "inputs": {
+      "context_length": {
+        "name": "コンテキスト長",
+        "tooltip": "実フレームにおけるコンテキストウィンドウの長さです。17*n + 5である必要があります。"
+      },
+      "context_overlap": {
+        "name": "コンテキストオーバーラップ",
+        "tooltip": "実フレームにおけるコンテキストウィンドウの重複部分です。17*n + 5である必要があります。"
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "FreeNoiseのノイズシャッフルを適用するかどうかです。ウィンドウのブレンドが改善されます。"
+      },
+      "fuse_method": {
+        "name": "融合方法",
+        "tooltip": "コンテキストウィンドウを融合するために使用する方法です。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "サンプリング中にコンテキストウィンドウを適用するモデルです。"
+      },
+      "split_conds_to_windows": {
+        "name": "条件をウィンドウに分割",
+        "tooltip": "複数の条件付け（ConditionCombineで作成）を、領域インデックスに基づいて各ウィンドウへ分割するかどうかです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "サンプリング中にコンテキストウィンドウが適用されたモデルです。"
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "MiniMax H3 Fun ControlNetをモデルパッチとしてテキストから動画へのモデルに適用します。",
     "display_name": "MiniMax H3 Fun ControlNetを適用",
@@ -15137,6 +15217,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "潜在アップスケールモデルを使用してMiniMax H3潜在空間の動画をリサイズします。音声は変更されずに通過します。",
+    "display_name": "モデルによる MiniMax H3 潜在アップスケール",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "samples": {
+        "name": "サンプル"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -18928,6 +19031,288 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialExtractNode": {
+    "description": "プロンプトをガイドとして、入力画像の領域からシームレスにタイル可能な PBR マテリアル（テクスチャ画像 + PBR マップ）を抽出します。",
+    "display_name": "Patina マテリアル抽出",
+    "inputs": {
+      "basecolor": {
+        "name": "ベースカラー",
+        "tooltip": "ベースカラー（アルベド）マップを生成します。"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "高さ/ディスプレイスメントマップを生成します。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "テクスチャを抽出する画像。"
+      },
+      "image_size": {
+        "name": "画像サイズ",
+        "tooltip": "出力テクスチャのサイズ。幅/高さを 512～2048 にするには「カスタム」を選択します（8K の結果はマップを 4x アップスケールして得られます）。"
+      },
+      "metalness": {
+        "name": "メタルネス",
+        "tooltip": "メタルネスマップを生成します。"
+      },
+      "normal": {
+        "name": "法線",
+        "tooltip": "法線マップを生成します。"
+      },
+      "num_inference_steps": {
+        "name": "推論ステップ数",
+        "tooltip": "テクスチャ生成のノイズ除去ステップ数。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像から抽出するテクスチャを指定します（例: 「壁」）。"
+      },
+      "prompt_expansion": {
+        "name": "プロンプト拡張",
+        "tooltip": "LLM でプロンプトを拡張し、より豊かなテクスチャのディテールを得ます。デフォルトではオフです。拡張するとプロンプトが写真として再構成され、メタルネスマップが白っぽくなりがちです。"
+      },
+      "roughness": {
+        "name": "粗さ",
+        "tooltip": "粗さマップを生成します。"
+      },
+      "safety_checker": {
+        "name": "安全性チェッカー"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "再現可能な生成のためのシード。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "入力画像をどの程度変換するか。"
+      },
+      "tile_size": {
+        "name": "タイルサイズ",
+        "tooltip": "潜在空間でのタイルサイズ（64 = 512px、128 = 1024px）。"
+      },
+      "tile_stride": {
+        "name": "タイルストライド",
+        "tooltip": "潜在空間でのタイルストライド。"
+      },
+      "tiling_mode": {
+        "name": "タイルモード",
+        "tooltip": "タイル方向: 全方向、水平、または垂直。"
+      },
+      "upscale_factor": {
+        "name": "アップスケール係数",
+        "tooltip": "PBR マップをシームレスに SeedVR アップスケールします（ベーステクスチャはアップスケールされません）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "テクスチャ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ベースカラー",
+        "tooltip": null
+      },
+      "2": {
+        "name": "法線",
+        "tooltip": null
+      },
+      "3": {
+        "name": "粗さ",
+        "tooltip": null
+      },
+      "4": {
+        "name": "メタルネス",
+        "tooltip": null
+      },
+      "5": {
+        "name": "高さ",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "テキストプロンプトから、最大8Kの完全なシームレスタイル可能PBRマテリアル（テクスチャ画像 + PBRマップ）を生成します。オプションで入力画像（img2img）、または画像 + mask（インペイント）を使用できます。",
+    "display_name": "Patina マテリアル",
+    "inputs": {
+      "basecolor": {
+        "name": "basecolor",
+        "tooltip": "ベースカラー（アルベド）マップを生成します。"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "高さ/ディスプレイスメントマップを生成します。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "任意のソース画像です。単独で指定するとimg2img、maskと併用するとインペイントになります。"
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "出力テクスチャのサイズです。512～2048の幅/高さを指定するには「custom」を選択します（8Kの結果はマップを4倍にアップスケールして得られます）。"
+      },
+      "mask": {
+        "name": "マスク",
+        "tooltip": "オプションのインペイントマスク（imageが必要）。白 = 再生成、黒 = 維持。"
+      },
+      "metalness": {
+        "name": "メタルネス",
+        "tooltip": "メタルネスマップを生成します。"
+      },
+      "normal": {
+        "name": "法線",
+        "tooltip": "法線マップを生成します。"
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "テクスチャ生成のノイズ除去ステップ数です。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成するマテリアル/テクスチャを説明します。"
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "より豊かなテクスチャの詳細を得るため、LLMでプロンプトを拡張します。デフォルトではオフです。拡張によりプロンプトが写真として再構成され、メタルネスマップが薄くなる傾向があります。"
+      },
+      "roughness": {
+        "name": "粗さ",
+        "tooltip": "粗さマップを生成します。"
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "再現可能な生成のためのシードです。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "入力画像をどの程度変換するかを指定します。画像が提供されている場合にのみ使用されます。"
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "latent space内のタイルサイズ（64 = 512px、128 = 1024px）。"
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "latent space内のタイルストライドです。"
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "タイリング方向：全方向、水平、または垂直。"
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "PBRマップをシームレスにSeedVRでアップスケールします（ベーステクスチャはアップスケールされません）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "テクスチャ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ベースカラー",
+        "tooltip": null
+      },
+      "2": {
+        "name": "ノーマル",
+        "tooltip": null
+      },
+      "3": {
+        "name": "ラフネス",
+        "tooltip": null
+      },
+      "4": {
+        "name": "メタルネス",
+        "tooltip": null
+      },
+      "5": {
+        "name": "高さ",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "テクスチャ画像からPBRマテリアルマップ（ベースカラー、ノーマル、ラフネス、メタルネス、高さ）を生成します。",
+    "display_name": "Patina PBRマテリアルマップ",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "最長辺が2048px（モデルの入力上限）を超える入力画像を、アスペクト比を維持して自動的に縮小します。より小さい画像はそのままです。無効にすると、代わりにサイズ超過の画像でエラーが発生します。"
+      },
+      "basecolor": {
+        "name": "ベースカラー",
+        "tooltip": "ベースカラー（アルベド）マップを生成します。"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "高さ／ディスプレイスメントマップを生成します。"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "PBRマップの生成元となる入力写真またはレンダー。"
+      },
+      "metalness": {
+        "name": "メタルネス",
+        "tooltip": "メタルネスマップを生成します。"
+      },
+      "normal": {
+        "name": "ノーマル",
+        "tooltip": "ノーマルマップを生成します。"
+      },
+      "roughness": {
+        "name": "ラフネス",
+        "tooltip": "ラフネスマップを生成します。"
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "再現可能なデノイズ用のシード。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ベースカラー",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ノーマル",
+        "tooltip": null
+      },
+      "2": {
+        "name": "ラフネス",
+        "tooltip": null
+      },
+      "3": {
+        "name": "メタルネス",
+        "tooltip": null
+      },
+      "4": {
+        "name": "高さ",
         "tooltip": null
       }
     }
@@ -28537,6 +28922,33 @@
       "video": {
         "name": "動画",
         "tooltip": "音声トラックを含む、30分未満の動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "VEEDを使用して、動画内の音声を別の言語に翻訳します。各話者の声をクローンし、唇の動きを翻訳に同期させます。",
+    "display_name": "VEED吹き替え",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "standard: 低価格、モノラル音声。スペイン語はラテンアメリカ向け、ポルトガル語はブラジル向けです。pro: 地域アクセントとステレオ音声。"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_source_language": {
+        "name": "ソース言語"
+      },
+      "model_target_language": {
+        "name": "ターゲット言語"
       }
     },
     "outputs": {
