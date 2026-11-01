@@ -460,12 +460,11 @@ describe('ensureWorkspaceToken', () => {
     const { rail, deps } = createRail()
     vi.mocked(fetch).mockImplementation(async () => failedResponse(500))
 
-    for (let attempt = 0; attempt < 3; attempt++) {
-      await expect(
-        rail.ensureWorkspaceToken('workspace-123')
-      ).resolves.toBeNull()
-      vi.advanceTimersByTime(recoveryCooldownMs)
-    }
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+    vi.advanceTimersByTime(recoveryCooldownMs)
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+    vi.advanceTimersByTime(recoveryCooldownMs)
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
 
     expect(fetch).toHaveBeenCalledTimes(3)
     expect(deps.reportTransientRecoveryFailure).toHaveBeenCalledExactlyOnceWith(
@@ -490,24 +489,43 @@ describe('ensureWorkspaceToken', () => {
     expect(deps.reportTransientRecoveryFailure).toHaveBeenCalledTimes(2)
   })
 
-  it('ends the failure run when the recovery switch succeeds without a legacy token', async () => {
+  it('keeps the failure run open when the recovery switch resolves without a legacy token', async () => {
     const { rail, deps } = createRail()
+    const firstFailure = new Error('network down')
     vi.mocked(deps.switchWorkspace)
-      .mockRejectedValueOnce(new Error('network down'))
+      .mockRejectedValueOnce(firstFailure)
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error('network down again'))
 
-    for (let attempt = 0; attempt < 3; attempt++) {
-      await expect(
-        rail.ensureWorkspaceToken('workspace-123')
-      ).resolves.toBeNull()
-      vi.advanceTimersByTime(recoveryCooldownMs)
-    }
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+    vi.advanceTimersByTime(recoveryCooldownMs)
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+    vi.advanceTimersByTime(recoveryCooldownMs)
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
 
-    expect(vi.mocked(deps.reportTransientRecoveryFailure).mock.calls).toEqual([
-      [new Error('network down')],
-      [new Error('network down again')]
-    ])
+    expect(deps.switchWorkspace).toHaveBeenCalledTimes(3)
+    expect(deps.reportTransientRecoveryFailure).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(deps.reportTransientRecoveryFailure).mock.calls[0][0]
+    ).toBe(firstFailure)
+  })
+
+  it('reports again after the legacy context is cleared', async () => {
+    const { rail, deps } = createRail()
+    const failureBeforeClear = new Error('network down')
+    const failureAfterClear = new Error('network down again')
+    vi.mocked(deps.switchWorkspace)
+      .mockRejectedValueOnce(failureBeforeClear)
+      .mockRejectedValueOnce(failureAfterClear)
+
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+    rail.clearLegacyContext()
+    await expect(rail.ensureWorkspaceToken('workspace-123')).resolves.toBeNull()
+
+    const reported = vi.mocked(deps.reportTransientRecoveryFailure).mock.calls
+    expect(reported).toHaveLength(2)
+    expect(reported[0][0]).toBe(failureBeforeClear)
+    expect(reported[1][0]).toBe(failureAfterClear)
   })
 
   it('collapses concurrent callers onto the in-flight mint', async () => {

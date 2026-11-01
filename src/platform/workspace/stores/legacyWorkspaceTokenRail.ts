@@ -559,7 +559,6 @@ export function createLegacyWorkspaceTokenRail({
       if (isCurrentUser(ownerUid)) handleRecoveryFailure(err, targetWorkspaceId)
       return null
     }
-    endRecoveryFailureStreak()
 
     if (!isCurrentUser(ownerUid)) return null
     if (hasValidTokenForWorkspace(targetWorkspaceId)) {
@@ -734,7 +733,7 @@ export function createLegacyWorkspaceTokenRail({
     workspaceTokenOwnerUid.value = null
     scheduledRefreshRetryCount = 0
     recoveryCooldownUntil = 0
-    // refreshRequestId bump above aborts any in-flight switch before it commits.
+    endRecoveryFailureStreak()
     inFlightSwitchPromise = null
   }
 
