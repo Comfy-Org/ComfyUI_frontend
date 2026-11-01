@@ -6874,7 +6874,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.sendMessage('add a text input node')
     draft = undefined
-    const sent = await session.sendMessage('and a load image node')
+    const sent = await session.sendMessage(
+      'and a load image node',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-refused'
+    )
 
     expect(sent).toBe(false)
     expect(postMessage).toHaveBeenCalledTimes(1)
@@ -6882,7 +6889,7 @@ describe('useAgentSession (v1 composition root)', () => {
       gate: 'composer',
       outcome: 'dropped',
       reason: 'target_unavailable',
-      client_message_id: null,
+      client_message_id: 'cm-refused',
       held_ms: null,
       thread_id: expect.any(String),
       client_session_id: expect.any(String)
@@ -8454,7 +8461,14 @@ describe('useAgentSession (v1 composition root)', () => {
     session.start()
 
     const first = session.sendMessage('first')
-    const second = await session.sendMessage('second')
+    const second = await session.sendMessage(
+      'second',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-second'
+    )
     expect(second).toBe(false)
     expect(postMessage).toHaveBeenCalledTimes(1)
 
@@ -8471,7 +8485,7 @@ describe('useAgentSession (v1 composition root)', () => {
       gate: 'composer',
       outcome: 'dropped',
       reason: 'send_busy',
-      client_message_id: null,
+      client_message_id: 'cm-second',
       held_ms: null,
       thread_id: null,
       client_session_id: expect.any(String)
