@@ -1615,7 +1615,11 @@ describe('LiveGraphApplier', () => {
       expect.objectContaining({ message: 'extension hook exploded' }),
       expect.objectContaining({
         errorType: 'agent_graph_apply_failed',
-        context: { actor: 'agent:test', opIds: ['op-1'] }
+        context: {
+          actor: 'agent',
+          opIds: ['op-1'],
+          omittedOpIdCount: 0
+        }
       })
     )
   })
@@ -1737,6 +1741,7 @@ describe('LiveGraphApplier', () => {
   it('reports apply context and node type when a created node collides with an id already registered in a sibling subgraph', () => {
     const graph = new LGraph()
     const subgraph = createTestSubgraph({ rootGraph: graph, inputs: [] })
+    graph.subgraphs.set(subgraph.id, subgraph)
     const interior = new LGraphNode('Interior')
     subgraph.add(interior)
     const host = createTestSubgraphNode(subgraph, { id: 501 })
@@ -1748,10 +1753,14 @@ describe('LiveGraphApplier', () => {
       CATALOG
     )
 
+    const opIds = Array.from(
+      { length: 10 },
+      (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`
+    )
     new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
       doc,
       collector.take(),
-      { actor: 'agent:test', opIds: ['op-9'], liveAgentTurn: true }
+      { actor: 'agent:test', opIds, liveAgentTurn: true }
     )
 
     const created = graph._nodes.find((node) => node.type === 'TestSource')
@@ -1769,10 +1778,11 @@ describe('LiveGraphApplier', () => {
           nodeId: String(collidingId),
           nodeType: 'TestSource',
           mode: 'merge',
-          isRootGraph: true,
-          rootGraphId: graph.id,
-          actor: 'agent:test',
-          opIds: ['op-9'],
+          existingOwnerKind: 'subgraph',
+          existingOwnerGraphId: subgraph.id,
+          actor: 'agent',
+          opIds: opIds.slice(0, 8),
+          omittedOpIdCount: 2,
           liveAgentTurn: true
         })
       })

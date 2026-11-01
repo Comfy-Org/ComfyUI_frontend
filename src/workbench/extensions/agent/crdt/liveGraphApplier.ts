@@ -238,6 +238,7 @@ interface MalformedDocNode {
 
 const MAX_SHAPED_ELEMENTS = 16
 const MAX_DIAGNOSTIC_CHARS = 1024
+const MAX_REPORTED_OP_IDS = 8
 const OMISSION_MARKER_CHARS = 8
 
 interface DiagnosticString {
@@ -365,6 +366,27 @@ function issueShapes(fields: unknown, error: z.ZodError): string {
 function actorKind(actor: unknown): ActorKind {
   const kind = typeof actor === 'string' ? actor.split(':', 1)[0] : ''
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
+}
+
+function diagnosticApplyContext(context: RemoteApplyContext) {
+  const opIds = context.opIds.slice(0, MAX_REPORTED_OP_IDS)
+  return {
+    actor: actorKind(context.actor),
+    opIds,
+    omittedOpIdCount: context.opIds.length - opIds.length
+  }
+}
+
+function diagnosticNodeOwner(graph: LGraph, nodeId: NodeId) {
+  const owner = [graph.rootGraph, ...graph.rootGraph.subgraphs.values()].find(
+    (candidate) =>
+      candidate._nodes.some((node) => String(node.id) === String(nodeId))
+  )
+  if (owner === undefined) return { existingOwnerKind: 'unknown' }
+  return {
+    existingOwnerKind: owner === graph.rootGraph ? 'root' : 'subgraph',
+    existingOwnerGraphId: owner.id
+  }
 }
 
 function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
@@ -875,7 +897,7 @@ export class LiveGraphApplier {
         surface: 'agent',
         errorType: 'agent_graph_apply_failed',
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-        context: { actor: context.actor, opIds: [...context.opIds] }
+        context: diagnosticApplyContext(context)
       })
     }
   }
@@ -1024,6 +1046,7 @@ export class LiveGraphApplier {
       info.widgets_values = docNode.widgetRecord as unknown as WidgetValue[]
     detachSerialisedLinks(info)
     node.pos = [info.pos[0], info.pos[1]]
+    const existingOwner = diagnosticNodeOwner(graph, node.id)
     graph.add(node)
     if (node.id !== toNodeId(docNode.id)) {
       this.reportOnce(
@@ -1035,10 +1058,8 @@ export class LiveGraphApplier {
           liveId: node.id,
           nodeType: docNode.type,
           mode,
-          isRootGraph: graph === graph.rootGraph,
-          rootGraphId: graph.rootGraph.id,
-          actor: context.actor,
-          opIds: [...context.opIds],
+          ...existingOwner,
+          ...diagnosticApplyContext(context),
           liveAgentTurn: context.liveAgentTurn
         }
       )
