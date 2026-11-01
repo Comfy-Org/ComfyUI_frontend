@@ -261,7 +261,9 @@ const handleTimeUpdate = () => {
 }
 
 const handlePlay = () => {
-  if (audioRef.value && !audioRef.value.paused) isPlaying.value = true
+  if (!audioRef.value || audioRef.value.paused) return
+  isPlaying.value = true
+  toast.dismiss(playbackErrorToastId)
 }
 
 const handlePause = () => {
@@ -336,12 +338,11 @@ const menuItems = computed(() => [
   }
 ])
 
-watch(modelValue, (value) => {
+watch(modelValue, () => {
   playAttempt++
   isPlaying.value = false
   toast.dismiss(playbackErrorToastId)
   audioRef.value?.pause()
-  if (value) return
   currentTime.value = 0
   duration.value = 0
 })

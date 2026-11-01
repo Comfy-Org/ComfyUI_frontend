@@ -260,6 +260,45 @@ describe('AudioPreviewPlayer', () => {
       expect(screen.getByText('0:00 / 0:00')).toBeInTheDocument()
     })
 
+    it('does not show the previous file length after the source is replaced', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'duration', 'get').mockReturnValue(
+        90
+      )
+      vi.spyOn(
+        HTMLMediaElement.prototype,
+        'currentTime',
+        'get'
+      ).mockReturnValue(27)
+      vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+
+      const { rerender } = renderPlayer('http://example.com/a.mp3')
+      await fireEvent.loadedMetadata(screen.getByTestId('audio-preview'))
+      await fireEvent.timeUpdate(screen.getByTestId('audio-preview'))
+      expect(screen.getByText('0:27 / 1:30')).toBeInTheDocument()
+
+      await rerender({ modelValue: 'http://example.com/b.mp3' })
+
+      expect(screen.getByText('0:00 / 0:00')).toBeInTheDocument()
+    })
+
+    it('dismisses the error toast when playback is resumed from outside the player', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(
+        notSupported()
+      )
+      const user = userEvent.setup()
+
+      renderPlayer('http://example.com/audio.mp3')
+      await user.click(screen.getByRole('button', { name: 'g.playPause' }))
+      expect(useToast().toasts).toHaveLength(1)
+
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
+        false
+      )
+      await fireEvent(screen.getByTestId('audio-preview'), new Event('play'))
+
+      expect(useToast().toasts).toEqual([])
+    })
+
     it.for([
       ['the source is replaced', (r) => r.rerender({ modelValue: 'b.mp3' })],
       ['the source is cleared', (r) => r.rerender({ modelValue: undefined })],
