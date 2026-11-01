@@ -60,8 +60,8 @@
     "coachHoldNotice": "ツアーを完了またはスキップすると、メッセージが送信されます。",
     "coachProgress": "{total}件中{current}件",
     "coachTitle": "Comfy Agentの紹介",
-    "coachWorkflowBody": "編集中のワークフロー名はメッセージボックスの上に表示されます。タブを切り替えると、そのワークフローの最新のチャットがある場合は表示されます。",
-    "coachWorkflowTitle": "各チャットは1つのワークフローに対応しています",
+    "coachWorkflowBody": "そのワークフローの名前はメッセージボックス上部に表示されています。名前をクリックして別のものを選択できます。ワークフロータブをクリックすると、メッセージボックスに下書きがない限り、その最新のチャットを開くことができます。",
+    "coachWorkflowTitle": "エージェントは一度に1つのワークフローを編集します",
     "consent": {
       "accept": "Comfy Agent を使い始める",
       "agreeAndContinue": "同意して続行",

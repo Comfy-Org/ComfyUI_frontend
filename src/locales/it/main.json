@@ -60,8 +60,8 @@
     "coachHoldNotice": "Il messaggio verrà inviato al termine o quando salterai il tour.",
     "coachProgress": "{current} di {total}",
     "coachTitle": "Conosci il tuo Comfy Agent",
-    "coachWorkflowBody": "Il workflow che sta modificando è indicato sopra la casella del messaggio. Passando da una scheda all'altra viene visualizzata la chat più recente di quel workflow, se presente.",
-    "coachWorkflowTitle": "Ogni chat lavora su un solo workflow",
+    "coachWorkflowBody": "Il nome di quel workflow è riportato nella parte superiore della casella del messaggio. Fai clic sul nome per selezionarne un altro. Facendo clic su una scheda del workflow puoi aprire la relativa chat più recente, a meno che la casella del messaggio non contenga una bozza.",
+    "coachWorkflowTitle": "L'agente modifica un workflow alla volta",
     "consent": {
       "accept": "Inizia a usare Comfy Agent",
       "agreeAndContinue": "Accetta e continua",

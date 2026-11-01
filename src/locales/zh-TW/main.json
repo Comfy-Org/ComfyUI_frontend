@@ -60,8 +60,8 @@
     "coachHoldNotice": "您完成或略過導覽後，系統就會傳送您的訊息。",
     "coachProgress": "{current} / {total}",
     "coachTitle": "認識您的 Comfy Agent",
-    "coachWorkflowBody": "正在編輯的工作流程名稱會顯示在訊息方塊上方。切換分頁會顯示該工作流程最新的對話（若有）。",
-    "coachWorkflowTitle": "每個對話僅處理一個工作流程",
+    "coachWorkflowBody": "該工作流程的名稱顯示在訊息方塊頂端。點擊名稱即可選擇其他工作流程。點擊工作流程分頁可開啟其最新對話，除非訊息方塊中有草稿。",
+    "coachWorkflowTitle": "Agent 一次只會編輯一個工作流程",
     "consent": {
       "accept": "開始使用 Comfy Agent",
       "agreeAndContinue": "同意並繼續",
