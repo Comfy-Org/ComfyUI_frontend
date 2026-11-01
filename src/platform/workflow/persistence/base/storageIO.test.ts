@@ -277,10 +277,6 @@ describe('storageIO', () => {
     })
 
     describe('when the client id changes on every page load', () => {
-      // Cloud assigns a new client id per page load. Until the socket
-      // connects, a page reads and writes under the previous page's id;
-      // afterwards it writes under its own. The next page load must
-      // restore the latest list, not an older one.
       const workspaceId = 'ws-reload'
 
       it('restores the open tabs written last, not an older list', () => {
@@ -307,6 +303,45 @@ describe('storageIO', () => {
         expect(readActivePath('load-3', workspaceId)).toEqual({
           workspaceId,
           path: 'workflows/c.json'
+        })
+      })
+
+      it('prefers the previous page load’s tabs over older leftovers', () => {
+        const older = {
+          workspaceId,
+          paths: ['workflows/a.json', 'workflows/b.json'],
+          activeIndex: 0
+        }
+        const latest = {
+          workspaceId,
+          paths: ['workflows/b.json'],
+          activeIndex: 0
+        }
+        sessionStorage.setItem(
+          'Comfy.Workflow.OpenPaths:load-1',
+          JSON.stringify(older)
+        )
+        sessionStorage.setItem(
+          'Comfy.Workflow.OpenPaths:load-2',
+          JSON.stringify(latest)
+        )
+
+        expect(readOpenPaths('load-3', workspaceId, 'load-2')).toEqual(latest)
+      })
+
+      it('prefers the previous page load’s active tab over older leftovers', () => {
+        sessionStorage.setItem(
+          'Comfy.Workflow.ActivePath:load-1',
+          JSON.stringify({ workspaceId, path: 'workflows/a.json' })
+        )
+        sessionStorage.setItem(
+          'Comfy.Workflow.ActivePath:load-2',
+          JSON.stringify({ workspaceId, path: 'workflows/b.json' })
+        )
+
+        expect(readActivePath('load-3', workspaceId, 'load-2')).toEqual({
+          workspaceId,
+          path: 'workflows/b.json'
         })
       })
 

@@ -237,49 +237,36 @@ export function deleteOrphanPayloads(
   return deleted
 }
 
-/**
- * Searches sessionStorage for a pointer matching the target workspaceId
- * when the exact clientId key has no entry (e.g. clientId changed after reload).
- * Migrates the found pointer to the new clientId key.
- */
 function findAndMigratePointer<T extends { workspaceId: string }>(
   newKey: string,
   prefix: string,
   targetWorkspaceId: string,
-  isValid: (value: unknown) => value is T
+  isValid: (value: unknown) => value is T,
+  previousKey: string | null
 ): T | null {
+  const candidateKeys = previousKey ? [previousKey] : []
   for (let i = 0; i < sessionStorage.length; i++) {
     const storageKey = sessionStorage.key(i)
-    if (!storageKey?.startsWith(prefix) || storageKey === newKey) continue
+    if (storageKey?.startsWith(prefix)) candidateKeys.push(storageKey)
+  }
 
-    const json = sessionStorage.getItem(storageKey)
-    if (!json) continue
-
-    try {
-      const pointer: unknown = JSON.parse(json)
-      if (isValid(pointer) && pointer.workspaceId === targetWorkspaceId) {
-        sessionStorage.setItem(newKey, json)
-        sessionStorage.removeItem(storageKey)
-        return pointer
-      }
-    } catch {
-      continue
-    }
+  for (const storageKey of candidateKeys) {
+    if (storageKey === newKey) continue
+    const pointer = readSessionValue(storageKey, isValid)
+    if (pointer?.workspaceId !== targetWorkspaceId) continue
+    sessionStorage.setItem(newKey, JSON.stringify(pointer))
+    sessionStorage.removeItem(storageKey)
+    return pointer
   }
   return null
 }
 
-/**
- * Reads a session pointer by clientId with workspace-based fallback.
- * Validates workspace on exact match and removes stale cross-workspace pointers.
- * If no valid entry exists, searches for any pointer matching the target
- * workspaceId and migrates it to the new key.
- */
 function readSessionPointer<T extends { workspaceId: string }>(
   key: string,
   prefix: string,
   targetWorkspaceId: string | undefined,
-  isValid: (value: unknown) => value is T
+  isValid: (value: unknown) => value is T,
+  previousKey: string | null
 ): T | null {
   try {
     const json = sessionStorage.getItem(key)
@@ -298,7 +285,13 @@ function readSessionPointer<T extends { workspaceId: string }>(
     }
 
     if (targetWorkspaceId) {
-      return findAndMigratePointer(key, prefix, targetWorkspaceId, isValid)
+      return findAndMigratePointer(
+        key,
+        prefix,
+        targetWorkspaceId,
+        isValid,
+        previousKey
+      )
     }
 
     return null
@@ -307,25 +300,17 @@ function readSessionPointer<T extends { workspaceId: string }>(
   }
 }
 
-/**
- * Writes a session pointer and drops this workspace's pointers under other
- * client ids. sessionStorage belongs to one browser tab, so those are earlier
- * page loads of this tab; Cloud assigns a new client id on every load. Left in
- * place, {@link findAndMigratePointer} could restore one of them instead of the
- * latest after the next reload.
- */
-function writeSessionPointer(
+function writeSessionPointer<T extends { workspaceId: string }>(
   key: string,
   prefix: string,
-  workspaceId: string,
-  json: string
+  pointer: T,
+  isValid: (value: unknown) => value is T
 ): void {
   if (!isStorageAvailable()) return
 
   try {
-    sessionStorage.setItem(key, json)
+    sessionStorage.setItem(key, JSON.stringify(pointer))
   } catch {
-    // Best effort — keep the older pointers if this one could not be saved
     return
   }
 
@@ -334,24 +319,26 @@ function writeSessionPointer(
       const storageKey = sessionStorage.key(i)
       if (!storageKey?.startsWith(prefix) || storageKey === key) continue
       if (
-        readPointerWorkspaceId(sessionStorage.getItem(storageKey)) !==
-        workspaceId
-      )
-        continue
-      sessionStorage.removeItem(storageKey)
+        readSessionValue(storageKey, isValid)?.workspaceId ===
+        pointer.workspaceId
+      ) {
+        sessionStorage.removeItem(storageKey)
+      }
     }
   } catch {
-    // Pruning is best effort; the pointer itself is saved
+    return
   }
 }
 
-function readPointerWorkspaceId(json: string | null): string | null {
+function readSessionValue<T>(
+  key: string,
+  isValid: (value: unknown) => value is T
+): T | null {
+  const json = sessionStorage.getItem(key)
   if (!json) return null
   try {
     const value: unknown = JSON.parse(json)
-    if (typeof value !== 'object' || value === null) return null
-    const { workspaceId } = value as Record<string, unknown>
-    return typeof workspaceId === 'string' ? workspaceId : null
+    return isValid(value) ? value : null
   } catch {
     return null
   }
@@ -364,7 +351,8 @@ function readPointerWorkspaceId(json: string | null): string | null {
  */
 export function readActivePath(
   clientId: string | null,
-  targetWorkspaceId?: string
+  targetWorkspaceId?: string,
+  previousClientId: string | null = null
 ): ActivePathPointer | null {
   return (
     (clientId
@@ -372,7 +360,8 @@ export function readActivePath(
           StorageKeys.activePath(clientId),
           StorageKeys.prefixes.activePath,
           targetWorkspaceId,
-          isValidActivePathPointer
+          isValidActivePathPointer,
+          previousClientId ? StorageKeys.activePath(previousClientId) : null
         )
       : null) ??
     (targetWorkspaceId
@@ -396,8 +385,8 @@ export function writeActivePath(
   writeSessionPointer(
     StorageKeys.activePath(clientId),
     StorageKeys.prefixes.activePath,
-    pointer.workspaceId,
-    json
+    pointer,
+    isValidActivePathPointer
   )
   writeStorage(
     localStorage,
@@ -423,7 +412,8 @@ export function clearActivePath(clientId: string, workspaceId: string): void {
  */
 export function readOpenPaths(
   clientId: string | null,
-  targetWorkspaceId?: string
+  targetWorkspaceId?: string,
+  previousClientId: string | null = null
 ): OpenPathsPointer | null {
   return (
     (clientId
@@ -431,7 +421,8 @@ export function readOpenPaths(
           StorageKeys.openPaths(clientId),
           StorageKeys.prefixes.openPaths,
           targetWorkspaceId,
-          isValidOpenPathsPointer
+          isValidOpenPathsPointer,
+          previousClientId ? StorageKeys.openPaths(previousClientId) : null
         )
       : null) ??
     (targetWorkspaceId
@@ -455,8 +446,8 @@ export function writeOpenPaths(
   writeSessionPointer(
     StorageKeys.openPaths(clientId),
     StorageKeys.prefixes.openPaths,
-    pointer.workspaceId,
-    json
+    pointer,
+    isValidOpenPathsPointer
   )
   writeStorage(
     localStorage,
