@@ -169,9 +169,7 @@
     },
     {
       "name": "Media cache fetches, reuses, and evicts object URLs for lazy images",
-      "checks": [
-        "src/services/mediaCacheService.test.ts"
-      ]
+      "checks": ["src/services/mediaCacheService.test.ts"]
     },
     {
       "name": "Curve, range, and palette swatch editors keep value shapes, drag behaviour, and histogram paths",
@@ -190,9 +188,7 @@
     },
     {
       "name": "Tree data helpers stay pure",
-      "checks": [
-        "src/utils/treeUtil.test.ts"
-      ]
+      "checks": ["src/utils/treeUtil.test.ts"]
     }
   ],
   "adrs": [],
