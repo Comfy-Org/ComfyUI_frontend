@@ -49,7 +49,7 @@ beforeEach(() => {
   mockStore.maskCtx = null
   mockStore.rgbCtx = null
   mockStore.clearTrigger = 0
-  mockStore.canvasHistory.currentStateIndex = 0
+  mockStore.canvasHistory.revision = 0
   mockStore.gpuTexturesNeedRecreation = false
 })
 
@@ -136,16 +136,16 @@ describe('watchers', () => {
     await nextTick()
   })
 
-  it('currentStateIndex watcher short-circuits when isSavingHistory is true', async () => {
+  it('revision watcher short-circuits when isSavingHistory is true', async () => {
     const { isSavingHistory } = setup()
     isSavingHistory.value = true
-    mockStore.canvasHistory.currentStateIndex++
+    mockStore.canvasHistory.revision++
     await nextTick()
   })
 
-  it('currentStateIndex watcher calls updateGPUFromCanvas when not saving history', async () => {
+  it('revision watcher calls updateGPUFromCanvas when not saving history', async () => {
     setup()
-    mockStore.canvasHistory.currentStateIndex++
+    mockStore.canvasHistory.revision++
     await nextTick()
   })
 

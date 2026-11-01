@@ -65,7 +65,7 @@ export function usePanAndZoom() {
   }
 
   const invalidatePanZoom = async (): Promise<void> => {
-    const currentImage = image.value
+    const currentImage = store.maskCanvas ?? image.value
     if (!currentImage?.width || !currentImage.height || !zoom_ratio.value) {
       console.warn('Missing required properties for pan/zoom')
       return
@@ -192,7 +192,6 @@ export function usePanAndZoom() {
       const pinchFactor = newDistance / lastTouchZoomDistance.value
       const midpoint = getMidpoint(p0, p1)
 
-      // Apply midpoint drag
       const draggedPan: Offset = {
         x: pan_offset.value.x + midpoint.x - lastTouchMidPoint.value.x,
         y: pan_offset.value.y + midpoint.y - lastTouchMidPoint.value.y
@@ -284,7 +283,8 @@ export function usePanAndZoom() {
   }
 
   const smoothResetView = async (duration: number = 500): Promise<void> => {
-    if (!image.value || !rootElement.value) return
+    const currentImage = store.maskCanvas ?? image.value
+    if (!currentImage || !rootElement.value) return
 
     const startZoom = zoom_ratio.value
     const startPan = { ...pan_offset.value }
@@ -294,8 +294,8 @@ export function usePanAndZoom() {
     const fitResult = calculateFitView({
       rootWidth: rootElement.value.clientWidth,
       rootHeight: rootElement.value.clientHeight,
-      imageWidth: image.value.width,
-      imageHeight: image.value.height,
+      imageWidth: currentImage.width,
+      imageHeight: currentImage.height,
       toolPanelWidth,
       sidePanelWidth
     })
@@ -366,6 +366,16 @@ export function usePanAndZoom() {
 
     await invalidatePanZoom()
   }
+
+  watch(
+    [
+      () => store.canvasHistory.dimensions?.width,
+      () => store.canvasHistory.dimensions?.height
+    ],
+    async () => {
+      await invalidatePanZoom()
+    }
+  )
 
   watch(
     () => store.resetZoomTrigger,
