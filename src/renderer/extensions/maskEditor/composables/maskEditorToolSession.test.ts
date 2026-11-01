@@ -6,7 +6,8 @@ import type {
   MaskEditorMask,
   MaskEditorOverlayPoint,
   MaskEditorPointerEvent,
-  MaskEditorTool
+  MaskEditorTool,
+  MaskEditorToolSession
 } from '@comfyorg/mask-editor/extensionTypes'
 
 function setup(createSession: MaskEditorTool['createSession'] = () => ({})) {
@@ -177,6 +178,38 @@ describe('MaskEditor extension session contract', () => {
     expect(dispose).toHaveBeenCalledTimes(1)
     expect(reportFailure).toHaveBeenCalledWith(failure)
   })
+
+  it.for([
+    { name: 'DOM element', returned: () => document.createElement('button') },
+    { name: 'async mount', returned: () => Promise.resolve() },
+    {
+      name: 'rejected async mount',
+      returned: () => Promise.reject(new Error('Async mount failed'))
+    }
+  ])(
+    'rejects an invalid panel cleanup at mount time: $name',
+    async ({ returned }) => {
+      const mountPanel =
+        vi.fn<NonNullable<MaskEditorToolSession['mountPanel']>>()
+      Reflect.apply(mountPanel.mockImplementation, mountPanel, [
+        (container: HTMLElement) => {
+          container.textContent = 'partially mounted'
+          return returned()
+        }
+      ])
+      const { runtime, reportFailure } = setup(() => ({ mountPanel }))
+      const container = document.createElement('div')
+
+      runtime.mountPanel(container)
+
+      expect(runtime.context.signal.aborted).toBe(true)
+      expect(container.childNodes).toHaveLength(0)
+      expect(reportFailure).toHaveBeenCalledExactlyOnceWith(expect.any(Error))
+      await Promise.resolve()
+      runtime.dispose()
+      expect(reportFailure).toHaveBeenCalledExactlyOnceWith(expect.any(Error))
+    }
+  )
 
   it.for([undefined, null])(
     'refuses a missing JavaScript mask: %s',
