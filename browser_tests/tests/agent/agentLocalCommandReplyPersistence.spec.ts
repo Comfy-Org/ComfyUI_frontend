@@ -73,6 +73,7 @@ test.describe(
       })
 
       let repliesBeforeReload = 0
+
       await test.step('reload the panel from persisted history', async () => {
         repliesBeforeReload = await agentPanel.root
           .getByTestId('markdown-stream')
