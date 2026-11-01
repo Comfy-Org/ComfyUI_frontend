@@ -38,7 +38,8 @@ vi.mock(import('@/i18n'), async () => {
   const { createI18n } = await import('vue-i18n')
   return {
     d: mockI18n.d,
-    t: (key: string) => key,
+    t: (key: string, plural?: unknown) =>
+      typeof plural === 'number' ? `${key}[${plural}]` : key,
     i18n: createI18n({ legacy: false, locale: 'en' })
   }
 })
@@ -549,27 +550,27 @@ describe('useCustomerEventsService', () => {
     })
 
     it.for([
-      { charge: 33_044, expected: 'credits.charge: 7 credits.credits' },
-      { charge: '36209', expected: 'credits.charge: 8 credits.credits' },
+      { charge: 33_044, expected: 'credits.charge: 7 credits.creditUnit[7]' },
+      { charge: '36209', expected: 'credits.charge: 8 credits.creditUnit[8]' },
       {
         charge: 10_000_000_000,
-        expected: 'credits.charge: 2,110,000 credits.credits'
+        expected: 'credits.charge: 2,110,000 credits.creditUnit[2110000]'
       },
-      { charge: 0, expected: 'credits.charge: 0 credits.credits' },
+      { charge: 0, expected: 'credits.charge: 0 credits.creditUnit[0]' },
       {
         charge: 1,
-        expected: 'credits.charge: credits.lessThanOne credits.credits'
+        expected: 'credits.charge: credits.lessThanOne credits.creditUnit[2]'
       },
       {
         charge: 1_000,
-        expected: 'credits.charge: credits.lessThanOne credits.credits'
+        expected: 'credits.charge: credits.lessThanOne credits.creditUnit[2]'
       },
       {
         charge: 3_318,
-        expected: 'credits.charge: credits.lessThanOne credits.credits'
+        expected: 'credits.charge: credits.lessThanOne credits.creditUnit[2]'
       },
-      { charge: 4_740, expected: 'credits.charge: 1 credits.credits' },
-      { charge: 6_636, expected: 'credits.charge: 1 credits.credits' },
+      { charge: 4_740, expected: 'credits.charge: 1 credits.creditUnit[1]' },
+      { charge: 6_636, expected: 'credits.charge: 1 credits.creditUnit[1]' },
       { charge: 'n/a', expected: 'Charge Micro Usd: n/a' }
     ])(
       'should render charge_micro_usd $charge as $expected',
@@ -577,6 +578,25 @@ describe('useCustomerEventsService', () => {
         expect(
           service.getTooltipContent(makeEvent({ charge_micro_usd: charge }))
         ).toBe(expected)
+      }
+    )
+
+    it.for([
+      [0, 'Credits'],
+      [1, 'Credit'],
+      [2, 'Credits'],
+      [7, 'Credits']
+    ] as const)(
+      'English charge unit for a count of %s is %s',
+      async ([count, unit]) => {
+        const { createI18n } = await import('vue-i18n')
+        const { default: en } = await import('@/locales/en/main.json')
+        const english = createI18n({
+          legacy: false,
+          locale: 'en',
+          messages: { en }
+        })
+        expect(english.global.t('credits.creditUnit', count)).toBe(unit)
       }
     )
 

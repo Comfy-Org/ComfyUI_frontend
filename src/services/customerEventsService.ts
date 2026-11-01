@@ -163,14 +163,15 @@ export const useCustomerEventsService = () => {
 
   function formatChargeCredits(microUsd: number) {
     const credits = microUsdToCredits(microUsd)
-    const amount = isSubCreditCharge(credits)
-      ? t('credits.lessThanOne')
-      : formatCredits({
-          value: credits,
-          locale: i18n.global.locale.value,
-          numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
-        })
-    return `${amount} ${t('credits.credits')}`
+    if (isSubCreditCharge(credits)) {
+      return `${t('credits.lessThanOne')} ${t('credits.creditUnit', 2)}`
+    }
+    const amount = formatCredits({
+      value: credits,
+      locale: i18n.global.locale.value,
+      numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+    })
+    return `${amount} ${t('credits.creditUnit', Math.round(credits))}`
   }
 
   function formatTooltipParam(key: string, value: unknown) {
