@@ -69,7 +69,8 @@ If an extension callback fails, the editor closes that session, cleans up its
 panel, and reports the failure to the user. Native tools remain available.
 
 `onPointer`, `onDocumentChange`, `dispose`, and the panel's unmount function
-may return promises. Panel mounting itself remains synchronous. Closing a
+may return promises. Panel mounting itself remains synchronous; a promise or
+another invalid cleanup value closes the session at mount time. Closing a
 session aborts its signal and removes its panel immediately; asynchronous
 cleanup does not delay tool switching. Callback failures from an obsolete
 document are ignored. Cleanup failures are still reported, without closing a
@@ -155,8 +156,9 @@ Use unique IDs and valid CSS colors. The frontend scales and moves markers
 with the image, and excludes them from snapshots, mask history, and Save.
 
 Overlays clear on external document changes and session disposal. The method
-returns `false` for a closed session, invalid coordinates/radii, or non-string
-IDs/colors. Calls from a closed session cannot affect a later editor.
+returns `false` for a closed session, invalid coordinates/radii, non-string
+IDs/colors, or duplicate IDs. Calls from a closed session cannot affect a
+later editor.
 
 Public TypeScript contracts are exported from the frontend types entry point
 as `MaskEditorExtensionAPI`, `MaskEditorTool`, `MaskEditorToolContext`, `MaskEditorToolSession`,

@@ -80,7 +80,7 @@
       "role": "infrastructure"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["packages/telemetry/src/reportError.ts"],
   "allowedDependencies": [
     "app-host",
     "ingest-api",

@@ -12,10 +12,17 @@ import { useCoordinateTransform } from './useCoordinateTransform'
 import type { useKeyboard } from './useKeyboard'
 import type { usePanAndZoom } from './usePanAndZoom'
 
+export interface MaskEditorToolDelegate {
+  isActive(): boolean
+  deactivate(): void
+  handlePointer(event: PointerEvent): Promise<void>
+}
+
 export function useToolManager(
   keyboard: ReturnType<typeof useKeyboard>,
   panZoom: ReturnType<typeof usePanAndZoom>,
-  brushAdjustment?: Parameters<typeof useBrushDrawing>[0]
+  brushAdjustment?: Parameters<typeof useBrushDrawing>[0],
+  extensionTools?: MaskEditorToolDelegate
 ) {
   const store = useMaskEditorStore()
 
@@ -59,6 +66,7 @@ export function useToolManager(
   }
 
   const switchTool = (tool: Tools) => {
+    extensionTools?.deactivate()
     store.currentTool = tool
 
     const newActiveLayer = toolSettings[tool].newActiveLayerOnSet
@@ -79,6 +87,11 @@ export function useToolManager(
   }
 
   const updateCursor = () => {
+    if (extensionTools?.isActive()) {
+      store.brushVisible = false
+      if (store.pointerZone) store.pointerZone.style.cursor = 'crosshair'
+      return
+    }
     const currentTool = store.currentTool
     const cursor = toolSettings[currentTool].cursor
     const pointerZone = store.pointerZone
@@ -93,6 +106,8 @@ export function useToolManager(
 
     store.brushPreviewGradientVisible = false
   }
+
+  watch(() => extensionTools?.isActive(), updateCursor, { flush: 'sync' })
 
   watch(
     () => store.currentTool,
@@ -118,14 +133,8 @@ export function useToolManager(
       return
     }
 
-    if (store.currentTool === Tools.PaintPen && event.button === 0) {
-      await brushDrawing.startDrawing(event)
-
-      return
-    }
-
-    if (store.currentTool === Tools.PaintPen && event.buttons === 1) {
-      await brushDrawing.handleDrawing(event)
+    if (extensionTools?.isActive()) {
+      await extensionTools.handlePointer(event)
       return
     }
 
@@ -140,6 +149,21 @@ export function useToolManager(
       const offset = { x: event.offsetX, y: event.offsetY }
       const coords_canvas = coordinateTransform.screenToCanvas(offset)
       await canvasTools.colorSelectFill(coords_canvas)
+      return
+    }
+
+    await handleBrushPointerDown(event)
+  }
+
+  const handleBrushPointerDown = async (event: PointerEvent): Promise<void> => {
+    if (store.currentTool === Tools.PaintPen && event.button === 0) {
+      await brushDrawing.startDrawing(event)
+
+      return
+    }
+
+    if (store.currentTool === Tools.PaintPen && event.buttons === 1) {
+      await brushDrawing.handleDrawing(event)
       return
     }
 
@@ -173,6 +197,11 @@ export function useToolManager(
       return
     }
 
+    if (extensionTools?.isActive()) {
+      await extensionTools.handlePointer(event)
+      return
+    }
+
     const isDrawingTool = [
       Tools.MaskPen,
       Tools.Eraser,
@@ -198,6 +227,7 @@ export function useToolManager(
   }
 
   const handlePointerUp = async (event: PointerEvent): Promise<void> => {
+    const wasPanning = store.isPanning
     store.isPanning = false
     store.brushVisible = true
 
@@ -208,6 +238,10 @@ export function useToolManager(
     if (event.pointerType === 'touch') return
     updateCursor()
     store.isAdjustingBrush = false
+    if (extensionTools?.isActive()) {
+      if (!wasPanning) await extensionTools.handlePointer(event)
+      return
+    }
     await brushDrawing.drawEnd(event)
     mouseDownPoint.value = null
   }

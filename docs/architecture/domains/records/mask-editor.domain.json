@@ -48,7 +48,7 @@
     "packages/mask-editor/src/extensionTypes.ts",
     "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.ts"
   ],
-  "allowedDependencies": ["error-reporting"],
+  "allowedDependencies": ["design-system", "error-reporting"],
   "allowedConsumers": ["extension-runtime", "workbench-shell"],
   "characterizationScenarios": [
     {
@@ -70,9 +70,13 @@
       "checks": ["src/utils/pngEncodeUtil.test.ts"]
     },
     {
-      "name": "External tool registration validates descriptors and releases registrations",
+      "name": "External tool sessions preserve native history, image pixels, and widget serialization",
       "checks": [
-        "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.test.ts"
+        "src/renderer/extensions/maskEditor/composables/maskEditorToolSession.test.ts",
+        "src/renderer/extensions/maskEditor/composables/useMaskEditorExtensionTools.test.ts",
+        "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.test.ts",
+        "browser_tests/tests/maskEditor/mask-editor-extension-tools.spec.ts",
+        "browser_tests/tests/maskEditor/mask-editor-extension-drag.spec.ts"
       ]
     }
   ],

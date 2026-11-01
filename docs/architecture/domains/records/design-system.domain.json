@@ -115,7 +115,8 @@
     "billing",
     "bounding-boxes",
     "extension-manager",
-    "keybindings"
+    "keybindings",
+    "mask-editor"
   ],
   "characterizationScenarios": [
     {
