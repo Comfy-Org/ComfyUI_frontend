@@ -6,6 +6,7 @@ import type {
   LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -137,5 +138,109 @@ describe('inputGroupStore', () => {
     useWorkflowStore().activeWorkflow = workflow
     await nextTick()
     expect(store.inputGroups).toEqual([])
+  })
+  it('reorders within a group and clears an old pairing', () => {
+    const groupId = store.createGroup()
+    store.addItemToGroup(groupId, inputIds.a)
+    store.addItemToGroup(groupId, inputIds.b)
+    store.addItemToGroup(groupId, inputIds.c)
+    store.pairItemsInGroup(groupId, inputIds.a, inputIds.b)
+    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock.calls.length
+
+    store.reorderWithinGroup(groupId, inputIds.a, inputIds.c, 'after')
+    expect(store.findGroup(groupId)?.items).toEqual([
+      { key: inputIds.b, pairId: undefined },
+      { key: inputIds.c },
+      { key: inputIds.a, pairId: undefined }
+    ])
+    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(captures + 1)
+  })
+
+  it('pairs inputs and replaces one member without an orphaned pair', () => {
+    const groupId = store.createGroup()
+    store.addItemToGroup(groupId, inputIds.a)
+    store.addItemToGroup(groupId, inputIds.b)
+    store.addItemToGroup(groupId, inputIds.c)
+
+    store.pairItemsInGroup(groupId, inputIds.a, inputIds.b)
+    const pairId = store.findGroup(groupId)?.items[0].pairId
+    expect(pairId).toBeDefined()
+
+    store.replaceInPair(groupId, inputIds.b, inputIds.c)
+    expect(
+      store.findGroup(groupId)?.items.filter((item) => item.pairId === pairId)
+        .map((item) => item.key)
+    ).toEqual([inputIds.a, inputIds.c])
+    expect(
+      store.findGroup(groupId)?.items.find((item) => item.key === inputIds.b)
+        ?.pairId
+    ).toBeUndefined()
+
+    store.unpairItem(groupId, inputIds.c)
+    expect(
+      store.findGroup(groupId)?.items.every((item) => !item.pairId)
+    ).toBe(true)
+  })
+
+  it('moves an item into another group and pairs at the center drop zone', () => {
+    const source = store.createGroup('Source', inputIds.a)
+    const target = store.createGroup('Target', inputIds.b)
+    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock.calls.length
+
+    store.moveItemToGroupAt(target, inputIds.a, inputIds.b, 'center')
+    expect(store.findGroup(source)).toBeUndefined()
+    expect(store.findGroup(target)?.items.map((item) => item.key)).toEqual([
+      inputIds.a,
+      inputIds.b
+    ])
+    const items = store.findGroup(target)?.items ?? []
+    expect(items[0].pairId).toBeDefined()
+    expect(items[0].pairId).toBe(items[1].pairId)
+    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(captures + 1)
+  })
+
+  it('moves a grouped input into the ungrouped list in one history entry', async () => {
+    const selections = [
+      [inputIds.a, 'a'],
+      [inputIds.b, 'b'],
+      [inputIds.c, 'c']
+    ]
+    const appModeStore = useAppModeStore()
+    appModeStore.selectedInputs = selections
+    await nextTick()
+    const id = store.createGroup('A', inputIds.a)
+    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock.calls.length
+
+    store.moveToUngrouped(inputIds.a, inputIds.c, 'after')
+    await nextTick()
+
+    expect(store.findGroup(id)).toBeUndefined()
+    expect(appModeStore.selectedInputs.map(([key]) => key)).toEqual([
+      inputIds.b,
+      inputIds.c,
+      inputIds.a
+    ])
+    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(captures + 1)
+  })
+
+  it('reorders two ungrouped inputs without changing group metadata', async () => {
+    const appModeStore = useAppModeStore()
+    appModeStore.selectedInputs = [
+      [inputIds.a, 'a'],
+      [inputIds.b, 'b'],
+      [inputIds.c, 'c']
+    ]
+    await nextTick()
+    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock.calls.length
+
+    store.moveToUngrouped(inputIds.c, inputIds.a, 'before')
+    await nextTick()
+
+    expect(appModeStore.selectedInputs.map(([key]) => key)).toEqual([
+      inputIds.c,
+      inputIds.a,
+      inputIds.b
+    ])
+    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(captures + 1)
   })
 })

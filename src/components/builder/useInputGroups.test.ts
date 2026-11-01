@@ -90,3 +90,43 @@ describe('groupPosition', () => {
     expect(groupPosition(index, count)).toBe(expected)
   })
 })
+
+function makeResolvedItem(key: WidgetId, pairId?: string) {
+  return { key, pairId }
+}
+
+describe('groupedByPair', () => {
+  it('keeps singles and combines matching pairs in source order', () => {
+    const items = [
+      makeResolvedItem(key('a')),
+      makeResolvedItem(key('b'), 'pair'),
+      makeResolvedItem(key('c'), 'pair'),
+      makeResolvedItem(key('d'))
+    ]
+
+    expect(groupedByPair(items)).toEqual([
+      { type: 'single', item: items[0] },
+      { type: 'pair', items: [items[1], items[2]] },
+      { type: 'single', item: items[3] }
+    ])
+  })
+
+  it('renders an orphaned pair member as a single', () => {
+    const item = makeResolvedItem(key('a'), 'orphan')
+    expect(groupedByPair([item])).toEqual([{ type: 'single', item }])
+  })
+
+  it('pairs the first two of three matching members', () => {
+    const items = [
+      makeResolvedItem(key('a'), 'pair'),
+      makeResolvedItem(key('b'), 'pair'),
+      makeResolvedItem(key('c'), 'pair')
+    ]
+
+    expect(groupedByPair(items)).toEqual([
+      { type: 'pair', items: [items[0], items[1]] },
+      { type: 'single', item: items[2] }
+    ])
+  })
+})
+

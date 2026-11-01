@@ -71,6 +71,69 @@ test.describe('App builder input groups', { tag: '@ui' }, () => {
     await expect(groups.widget('cfg')).toBeVisible()
   })
 
+  test('drags an ungrouped input into a group and between groups', async ({
+    comfyPage
+  }) => {
+    const groups = new InputGroups(comfyPage.page)
+    await groups.createEmpty('Sampling')
+    await groups.dragWidgetToEmptyGroup('seed', 'Sampling')
+    await expect(groups.labels('Sampling')).toHaveText(['seed'])
+    await groups.createEmpty('Other inputs')
+    await groups.dragWidgetToEmptyGroup('seed', 'Other inputs')
+    await expect(groups.group('Sampling')).toHaveCount(0)
+    await expect(groups.labels('Other inputs')).toHaveText(['seed'])
+    await expect(comfyPage.appMode.select.previewWidgetLabels).toHaveCount(3)
+  })
+
+  test('cancels a drag and restores an ungrouped input with undo', async ({
+    comfyPage
+  }) => {
+    const groups = new InputGroups(comfyPage.page)
+    await groups.createFromWidget('seed', 'Sampling')
+    await groups.dragWidgetToUngroupedInput('seed', 'cfg', true)
+    await expect(groups.labels('Sampling')).toHaveText(['seed'])
+    await groups.dragWidgetToUngroupedInput('seed', 'cfg')
+    await expect(groups.all).toHaveCount(0)
+    await expect(groups.widget('seed')).toBeVisible()
+    await comfyPage.keyboard.undo(null)
+    await expect(groups.labels('Sampling')).toHaveText(['seed'])
+  })
+
+  test('pairs inputs side by side and undoes the pair in one step', async ({
+    comfyPage
+  }) => {
+    const groups = new InputGroups(comfyPage.page)
+    await groups.createFromWidget('seed', 'Sampling')
+    await groups.addWidget('steps', 'Sampling')
+    await groups.pairWidgets('seed', 'steps')
+    await expect
+      .poll(async () => {
+        const seed = await groups.widgetPosition('seed')
+        const steps = await groups.widgetPosition('steps')
+        return seed.y === steps.y && seed.x !== steps.x
+      })
+      .toBe(true)
+    await comfyPage.keyboard.undo(null)
+    await expect
+      .poll(async () => {
+        const seed = await groups.widgetPosition('seed')
+        const steps = await groups.widgetPosition('steps')
+        return seed.x === steps.x && seed.y !== steps.y
+      })
+      .toBe(true)
+    await expect(groups.labels('Sampling')).toHaveText(['seed', 'steps'])
+  })
+
+  test('reorders ungrouped inputs with a shared drag source', async ({
+    comfyPage
+  }) => {
+    const groups = new InputGroups(comfyPage.page)
+    await groups.dragWidgetToUngroupedInput('cfg', 'seed')
+    await expect(comfyPage.appMode.select.previewWidgetLabels).toHaveText([
+      'seed', 'cfg', 'steps'
+    ])
+  })
+
   test('hides a group in app mode after its last input is deselected', async ({
     comfyPage
   }) => {
