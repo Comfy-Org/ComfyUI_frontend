@@ -169,6 +169,24 @@ describe('useAgentChatHistoryRefresh', () => {
     expect(listThreads).not.toHaveBeenCalled()
   })
 
+  it('preserves an in-flight failure across an ownerless no-op for the same scope', async () => {
+    const { listThreads, onFailure, refreshHistory } = setup()
+    const pending = deferredListing()
+    listThreads.mockReturnValueOnce(pending.promise)
+    const refresh = refreshHistory('none')
+
+    vi.mocked(storageIO.getStorageScope).mockReturnValue(null)
+    await expect(refreshHistory('none')).resolves.toBe('superseded')
+    vi.mocked(storageIO.getStorageScope).mockReturnValue(
+      unsafeStorageScope('personal')
+    )
+    pending.resolve(requestFailure)
+
+    await expect(refresh).resolves.toBe('failed')
+    expect(listThreads).toHaveBeenCalledTimes(1)
+    expect(onFailure).toHaveBeenCalledExactlyOnceWith(requestFailure, 'none')
+  })
+
   it('applies an older successful refresh after a newer refresh fails', async () => {
     const { history, listThreads, onFailure, refreshHistory } = setup()
     const older = deferredListing()

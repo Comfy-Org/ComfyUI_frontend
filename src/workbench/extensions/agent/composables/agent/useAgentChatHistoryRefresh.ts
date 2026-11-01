@@ -187,10 +187,10 @@ export function useAgentChatHistoryRefresh({
     workflowId?: string
   ): Promise<HistoryRefreshOutcome> {
     if (controller.signal.aborted) return 'aborted'
-    const { signal } = controller
-    const generation = ++latestStartedRefresh
     const owner = getStorageScope()
     if (owner === null) return 'superseded'
+    const { signal } = controller
+    const generation = ++latestStartedRefresh
     if (uiTreatment === 'error_overlay') latestSurfacedRefresh = generation
     const result = await listThreads({ signal, workflowId })
     if (signal.aborted) return 'aborted'
