@@ -343,6 +343,54 @@ describe('ErrorOverlay deployment offer', () => {
     expect(customDeploymentOffer()).toBeNull()
   })
 
+  it.for([
+    {
+      finds: 'a deployment it could not check',
+      compatibility: {
+        deployments: [
+          {
+            deployment_id: plain.deployment_id,
+            missing_node_types: [RGTHREE],
+            unknown: false
+          },
+          {
+            deployment_id: agencyA.deployment_id,
+            missing_node_types: [],
+            unknown: true
+          }
+        ],
+        cloud: { missing_node_types: [RGTHREE] }
+      }
+    },
+    {
+      finds: 'an answer that leaves a deployment out',
+      compatibility: answer([], [plain])
+    },
+    {
+      finds: 'that Comfy Cloud runs the workflow',
+      compatibility: {
+        ...answer([], [plain, agencyA]),
+        cloud: { missing_node_types: [] }
+      }
+    }
+  ] satisfies {
+    finds: string
+    compatibility: DeploymentCompatibility
+  }[])(
+    'offers no custom deployment when the check finds $finds',
+    async ({ compatibility }) => {
+      onComfyCloud([plain, agencyA])
+      useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)
+      vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+        compatibility
+      )
+      renderNotice()
+      await compatibilityAnswered()
+
+      expect(customDeploymentOffer()).toBeNull()
+    }
+  )
+
   it('offers Switch instead of a custom deployment when a deployment runs the workflow', async () => {
     onComfyCloud([plain, agencyA])
     useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)

@@ -4129,8 +4129,15 @@
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
-      "andMore": "{names}, and {count} more"
+      "andMore": "{names}, and {count} more",
+      "titleNoneRunIt": "Create a deployment to run this workflow on Comfy Cloud",
+      "noneRunIt": "No deployment in this workspace has all of these nodes.",
+      "switchBody": "Comfy Cloud is missing these. Switch to a deployment that has them and keep working from there.",
+      "switch": "Switch"
     },
+    "runsThisWorkflow": "Runs this workflow",
+    "missingNodes": "Missing {count} node | Missing {count} nodes",
+    "notChecked": "Not checked",
     "releaseChanged": "This deployment now runs a different Release. Reload to get its nodes.",
     "deploymentChanged": "This browser now runs on {deployment}. Reload to get its nodes.",
     "reload": "Reload",
