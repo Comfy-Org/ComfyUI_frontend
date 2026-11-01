@@ -30,13 +30,10 @@ export function useBrushDrawing(initialSettings?: {
   const isDrawingLine = ref(false)
   const lineStartPoint = ref<Point | null>(null)
   const lineRemainder = ref(0)
-  const smoothingLastDrawTime = ref(new Date())
   const initialDraw = ref(true)
 
   let strokeProcessor: StrokeProcessor | null = null
   let drawingPointerId: number | undefined
-
-  // ── CPU drawing path ─────────────────────────────────────────────────────────
 
   function drawShape(point: Point, overrideOpacity?: number) {
     const brush = store.brushSettings
@@ -92,8 +89,6 @@ export function useBrushDrawing(initialSettings?: {
       effectiveRadius
     )
   }
-
-  // ── Drawing orchestration ────────────────────────────────────────────────────
 
   function initShape(compositionOperation: CompositionOperation) {
     const blendMode = store.maskBlendMode
@@ -214,7 +209,6 @@ export function useBrushDrawing(initialSettings?: {
 
       strokeProcessor = new StrokeProcessor(targetSpacing)
       await drawWithBetterSmoothing(coords_canvas)
-      smoothingLastDrawTime.value = new Date()
     } catch (error) {
       /* c8 ignore start */
       const isRgb = store.activeLayer === 'rgb'
@@ -231,42 +225,30 @@ export function useBrushDrawing(initialSettings?: {
   }
 
   async function handleDrawing(event: PointerEvent): Promise<void> {
-    const diff = performance.now() - smoothingLastDrawTime.value.getTime()
+    if (event.pointerId !== drawingPointerId) return
+
+    const activeStroke = strokeProcessor
     const coords = { x: event.offsetX, y: event.offsetY }
     const coords_canvas = coordinateTransform.screenToCanvas(coords)
     const currentTool = store.currentTool
 
-    if (diff > 20 && drawingPointerId === undefined) {
-      requestAnimationFrame(async () => {
-        if (drawingPointerId === undefined) return
-        try {
-          initShape(CompositionOperation.SourceOver)
-          if (gpu.hasRenderer.value) {
-            await gpu.gpuDrawPoint(coords_canvas)
-          } else {
-            drawShape(coords_canvas)
-          }
-        } catch (error) {
-          console.error('[useBrushDrawing] Drawing error:', error)
-        }
-      })
-    } else {
-      requestAnimationFrame(async () => {
-        if (drawingPointerId === undefined) return
-        try {
-          if (currentTool === 'eraser' || event.buttons === 2) {
-            initShape(CompositionOperation.DestinationOut)
-          } else {
-            initShape(CompositionOperation.SourceOver)
-          }
-          await drawWithBetterSmoothing(coords_canvas)
-        } catch (error) {
-          console.error('[useBrushDrawing] Drawing error:', error)
-        }
-      })
-    }
-
-    smoothingLastDrawTime.value = new Date()
+    requestAnimationFrame(async () => {
+      if (
+        event.pointerId !== drawingPointerId ||
+        activeStroke !== strokeProcessor
+      )
+        return
+      try {
+        const compositionOp =
+          currentTool === 'eraser' || event.buttons === 2
+            ? CompositionOperation.DestinationOut
+            : CompositionOperation.SourceOver
+        initShape(compositionOp)
+        await drawWithBetterSmoothing(coords_canvas)
+      } catch (error) {
+        console.error('[useBrushDrawing] Drawing error:', error)
+      }
+    })
   }
 
   async function drawEnd(event: PointerEvent): Promise<void> {
