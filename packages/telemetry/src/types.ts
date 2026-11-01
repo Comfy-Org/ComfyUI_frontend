@@ -1365,6 +1365,8 @@ export interface CheckoutAttributionMetadata {
 export interface SubscriptionMetadata extends Partial<WorkspaceTelemetryContext> {
   current_tier?: string
   reason?: PaymentIntentSource
+  /** Server `error.type` when a refused run opened the paywall. */
+  refusal_type?: string
 }
 
 export interface AddCreditsClickMetadata {

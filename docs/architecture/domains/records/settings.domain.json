@@ -104,7 +104,7 @@
     "keybindings",
     "telemetry"
   ],
-  "allowedConsumers": [],
+  "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
       "name": "Setting store loads, validates, migrates, persists, and reports setting values",

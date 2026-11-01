@@ -93,6 +93,7 @@ function mount(steps = STEPS) {
 
 beforeEach(() => {
   localStorage.clear()
+  vi.mocked(fetch).mockImplementation(async () => Response.json([]))
   telemetry().trackAgentOnboardingShown.mockClear()
   telemetry().trackAgentOnboardingStep.mockClear()
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
@@ -350,22 +351,17 @@ describe('OnboardingCoach', () => {
   })
 
   it('stops drawing attention to the card shortly after the click', async () => {
-    vi.useFakeTimers()
-    try {
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      mount()
-      const dialog = await screen.findByRole('dialog', {
-        name: STEPS[0].title
-      })
-      await user.click(screen.getByTestId('agent-coach-scrim'))
-      expect(dialog).toHaveAttribute('data-nudged')
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mount()
+    const dialog = await screen.findByRole('dialog', {
+      name: STEPS[0].title
+    })
+    await user.click(screen.getByTestId('agent-coach-scrim'))
+    expect(dialog).toHaveAttribute('data-nudged')
 
-      await vi.advanceTimersByTimeAsync(2_000)
+    await vi.advanceTimersByTimeAsync(2_000)
 
-      expect(dialog).not.toHaveAttribute('data-nudged')
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(dialog).not.toHaveAttribute('data-nudged')
   })
 
   it('shows the target in its hover state with its tooltip inside the spotlight', async () => {

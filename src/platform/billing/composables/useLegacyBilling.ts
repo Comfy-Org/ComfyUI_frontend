@@ -34,6 +34,27 @@ type RuntimeLegacyBalance = Omit<
 }
 type StatusReadResult = { ok: true } | { ok: false; cause: unknown }
 
+function datesFromStatus(status: BillingStatusResponse | null) {
+  return {
+    renewalDate: status?.renewal_date ?? null,
+    endDate: status?.cancel_at ?? null,
+    endedAt: status?.ended_at
+  }
+}
+
+function servesEndedSubscription(status: BillingStatusResponse | null) {
+  switch (status?.subscription_status) {
+    case 'ended':
+      return true
+  }
+  switch (status?.subscription_state) {
+    case 'ended':
+      return true
+    default:
+      return false
+  }
+}
+
 function fundsFromStatus(
   status: BillingStatusResponse | null,
   statusReadAuthoritative: boolean
@@ -122,7 +143,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
     if (
       !legacyCanAccessSubscriptionFeatures.value &&
       !subscriptionTier.value &&
-      !status?.renewal_invoice
+      !status?.renewal_invoice &&
+      !servesEndedSubscription(status)
     ) {
       return null
     }
@@ -133,8 +155,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
       duration: subscriptionDuration.value,
       planSlug: null,
       scheduledChange: null,
-      renewalDate: status?.renewal_date ?? null,
-      endDate: status?.cancel_at ?? null,
+      ...datesFromStatus(status),
       isCancelled: isCancelled.value,
       ...fundsFromStatus(status, statusReadAuthoritative.value)
     }
@@ -336,6 +357,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
     renewalDate,
     renewalInvoice: computed(
       () => legacySubscriptionStatus.value?.renewal_invoice ?? null
+    ),
+    periodCreditGrant: computed(
+      () => legacySubscriptionStatus.value?.period_credit_grant ?? null
     ),
 
     // Actions
