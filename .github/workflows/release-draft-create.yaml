@@ -98,7 +98,6 @@ jobs:
           prerelease: >-
             ${{ needs.build.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
-      # Other workflows share this PAT's hourly quota and can spend all of it.
       - name: Wait for release token rate limit reset
         if: steps.create_release.outcome == 'failure'
         continue-on-error: true
