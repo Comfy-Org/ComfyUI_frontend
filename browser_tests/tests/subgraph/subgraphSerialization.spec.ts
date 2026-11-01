@@ -7,6 +7,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect, comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { UserDataHelper } from '@e2e/fixtures/helpers/UserDataHelper'
 import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 import {
   getPromotedWidgetCount,
@@ -21,6 +22,11 @@ const PRIMITIVE_FANOUT_MULTI_HOST_WORKFLOW =
   'subgraphs/subgraph-primitive-fanout-multi-host'
 const UNRESOLVABLE_PROXY_WORKFLOW =
   'subgraphs/subgraph-unresolvable-proxy-widget'
+
+const renderModes = [
+  { name: 'litegraph', vueNodesEnabled: false },
+  { name: 'vue nodes', vueNodesEnabled: true }
+] as const
 
 interface HostWidgetSnapshot {
   name: string
@@ -126,6 +132,83 @@ async function expectPromotedWidgetsToResolveToInteriorNodes(
 }
 
 test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
+  for (const mode of renderModes) {
+    // Renderer selection rides on the `@vue-nodes` tag so the base fixture owns
+    // it: `setupSettings` writes `Comfy.VueNodes.Enabled` true for tagged tests
+    // and false for every other one. Setting it at runtime instead left the
+    // server-persisted value enabled for whatever ran next on the same worker
+    // user, and skipped the tag-gated Vue node waits in the workflow helpers.
+    test.describe(
+      `(${mode.name})`,
+      { tag: mode.vueNodesEnabled ? ['@vue-nodes'] : [] },
+      () => {
+        test('Empty promoted text survives save and reload', async ({
+          comfyPage
+        }) => {
+          const userData = new UserDataHelper(
+            comfyPage.request,
+            comfyPage.id,
+            comfyPage.url
+          )
+          const savedWorkflow = `empty-promoted-text-${mode.vueNodesEnabled ? 'vue' : 'legacy'}`
+          const savedArtifact = () =>
+            userData.readText(`workflows/${savedWorkflow}.json`)
+
+          await comfyPage.workflow.setupWorkflowsDirectory({})
+          await comfyPage.workflow.loadWorkflow(
+            'subgraphs/subgraph-with-promoted-text-widget'
+          )
+
+          const promotedText = () =>
+            comfyPage.page.getByRole('textbox', { name: 'text', exact: true })
+          await expect(promotedText()).toBeVisible()
+
+          // This fixture ships the widget empty on the host AND on the interior
+          // CLIPTextEncode, so "empty after reload" is also satisfied by a reset
+          // to that default. Persisting a non-empty sentinel first is what tells
+          // the two apart: if the clear is dropped as falsy, this string comes
+          // back instead of an empty one.
+          const baseline = 'value that must be cleared'
+          await promotedText().fill(baseline)
+          await expect(promotedText()).toHaveValue(baseline)
+
+          await comfyPage.menu.topbar.saveWorkflow(savedWorkflow)
+
+          // Control, proven from the saved artifact rather than a second app
+          // boot: the sentinel really did reach the server, so a later empty
+          // read cannot be a value that was never persisted in the first place.
+          // This used to be a full reload. Two boots do not fit the chromium
+          // project's 15s budget on a loaded CI shard, and the control never
+          // needed a browser; reading the file is also stronger, because a
+          // reload can be satisfied by a restored local draft.
+          await expect.poll(savedArtifact).toContain(baseline)
+
+          await promotedText().fill('')
+          await expect(promotedText()).toHaveValue('')
+
+          // The workflow is already persisted, so this saves in place with no
+          // overwrite prompt — unlike a second topbar Save, which reopens the
+          // dialog. `executeCommand` resolves the command promise, which awaits
+          // `workflowService.saveWorkflow()`, so the write has landed here.
+          await comfyPage.command.executeCommand('Comfy.SaveWorkflow')
+
+          // The clear reached the server too. If it were dropped as falsy, the
+          // sentinel would still be in the artifact and this fails before the
+          // reload, which localises the defect to the save rather than the load.
+          await expect.poll(savedArtifact).not.toContain(baseline)
+
+          await comfyPage.workflow.reloadAndWaitForApp()
+
+          await expect(promotedText()).toHaveValue('')
+          const host = await comfyPage.nodeOps.getNodeRefById('11')
+          await expect
+            .poll(async () => (await host.getWidgetByName('text')).getValue())
+            .toBe('')
+        })
+      }
+    )
+  }
+
   test(
     'Legacy primitive proxy widgets migrate to host inputs without proxyWidgets round-trip',
     { tag: ['@vue-nodes'] },
