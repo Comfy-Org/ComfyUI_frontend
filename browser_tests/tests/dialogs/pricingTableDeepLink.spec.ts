@@ -94,6 +94,7 @@ const ACTIVE_TEAM_STATUS = {
     stop_usd: 700
   },
   scheduled_change: null,
+  next_charge: null,
   max_seats: 5,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -110,6 +111,7 @@ const ACTIVE_STANDARD_STATUS = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies BillingStatusResponse
