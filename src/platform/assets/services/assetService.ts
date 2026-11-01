@@ -620,7 +620,6 @@ function createAssetService() {
       return EMPTY_PAGE
     }
 
-    // Find the category for this node type using efficient O(1) lookup
     const modelToNodeStore = useModelToNodeStore()
     const category = modelToNodeStore.getCategoryForNodeType(nodeType)
 
@@ -628,9 +627,6 @@ function createAssetService() {
       return EMPTY_PAGE
     }
 
-    // Fetch assets for this category using same API pattern as getAssetModels
-    // Model pickers need the shared catalog; ask for it explicitly so the
-    // server can stop defaulting include_public to true (BE-20085).
     return await handleAssetRequest(
       {
         includeTags: [MODELS_TAG, category],
