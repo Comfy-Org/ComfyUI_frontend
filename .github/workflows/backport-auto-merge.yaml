@@ -159,10 +159,18 @@ jobs:
 
             # Release-branch protection keeps an approval after new commits are
             # pushed, so reviewDecision can be APPROVED for code nobody reviewed.
-            # Merge only when an approval is on the current head commit.
+            # Merge only when a reviewer with write access has, as their latest
+            # review, approved the current head; the merge is pinned to that head.
             head=$(echo "$info" | jq -r '.headRefOid')
-            approved_at_head=$(GH_TOKEN="$READ_TOKEN" gh api "repos/${GH_REPO}/pulls/${pr}/reviews" --paginate 2>/dev/null \
-              | jq -s --arg head "$head" '[.[][] | select(.state == "APPROVED" and .commit_id == $head)] | length > 0' 2>/dev/null || echo false)
+            if ! reviews=$(GH_TOKEN="$READ_TOKEN" gh api "repos/${GH_REPO}/pulls/${pr}/reviews" --paginate 2>&1); then
+              echo "Could not read reviews for PR #${pr}: ${reviews}"
+              echo "::endgroup::"; continue
+            fi
+            approved_at_head=$(echo "$reviews" | jq -s --arg head "$head" '
+              [.[][] | select(.state != "COMMENTED" and .state != "PENDING")]
+              | group_by(.user.login) | map(last)
+              | any(.state == "APPROVED" and .commit_id == $head
+                    and (.author_association | IN("OWNER", "MEMBER", "COLLABORATOR")))' 2>/dev/null || echo false)
             if [ "$approved_at_head" != "true" ]; then
               echo "Approved, but no approval at head ${head} — waiting for a re-approval."
               echo "::endgroup::"; continue
@@ -176,7 +184,7 @@ jobs:
               attempt=$((attempt + 1))
               # A concurrent run (or a human) may have merged it already.
               if is_merged "$pr"; then merged=true; break; fi
-              if out=$(GH_TOKEN="$MERGE_TOKEN" gh pr merge "$pr" --repo "$GH_REPO" --squash 2>&1); then
+              if out=$(GH_TOKEN="$MERGE_TOKEN" gh pr merge "$pr" --repo "$GH_REPO" --squash --match-head-commit "$head" 2>&1); then
                 merged=true; break
               fi
               echo "Merge attempt ${attempt}/${max} failed: ${out}"

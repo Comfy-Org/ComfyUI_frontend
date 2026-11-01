@@ -32,8 +32,6 @@ const mergeScript =
 const HEAD = 'b'.repeat(40)
 const OLD = 'a'.repeat(40)
 
-// Stands in for `gh`: `pr view` answers from FAKE_PR, `api .../reviews` from
-// FAKE_REVIEWS, `pr merge` is recorded and marks the PR merged.
 const fakeGh = `#!/usr/bin/env bash
 set -euo pipefail
 echo "$*" >> "$FAKE_CALLS"
@@ -49,7 +47,9 @@ case "$1 $2" in
   "pr comment") : ;;
   api\\ *)
     case "$2" in
-      */reviews) cat "$FAKE_REVIEWS" ;;
+      */reviews)
+        [ -z "\${FAKE_REVIEWS_FAIL:-}" ] || { echo 'API rate limit exceeded (HTTP 403)' >&2; exit 1; }
+        cat "$FAKE_REVIEWS" ;;
       */comments) echo '[]' ;;
       *) echo "unexpected gh api call: $2" >&2; exit 2 ;;
     esac ;;
@@ -57,7 +57,14 @@ case "$1 $2" in
 esac
 `
 
-function runMerge(reviews: Array<{ state: string; commit_id: string }>) {
+interface Review {
+  state: string
+  commit_id: string
+  login?: string
+  author_association?: string
+}
+
+function runMerge(reviews: Review[], { reviewsFail = false } = {}) {
   const directory = mkdtempSync(join(tmpdir(), 'backport-auto-merge-'))
   onTestFinished(() => rmSync(directory, { recursive: true, force: true }))
   const calls = join(directory, 'calls')
@@ -80,7 +87,13 @@ function runMerge(reviews: Array<{ state: string; commit_id: string }>) {
   writeFileSync(
     join(directory, 'reviews.json'),
     JSON.stringify(
-      reviews.map((review) => ({ user: { login: 'reviewer' }, ...review }))
+      reviews.map(
+        ({ login = 'reviewer', author_association = 'MEMBER', ...review }) => ({
+          user: { login },
+          author_association,
+          ...review
+        })
+      )
     )
   )
   const result = spawnSync('bash', ['-c', mergeScript], {
@@ -91,6 +104,7 @@ function runMerge(reviews: Array<{ state: string; commit_id: string }>) {
       FAKE_CALLS: calls,
       FAKE_PR: join(directory, 'pr.json'),
       FAKE_REVIEWS: join(directory, 'reviews.json'),
+      FAKE_REVIEWS_FAIL: reviewsFail ? '1' : '',
       GH_REPO: 'Comfy-Org/ComfyUI_frontend',
       MERGE_TOKEN: 'merge-token',
       PATH: `${directory}:${process.env.PATH}`,
@@ -112,6 +126,7 @@ describe('backport auto-merge', () => {
     expect(result.stderr).toBe('')
     expect(result.status).toBe(0)
     expect(merges).toHaveLength(1)
+    expect(merges[0]).toContain(`--match-head-commit ${HEAD}`)
   })
 
   it('does not merge when the only approval is on an older commit', () => {
@@ -121,5 +136,39 @@ describe('backport auto-merge', () => {
     expect(result.status).toBe(0)
     expect(merges).toHaveLength(0)
     expect(result.stdout).toContain('no approval at head')
+  })
+
+  it('ignores an approval at head from an account without write access', () => {
+    const { merges } = runMerge([
+      { state: 'APPROVED', commit_id: OLD, login: 'maintainer' },
+      {
+        state: 'APPROVED',
+        commit_id: HEAD,
+        login: 'outsider',
+        author_association: 'NONE'
+      }
+    ])
+
+    expect(merges).toHaveLength(0)
+  })
+
+  it('uses only the latest review from each reviewer', () => {
+    const { merges } = runMerge([
+      { state: 'APPROVED', commit_id: HEAD, login: 'first' },
+      { state: 'DISMISSED', commit_id: HEAD, login: 'first' },
+      { state: 'COMMENTED', commit_id: HEAD, login: 'first' },
+      { state: 'APPROVED', commit_id: OLD, login: 'second' }
+    ])
+
+    expect(merges).toHaveLength(0)
+  })
+
+  it('reports a failed review lookup instead of waiting silently', () => {
+    const { result, merges } = runMerge([], { reviewsFail: true })
+
+    expect(result.status).toBe(0)
+    expect(merges).toHaveLength(0)
+    expect(result.stdout).toContain('Could not read reviews')
+    expect(result.stdout).toContain('API rate limit exceeded')
   })
 })
