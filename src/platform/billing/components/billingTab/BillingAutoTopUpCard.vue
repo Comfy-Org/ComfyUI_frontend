@@ -95,6 +95,7 @@ import { useI18n } from 'vue-i18n'
 import { formatCredits, formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { zAutoReloadSettings } from '@comfyorg/ingest-types/zod'
 import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
@@ -366,13 +367,24 @@ const needsDefaultPaymentMethod = computed(
     autoTopUpSetup.value.reason === 'default_payment_method_missing'
 )
 
+const offSettings = computed(() =>
+  state.value.kind === 'loaded' && state.value.settings.status === 'off'
+    ? state.value.settings
+    : null
+)
+
 const savedPaymentMethodsRead = computedAsync(async () => {
   const requestScope = scope.value
-  if (!needsDefaultPaymentMethod.value) return null
+  if (!offSettings.value || !needsDefaultPaymentMethod.value) return null
   const result = await useBillingSdkStore().readPaymentMethods()
-  return result.status === 'ok'
-    ? { scope: requestScope, methods: result.value }
-    : null
+  if (result.status === 'ok') {
+    return { scope: requestScope, methods: result.value }
+  }
+  reportError(new Error(`Saved payment methods read failed: ${result.code}`), {
+    errorType: 'auto_top_up_payment_methods_read_failed',
+    surface: 'billing'
+  })
+  return null
 }, null)
 
 const savedPaymentMethods = computed(() => {

@@ -645,6 +645,8 @@ describe('BillingAutoTopUpCard', () => {
       line: string
       action: string
       icon: string
+      reads: number
+      reports: number
     }>([
       {
         name: 'asks to add one when nothing is saved',
@@ -652,25 +654,33 @@ describe('BillingAutoTopUpCard', () => {
         methods: Promise.resolve({ status: 'ok', value: [] }),
         line: 'Auto top-up needs a payment method. Add one to turn it on.',
         action: 'Add payment method',
-        icon: 'icon-[lucide--arrow-up-right]'
+        icon: 'icon-[lucide--arrow-up-right]',
+        reads: 1,
+        reports: 0
       },
       {
         name: 'asks to set a default when cards are saved',
         setup: frozen,
         methods: Promise.resolve({ status: 'ok', value: [savedCard] }),
-        ...NO_DEFAULT
+        ...NO_DEFAULT,
+        reads: 1,
+        reports: 0
       },
       {
         name: 'asks to set a default while the saved list is loading',
         setup: frozen,
         methods: new Promise(() => {}),
-        ...NO_DEFAULT
+        ...NO_DEFAULT,
+        reads: 1,
+        reports: 0
       },
       {
-        name: 'asks to set a default when the saved list fails',
+        name: 'asks to set a default and reports once when the saved list fails',
         setup: frozen,
         methods: Promise.resolve({ status: 'error', code: 'REQUEST_FAILED' }),
-        ...NO_DEFAULT
+        ...NO_DEFAULT,
+        reads: 1,
+        reports: 1
       },
       {
         name: 'keeps the off card when not frozen',
@@ -678,28 +688,34 @@ describe('BillingAutoTopUpCard', () => {
         methods: Promise.resolve({ status: 'ok', value: [] }),
         line: 'Refills credits when your balance runs low',
         action: 'Turn on',
-        icon: 'icon-[lucide--external-link]'
+        icon: 'icon-[lucide--external-link]',
+        reads: 0,
+        reports: 0
       }
-    ])('$name', async ({ setup, methods, line, action, icon }) => {
-      serveSavedMethods(methods)
-      renderCard(notConfigured, setup)
+    ])(
+      '$name',
+      async ({ setup, methods, line, action, icon, reads, reports }) => {
+        serveSavedMethods(methods)
+        renderCard(notConfigured, setup)
 
-      const link = await screen.findByRole('link', { name: action })
-      await vi.waitFor(() =>
+        const link = await screen.findByRole('link', { name: action })
+        await vi.waitFor(() =>
+          expect(
+            screen
+              .getAllByTestId('billing-auto-top-up-line')
+              .map((node) => node.textContent.trim())
+          ).toEqual([line])
+        )
         expect(
-          screen
-            .getAllByTestId('billing-auto-top-up-line')
-            .map((node) => node.textContent.trim())
-        ).toEqual([line])
-      )
-      expect(
-        screen.getByTestId('billing-auto-top-up-status')
-      ).toHaveTextContent('Off')
-      expect(link).toContainHTML(icon)
-      expect(useBillingSdkStore().readPaymentMethods).toHaveBeenCalledTimes(
-        setup ? 1 : 0
-      )
-    })
+          screen.getByTestId('billing-auto-top-up-status')
+        ).toHaveTextContent('Off')
+        expect(link).toContainHTML(icon)
+        expect(useBillingSdkStore().readPaymentMethods).toHaveBeenCalledTimes(
+          reads
+        )
+        expect(reportError).toHaveBeenCalledTimes(reports)
+      }
+    )
 
     it('reads the saved methods again for a workspace switch and ignores the late answer for the previous workspace', async () => {
       let settleWorkspaceA: (
@@ -746,6 +762,32 @@ describe('BillingAutoTopUpCard', () => {
       expect(
         await screen.findByRole('link', { name: 'Update payment' })
       ).toBeInTheDocument()
+    })
+
+    it('shows the update copy after the owner saves a card on the billing site and returns', async () => {
+      serveSavedMethods(Promise.resolve({ status: 'ok', value: [] }))
+      renderCard(notConfigured, frozen)
+      await screen.findByRole('link', { name: 'Add payment method' })
+
+      vi.mocked(useBillingSdkStore().readPaymentMethods).mockReturnValue(
+        Promise.resolve({ status: 'ok', value: [savedCard] })
+      )
+      vi.mocked(billingApi.getBillingAutoReload).mockResolvedValue({
+        ...notConfigured
+      })
+      await returnToTab()
+
+      expect(
+        await screen.findByRole('link', { name: 'Update payment' })
+      ).toBeInTheDocument()
+    })
+
+    it('reads no saved methods while the card is on', async () => {
+      serveSavedMethods(Promise.resolve({ status: 'ok', value: [] }))
+      renderCard(configured, frozen)
+      await screen.findByRole('link', { name: 'Manage' })
+
+      expect(useBillingSdkStore().readPaymentMethods).not.toHaveBeenCalled()
     })
 
     it('reports a no-card click as update_payment', async () => {
