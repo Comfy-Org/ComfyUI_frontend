@@ -459,7 +459,11 @@ export function useWorkflowPersistenceV2() {
       if (!draft?.isTemporary) return
       try {
         const workflowData = JSON.parse(draft.data)
-        workflowStore.createTemporary(draft.name, workflowData)
+        const restored = workflowStore.createTemporary(draft.name, workflowData)
+        // The tab is built from this draft, so the draft is not older than
+        // the tab. Without this, the first load() treats it as stale and
+        // deletes it while the tab is still unsaved.
+        restored.lastModified = draft.updatedAt
       } catch (err) {
         console.warn(
           'Failed to parse workflow draft, creating with default',

@@ -1,12 +1,21 @@
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { api } from '@/scripts/api'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import '@/scripts/changeTracker'
@@ -522,6 +531,34 @@ describe('useWorkflowPersistenceV2', () => {
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+    })
+
+    it('keeps the draft of an unsaved background tab when it is first loaded', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const draftStore = useWorkflowDraftStoreV2()
+      const draftPath = 'workflows/Background.json'
+      const draftGraph = JSON.stringify({ ...blankGraph, extra: { a: 1 } })
+      draftStore.saveDraft(draftPath, draftGraph, {
+        name: 'Background.json',
+        isTemporary: true
+      })
+      const active = workflowStore.createTemporary('Active.json')
+      writeTabState([draftPath, active.path], 1)
+      vi.advanceTimersByTime(60_000)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+      const background = workflowStore.getWorkflowByPath(draftPath)
+      expect(background?.isLoaded).toBe(false)
+
+      await background!.load()
+
+      expect(draftStore.getDraft(draftPath)?.data).toBe(draftGraph)
     })
 
     it('activates first tab when storedActiveIndex is 0', async () => {
