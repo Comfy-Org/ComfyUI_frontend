@@ -7,7 +7,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
+import type {
+  WorkspaceDeployment,
+  WorkspaceDeploymentList
+} from '@/platform/workspace/api/workspaceApi'
 
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 
@@ -244,7 +247,7 @@ describe('useDeploymentPickStore', () => {
     await boot
 
     expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
-    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1', [])
   })
 
   it('boots on Comfy Cloud, quietly, when ingest has no deployment routes (404)', async () => {
@@ -307,7 +310,7 @@ describe('useDeploymentPickStore', () => {
 
     await store.load()
 
-    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1', [])
     expect(store.state.phase).toBe('ready')
     expect(store.isVisible).toBe(true)
     expect(store.deployments).toHaveLength(2)
@@ -740,7 +743,10 @@ describe('useDeploymentPickStore', () => {
     expect(store.pickedDeploymentId).toBeNull()
 
     await store.load()
-    expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith('ws-2')
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith(
+      'ws-2',
+      []
+    )
     expect(store.state.phase).toBe('hidden')
   })
 
@@ -752,7 +758,10 @@ describe('useDeploymentPickStore', () => {
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
     await store.loadOnce()
 
-    expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith('ws-2')
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith(
+      'ws-2',
+      []
+    )
     expect(store.pickedDeploymentId).toBe('dep-2')
   })
 
@@ -1252,6 +1261,82 @@ describe('useDeploymentPickStore', () => {
         expect(reload).not.toHaveBeenCalled()
       }
     )
+  })
+
+  describe('a deployment this browser started', () => {
+    const stopped: WorkspaceDeployment = {
+      deployment_id: 'dep-1',
+      release_id: 'r-1',
+      status: 'stopped',
+      can_start: true,
+      created_at: '2026-09-20T00:00:00Z'
+    }
+
+    it.for([
+      {
+        answer: 'shows it queued',
+        outcome: 'is still named',
+        items: [{ ...stopped, status: 'queued', can_start: false }],
+        named: ['dep-1']
+      },
+      {
+        answer: 'shows it ready',
+        outcome: 'is still named',
+        items: [{ ...stopped, status: 'ready', can_start: false }],
+        named: ['dep-1']
+      },
+      {
+        answer: 'offers Start on it again',
+        outcome: 'is no longer named',
+        items: [{ ...stopped, status: 'failed', can_start: true }],
+        named: []
+      },
+      {
+        answer: 'no longer lists it',
+        outcome: 'is no longer named',
+        items: [],
+        named: []
+      }
+    ])(
+      '$outcome on the listing after one that $answer',
+      async ({ items, named }) => {
+        const store = useDeploymentPickStore()
+        store.followStart('dep-1')
+        mockWorkspaceApi.listDeployments.mockResolvedValue({
+          ...listing,
+          items
+        })
+
+        await store.load()
+        await store.load()
+
+        expect(mockWorkspaceApi.listDeployments.mock.calls).toEqual([
+          ['ws-1', ['dep-1']],
+          ['ws-1', named]
+        ])
+      }
+    )
+
+    it('is still named after a listing asked for before its start offers Start on it', async () => {
+      const beforeStart = deferred<WorkspaceDeploymentList>()
+      mockWorkspaceApi.listDeployments.mockReturnValueOnce(beforeStart.promise)
+      const store = useDeploymentPickStore()
+      const loading = store.load()
+
+      store.followStart('dep-1')
+      beforeStart.resolve({ ...listing, items: [stopped] })
+      await loading
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        items: [stopped]
+      })
+      await store.load()
+
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith(
+        'ws-1',
+        ['dep-1']
+      )
+    })
   })
 
   describe('when answers arrive out of order', () => {

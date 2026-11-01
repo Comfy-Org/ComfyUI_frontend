@@ -50,6 +50,7 @@ import type {
   SubscriptionTier,
   TeamCreditStops,
   TeamCreditStopSummary,
+  StartWorkspaceDeploymentResult,
   UpdateWorkspaceRequest,
   WorkspaceDeployment,
   WorkspaceDeploymentCpuServer,
@@ -59,6 +60,7 @@ import type {
 import {
   zDeploymentCompatibility,
   zReleaseUnsupportedPacks,
+  zStartWorkspaceDeploymentResult,
   zRetentionAcceptance,
   zRetentionFlowResponse,
   zWorkspaceDeploymentCpuServer
@@ -76,7 +78,10 @@ import {
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
 import { attachCapabilityRevisionInterceptor } from '@/platform/billing/api/capabilityRevision'
-import { DEPLOYMENT_LISTING_TIMEOUT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import {
+  DEPLOYMENT_LISTING_TIMEOUT_MS,
+  DEPLOYMENT_START_TIMEOUT_MS
+} from '@/platform/workspace/api/deploymentListingTimeouts'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -350,7 +355,8 @@ export const workspaceApi = {
    * GET /api/workspaces/:id/deployments
    */
   async listDeployments(
-    workspaceId: WorkspaceId
+    workspaceId: WorkspaceId,
+    startedDeploymentIds: readonly string[]
   ): Promise<WorkspaceDeploymentList> {
     const auth = await requestAuth()
     try {
@@ -358,6 +364,8 @@ export const workspaceApi = {
         workspaceApiUrl(`/workspaces/${workspaceId}/deployments`),
         {
           ...auth,
+          params: { started_deployment_id: startedDeploymentIds },
+          paramsSerializer: { indexes: null },
           timeout: DEPLOYMENT_LISTING_TIMEOUT_MS,
           __skipStatusRetry: true
         }
@@ -389,6 +397,24 @@ export const workspaceApi = {
       )
     } catch (err) {
       handleAxiosError(err, 'pickDeployment')
+    }
+  },
+  async startDeployment(
+    workspaceId: WorkspaceId,
+    deploymentId: string
+  ): Promise<StartWorkspaceDeploymentResult> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        workspaceApiUrl(
+          `/workspaces/${workspaceId}/deployments/${encodeURIComponent(deploymentId)}/start`
+        ),
+        undefined,
+        { ...auth, timeout: DEPLOYMENT_START_TIMEOUT_MS }
+      )
+      return zStartWorkspaceDeploymentResult.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'startDeployment')
     }
   },
 
