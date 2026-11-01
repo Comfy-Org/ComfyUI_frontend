@@ -155,8 +155,9 @@ Use unique IDs and valid CSS colors. The frontend scales and moves markers
 with the image, and excludes them from snapshots, mask history, and Save.
 
 Overlays clear on external document changes and session disposal. The method
-returns `false` for a closed session, invalid coordinates/radii, or non-string
-IDs/colors. Calls from a closed session cannot affect a later editor.
+returns `false` for a closed session, invalid coordinates/radii, non-string
+IDs/colors, or duplicate IDs. Calls from a closed session cannot affect a
+later editor.
 
 Public TypeScript contracts are exported from the frontend types entry point
 as `MaskEditorExtensionAPI`, `MaskEditorTool`, `MaskEditorToolContext`, `MaskEditorToolSession`,

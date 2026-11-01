@@ -503,6 +503,36 @@ describe('useToolManager', () => {
   })
 
   describe('handlePointerUp', () => {
+    it.for([
+      {
+        gesture: 'tool interaction',
+        button: 0,
+        buttons: 1,
+        expected: ['pointerdown', 'pointerup']
+      },
+      { gesture: 'pan', button: 1, buttons: 4, expected: [] }
+    ])(
+      'delivers only extension-owned pointer phases after a $gesture',
+      async ({ button, buttons, expected }) => {
+        const phases: string[] = []
+        mockPanZoom.handlePanStart.mockImplementation(() => {
+          mockStore.isPanning = true
+        })
+        const tm = setup({
+          isActive: () => true,
+          deactivate: () => {},
+          handlePointer: async (event) => {
+            phases.push(event.type)
+          }
+        })
+
+        await tm.handlePointerDown(pointerEvent({ button, buttons }))
+        await tm.handlePointerUp(pointerEvent({ type: 'pointerup', button }))
+
+        expect(phases).toEqual(expected)
+      }
+    )
+
     it('should reset panning and brush state', async () => {
       const tm = setup()
       mockStore.isPanning = true

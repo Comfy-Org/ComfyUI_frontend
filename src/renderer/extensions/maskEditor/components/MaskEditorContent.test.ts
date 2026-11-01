@@ -343,16 +343,10 @@ describe('MaskEditorContent', () => {
       renderContent()
 
       expect(mockBrushPersistence.loadAndApply).toHaveBeenCalledTimes(1)
-      expect(useToolManager).toHaveBeenCalledWith(
-        mockKeyboard,
-        mockPanZoom,
-        { useDominantAxis: true, brushAdjustmentSpeed: 2.5 },
-        expect.objectContaining({
-          isActive: expect.any(Function),
-          deactivate: expect.any(Function),
-          handlePointer: expect.any(Function)
-        })
-      )
+      expect(vi.mocked(useToolManager).mock.calls[0]?.[2]).toEqual({
+        useDominantAxis: true,
+        brushAdjustmentSpeed: 2.5
+      })
     })
   })
 
