@@ -43,7 +43,7 @@ const jobOutput: AugmentedResultItem = {
   mediaType: 'video'
 }
 
-const assetItem: AugmentedResultItem = {
+const assetPanelItem: AugmentedResultItem = {
   ...jobOutput,
   filename: 'QATEST_c45_00002_.mp4',
   url: '/api/view?filename=blake3%3Aabc&type=output'
@@ -56,16 +56,18 @@ describe('ResultVideo', () => {
   })
 
   it('plays the resolved url of an item that carries one', () => {
-    expect(renderVideo(assetItem).getAttribute('src')).toBe(assetItem.url)
+    expect(renderVideo(assetPanelItem).getAttribute('src')).toBe(
+      assetPanelItem.url
+    )
   })
 
   it('plays the resolved url on Cloud with VHS advanced previews on', () => {
     distribution.isCloud = true
     setVhsAdvancedPreviews(true)
 
-    const source = renderVideo(assetItem)
+    const source = renderVideo(assetPanelItem)
 
-    expect(source.getAttribute('src')).toBe(assetItem.url)
+    expect(source.getAttribute('src')).toBe(assetPanelItem.url)
     expect(source.getAttribute('type')).toBe('video/mp4')
   })
 
@@ -73,15 +75,15 @@ describe('ResultVideo', () => {
     distribution.isCloud = true
     setVhsAdvancedPreviews(true)
 
-    expect(renderVideo({ ...assetItem, url: '' }).getAttribute('src')).toMatch(
-      /^\/api\/viewvideo\?/
-    )
+    expect(
+      renderVideo({ ...assetPanelItem, url: '' }).getAttribute('src')
+    ).toMatch(/^\/api\/viewvideo\?/)
   })
 
   it('keeps the VHS preview off Cloud, where the filename is on disk', () => {
     setVhsAdvancedPreviews(true)
 
-    expect(renderVideo(assetItem).getAttribute('src')).toMatch(
+    expect(renderVideo(assetPanelItem).getAttribute('src')).toMatch(
       /^\/api\/viewvideo\?filename=QATEST_c45_00002_\.mp4&/
     )
   })

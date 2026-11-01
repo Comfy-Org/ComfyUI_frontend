@@ -45,9 +45,11 @@ onActivated(() => {
 const settingStore = useSettingStore()
 const { isExtensionInstalled, isExtensionEnabled } = useExtensionStore()
 
+const playsCloudAssetUrl = computed(() => isCloud && !!props.result.url)
+
 const vhsAdvancedPreviews = computed(() => {
   return (
-    !(isCloud && props.result.url) &&
+    !playsCloudAssetUrl.value &&
     isExtensionInstalled('VideoHelperSuite.Core') &&
     isExtensionEnabled('VideoHelperSuite.Core') &&
     settingStore.get('VHS.AdvancedPreviews') &&
