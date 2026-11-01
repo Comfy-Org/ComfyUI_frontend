@@ -836,6 +836,8 @@ type AgentSendGateOutcome =
  */
 export type AgentSendGatedMetadata = AgentSendGateOutcome & {
   thread_id: string | null
+  /** Page load id, also sent on the agent feedback form. */
+  client_session_id: string
 }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
@@ -923,13 +925,17 @@ export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
   save_error_shown: boolean
 }
 export type AgentOnboardingAction = 'next' | 'finish' | 'skip'
+export type AgentOnboardingCard = 'intro' | 'workflow' | 'history'
 /**
  * `step` is 1-based and matches the "Step N of M" indicator on the card.
  * `finish` marks completion, so the gap from `agent_onboarding_shown` is the
- * onboarding time.
+ * onboarding time. `card` is the stable identity to funnel on, since `step`
+ * shifts when cards change. `total` is the tour length at the time of the event.
  */
 export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
   step: number
+  card: AgentOnboardingCard
+  total: number
   action: AgentOnboardingAction
 }
 /**
@@ -1359,6 +1365,8 @@ export interface CheckoutAttributionMetadata {
 export interface SubscriptionMetadata extends Partial<WorkspaceTelemetryContext> {
   current_tier?: string
   reason?: PaymentIntentSource
+  /** Server `error.type` when a refused run opened the paywall. */
+  refusal_type?: string
 }
 
 export interface AddCreditsClickMetadata {

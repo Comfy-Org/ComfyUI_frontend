@@ -272,9 +272,6 @@ async function disableAgentExtensions() {
 }
 
 const applyChanges = () => {
-  const url = new URL(window.location.href)
-  url.searchParams.delete('safe')
-  window.history.replaceState(window.history.state, '', url)
   window.location.reload()
 }
 

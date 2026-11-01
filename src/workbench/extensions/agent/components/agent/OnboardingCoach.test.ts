@@ -18,18 +18,21 @@ const telemetry = () => vi.mocked(useTelemetry())!
 const KEY = 'coach-test'
 const STEPS: CoachStep[] = [
   {
+    card: 'intro',
     target: '#panel',
     title: 'Meet the agent',
     body: 'Build and run workflows.',
     placement: 'left-center'
   },
   {
+    card: 'workflow',
     target: '#composer',
     title: 'Choose a workflow',
     body: 'Choose what to edit.',
     placement: 'left-end'
   },
   {
+    card: 'history',
     target: '#history',
     title: 'Previous chats',
     body: 'Continue an earlier chat.',
@@ -90,6 +93,7 @@ function mount(steps = STEPS) {
 
 beforeEach(() => {
   localStorage.clear()
+  vi.mocked(fetch).mockImplementation(async () => Response.json([]))
   telemetry().trackAgentOnboardingShown.mockClear()
   telemetry().trackAgentOnboardingStep.mockClear()
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
@@ -347,22 +351,17 @@ describe('OnboardingCoach', () => {
   })
 
   it('stops drawing attention to the card shortly after the click', async () => {
-    vi.useFakeTimers()
-    try {
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-      mount()
-      const dialog = await screen.findByRole('dialog', {
-        name: STEPS[0].title
-      })
-      await user.click(screen.getByTestId('agent-coach-scrim'))
-      expect(dialog).toHaveAttribute('data-nudged')
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mount()
+    const dialog = await screen.findByRole('dialog', {
+      name: STEPS[0].title
+    })
+    await user.click(screen.getByTestId('agent-coach-scrim'))
+    expect(dialog).toHaveAttribute('data-nudged')
 
-      await vi.advanceTimersByTimeAsync(2_000)
+    await vi.advanceTimersByTimeAsync(2_000)
 
-      expect(dialog).not.toHaveAttribute('data-nudged')
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(dialog).not.toHaveAttribute('data-nudged')
   })
 
   it('shows the target in its hover state with its tooltip inside the spotlight', async () => {
@@ -533,16 +532,16 @@ describe('OnboardingCoach', () => {
   })
 
   it.for([
-    { advance: 0, dismiss: 'Next', step: 1, action: 'next' },
-    { advance: 1, dismiss: 'Next', step: 2, action: 'next' },
-    { advance: 2, dismiss: 'Done', step: 3, action: 'finish' },
-    { advance: 0, dismiss: 'Skip', step: 1, action: 'skip' },
-    { advance: 1, dismiss: 'Skip', step: 2, action: 'skip' },
-    { advance: 2, dismiss: 'Escape', step: 3, action: 'skip' },
-    { advance: 1, dismiss: 'Escape', step: 2, action: 'skip' }
+    { advance: 0, dismiss: 'Next', step: 1, card: 'intro', action: 'next' },
+    { advance: 1, dismiss: 'Next', step: 2, card: 'workflow', action: 'next' },
+    { advance: 2, dismiss: 'Done', step: 3, card: 'history', action: 'finish' },
+    { advance: 0, dismiss: 'Skip', step: 1, card: 'intro', action: 'skip' },
+    { advance: 1, dismiss: 'Skip', step: 2, card: 'workflow', action: 'skip' },
+    { advance: 2, dismiss: 'Escape', step: 3, card: 'history', action: 'skip' },
+    { advance: 1, dismiss: 'Escape', step: 2, card: 'workflow', action: 'skip' }
   ])(
     'reports $dismiss on card $step as action $action',
-    async ({ advance, dismiss, step, action }) => {
+    async ({ advance, dismiss, step, card, action }) => {
       const user = userEvent.setup()
       mount()
       await screen.findByRole('dialog', { name: STEPS[0].title })
@@ -554,7 +553,7 @@ describe('OnboardingCoach', () => {
       else await user.click(screen.getByRole('button', { name: dismiss }))
 
       expect(telemetry().trackAgentOnboardingStep.mock.calls).toEqual([
-        [{ step, action }]
+        [{ step, card, total: STEPS.length, action }]
       ])
     }
   )

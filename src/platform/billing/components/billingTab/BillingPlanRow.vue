@@ -35,7 +35,11 @@
         :href="plansHref"
         target="_blank"
         rel="noopener"
-        :variant="action === 'manage' ? 'secondary' : 'inverted'"
+        :variant="
+          action === 'manage' || addCreditsVariant === 'inverted'
+            ? 'secondary'
+            : 'inverted'
+        "
         size="md"
         class="shrink-0 no-underline"
         @click="trackPlans"
@@ -67,12 +71,14 @@ const {
   state,
   action,
   canManageSubscription,
-  salesVariant = 'secondary'
+  salesVariant = 'secondary',
+  addCreditsVariant = 'secondary'
 } = defineProps<{
   state: PlanRowState
   action: PlanRowAction | null
   canManageSubscription: boolean
   salesVariant?: 'inverted' | 'secondary'
+  addCreditsVariant?: 'inverted' | 'secondary'
 }>()
 
 const { href: plansHref, track: trackPlans } = usePlatformHandoff(
@@ -88,6 +94,9 @@ const title = computed(() => {
   }
   if (state.kind === 'unknown') {
     return t('workspacePanel.billingTab.plan.unknown.title')
+  }
+  if (state.kind === 'ended') {
+    return state.planName ?? t('workspacePanel.billingTab.plan.unknown.title')
   }
   if (state.kind === 'salesManaged') {
     return (
@@ -124,6 +133,14 @@ function noPlanLine(state: Extract<PlanRowState, { kind: 'noPlan' }>) {
     : t(`${key}.freeRunsUsed`, { total })
 }
 
+function endedLine(state: Extract<PlanRowState, { kind: 'ended' }>) {
+  const key = 'workspacePanel.billingTab.plan'
+  if (!state.endedAt) return t(`${key}.endedNoDate`)
+  return t(`${key}.ended`, {
+    date: formatPlanDate(state.endedAt, locale.value, state.cadence)
+  })
+}
+
 const statusLine = computed(() => {
   const key = 'workspacePanel.billingTab.plan'
   if (state.kind === 'activating') {
@@ -144,11 +161,7 @@ const statusLine = computed(() => {
       date: formatPlanDate(state.endsAt, locale.value, state.cadence)
     })
   }
-  if (state.kind === 'ended') {
-    return t(`${key}.ended`, {
-      date: formatPlanDate(state.endedAt, locale.value, state.cadence)
-    })
-  }
+  if (state.kind === 'ended') return endedLine(state)
   return ''
 })
 

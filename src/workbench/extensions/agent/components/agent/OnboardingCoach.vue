@@ -109,7 +109,12 @@ watch(visible, (isVisible) => {
 })
 
 function reportStep(action: AgentOnboardingAction): void {
-  useTelemetry()?.trackAgentOnboardingStep({ step: index.value + 1, action })
+  useTelemetry()?.trackAgentOnboardingStep({
+    step: index.value + 1,
+    card: step.value.card,
+    total: steps.length,
+    action
+  })
 }
 
 let finishedHere = false
@@ -275,7 +280,7 @@ const spotlightStyle = computed(() => {
 })
 
 useEventListener(
-  document,
+  window,
   'keydown',
   (event) => {
     if (!active.value || !target.value || event.key !== 'Escape') return

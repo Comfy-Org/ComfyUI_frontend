@@ -29,7 +29,10 @@ export class AgentPanel {
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
   public readonly composerStack: Locator
+  public readonly consentAcceptButton: Locator
+  public readonly consentContactFormButton: Locator
   public readonly consentDialog: Locator
+  public readonly consentLoadError: Locator
   public readonly consentRejectButton: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
@@ -38,6 +41,7 @@ export class AgentPanel {
   public readonly debugHeading: Locator
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
+  public readonly feedbackButton: Locator
   public readonly fileInput: Locator
   public readonly historyButton: Locator
   public readonly loadFailedMessage: Locator
@@ -85,6 +89,13 @@ export class AgentPanel {
     this.consentDialog = page.getByRole('dialog', {
       name: enMessages.agent.consent.title
     })
+    this.consentAcceptButton = this.consentDialog.getByRole('button', {
+      name: enMessages.agent.consent.accept
+    })
+    this.consentContactFormButton = this.consentDialog.getByRole('button', {
+      name: enMessages.agent.consent.contactForm
+    })
+    this.consentLoadError = this.consentDialog.getByRole('alert')
     this.consentRejectButton = this.consentDialog.getByRole('button', {
       name: enMessages.agent.consent.reject
     })
@@ -101,6 +112,9 @@ export class AgentPanel {
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
+    this.feedbackButton = page.getByRole('button', {
+      name: enMessages.agent.feedbackCaption
+    })
     this.fileInput = this.root.getByTestId('agent-file-input')
     this.historyButton = this.root.getByRole('button', {
       name: enMessages.agent.showChatHistory
@@ -146,7 +160,14 @@ export class AgentPanel {
       name: 'Workflow JSON'
     })
     this.workSummary = this.root.getByRole('button', {
-      name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
+      name: new RegExp(
+        `^(${[
+          enMessages.agent.worked,
+          enMessages.agent.workedNotConfirmedOnCanvas
+        ]
+          .map(escapeRegExp)
+          .join('|')})`
+      )
     })
   }
 
@@ -313,6 +334,14 @@ export class AgentPanel {
   /** Opens the panel until its dock is on screen, whatever the dock draws. */
   async openDock(timeout?: number): Promise<Locator> {
     return this.openUntilVisible(this.dockedPanel, timeout)
+  }
+
+  /** Clicks the entry from a known-closed state, for flows the panel never reaches. */
+  async openFromClosed(): Promise<void> {
+    await expect(this.openButton).toBeVisible()
+    if ((await this.openButton.getAttribute('aria-pressed')) === 'true')
+      await this.close()
+    await this.openButton.click()
   }
 
   private async openUntilVisible(

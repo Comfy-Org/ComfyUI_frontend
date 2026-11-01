@@ -6,7 +6,6 @@ import { api } from '@/scripts/api'
 
 import type { CustomNodeLoadFailure } from './customNodeScripts'
 import {
-  isSafeExtensionBoot,
   loadCustomNodeScripts,
   reportCustomNodeLoadFailures,
   shouldLoadCustomNodeScript
@@ -103,19 +102,6 @@ describe('loadCustomNodeScripts', () => {
     )
 
     expect(executed).toEqual(['/extensions/enabled/main.js'])
-  })
-})
-
-describe('isSafeExtensionBoot', () => {
-  it.for([
-    { search: '?safe', expected: true },
-    { search: '?safe=1', expected: true },
-    { search: '?safe=true', expected: true },
-    { search: '?safe=0', expected: false },
-    { search: '?safe=false', expected: false },
-    { search: '', expected: false }
-  ])('reads $search as $expected', ({ search, expected }) => {
-    expect(isSafeExtensionBoot(search)).toBe(expected)
   })
 })
 

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -167,6 +167,20 @@ describe('TourSpotlight', () => {
 
     await user.keyboard('{Escape}')
     expect(emitted().skip).toHaveLength(1)
+  })
+
+  it('claims Escape before document handlers', async () => {
+    const user = userEvent.setup()
+    const escaped = vi.fn()
+    document.addEventListener('keydown', escaped, { capture: true })
+    onTestFinished(() =>
+      document.removeEventListener('keydown', escaped, { capture: true })
+    )
+    const { emitted } = renderSpotlight()
+
+    await user.keyboard('{Escape}')
+    expect(emitted().skip).toHaveLength(1)
+    expect(escaped).not.toHaveBeenCalled()
   })
 
   it('disables the primary button while waiting for a deferred target', () => {
