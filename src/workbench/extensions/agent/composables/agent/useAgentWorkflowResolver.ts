@@ -30,6 +30,9 @@ type WorkflowResolverDeps = {
 
 export type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
 
+/** How long a successful cloud index fetch satisfies non-forced refreshes. */
+const CLOUD_INDEX_TTL_MS = 30_000
+
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
@@ -40,6 +43,8 @@ export function useAgentWorkflowResolver({
   const listedCloudIds = ref<ReadonlySet<string>>(new Set())
   const listingComplete = ref(false)
   let refreshGeneration = 0
+  let lastSuccessfulRefreshAt: number | null = null
+  let inFlightRefresh: Promise<boolean> | null = null
   const cloudIdsByName = computed(() => {
     const counts = new Map<string, number>()
     for (const { name } of cloudIndex.value)
@@ -51,25 +56,51 @@ export function useAgentWorkflowResolver({
     )
   })
 
-  async function refreshCloudWorkflowIds(): Promise<boolean> {
-    const generation = ++refreshGeneration
-    try {
-      const { entries, complete } = await listCloudWorkflows()
-      if (generation !== refreshGeneration) return false
-      listedCloudIds.value = new Set(entries.map(({ id }) => id))
-      listingComplete.value = complete
-      cloudIndex.value = entries.flatMap(({ id, name }) =>
-        name === undefined ? [] : [{ id, name }]
+  /**
+   * Refreshes the cloud workflow index. Non-forced calls reuse an in-flight
+   * request and skip the network entirely while the last successful fetch is
+   * younger than {@link CLOUD_INDEX_TTL_MS}, so routine callers (mount, every
+   * message send, tab switches) do not each re-list every cloud workflow.
+   * Callers that just observed a miss should pass `force: true`. A failed
+   * fetch clears the freshness window so the next routine call retries.
+   */
+  async function refreshCloudWorkflowIds({
+    force = false
+  }: { force?: boolean } = {}): Promise<boolean> {
+    if (inFlightRefresh) return inFlightRefresh
+    if (!force) {
+      if (
+        lastSuccessfulRefreshAt !== null &&
+        Date.now() - lastSuccessfulRefreshAt < CLOUD_INDEX_TTL_MS
       )
-      return true
-    } catch (error) {
-      if (generation !== refreshGeneration) return false
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'agent_cloud_workflow_ids_refresh_failed'
-      })
-      return false
+        return true
     }
+    const generation = ++refreshGeneration
+    const request = (async () => {
+      try {
+        const { entries, complete } = await listCloudWorkflows()
+        if (generation !== refreshGeneration) return false
+        listedCloudIds.value = new Set(entries.map(({ id }) => id))
+        listingComplete.value = complete
+        cloudIndex.value = entries.flatMap(({ id, name }) =>
+          name === undefined ? [] : [{ id, name }]
+        )
+        lastSuccessfulRefreshAt = Date.now()
+        return true
+      } catch (error) {
+        if (generation !== refreshGeneration) return false
+        lastSuccessfulRefreshAt = null
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_cloud_workflow_ids_refresh_failed'
+        })
+        return false
+      } finally {
+        if (generation === refreshGeneration) inFlightRefresh = null
+      }
+    })()
+    inFlightRefresh = request
+    return request
   }
 
   /**
