@@ -8,7 +8,12 @@ import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import InputGroupAccordion from '@/components/builder/InputGroupAccordion.vue'
-import { groupPosition, resolveGroupItems } from '@/components/builder/useInputGroups'
+import {
+  createInputLinkChecker,
+  groupPosition,
+  isRenderableAppInput,
+  resolveGroupItems
+} from '@/components/builder/useInputGroups'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
@@ -33,6 +38,7 @@ import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useInputGroupStore } from '@/stores/inputGroupStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
@@ -50,9 +56,15 @@ const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const inputGroupStore = useInputGroupStore()
 const resolvedInputs = useResolvedSelectedInputs()
+const isInputLinked = createInputLinkChecker(useLinkStore())
+const renderableInputs = computed(() =>
+  resolvedInputs.value.filter((selection) =>
+    isRenderableAppInput(selection, isInputLinked)
+  )
+)
 const visibleInputGroups = computed(() =>
   inputGroupStore.inputGroups.filter(
-    (group) => resolveGroupItems(group, resolvedInputs.value).length > 0
+    (group) => resolveGroupItems(group, renderableInputs.value).length > 0
   )
 )
 const { hasOutputs } = storeToRefs(appModeStore)

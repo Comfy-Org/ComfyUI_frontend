@@ -1,4 +1,8 @@
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { useLinkStore } from '@/stores/linkStore'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { t } from '@/i18n'
 import type { InputGroup } from '@comfyorg/graph-model/workflowSchema'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
@@ -11,6 +15,35 @@ interface ResolvedGroupItem {
 type GroupRow =
   | { type: 'single'; item: ResolvedGroupItem }
   | { type: 'pair'; items: [ResolvedGroupItem, ResolvedGroupItem] }
+
+type LinkLookup = Pick<
+  ReturnType<typeof useLinkStore>,
+  'isInputSlotConnected'
+>
+
+export function createInputLinkChecker(linkStore: LinkLookup) {
+  return (node: LGraphNode, widgetName: string): boolean => {
+    const graph = node.graph
+    const slot = node.inputs?.findIndex((input) => input.widget?.name === widgetName)
+    return (
+      !!graph &&
+      slot !== undefined &&
+      slot >= 0 &&
+      linkStore.isInputSlotConnected(graphScopeOf(graph), node.id, slot)
+    )
+  }
+}
+
+export function isRenderableAppInput(
+  selection: ResolvedSelection,
+  isInputLinked: ReturnType<typeof createInputLinkChecker>
+): selection is Extract<ResolvedSelection, { status: 'resolved' }> {
+  return (
+    selection.status === 'resolved' &&
+    selection.node.mode === LGraphEventMode.ALWAYS &&
+    !isInputLinked(selection.node, selection.widget.name)
+  )
+}
 
 export function groupPosition(
   index: number,

@@ -7,7 +7,11 @@ import WidgetDescription from '@/components/builder/WidgetDescription.vue'
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
 import { getLoaderDropIndicator } from '@/components/builder/useLoaderDropIndicator'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
-import { autoGroupName } from '@/components/builder/useInputGroups'
+import {
+  autoGroupName,
+  createInputLinkChecker,
+  isRenderableAppInput
+} from '@/components/builder/useInputGroups'
 import {
   vGroupItemDrag,
   vUngroupedItemReorder
@@ -25,7 +29,6 @@ import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.v
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useInputGroupStore } from '@/stores/inputGroupStore'
@@ -65,6 +68,7 @@ const inputGroupStore = useInputGroupStore()
 const templateInputDownloadStore = useTemplateInputDownloadStore()
 const widgetValueStore = useWidgetValueStore()
 const linkStore = useLinkStore()
+const isInputLinked = createInputLinkChecker(linkStore)
 const maskEditor = useMaskEditor()
 
 const { onPointerDown } = useAppModeWidgetResizing((widget, config) =>
@@ -107,30 +111,19 @@ function ensureSelectedWidgetState(
   )
 }
 
-function isWidgetInputLinked(node: LGraphNode, widgetName: string): boolean {
-  const graph = node.graph
-  const slot = node.inputs?.findIndex((i) => i.widget?.name === widgetName)
-  if (!graph || slot === undefined || slot < 0) return false
-  return linkStore.isInputSlotConnected(graphScopeOf(graph), node.id, slot)
-}
-
 watchEffect(() => {
   for (const entry of resolvedInputs.value) {
-    if (entry.status !== 'resolved') continue
+    if (!isRenderableAppInput(entry, isInputLinked)) continue
     if (!shouldRender(entry.widgetId)) continue
-    if (entry.node.mode !== LGraphEventMode.ALWAYS) continue
     ensureSelectedWidgetState(entry.widgetId, entry.widget)
   }
 })
 
 const mappedSelections = computed((): WidgetEntry[] => {
   return resolvedInputs.value.flatMap((entry) => {
-    if (entry.status !== 'resolved') return []
+    if (!isRenderableAppInput(entry, isInputLinked)) return []
     const { widgetId, node, widget, config } = entry
     if (!shouldRender(widgetId)) return []
-    if (node.mode !== LGraphEventMode.ALWAYS) return []
-
-    if (isWidgetInputLinked(node, widget.name)) return []
     const fullNodeData = nodeToNodeData(node, widgetId)
 
     return [
@@ -171,10 +164,8 @@ function nodeToNodeData(node: LGraphNode, id: WidgetId) {
 async function handleDragDrop() {
   const onDragDrop = async (e: DragEvent) => {
     for (const entry of resolvedInputs.value) {
-      if (entry.status !== 'resolved') continue
-      const { node, widget, widgetId } = entry
-      if (node.mode !== LGraphEventMode.ALWAYS) continue
-      if (isWidgetInputLinked(node, widget.name)) continue
+      if (!isRenderableAppInput(entry, isInputLinked)) continue
+      const { node, widgetId } = entry
       const nodeData = nodeToNodeData(node, widgetId)
       if (nodeData.onDragOver?.(e) && (await nodeData.onDragDrop?.(e)))
         return true

@@ -211,6 +211,7 @@ describe('inputGroupStore', () => {
     await nextTick()
 
     expect(store.findGroup(id)).toBeUndefined()
+    expect((app.rootGraph.extra.linearData as LinearData).inputGroups).toBeUndefined()
     expect(appModeStore.selectedInputs.map(([key]) => key)).toEqual([
       inputIds.b,
       inputIds.c,
@@ -238,5 +239,27 @@ describe('inputGroupStore', () => {
       inputIds.b
     ])
     expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(captures + 1)
+  })
+
+  it('ignores an ungrouped self-drop without adding history', async () => {
+    const appModeStore = useAppModeStore()
+    appModeStore.selectedInputs = [
+      [inputIds.a, 'a'],
+      [inputIds.b, 'b']
+    ]
+    await nextTick()
+    const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock
+      .calls.length
+
+    store.moveToUngrouped(inputIds.a, inputIds.a, 'after')
+    await nextTick()
+
+    expect(appModeStore.selectedInputs.map(([key]) => key)).toEqual([
+      inputIds.a,
+      inputIds.b
+    ])
+    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(
+      captures
+    )
   })
 })

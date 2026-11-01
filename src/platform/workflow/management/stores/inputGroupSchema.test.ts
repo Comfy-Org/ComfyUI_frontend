@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  validateComfyWorkflow
-} from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
