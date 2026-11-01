@@ -163,8 +163,8 @@ catalogs:
       specifier: ^18.5.0
       version: 18.5.0
     dompurify:
-      specifier: ^3.4.13
-      version: 3.4.13
+      specifier: ^3.4.17
+      version: 3.4.17
     dotenv:
       specifier: ^16.4.5
       version: 16.6.1
@@ -401,7 +401,7 @@ overrides:
   minimatch@^10.0.0: ^10.2.3
   ajv@^8.0.0: ^8.18.0
   undici@^7.0.0: ^7.29.0
-  dompurify@^3.0.0: ^3.4.13
+  dompurify@^3.0.0: ^3.4.17
   js-yaml@^4.0.0: ^4.3.1
   js-yaml@^3.0.0: ^3.15.1
   fast-uri@^3.0.0: ^3.1.5
@@ -550,7 +550,7 @@ importers:
         version: 4.5.1
       dompurify:
         specifier: 'catalog:'
-        version: 3.4.13
+        version: 3.4.17
       dotenv:
         specifier: 'catalog:'
         version: 16.6.1
@@ -1201,7 +1201,7 @@ importers:
         version: 1.0.0-beta.4(typescript@6.0.3)
       dompurify:
         specifier: 'catalog:'
-        version: 3.4.13
+        version: 3.4.17
       es-toolkit:
         specifier: 'catalog:'
         version: 1.49.0
@@ -5683,8 +5683,8 @@ packages:
     resolution: {integrity: sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==}
     engines: {node: '>= 4'}
 
-  dompurify@3.4.13:
-    resolution: {integrity: sha512-2vmYIoqjze2d+kakP8S/nS5shfsl587kzwEjcGlTdiksUVgFHnFCsLYDVj/JNqJVOQZGSYBTmuycv0PodwmnMQ==}
+  dompurify@3.4.17:
+    resolution: {integrity: sha512-B/pSlYVHQ58kqISD/yDjuJ1yfzI34m1gF4lAod2bwSRhiN4K5Cl3H8Af7hqB2PmTL911tdEudnnXn5FnhRoz0w==}
 
   domutils@2.8.0:
     resolution: {integrity: sha512-w96Cjofp72M5IIhpjgobBimYEfoPjx1Vx0BSX9P30WBdZW2WIKU0T1Bd0kz2eNZ9ikjKgHbEyKx8BB6H1L3h3A==}
@@ -12686,7 +12686,7 @@ snapshots:
     dependencies:
       domelementtype: 2.3.0
 
-  dompurify@3.4.13:
+  dompurify@3.4.17:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -14622,7 +14622,7 @@ snapshots:
       '@posthog/core': 1.42.1
       '@posthog/types': 1.395.0
       core-js: 3.49.0
-      dompurify: 3.4.13
+      dompurify: 3.4.17
       fflate: 0.4.8
       preact: 10.29.7
       query-selector-shadow-dom: 1.0.1
