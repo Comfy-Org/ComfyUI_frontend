@@ -2179,6 +2179,7 @@ export class ComfyApp implements IComfyApp {
     // Check workflow first - it should take priority over parameters
     // when both are present (e.g., in ComfyUI-generated PNGs)
     if (workflow) {
+      let graphData: ComfyWorkflowJSON | undefined
       try {
         const workflowObj: unknown =
           typeof workflow === 'string'
@@ -2191,7 +2192,18 @@ export class ComfyApp implements IComfyApp {
           typeof workflowObj === 'object' &&
           !Array.isArray(workflowObj)
         ) {
-          const graphData = workflowObj as ComfyWorkflowJSON
+          graphData = workflowObj as ComfyWorkflowJSON
+        } else {
+          console.error(
+            'Invalid workflow structure, trying parameters fallback'
+          )
+        }
+      } catch (err) {
+        console.error('Failed to parse workflow:', err)
+      }
+
+      if (graphData) {
+        try {
           const outcome = await this.loadGraphData(
             graphData,
             true,
@@ -2203,14 +2215,15 @@ export class ComfyApp implements IComfyApp {
             }
           )
           return outcome === false ? false : undefined
-        } else {
-          console.error(
-            'Invalid workflow structure, trying parameters fallback'
-          )
+        } catch (err) {
+          console.error('Failed to load workflow:', err)
+          reportError(err, {
+            surface: 'graph',
+            errorType: 'workflow_load_failure'
+          })
+          if (!isGraphLoadFailurePresented(err)) this.showErrorOnFileLoad(file)
         }
-      } catch (err) {
-        console.error('Failed to parse workflow:', err)
-        // Fall through to check parameters as fallback
+        return
       }
     }
 
