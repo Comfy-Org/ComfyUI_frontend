@@ -3,11 +3,15 @@ vi.mock(import('@/composables/auth/useAuthDialogs'))
 vi.mock(import('@/scripts/api'))
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
-import { useAuthStore } from '@/stores/authStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
 
 import {
@@ -24,32 +28,75 @@ function userHeader(header: AuthHeader | null): void {
   vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue(header)
 }
 
+function workspaceToken(token: string | undefined | Error): void {
+  const spy = vi.spyOn(useAuthStore(), 'getWorkspaceAuthTokenOrThrow')
+  if (token instanceof Error) spy.mockRejectedValue(token)
+  else if (token === undefined)
+    spy.mockRejectedValue(new AuthStoreError('not authenticated'))
+  else spy.mockResolvedValue(token)
+}
+
+function storedApiKey(key: string): void {
+  Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })
+  vi.spyOn(useApiKeyAuthStore(), 'getAuthHeader').mockReturnValue({
+    'X-API-KEY': key
+  })
+}
+
+function signInPersonal(): void {
+  useAuthStore().currentUser = fromPartial<User>({ uid: 'user-a' })
+  userHeader({ Authorization: 'Bearer personal-id-token' })
+}
+
+const missingWorkspaceTokens = [
+  { label: 'no workspace token', token: undefined, apiKey: false },
+  {
+    label: 'a workspace token that failed to mint',
+    token: new Error('token exchange failed'),
+    apiKey: false
+  },
+  {
+    label: 'no workspace token and a stored API key',
+    token: undefined,
+    apiKey: true
+  }
+]
+
+function signInWithout(token: undefined | Error, apiKey: boolean) {
+  signInPersonal()
+  if (apiKey) storedApiKey('comfyui-key')
+  workspaceToken(token)
+}
+
 describe('withAgentAuth', () => {
   it.for<{
     account: string
-    header: AuthHeader
+    signIn: () => void
     name: string
     value: string
     credential: AuthCredential
   }>([
     {
-      account: 'a signed-in session',
-      header: { Authorization: 'Bearer id-token' },
+      account: 'a workspace session',
+      signIn: () => {
+        signInPersonal()
+        workspaceToken('workspace-token')
+      },
       name: 'Authorization',
-      value: 'Bearer id-token',
+      value: 'Bearer workspace-token',
       credential: 'bearer'
     },
     {
       account: 'an API-key session',
-      header: { 'X-API-KEY': 'comfyui-key' },
+      signIn: () => storedApiKey('comfyui-key'),
       name: 'X-API-KEY',
       value: 'comfyui-key',
       credential: 'api-key'
     }
   ])(
-    "sends $account's user auth header, keeping the request's own",
-    async ({ header, name, value, credential }) => {
-      userHeader(header)
+    "sends $account's credential, keeping the request's own headers",
+    async ({ signIn, name, value, credential }) => {
+      signIn()
       const reported: AuthCredential[] = []
       const schemes: AuthScheme[] = []
 
@@ -72,9 +119,32 @@ describe('withAgentAuth', () => {
     }
   )
 
+  it.for(missingWorkspaceTokens)(
+    'fails closed for a signed-in session with $label',
+    async ({ token, apiKey }) => {
+      signInWithout(token, apiKey)
+
+      await expect(withAgentAuth({ method: 'POST' })).rejects.toThrow(
+        token ?? AuthStoreError
+      )
+    }
+  )
+
+  it('sends nothing for a signed-out user whose last workspace is still selected', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-team' })
+    workspaceToken(undefined)
+
+    const headers = new Headers(
+      (await withAgentAuth({ method: 'POST' })).headers
+    )
+
+    expect(headers.has('Authorization')).toBe(false)
+  })
+
   it('leaves a cloud request to fetchApi, never attaching the personal token', async () => {
     distribution.isCloud = true
-    userHeader({ Authorization: 'Bearer personal-id-token' })
+    signInPersonal()
+    workspaceToken('workspace-token')
 
     const init = await withAgentAuth({ method: 'GET' })
 
@@ -83,7 +153,7 @@ describe('withAgentAuth', () => {
   })
 
   it('sends nothing and leaves the redirect policy alone for a signed-out user', async () => {
-    userHeader(null)
+    workspaceToken(undefined)
 
     const init = await withAgentAuth({ method: 'GET' })
 
@@ -94,28 +164,39 @@ describe('withAgentAuth', () => {
 })
 
 describe('agentSocketAuthParams', () => {
-  it.for<{ label: string; header: AuthHeader; token: string }>([
+  it.for<{ label: string; signIn: () => void; token: string }>([
     {
-      label: 'a bearer token',
-      header: { Authorization: 'Bearer id-token' },
-      token: 'id-token'
+      label: 'the workspace token',
+      signIn: () => {
+        signInPersonal()
+        workspaceToken('workspace-token')
+      },
+      token: 'workspace-token'
     },
     {
       label: 'an API key',
-      header: { 'X-API-KEY': 'comfyui-key' },
+      signIn: () => storedApiKey('comfyui-key'),
       token: 'comfyui-key'
     }
-  ])(
-    'passes the user credential as the token off-cloud: $label',
-    async ({ header, token }) => {
-      userHeader(header)
+  ])('passes $label as the token off-cloud', async ({ signIn, token }) => {
+    signIn()
 
-      expect((await agentSocketAuthParams())?.get('token')).toBe(token)
+    expect((await agentSocketAuthParams())?.get('token')).toBe(token)
+  })
+
+  it.for(missingWorkspaceTokens)(
+    'fails closed for a signed-in session with $label',
+    async ({ token, apiKey }) => {
+      signInWithout(token, apiKey)
+
+      await expect(agentSocketAuthParams()).rejects.toThrow(
+        token ?? AuthStoreError
+      )
     }
   )
 
   it('connects without a token when signed out', async () => {
-    userHeader(null)
+    workspaceToken(undefined)
 
     expect((await agentSocketAuthParams())?.has('token')).toBe(false)
   })
