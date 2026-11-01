@@ -924,23 +924,49 @@ export class LiveGraphApplier {
     const missing = allSubgraphDefinitions(definitions)
       .map((definition) => ({ ...definition, definitions: undefined }))
       .filter((definition) => !rootGraph.subgraphs.has(definition.id))
-    if (missing.length === 0) return
+    const failed = new Set(malformed.map(({ id }) => String(id)))
+    const registrable = this.withoutFailedDependents(graph, missing, failed)
+    if (registrable.length === 0) return
     const reserved = docRootIds(doc)
-    if (tryCreateSubgraphs(rootGraph, missing, reserved) === undefined) {
-      for (const definition of missing) {
+    if (tryCreateSubgraphs(rootGraph, registrable, reserved) === undefined) {
+      for (const definition of registrable) {
         this.recordRegisteredDefinition(rootGraph, definition)
       }
       return
     }
-    const failed = new Set<string>()
-    for (const definition of topologicalSortSubgraphs(missing)) {
-      const failure = definition.nodes?.some(({ type }) => failed.has(type))
-        ? new Error(
-            `Agent subgraph definition ${definition.id} nests a definition that failed to register`
-          )
-        : tryCreateSubgraphs(rootGraph, [definition], reserved)
+    this.registerIndividually(graph, registrable, failed, reserved)
+  }
+
+  private withoutFailedDependents(
+    graph: LGraph,
+    definitions: ExportedSubgraph[],
+    failed: Set<string>
+  ): ExportedSubgraph[] {
+    const registrable: ExportedSubgraph[] = []
+    for (const definition of topologicalSortSubgraphs(definitions)) {
+      const failure = nestedDefinitionFailure(definition, failed)
       if (failure === undefined) {
-        this.recordRegisteredDefinition(rootGraph, definition)
+        registrable.push(definition)
+        continue
+      }
+      failed.add(definition.id)
+      this.reportDefinitionFailure(graph, definition.id, failure)
+    }
+    return registrable
+  }
+
+  private registerIndividually(
+    graph: LGraph,
+    definitions: ExportedSubgraph[],
+    failed: Set<string>,
+    reserved: { nodeIds: NodeId[]; linkIds: number[] }
+  ): void {
+    for (const definition of definitions) {
+      const failure =
+        nestedDefinitionFailure(definition, failed) ??
+        tryCreateSubgraphs(graph.rootGraph, [definition], reserved)
+      if (failure === undefined) {
+        this.recordRegisteredDefinition(graph.rootGraph, definition)
         continue
       }
       failed.add(definition.id)
@@ -2019,6 +2045,16 @@ function docRootIds(doc: Y.Doc): { nodeIds: NodeId[]; linkIds: number[] } {
     if (id !== undefined) linkIds.push(id)
   })
   return { nodeIds, linkIds }
+}
+
+function nestedDefinitionFailure(
+  definition: ExportedSubgraph,
+  failed: ReadonlySet<string>
+): Error | undefined {
+  if (!definition.nodes?.some(({ type }) => failed.has(type))) return undefined
+  return new Error(
+    `Agent subgraph definition ${definition.id} nests a definition that failed to register`
+  )
 }
 
 function tryCreateSubgraphs(

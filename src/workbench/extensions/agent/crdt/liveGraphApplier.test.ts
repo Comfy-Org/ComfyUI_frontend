@@ -1777,6 +1777,32 @@ describe('LiveGraphApplier', () => {
       )
     })
 
+    it('does not register a definition that nests a malformed one', () => {
+      const unrelated = createTestSubgraphData({
+        id: UNRELATED,
+        nodes: [interior('TestSink')]
+      })
+      const { graph, applyCollected } = setup({
+        nodes: [],
+        links: [],
+        definitions: {
+          subgraphs: [outer(), { ...inner(), inputs: 'invalid' }, unrelated]
+        }
+      })
+
+      const result = applyCollected()
+
+      expect(result.failureCount).toBe(2)
+      expect([...graph.subgraphs.keys()]).toEqual([UNRELATED])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'agent_subgraph_definitions_failed',
+          context: expect.objectContaining({ definitionId: OUTER })
+        })
+      )
+    })
+
     it('registers a valid sibling when another definition fails to configure', () => {
       const unrelated = createTestSubgraphData({
         id: UNRELATED,
