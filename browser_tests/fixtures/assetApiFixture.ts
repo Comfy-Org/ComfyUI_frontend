@@ -94,3 +94,54 @@ export function createCloudAssetsFixture(assets: ReadonlyArray<Asset>) {
     }
   })
 }
+
+/** Mocks `/api/assets` with public assets included unless `include_public=false`. */
+export function createIncludePublicAssetsFixture(
+  ownAssets: ReadonlyArray<Asset>,
+  publicAssets: ReadonlyArray<Asset>
+) {
+  return comfyPageFixture.extend<{
+    includePublicValues: (tag: string) => Array<string | null>
+  }>({
+    includePublicValues: [
+      async ({ page }, use) => {
+        const requests: URL[] = []
+        await page.route(ASSETS_ROUTE_PATTERN, (route) => {
+          const url = new URL(route.request().url())
+          requests.push(url)
+          const csv = (key: string) =>
+            (url.searchParams.get(key) ?? '').split(',').filter(Boolean)
+          const visible =
+            url.searchParams.get('include_public') === 'false'
+              ? ownAssets
+              : [...ownAssets, ...publicAssets]
+          const assets = url.searchParams.get('after')
+            ? []
+            : visible.filter(
+                (asset) =>
+                  csv('tags_any').some((tag) => asset.tags?.includes(tag)) &&
+                  !csv('tags_none').some((tag) => asset.tags?.includes(tag))
+              )
+          return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              assets,
+              total: assets.length,
+              has_more: false
+            } satisfies ListAssetsResponse)
+          })
+        })
+        await page.route(/\/internal\/files\/input(?:\?.*)?$/, (route) =>
+          route.fulfill({ status: 200, json: [] })
+        )
+        await use((tag) =>
+          requests
+            .filter((url) => assetRequestIncludesTag(url.href, tag))
+            .map((url) => url.searchParams.get('include_public'))
+        )
+      },
+      { auto: true }
+    ]
+  })
+}
