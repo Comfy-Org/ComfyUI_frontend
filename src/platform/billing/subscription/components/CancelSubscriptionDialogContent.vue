@@ -105,8 +105,13 @@ const {
 const { t, n } = useI18n()
 const dialogStore = useDialogStore()
 const toast = useToast()
-const { cancelSubscription, fetchStatus, subscription, tier } =
-  useBillingContext()
+const {
+  cancelSubscription,
+  fetchStatus,
+  subscription,
+  tier,
+  whenRoutingKnown
+} = useBillingContext()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { canCancel } = useBillingCapabilities()
 const { permissions } = useBillingUI()
@@ -243,8 +248,8 @@ function lacksWorkspaceCancelPermission() {
   )
 }
 
-function reportCancelFailure(error: unknown) {
-  if (!shouldUseWorkspaceBilling.value) {
+function reportCancelFailure(error: unknown, confirmedBeforeCall: boolean) {
+  if (!confirmedBeforeCall) {
     telemetry?.trackSubscriptionCancellation('failed', cancellationMetadata())
     cancelReport.confirmed({ operationFollows: false })
     cancelReport.failed(categorizeBillingApiError(error))
@@ -270,9 +275,9 @@ async function finishWorkspaceCancel() {
   isLoading.value = false
 }
 
-function handleCancelError(error: unknown) {
+function handleCancelError(error: unknown, confirmedBeforeCall: boolean) {
   if (!isScopeCurrent()) return abortForScopeChange()
-  reportCancelFailure(error)
+  reportCancelFailure(error, confirmedBeforeCall)
 }
 
 async function finishCancel(confirmedBeforeCall: boolean) {
@@ -289,9 +294,20 @@ async function onConfirmCancel() {
   if (confirmedBeforeCall) reportWorkspaceConfirmed()
   isLoading.value = true
   try {
+    if (!confirmedBeforeCall) {
+      if (!(await whenRoutingKnown())) {
+        isLoading.value = false
+        return
+      }
+      if (!isScopeCurrent()) return abortForScopeChange()
+      if (lacksWorkspaceCancelPermission()) {
+        isLoading.value = false
+        return
+      }
+    }
     await cancelSubscription(isScopeCurrent)
   } catch (error) {
-    return handleCancelError(error)
+    return handleCancelError(error, confirmedBeforeCall)
   }
   await finishCancel(confirmedBeforeCall)
 }

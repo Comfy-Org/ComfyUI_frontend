@@ -145,8 +145,11 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.occupiedSeats)
   )
 
-  const canAccessSubscriptionFeatures = computed(() =>
-    toValue(activeContext.value.canAccessSubscriptionFeatures)
+  // Off Cloud there is no subscription gate, including before a workspace loads.
+  const canAccessSubscriptionFeatures = computed(
+    () =>
+      (type.value === 'unknown' && !isCloud) ||
+      toValue(activeContext.value.canAccessSubscriptionFeatures)
   )
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
