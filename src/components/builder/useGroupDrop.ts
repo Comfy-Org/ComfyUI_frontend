@@ -170,46 +170,61 @@ export const vGroupItemReorder: Directive<HTMLElement, GroupItemBinding> = {
 }
 
 /** Drop onto an ungrouped widget: reorder or move out of a group. */
+function registerUngroupedTarget(
+  element: HTMLElement,
+  value: UngroupedItemBinding
+) {
+  const state: BindingState<UngroupedItemBinding> = { value }
+  const store = useInputGroupStore()
+  state.cleanup = dropTargetForElements({
+    element,
+    canDrop: ({ source }) => {
+      const key = activeDragKey(source.data)
+      return key !== null && key !== state.value.itemKey
+    },
+    onDrag: ({ location }) =>
+      setIndicator(
+        element,
+        getUngroupedEdge(element, location.current.input.clientY)
+      ),
+    onDragEnter: ({ location }) =>
+      setIndicator(
+        element,
+        getUngroupedEdge(element, location.current.input.clientY)
+      ),
+    onDragLeave: () => clearIndicator(element),
+    onDrop: ({ source, location }) => {
+      clearIndicator(element)
+      if (location.current.dropTargets[0]?.element !== element) return
+      const key = activeDragKey(source.data)
+      if (!key) return
+      store.moveToUngrouped(
+        key,
+        state.value.itemKey,
+        getUngroupedEdge(element, location.current.input.clientY)
+      )
+    }
+  })
+  ungroupedItemStates.set(element, state)
+}
+
 export const vUngroupedItemReorder: Directive<
   HTMLElement,
   UngroupedItemBinding | undefined
 > = {
   mounted(element, { value }) {
-    if (!value) return
-    const state: BindingState<UngroupedItemBinding> = { value }
-    const store = useInputGroupStore()
-    state.cleanup = dropTargetForElements({
-      element,
-      canDrop: ({ source }) => {
-        const key = activeDragKey(source.data)
-        return key !== null && key !== state.value.itemKey
-      },
-      onDrag: ({ location }) =>
-        setIndicator(element, getUngroupedEdge(element, location.current.input.clientY)),
-      onDragEnter: ({ location }) =>
-        setIndicator(element, getUngroupedEdge(element, location.current.input.clientY)),
-      onDragLeave: () => clearIndicator(element),
-      onDrop: ({ source, location }) => {
-        clearIndicator(element)
-        if (location.current.dropTargets[0]?.element !== element) return
-        const key = activeDragKey(source.data)
-        if (!key) return
-        store.moveToUngrouped(
-          key,
-          state.value.itemKey,
-          getUngroupedEdge(element, location.current.input.clientY)
-        )
-      }
-    })
-    ungroupedItemStates.set(element, state)
+    if (value) registerUngroupedTarget(element, value)
   },
   updated(element, { value }) {
     const state = ungroupedItemStates.get(element)
-    if (state && value) state.value = value
-    if (state && !value) {
-      state.cleanup?.()
+    if (!value) {
+      state?.cleanup?.()
       ungroupedItemStates.delete(element)
       clearIndicator(element)
+    } else if (state) {
+      state.value = value
+    } else {
+      registerUngroupedTarget(element, value)
     }
   },
   unmounted(element) {

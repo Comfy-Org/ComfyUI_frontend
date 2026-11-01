@@ -3,6 +3,7 @@ import { nextTick } from 'vue'
 
 import type {
   LinearData,
+  LinearInput,
   LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -200,7 +201,7 @@ describe('inputGroupStore', () => {
   })
 
   it('moves a grouped input into the ungrouped list in one history entry', async () => {
-    const selections = [
+    const selections: LinearInput[] = [
       [inputIds.a, 'a'],
       [inputIds.b, 'b'],
       [inputIds.c, 'c']
