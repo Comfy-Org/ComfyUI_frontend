@@ -15,6 +15,7 @@ export interface AugmentedResultItem extends ResultItem {
   format?: string
   frame_rate?: number
   url?: string
+  filenameIsDisplayName?: boolean
   previewUrl?: string
 }
 

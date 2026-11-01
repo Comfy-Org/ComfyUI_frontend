@@ -16,6 +16,9 @@ import { useAssetsStore } from '@/stores/assetsStore'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+
 beforeEach(() => {
   const store = useAssetsStore()
   store.outputAssets = {
@@ -131,7 +134,7 @@ const assetsGridStub = {
 
 const mediaLightboxStub = {
   props: ['allGalleryItems', 'activeIndex'],
-  template: `<div data-testid="lightbox-url">{{ allGalleryItems[activeIndex]?.url }}</div>`
+  template: `<div data-testid="lightbox-url" :data-display-name="String(allGalleryItems[activeIndex]?.filenameIsDisplayName)">{{ allGalleryItems[activeIndex]?.url }}</div>`
 }
 
 function renderTab({ realTemplate = false } = {}) {
@@ -151,6 +154,7 @@ function renderTab({ realTemplate = false } = {}) {
 }
 
 beforeEach(() => {
+  distribution.isCloud = false
   useAssetsStore().outputAssets.items = [folderAsset]
   useAssetsStore().outputAssets.hasMore = false
 })
@@ -206,6 +210,26 @@ it('gives the lightbox a playable URL for a video without a preview_url', async 
 
   expect(screen.getByTestId('lightbox-url').textContent).toBeTruthy()
 })
+
+it.for([
+  { isCloud: true, expected: 'true' },
+  { isCloud: false, expected: 'false' }
+])(
+  'marks the lightbox item filename as a display name only on Cloud ($isCloud)',
+  async ({ isCloud, expected }) => {
+    distribution.isCloud = isCloud
+    useAssetsStore().outputAssets.items = [
+      { ...folderAsset, id: 'clip', name: 'clip.mp4' }
+    ]
+    renderTab()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+
+    expect(
+      screen.getByTestId('lightbox-url').getAttribute('data-display-name')
+    ).toBe(expected)
+  }
+)
 
 it('shows the sidebar close button when mounted as a sidebar tab', () => {
   renderTab({ realTemplate: true })
