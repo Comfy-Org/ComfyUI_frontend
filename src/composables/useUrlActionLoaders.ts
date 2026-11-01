@@ -207,6 +207,24 @@ function schedulePendingCheckoutRecovery(
   )
 }
 
+/**
+ * `?safe` skips custom extensions for the boot that read it, so it is dropped
+ * once the boot is done; otherwise every reload of the tab stays in safe mode.
+ */
+function safeBootCleanupStep(
+  router: ReturnType<typeof useRouter>
+): UrlActionStep {
+  return {
+    failureMessage: 'Failed to clear the safe-boot flag from the URL:',
+    run: async () => {
+      const { query, hash } = router.currentRoute.value
+      if (!('safe' in query)) return
+      const { safe: _safe, ...rest } = query
+      await router.replace({ query: rest, hash })
+    }
+  }
+}
+
 /** Calls a composable only on the cloud distribution; `null` off it. */
 function useIfCloud<T>(create: () => T): T | null {
   return isCloud ? create() : null
@@ -232,7 +250,7 @@ export function useUrlActionLoaders() {
   const assetsUrlLoader = useIfCloud(useAssetsUrlLoader)
   const subscriptionDialog = useIfCloud(useSubscriptionDialog)
 
-  const steps = isCloud
+  const cloudSteps = isCloud
     ? buildUrlActionSteps(
         {
           deploymentUrlLoader,
@@ -247,6 +265,7 @@ export function useUrlActionLoaders() {
         router
       )
     : []
+  const steps = [...cloudSteps, safeBootCleanupStep(router)]
 
   async function runUrlActionLoaders() {
     const reloading = await runUrlActionSteps(steps)
