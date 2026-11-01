@@ -6750,11 +6750,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "ویدئو را با وضوح فوق‌العادهٔ FLUX به اندازهٔ ۱٫۵ تا ۳ برابر افزایش می‌دهد؛ یا مبدأ را دقیقاً حفظ می‌کند یا جزئیات آن را به‌صورت خلاقانه بهبود می‌دهد.",
-    "display_name": "افزایش وضوح ویدئوی Flux",
+    "display_name": "ارتقای مقیاس ویدیوی Flux (قدیمی)",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "منابعی را که مساحتشان از ۳۸۴۰×۲۱۶۰ پیکسل بیشتر است، به‌طور خودکار کوچک می‌کند تا در محدودیت ورودی بگنجند. نسبت تصویر حفظ می‌شود؛ ویدیوهای کوچک‌تر تغییری نمی‌کنند."
+        "tooltip": "منابعی را که از نظر مساحت پیکسلی بزرگ‌تر از ۲۵۶۰×۱۴۴۰ هستند، برای مطابقت با محدودیت ورودی به‌طور خودکار کوچک‌مقیاس می‌کند. نسبت ابعاد حفظ می‌شود؛ ویدیوهای کوچک‌تر بدون تغییر می‌مانند."
       },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -6782,6 +6782,48 @@
       "video": {
         "name": "video",
         "tooltip": "کلیپ مبدأ با مدت ۱ تا ۲۰ ثانیه و نسبت تصویر بین ۱:۴ و ۴:۱. خروجی با ۲۴ fps رندر می‌شود و برای هر فریم به حدود ۱۴٫۴ مگاپیکسل محدود است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "یک ویدیو را با فوق‌وضوح FLUX به ۱۰۸۰p، ۲K یا ۴K، یا به اندازهٔ ۱.۵ تا ۳ برابر ارتقا می‌دهد؛ با حفظ دقیق منبع یا بهبود خلاقانهٔ جزئیات آن.",
+    "display_name": "ارتقای مقیاس ویدیوی Flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "کوچک‌مقیاس‌سازی خودکار",
+        "tooltip": "منابع بیش‌ازحد بزرگ را به‌جای رد کردن، کوچک‌مقیاس می‌کند: منابعی با مساحت پیکسلی بیش از ۲۵۶۰×۱۴۴۰، یا بیش از دوسوم رزولوشن هدف (حداقل ضریب ۱.۵× است). نسبت ابعاد حفظ می‌شود."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "«creative» جزئیات ریز را بازسازی و ابداع می‌کند و برای ویدیوهای تولیدشده، بافت‌ها و مناظر مناسب‌تر است. «precise» منبع را بدون تغییر دادن آن شارپ می‌کند و برای چهره‌ها، محصولات و ویدیوهای واقعی مناسب است."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح اختیاری کلیپ که جزئیات بهبودیافته را هدایت می‌کند. برای ارتقای خنثی، خالی بگذارید."
+      },
+      "safety_tolerance": {
+        "name": "تلورانس ایمنی",
+        "tooltip": "تلورانس تعدیل محتوا؛ ۰ سخت‌گیرانه‌ترین مقدار است."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ FLUX بذر خود را انتخاب می‌کند، بنابراین نتایج واقعی صرف‌نظر از این مقدار غیرقطعی هستند."
+      },
+      "target_resolution": {
+        "name": "رزولوشن هدف",
+        "tooltip": "۲K، ۴K و ۱۰۸۰p خروجی را درون ۲۵۶۰×۱۴۴۰، ۳۸۴۰×۲۱۶۰ یا ۱۹۲۰×۱۰۸۰ جای می‌دهند (برای کلیپ‌های عمودی چرخانده می‌شوند). منبعی که در حداکثر ۳× برای پر کردن آن کوچک باشد، ۳× ارتقا می‌یابد و خروجی کوچک‌تری خواهد داشت."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "کلیپ منبعی با مدت ۱ تا ۲۰ ثانیه و نسبت ابعاد بین ۱:۴ و ۴:۱. خروجی با ۲۴ fps رندر می‌شود و هر فریم به حدود ۱۴.۴ مگاپیکسل محدود است."
       }
     },
     "outputs": {
@@ -9039,7 +9081,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "با استفاده از ویرایش دقیق Ideogram 4.5، تصویری را با راهنمایی یک پرامپت متنی ویرایش می‌کند: فقط مواردی که پرامپت درخواست می‌کند تغییر می‌کنند، پیکسل‌های دست‌نخورده یکسان می‌مانند و خروجی، اندازهٔ تصویر ۱ را حفظ می‌کند (تصاویر بزرگ‌تر از حدود ۴ مگاپیکسل ابتدا کوچک‌مقیاس می‌شوند). حداکثر ۴ تصویر مرجع را می‌پذیرد.",
+    "description": "تصویری را با هدایت یک پرامپت متنی و با استفاده از ویرایش دقیق Ideogram ۴.۵ ویرایش می‌کند: فقط مواردی که پرامپت درخواست می‌کند تغییر می‌کنند، پیکسل‌های دست‌نخورده یکسان می‌مانند و خروجی اندازهٔ تصویر ۱ را حفظ می‌کند (تصاویر بزرگ‌تر از حدود ۴ MP ابتدا کوچک‌مقیاس می‌شوند). همچنین می‌تواند یک ناحیهٔ واحد را که با mask یا کادرهای محدودکننده تعیین شده است ویرایش کند و تصویر را در اندازهٔ کامل بازگرداند. تا ۴ تصویر مرجع را می‌پذیرد (۳ تصویر همراه با context_window_mask).",
     "display_name": "ویرایش دقیق Ideogram 4.5",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9090,9 @@
       "model": {
         "name": "مدل",
         "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_context_window": {
+        "name": "پنجرهٔ زمینه"
       },
       "model_prompt": {
         "name": "پرامپت"
@@ -10250,6 +10295,128 @@
       },
       "steps": {
         "name": "گام‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4EditVideoNode": {
+    "description": "ویدیویی را با یک پرامپت متنی و تصاویر و ویدیوهای مرجع اختیاری ویرایش کنید. نتیجه همان مدت ویدیوی ورودی را دارد.",
+    "display_name": "ویرایش ویدیوی Kling ۴.۰",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageToVideoNode": {
+    "description": "با حداکثر ۱۰ فریم کلیدی، ویدیویی همراه با صدا تولید کنید. فریم‌های میانی با فاصلهٔ یکسان قرار می‌گیرند؛ ویدیو نسبت ابعاد نخستین فریم کلیدی را می‌گیرد.",
+    "display_name": "تبدیل تصویر به ویدیوی Kling ۴.۰",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_duration": {
+        "name": "مدت"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ReferenceToVideoNode": {
+    "description": "از تصاویر و ویدیوهای مرجع، ویدیویی همراه با صدا تولید کنید که می‌تواند به‌صورت اختیاری با فریم‌های مشخص آغاز یا پایان یابد.",
+    "display_name": "تبدیل مرجع به ویدیوی Kling ۴.۰",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4TextToVideoNode": {
+    "description": "یک ویدیو همراه با صدا از یک پرامپت متنی تولید کنید.",
+    "display_name": "متن به ویدیو Kling ۴.۰",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
       }
     },
     "outputs": {
@@ -14940,6 +15107,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "پنجره‌های زمینه را برای MiniMax H3 تنظیم کنید. پنجره‌ها از بخش‌های ۱۷‌فریمی مدل آغاز می‌شوند تا ویدیو و صدا همگام بمانند.",
+    "display_name": "پنجره‌های زمینهٔ MiniMax H3",
+    "inputs": {
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "طول پنجرهٔ زمینه بر حسب فریم‌های واقعی. باید 17*n + 5 باشد."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "هم‌پوشانی پنجرهٔ زمینه بر حسب فریم‌های واقعی. باید 17*n + 5 باشد."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "این‌که درهم‌ریزی نویز FreeNoise اعمال شود یا نه؛ ترکیب پنجره‌ها را بهبود می‌دهد."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "روشی که برای ادغام پنجره‌های زمینه استفاده می‌شود."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که پنجره‌های زمینه هنگام نمونه‌گیری بر آن اعمال می‌شوند."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "این‌که چند شرطی‌سازی (ایجادشده توسط ConditionCombine) بر اساس شاخص ناحیه برای هر پنجره تقسیم شوند یا نه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدلی که پنجره‌های زمینه هنگام نمونه‌گیری بر آن اعمال شده‌اند."
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "یک MiniMax H3 Fun ControlNet را به‌عنوان patch مدل به یک مدل متن‌به‌ویدئو اعمال کنید.",
     "display_name": "اعمال MiniMax H3 Fun ControlNet",
@@ -15015,6 +15217,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "اندازهٔ ویدیوی یک فضای نهفتهٔ MiniMax H3 را با یک مدل بزرگ‌نمایی فضای نهفته تغییر می‌دهد؛ صدا بدون تغییر عبور می‌کند.",
+    "display_name": "بزرگ‌نمایی فضای نهفتهٔ MiniMax H3 با مدل",
+    "inputs": {
+      "height": {
+        "name": "ارتفاع"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "samples": {
+        "name": "نمونه‌ها"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15209,8 +15434,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "ویدیویی تولید کنید که از تصویر آغاز می‌شود و دوربین را به زاویه و فاصله‌ای جدید پیرامون سوژه حرکت می‌دهد.",
+    "display_name": "کنترل دوربین MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_azimuth": {
+        "name": "سمت‌الرأس"
+      },
+      "model_distance": {
+        "name": "فاصله"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_elevation": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "حالت گسترش پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "ادامه‌دادن یک ویدیو با فیلم جدید، با هدایت پرامپت و ارجاعات صوتی اختیاری.",
+    "display_name": "افزودن ادامه به ویدیو با MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای تولید ویدیو."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_output": {
+        "name": "خروجی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_prompt_expansion": {
+        "name": "گسترش پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "بخش یک ویدیو را بین زمان‌های شروع و ادامه، با صحنه‌ای تازه‌تولیدشده که با پرامپت و تصاویر و ویدیوهای مرجع اختیاری هدایت می‌شود، جایگزین کنید.",
+    "display_name": "درج ویدیو با MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای تولید ویدیو."
+      },
+      "model_color_match": {
+        "name": "تطبیق رنگ"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_prompt_expansion": {
+        "name": "گسترش پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_resume_time": {
+        "name": "زمان ادامه"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_start_time": {
+        "name": "زمان شروع"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "یک تصویر را متحرک کنید تا حرکت‌های دهان آن از صوت پیروی کند. طول ویدیو برابر با طول صوت است.",
+    "display_name": "همگام‌سازی لب با MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای تولید ویدیو."
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_transcription": {
+        "name": "رونویسی"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "افرادِ یک ویدیو را با افرادِ عکس‌های مرجع جایگزین کنید، در حالی که حرکت، دوربین، برش‌ها و صدای ویدیوی مبدأ حفظ می‌شوند.",
+    "display_name": "MiniMax H3 Max Recast",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_enhance_realism": {
+        "name": "افزایش واقع‌گرایی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "یک ویدیو را با قرار دادن آن روی بوم جدید و تولید نواحی پیرامونی، با نسبت ابعاد جدید سازگار کنید. زمان‌بندی و صدای ویدیوی مبدأ حفظ می‌شوند.",
+    "display_name": "MiniMax H3 Max بازکادربندی ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "با استفاده از مدل‌های MiniMax H3، ویدئویی شرطی‌شده بر تصاویر، ویدئوها و صوت مرجع تولید کنید. در prompt به‌ترتیب به مراجع اشاره کنید: 'Image 1'، 'Image 2'، 'Video 1'، 'Audio 1' و غیره.",
+    "description": "با استفاده از مدل‌های MiniMax H3، ویدیو را بر اساس تصاویر، ویدیوها و صدای مرجع تولید کنید. در پرامپت، با ترتیب آن‌ها به مراجع اشاره کنید: {'@'}Image1، {'@'}Image2، {'@'}Video1، {'@'}Audio1، و غیره.",
     "display_name": "تبدیل مرجع MiniMax H3 به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -18824,6 +19259,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "یک متریال PBR قابل‌کاشیِ بدون درز (تصویر بافت + نقشه‌های PBR) را با راهنمایی یک پرامپت از ناحیه‌ای از تصویر ورودی استخراج کنید.",
+    "display_name": "استخراج متریال Patina",
+    "inputs": {
+      "basecolor": {
+        "name": "رنگ پایه",
+        "tooltip": "نقشه رنگ پایه (albedo) را تولید کنید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "height": {
+        "name": "ارتفاع",
+        "tooltip": "نقشه ارتفاع/جابجایی را تولید کنید."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویری که بافت از آن استخراج می‌شود."
+      },
+      "image_size": {
+        "name": "اندازه تصویر",
+        "tooltip": "اندازه بافت خروجی. برای عرض/ارتفاعی بین ۵۱۲ و ۲۰۴۸، «custom» را انتخاب کنید (نتیجه ۸K از بزرگ‌نمایی ۴برابری نقشه‌ها به دست می‌آید)."
+      },
+      "metalness": {
+        "name": "فلزی‌بودن",
+        "tooltip": "نقشه فلزی‌بودن را تولید کنید."
+      },
+      "normal": {
+        "name": "نرمال",
+        "tooltip": "نقشه نرمال را تولید کنید."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "گام‌های نویززدایی برای تولید بافت."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "مشخص کنید کدام بافت از تصویر استخراج شود (برای مثال، «دیوار»)."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "پرامپت را با یک LLM برای جزئیات غنی‌تر بافت گسترش می‌دهد. به‌طور پیش‌فرض خاموش است: گسترش، پرامپت را به‌صورت عکس بازتعریف می‌کند و معمولاً نقشه metalness را محو می‌کند."
+      },
+      "roughness": {
+        "name": "زبری",
+        "tooltip": "نقشه زبری را تولید کنید."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تولید تکرارپذیر."
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "میزان تبدیل تصویر ورودی."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "اندازه کاشی در فضای latent (۶۴ = ۵۱۲px، ۱۲۸ = ۱۰۲۴px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "گام کاشی در فضای latent."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "جهت کاشی‌کاری: همه‌جهته، افقی یا عمودی."
+      },
+      "upscale_factor": {
+        "name": "ضریب بزرگ‌نمایی",
+        "tooltip": "بزرگ‌نمایی بدون درزِ SeedVR برای نقشه‌های PBR (بافت پایه بزرگ‌نمایی نمی‌شود)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "بافت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "رنگ پایه",
+        "tooltip": null
+      },
+      "2": {
+        "name": "نرمال",
+        "tooltip": null
+      },
+      "3": {
+        "name": "زبری",
+        "tooltip": null
+      },
+      "4": {
+        "name": "فلزی‌بودن",
+        "tooltip": null
+      },
+      "5": {
+        "name": "ارتفاع",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "یک متریال PBR کامل با قابلیت کاشی‌کاری بدون درز (تصویر بافت + نقشه‌های PBR) را از یک پرامپت متنی، تا ۸K، تولید می‌کند. در صورت تمایل، آن را با یک تصویر ورودی (img2img) یا یک تصویر + ماسک (inpaint) هدایت کنید.",
+    "display_name": "متریال پاتینا",
+    "inputs": {
+      "basecolor": {
+        "name": "رنگ پایه",
+        "tooltip": "نقشه رنگ پایه (albedo) را تولید می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "height": {
+        "name": "ارتفاع",
+        "tooltip": "نقشه ارتفاع/جابجایی را تولید می‌کند."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر منبع اختیاری. به‌تنهایی = img2img؛ همراه با ماسک = inpaint."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "اندازه بافت خروجی. برای عرض/ارتفاعی بین ۵۱۲ و ۲۰۴۸، «custom» را انتخاب کنید (نتیجه ۸K از بزرگ‌نمایی ۴x نقشه‌ها به دست می‌آید)."
+      },
+      "mask": {
+        "name": "ماسک",
+        "tooltip": "ماسک inpaint اختیاری (به تصویر نیاز دارد). سفید = بازتولید، سیاه = حفظ."
+      },
+      "metalness": {
+        "name": "فلزی‌بودن",
+        "tooltip": "نقشه فلزی‌بودن را تولید می‌کند."
+      },
+      "normal": {
+        "name": "نرمال",
+        "tooltip": "نقشه نرمال را تولید می‌کند."
+      },
+      "num_inference_steps": {
+        "name": "تعداد گام‌های استنتاج",
+        "tooltip": "گام‌های نویززدایی برای تولید بافت."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "متریال/بافتی را که باید تولید شود توصیف کنید."
+      },
+      "prompt_expansion": {
+        "name": "گسترش پرامپت",
+        "tooltip": "پرامپت را با یک LLM برای جزئیات بافت غنی‌تر گسترش دهید. به‌طور پیش‌فرض خاموش است: گسترش، پرامپت را به‌شکل یک عکس بازتعریف می‌کند و معمولاً نقشهٔ فلزی‌بودن را کم‌رنگ می‌کند."
+      },
+      "roughness": {
+        "name": "زبری",
+        "tooltip": "نقشه زبری را تولید می‌کند."
+      },
+      "safety_checker": {
+        "name": "بررسی‌کنندهٔ ایمنی"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تولید تکرارپذیر."
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "میزان تغییر تصویر ورودی. فقط هنگامی استفاده می‌شود که تصویری ارائه شده باشد."
+      },
+      "tile_size": {
+        "name": "اندازهٔ کاشی",
+        "tooltip": "اندازهٔ کاشی در فضای نهفته (۶۴ = ۵۱۲px، ۱۲۸ = ۱۰۲۴px)."
+      },
+      "tile_stride": {
+        "name": "گام کاشی",
+        "tooltip": "گام کاشی در فضای نهفته."
+      },
+      "tiling_mode": {
+        "name": "حالت کاشی‌کاری",
+        "tooltip": "جهت کاشی‌کاری: همه‌جهته، افقی یا عمودی."
+      },
+      "upscale_factor": {
+        "name": "ضریب بزرگ‌نمایی",
+        "tooltip": "بزرگ‌نمایی یکپارچهٔ SeedVR برای نقشه‌های PBR (بافت پایه بزرگ‌نمایی نمی‌شود)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "بافت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "رنگ پایه",
+        "tooltip": null
+      },
+      "2": {
+        "name": "نرمال",
+        "tooltip": null
+      },
+      "3": {
+        "name": "زبری",
+        "tooltip": null
+      },
+      "4": {
+        "name": "فلزی‌بودن",
+        "tooltip": null
+      },
+      "5": {
+        "name": "ارتفاع",
+        "tooltip": null
+      },
+      "6": {
+        "name": "پرامپت گسترش‌یافته",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "نقشه‌های متریال PBR (رنگ پایه، نرمال، زبری، فلزی‌بودن، ارتفاع) را از یک تصویر بافت تولید کنید.",
+    "display_name": "نقشه‌های متریال PBR Patina",
+    "inputs": {
+      "auto_downscale": {
+        "name": "کاهش مقیاس خودکار",
+        "tooltip": "تصویر ورودی‌ای را که ضلع بلندتر آن از ۲۰۴۸px (حد ورودی مدل) فراتر می‌رود، با حفظ نسبت ابعاد به‌طور خودکار کاهش مقیاس می‌دهد؛ تصاویر کوچک‌تر بدون تغییر باقی می‌مانند. برای ایجاد خطا به‌جای این کار هنگام ورود تصاویر بیش‌ازحد بزرگ، غیرفعال کنید."
+      },
+      "basecolor": {
+        "name": "رنگ پایه",
+        "tooltip": "نقشهٔ رنگ پایه (آلبدو) را تولید کنید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "height": {
+        "name": "ارتفاع",
+        "tooltip": "نقشهٔ ارتفاع/جابه‌جایی را تولید کنید."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "عکس یا رندر ورودی برای استخراج نقشه‌های PBR از آن."
+      },
+      "metalness": {
+        "name": "فلزی‌بودن",
+        "tooltip": "نقشهٔ فلزینگی را تولید کنید."
+      },
+      "normal": {
+        "name": "نرمال",
+        "tooltip": "نقشهٔ نرمال را تولید کنید."
+      },
+      "roughness": {
+        "name": "زبری",
+        "tooltip": "نقشهٔ زبری را تولید کنید."
+      },
+      "safety_checker": {
+        "name": "بررسی‌کنندهٔ ایمنی"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای نویززدایی تکرارپذیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "رنگ پایه",
+        "tooltip": null
+      },
+      "1": {
+        "name": "نرمال",
+        "tooltip": null
+      },
+      "2": {
+        "name": "زبری",
+        "tooltip": null
+      },
+      "3": {
+        "name": "فلزینگی",
+        "tooltip": null
+      },
+      "4": {
+        "name": "ارتفاع",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg (منسوخ شده توسط PerpNegGuider)",
     "inputs": {
@@ -19765,6 +20482,33 @@
       },
       "model_seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaPVideoUpscaleNode": {
+    "description": "با استفاده از Pruna P-Video Upscale، یک ویدیو را با حفظ نسبت ابعاد و صدای آن به ۷۲۰p، ۱۰۸۰p، ۲K یا ۴K ارتقا می‌دهد.",
+    "display_name": "ارتقای وضوح Pruna P-Video",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "نرخ فریم خروجی. «source» نرخ ویدیو را تا سقف ۶۰ حفظ می‌کند. نرخ بالاتر درون‌یابی می‌شود. خروجی بالاتر از ۳۰ fps دو برابر هزینه دارد."
+      },
+      "target": {
+        "name": "هدف",
+        "tooltip": "مساحت پیکسلی خروجی: ۷۲۰p حدود ۰٫۹ مگاپیکسل، ۱۰۸۰p برابر ۲٫۱، ۲K برابر ۳٫۷، و ۴K برابر ۸٫۳. ویدیویی که از پیش به این اندازه بزرگ باشد، اندازه‌اش حفظ می‌شود و فقط بهبود می‌یابد. حداکثر طول: ۲۴۰۰، ۱۲۰۰، ۶۰۰ یا ۳۰۰ فریم، حدود ۱۰۰، ۵۰، ۲۵ یا ۱۲٫۵ ثانیه در ۲۴ fps."
+      },
+      "turbo": {
+        "name": "توربو",
+        "tooltip": "ارتقای وضوح سریع‌تر با جزئیات نرم‌تر و همان قیمت."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی قابل ارتقا، تا سقف ۵۱۲ MiB."
       }
     },
     "outputs": {
@@ -27960,6 +28704,24 @@
       }
     }
   },
+  "VAEComputeDtype": {
+    "description": "نوع دادهٔ محاسباتی را برای رمزگذاری و رمزگشایی VAE، بدون تأثیر بر شاخه‌های دیگر، تنظیم می‌کند.",
+    "display_name": "نوع دادهٔ محاسباتی VAE",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "گزینهٔ پیش‌فرض نوع دادهٔ محاسباتی VAE ورودی را حفظ می‌کند."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VAEDecode": {
     "description": "تصاویر latent را به تصاویر پیکسلی بازمی‌گرداند.",
     "display_name": "رمزگشایی VAE",
@@ -28429,6 +29191,33 @@
       "video": {
         "name": "ویدیو",
         "tooltip": "ویدیوی دارای موسیقی متن گفتار، کوتاه‌تر از ۳۰ دقیقه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "گفتار یک ویدیو را با VEED به زبانی دیگر ترجمه می‌کند. صدای هر گوینده شبیه‌سازی می‌شود و لب‌های او با ترجمه همگام می‌شوند.",
+    "display_name": "دوبلهٔ VEED",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "standard: قیمت کمتر، صدای مونو؛ اسپانیایی از نوع آمریکای لاتین و پرتغالی از نوع برزیلی است. pro: لهجه‌های منطقه‌ای و صدای استریو."
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_source_language": {
+        "name": "زبان مبدأ"
+      },
+      "model_target_language": {
+        "name": "زبان مقصد"
       }
     },
     "outputs": {

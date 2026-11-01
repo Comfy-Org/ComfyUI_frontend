@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Yeniden Başlat"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Seçili Düğüm için 3B Görüntüleyiciyi (Beta) Aç"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "Deneysel: Model Varlıklarını Gözat"
   },
