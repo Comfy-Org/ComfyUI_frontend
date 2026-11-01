@@ -1,11 +1,14 @@
 import { t } from '@/i18n'
 import {
   clearLinkSelection,
-  getSelectedLinkIds
+  getSelectedLinkIds,
+  selectLinksInMarquee
 } from '@/lib/litegraph/src/canvas/linkSelection'
+import { resolvePointerTarget } from '@/lib/litegraph/src/canvas/resolvePointerTarget'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
 import type { LGraphCanvas, LGraph } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { app } from '@/scripts/app'
@@ -23,6 +26,64 @@ import type { ZipTie } from './zipTieRouting'
 
 function canEdit(canvas: LGraphCanvas): boolean {
   return !canvas.read_only && !canvas.selectOnly && canvas.allow_interaction
+}
+
+function isZipTieMarquee(event: MouseEvent): boolean {
+  return (
+    event.button === 0 &&
+    event.metaKey &&
+    event.shiftKey &&
+    !event.ctrlKey &&
+    !event.altKey
+  )
+}
+
+function beginZipTieMarquee(
+  canvas: LGraphCanvas,
+  event: CanvasPointerEvent,
+  finish: () => void
+): boolean {
+  const { graph, pointer } = canvas
+  if (
+    !graph ||
+    !event.isPrimary ||
+    !canEdit(canvas) ||
+    !isZipTieMarquee(event) ||
+    canvas.dragging_canvas
+  )
+    return false
+  const origin: Point = [event.canvasX, event.canvasY]
+  const node = graph.getNodeOnPos(...origin) ?? undefined
+  const target = resolvePointerTarget(canvas, graph, event, node)
+  if (!['empty', 'group', 'link', 'linkCentre'].includes(target.kind))
+    return false
+
+  event.preventDefault()
+  event.stopPropagation()
+  pointer.onDragStart = () => {
+    canvas.dragging_rectangle = [...origin, 0, 0]
+  }
+  pointer.onDragEnd = (upEvent) => {
+    if (canvas.graph !== graph || !canEdit(canvas) || !isZipTieMarquee(upEvent))
+      return
+    selectLinksInMarquee(
+      canvas,
+      [
+        Math.min(origin[0], upEvent.canvasX),
+        Math.min(origin[1], upEvent.canvasY),
+        Math.abs(upEvent.canvasX - origin[0]),
+        Math.abs(upEvent.canvasY - origin[1])
+      ],
+      upEvent.canvasX
+    )
+    bundleSelectedLinks(canvas)
+  }
+  pointer.finally = () => {
+    canvas.dragging_rectangle = null
+    canvas.setDirty(true, true)
+    finish()
+  }
+  return true
 }
 
 function tieAtPoint(canvas: LGraphCanvas, [x, y]: Point) {
@@ -145,6 +206,16 @@ export function installZipTieInteraction(canvas: LGraphCanvas): () => void {
   const controller = new AbortController()
   const options = { capture: true, signal: controller.signal }
   const pointer = new CanvasPointer(canvas.canvas)
+  let marqueePointer: CanvasPointer | undefined
+  const originalMouse = canvas.onMouse
+  canvas.onMouse = function (event) {
+    if (originalMouse?.call(this, event)) return true
+    const started = beginZipTieMarquee(canvas, event, () => {
+      marqueePointer = undefined
+    })
+    if (started) marqueePointer = canvas.pointer
+    return started
+  }
 
   function start(event: PointerEvent) {
     if (
@@ -181,10 +252,12 @@ export function installZipTieInteraction(canvas: LGraphCanvas): () => void {
   document.addEventListener(
     'keydown',
     (event) => {
-      if (pointer.pointerId === undefined || event.key !== 'Escape') return
+      const activePointer = marqueePointer ?? pointer
+      if (activePointer.pointerId === undefined || event.key !== 'Escape')
+        return
       event.preventDefault()
       event.stopImmediatePropagation()
-      pointer.reset()
+      activePointer.reset()
     },
     options
   )
@@ -216,8 +289,10 @@ export function installZipTieInteraction(canvas: LGraphCanvas): () => void {
   }
 
   return () => {
+    marqueePointer?.reset()
     pointer.reset()
     controller.abort()
+    canvas.onMouse = originalMouse
     canvas.onDrawForeground = originalDraw
   }
 }

@@ -4,6 +4,7 @@ import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import {
   createMockCanvasRenderingContext2D,
@@ -37,7 +38,13 @@ function setup() {
   return { canvas, graph, links }
 }
 
-function pointer(type: string, x: number, y: number, button = 0) {
+function pointer(
+  type: string,
+  x: number,
+  y: number,
+  button = 0,
+  modifiers: PointerEventInit = {}
+) {
   return new PointerEvent(type, {
     bubbles: true,
     cancelable: true,
@@ -46,11 +53,134 @@ function pointer(type: string, x: number, y: number, button = 0) {
     pointerId: 1,
     buttons: type === 'pointerup' || type === 'pointercancel' ? 0 : 1,
     isPrimary: true,
-    button
+    button,
+    ...modifiers
   })
 }
 
+const metaShift = { metaKey: true, shiftKey: true }
+
+function setupMarquee() {
+  const fixture = setup()
+  fixture.links.forEach((link, index) => {
+    setLinkPolyline(link, () => [
+      { x: 300, y: 150 + index * 20 },
+      { x: 500, y: 150 + index * 20 }
+    ])
+    fixture.canvas.renderedPaths.add(link)
+  })
+  return fixture
+}
+
 describe('zip tie interaction', () => {
+  it.for([
+    { from: [320, 130], to: [480, 190] },
+    { from: [480, 190], to: [320, 130] }
+  ])(
+    'zips crossed wires on Meta+Shift drag release from $from to $to',
+    ({ from, to }) => {
+      const { canvas, graph, links } = setupMarquee()
+      const connections = links.map((link) => link.serialize())
+
+      canvas.canvas.dispatchEvent(
+        pointer('pointerdown', from[0], from[1], 0, metaShift)
+      )
+      canvas.canvas.dispatchEvent(
+        pointer('pointermove', to[0], to[1], 0, metaShift)
+      )
+
+      expect(graph.reroutes.size).toBe(0)
+      expect(canvas.dragging_rectangle).not.toBeNull()
+
+      canvas.canvas.dispatchEvent(
+        pointer('pointerup', to[0], to[1], 0, metaShift)
+      )
+
+      expect(getZipTies(graph)).toHaveLength(1)
+      expect(
+        [...graph.reroutes.values()].map((reroute) => [...reroute.pos])
+      ).toEqual([
+        [364, 157],
+        [436, 157],
+        [364, 163],
+        [436, 163]
+      ])
+      expect(links.map((link) => link.serialize())).toEqual(connections)
+      expect(canvas.selectedItems.size).toBe(0)
+      expect(canvas.dragging_rectangle).toBeNull()
+    }
+  )
+
+  it.for([
+    {
+      name: 'Escape',
+      cancel: (canvas: HTMLCanvasElement) =>
+        canvas.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        )
+    },
+    {
+      name: 'pointer cancellation',
+      cancel: (canvas: HTMLCanvasElement) =>
+        canvas.dispatchEvent(pointer('pointercancel', 480, 190, 0, metaShift))
+    },
+    {
+      name: 'lost capture',
+      cancel: (canvas: HTMLCanvasElement) =>
+        canvas.dispatchEvent(
+          new PointerEvent('lostpointercapture', { pointerId: 1 })
+        )
+    }
+  ])('does not zip a marquee interrupted by $name', ({ cancel }) => {
+    const { canvas, graph } = setupMarquee()
+    canvas.canvas.dispatchEvent(pointer('pointerdown', 320, 130, 0, metaShift))
+    canvas.canvas.dispatchEvent(pointer('pointermove', 480, 190, 0, metaShift))
+
+    cancel(canvas.canvas)
+    canvas.canvas.dispatchEvent(pointer('pointerup', 480, 190, 0, metaShift))
+
+    expect(getZipTies(graph)).toEqual([])
+    expect(graph.reroutes.size).toBe(0)
+    expect(canvas.dragging_rectangle).toBeNull()
+  })
+
+  it.for([
+    { name: 'no modifiers', modifiers: {} },
+    { name: 'Meta only', modifiers: { metaKey: true } },
+    { name: 'Shift only', modifiers: { shiftKey: true } },
+    { name: 'Control+Shift', modifiers: { ctrlKey: true, shiftKey: true } }
+  ])('does not zip an ordinary drag with $name', ({ modifiers }) => {
+    const { canvas, graph } = setupMarquee()
+    canvas.canvas.dispatchEvent(pointer('pointerdown', 320, 130, 0, modifiers))
+    canvas.canvas.dispatchEvent(pointer('pointermove', 480, 190, 0, modifiers))
+    canvas.canvas.dispatchEvent(pointer('pointerup', 480, 190, 0, modifiers))
+
+    expect(getZipTies(graph)).toEqual([])
+    expect(graph.reroutes.size).toBe(0)
+  })
+
+  it('cancels the zip when Meta is released before the mouse', () => {
+    const { canvas, graph } = setupMarquee()
+    canvas.canvas.dispatchEvent(pointer('pointerdown', 320, 130, 0, metaShift))
+    canvas.canvas.dispatchEvent(pointer('pointermove', 480, 190, 0, metaShift))
+    canvas.canvas.dispatchEvent(
+      pointer('pointerup', 480, 190, 0, { shiftKey: true })
+    )
+
+    expect(graph.reroutes.size).toBe(0)
+    expect(canvas.dragging_rectangle).toBeNull()
+  })
+
+  it('does not create a tie when the box crosses only one wire', () => {
+    const { canvas, graph } = setupMarquee()
+    canvas.canvas.dispatchEvent(pointer('pointerdown', 320, 140, 0, metaShift))
+    canvas.canvas.dispatchEvent(pointer('pointermove', 480, 160, 0, metaShift))
+    canvas.canvas.dispatchEvent(pointer('pointerup', 480, 160, 0, metaShift))
+
+    expect(graph.reroutes.size).toBe(0)
+    expect(getZipTies(graph)).toEqual([])
+  })
+
   it('bundles selected wires at the captured context menu position', async () => {
     const { canvas, graph, links } = setup()
     useLinkSelectionStore().select({

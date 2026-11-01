@@ -109,8 +109,8 @@
     {
       "id": 5,
       "type": "MarkdownNote",
-      "pos": [60, 40],
-      "size": [1020, 120],
+      "pos": [60, 20],
+      "size": [1020, 150],
       "flags": {},
       "order": 4,
       "mode": 0,
@@ -119,7 +119,7 @@
       "outputs": [],
       "properties": {},
       "widgets_values": [
-        "## Try the zip tie below\nDrag the small clasp in the center to move all three wires together. Right-click the clasp and choose **Release zip tie**.\n\nTo make another tie: select two or more wires, then use the cable icon in the selection toolbar or **Zip tie selected links** in the canvas menu. No model downloads or generation needed."
+        "## Try the zip tie below\nDrag the small clasp in the center to move all three wires together. Right-click the clasp and choose **Release zip tie**.\n\nTo make another tie: select two or more wires, then use the cable icon in the selection toolbar or **Zip tie selected links** in the canvas menu. No model downloads or generation needed.\n\n**Direct gesture:** hold **Cmd + Shift** on Mac or **Windows + Shift** on Windows, drag a box across two or more wires, then release the mouse to zip them. Press **Escape** to cancel."
       ]
     }
   ],

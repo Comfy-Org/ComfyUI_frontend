@@ -7,6 +7,11 @@ Open `/?template=zip_tie_demo` for a model-free example with three wires already
 bundled. Drag the clasp in the middle of the canvas, or right-click it to release
 the tie. The example opens as a new workflow.
 
+For a one-gesture zip tie, hold **Command + Shift** on macOS or **Windows + Shift**
+on Windows, then drag a box from empty canvas space across two or more wires.
+Release the mouse while holding both keys to zip the crossed wires at the box's
+center. Press **Escape** before releasing the mouse to cancel.
+
 1. Drag a selection marquee across two or more wires in empty canvas space.
 2. Click **Zip tie selected links** in the selection toolbar. Alternatively,
    right-click empty canvas and choose the same action to place the tie there.
