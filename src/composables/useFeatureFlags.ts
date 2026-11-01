@@ -171,6 +171,13 @@ export function useFeatureFlags() {
         false
       )
     },
+    get signedOutRerouteEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.SIGNED_OUT_REROUTE_ENABLED,
+        remoteConfig.value.signed_out_reroute_enabled,
+        false
+      )
+    },
     get partnerNodeGovernanceEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
@@ -406,6 +413,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
       [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
         flags.onboardingSurveyEnabled,
+      [ServerFeatureFlag.SIGNED_OUT_REROUTE_ENABLED]:
+        flags.signedOutRerouteEnabled,
       [ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED]:
         flags.partnerNodeGovernanceEnabled,
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
