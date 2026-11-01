@@ -997,6 +997,17 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      type: 'RuntimeError',
+      message:
+        'Payment Required: This API key bills your personal account, which is out of credits.',
+      expected: {
+        catalogId: 'personal_wallet_insufficient_credits',
+        displayTitle: 'Insufficient credits',
+        displayMessage:
+          'This run billed your personal account, which is out of credits.'
+      }
+    },
+    {
       type: 'InactiveSubscriptionError',
       message:
         'User has no active subscription. Please subscribe to a plan to continue.',

@@ -190,12 +190,13 @@ describe('useInviteUrlLoader', () => {
     it.for([
       {
         name: 'dismisses the toast once the switch succeeds',
-        switchWorkspace: () => Promise.resolve(),
+        switchWorkspace: () => Promise.resolve(true),
         toasts: []
       },
       {
         name: 'keeps the toast and reports a failed switch',
-        switchWorkspace: () => Promise.reject(new Error('switch failed')),
+        switchWorkspace: (): Promise<boolean> =>
+          Promise.reject(new Error('switch failed')),
         toasts: [
           expect.objectContaining({
             kind: 'success',

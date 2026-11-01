@@ -2993,6 +2993,15 @@
       "memberDescription": "Your team has used all its credits. Your workspace admins need to add more credits to run workflows.",
       "memberCta": "Ok, got it"
     },
+    "personalWallet": {
+      "title": "Your personal account is out of credits",
+      "sessionDescription": "This session bills your personal account. To bill a team instead, switch to its workspace.",
+      "sessionNoTeamsDescription": "This session bills your personal account. Add personal credits to continue.",
+      "apiKeyDescription": "This key bills your personal account. Create a team API key or add personal credits.",
+      "switchTo": "Switch to {workspaceName}",
+      "createTeamApiKey": "Create a team API key",
+      "addCredits": "Add personal credits"
+    },
     "credits": "Credits",
     "yourCreditBalance": "Your credit balance",
     "purchaseCredits": "Purchase Credits",
@@ -5518,6 +5527,13 @@
         "itemLabel": "{nodeName}",
         "toastTitle": "Insufficient credits",
         "toastMessage": "Add credits to your account to use this node."
+      },
+      "personal_wallet_insufficient_credits": {
+        "title": "Insufficient credits",
+        "message": "This run billed your personal account, which is out of credits.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Insufficient credits",
+        "toastMessage": "This run billed your personal account, which is out of credits."
       },
       "workspace_insufficient_credits": {
         "title": "Insufficient credits",

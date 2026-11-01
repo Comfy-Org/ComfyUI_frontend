@@ -128,6 +128,26 @@ describe('resolveAccountPrecondition', () => {
     ).toBe('subscription')
   })
 
+  it.for([
+    {
+      message:
+        'Payment Required: This session is set to bill your personal account, which is out of credits.',
+      expected: 'personal_wallet_session'
+    },
+    {
+      message:
+        'Payment Required: This API key bills your personal account, which is out of credits.',
+      expected: 'personal_wallet_api_key'
+    }
+  ])('routes a personal-wallet 402 to $expected', ({ message, expected }) => {
+    expect(
+      resolveAccountPrecondition({
+        exceptionType: 'RuntimeError',
+        exceptionMessage: message
+      })
+    ).toBe(expected)
+  })
+
   it('returns undefined for an ordinary workflow error', () => {
     expect(
       resolveAccountPrecondition({
