@@ -15,6 +15,17 @@
           <div class="flex h-8 gap-1">
             <template v-if="hasLinkSelection">
               <ToolboxButton
+                v-if="
+                  (linkSelectionStore.selection?.links.length ?? 0) > 1 &&
+                  !linksHidden
+                "
+                :label="$t('zipTie.bundle')"
+                icon="icon-[lucide--cable]"
+                @click="
+                  commandStore.execute('Comfy.Canvas.ZipTieSelectedLinks')
+                "
+              />
+              <ToolboxButton
                 v-if="linksHidden"
                 :label="$t('commands.Comfy_Canvas_ShowSelectedLinks.label')"
                 icon="icon-[lucide--eye]"

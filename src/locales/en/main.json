@@ -6372,6 +6372,10 @@
       "bodyRequired": "Instructions are required"
     }
   },
+  "zipTie": {
+    "bundle": "Zip tie selected links",
+    "release": "Release zip tie"
+  },
   "lateCustomNodes": {
     "starting": "Custom nodes are starting... {seconds} s",
     "startingDetail": "Usually about 20 s. Their buttons and menus will show up here on their own.",

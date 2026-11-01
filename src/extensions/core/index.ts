@@ -34,6 +34,7 @@ import {
 import { uploadImageExtension } from './uploadImage'
 import { webcamCaptureExtension } from './webcamCapture'
 import { widgetInputsExtension } from './widgetInputs'
+import { zipTieExtension } from './zipTie'
 
 const baseCoreExtensions: ComfyExtension[] = [
   clipspaceExtension,
@@ -64,7 +65,8 @@ const baseCoreExtensions: ComfyExtension[] = [
   uploadAudioExtension,
   recordAudioExtension,
   uploadImageExtension,
-  webcamCaptureExtension
+  webcamCaptureExtension,
+  zipTieExtension
 ]
 
 const disposers: (() => void)[] = []
