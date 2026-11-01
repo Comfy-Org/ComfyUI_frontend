@@ -1,6 +1,8 @@
+import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
 import {
@@ -11,6 +13,7 @@ import {
 } from './check-command-locales'
 
 const LOAD3D_FILE = 'src/extensions/core/load3d/load3d.ts'
+const TSX_LOADER = fileURLToPath(import.meta.resolve('tsx'))
 
 const LAZY_EXTENSION = `
 export const load3dExtension: ComfyExtension = {
@@ -113,13 +116,25 @@ describe('findCommandLocaleGaps', () => {
     expect(findCommandLocaleGaps(declared, VIEWER_ENTRY)).toEqual([])
   })
 
-  test('rejects an entry whose label is absent or blank, which call sites read', () => {
-    const reasons = [
-      { Comfy_3DViewer_Open3DViewer: {} },
-      { Comfy_3DViewer_Open3DViewer: { label: '   ' } },
-      { Comfy_3DViewer_Open3DViewer: { tooltip: 'Open it' } }
-    ].map((catalog) => findCommandLocaleGaps(declared, catalog)[0]?.reason)
-    expect(reasons).toEqual(['missing-label', 'missing-label', 'missing-label'])
+  test.for([
+    {
+      name: 'absent label',
+      catalog: { Comfy_3DViewer_Open3DViewer: {} }
+    },
+    {
+      name: 'blank label',
+      catalog: { Comfy_3DViewer_Open3DViewer: { label: '   ' } }
+    },
+    {
+      name: 'tooltip without a label',
+      catalog: {
+        Comfy_3DViewer_Open3DViewer: { tooltip: 'Open it' }
+      }
+    }
+  ])('rejects $name', ({ catalog }) => {
+    expect(findCommandLocaleGaps(declared, catalog)[0]?.reason).toBe(
+      'missing-label'
+    )
   })
 
   test('reports a duplicated declaration once', () => {
@@ -171,6 +186,28 @@ describe('checkCommandLocales over a repository tree', () => {
     const { gaps, declared } = checkCommandLocales(root)
     expect(gaps).toEqual([])
     expect(declared).toHaveLength(1)
+  })
+
+  test('fails closed when a command array contains a spread', () => {
+    write(
+      LOAD3D_FILE,
+      `const sharedCommands = [{ id: 'Comfy.Shared' }]
+const commands = [...sharedCommands]`
+    )
+    writeCatalog({ Comfy_Shared: { label: 'Shared' } })
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        TSX_LOADER,
+        join(process.cwd(), 'scripts/check-command-locales.ts')
+      ],
+      { cwd: root, encoding: 'utf8' }
+    )
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain(
+      `${LOAD3D_FILE}:2 command id cannot be resolved statically`
+    )
   })
 
   test('skips test files, so a fixture command needs no locale entry', () => {

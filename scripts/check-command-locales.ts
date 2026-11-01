@@ -77,6 +77,37 @@ function lineOf(sourceFile: ts.SourceFile, node: ts.Node): number {
   )
 }
 
+function commandIdProperty(
+  element: ts.Expression
+): ts.PropertyAssignment | undefined {
+  if (!ts.isObjectLiteralExpression(element)) return
+  return element.properties.find(
+    (property): property is ts.PropertyAssignment =>
+      ts.isPropertyAssignment(property) && propertyName(property.name) === 'id'
+  )
+}
+
+function collectCommandArrayElement(
+  file: string,
+  sourceFile: ts.SourceFile,
+  element: ts.Expression
+): { declared: DeclaredCommand[]; unresolved: UnresolvedCommand[] } {
+  if (ts.isSpreadElement(element))
+    return {
+      declared: [],
+      unresolved: [{ file, line: lineOf(sourceFile, element) }]
+    }
+  const property = commandIdProperty(element)
+  if (!property) return { declared: [], unresolved: [] }
+  const line = lineOf(sourceFile, property)
+  if (ts.isStringLiteralLike(property.initializer))
+    return {
+      declared: [{ id: property.initializer.text, file, line }],
+      unresolved: []
+    }
+  return { declared: [], unresolved: [{ file, line }] }
+}
+
 export function collectDeclaredCommands(
   file: string,
   source: string
@@ -93,18 +124,9 @@ export function collectDeclaredCommands(
   const walk = (node: ts.Node): void => {
     const array = commandArray(node)
     for (const element of array?.elements ?? []) {
-      if (!ts.isObjectLiteralExpression(element)) continue
-      for (const property of element.properties) {
-        if (
-          !ts.isPropertyAssignment(property) ||
-          propertyName(property.name) !== 'id'
-        )
-          continue
-        const line = lineOf(sourceFile, property)
-        if (ts.isStringLiteralLike(property.initializer))
-          declared.push({ id: property.initializer.text, file, line })
-        else unresolved.push({ file, line })
-      }
+      const found = collectCommandArrayElement(file, sourceFile, element)
+      declared.push(...found.declared)
+      unresolved.push(...found.unresolved)
     }
     ts.forEachChild(node, walk)
   }
@@ -178,27 +200,38 @@ export function formatGap(gap: CommandLocaleGap): string {
   return `${gap.file}:${gap.line} command '${gap.id}' ${detail}`
 }
 
+export function formatUnresolved(command: UnresolvedCommand): string {
+  return `${command.file}:${command.line} command id cannot be resolved statically`
+}
+
 function main(): void {
   const { files, declared, unresolved, gaps } = checkCommandLocales(
     process.cwd()
   )
-  if (gaps.length === 0) {
-    const skipped = unresolved.length
-      ? `; ${unresolved.length} computed id(s) not resolvable statically`
-      : ''
+  if (gaps.length === 0 && unresolved.length === 0) {
     process.stdout.write(
-      `Command locale guard passed (${declared.length} declared commands across ${files.length} files${skipped})\n`
+      `Command locale guard passed (${declared.length} declared commands across ${files.length} files)\n`
     )
     return
   }
-  process.stderr.write(
-    `Command locale guard found ${gaps.length} declared command(s) missing from ${COMMANDS_CATALOG_FILE}:\n\n` +
-      gaps.map(formatGap).join('\n') +
-      `\n\nLocale regeneration prunes a command whose extension had not registered when ` +
+  const reports = []
+  if (gaps.length)
+    reports.push(
+      `Command locale guard found ${gaps.length} declared command(s) missing from ${COMMANDS_CATALOG_FILE}:\n\n` +
+        gaps.map(formatGap).join('\n')
+    )
+  if (unresolved.length)
+    reports.push(
+      `Command locale guard found ${unresolved.length} command declaration(s) that cannot be resolved:\n\n` +
+        unresolved.map(formatUnresolved).join('\n')
+    )
+  reports.push(
+    `Locale regeneration prunes a command whose extension had not registered when ` +
       `scripts/collect-i18n-general.ts ran, and ESLint's cache can hide the result until an ` +
-      `unrelated pull request fails. Restore the entry, and fix collection so the command is ` +
-      `declared to the collector as #22168 did for the lazy 3D extension.\n`
+      `unrelated pull request fails. Restore missing entries, replace computed or spread command ` +
+      `declarations with statically declared ids, and fix collection for lazy extensions.`
   )
+  process.stderr.write(reports.join('\n\n') + '\n')
   process.exitCode = 1
 }
 
