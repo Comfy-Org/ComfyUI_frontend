@@ -53,7 +53,7 @@ export function useGPUResources() {
   )
 
   watch(
-    () => store.canvasHistory.currentStateIndex,
+    () => store.canvasHistory.revision,
     async () => {
       if (isSavingHistory.value) return
       await updateGPUFromCanvas()
