@@ -44,6 +44,12 @@ async function skipTheFirstRunTour(page: Page): Promise<void> {
   await expect(card).toBeHidden()
 }
 
+async function hideServerTemplateGraph(page: Page): Promise<void> {
+  await page.addStyleTag({
+    content: `#graph-canvas, [data-testid="transform-pane"], [data-testid="minimap-container"] { visibility: hidden !important; }`
+  })
+}
+
 test.describe(
   'First-run nudge beside the Agent panel',
   { tag: ['@cloud', '@agent', '@ui', '@screenshot'] },
@@ -88,11 +94,7 @@ test.describe(
           'the nudge must sit left of the docked Agent panel, not over its starter prompts and composer (PM-1872)'
         ).toBeLessThanOrEqual(panelBox.x)
 
-        // The graph behind the nudge comes from the server's template package,
-        // so hide it: the snapshot pins placement, not template content.
-        await page.addStyleTag({
-          content: `#graph-canvas, [data-testid="transform-pane"], [data-testid="minimap-container"] { visibility: hidden !important; }`
-        })
+        await hideServerTemplateGraph(page)
 
         await expectRegionScreenshot(
           page,
