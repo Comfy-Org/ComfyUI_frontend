@@ -1,5 +1,6 @@
 <template>
   <WidgetLayoutField :widget :value-text="selectedSummary">
+    <template #between><slot name="between" /></template>
     <ComboboxRoot
       :open="isOpen"
       :model-value="selectedOption ?? null"

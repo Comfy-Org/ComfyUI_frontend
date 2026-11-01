@@ -1,5 +1,6 @@
 <template>
   <WidgetLayoutField :widget="widget">
+    <template #between><slot name="between" /></template>
     <div
       :class="
         cn(

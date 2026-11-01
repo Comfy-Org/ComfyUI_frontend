@@ -5,7 +5,7 @@
       "offset": [70, 120],
       "scale": 0.85
     },
-    "reconstruction": "Narrow variant reconstructed from supplied screenshots. Nodes use Nodes2 minimum width225. Referenced weights are not installed."
+    "reconstruction": "Narrow variant reconstructed from supplied screenshots. Prompt, latent image, and output nodes retain wider layouts. Referenced weights are not installed."
   },
   "groups": [],
   "id": "cb76d942-eb66-4d99-a899-f58a6abb4166",
