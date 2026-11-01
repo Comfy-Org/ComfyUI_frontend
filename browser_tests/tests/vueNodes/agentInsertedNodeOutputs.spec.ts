@@ -15,8 +15,6 @@ const INSERTED_INTERIOR_ID =
   'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root/definition:%22a1b2c3d4-e5f6-7890-abcd-ef1234567890%22:node:6'
 
 test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
-  test.use({ initialFeatureFlags: { enable_telemetry: true } })
-
   test('shows the executed image in an agent-inserted Save Image node', async ({
     comfyPage,
     getWebSocket
@@ -84,7 +82,9 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
     await expect.poll(() => unresolvedReports.length).toBe(3)
     expect(unresolvedReports).toEqual(
       Array(3).fill(
-        expect.stringContaining('failure_resolving_node_output_execution_id')
+        expect.stringContaining(
+          'failure_resolving_node_output_execution_id Error: No live node resolves the executed output'
+        )
       )
     )
   })

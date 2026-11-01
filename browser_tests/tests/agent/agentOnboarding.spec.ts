@@ -5,10 +5,13 @@ import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 
 import {
   agentTest as test,
-  bootAgentApp
+  bootAgentApp,
+  storedOnboardedScopes
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+
+const SCOPE_KEY = 'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
 
 test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
   test('returns to the previous card without completing the tour', async ({
@@ -43,13 +46,7 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
 
     await expect(firstCard).toBeVisible()
     await expect
-      .poll(() =>
-        page.evaluate(() =>
-          localStorage.getItem(
-            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
-          )
-        )
-      )
+      .poll(() => page.evaluate((key) => localStorage.getItem(key), SCOPE_KEY))
       .toBe('false')
   })
 
@@ -57,8 +54,6 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     page,
     agentFlagEnabled
   }) => {
-    // DES-1208's replay path. The header control is the only way back into the
-    // tour once it is done, and nothing else covers it end to end.
     await bootAgentApp(page, agentFlagEnabled, {
       onboardingCompleted: true
     })
@@ -73,7 +68,6 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       .getByRole('button', { name: enMessages.agent.takeTour, exact: true })
       .click()
 
-    // Replay starts at card one, not wherever the finished tour left off.
     await expect(firstCard).toBeVisible()
     await expect(
       firstCard.getByRole('button', {
@@ -81,16 +75,8 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       })
     ).toHaveCount(0)
 
-    // The persisted flag has to clear too, or a reload re-hides a tour the
-    // user just asked to see.
     await expect
-      .poll(() =>
-        page.evaluate(() =>
-          localStorage.getItem(
-            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
-          )
-        )
-      )
+      .poll(() => page.evaluate((key) => localStorage.getItem(key), SCOPE_KEY))
       .not.toBe('true')
   })
 
@@ -242,20 +228,21 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(page.getByTestId('agent-coach-spotlight')).toHaveCount(0)
     await expect
-      .poll(() =>
-        page.evaluate(() =>
-          localStorage.getItem(
-            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
-          )
-        )
-      )
+      .poll(() => page.evaluate((key) => localStorage.getItem(key), SCOPE_KEY))
       .toBe('true')
+
+    await expect.poll(() => storedOnboardedScopes(page)).toContain(SCOPE_KEY)
+    await page.evaluate((key) => localStorage.removeItem(key), SCOPE_KEY)
 
     await page.reload()
     await waitForCloudApp(page)
-    await expect(page.locator('#agent-panel-root')).toBeVisible()
-    await expect(
-      page.getByRole('dialog', { name: enMessages.agent.coachTitle })
-    ).toHaveCount(0)
+    await expect(page.locator('#agent-composer')).toBeVisible()
+    await page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        )
+    )
+    await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 })
