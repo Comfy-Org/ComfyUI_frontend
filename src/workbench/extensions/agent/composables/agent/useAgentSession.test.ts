@@ -6784,9 +6784,10 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(h10) a continuing turn re-flags a tab that never adopted the workflow another tab holds, with its draft', async () => {
     const draftSnapshot = { content: { nodes: [], links: [] } }
+    const draft = vi.fn(() => draftSnapshot)
     const { session, postMessage } = unboundTabSession({
       acks: ['wf-other-tab', 'wf-minted'],
-      draft: () => draftSnapshot
+      draft
     })
 
     await session.sendMessage('add a text input node')
@@ -6796,6 +6797,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(second).not.toHaveProperty('workflowId')
     expect(second.currentTabUnbound).toBe(true)
     expect(second.draft).toEqual(draftSnapshot)
+    expect(draft).toHaveBeenCalledTimes(2)
   })
 
   it('(h10b) a continuing turn with no canvas is held instead of retargeting the remembered workflow', async () => {

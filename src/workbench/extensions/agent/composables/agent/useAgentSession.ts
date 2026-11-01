@@ -1185,11 +1185,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     originContext: WorkflowTurnContext | undefined,
     wfContext: WorkflowTurnContext | undefined,
-    origin: TurnOrigin
+    draft: DraftSnapshot | undefined
   ): boolean {
     const refused =
       workflowTargetChanged(originContext, wfContext) ||
-      lacksCanvasForRemint(wfContext, origin)
+      lacksCanvasForRemint(wfContext, draft)
     if (refused) recordUnavailableTarget(text)
     return refused
   }
@@ -1208,13 +1208,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     origin: TurnOrigin,
     wfContext: WorkflowTurnContext | undefined,
+    draft: DraftSnapshot | undefined,
     attachments?: SentAttachment[],
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string
   ): PostMessageInput {
-    const draft = workflow?.draft?.(origin)
     const tabs = workflow?.tabs?.(origin)
     const unboundTarget = isUnboundTarget(
       wfContext,
@@ -1324,12 +1324,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function lacksCanvasForRemint(
     wfContext: WorkflowTurnContext | undefined,
-    origin: TurnOrigin
+    draft: DraftSnapshot | undefined
   ): boolean {
     if (wfContext === undefined || wfContext.id !== undefined) return false
     if (boundWorkflowId.value === null) return false
-    const readCanvas = workflow?.draft
-    return readCanvas !== undefined && readCanvas(origin) === undefined
+    return workflow?.draft !== undefined && draft === undefined
   }
 
   function buildTargetFields(
@@ -1564,13 +1563,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
-      if (refusesTarget(text, originContext, wfContext, origin)) return false
+      const draft = workflow?.draft?.(origin)
+      if (refusesTarget(text, originContext, wfContext, draft)) return false
       sentContext = wfContext
       const input = buildPostInput(
         threadAtSend,
         text,
         origin,
         wfContext,
+        draft,
         attachments,
         tags,
         workflowReferences,
@@ -1592,9 +1593,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       rememberMint(input, wfContext, ack.workflow_id)
       return true
     } catch (error) {
-      // Before the generation guard: the binding store is page-global and
-      // persisted, so a refusal that lands after newChat()/loadThread() has
-      // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
       if (generation !== loadGeneration) return false
       const reattached = await reattachRefusedTurn(
