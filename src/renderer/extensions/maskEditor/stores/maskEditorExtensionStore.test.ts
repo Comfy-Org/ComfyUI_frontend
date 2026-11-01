@@ -108,6 +108,28 @@ describe('MaskEditor tool registration', () => {
     })
   })
 
+  it('rejects a factory that throws during binding without changing registrations', () => {
+    const registry = useMaskEditorExtensionStore()
+    registry.registerTool(tool)
+    const failure = new Error('Factory name unavailable')
+    const createSession = () => ({})
+    Object.defineProperty(createSession, 'name', {
+      get() {
+        throw failure
+      }
+    })
+
+    expect(
+      registry.registerTool({ ...tool, id: 'test.binding', createSession })
+    ).toEqual({ ok: false, reason: 'invalid-tool' })
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+      errorType: 'failure_registering_mask_editor_tool',
+      surface: 'workspace'
+    })
+    expect(registry.tools.map((item) => item.id)).toEqual(['impact.sam'])
+    expect(registry.registerTool({ ...tool, id: 'test.binding' }).ok).toBe(true)
+  })
+
   it('activates a class-based tool with its original receiver', () => {
     class SelectionTool implements MaskEditorTool {
       id = 'test.class'

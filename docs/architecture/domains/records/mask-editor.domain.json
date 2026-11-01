@@ -48,7 +48,7 @@
     "packages/mask-editor/src/extensionTypes.ts",
     "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.ts"
   ],
-  "allowedDependencies": [],
+  "allowedDependencies": ["error-reporting"],
   "allowedConsumers": ["extension-runtime", "workbench-shell"],
   "characterizationScenarios": [
     {

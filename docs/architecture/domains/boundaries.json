@@ -4254,6 +4254,7 @@
         "from": "mask-editor/domain/public",
         "allow": [
           "mask-editor/domain/public",
+          "error-reporting/domain",
           "mask-editor/domain",
           "unclassified"
         ]
@@ -4263,6 +4264,9 @@
         "allow": [
           "mask-editor/domain/public",
           "mask-editor/application/public",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
@@ -6705,6 +6709,7 @@
         "from": "mask-editor/domain",
         "allow": [
           "mask-editor/domain/public",
+          "error-reporting/domain",
           "mask-editor/domain",
           "unclassified"
         ]
@@ -6714,6 +6719,9 @@
         "allow": [
           "mask-editor/domain/public",
           "mask-editor/application/public",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
@@ -6726,6 +6734,9 @@
         "allow": [
           "mask-editor/domain/public",
           "mask-editor/application/public",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
@@ -6738,6 +6749,8 @@
         "allow": [
           "mask-editor/domain/public",
           "mask-editor/application/public",
+          "error-reporting/domain",
+          "error-reporting/application",
           "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/presentation",
@@ -6750,6 +6763,9 @@
         "allow": [
           "mask-editor/domain/public",
           "mask-editor/application/public",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
@@ -9402,6 +9418,9 @@
         "allow": [
           "mask-editor/domain/public",
           "mask-editor/application/public",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
