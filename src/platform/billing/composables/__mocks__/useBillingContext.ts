@@ -6,7 +6,7 @@ import type { useBillingContext as realUseBillingContext } from '@/platform/bill
 
 function createBillingContextMock(): BillingContext {
   return {
-    type: computed(() => 'legacy'),
+    type: computed(() => 'workspace'),
     isInitialized: ref(false),
     isLoading: ref(false),
     error: ref(null),
@@ -38,7 +38,7 @@ function createBillingContextMock(): BillingContext {
     subscribe: vi.fn(async () => {}),
     previewSubscribe: vi.fn(async () => null),
     manageSubscription: vi.fn(async () => ({ ok: true }) as const),
-    cancelSubscription: vi.fn(async () => 'legacy' as const),
+    cancelSubscription: vi.fn(async () => 'workspace' as const),
     resubscribe: vi.fn(async () => {}),
     topup: vi.fn(async () => {}),
     fetchPlans: vi.fn(async () => {}),

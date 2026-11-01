@@ -272,7 +272,7 @@ const paywallCapabilities = reactive({
 })
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null,
-  type: 'workspace' as 'workspace' | 'legacy',
+  type: 'workspace' as 'workspace' | 'unknown',
   status: 'paid' as BillingStatus | null,
   isActive: true,
   fetchStatus: vi.fn<() => Promise<void>>()
@@ -2288,9 +2288,9 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
-  it('stays hidden on the legacy rail whose unloaded balance reads as false', async () => {
+  it('stays hidden while the billing type is unknown and the balance reads as false', async () => {
     paywallHasFunds.value = false
-    paywallBilling.type = 'legacy'
+    paywallBilling.type = 'unknown'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     activateThread()
     await screen.findByRole('textbox')
@@ -2586,13 +2586,13 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     )
   })
 
-  it('does not refresh workspace status for a legacy billing turn', async () => {
+  it('does not refresh workspace status while the billing type is unknown', async () => {
     paywallHasFunds.value = true
-    paywallBilling.type = 'legacy'
+    paywallBilling.type = 'unknown'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     activateThread()
     const conversation = useAgentConversationStore()
-    const turnId = toTurnId('legacy-billing-refresh')
+    const turnId = toTurnId('unknown-billing-refresh')
 
     conversation.startTurn(turnId)
     paywallBilling.fetchStatus.mockClear()
@@ -8773,7 +8773,7 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  it.for(['workspace', 'legacy'] as const)(
+  it.for(['workspace', 'unknown'] as const)(
     'leaves the $ post-consent billing refresh to the dock host on first send',
     async (billingType) => {
       makeTab('wf-42')

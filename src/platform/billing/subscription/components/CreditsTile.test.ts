@@ -42,7 +42,7 @@ const state = vi.hoisted(() => ({
   tier: null as SubscriptionInfo['tier'],
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
-  type: 'workspace' as 'workspace' | 'legacy',
+  type: 'workspace' as 'workspace' | 'unknown',
   telemetryUnavailable: false
 }))
 
@@ -780,9 +780,9 @@ describe('CreditsTile', () => {
     expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
 
-  it('uses the fail-open capability fallback on legacy billing', () => {
+  it('uses the fail-open capability fallback before the billing type loads', () => {
     activeProSubscription()
-    state.type = 'legacy'
+    state.type = 'unknown'
     renderTile()
     expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
@@ -801,7 +801,7 @@ describe('CreditsTile', () => {
 
   it('keeps refreshing on focus until a pending top-up is confirmed', async () => {
     activeProSubscription()
-    state.type = 'legacy'
+    state.type = 'unknown'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
     renderTile()
 
@@ -820,7 +820,7 @@ describe('CreditsTile', () => {
 
   it('runs a trailing refresh when focus returns during an active refresh', async () => {
     activeProSubscription()
-    state.type = 'legacy'
+    state.type = 'unknown'
     renderTile()
     await waitFor(() =>
       expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
@@ -857,7 +857,7 @@ describe('CreditsTile', () => {
 
   it('waits for a failed refresh to settle before its trailing refresh', async () => {
     activeProSubscription()
-    state.type = 'legacy'
+    state.type = 'unknown'
     renderTile()
     await waitFor(() =>
       expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
@@ -891,9 +891,9 @@ describe('CreditsTile', () => {
     expect(useCustomerEventsService().getMyEvents).toHaveBeenCalledOnce()
   })
 
-  it('clears a confirmed legacy top-up before the next focus', async () => {
+  it('clears a confirmed top-up before the next focus', async () => {
     activeProSubscription()
-    state.type = 'legacy'
+    state.type = 'unknown'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
     const events = [
       {
@@ -921,11 +921,11 @@ describe('CreditsTile', () => {
     expect(useCustomerEventsService().getMyEvents).not.toHaveBeenCalled()
   })
 
-  it('closes a confirmed legacy top-up with one succeeded event measured from its start', async () => {
+  it('closes a confirmed top-up with one succeeded event measured from its start', async () => {
     const confirmedAtMs = Date.parse('2024-06-15T12:30:00Z')
     vi.spyOn(Date, 'now').mockReturnValue(confirmedAtMs)
     activeProSubscription()
-    state.type = 'legacy'
+    state.type = 'unknown'
     localStorage.setItem(
       'pending_topup_timestamp',
       String(confirmedAtMs - 90_000)
@@ -958,9 +958,9 @@ describe('CreditsTile', () => {
     ])
   })
 
-  it('refreshes and reconciles a pending legacy top-up when telemetry is unavailable', async () => {
+  it('refreshes and reconciles a pending top-up when telemetry is unavailable', async () => {
     activeProSubscription()
-    state.type = 'legacy'
+    state.type = 'unknown'
     const telemetry = useTelemetry()
     if (!telemetry) throw new Error('Expected telemetry mock')
     state.telemetryUnavailable = true
@@ -984,9 +984,9 @@ describe('CreditsTile', () => {
     expect(telemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
   })
 
-  it('retries legacy completion reconciliation after a request failure', async () => {
+  it('retries completion reconciliation after a request failure', async () => {
     activeProSubscription()
-    state.type = 'legacy'
+    state.type = 'unknown'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
     useCustomerEventsService().error.value = 'events unavailable'
     const retryEvents = [

@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import {
   BILLING_STATUS_ROUTE,
   CANCEL_SUBSCRIPTION_ROUTE,
@@ -338,14 +337,6 @@ async function driveCheckoutSubscribe() {
   await checkout.handleConfirmTransition()
 }
 
-async function driveLegacyStripeCheckoutSubscribe() {
-  useWorkspaceBillingStateStore().setWorkspaceBillingRail(
-    'ws-1',
-    'legacy_stripe'
-  )
-  await driveCheckoutSubscribe()
-}
-
 async function driveDowngrade() {
   const billing = workspaceBilling()
   Object.assign(useBillingContext(), {
@@ -495,16 +486,6 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
       routes: rejected(SUBSCRIBE_ROUTE),
       drive: driveCheckoutSubscribe,
       expected: [STARTED, REFUSED]
-    },
-    {
-      name: 'a checkout that reports no started subscribes',
-      routes: issuedThenSettled(
-        SUBSCRIBE_ROUTE,
-        { status: 'pending_payment' },
-        { status: 'succeeded' }
-      ),
-      drive: driveLegacyStripeCheckoutSubscribe,
-      expected: [LIFECYCLE_STARTED, SUCCEEDED]
     },
     {
       name: 'downgrade to personal succeeds',
