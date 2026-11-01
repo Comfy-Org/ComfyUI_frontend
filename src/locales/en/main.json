@@ -4134,7 +4134,14 @@
     "compatibleEnvironments": "Compatible environments",
     "incompatibleEnvironments": "Incompatible environments",
     "missingNodesNamed": "{deployment} cannot run this workflow. It is missing {nodes}.",
-    "notCheckedNamed": "Could not check whether {deployment} can run this workflow."
+    "notCheckedNamed": "Could not check whether {deployment} can run this workflow.",
+    "reason": {
+      "starting": "{deployment} is starting. Pick it once it's ready.",
+      "startElsewhere": "{deployment} isn't running. Start it on the Developer Platform, then pick it.",
+      "notReady": "{deployment} isn't ready. Pick it once it's ready."
+    },
+    "missingNodesAfterReason": "It cannot run this workflow. It is missing {nodes}.",
+    "notCheckedAfterReason": "Could not check whether it can run this workflow."
   },
   "selectionToolbox": {
     "executeButton": {
