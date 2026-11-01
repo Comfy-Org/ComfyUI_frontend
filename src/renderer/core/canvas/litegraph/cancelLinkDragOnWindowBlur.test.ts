@@ -6,12 +6,14 @@ import {
   pointerEvent
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { cancelLinkDragOnWindowBlur } from '@/renderer/core/canvas/litegraph/cancelLinkDragOnWindowBlur'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 function startOutputLinkDrag() {
   const graph = new LGraph()
   const canvas = createCanvas(graph)
+  onTestFinished(cancelLinkDragOnWindowBlur(canvas))
   onTestFinished(() => {
     canvas.unbindEvents()
     canvas.canvas.remove()
@@ -25,7 +27,7 @@ function startOutputLinkDrag() {
   return canvas
 }
 
-describe('LGraphCanvas window blur', () => {
+describe('cancelLinkDragOnWindowBlur', () => {
   it('cancels a link drag when the window loses focus', () => {
     const canvas = startOutputLinkDrag()
     expect(canvas.linkConnector.isConnecting).toBe(true)
