@@ -97,6 +97,8 @@ export function createMaskEditorToolSession(
         )
       )
         return false
+      if (new Set(overlay.map((point) => point.id)).size !== overlay.length)
+        return false
       setOverlay(overlay)
       return true
     },
