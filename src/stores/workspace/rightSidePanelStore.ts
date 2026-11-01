@@ -60,7 +60,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     }
   }
 
-  function requestErrorDetails(groupKeys: readonly string[] = []) {
+  function requestErrorDetails(groupKeys: readonly string[]) {
     if (isLegacyMenu.value) return
     errorDetailsRequest.value = [...groupKeys]
   }
