@@ -134,6 +134,41 @@ describe('usePanAndZoom', () => {
       }
     )
 
+    it.for([0, 1200])(
+      'recovers a deferred fit after opening at viewport width %s',
+      async (initialWidth) => {
+        const pz = usePanAndZoom()
+        const root = createMockElement(initialWidth, 800)
+        const canvas = createMockCanvas(800, 600)
+        mockStore.maskCanvas = canvas
+        mockStore.canvasContainer = createMockElement()
+        Object.defineProperty(canvas, 'clientWidth', {
+          get: () => canvas.width * mockStore.zoomRatio
+        })
+        await pz.initializeCanvasPanZoom(createMockImage(800, 600), root)
+
+        Object.defineProperty(root, 'clientWidth', { value: 0 })
+        canvas.width = 600
+        canvas.height = 800
+        await pz.initializeCanvasPanZoom(createMockImage(600, 800), root)
+        const wheel = fromPartial<WheelEvent>({
+          clientX: 400,
+          clientY: 300,
+          deltaY: -100
+        })
+        await pz.zoom(wheel)
+        expect(Number.isFinite(mockStore.displayZoomRatio)).toBe(true)
+
+        Object.defineProperty(root, 'clientWidth', { value: 1200 })
+        await pz.invalidatePanZoom()
+
+        expect(mockStore.zoomRatio).toBe(1)
+        expect(mockStore.panOffset).toEqual({ x: 222, y: 0 })
+        await pz.zoom(wheel)
+        expect(mockStore.displayZoomRatio).toBeCloseTo(1.1)
+      }
+    )
+
     it('accounts for panel widths via setPanOffset', async () => {
       const pz = usePanAndZoom()
       mockStore.canvasContainer = createMockElement()
