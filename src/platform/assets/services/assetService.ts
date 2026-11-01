@@ -828,7 +828,7 @@ function createAssetService() {
   }
 
   /**
-   * Calls back after this client deletes an asset or an import finishes at once; returns the unsubscribe.
+   * Calls back after this client deletes an asset, adds or removes an asset's tags, or an import finishes at once; returns the unsubscribe.
    */
   function onAssetsChanged(callback: () => void): () => void {
     assetChangeListeners.add(callback)
@@ -1019,6 +1019,7 @@ function createAssetService() {
         `Unable to add tags to asset ${id}: Server returned ${res.status}`
       )
     }
+    notifyAssetsChanged()
 
     const result = await res.json()
     const parseResult = tagsOperationResultSchema.safeParse(result)
@@ -1049,6 +1050,7 @@ function createAssetService() {
         `Unable to remove tags from asset ${id}: Server returned ${res.status}`
       )
     }
+    notifyAssetsChanged()
 
     const result = await res.json()
     const parseResult = tagsOperationResultSchema.safeParse(result)
