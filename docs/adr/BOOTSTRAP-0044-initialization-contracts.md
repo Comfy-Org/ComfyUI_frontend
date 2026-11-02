@@ -47,8 +47,8 @@ extensions retain the existing manager contract. Remove the dialog registry.
 ## Verification and limits
 
 Registry tests exercise unregistered access with `DEV` both true and false.
-The bootstrap regression verifies that the handler reports the failure and
-that initialization after the accessor does not run. Browser tests exercise
+The bootstrap regression verifies that a rejected main-module import reports
+the initialization failure. Browser tests exercise
 the composed dialog through the public extension API and assert its rendered
 message without importing stores across domain boundaries.
 

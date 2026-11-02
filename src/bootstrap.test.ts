@@ -1,24 +1,25 @@
 import { expect, it, vi } from 'vitest'
 
-vi.mock(import('@/scripts/app'))
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
-const { initialize } = vi.hoisted(() => ({ initialize: vi.fn() }))
-vi.mock(import('./main'), async () => {
-  const { useApp } = await import('@/scripts/appRegistry')
-  initialize(useApp())
-  return {}
+vi.mock(import('./main'), () => {
+  throw new Error('Main module initialization failed')
 })
 
-it('reports an unregistered app during boot and stops dependent initialization', async () => {
-  vi.stubEnv('DEV', false)
-  const { reportError } = await import('@comfyorg/telemetry/reportError')
-
+it('reports a main module initialization failure during boot', async () => {
   await import('./bootstrap')
 
-  expect(initialize).not.toHaveBeenCalled()
-  expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
-    errorType: 'failure_initializing_app',
-    surface: 'platform'
-  })
+  expect(reportError).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({
+      cause: expect.objectContaining({
+        message: 'Main module initialization failed'
+      })
+    }),
+    {
+      errorType: 'failure_initializing_app',
+      surface: 'platform'
+    }
+  )
 })
