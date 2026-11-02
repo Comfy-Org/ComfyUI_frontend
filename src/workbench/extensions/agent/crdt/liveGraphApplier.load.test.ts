@@ -1,4 +1,5 @@
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { loadSerialisedNode } from '@/core/graph/loadSerialisedNode'
@@ -6,6 +7,12 @@ import { withGraphConfiguring } from '@/core/graph/withGraphConfiguring'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { useApp } from '@/scripts/appInstance'
+import {
+  PrimitiveNode,
+  widgetInputsExtension
+} from '@/extensions/core/widgetInputs'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -59,7 +66,9 @@ const CATALOG: WidgetCatalog = {
     KSampler: {
       widget_order: ['sampler_name', 'control_after_generate', 'scheduler']
     },
-    LifecycleSource: { widget_order: [] }
+    LifecycleSource: { widget_order: [] },
+    Seeded: { widget_order: ['seed'] },
+    PrimitiveNode: { widget_order: ['value'] }
   }
 }
 const CONTEXT = { actor: 'agent:test', opIds: ['op-1'] }
@@ -154,12 +163,12 @@ describe('LiveGraphApplier node creation through loadSerialisedNode', () => {
     links: [[1, 3, 0, 7, 0, 'MODEL']]
   }
 
-  it('connects created nodes while configuring, then fires the graph-configured callbacks', () => {
+  it('connects created nodes while configuring, between the graph-configured callbacks', () => {
     applyWorkflow(sourceLinkedToSampler)
 
     expect(lifecycle).toEqual([
-      'connect configuring=true',
       'onGraphConfigured',
+      'connect configuring=true',
       'onAfterGraphConfigured links=1'
     ])
   })
@@ -174,5 +183,72 @@ describe('LiveGraphApplier node creation through loadSerialisedNode', () => {
     applyWorkflow(sourceLinkedToSampler, graph)
 
     expect(lifecycle).toEqual(['connect configuring=false'])
+  })
+})
+
+const SEEDED_DEF = fromPartial<ComfyNodeDef>({
+  input: { required: { seed: ['INT', {}] } }
+})
+
+class Seeded extends LGraphNode {
+  static override nodeData = SEEDED_DEF
+
+  constructor() {
+    super('Seeded')
+    this.serialize_widgets = true
+    this.addWidget('number', 'seed', 1, () => {})
+    this.addInput('seed', 'INT')
+    this.inputs[0].widget = {
+      name: 'seed',
+      [GET_CONFIG]: () => ['INT', {}]
+    }
+  }
+}
+
+describe('LiveGraphApplier PrimitiveNode links to created widget inputs', () => {
+  beforeEach(async () => {
+    await widgetInputsExtension.beforeRegisterNodeDef?.(
+      Seeded,
+      SEEDED_DEF,
+      useApp()
+    )
+    LiteGraph.registerNodeType('Seeded', Seeded)
+    LiteGraph.registerNodeType('PrimitiveNode', PrimitiveNode)
+  })
+
+  function seeded(id: number, link: number) {
+    return {
+      id,
+      type: 'Seeded',
+      pos: [id * 300, 0],
+      size: [200, 100],
+      inputs: [{ name: 'seed', type: 'INT', widget: { name: 'seed' }, link }],
+      widgets_values: [1]
+    }
+  }
+
+  const primitiveFannedOut: WorkflowJSON = {
+    nodes: [
+      {
+        id: 1,
+        type: 'PrimitiveNode',
+        pos: [0, 0],
+        size: [200, 80],
+        outputs: [{ name: 'INT', type: 'INT', links: [1, 2] }],
+        widgets_values: [5]
+      },
+      seeded(7, 1),
+      seeded(8, 2)
+    ],
+    links: [
+      [1, 1, 0, 7, 0, 'INT'],
+      [2, 1, 0, 8, 0, 'INT']
+    ]
+  }
+
+  it('connects a created primitive to every created widget input', () => {
+    const graph = applyWorkflow(primitiveFannedOut)
+
+    expect(liveNode(graph, 8).inputs[0].link).toBe(2)
   })
 })

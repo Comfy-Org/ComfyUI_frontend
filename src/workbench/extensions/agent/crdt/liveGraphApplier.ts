@@ -780,6 +780,7 @@ export class LiveGraphApplier {
             if (result === 'created' || result === 'recreated') loaded.push(id)
           })
         }
+        this.notifyLoaded(graph, loaded, context, 'onGraphConfigured')
         this.connectLoadedLinks(graph, doc, loaded, context)
 
         this.deleteGroups(graph, changes.removedGroups, context)
@@ -797,7 +798,7 @@ export class LiveGraphApplier {
         this.applyInteriors(graph, doc, changes, context, mode)
 
         this.applyLinks(graph, doc, [...changes.links], context)
-        this.notifyGraphConfigured(graph, loaded, context)
+        this.notifyLoaded(graph, loaded, context, 'onAfterGraphConfigured')
         if (mode === 'merge')
           this.placeBatch(graph, created, {
             moveCollisions: context.liveAgentTurn === true
@@ -999,16 +1000,16 @@ export class LiveGraphApplier {
     }
   }
 
-  private notifyGraphConfigured(
+  private notifyLoaded(
     graph: LGraph,
     ids: readonly string[],
-    context: RemoteApplyContext
+    context: RemoteApplyContext,
+    callback: 'onGraphConfigured' | 'onAfterGraphConfigured'
   ): void {
-    const nodes = ids.flatMap((id) => graph.getNodeById(toNodeId(id)) ?? [])
-    for (const node of nodes)
-      this.try(context, () => node.onGraphConfigured?.())
-    for (const node of nodes)
-      this.try(context, () => node.onAfterGraphConfigured?.())
+    for (const id of ids) {
+      const node = graph.getNodeById(toNodeId(id))
+      if (node) this.try(context, () => node[callback]?.())
+    }
   }
 
   private createNode(
