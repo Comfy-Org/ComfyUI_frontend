@@ -18,7 +18,16 @@ import type {
 import type { User } from 'firebase/auth'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mocked } from 'vitest'
 import {
   computed,
@@ -516,6 +525,9 @@ beforeEach(() => {
   socketSend.mockReset()
   vi.mocked(reportError).mockClear()
   paywallWorkspace.role = 'owner'
+  // Its failed init retries on timers that outlive the test and re-activate a
+  // destroyed Pinia in later tests.
+  vi.spyOn(useTeamWorkspaceStore(), 'initialize').mockResolvedValue()
   vi.spyOn(
     useTeamWorkspaceStore(),
     'activeWorkspace',
@@ -2868,6 +2880,9 @@ function setupOwnedSelectionCanvas() {
   const canvas = new LGraphCanvas(canvasElement, rootGraph, {
     skip_render: true
   })
+  // The canvas registers a document-level keyup listener that would otherwise
+  // outlive its test and read a destroyed Pinia on a later test's key events.
+  onTestFinished(() => canvas.unbindEvents())
   canvas.onSelectionChange = () => syncFakeSelection()
 
   appMock.graph.nodes = rootGraph.nodes
