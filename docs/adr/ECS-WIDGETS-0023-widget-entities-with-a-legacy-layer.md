@@ -184,22 +184,27 @@ So the rule is not "derive the order from `node.widgets`". It is:
 Deriving is a guess dressed as a declaration; proving is not. `proveWidgetForm`
 (`src/lib/litegraph/src/widgets/widgetFormProof.ts`) is that predicate, and it returns an order
 **only** alongside `provable: true` — never a partial order beside a refusal. The result type is a
-discriminated union, so reading `order` without checking `provable` does not compile, and an empty
+discriminated union, so using `order` as a `string[]` without checking `provable` does not compile, and an empty
 serializing order is refused (`widgets_not_serialized`) because the document rejects an empty form.
 
 ### Why deriving does not work, measured
 
 The obvious implementation — derive after `runExtensionSerializeHook`, since that hook receives the
-final values — is wrong for two independent reasons.
+final values — is wrong for two independent reasons. `replayed` is required for the same reason
+as `coreIsLastWriter` below: a missing-node shell's `has_errors` lives on the node instance, not in
+the serialized payload, so only the caller can say the payload was replayed.
 
 **`LGraphNode.serialize` is not the last writer.** `SubgraphNode.serializeFromStoreState` calls
 `super.serializeFromStoreState(state)` — hook included — and _then_ replaces `widgets_values`
 from `this.inputs` filtered to those carrying a `widgetId`, or deletes it. That is a different
 collection from `node.widgets` (promoted widgets are linked inputs, per
 [ADR-SUBGRAPH-PROMOTION-0009](SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md)),
-so a form written at the end of the base method is already stale when the subclass returns. The
-proof catches this on **array identity**, deliberately not deep equality: a rebuilt
-equal-looking array came from a source core cannot see, and a coincidental match is not evidence.
+so a form written at the end of the base method is already stale when the subclass returns.
+Identity alone does not catch this (see the call-site section below); `coreIsLastWriter` does. The
+proof still checks **array identity**, deliberately not deep equality, against an instance hook
+that assigns a new array: a rebuilt equal-looking array came from a source core cannot see, and a
+coincidental match is not evidence. That check is only meaningful when the caller passes the array
+core built before the hook ran; passing the final array makes it vacuous.
 
 **`node.widgets` is a public JavaScript API that extensions mutate**, as the ADR body above
 already describes. Shipping packs splice it, truncate it (`this.widgets.length = n`), reorder
@@ -251,10 +256,10 @@ can represent duplicate occurrences. Measured in the corpus: `RecordAudio` store
 1 name.
 
 **`values_missing`** and **`values_replaced`** are deliberately distinct, because they send a
-reader to different problems. `values_missing` is an absent `widgets_values` — the
-`delete serialized.widgets_values` branch a `SubgraphNode` takes when every promoted store value
-is `undefined`. `values_replaced` is an array core did not produce, which is the shape a pack's
-own `serialize` override leaves behind. `values_not_positional` is reserved for an
+reader to different problems. `values_missing` is an absent `widgets_values` left by an
+instance hook that deleted it. `values_replaced` is an array core did not produce, which an
+`onSerialize` hook assigning a new array leaves behind. (`SubgraphNode` and class-level
+`serialize` overrides never reach either: `class_may_rewrite_payload` refuses them first.) `values_not_positional` is reserved for an
 object-shaped payload: the VHS family's `onSerialize` writes a dict keyed by every widget name,
 including widgets flagged `serialize === false`, so its keys and any derived order disagree.
 `widgets_not_serialized` covers `this.serialize_widgets = false`, which rgthree's group muters,
@@ -292,6 +297,10 @@ coreIsLastWriter: node.serializeFromStoreState ===
   LGraphNode.prototype.serializeFromStoreState &&
   node.serialize === LGraphNode.prototype.serialize
 ```
+
+It compares against the live base prototype, so an extension that globally wraps
+`LGraphNode.prototype.serialize` still compares equal. That is a known limit for the producer to
+close, for example by comparing against references captured at module load.
 
 Required rather than derived for two reasons. `tsc` then refuses any new call site until the
 question has been answered, so the assumption cannot creep back in silently. And the comparison
