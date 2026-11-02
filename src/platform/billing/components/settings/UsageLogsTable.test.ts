@@ -1,6 +1,6 @@
 import { getActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -161,6 +161,26 @@ describe('UsageLogsTable', () => {
         expect(screen.getByRole('table')).toBeInTheDocument()
       })
       expect(billingApi.getBillingEvents).toHaveBeenCalledTimes(1)
+    })
+
+    it('reads nothing when a parent refreshes while routing is unknown', async () => {
+      setWorkspaceBilling(false)
+      const table = ref<InstanceType<typeof UsageLogsTable>>()
+      render(
+        defineComponent({
+          setup: () => () => h(UsageLogsTable, { ref: table })
+        }),
+        { global: { plugins: [testI18n, getActivePinia()!] } }
+      )
+      await flushMicrotasks()
+
+      await table.value?.refresh()
+
+      expect(billingApi.getBillingEvents).not.toHaveBeenCalled()
+      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+      expect(
+        screen.queryByText('Failed to load activity. Please try again.')
+      ).not.toBeInTheDocument()
     })
 
     it.for(['ready', 'error'] as const)(

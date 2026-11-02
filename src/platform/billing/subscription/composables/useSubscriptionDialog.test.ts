@@ -1,4 +1,3 @@
-import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { BillingOperationRecordView } from '@/platform/billing/sdk/operationRecordView'
 import { fakeBillingSdk } from '@/platform/billing/sdk/billingSdkTestUtils'
@@ -19,7 +18,6 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useDialogService } from '@/services/dialogService'
-import { openTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import type {
   BillingSubscriptionStatus,
@@ -47,7 +45,6 @@ vi.mock(
 )
 
 const mockShowLayoutDialog = vi.fn()
-const mockShowTeamWorkspacesDialog = vi.fn()
 
 const mockIsFreeTier = vi.hoisted(() => ({ value: false }))
 const mockTier = vi.hoisted<{ value: SubscriptionInfo['tier'] }>(() => ({
@@ -79,7 +76,6 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/services/dialogService'))
-vi.mock(import('@/platform/billing/ports/teamWorkspaceDialog'))
 
 vi.mock(import('@/platform/billing/composables/useBillingRouting'))
 
@@ -124,9 +120,6 @@ function recoveredOperation(
 beforeEach(() => {
   vi.mocked(useDialogService().showLayoutDialog).mockImplementation(
     mockShowLayoutDialog
-  )
-  vi.mocked(openTeamWorkspaceDialog).mockImplementation(
-    mockShowTeamWorkspacesDialog
   )
   const billing = useBillingContext()
   billing.isFreeTier = computed(() => mockIsFreeTier.value)
@@ -346,8 +339,29 @@ describe('useSubscriptionDialog', () => {
       expect(props.initialPlanMode).toBe('personal')
     })
 
-    it('opens nothing while the workspace is not yet known', async () => {
-      useBillingRouting().shouldUseUnifiedPricing = computed(() => false)
+    it('opens the table once routing resolves for an early click', async () => {
+      let resolveRouting!: (known: boolean) => void
+      vi.mocked(useBillingContext().whenRoutingKnown).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRouting = resolve
+        })
+      )
+      const { showPricingTable } = useSubscriptionDialog()
+
+      const opened = showPricingTable({ reason: 'subscribe_now_button' })
+      await Promise.resolve()
+      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+
+      resolveRouting(true)
+
+      await expect(opened).resolves.toBe(true)
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+    })
+
+    it('opens nothing when routing never resolves', async () => {
+      vi.mocked(useBillingContext().whenRoutingKnown).mockResolvedValueOnce(
+        false
+      )
       const { showPricingTable } = useSubscriptionDialog()
 
       await expect(showPricingTable()).resolves.toBe(false)
@@ -830,100 +844,12 @@ describe('useSubscriptionDialog', () => {
     })
   })
 
-  describe('startTeamWorkspaceUpgradeFlow', () => {
-    it('closes existing dialogs before opening team workspace dialog', () => {
-      mockShowTeamWorkspacesDialog.mockResolvedValue(undefined)
-      const { startTeamWorkspaceUpgradeFlow } = useSubscriptionDialog()
-
-      startTeamWorkspaceUpgradeFlow()
-
-      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-        key: 'subscription-required'
-      })
-      expect(mockShowTeamWorkspacesDialog).toHaveBeenCalledWith(
-        expect.any(Function)
-      )
-    })
-
-    it('persists resume intent to sessionStorage via onConfirm callback', () => {
-      mockShowTeamWorkspacesDialog.mockResolvedValue(undefined)
-      const { startTeamWorkspaceUpgradeFlow } = useSubscriptionDialog()
-
-      startTeamWorkspaceUpgradeFlow()
-
-      const onConfirm = mockShowTeamWorkspacesDialog.mock.calls[0][0]
-      onConfirm()
-
-      expect(sessionStorage.getItem('comfy:resume-team-pricing')).toBe('1')
-    })
-
-    it('reopens pricing table on dialog rejection', async () => {
-      mockShowTeamWorkspacesDialog.mockRejectedValue(new Error('dialog error'))
-
-      const { startTeamWorkspaceUpgradeFlow } = useSubscriptionDialog()
-      startTeamWorkspaceUpgradeFlow()
-
-      await vi.waitFor(() => {
-        expect(console.error).toHaveBeenCalledWith(
-          '[useSubscriptionDialog] Failed to open team workspaces dialog:',
-          expect.any(Error)
-        )
-        expect(mockShowLayoutDialog).toHaveBeenCalledWith(
-          expect.objectContaining({ key: 'subscription-required' })
-        )
-      })
-    })
-  })
-
   describe('resumePendingPricingFlow', () => {
     it('does nothing when no resume intent is stored', async () => {
       const { resumePendingPricingFlow } = useSubscriptionDialog()
 
       await resumePendingPricingFlow()
 
-      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
-    })
-
-    it('shows pricing table and clears intent when in team workspace', async () => {
-      sessionStorage.setItem('comfy:resume-team-pricing', '1')
-      Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
-      useBillingRouting().type = computed(() => 'workspace')
-      useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
-      useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
-      mockCurrentPlanSlug.value = 'creator-monthly'
-
-      const { resumePendingPricingFlow } = useSubscriptionDialog()
-      await resumePendingPricingFlow()
-
-      expect(sessionStorage.getItem('comfy:resume-team-pricing')).toBeNull()
-      expect(mockShowLayoutDialog).toHaveBeenCalledWith(
-        expect.objectContaining({
-          key: 'subscription-required',
-          props: expect.objectContaining({ initialPlanMode: 'team' })
-        })
-      )
-    })
-
-    it('clears intent but does not show pricing if still in personal workspace', async () => {
-      sessionStorage.setItem('comfy:resume-team-pricing', '1')
-      Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
-
-      const { resumePendingPricingFlow } = useSubscriptionDialog()
-      await resumePendingPricingFlow()
-
-      expect(sessionStorage.getItem('comfy:resume-team-pricing')).toBeNull()
-      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
-    })
-
-    it('consumes intent so second call is a no-op', async () => {
-      sessionStorage.setItem('comfy:resume-team-pricing', '1')
-      Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
-
-      const { resumePendingPricingFlow } = useSubscriptionDialog()
-      await resumePendingPricingFlow()
-      mockShowLayoutDialog.mockClear()
-
-      await resumePendingPricingFlow()
       expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     })
 

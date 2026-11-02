@@ -10,7 +10,6 @@ import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxy
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
-import { provideTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
@@ -167,11 +166,6 @@ async function bootstrap(): Promise<void> {
     installCloudApiAuth()
   }
   installWorkspaceApiAuth()
-  provideTeamWorkspaceDialog(async (onConfirm) => {
-    const { useWorkspaceDialogs } =
-      await import('@/platform/account/composables/useWorkspaceDialogs')
-    return useWorkspaceDialogs().showTeamWorkspacesDialog(onConfirm)
-  })
 
   bootstrapTracer.armWatchdog()
 

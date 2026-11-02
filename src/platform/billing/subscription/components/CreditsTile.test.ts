@@ -5,7 +5,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type {
@@ -1064,6 +1064,35 @@ describe('CreditsTile', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(readWorkspaceBillingEvents).not.toHaveBeenCalled()
     expect(localStorage.getItem('pending_topup_timestamp')).not.toBeNull()
+  })
+
+  it('reconciles a pending top-up once routing becomes known', async () => {
+    activeProSubscription()
+    const workspaceBilling = ref(false)
+    useBillingRouting().shouldUseWorkspaceBilling = computed(
+      () => workspaceBilling.value
+    )
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+    vi.mocked(readWorkspaceBillingEvents).mockResolvedValueOnce(
+      eventsPage([
+        {
+          event_type: 'topup_completed',
+          createdAt: new Date(Date.now() + 1000).toISOString()
+        }
+      ])
+    )
+
+    renderTile()
+    await waitFor(() =>
+      expect(useBillingContext().fetchBalance).toHaveBeenCalled()
+    )
+    expect(readWorkspaceBillingEvents).not.toHaveBeenCalled()
+
+    workspaceBilling.value = true
+
+    await waitFor(() =>
+      expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
+    )
   })
 
   it('surfaces a failure toast when a refresh rejects', async () => {

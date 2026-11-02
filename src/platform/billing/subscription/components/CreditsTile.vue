@@ -222,7 +222,7 @@
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -586,6 +586,10 @@ async function handleWindowFocus() {
 }
 
 useEventListener(window, 'focus', () => void handleWindowFocus())
+
+watch(shouldUseWorkspaceBilling, (known) => {
+  if (known && pendingTopupNeedsRefresh()) void handleRefresh()
+})
 
 onMounted(handleRefresh)
 </script>

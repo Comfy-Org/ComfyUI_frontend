@@ -123,6 +123,7 @@ const error = ref<string | null>(null)
 const customerEventService = useCustomerEventsService()
 
 const { shouldUseWorkspaceBilling } = useBillingRouting()
+const routingPending = computed(() => !shouldUseWorkspaceBilling.value)
 
 const pagination = ref({
   page: 1,
@@ -140,6 +141,14 @@ let latestLoadToken = 0
 
 const loadEvents = async () => {
   const loadToken = ++latestLoadToken
+  if (routingPending.value) {
+    dropRenderedEvents()
+    error.value = workspaceInitSettled.value
+      ? t('credits.loadEventsError')
+      : null
+    loading.value = !workspaceInitSettled.value
+    return
+  }
   loading.value = true
   error.value = null
 
@@ -151,8 +160,7 @@ const loadEvents = async () => {
     const response = await readWorkspaceBillingEvents(params)
 
     // Completion telemetry must run even when a mid-checkout route flip
-    // supersedes this load, since the winning fetch may not carry the
-    // completion yet.
+    // supersedes this load.
     const completedTopup = usePendingTopup().consumeCompletedTopup(
       response?.events
     )
@@ -250,17 +258,6 @@ watch(
   ([, workspaceId], previous) => {
     if (previous !== undefined && previous[1] !== workspaceId) {
       dropRenderedEvents()
-    }
-    if (!shouldUseWorkspaceBilling.value) {
-      // Routing is not known yet: invalidate any read in flight and wait,
-      // unless init has finished with no workspace, which will not resolve.
-      latestLoadToken++
-      dropRenderedEvents()
-      error.value = workspaceInitSettled.value
-        ? t('credits.loadEventsError')
-        : null
-      loading.value = !workspaceInitSettled.value
-      return
     }
     refresh().catch((error) => {
       console.error('Error loading events:', error)
