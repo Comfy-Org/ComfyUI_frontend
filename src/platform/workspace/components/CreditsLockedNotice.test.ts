@@ -25,14 +25,14 @@ const i18n = createI18n({
   }
 })
 
-function renderNotice(state: BillingContext['subscriptionStatus']['value']) {
-  mockBillingContext().subscriptionStatus = computed(() => state)
+function renderNotice(state: BillingContext['subscriptionState']['value']) {
+  mockBillingContext().subscriptionState = computed(() => state)
   return render(CreditsLockedNotice, { global: { plugins: [i18n] } })
 }
 
 describe('CreditsLockedNotice', () => {
   it('tells a never-subscribed account to subscribe', () => {
-    renderNotice(null)
+    renderNotice('never_subscribed')
 
     expect(screen.getByRole('status')).toHaveTextContent('Subscribe to run')
   })
@@ -43,8 +43,8 @@ describe('CreditsLockedNotice', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Resubscribe to run')
   })
 
-  it('falls back to the subscribe line for any other state', () => {
-    renderNotice('canceled')
+  it('falls back to the subscribe line while the state is unknown', () => {
+    renderNotice(null)
 
     expect(screen.getByRole('status')).toHaveTextContent('Subscribe to run')
   })

@@ -382,6 +382,16 @@ describe('useBillingContext', () => {
     })
   })
 
+  it('passes subscription_state through legacy billing as received', () => {
+    mockBillingRail.value = 'legacy_stripe'
+    useSubscription().subscriptionStatus.value = {
+      ...DEFAULT_BILLING_STATUS,
+      subscription_state: 'ended'
+    }
+
+    expect(useBillingContext().subscriptionState.value).toBe('ended')
+  })
+
   it('exposes initialize action', async () => {
     const { initialize } = useBillingContext()
     await expect(initialize()).resolves.toBeUndefined()
