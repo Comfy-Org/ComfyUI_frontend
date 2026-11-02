@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 import CanvasModeSelector from '@/components/graph/CanvasModeSelector.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useZipTieToolStore } from './zipTieToolStore'
 
 beforeEach(() => {
   useCanvasStore().canvas = fromPartial({ read_only: false })
@@ -48,6 +49,19 @@ async function openMenu() {
 }
 
 describe('CanvasModeSelector', () => {
+  it.for(['Select', 'Hand'])(
+    'exits the zip tie tool when choosing %s',
+    async (mode) => {
+      const tool = useZipTieToolStore()
+      tool.toggle()
+      const { user } = await openMenu()
+
+      await user.click(screen.getByRole('menuitemradio', { name: mode }))
+
+      expect(tool.active).toBe(false)
+    }
+  )
+
   it.for([
     { event: 'resize', target: window },
     { event: 'scroll', target: document }
