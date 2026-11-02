@@ -1208,6 +1208,9 @@ export async function runPack(
       formMeasurementErrors
     )
   })
+  row.formAgreement ??= {
+    harnessError: 'serialize threw before the form could be measured'
+  }
   await op('reload', () => {
     const g2 = new LGraph()
     g2.configure(
