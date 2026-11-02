@@ -25,6 +25,13 @@ const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
   'KJNodes.browserstatus'
 ]
 
+function withReadOnlyExtensions(disabledNames: readonly string[]) {
+  const disabled = new Set(disabledNames)
+  for (const name of ALWAYS_DISABLED_EXTENSIONS) disabled.add(name)
+  for (const name of ALWAYS_ENABLED_EXTENSIONS) disabled.delete(name)
+  return disabled
+}
+
 type Registration =
   | { mode: 'immediate' }
   | { mode: 'holding'; held: readonly ComfyExtension[] }
@@ -49,14 +56,6 @@ export const useExtensionStore = defineStore('extension', () => {
   const extensionPaths = computed(() => extensionPathState.value.paths)
   const isSavingExtensionPaths = ref(false)
 
-  // Disabled extension names that are currently not in the extension list.
-  // If a node pack is disabled in the backend, we shouldn't remove the configuration
-  // of the frontend extension disable list, in case the node pack is re-enabled.
-  const inactiveDisabledExtensionNames = computed(() => {
-    return Array.from(disabledExtensionNames.value).filter(
-      (name) => !(name in extensionByName.value)
-    )
-  })
   const isAgentCreatedExtension = (extension: ComfyExtension) =>
     extension.provenance?.createdBy === 'comfy-agent' ||
     /^agent\.[^.]+\./.test(extension.name)
@@ -170,13 +169,37 @@ export const useExtensionStore = defineStore('extension', () => {
   }
 
   function loadDisabledExtensionNames(names: string[]) {
-    disabledExtensionNames.value = new Set(names)
-    for (const name of ALWAYS_DISABLED_EXTENSIONS) {
-      disabledExtensionNames.value.add(name)
-    }
-    for (const name of ALWAYS_ENABLED_EXTENSIONS) {
-      disabledExtensionNames.value.delete(name)
-    }
+    disabledExtensionNames.value = withReadOnlyExtensions(names)
+  }
+
+  const enabledByName = computed<Record<string, boolean>>(() => {
+    const disabled = withReadOnlyExtensions(
+      useSettingStore().get('Comfy.Extension.Disabled')
+    )
+    return Object.fromEntries(
+      extensions.value.map((ext) => [ext.name, !disabled.has(ext.name)])
+    )
+  })
+
+  const changedExtensions = computed(() =>
+    extensions.value.filter(
+      (ext) => enabledByName.value[ext.name] !== isExtensionEnabled(ext.name)
+    )
+  )
+
+  async function setExtensionsEnabled(
+    names: readonly string[],
+    enabled: boolean
+  ) {
+    const settingStore = useSettingStore()
+    const editable = new Set(names.filter((name) => !isExtensionReadOnly(name)))
+    const disabled = settingStore.get('Comfy.Extension.Disabled')
+    await settingStore.set(
+      'Comfy.Extension.Disabled',
+      enabled
+        ? disabled.filter((name) => !editable.has(name))
+        : [...new Set([...disabled, ...editable])]
+    )
   }
 
   function loadExtensionPaths(paths: string[], disabledAtBoot: string[]) {
@@ -288,7 +311,6 @@ export const useExtensionStore = defineStore('extension', () => {
     enabledExtensions,
     extensionPaths,
     isSavingExtensionPaths,
-    inactiveDisabledExtensionNames,
     isExtensionInstalled,
     isAgentCreatedExtension,
     isExtensionEnabled,
@@ -307,6 +329,9 @@ export const useExtensionStore = defineStore('extension', () => {
     areNodeDefHooksOwed,
     takeOwedNodeDefHooks,
     loadDisabledExtensionNames,
+    enabledByName,
+    changedExtensions,
+    setExtensionsEnabled,
     loadExtensionPaths,
     isExtensionPathEnabledAtBoot,
     getCurrentDisabledExtensionPaths,
