@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { disarmHostedBillingReturnRefresh } from '@/platform/billing/openHostedBillingTab'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -181,9 +180,6 @@ beforeEach(() => {
   Object.assign(useTeamWorkspaceStore(), {
     activeWorkspace: { id: 'workspace-1' }
   })
-  vi.mocked(
-    useWorkspaceBillingStateStore().setWorkspaceBillingRail
-  ).mockImplementation(() => {})
 })
 
 describe('useWorkspaceBilling', () => {
@@ -332,9 +328,6 @@ describe('useWorkspaceBilling', () => {
       })
       expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isFreeTier.value).toBe(false)
-      expect(
-        useWorkspaceBillingStateStore().setWorkspaceBillingRail
-      ).toHaveBeenCalledWith('workspace-1', 'stripe')
     })
 
     it.for([
@@ -624,9 +617,6 @@ describe('useWorkspaceBilling', () => {
       await billing.fetchStatus()
 
       expect(billing.isFreeTier.value).toBe(true)
-      expect(
-        useWorkspaceBillingStateStore().setWorkspaceBillingRail
-      ).not.toHaveBeenCalled()
     })
 
     it('sets error and rethrows when fetchStatus fails', async () => {

@@ -63,6 +63,7 @@
                     :widget="row.widget.simplified"
                     :node-id
                     :node-type
+                    :node-title
                     :invalid="row.widget.hasError"
                     :aria-invalid="row.widget.hasError || undefined"
                     :class="
@@ -123,12 +124,14 @@ const {
   nodeType,
   canSelectInputs = false,
   nodeId,
+  nodeTitle,
   syncLayout = true
 } = defineProps<{
   processedWidgets: WidgetGridItem[]
   nodeType: string
   canSelectInputs?: boolean
   nodeId?: NodeId
+  nodeTitle?: string
   syncLayout?: boolean
 }>()
 

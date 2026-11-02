@@ -541,7 +541,7 @@ jobs:
       cancel-in-progress: false
     if: >-
       ${{
-        always() &&
+        !cancelled() &&
         needs.preflight.result == 'success' &&
         needs.changes.outputs.should-run == 'true' &&
         github.event_name == 'pull_request' &&

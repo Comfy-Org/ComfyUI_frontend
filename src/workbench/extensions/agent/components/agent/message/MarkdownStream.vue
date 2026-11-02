@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { marked } from 'marked'
 import type { Token, Tokens } from 'marked'
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import { useCanvasActionShortcutKeys } from '@/platform/keybindings/canvasActionShortcuts'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -105,10 +106,6 @@ const segments = computed<Segment[]>(() => {
   flushProse()
   return out
 })
-
-const MediaLightbox = defineAsyncComponent(
-  () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
-)
 
 const proseItems = ref<AugmentedResultItem[]>([])
 const proseIndex = ref(-1)

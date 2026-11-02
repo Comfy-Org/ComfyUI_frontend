@@ -1,5 +1,4 @@
-import { onTestFinished, vi } from 'vitest'
-import { ref } from 'vue'
+import { vi } from 'vitest'
 
 import {
   hasParamsBeyondDetailsColumn,
@@ -32,9 +31,6 @@ const eventSeverities = new Map<
 ])
 
 const customerEventsService: CustomerEventsService = {
-  isLoading: ref(false),
-  error: ref(null),
-  getMyEvents: vi.fn(async () => ({ events: [] })),
   formatEventType: vi.fn((type) => eventLabels.get(type) ?? type),
   getEventSeverity: vi.fn((type) => eventSeverities.get(type) ?? 'info'),
   formatAmount: vi.fn((amount) => {
@@ -55,10 +51,4 @@ const customerEventsService: CustomerEventsService = {
 
 export const useCustomerEventsService = vi.fn<
   typeof real.useCustomerEventsService
->(() => {
-  onTestFinished(() => {
-    customerEventsService.isLoading.value = false
-    customerEventsService.error.value = null
-  })
-  return customerEventsService
-})
+>(() => customerEventsService)
