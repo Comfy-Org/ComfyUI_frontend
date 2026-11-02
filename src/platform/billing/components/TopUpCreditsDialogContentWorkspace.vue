@@ -363,6 +363,10 @@
             {{ $t('credits.topUp.paymentProcessingBody') }}
           </p>
         </div>
+        <TopUpAutoTopUpCard
+          v-if="step === 'amount' && !processingPayment"
+          class="mb-2"
+        />
         <Button
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
@@ -450,6 +454,7 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import FormNumberField from '@/components/common/FormNumberField.vue'
+import TopUpAutoTopUpCard from './TopUpAutoTopUpCard.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
