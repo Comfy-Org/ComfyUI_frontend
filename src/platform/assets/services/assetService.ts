@@ -620,7 +620,6 @@ function createAssetService() {
       return EMPTY_PAGE
     }
 
-    // Find the category for this node type using efficient O(1) lookup
     const modelToNodeStore = useModelToNodeStore()
     const category = modelToNodeStore.getCategoryForNodeType(nodeType)
 
@@ -628,9 +627,15 @@ function createAssetService() {
       return EMPTY_PAGE
     }
 
-    // Fetch assets for this category using same API pattern as getAssetModels
     return await handleAssetRequest(
-      { includeTags: [MODELS_TAG, category], limit, offset, after, signal },
+      {
+        includeTags: [MODELS_TAG, category],
+        limit,
+        offset,
+        after,
+        includePublic: true,
+        signal
+      },
       `assets for ${nodeType}`
     )
   }
