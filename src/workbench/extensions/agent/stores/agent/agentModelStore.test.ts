@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { api } from '@/scripts/api'
 import { AgentApiError } from '@/workbench/extensions/agent/services/agent/agentRestClient'
@@ -57,10 +58,6 @@ describe('agentModelStore', () => {
     vi.mocked(api.fetchApi).mockReset()
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('stays unsupported on a host without the model list', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       jsonResponse(404, { error: 'not found' })
@@ -103,6 +100,7 @@ describe('agentModelStore', () => {
     expect(store.modelForSend('t1')).toBe('local')
     expect(store.modelForSend(null)).toBe('cloud:claude-opus-4-8')
     expect(store.modelForSend('t2')).toBe('cloud:claude-opus-4-8')
+    await nextTick()
     expect(
       JSON.parse(localStorage.getItem('Comfy.Agent.ModelChoiceByThread')!)
     ).toEqual({ t1: 'local' })

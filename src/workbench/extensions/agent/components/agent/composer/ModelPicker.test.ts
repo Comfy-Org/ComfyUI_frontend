@@ -83,7 +83,7 @@ describe('ModelPicker', () => {
 
     await userEvent.click(trigger)
     const options = await screen.findAllByRole('menuitemradio')
-    expect(options.map((option) => option.textContent?.trim())).toEqual([
+    expect(options.map((option) => option.textContent.trim())).toEqual([
       'qwen (this computer)',
       'qwen (OpenRouter)'
     ])
@@ -96,9 +96,9 @@ describe('ModelPicker', () => {
     expect(useAgentModelStore().modelForSend('t1')).toBe(
       'openrouter:qwen/qwen3.8-27b'
     )
-    expect(
-      await screen.findByTestId('agent-model-picker')
-    ).toHaveTextContent('qwen (OpenRouter)')
+    expect(await screen.findByTestId('agent-model-picker')).toHaveTextContent(
+      'qwen (OpenRouter)'
+    )
   })
 
   it('refreshes the list when opened', async () => {
