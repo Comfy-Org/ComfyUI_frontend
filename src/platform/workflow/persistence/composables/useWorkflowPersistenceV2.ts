@@ -44,7 +44,7 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { isValidUuid } from '@/utils/formatUtil'
 
 export function useWorkflowPersistenceV2() {
