@@ -38,15 +38,14 @@ When docs and examples conflict, use this order:
 
 1. Explicit repo rules, lint rules, and note blocks.
 2. [`docs/guidance/testing-principles.md`](../../../docs/guidance/testing-principles.md) for design rules that apply at every test level.
-3. [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md)
-4. Rule sections in [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md), [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md), and [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)
+3. [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md)
+4. Rule sections in [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)
 5. Example snippets
 6. Prior diffs
 
 Apply these repo-specific clarifications:
 
 - [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md) starts with the authoritative rule: new component tests use `@testing-library/vue` with `@testing-library/user-event`. The `@vue/test-utils` snippets below it are legacy examples.
-- [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md) still contains `as any` examples. Treat them as legacy snippets, not approval for new or edited test code.
 - If docs conflict, prefer the stricter newer rule and call out the doc ambiguity. Do not approve through it.
 - Motion != fix.
 
@@ -83,9 +82,9 @@ Apply these repo-specific clarifications:
 ## Mocking Rules
 
 - Fail helpers that do not remove repeated setup, encode domain meaning, or simplify assertions. Barely earning the abstraction is not enough.
-- For composables with reactive or singleton state, define stable mock state inside the `vi.mock()` factory. Access it per test via the composable itself. See [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md) "Mocking Composables with Reactive State".
+- For composables with reactive or singleton state, define stable mock state inside the `vi.mock()` factory. Access it per test via the composable itself. See [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#shared-manual-mocks) "Shared manual mocks".
 - This does not ban local test data builders or per-test `vi.spyOn(...)`.
-- Mock seams, not the project-owned module you are trying to exercise. Default to real collaborators and shared factories per [`docs/guidance/testing-principles.md`](../../../docs/guidance/testing-principles.md) "Doubles: real collaborators first". For store tests, use real stores on the testing Pinia that [`vitest.setup.ts`](../../../vitest.setup.ts) activates before each test. Flag any test that creates its own Pinia or mocks `pinia`. Audited concurrent store tests use the per-test `pinia` fixture. See [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md) and [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md).
+- Mock seams, not the project-owned module you are trying to exercise. Default to real collaborators and shared factories per [`docs/guidance/testing-principles.md`](../../../docs/guidance/testing-principles.md) "Doubles: real collaborators first". For store tests, use real stores on the testing Pinia that [`vitest.setup.ts`](../../../vitest.setup.ts) activates before each test. Flag any test that creates its own Pinia or mocks `pinia`. Audited concurrent store tests use the per-test `pinia` fixture. See [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#pinia-stores) "Pinia Stores".
 
 ### Over-Mocking and Replicated Logic
 
@@ -137,7 +136,7 @@ If the wrapper only renames or relays a mocked value, fail it. Inline the lookup
 ### `vue-i18n`
 
 - Never mock `vue-i18n` in component tests.
-- Use real `createI18n` per [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) and the shared [`testI18n`](../../../src/components/searchbox/v2/__test__/testUtils.ts) setup.
+- Use real `createI18n` per [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#real-vue-i18n) and the shared [`testI18n`](../../../src/utils/__tests__/testI18n.ts) setup.
 
 ## Test-Body Rules
 
@@ -169,23 +168,23 @@ A regression test that never proves red does not pin the bug.
 
 ## Quick Reference
 
-| When you see...                            | Read this                                                                                                                                                                                                   |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New `vi.mock(...)` for a composable        | [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md) -> "Mocking Composables with Reactive State"                                                                                        |
-| New store test or store mock               | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) setup + [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md)                                             |
-| New component test                         | Top note in [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)                                                                                                               |
-| `vue-i18n` in a component test             | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md) + [`src/components/searchbox/v2/__test__/testUtils.ts`](../../../src/components/searchbox/v2/__test__/testUtils.ts)           |
-| New LiteGraph node/canvas/graph test setup | [`docs/testing/litegraph-testing.md`](../../../docs/testing/litegraph-testing.md) -> "Shared Factories" + [`src/utils/__tests__/litegraphTestUtils.ts`](../../../src/utils/__tests__/litegraphTestUtils.ts) |
-| Cast around a mock                         | [`docs/guidance/typescript.md`](../../../docs/guidance/typescript.md) -> "Type Assertion Hierarchy"                                                                                                         |
+| When you see...                            | Read this                                                                                                                                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New `vi.mock(...)` for a composable        | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#shared-manual-mocks) -> "Shared manual mocks"                                                                |
+| New store test or store mock               | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#pinia-stores) -> "Pinia Stores"                                                                              |
+| New component test                         | Top note in [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)                                                                             |
+| `vue-i18n` in a component test             | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#real-vue-i18n) + [`src/utils/__tests__/testI18n.ts`](../../../src/utils/__tests__/testI18n.ts)               |
+| New LiteGraph node/canvas/graph test setup | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#mocking) + [`src/utils/__tests__/litegraphTestUtils.ts`](../../../src/utils/__tests__/litegraphTestUtils.ts) |
+| Cast around a mock                         | [`docs/guidance/typescript.md`](../../../docs/guidance/typescript.md) -> "Type Assertion Hierarchy"                                                                       |
 
 ## Key Files to Read
 
 | Purpose                              | Path                                                                                                              |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| Composable mocking patterns          | [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md)                                           |
-| Store testing patterns               | [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md)                                         |
-| Repo-wide Vitest setup defaults      | [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md)                                     |
+| Composable mocking patterns          | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#shared-manual-mocks)                                 |
+| Store testing patterns               | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#pinia-stores)                                        |
+| Repo-wide Vitest setup defaults      | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md)                                                     |
 | Component testing rule for new tests | [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)                                 |
-| LiteGraph test patterns              | [`docs/testing/litegraph-testing.md`](../../../docs/testing/litegraph-testing.md)                                 |
+| LiteGraph test patterns              | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#mocking)                                             |
 | Shared LiteGraph factories           | [`src/utils/__tests__/litegraphTestUtils.ts`](../../../src/utils/__tests__/litegraphTestUtils.ts)                 |
 | Real i18n setup                      | [`src/components/searchbox/v2/__test__/testUtils.ts`](../../../src/components/searchbox/v2/__test__/testUtils.ts) |

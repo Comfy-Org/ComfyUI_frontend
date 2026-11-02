@@ -6,7 +6,7 @@ globs:
 
 # Vitest Unit Test Conventions
 
-See `docs/testing/*.md` for detailed patterns.
+Component-test mechanics live in `docs/testing/component-testing.md`.
 
 ## Test Quality
 
@@ -22,7 +22,20 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
   cannot satisfy the module type. For new mocks, type the factory instead.
 - Keep module mocks contained - no global mutable state
 - Use `vi.hoisted()` only for bindings needed by a hoisted mock factory.
-  Keep mutable scenario state inside the test that uses it.
+  Keep mutable scenario state inside the test that uses it. Do not use
+  `vi.doMock()`; declare the mock with `vi.mock()` instead.
+- Configure a module mock inside the test or `beforeEach` through the real
+  import: `vi.mocked(myService.doThing).mockResolvedValue(result)`.
+- Use [`vi.when`](https://vitest.dev/guide/recipes/conditional-mocking) when a
+  mock returns fixed values for specific arguments, as
+  `UsageLogsTable.test.ts` does for paginated responses. Keep
+  `mockImplementation` for calculations and side effects. Register behaviors
+  in the test or `beforeEach`, exact matches before asymmetric catch-all
+  matchers, because Vitest matches in registration order. Preserve
+  unmatched-call behavior with `onUnmatched`.
+- Build LiteGraph nodes, graphs, canvases, subgraphs, and workflows with the
+  shared factories in `src/utils/__tests__/litegraphTestUtils.ts` or real
+  LiteGraph instances. Do not mock LiteGraph classes or hand-roll builders.
 - Vitest automatically resets mocks, restores spies, and unstubs globals and
   environment variables before each test, and shared mocks restore their own
   reactive state with `onTestFinished`. Do not repeat that cleanup in test
@@ -33,12 +46,19 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
 - `console.debug`, `error`, `info`, `log`, and `warn` are already spied before
   every test, and output from passing tests is hidden. Assert with
   `expect(console.error)` and configure with `vi.mocked(console.error)` instead
-  of calling `vi.spyOn(console, 'error')`.
+  of calling `vi.spyOn(console, 'error')`; `comfy/no-redundant-console-spy`
+  reports a second spy. Run with `--silent=false` to see output from passing
+  tests.
 - Module-scope `vi.fn()` declarations may provide reset-persistent defaults by
   passing the implementation directly to `vi.fn(implementation)`.
+- Prefer `toHaveLength(n)` over `.length).toBe(n)`, and `toMatchObject` for
+  partial matches.
 
 ### Shared manual mocks
 
+- A one-off composable mock inline in `vi.mock()` creates its `vi.fn()` and
+  `ref()` values inside the factory and returns the same object on every
+  call. Tests read it through the composable rather than a shared variable.
 - Put reusable module mocks in a same-named file under `__mocks__`. Activate
   them with `vi.mock(import('…'))`. Tests import the real module path and
   configure its functions with `vi.mocked`. Do not export mock-only setters,
@@ -152,6 +172,96 @@ cleanup can be attached to the test that dirtied it.
   restores the getter. A fixed getter return does not provide a reactive
   dependency for consumer computeds.
 
+## Pinia Stores
+
+In the `frontend` project, `vitest.setup.ts` activates a fresh
+`createTestingPinia({ stubActions: false })` before each test and disposes it
+afterward. Call real store composables in the test or `beforeEach`. Do not
+create another Pinia, mock `pinia` or `@pinia/testing`, or replace a store
+composable; the `comfy/use-global-pinia` oxlint rule reports each of these.
+Concurrent store suites use the per-test fixture from `@/testing/pinia`
+instead (see [Own setup resources and test
+teardown](#own-setup-resources-and-test-teardown)).
+
+Set scenario state on the store, directly or with `store.$patch()`. Actions
+run their real implementations and are already spies, so assert on store
+state first. Stub an action only to isolate its effects, and keep the action
+under test real:
+
+```ts
+import { beforeEach, vi } from 'vitest'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
+
+beforeEach(() => {
+  const settings = useSettingStore()
+  settings.settingValues['Comfy.WorkflowActions.SeenItems'] = []
+  vi.mocked(settings.set).mockResolvedValue()
+})
+```
+
+Read an action from its store where it is used, such as
+`expect(useToast().error).toHaveBeenCalledWith('Upload failed')`, instead of
+caching it in a suite-level `let` assigned by `beforeEach`. A test-local
+`const store = useToast()` is fine when it helps readability.
+
+A component that needs Pinia injection receives the same instance:
+`render(MyComponent, { global: { plugins: [getActivePinia()!] } })`.
+
+## Core Extensions
+
+Core extension modules export their `ComfyExtension` object and register
+nothing on import. Call the hook under test on that object and assert on the
+node, widget, or store state it changes. Do not mock `registerExtension` to
+capture it:
+
+```ts
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import { app } from '@/scripts/app'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+
+import { customWidgetsExtension } from './customWidgets'
+
+await customWidgetsExtension.beforeRegisterNodeDef?.(
+  TestCustomComboNode,
+  fromPartial<ComfyNodeDef>({ name: 'CustomCombo' }),
+  app
+)
+```
+
+`src/extensions/core/index.test.ts` covers registration order.
+
+## Real `vue-i18n`
+
+Do not mock `vue-i18n` or spy on `t`. Install a real instance in every test
+that reaches `useI18n()`, through `global.plugins` for components or a host
+app for composables. `testI18n` from `@/utils/__tests__/testI18n` loads the
+English messages. To assert on keys instead of copy, create an instance with
+empty messages; `t('foo.bar')` then returns `'foo.bar'`:
+
+```ts
+import { createI18n } from 'vue-i18n'
+
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+
+render(MyComponent, { global: { plugins: [i18n] } })
+
+expect(useToast().success).toHaveBeenCalledWith(
+  'mediaAsset.selection.exportStarted'
+)
+```
+
+## Fake Timers
+
+The `frontend` project's `vitest.timer.setup.ts` calls `vi.useFakeTimers()`
+before every test and `vi.useRealTimers()` after it. Do not repeat either in
+hooks; `comfy/no-redundant-vitest-cleanup` reports `vi.useRealTimers()` and
+`vi.clearAllTimers()` in `afterEach`. Advance time with
+`await vi.advanceTimersByTimeAsync(ms)`. A test that needs real timers calls
+`vi.useRealTimers()` in its own body. The `isolated-stores` and `tooling`
+projects run on real timers.
+
 ## No Real Network
 
 `vitest.network.setup.ts` blocks every `http(s)` `fetch`, and happy-dom is configured not
@@ -210,10 +320,13 @@ expect(JSON.parse(String(fetchRequests(TOKEN_URL)[0].body))).toEqual({
 
 ## Running Tests
 
+Run the files you changed. The path argument filters by substring of the test
+file path, and `-t` filters by test name, a regex that matches `it()` and
+`test()` titles but not `describe()` titles:
+
 ```bash
-pnpm test:unit                       # Run all unit tests
-pnpm test:unit path/to/file          # Filter by substring of test file path
-pnpm test:unit foo.test.ts -t "name" # Filter by test name (regex; it()/test() only, not describe())
+pnpm test:unit path/to/file
+pnpm test:unit foo.test.ts -t "name"
 ```
 
 Do not use the `--` separator before vitest args; pnpm forwards extra args automatically, and `--` mangles quoted args (e.g. `-t "two words"`) on Windows PowerShell.
@@ -245,12 +358,12 @@ same worker, so concurrent tests must not mutate shared mocks or globals.
 
 Use the test context's `expect` for concurrent assertions. Allocate and dispose
 resources inside each test, as in `scripts/cicd/check-binary-size.test.ts`.
-Verify both filtered and mixed runs without retries:
+Verify the changed suites in filtered and mixed runs without retries:
 
 ```bash
-pnpm test:unit --tags-filter=concurrent-safe --retry=0
-pnpm test:unit --tags-filter=shared-state --retry=0
-pnpm test:unit --retry=0
+pnpm test:unit path/to/suite --tags-filter=concurrent-safe --retry=0
+pnpm test:unit path/to/suite --tags-filter=shared-state --retry=0
+pnpm test:unit path/to/suite --retry=0
 ```
 
 ### Own setup resources and test teardown
@@ -294,7 +407,7 @@ worker so files actually share a worker. Shuffled passes are evidence, not proof
 that every interleaving is safe. Use controlled overlapping lifetimes to verify
 that one test's cleanup leaves another test's resources usable.
 
-Vitest 4.1.11 does not propagate CLI `--maxConcurrency` into projects. Set
+Vitest does not propagate CLI `--maxConcurrency` into projects. Set
 `test.maxConcurrency` in configuration when comparing limits, and verify actual
 overlap rather than relying on the command-line value.
 
@@ -326,10 +439,10 @@ CI does not persist the cache, so it always orders by file size - which is why
 this class of failure can reproduce locally and pass in CI.
 
 Do the import at module scope instead. File collection is untimed, so the same
-work costs nothing against a test or hook budget:
+work costs nothing against a test or hook budget. Use a top-level dynamic
+import when `vi.mock` factories close over module-scope consts, because a
+static import is hoisted above them:
 
 ```ts
-// Not inside it(): a static import is hoisted above the consts that vi.mock
-// factories close over, so keep it a top-level dynamic import.
 const { default: SomeView } = await import('./SomeView.vue')
 ```
