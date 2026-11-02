@@ -2494,19 +2494,67 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function isRetryableSettledRead(outcome: TurnOutcome): boolean {
+    if (outcome.kind === 'streaming') return true
+    return (
+      outcome.kind === 'error' &&
+      isRetryableRequestFailure(outcome.cause, false)
+    )
+  }
+
   async function fetchSettledTurnOutcome(
     turn: LiveTurn,
     generation: number,
-    signal: AbortSignal
+    signal: AbortSignal,
+    deadlineReason: Error
   ): Promise<TurnOutcome> {
-    let outcome = await fetchTurnOutcome(turn, signal)
-    for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
-      if (outcome.kind !== 'streaming' || generation !== sessionGeneration)
-        return outcome
-      await delay(ms, { signal })
+    let outcome: TurnOutcome | undefined
+    try {
       outcome = await fetchTurnOutcome(turn, signal)
+      for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
+        if (
+          !isRetryableSettledRead(outcome) ||
+          generation !== sessionGeneration
+        )
+          return outcome
+        await delay(ms, { signal })
+        outcome = await fetchTurnOutcome(turn, signal)
+      }
+      return outcome
+    } catch (error) {
+      if (signal.reason === deadlineReason && outcome?.kind === 'error')
+        return outcome
+      throw error
     }
-    return outcome
+  }
+
+  function reportSettledReadFailure(cause: unknown): void {
+    reportError(cause, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  }
+
+  function applySettledRead(turn: LiveTurn, outcome: TurnOutcome): void {
+    if (outcome.kind === 'error') reportSettledReadFailure(outcome.cause)
+    else if (outcome.kind === 'terminal')
+      conversationStore.reconcileSettledTurn(turn, outcome.parts)
+  }
+
+  function releaseSettledRead(
+    key: string,
+    recovery: AbortController,
+    state: RunningRecovery,
+    turn: LiveTurn,
+    generation: number
+  ): void {
+    const ownsKey = recoveringTurns.get(key) === state
+    if (ownsKey && generation === sessionGeneration)
+      conversationStore.reconcileSettledTurn(turn, undefined)
+    finishRecovery(key, recovery, state, turn)
+    if (!ownsKey) return
+    recoveryPendingAskObservations.delete(key)
+    recoveryThreadMissingCounts.delete(key)
   }
 
   async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
@@ -2522,42 +2570,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
       automaticRerun: false
     }
     recoveringTurns.set(key, state)
+    const deadlineReason = new Error('settled read deadline')
     const deadline = setTimeout(
-      () => recovery.abort(),
+      () => recovery.abort(deadlineReason),
       TURN_RECOVERY_DEADLINE_MS
     )
     try {
       const outcome = await fetchSettledTurnOutcome(
         turn,
         generation,
-        recovery.signal
+        recovery.signal,
+        deadlineReason
       )
-      if (generation !== sessionGeneration) return
-      if (outcome.kind === 'error') {
-        reportError(outcome.cause, {
-          surface: 'agent',
-          errorType: 'failure_recovering_agent_turn'
-        })
-        return
-      }
-      if (outcome.kind !== 'terminal') return
-      conversationStore.reconcileSettledTurn(turn, outcome.parts)
-    } catch (error) {
-      if (!recovery.signal.aborted)
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'failure_recovering_agent_turn'
-        })
-    } finally {
-      clearTimeout(deadline)
       if (
         generation === sessionGeneration &&
         recoveringTurns.get(key) === state
       )
-        conversationStore.reconcileSettledTurn(turn, undefined)
-      finishRecovery(key, recovery, state, turn)
-      recoveryPendingAskObservations.delete(key)
-      recoveryThreadMissingCounts.delete(key)
+        applySettledRead(turn, outcome)
+    } catch (error) {
+      if (!recovery.signal.aborted) reportSettledReadFailure(error)
+    } finally {
+      clearTimeout(deadline)
+      releaseSettledRead(key, recovery, state, turn, generation)
     }
   }
 
