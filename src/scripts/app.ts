@@ -1170,11 +1170,6 @@ export class ComfyApp implements IComfyApp {
     return failure
   }
 
-  /**
-   * Activates a graph built outside `loadGraphData` under the same
-   * `isLoadingGraph` guard, so a failed activation's recovery cannot capture
-   * the built graph into the retained workflow's change tracker.
-   */
   private async activateBuiltGraph(fileName: string) {
     ChangeTracker.isLoadingGraph = true
     try {
@@ -1243,6 +1238,7 @@ export class ComfyApp implements IComfyApp {
     options: LoadGraphDataOptions
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
     const canvasScheduler = useCanvasScheduler()
+    const wasLoadingGraph = ChangeTracker.isLoadingGraph
     const loadId = ++this.graphLoadSequence
 
     const {
@@ -1430,7 +1426,7 @@ export class ComfyApp implements IComfyApp {
       try {
         await this.reportGraphLoadFailure(error)
       } finally {
-        ChangeTracker.isLoadingGraph = false
+        ChangeTracker.isLoadingGraph = wasLoadingGraph
       }
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
@@ -1628,8 +1624,6 @@ export class ComfyApp implements IComfyApp {
       try {
         await this.activateGraph(workflow, effectiveShareId)
       } catch (error) {
-        // Not reportGraphLoadFailure: `afterConfigureGraph` already ran, so
-        // `onGraphLoadError` would contradict what extensions observed.
         useDialogService().showErrorDialog(error, {
           title: t('errorDialog.loadWorkflowTitle'),
           reportType: 'loadWorkflowError'
@@ -1646,7 +1640,7 @@ export class ComfyApp implements IComfyApp {
         await cancelReplacedLoad()
         return undefined
       }
-      ChangeTracker.isLoadingGraph = false
+      ChangeTracker.isLoadingGraph = wasLoadingGraph
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -1714,7 +1708,7 @@ export class ComfyApp implements IComfyApp {
         'workflow-load',
         workflowNavigationId
       )
-      ChangeTracker.isLoadingGraph = false
+      ChangeTracker.isLoadingGraph = wasLoadingGraph
       // The retirement watcher skips transitions made during the load.
       useExecutionErrorStore().retireResolvedMissingNodePromptError()
       reconcileResourceErrors?.()

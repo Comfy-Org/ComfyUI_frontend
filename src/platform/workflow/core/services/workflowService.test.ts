@@ -21,7 +21,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -46,6 +45,8 @@ import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
 import { t } from '@/i18n'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+
+type RootGraph = NonNullable<typeof app.rootGraphOrUndefined>
 
 vi.mock(import('firebase/auth'), { spy: true })
 
@@ -3210,9 +3211,9 @@ describe('useWorkflowService', () => {
       const { unfetchable } = setUpRetainedWithUnfetchable()
       const graphState = vi
         .spyOn(app, 'rootGraphOrUndefined', 'get')
-        .mockReturnValue(fromPartial<LGraph>({ state: {} }))
+        .mockReturnValue(fromPartial<RootGraph>({ state: {} }))
       vi.mocked(unfetchable.load).mockImplementationOnce(async () => {
-        graphState.mockReturnValue(fromPartial<LGraph>({ state: {} }))
+        graphState.mockReturnValue(fromPartial<RootGraph>({ state: {} }))
         throw new Error('Failed to load file')
       })
 

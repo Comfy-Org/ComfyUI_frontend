@@ -1391,6 +1391,37 @@ describe('ComfyApp', () => {
       expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledTimes(2)
     })
 
+    it('keeps the graph-load guard after a recovery load fails before configuring', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      let recoveryLoaded: Awaited<ReturnType<ComfyApp['loadGraphData']>>
+      let loadingGraphAfterRecovery: boolean | undefined
+      mockWorkflowService.afterLoadNewGraph.mockImplementationOnce(async () => {
+        vi.when(mockExtensionService.invokeExtensionsAsync)
+          .calledWith(
+            'beforeConfigureGraph',
+            expect.anything(),
+            expect.anything()
+          )
+          .thenRejectOnce(new Error('bad extension'))
+        recoveryLoaded = await app.loadGraphDataWithinLoad(
+          createWorkflowGraphData()
+        )
+        loadingGraphAfterRecovery = ChangeTracker.isLoadingGraph
+        throw new Error('Failed to load file')
+      })
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), true)
+      ).resolves.toBe(false)
+
+      expect(recoveryLoaded).toBe(false)
+      expect(loadingGraphAfterRecovery).toBe(true)
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+    })
+
     it.for([
       {
         format: 'API JSON',
