@@ -28,6 +28,17 @@ function listingWaitMs(hint: DeploymentHint): number {
   return DEPLOYMENT_LISTING_NO_HINT_WAIT_MS
 }
 
+/** Waits at most `ms` for the page's first deployments listing to settle. */
+export function waitForDeploymentListing(ms: number): Promise<void> {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  return Promise.race([
+    useDeploymentPickStore().loadOnce(),
+    new Promise<void>((resolve) => {
+      timeout = setTimeout(resolve, ms)
+    })
+  ]).finally(() => clearTimeout(timeout))
+}
+
 /** Waits for the boot listing to say where this page runs; `onLateDeployment` runs if a late listing names a deployment. */
 export async function waitForDeploymentPick(
   onLateDeployment: () => void = () => {}

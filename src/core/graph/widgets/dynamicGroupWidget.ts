@@ -384,8 +384,8 @@ export function dynamicGroupWidget(
     }
   }
 
-  function exceedsAllocationBound(requested: number) {
-    if (requested <= dynamicGroupRowAllocationBound(controller)) return false
+  function assertWithinAllocationBound(requested: number): void {
+    if (requested <= dynamicGroupRowAllocationBound(controller)) return
     if (!isRemoteDynamicGroupRowWrite(node))
       reportDynamicGroupRowRefusal(node, 'add_row', requested, rowCount)
     throw new RangeError(
@@ -419,7 +419,7 @@ export function dynamicGroupWidget(
       if (typeof value !== 'number' || !Number.isFinite(value)) return
       const requested = Math.max(0, Math.trunc(value))
       const count = Math.max(min, requested)
-      if (exceedsAllocationBound(count)) return
+      assertWithinAllocationBound(count)
       resizeRows(count)
     }
   })

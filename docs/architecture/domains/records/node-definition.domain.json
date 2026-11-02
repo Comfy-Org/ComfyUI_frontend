@@ -29,8 +29,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["extension-manager"],
-  "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
     {
       "name": "V1 node definitions migrate to V2 and input spec trees report diagnostics within bounds",
@@ -52,7 +50,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior. The domain has no public entry point; cross-module imports, including the V2 schema through @comfyorg/object-info-parser, are inherited debt."
+    "Inventory preserves existing exports and runtime behavior. The domain has no public entry point; cross-module imports that break role direction remain inherited debt."
   ],
   "deepImports": "inventory"
 }
