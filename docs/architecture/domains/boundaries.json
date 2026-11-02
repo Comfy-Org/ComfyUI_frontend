@@ -312,6 +312,7 @@
           "src/workbench/extensions/agent/crdt/linkMintOutboundPositionCorruption.test.ts",
           "src/workbench/extensions/agent/crdt/liveGraphApplier.ts",
           "src/workbench/extensions/agent/crdt/liveGraphApplier.changeTracker.test.ts",
+          "src/workbench/extensions/agent/crdt/liveGraphApplier.load.test.ts",
           "src/workbench/extensions/agent/crdt/liveGraphApplier.malformedNode.test.ts",
           "src/workbench/extensions/agent/crdt/liveGraphApplier.primitiveIntControl.test.ts",
           "src/workbench/extensions/agent/crdt/liveGraphApplier.test.ts",
