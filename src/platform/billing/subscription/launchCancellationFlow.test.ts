@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import type { RetentionFlowResponse } from '@comfyorg/ingest-types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
@@ -8,7 +7,6 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { BillingRail } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -24,12 +22,10 @@ const mocks = vi.hoisted(
     billingType: { value: BillingType }
     activeWorkspaceId: string | null
     isPersonal: boolean
-    billingRail: BillingRail | null
   } => ({
     billingType: { value: 'workspace' },
     activeWorkspaceId: 'workspace-1',
-    isPersonal: true,
-    billingRail: 'stripe'
+    isPersonal: true
   })
 )
 
@@ -74,7 +70,6 @@ beforeEach(() => {
   mocks.billingType.value = 'workspace'
   mocks.activeWorkspaceId = 'workspace-1'
   mocks.isPersonal = true
-  mocks.billingRail = 'stripe'
   remoteConfig.value = { cancellation_survey_id: 'survey-1' }
 
   vi.spyOn(
@@ -87,11 +82,6 @@ beforeEach(() => {
     'isInPersonalWorkspace',
     'get'
   ).mockImplementation(() => mocks.isPersonal)
-  vi.spyOn(
-    useWorkspaceBillingStateStore(),
-    'activeWorkspaceBillingRail',
-    'get'
-  ).mockImplementation(() => mocks.billingRail)
 })
 
 afterEach(() => {
@@ -103,27 +93,18 @@ describe('launchCancellationFlow', () => {
     {
       name: 'unresolved billing',
       billingType: 'unknown',
-      isPersonal: true,
-      billingRail: 'stripe'
-    },
-    {
-      name: 'Metronome billing',
-      billingType: 'workspace',
-      isPersonal: true,
-      billingRail: 'metronome'
+      isPersonal: true
     },
     {
       name: 'a team workspace',
       billingType: 'workspace',
-      isPersonal: false,
-      billingRail: 'stripe'
+      isPersonal: false
     }
   ] as const)(
     'opens the flow without a retention session for $name',
-    async ({ billingType, isPersonal, billingRail }) => {
+    async ({ billingType, isPersonal }) => {
       mocks.billingType.value = billingType
       mocks.isPersonal = isPersonal
-      mocks.billingRail = billingRail
       const { shown, showFlow } = captureFlow()
 
       await launchCancellationFlow({ cancelAt: '2026-11-12', showFlow })

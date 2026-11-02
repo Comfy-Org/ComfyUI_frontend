@@ -16,10 +16,6 @@
       "role": "application"
     },
     {
-      "path": "src/platform/billing/composables/billingRail.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/billing/composables/topupBalanceRefresh.ts",
       "role": "application"
     },
@@ -387,7 +383,6 @@
       "checks": [
         "src/platform/billing/composables/useBillingContext.test.ts",
         "src/platform/billing/composables/useBillingRouting.test.ts",
-        "src/platform/billing/composables/billingRail.test.ts",
         "src/platform/billing/composables/useWorkspaceBilling.test.ts",
         "src/platform/billing/composables/useWorkspaceBilling.sdk.test.ts",
         "src/platform/billing/composables/useWorkspaceBilling.subscriptionRail.test.ts",

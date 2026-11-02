@@ -650,8 +650,6 @@
       {
         "name": "billing/domain",
         "patterns": [
-          "src/platform/billing/composables/billingRail.ts",
-          "src/platform/billing/composables/billingRail.test.ts",
           "src/platform/billing/composables/types.ts",
           "src/platform/billing/customerActionParity.test.ts",
           "src/platform/billing/customerAttention.ts",
