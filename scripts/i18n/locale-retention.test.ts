@@ -22,13 +22,15 @@ function simulateGeneration({
   english,
   existing,
   excludedPaths = [],
-  policy = preserve
+  policy = preserve,
+  pluralFormCount
 }: {
   previousEnglish: LocaleObject
   english: LocaleObject
   existing: LocaleObject
   excludedPaths?: string[][]
   policy?: TranslationPipelineConfig['existingCopy']
+  pluralFormCount?: number
 }): LocaleObject {
   const changes = diffLocaleSources(previousEnglish, english)
   const invalidated = new Set(
@@ -40,7 +42,8 @@ function simulateGeneration({
     existing,
     modifiedKeys: new Set(changes.modified.map(pathKey)),
     policy,
-    excludedKeys: new Set(excludedPaths.map(pathKey))
+    excludedKeys: new Set(excludedPaths.map(pathKey)),
+    pluralFormCount
   })
   const regenerated = collectPendingLeaves(english, existing, invalidated)
     .filter(({ path }) => !retained.has(pathKey(path)))
@@ -114,6 +117,65 @@ describe('locale retention', () => {
         policy: { kind: 'regenerate' }
       })
     ).toEqual({ kept: '保持', title: 'MT(New)' })
+  })
+
+  describe('locale plural forms under regenerate', () => {
+    const english = { used: '{n} credit | {n} credits' }
+    const russian = {
+      used: '{n} кредит | {n} кредита | {n} кредитов | {n} кредита'
+    }
+    const regenerate = { kind: 'regenerate' } as const
+
+    it.for<{ label: string; previousEnglish: LocaleObject }>([
+      { label: 'an added key', previousEnglish: {} },
+      { label: 'an unchanged key', previousEnglish: english }
+    ])(
+      'keeps every plural form the locale needs for $label',
+      ({ previousEnglish }) => {
+        expect(
+          simulateGeneration({
+            previousEnglish,
+            english,
+            existing: russian,
+            policy: regenerate,
+            pluralFormCount: 4
+          })
+        ).toEqual(russian)
+      }
+    )
+
+    it('regenerates the forms when the English source changed', () => {
+      expect(
+        simulateGeneration({
+          previousEnglish: { used: '{n} point | {n} points' },
+          english,
+          existing: russian,
+          policy: regenerate,
+          pluralFormCount: 4
+        })
+      ).toEqual({ used: `MT(${english.used})` })
+    })
+
+    it.for<{ label: string; existing: LocaleObject; pluralFormCount?: number }>(
+      [
+        {
+          label: 'copy with the English form count',
+          existing: { used: '{n} кредит | {n} кредитов' },
+          pluralFormCount: 4
+        },
+        { label: 'a locale without its own plural rule', existing: russian }
+      ]
+    )('regenerates $label', ({ existing, pluralFormCount }) => {
+      expect(
+        simulateGeneration({
+          previousEnglish: {},
+          english,
+          existing,
+          policy: regenerate,
+          pluralFormCount
+        })
+      ).toEqual({ used: `MT(${english.used})` })
+    })
   })
 
   describe('excluded copy', () => {

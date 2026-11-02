@@ -4,6 +4,7 @@ export interface OutputLocale {
   code: string
   name: string
   guidance?: string
+  pluralFormCount?: number
 }
 
 export interface TranslationPipelineConfig {
@@ -76,7 +77,7 @@ const appTranslationConfig: TranslationPipelineConfig = {
       name: 'Traditional Chinese (Taiwan)',
       guidance: chineseTraditionalGuidance
     },
-    { code: 'ru', name: 'Russian' },
+    { code: 'ru', name: 'Russian', pluralFormCount: 4 },
     { code: 'ja', name: 'Japanese' },
     { code: 'ko', name: 'Korean' },
     { code: 'fr', name: 'French' },

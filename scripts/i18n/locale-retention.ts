@@ -7,6 +7,7 @@ import type {
   LocaleTrackedLeaf
 } from './locale-tree'
 import { getLeaf } from './locale-tree'
+import { countPluralForms } from './protected-tokens'
 
 function usesEnglishFallback({
   current,
@@ -24,13 +25,28 @@ function usesEnglishFallback({
   )
 }
 
+function hasLocalePluralForms(
+  source: LocaleTrackedLeaf,
+  current: LocaleTrackedLeaf | undefined,
+  pluralFormCount: number
+): current is string {
+  return (
+    typeof source === 'string' &&
+    typeof current === 'string' &&
+    countPluralForms(source) > 1 &&
+    countPluralForms(source) !== pluralFormCount &&
+    countPluralForms(current) === pluralFormCount
+  )
+}
+
 export function partitionLocale({
   sourceLeaves,
   previousEnglish,
   existing,
   modifiedKeys,
   policy,
-  excludedKeys
+  excludedKeys,
+  pluralFormCount
 }: {
   sourceLeaves: ReadonlyMap<string, LocaleLeafEntry>
   previousEnglish: LocaleObject
@@ -38,13 +54,25 @@ export function partitionLocale({
   modifiedKeys: ReadonlySet<string>
   policy: TranslationPipelineConfig['existingCopy']
   excludedKeys: ReadonlySet<string>
+  pluralFormCount?: number
 }): {
   omitted: Set<string>
   retained: Map<string, LocaleTrackedLeaf>
 } {
   const omitted = new Set<string>()
   const retained = new Map<string, LocaleTrackedLeaf>()
-  if (policy.kind === 'regenerate') return { omitted, retained }
+  if (policy.kind === 'regenerate') {
+    if (pluralFormCount === undefined) return { omitted, retained }
+    for (const [key, leaf] of sourceLeaves) {
+      const current = getLeaf(existing, leaf.path)
+      if (
+        !modifiedKeys.has(key) &&
+        hasLocalePluralForms(leaf.value, current, pluralFormCount)
+      )
+        retained.set(key, current)
+    }
+    return { omitted, retained }
+  }
   for (const [key, leaf] of sourceLeaves) {
     const excluded = excludedKeys.has(key)
     const current = getLeaf(existing, leaf.path)

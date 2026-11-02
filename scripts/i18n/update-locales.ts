@@ -292,7 +292,8 @@ function loadStates(
         existing,
         modifiedKeys: plan.modified,
         policy: config.existingCopy,
-        excludedKeys: plan.excluded
+        excludedKeys: plan.excluded,
+        pluralFormCount: locale.pluralFormCount
       })
       const pendingLeaves = collectPendingLeaves(
         plan.source,
