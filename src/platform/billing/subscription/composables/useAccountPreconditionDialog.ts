@@ -8,6 +8,8 @@ interface AccountPreconditionContext {
   /** Node type that triggered the precondition, used as modal context. */
   nodeType?: string
   source?: PaymentIntentSource
+  creditsLocked?: boolean
+  refusalType?: string
 }
 
 // Routes a resolved account precondition to its dedicated modal. This is the
@@ -31,7 +33,11 @@ export function useAccountPreconditionDialog() {
         return true
       case 'subscription':
         return showSubscriptionRequiredDialog({
-          reason: context.source ?? 'subscription_required'
+          reason: context.source ?? 'subscription_required',
+          ...(context.creditsLocked !== undefined && {
+            creditsLocked: context.creditsLocked
+          }),
+          ...(context.refusalType && { refusalType: context.refusalType })
         })
       case 'credits': {
         // The server just declared the balance exhausted; there is no push or
