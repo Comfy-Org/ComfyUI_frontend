@@ -28,10 +28,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/scripts/apiTimeouts.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/scripts/app.ts",
       "role": "integration"
     },
@@ -82,17 +78,17 @@
     {
       "path": "src/types/extensionTypes.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/ComfyApi.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/apiTimeouts.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [
-    "error-reporting",
-    "extension-manager",
-    "keybindings",
-    "telemetry",
-    "webcam-capture"
-  ],
-  "allowedConsumers": ["agent", "extension-manager"],
   "characterizationScenarios": [
     {
       "name": "Extension loader fetches, filters, imports, and reports failing extensions",
@@ -128,7 +124,7 @@
         "src/scripts/api.responses.test.ts",
         "src/scripts/api.featureFlags.test.ts",
         "src/scripts/api.sessionOverride.test.ts",
-        "src/scripts/api.eventListeners.test.ts"
+        "packages/api-client/src/ComfyApi.eventListeners.test.ts"
       ]
     },
     {

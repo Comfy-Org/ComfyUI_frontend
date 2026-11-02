@@ -58,28 +58,13 @@
     {
       "path": "src/platform/customNodes/manager/utils/**",
       "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/generatedManagerTypes.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [
-    "app-host",
-    "comfy-registry",
-    "design-system",
-    "dialog-host",
-    "extension-runtime",
-    "keybindings",
-    "system-info"
-  ],
-  "allowedConsumers": [
-    "app-host",
-    "extension-runtime",
-    "help-center",
-    "node-definition",
-    "node-library",
-    "subgraphs",
-    "workbench-shell",
-    "workflow-errors"
-  ],
   "characterizationScenarios": [
     {
       "name": "Compatibility and version policy determine pack conflicts and ordering",

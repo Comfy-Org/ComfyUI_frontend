@@ -27,8 +27,6 @@
   "publicEntryPoints": [
     "src/platform/navigation/composables/usePreservedQueryDeepLink.ts"
   ],
-  "allowedDependencies": [],
-  "allowedConsumers": ["account", "workflow-sharing", "workspace"],
   "characterizationScenarios": [
     {
       "name": "Preserved query parameters survive redirects and are merged back by namespace",

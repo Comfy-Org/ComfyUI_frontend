@@ -93,8 +93,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["error-reporting", "keybindings", "telemetry"],
-  "allowedConsumers": ["agent", "execution"],
   "characterizationScenarios": [
     {
       "name": "Workflow store opens, renames, closes, and tracks modified workflows",

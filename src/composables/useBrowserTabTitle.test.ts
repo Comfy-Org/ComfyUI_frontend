@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
@@ -213,20 +213,20 @@ describe('useBrowserTabTitle', () => {
     scope.stop()
   })
 
-  describe('when the agent waits for an approval', () => {
-    it('prefixes the title while any agent turn awaits an answer', async () => {
+  describe('when a feature sets a title prefix', () => {
+    it('prefixes the title until the feature clears it', async () => {
       workflowStore.activeWorkflow = fromPartial<
         NonNullable<typeof workflowStore.activeWorkflow>
       >({ filename: 'myFlow', isModified: false, isPersisted: true })
-      const tabActivity = useWorkflowTabActivityStore()
+      const titleStore = useBrowserTabTitleStore()
       const scope = effectScope()
       scope.run(() => useBrowserTabTitle())
 
-      tabActivity.setAgentAwaitingApproval(true)
+      titleStore.setPrefix('feature', 'Input needed')
       await nextTick()
       expect(document.title).toBe('[Input needed] myFlow - ComfyUI')
 
-      tabActivity.clearAgentActivity()
+      titleStore.setPrefix('feature', null)
       await nextTick()
       expect(document.title).toBe('myFlow - ComfyUI')
       scope.stop()
@@ -246,7 +246,7 @@ describe('useBrowserTabTitle', () => {
       Object.assign(executionStore, {
         executingNode: { type: 'Foo', title: 'Foo' }
       })
-      useWorkflowTabActivityStore().setAgentAwaitingApproval(true)
+      useBrowserTabTitleStore().setPrefix('feature', 'Input needed')
       const scope = effectScope()
       scope.run(() => useBrowserTabTitle())
       await nextTick()

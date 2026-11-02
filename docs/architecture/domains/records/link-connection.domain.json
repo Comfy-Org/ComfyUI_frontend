@@ -64,13 +64,11 @@
       "role": "domain"
     },
     {
-      "path": "src/types/searchBoxTypes.ts",
+      "path": "packages/settings-core/src/searchBoxTypes.ts",
       "role": "domain"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Dragging and dropping links connects compatible slots and rejects invalid targets",

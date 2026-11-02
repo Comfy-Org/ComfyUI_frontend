@@ -33,13 +33,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [
-    "design-system",
-    "dialog-host",
-    "graph-model",
-    "vue-node-widgets"
-  ],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Box geometry, hit testing, and editor state preserve region editing",

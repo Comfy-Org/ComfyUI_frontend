@@ -53,8 +53,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["extension-manager"],
   "characterizationScenarios": [
     {
       "name": "Registry client and store fetch, cache, and abort pack and node requests",

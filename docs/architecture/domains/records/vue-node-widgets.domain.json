@@ -257,8 +257,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["bounding-boxes"],
   "characterizationScenarios": [
     {
       "name": "Widget constructors create LiteGraph widgets from node definitions",

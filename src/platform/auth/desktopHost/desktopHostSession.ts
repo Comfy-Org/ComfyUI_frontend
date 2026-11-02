@@ -20,6 +20,7 @@ type DesktopHostSession =
 
 const session = shallowRef<DesktopHostSession>({ status: 'inactive' })
 let bridge: DesktopHostAuthBridge | undefined
+let bridgeReportsSignInFailures = false
 let unsubscribe: (() => void) | undefined
 /** Bumped on every session change, so a reply that raced one is dropped. */
 let revision = 0
@@ -37,7 +38,13 @@ function apply(state: DesktopHostAuthState): void {
     stopDesktopHostSession()
     return
   }
-  revision++
+  const current = session.value
+  const sameAccount =
+    next.status === 'signed_in' &&
+    current.status === 'signed_in' &&
+    next.user.id === current.user.id &&
+    next.user.workspaceId === current.user.workspaceId
+  if (!sameAccount) revision++
   session.value = next
 }
 
@@ -62,10 +69,12 @@ export function isDesktopHostSignedIn(): boolean {
  * answers `disabled` or the bridge fails.
  */
 export async function startDesktopHostSession(
-  hostBridge: DesktopHostAuthBridge
+  hostBridge: DesktopHostAuthBridge,
+  { reportsSignInFailures = false }: { reportsSignInFailures?: boolean } = {}
 ): Promise<void> {
   stopDesktopHostSession()
   bridge = hostBridge
+  bridgeReportsSignInFailures = reportsSignInFailures
   try {
     unsubscribe = hostBridge.onChanged(apply)
     const before = revision
@@ -76,8 +85,14 @@ export async function startDesktopHostSession(
   }
 }
 
+/** True when the session tells the person itself why a sign-in did not finish. */
+export function desktopHostReportsSignInFailures(): boolean {
+  return bridgeReportsSignInFailures
+}
+
 export function stopDesktopHostSession(): void {
   unsubscribe?.()
+  bridgeReportsSignInFailures = false
   unsubscribe = undefined
   bridge = undefined
   revision++

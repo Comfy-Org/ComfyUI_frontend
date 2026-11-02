@@ -10,7 +10,7 @@ import { createI18n } from 'vue-i18n'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/platform/settings/types'
+import type { Settings } from '@comfyorg/settings-core/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -186,6 +186,19 @@ describe('NodeHeader.vue', () => {
     const collapsedIcon = collapseButton.querySelector('i')!
     expect(collapsedIcon.classList).toContain('-rotate-90')
   })
+
+  it.for([
+    { showMissingWarning: true, shown: true },
+    { showMissingWarning: false, shown: false }
+  ])(
+    'shows the missing resources icon when showMissingWarning is $showMissingWarning',
+    ({ showMissingWarning, shown }) => {
+      renderHeader({ showMissingWarning })
+      expect(
+        screen.queryByRole('img', { name: 'Missing resources' }) !== null
+      ).toBe(shown)
+    }
+  )
 
   describe('Tooltips', () => {
     it('shows the node description for its title', async () => {
