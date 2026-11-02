@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { copyPngTextMetadata } from './pngTextMetadata'
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
 import { writeImageWidgetValue } from '@/renderer/extensions/maskEditor/composables/imageWidgetAdapter'
@@ -45,8 +47,25 @@ export function useMaskEditorSaver() {
       throw new Error('No source node or input data')
     }
 
+    const sourceRef = { ...dataStore.inputData.sourceRef }
     try {
       const outputData = await prepareOutputData()
+      const source = await readSourceImage(sourceRef)
+      if (source) {
+        for (const layer of [
+          outputData.maskedImage,
+          outputData.paintedMaskedImage
+        ]) {
+          const image = copyPngTextMetadata(source, layer.blob)
+          if (!image) {
+            reportSourceImageFailure(
+              new Error('Invalid mask editor source PNG')
+            )
+            break
+          }
+          layer.blob = image
+        }
+      }
       dataStore.outputData = outputData
 
       await updateNodePreview(sourceNode, outputData)
@@ -60,6 +79,32 @@ export function useMaskEditorSaver() {
       console.error('[MaskEditorSaver] Save failed:', error)
       throw error
     }
+  }
+
+  async function readSourceImage(ref: ImageRef): Promise<ArrayBuffer | null> {
+    const params = new URLSearchParams({ filename: ref.filename })
+    if (ref.type) params.set('type', ref.type)
+    if (ref.subfolder) params.set('subfolder', ref.subfolder)
+    try {
+      const response = await api.fetchApi(`/view?${params}`)
+      if (!response.ok)
+        return reportSourceImageFailure(
+          new Error(
+            `Failed to read mask editor source image (${response.status})`
+          )
+        )
+      return await response.arrayBuffer()
+    } catch (cause) {
+      return reportSourceImageFailure(cause)
+    }
+  }
+
+  function reportSourceImageFailure(cause: unknown): null {
+    reportError(cause, {
+      errorType: 'error_loading_mask_editor_source_image',
+      surface: 'graph'
+    })
+    return null
   }
 
   async function prepareOutputData(): Promise<EditorOutputData> {
