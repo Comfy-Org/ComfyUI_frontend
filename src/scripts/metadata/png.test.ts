@@ -260,6 +260,23 @@ describe('getFromPngBuffer', () => {
 
     expect(result).toEqual({ workflow })
   })
+
+  it.for([1, 2, 3])(
+    'keeps the metadata when a %i-byte tail follows the IEND chunk',
+    async (trailingByteCount) => {
+      const workflow = '{"nodes":[]}'
+      const buffer = concatBytes(
+        PNG_SIGNATURE,
+        rawChunk('tEXt', encode(`workflow\0${workflow}`)),
+        rawChunk('IEND', new Uint8Array()),
+        new Uint8Array(trailingByteCount).fill(0x74)
+      ).buffer
+
+      const result = await getFromPngBuffer(buffer)
+
+      expect(result).toEqual({ workflow })
+    }
+  )
 })
 
 describe('getFromPngFile', () => {
