@@ -857,7 +857,9 @@ export const useAgentConversationStore = defineStore(
       persistedParts: AssistantMessage['parts'] | undefined
     ): void {
       const unreconciled = unreconciledSnapshotTurns.get(turn.messageId)
-      if (unreconciled === undefined) return
+      // An unannounced registration belongs to a later settle whose read has
+      // not started; a read still finishing for an earlier one must not take it.
+      if (unreconciled === undefined || !unreconciled.announced) return
       unreconciledSnapshotTurns.delete(turn.messageId)
       if (persistedParts === undefined || threadId.value !== turn.threadId)
         return
