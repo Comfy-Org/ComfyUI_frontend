@@ -9,6 +9,8 @@ let touchCount = 0
 
 type TouchPoint = { clientX: number; clientY: number }
 
+const MIN_PINCH_DISTANCE = 8
+
 function zoomCanvasAroundPinch(
   canvas: LGraphCanvas,
   requestedScale: number,
@@ -16,8 +18,6 @@ function zoomCanvasAroundPinch(
   lastTouch: TouchPoint
 ) {
   let scale = requestedScale
-  const newX = (center.clientX - lastTouch.clientX) / requestedScale
-  const newY = (center.clientY - lastTouch.clientY) / requestedScale
 
   if (scale < canvas.ds.min_scale) {
     scale = canvas.ds.min_scale
@@ -25,6 +25,8 @@ function zoomCanvasAroundPinch(
     scale = canvas.ds.max_scale
   }
 
+  const newX = (center.clientX - lastTouch.clientX) / scale
+  const newY = (center.clientY - lastTouch.clientY) / scale
   const oldScale = canvas.ds.scale
 
   canvas.ds.scale = scale
@@ -149,6 +151,32 @@ app.registerExtension({
     // Also handle touchcancel which fires when touch is interrupted
     app.canvasEl.parentElement?.addEventListener('touchcancel', resetTouchState)
 
+    function handlePinchMove(e: TouchEvent) {
+      if (!lastTouch) return
+      const canvas = canvasOrReport('touchmove', e)
+      if (!canvas) return
+      e.preventDefault()
+      canvas.pointer.isDown = false
+      touchZooming = true
+
+      LiteGraph.closeAllContextMenus(window)
+      canvas.search_box?.close()
+      const newTouchDist = getMultiTouchPos(e)
+      const center = getMultiTouchCenter(e)
+
+      if (lastScale === null || touchDist === null) return
+      if (touchDist < MIN_PINCH_DISTANCE) {
+        touchDist = newTouchDist
+        lastScale = canvas.ds.scale
+        lastTouch = center
+        return
+      }
+      const scale = (lastScale * newTouchDist) / touchDist
+      if (!Number.isFinite(scale) || scale <= 0) return
+
+      zoomCanvasAroundPinch(canvas, scale, center, lastTouch)
+    }
+
     app.canvasEl.parentElement?.addEventListener(
       'touchmove',
       (e) => {
@@ -161,23 +189,8 @@ app.registerExtension({
             touchTime = null
           }
         }
-        if (e.touches.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
-          const canvas = canvasOrReport('touchmove', e)
-          if (!canvas) return
-          e.preventDefault() // Prevent browser from zooming when two textareas are touched
-          canvas.pointer.isDown = false
-          touchZooming = true
-
-          LiteGraph.closeAllContextMenus(window)
-          canvas.search_box?.close()
-          const newTouchDist = getMultiTouchPos(e)
-
-          const center = getMultiTouchCenter(e)
-
-          if (lastScale === null || touchDist === null) return
-          const scale = (lastScale * newTouchDist) / touchDist
-
-          zoomCanvasAroundPinch(canvas, scale, center, lastTouch)
+        if (e.touches.length === 2 && !e.ctrlKey && !e.shiftKey) {
+          handlePinchMove(e)
         }
       },
       true

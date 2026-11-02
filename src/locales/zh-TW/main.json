@@ -307,7 +307,7 @@
     "workflowReferenceUnavailableReason": "此參照的工作流程已無法使用，或您沒有存取權限。",
     "workflowSyncFailedDetail": "此工作流程是使用不相容的文件版本建立。您的畫布未受到變更。",
     "workflowSyncFailedDetailCatalogMismatch": "自代理上次查看後，此工作流程中的某個節點已變更。您的畫布未受到變更。您的下一則訊息會傳送畫布，讓代理重建其工作流程副本。",
-    "workflowSyncFailedDetailStaleClient": "此頁面已過期，因此無法顯示代理所做的變更。請重新載入頁面以查看變更。",
+    "workflowSyncFailedDetailStaleClient": "此頁面無法顯示此文件的目前版本，因此無法在這裡顯示代理程式所做的變更。這些變更已保留。重新載入可能會解決此問題；若沒有，表示更新尚未傳送到您的應用程式。",
     "workflowSyncFailedTitle": "此工作流程無法同步",
     "workflows": "工作流程",
     "working": "處理中..."
@@ -2028,6 +2028,7 @@
     "arrangeVertically": "垂直排列",
     "asset": "{count} 筆資產",
     "audioFailedToLoad": "無法載入音訊",
+    "audioPlaybackFailed": "無法播放此音訊。請再試一次，或下載後使用其他應用程式播放。",
     "audioProgress": "音訊進度",
     "author": "作者",
     "back": "返回",

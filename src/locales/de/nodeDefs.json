@@ -4529,6 +4529,10 @@
         "name": "Bittiefe",
         "tooltip": "Auto verwendet 8-Bit für sRGB und 10-Bit für HDR. Explizite 8-Bit- und 10-Bit-Auswahlen sind unabhängig vom Farbraum."
       },
+      "chroma_subsampling": {
+        "name": "Chroma-Subsampling",
+        "tooltip": "444 behält die volle Farbauflösung bei, 422 halbiert die horizontale Farbauflösung und 420 halbiert beide Achsen. Auto verwendet die Codec-Standardeinstellung. Nicht unterstützte Optionen verwenden den nächstgelegenen unterstützten Modus und geben eine Konsolenwarnung aus."
+      },
       "codec": {
         "name": "codec",
         "tooltip": "Kodiert das Video optional sofort. None behält die Bilder in Tensorform; Auto verwendet H.264."
@@ -15434,8 +15438,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "Generiert ein Video, das mit dem Bild beginnt und die Kamera zu einem neuen Winkel und Abstand um das Motiv bewegt.",
+    "display_name": "MiniMax H3 Max Kamera-Steuerung",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Modell für die Videogenerierung."
+      },
+      "model_azimuth": {
+        "name": "Azimut"
+      },
+      "model_distance": {
+        "name": "Abstand"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_elevation": {
+        "name": "Elevation"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "Prompt-Erweiterungsmodus"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "Setzt ein Video mit neuem Material fort, das durch einen Prompt und optionale Audio-Referenzen gesteuert wird.",
+    "display_name": "MiniMax H3 Max Video erweitern",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Modell für die Videogenerierung."
+      },
+      "model_aspect_ratio": {
+        "name": "Seitenverhältnis"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_output": {
+        "name": "Ausgabe"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_prompt_expansion": {
+        "name": "Prompt-Erweiterung"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "Ersetzt den Teil eines Videos zwischen der Start- und Fortsetzungszeit durch eine neu generierte Szene, gesteuert durch einen Prompt und optionale Referenzbilder und -videos.",
+    "display_name": "MiniMax H3 Max Video einfügen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Modell für die Videogenerierung."
+      },
+      "model_color_match": {
+        "name": "Farbangleichung"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_prompt_expansion": {
+        "name": "Prompt-Erweiterung"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_resume_time": {
+        "name": "Fortsetzungszeit"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_start_time": {
+        "name": "Startzeit"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "Animiert ein Bild so, dass seine Mundbewegungen dem Audio folgen. Das Video ist genauso lang wie das Audio.",
+    "display_name": "MiniMax H3 Max Lippensynchronisation",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Modell für die Videogenerierung."
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_transcription": {
+        "name": "Transkription"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "Ersetzt die Personen in einem Video durch die Personen aus Referenzfotos und behält Bewegung, Kamera, Schnitte und Ton des Quellvideos bei.",
+    "display_name": "MiniMax H3 Max Neubesetzung",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Modell für die Videogenerierung."
+      },
+      "model_enhance_realism": {
+        "name": "Realismus verbessern"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "Passt ein Video an ein neues Seitenverhältnis an, indem es auf einem neuen Canvas platziert und die umliegenden Bereiche generiert werden. Timing und Ton des Quellvideos bleiben erhalten.",
+    "display_name": "MiniMax H3 Max Video neu einrahmen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Modell für die Videogenerierung."
+      },
+      "model_aspect_ratio": {
+        "name": "Seitenverhältnis"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Generiert mit den MiniMax-H3-Modellen ein Video, das durch Referenzbilder, -videos und -audio konditioniert wird. Verweisen Sie im Prompt anhand ihrer Reihenfolge auf die Referenzen: „Image 1“, „Image 2“, „Video 1“, „Audio 1“ usw.",
+    "description": "Generiert mit den MiniMax-H3-Modellen ein Video, das durch Referenzbilder, -videos und -audio bedingt wird. Verweisen Sie im Prompt anhand ihrer Reihenfolge auf die Referenzen: {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1 usw.",
     "display_name": "MiniMax H3 Referenz zu Video",
     "inputs": {
       "control_after_generate": {
@@ -20266,6 +20480,33 @@
       }
     }
   },
+  "PrunaPVideoUpscaleNode": {
+    "description": "Skaliert ein Video mit Pruna P-Video Upscale auf 720p, 1080p, 2K oder 4K hoch und behält dabei Seitenverhältnis und Audio bei.",
+    "display_name": "Pruna P-Video Upscale",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "Ausgabe-Framerate. „source“ behält die Framerate des Videos bei, bis zu 60. Eine höhere Framerate wird interpoliert. Ausgabe über 30 fps kostet doppelt so viel."
+      },
+      "target": {
+        "name": "Ziel",
+        "tooltip": "Ausgabepixelfläche: 720p etwa 0,9 Megapixel, 1080p 2,1, 2K 3,7, 4K 8,3. Ein bereits so großes Video behält seine Größe und wird nur verbessert. Maximale Länge: 2400, 1200, 600 bzw. 300 Frames, etwa 100, 50, 25 bzw. 12,5 Sekunden bei 24 fps."
+      },
+      "turbo": {
+        "name": "Turbo",
+        "tooltip": "Schnelleres Upscaling mit weicheren Details zum gleichen Preis."
+      },
+      "video": {
+        "name": "Video",
+        "tooltip": "Hochzuskalierendes Video, bis zu 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaTextToVideoNode": {
     "description": "Generiert ein Video aus einem Text-Prompt mit Pruna-Videomodellen, optional mit generiertem Ton oder einer Audiospur zur Steuerung.",
     "display_name": "Pruna P-Video-2 Text zu Video",
@@ -24122,7 +24363,7 @@
       },
       "format": {
         "name": "format",
-        "tooltip": "Der Ausgabecontainer. Auto verwendet MP4 für Auto/H.264 und WebM für AV1. MP4, MKV und WebM wählen einen bestimmten Container aus."
+        "tooltip": "Auto verwendet MOV für ProRes, WebM für AV1 und andernfalls MP4."
       },
       "format_codec": {
         "name": "codec"
@@ -28445,6 +28686,24 @@
     "inputs": {
       "model_name": {
         "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "Legt den Berechnungs-Dtype für die VAE-Kodierung und -Dekodierung fest, ohne andere Zweige zu beeinflussen.",
+    "display_name": "VAE-Berechnungs-Dtype",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Standard behält den Berechnungs-dtype des Eingabe-VAE bei."
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

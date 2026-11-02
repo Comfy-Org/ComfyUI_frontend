@@ -4529,6 +4529,10 @@
         "name": "bit_depth",
         "tooltip": "Авто использует 8 бит для sRGB и 10 бит для HDR. Явный выбор 8 или 10 бит не зависит от цветового пространства."
       },
+      "chroma_subsampling": {
+        "name": "субдискретизация_цветности",
+        "tooltip": "444 сохраняет полное цветовое разрешение, 422 уменьшает горизонтальное цветовое разрешение вдвое, а 420 — вдвое по обеим осям. Авто использует значение кодека по умолчанию. Неподдерживаемые варианты используют ближайший поддерживаемый режим и выводят предупреждение в консоль."
+      },
       "codec": {
         "name": "codec",
         "tooltip": "При необходимости сразу кодирует видео. None сохраняет изображения в виде тензоров; Auto использует H.264."
@@ -15434,8 +15438,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "Создаёт видео, которое начинается с изображения и перемещает камеру на новый угол и расстояние относительно объекта.",
+    "display_name": "Управление камерой MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_azimuth": {
+        "name": "азимут"
+      },
+      "model_distance": {
+        "name": "расстояние"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_elevation": {
+        "name": "высота"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "режим_расширения_запроса"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "зерно"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "Продолжает видео новыми кадрами на основе запроса и необязательных аудиореференсов.",
+    "display_name": "Продление видео MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение_сторон"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_output": {
+        "name": "выход"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_prompt_expansion": {
+        "name": "расширение_запроса"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "зерно"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "Заменяет часть видео между временем начала и возобновления заново сгенерированной сценой на основе запроса и необязательных референсных изображений и видео.",
+    "display_name": "Вставка видео MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_color_match": {
+        "name": "сопоставление_цветов"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_prompt_expansion": {
+        "name": "расширение_запроса"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_resume_time": {
+        "name": "время_возобновления"
+      },
+      "model_seed": {
+        "name": "зерно"
+      },
+      "model_start_time": {
+        "name": "время_начала"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "Анимирует изображение так, чтобы движения рта соответствовали аудио. Длительность видео равна длительности аудио.",
+    "display_name": "Синхронизация губ MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_transcription": {
+        "name": "транскрипция"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "Заменяет людей в видео людьми с референсных фотографий, сохраняя движение, камеру, монтаж и звук исходного видео.",
+    "display_name": "Замена персонажей MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_enhance_realism": {
+        "name": "enhance_realism"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "Адаптирует видео к новому соотношению сторон, размещая его на новом холсте и генерируя окружающие области. Тайминг и звук исходного видео сохраняются.",
+    "display_name": "Изменение кадрирования видео MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "промпт"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Генерирует видео с учётом эталонных изображений, видео и аудио с помощью моделей MiniMax H3. Ссылайтесь на эталоны в запросе по их порядку: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' и так далее.",
+    "description": "Генерирует видео на основе референсных изображений, видео и аудио с помощью моделей MiniMax H3. Ссылайтесь на референсы в промпте по их порядку: {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1 и так далее.",
     "display_name": "MiniMax H3: Референс в видео",
     "inputs": {
       "control_after_generate": {
@@ -20266,6 +20480,33 @@
       }
     }
   },
+  "PrunaPVideoUpscaleNode": {
+    "description": "Повышает разрешение видео до 720p, 1080p, 2K или 4K с помощью Pruna P-Video Upscale, сохраняя соотношение сторон и аудио.",
+    "display_name": "Апскейл видео Pruna P-Video",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "Частота кадров на выходе. «source» сохраняет частоту видео, до 60. Более высокая частота интерполируется. Выходное видео выше 30 fps стоит вдвое дороже."
+      },
+      "target": {
+        "name": "цель",
+        "tooltip": "Площадь кадра на выходе: 720p — около 0,9 мегапикселя, 1080p — 2,1, 2K — 3,7, 4K — 8,3. Видео уже такого размера сохраняет свой размер и лишь улучшается. Максимальная длина: 2400, 1200, 600 или 300 кадров — около 100, 50, 25 или 12,5 секунд при 24 fps."
+      },
+      "turbo": {
+        "name": "турбо",
+        "tooltip": "Более быстрое повышение разрешения с менее чёткими деталями по той же цене."
+      },
+      "video": {
+        "name": "видео",
+        "tooltip": "Видео для повышения разрешения, до 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaTextToVideoNode": {
     "description": "Генерирует видео из текстового промпта с помощью видеомоделей Pruna, с возможностью добавить сгенерированный звук или аудиодорожку для управления видео.",
     "display_name": "Pruna P-Video-2: текст в видео",
@@ -24122,7 +24363,7 @@
       },
       "format": {
         "name": "формат",
-        "tooltip": "Выходной контейнер. Auto использует MP4 для Auto/H.264 и WebM для AV1. MP4, MKV и WebM выбирают конкретный контейнер."
+        "tooltip": "Авто использует MOV для ProRes, WebM для AV1 и MP4 в остальных случаях."
       },
       "format_codec": {
         "name": "кодек"
@@ -28445,6 +28686,24 @@
     "inputs": {
       "model_name": {
         "name": "название_модели"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "Задаёт dtype вычислений для кодирования и декодирования VAE, не затрагивая другие ветви.",
+    "display_name": "Тип данных вычислений VAE",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "По умолчанию используется dtype вычислений входного VAE."
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

@@ -257,9 +257,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     })
     workflow.legacyId = getLegacyWorkflowId(workflowData?.id)
 
-    const initialWorkflowData = ensureWorkflowId(
-      structuredClone(workflowData ?? defaultGraph)
-    )
+    const initialWorkflowData = ensureWorkflowId(workflowData ?? defaultGraph)
     workflow.originalContent = workflow.content =
       JSON.stringify(initialWorkflowData)
 

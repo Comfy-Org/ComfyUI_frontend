@@ -307,7 +307,7 @@
     "workflowReferenceUnavailableReason": "Ce workflow référencé n’est plus disponible ou vous n’y avez pas accès.",
     "workflowSyncFailedDetail": "Ce workflow a été créé avec une version de document incompatible. Votre canevas est resté inchangé.",
     "workflowSyncFailedDetailCatalogMismatch": "Un nœud de ce workflow a changé depuis que l’agent l’a vu pour la dernière fois. Votre canevas est resté inchangé. Votre prochain message enverra votre canevas afin que l’agent puisse recréer sa copie du workflow.",
-    "workflowSyncFailedDetailStaleClient": "Cette page n’est pas à jour ; les modifications de l’agent ne peuvent donc pas être affichées. Rechargez la page pour les voir.",
+    "workflowSyncFailedDetailStaleClient": "Cette page ne peut pas afficher la version actuelle de ce document, les modifications de l’agent ne peuvent donc pas être affichées ici. Elles sont conservées. Le rechargement peut résoudre le problème ; sinon, la mise à jour n’est pas encore arrivée dans votre application.",
     "workflowSyncFailedTitle": "Ce workflow ne peut pas être synchronisé",
     "workflows": "Workflows",
     "working": "En cours..."
@@ -2028,6 +2028,7 @@
     "arrangeVertically": "Organiser verticalement",
     "asset": "{count} ressource | {count} ressources",
     "audioFailedToLoad": "Échec du chargement de l'audio",
+    "audioPlaybackFailed": "Impossible de lire cet audio. Réessayez ou téléchargez-le pour le lire dans une autre application.",
     "audioProgress": "Progression audio",
     "author": "Auteur",
     "back": "Retour",

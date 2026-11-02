@@ -4529,6 +4529,10 @@
         "name": "bit_depth",
         "tooltip": "자동은 sRGB에 8비트, HDR에 10비트를 사용합니다. 명시적인 8비트 및 10비트 선택은 색상 공간과 무관합니다."
       },
+      "chroma_subsampling": {
+        "name": "크로마 서브샘플링",
+        "tooltip": "444는 전체 색상 해상도를 유지하고, 422는 가로 색상 해상도를 절반으로 줄이며, 420은 두 축 모두를 절반으로 줄입니다. 자동은 코덱 기본값을 사용합니다. 지원되지 않는 선택 항목은 가장 가까운 지원 모드를 사용하고 콘솔 경고를 표시합니다."
+      },
       "codec": {
         "name": "codec",
         "tooltip": "선택적으로 비디오를 즉시 인코딩합니다. None은 이미지를 텐서 형식으로 유지하고, Auto는 H.264를 사용합니다."
@@ -15434,8 +15438,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "이미지로 시작하여 피사체 주변에서 카메라를 새로운 각도와 거리로 이동시키는 비디오를 생성합니다.",
+    "display_name": "MiniMax H3 Max 카메라 제어",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_azimuth": {
+        "name": "방위각"
+      },
+      "model_distance": {
+        "name": "거리"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_elevation": {
+        "name": "고도각"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "프롬프트 확장 모드"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "프롬프트와 선택적 오디오 참조를 기반으로 새 영상을 추가하여 비디오를 이어갑니다.",
+    "display_name": "MiniMax H3 Max 비디오 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_output": {
+        "name": "출력"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_prompt_expansion": {
+        "name": "프롬프트 확장"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "프롬프트와 선택적 참조 이미지 및 비디오를 기반으로 시작 시간과 재개 시간 사이의 비디오 부분을 새로 생성된 장면으로 교체합니다.",
+    "display_name": "MiniMax H3 Max 비디오 삽입",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_color_match": {
+        "name": "색상 일치"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_prompt_expansion": {
+        "name": "프롬프트 확장"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_resume_time": {
+        "name": "재개 시간"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_start_time": {
+        "name": "시작 시간"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "이미지의 입 움직임이 오디오를 따르도록 애니메이션을 적용합니다. 비디오 길이는 오디오 길이와 같습니다.",
+    "display_name": "MiniMax H3 Max 립싱크",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_transcription": {
+        "name": "트랜스크립션"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "소스 비디오의 움직임, 카메라, 컷 및 사운드를 유지하면서 비디오 속 인물을 참조 사진 속 인물로 교체합니다.",
+    "display_name": "MiniMax H3 Max 리캐스트",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_enhance_realism": {
+        "name": "사실감 향상"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "비디오를 새 캔버스에 맞추고 주변 영역을 생성하여 새 종횡비에 맞게 조정합니다. 소스 비디오의 타이밍과 사운드는 유지됩니다.",
+    "display_name": "MiniMax H3 Max 비디오 리프레임",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "MiniMax H3 모델을 사용하여 참조 이미지, 비디오 및 오디오를 조건으로 비디오를 생성합니다. 프롬프트에서 참조 항목을 순서대로 '이미지 1', '이미지 2', '비디오 1', '오디오 1' 등으로 지칭하세요.",
+    "description": "MiniMax H3 모델을 사용하여 참조 이미지, 비디오 및 오디오를 조건으로 비디오를 생성합니다. 프롬프트에서 참조 자료는 순서에 따라 {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1 등으로 지정하세요.",
     "display_name": "MiniMax H3 참조 기반 비디오",
     "inputs": {
       "control_after_generate": {
@@ -20266,6 +20480,33 @@
       }
     }
   },
+  "PrunaPVideoUpscaleNode": {
+    "description": "Pruna P-Video Upscale을 사용하여 종횡비와 오디오를 유지한 채 비디오를 720p, 1080p, 2K 또는 4K로 업스케일합니다.",
+    "display_name": "Pruna P-Video 업스케일",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "출력 프레임 레이트입니다. 'source'는 최대 60까지 비디오의 프레임 레이트를 유지합니다. 더 높은 레이트는 보간됩니다. 30fps를 초과하는 출력은 비용이 두 배입니다."
+      },
+      "target": {
+        "name": "대상",
+        "tooltip": "출력 픽셀 영역: 720p는 약 0.9메가픽셀, 1080p는 2.1, 2K는 3.7, 4K는 8.3입니다. 이미 이 크기인 비디오는 크기를 유지하고 향상만 적용됩니다. 최대 길이: 2400, 1200, 600 또는 300프레임이며, 24fps 기준 약 100, 50, 25 또는 12.5초입니다."
+      },
+      "turbo": {
+        "name": "터보",
+        "tooltip": "동일한 가격으로 더 부드러운 디테일의 빠른 업스케일을 수행합니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "업스케일할 비디오입니다. 최대 512 MiB입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaTextToVideoNode": {
     "description": "선택적으로 생성된 사운드 또는 이를 구동할 오디오 트랙과 함께 Pruna 비디오 모델을 사용하여 텍스트 프롬프트에서 비디오를 생성합니다.",
     "display_name": "Pruna P-Video-2 텍스트-비디오",
@@ -24122,7 +24363,7 @@
       },
       "format": {
         "name": "포맷",
-        "tooltip": "출력 컨테이너입니다. 자동은 Auto/H.264에 MP4를, AV1에 WebM을 사용합니다. MP4, MKV 및 WebM은 특정 컨테이너를 선택합니다."
+        "tooltip": "자동은 ProRes에는 MOV를, AV1에는 WebM을 사용하며, 그 외에는 MP4를 사용합니다."
       },
       "format_codec": {
         "name": "코덱"
@@ -28445,6 +28686,24 @@
     "inputs": {
       "model_name": {
         "name": "모델 파일명"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "다른 분기에 영향을 주지 않고 VAE 인코딩 및 디코딩의 계산 dtype을 설정합니다.",
+    "display_name": "VAE 계산 Dtype",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "기본값은 입력 VAE의 계산 dtype을 유지합니다."
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

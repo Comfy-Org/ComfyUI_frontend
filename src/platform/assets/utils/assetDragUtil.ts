@@ -18,22 +18,19 @@ import { MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
 import { getAssetUrlFilename } from './assetMetadataUtils'
 import { resolvePreviewUrl } from './assetPreviewUtil'
 import { getAssetFileUrl } from './assetUrlUtil'
+import { parseUrl } from '@/utils/urlSafety'
 
 function resolveThumbnailUrl(url: string): URL | null {
-  const source =
-    URL.canParse(url) || url.startsWith('//') ? url : api.apiURL(url)
-  return URL.parse(source, location.href)
+  const source = parseUrl(url) || url.startsWith('//') ? url : api.apiURL(url)
+  return parseUrl(source, location.href)
 }
 
 function assetMediaSources(asset: AssetItem) {
   const mediaKind = getMediaTypeFromFilename(asset.name)
-  const previewUrl = URL.parse(resolvePreviewUrl(asset), location.href)
+  const previewUrl = parseUrl(resolvePreviewUrl(asset), location.href)
   const playable = mediaKind === 'video' || mediaKind === 'audio'
   const mediaUrl = playable
-    ? URL.parse(
-        getAssetFileUrl(asset, { disposition: 'inline' }),
-        location.href
-      )
+    ? parseUrl(getAssetFileUrl(asset, { disposition: 'inline' }), location.href)
     : undefined
   const posterUrl = asset.preview_id
     ? previewUrl
@@ -95,7 +92,7 @@ export function startAssetDrag(
   }
   dataTransfer.setData(MIME_ASSET_INFO, JSON.stringify(assetInfo))
 
-  const fileUrl = URL.parse(getAssetFileUrl(asset), location.href)
+  const fileUrl = parseUrl(getAssetFileUrl(asset), location.href)
   if (!fileUrl) return
 
   dataTransfer.setData('text/uri-list', fileUrl.toString())

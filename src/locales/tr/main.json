@@ -307,7 +307,7 @@
     "workflowReferenceUnavailableReason": "Referans verilen bu iş akışı artık kullanılamıyor veya erişim izniniz yok.",
     "workflowSyncFailedDetail": "Bu iş akışı uyumsuz bir belge sürümüyle oluşturuldu. Tuvaliniz değiştirilmeden bırakıldı.",
     "workflowSyncFailedDetailCatalogMismatch": "Bu iş akışındaki bir düğüm, aracının onu son görüşünden bu yana değişti. Tuvaliniz değişmeden bırakıldı. Sonraki mesajınız, aracının iş akışının kendi kopyasını yeniden oluşturabilmesi için tuvalinizi gönderir.",
-    "workflowSyncFailedDetailStaleClient": "Bu sayfa güncel değil, bu nedenle aracının değişiklikleri gösterilemiyor. Görmek için sayfayı yeniden yükleyin.",
+    "workflowSyncFailedDetailStaleClient": "Bu sayfa bu belgenin güncel sürümünü görüntüleyemiyor; bu nedenle ajanın değişiklikleri burada gösterilemiyor. Değişiklikler korunuyor. Sayfayı yeniden yüklemek bunu düzeltebilir; düzelmezse güncelleme henüz uygulamanıza ulaşmamıştır.",
     "workflowSyncFailedTitle": "Bu iş akışı senkronize edilemiyor",
     "workflows": "İş akışları",
     "working": "Çalışıyor..."
@@ -2028,6 +2028,7 @@
     "arrangeVertically": "Dikey olarak düzenle",
     "asset": "{count} varlık | {count} varlık",
     "audioFailedToLoad": "Ses yüklenemedi",
+    "audioPlaybackFailed": "Bu ses oynatılamadı. Yeniden deneyin veya başka bir uygulamada oynatmak için indirin.",
     "audioProgress": "Ses ilerlemesi",
     "author": "Yazar",
     "back": "Geri",

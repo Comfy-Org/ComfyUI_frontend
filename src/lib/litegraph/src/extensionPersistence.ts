@@ -34,6 +34,76 @@ function safeCloneExtensionValue(value: unknown): JsonValue | undefined {
   return isJsonValue(clonedValue) ? clonedValue : undefined
 }
 
+function readIndexedArray(value: unknown): unknown[] | undefined {
+  if (
+    value === null ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    ArrayBuffer.isView(value)
+  )
+    return
+  try {
+    const keys = Object.keys(value)
+    if (keys.length === 0) return
+    if (keys.some((key, index) => key !== `${index}`)) return
+    if (Reflect.get(value, 'length') !== keys.length) return
+    return keys.map((key) => Reflect.get(value, key))
+  } catch {
+    return
+  }
+}
+
+type CanonicalCloneResult = { ok: true; value: unknown } | { ok: false }
+
+function detachCanonicalValue(value: unknown): CanonicalCloneResult {
+  if (
+    value === undefined ||
+    typeof value === 'function' ||
+    typeof value === 'symbol'
+  )
+    return { ok: true, value: undefined }
+  try {
+    const json = JSON.stringify(
+      value,
+      (_key, nestedValue: unknown) =>
+        readIndexedArray(nestedValue) ?? nestedValue
+    )
+    return {
+      ok: true,
+      value: JSON.parse(json)
+    }
+  } catch {
+    return { ok: false }
+  }
+}
+
+function isStructuredCloneable(value: unknown): boolean {
+  try {
+    structuredClone(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function writeDetachedCanonicalValue(
+  canonical: object,
+  key: string,
+  value: unknown
+): void {
+  if (isStructuredCloneable(value)) return
+
+  const detached = detachCanonicalValue(value)
+  if (detached.ok) {
+    Reflect.set(canonical, key, detached.value)
+    return
+  }
+
+  console.warn(
+    `LiteGraph: could not detach canonical field "${key}"; preserving its value`
+  )
+}
+
 function readClonedEntry(source: object, key: string): JsonValue | undefined {
   try {
     return safeCloneExtensionValue(Reflect.get(source, key))
@@ -232,13 +302,12 @@ export const runExtensionSerializeHook = <T extends object>(
   Object.assign(view, structuredClone(state.legacy), {
     extensions: structuredClone({ ...state.namespaced, ...state.legacy })
   })
-  hook?.(view)
 
-  for (const key of canonicalFields) {
-    if (Object.hasOwn(view, key)) {
-      Reflect.set(canonical, key, Reflect.get(view, key))
-    } else {
-      Reflect.deleteProperty(canonical, key)
+  if (hook) {
+    hook(view)
+    for (const key of canonicalFields) {
+      if (Object.hasOwn(view, key))
+        writeDetachedCanonicalValue(canonical, key, Reflect.get(view, key))
     }
   }
 

@@ -307,7 +307,7 @@
     "workflowReferenceUnavailableReason": "Dieser referenzierte Workflow ist nicht mehr verfügbar oder Sie haben keinen Zugriff darauf.",
     "workflowSyncFailedDetail": "Dieser Workflow wurde mit einer inkompatiblen Dokumentversion erstellt. Ihr Canvas wurde nicht verändert.",
     "workflowSyncFailedDetailCatalogMismatch": "Ein Node in diesem Workflow wurde geändert, seit der Agent ihn zuletzt gesehen hat. Ihr Canvas blieb unverändert. Mit Ihrer nächsten Nachricht wird Ihr Canvas gesendet, damit der Agent seine Kopie des Workflows neu erstellen kann.",
-    "workflowSyncFailedDetailStaleClient": "Diese Seite ist nicht aktuell, daher können die Änderungen des Agenten nicht angezeigt werden. Laden Sie die Seite neu, um sie zu sehen.",
+    "workflowSyncFailedDetailStaleClient": "Diese Seite kann die aktuelle Version dieses Dokuments nicht anzeigen, daher können die Änderungen des Agenten hier nicht angezeigt werden. Sie bleiben erhalten. Ein Neuladen könnte das Problem beheben; falls nicht, hat das Update Ihre App noch nicht erreicht.",
     "workflowSyncFailedTitle": "Dieser Workflow kann nicht synchronisiert werden",
     "workflows": "Workflows",
     "working": "Wird bearbeitet..."
@@ -2028,6 +2028,7 @@
     "arrangeVertically": "Vertikal anordnen",
     "asset": "{count} Asset | {count} Assets",
     "audioFailedToLoad": "Audio konnte nicht geladen werden",
+    "audioPlaybackFailed": "Diese Audiodatei konnte nicht wiedergegeben werden. Versuchen Sie es erneut oder laden Sie sie herunter, um sie in einer anderen App abzuspielen.",
     "audioProgress": "Audiofortschritt",
     "author": "Autor",
     "back": "Zurück",

@@ -4529,6 +4529,10 @@
         "name": "bit_depth",
         "tooltip": "يستخدم «تلقائي» 8 بت لـ sRGB و10 بت لـ HDR. خيارات 8 بت و10 بت الصريحة مستقلة عن مساحة الألوان."
       },
+      "chroma_subsampling": {
+        "name": "اختزال عينات الألوان",
+        "tooltip": "يحافظ 444 على الدقة الكاملة للألوان، ويخفض 422 دقة الألوان الأفقية إلى النصف، ويخفض 420 الدقة على كلا المحورين إلى النصف. يستخدم «تلقائي» الإعداد الافتراضي للترميز. تستخدم الخيارات غير المدعومة أقرب وضع مدعوم وتطبع تحذيرًا في وحدة التحكم."
+      },
       "codec": {
         "name": "codec",
         "tooltip": "يمكن ترميز الفيديو فورًا اختياريًا. يحافظ None على الصور بصيغة موتر؛ ويستخدم Auto ‏H.264."
@@ -15434,8 +15438,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "إنشاء فيديو يبدأ من الصورة وينقل الكاميرا إلى زاوية ومسافة جديدتين حول الموضوع.",
+    "display_name": "التحكم بكاميرا MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لإنشاء الفيديو."
+      },
+      "model_azimuth": {
+        "name": "السمت"
+      },
+      "model_distance": {
+        "name": "المسافة"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_elevation": {
+        "name": "الارتفاع"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "وضع توسيع الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "متابعة فيديو بلقطات جديدة موجّهة بواسطة موجّه ومراجع صوتية اختيارية.",
+    "display_name": "تمديد فيديو MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لإنشاء الفيديو."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_output": {
+        "name": "المخرَج"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_prompt_expansion": {
+        "name": "توسيع الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "استبدال جزء من فيديو بين وقتي البدء والاستئناف بمشهد مُنشأ حديثًا، موجّه بواسطة موجّه وصور ومقاطع فيديو مرجعية اختيارية.",
+    "display_name": "إدراج فيديو MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لإنشاء الفيديو."
+      },
+      "model_color_match": {
+        "name": "مطابقة الألوان"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_prompt_expansion": {
+        "name": "توسيع الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_resume_time": {
+        "name": "وقت الاستئناف"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_start_time": {
+        "name": "وقت البدء"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "حرّك صورة بحيث تتبع حركات فمها الصوت. يكون الفيديو بطول الصوت.",
+    "display_name": "MiniMax H3 Max لمزامنة الشفاه",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_transcription": {
+        "name": "النسخ النصي"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "استبدل الأشخاص في فيديو بأشخاص من صور مرجعية، مع الحفاظ على الحركة والكاميرا واللقطات والصوت في الفيديو المصدر.",
+    "display_name": "MiniMax H3 Max لإعادة التمثيل",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_enhance_realism": {
+        "name": "enhance_realism"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "كيّف فيديو مع نسبة أبعاد جديدة عبر ملاءمته ضمن لوحة جديدة وتوليد المناطق المحيطة. يُحافَظ على توقيت الفيديو المصدر وصوته.",
+    "display_name": "MiniMax H3 Max لإعادة تأطير الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "أنشئ فيديو مشروطًا بالصور والفيديوهات والصوت المرجعية باستخدام نماذج MiniMax H3. أشِر إلى المراجع في الموجّه وفق ترتيبها: «الصورة 1»، «الصورة 2»، «الفيديو 1»، «الصوت 1»، وهكذا.",
+    "description": "ولّد فيديو مشروطًا بصور وفيديوهات وصوت مرجعية باستخدام نماذج MiniMax H3. أشر إلى المراجع في الموجّه حسب ترتيبها: {'@'}Image1، {'@'}Image2، {'@'}Video1، {'@'}Audio1، وهكذا.",
     "display_name": "MiniMax H3 مرجع إلى فيديو",
     "inputs": {
       "control_after_generate": {
@@ -20266,6 +20480,33 @@
       }
     }
   },
+  "PrunaPVideoUpscaleNode": {
+    "description": "يرفع دقة فيديو إلى 720p أو 1080p أو 2K أو 4K باستخدام Pruna P-Video Upscale، مع الحفاظ على نسبة أبعاده وصوته.",
+    "display_name": "Pruna P-Video Upscale",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "معدل إطارات الإخراج. يحافظ 'source' على معدل الفيديو، حتى 60. يُجرى استيفاء لمعدل أعلى. الإخراج فوق 30 fps يكلّف ضعف المبلغ."
+      },
+      "target": {
+        "name": "الهدف",
+        "tooltip": "مساحة بكسلات الإخراج: تبلغ 720p نحو 0.9 ميغابكسل، و1080p ‏2.1، و2K ‏3.7، و4K ‏8.3. يحتفظ الفيديو الكبير بهذا القدر من الحجم بحجمه ويُحسَّن فقط. الحد الأقصى للطول: 2400 أو 1200 أو 600 أو 300 إطار، أي نحو 100 أو 50 أو 25 أو 12.5 ثانية عند 24 fps."
+      },
+      "turbo": {
+        "name": "توربو",
+        "tooltip": "رفع دقة أسرع بتفاصيل أكثر نعومة، بالسعر نفسه."
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المراد رفع دقته، حتى 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaTextToVideoNode": {
     "description": "ينشئ فيديو من مطالبة نصية باستخدام نماذج فيديو Pruna، مع صوت مُولَّد اختياري أو مسار صوتي للتحكم به.",
     "display_name": "Pruna P-Video-2 من نص إلى فيديو",
@@ -24122,7 +24363,7 @@
       },
       "format": {
         "name": "الصيغة",
-        "tooltip": "حاوية الإخراج. يستخدم Auto تنسيق MP4 لـ Auto/H.264 وWebM لـ AV1. تحدد MP4 وMKV وWebM حاوية معينة."
+        "tooltip": "يستخدم تلقائيًا MOV لـ ProRes، وWebM لـ AV1، وMP4 في غير ذلك."
       },
       "format_codec": {
         "name": "codec"
@@ -28445,6 +28686,24 @@
     "inputs": {
       "model_name": {
         "name": "اسم النموذج"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "يضبط نوع بيانات الحساب لترميز وفك ترميز VAE دون التأثير في الفروع الأخرى.",
+    "display_name": "نوع بيانات الحساب لـ VAE",
+    "inputs": {
+      "dtype": {
+        "name": "نوع البيانات",
+        "tooltip": "يُبقي الخيار الافتراضي نوع بيانات الحساب الخاص بـ vae المُدخل."
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

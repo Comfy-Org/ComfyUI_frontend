@@ -4529,6 +4529,10 @@
         "name": "bit_depth",
         "tooltip": "自動模式會對 sRGB 使用 8 位元，對 HDR 使用 10 位元。明確選擇 8 位元或 10 位元時，不受色彩空間影響。"
       },
+      "chroma_subsampling": {
+        "name": "色度子採樣",
+        "tooltip": "444 保留完整色彩解析度，422 將水平色彩解析度減半，而 420 將兩個軸向的色彩解析度皆減半。自動會使用編解碼器的預設值。不支援的選項會使用最接近的支援模式，並在主控台顯示警告。"
+      },
       "codec": {
         "name": "codec",
         "tooltip": "可選擇立即編碼影片。無會保留影像的張量形式；自動使用 H.264。"
@@ -15434,8 +15438,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "從影像開始生成影片，並將攝影機移動至主體周圍的新角度與距離。",
+    "display_name": "MiniMax H3 Max 攝影機控制",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_azimuth": {
+        "name": "方位角"
+      },
+      "model_distance": {
+        "name": "距離"
+      },
+      "model_duration": {
+        "name": "持續時間"
+      },
+      "model_elevation": {
+        "name": "仰角"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "提示詞擴充模式"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "依據提示詞與選用的音訊參考資料，使用新片段延續影片。",
+    "display_name": "MiniMax H3 Max 延伸影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_duration": {
+        "name": "持續時間"
+      },
+      "model_output": {
+        "name": "輸出"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_prompt_expansion": {
+        "name": "提示詞擴充"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "依據提示詞與選用的參考影像和影片，將影片中開始時間與恢復時間之間的部分替換為新生成的場景。",
+    "display_name": "MiniMax H3 Max 插入影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_color_match": {
+        "name": "色彩匹配"
+      },
+      "model_duration": {
+        "name": "持續時間"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_prompt_expansion": {
+        "name": "提示詞擴充"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_resume_time": {
+        "name": "恢復時間"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_start_time": {
+        "name": "開始時間"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "讓影像中的嘴部動作配合音訊。影片長度會與音訊相同。",
+    "display_name": "MiniMax H3 Max 嘴型同步",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_transcription": {
+        "name": "轉錄文字"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "使用參考照片中的人物替換影片中的人物，同時保留來源影片的動作、鏡頭、剪輯與聲音。",
+    "display_name": "MiniMax H3 Max 角色替換",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_enhance_realism": {
+        "name": "enhance_realism"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "將影片放入新畫布並生成周圍區域，以調整為新的長寬比。會保留來源影片的時間長度與聲音。",
+    "display_name": "MiniMax H3 Max 影片重新取景",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "使用 MiniMax H3 模型，根據參考圖片、影片及音訊生成影片。在提示詞中請依序引用參考資料：「Image 1」、「Image 2」、「Video 1」、「Audio 1」等。",
+    "description": "使用 MiniMax H3 模型，根據參考影像、影片及音訊生成影片。請依照提示詞中的順序引用參考資料：{'@'}Image1、{'@'}Image2、{'@'}Video1、{'@'}Audio1，依此類推。",
     "display_name": "MiniMax H3 參考生成影片",
     "inputs": {
       "control_after_generate": {
@@ -20266,6 +20480,33 @@
       }
     }
   },
+  "PrunaPVideoUpscaleNode": {
+    "description": "使用 Pruna P-Video Upscale 將影片放大至 720p、1080p、2K 或 4K，並保留其長寬比與音訊。",
+    "display_name": "Pruna P-Video Upscale",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "輸出影格率。'source' 會保留影片的影格率，最高可達 60。較高的影格率會透過插幀產生。輸出超過 30 fps 的費用為兩倍。"
+      },
+      "target": {
+        "name": "目標",
+        "tooltip": "輸出像素數：720p 約 90 萬像素、1080p 210 萬像素、2K 370 萬像素、4K 830 萬像素。已達此尺寸的影片會維持原始大小，僅進行增強。最大長度為 2400、1200、600 或 300 個影格；以 24 fps 計算，約為 100、50、25 或 12.5 秒。"
+      },
+      "turbo": {
+        "name": "極速模式",
+        "tooltip": "以較柔和的細節更快地放大，價格相同。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要放大的影片，最大為 512 MiB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaTextToVideoNode": {
     "description": "使用 Pruna 影片模型根據文字提示詞生成影片，可選擇生成音效或使用音軌驅動影片。",
     "display_name": "Pruna P-Video-2 文字轉影片",
@@ -24122,7 +24363,7 @@
       },
       "format": {
         "name": "格式",
-        "tooltip": "輸出封裝格式。Auto 對 Auto/H.264 使用 MP4，對 AV1 使用 WebM。MP4、MKV 與 WebM 可選擇特定封裝格式。"
+        "tooltip": "Auto 會對 ProRes 使用 MOV、對 AV1 使用 WebM，其他情況則使用 MP4。"
       },
       "format_codec": {
         "name": "codec"
@@ -28445,6 +28686,24 @@
     "inputs": {
       "model_name": {
         "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "設定 VAE 編碼與解碼的運算資料類型，不會影響其他分支。",
+    "display_name": "VAE 運算資料類型",
+    "inputs": {
+      "dtype": {
+        "name": "資料型別",
+        "tooltip": "預設值會保留輸入 VAE 的運算資料型別。"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

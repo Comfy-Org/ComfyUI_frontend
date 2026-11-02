@@ -26,10 +26,11 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
+import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 
-const bridgeState = vi.hoisted(() => {
+const bridgeState = (() => {
   const liveSubscriptions = new Map<object, Set<string>>()
   let maxLiveSubscriptions = 0
   const countLiveSubscriptions = () =>
@@ -81,7 +82,7 @@ const bridgeState = vi.hoisted(() => {
       maxLiveSubscriptions = 0
     }
   }
-})
+})()
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
@@ -133,15 +134,7 @@ const telemetryState = vi.hoisted(() => ({
   reportError: vi.fn<typeof reportErrorFn>()
 }))
 
-vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
-  LayoutFollowerBridge: class {
-    constructor() {
-      const bridge = new bridgeState.FakeBridge()
-      bridgeState.current = bridge
-      return bridge
-    }
-  }
-}))
+vi.mock(import('./layoutFollowerBridge'), { spy: true })
 
 vi.mock<unknown>(import('./docFrameClient'), () => ({
   DocFrameClient: class {
@@ -281,6 +274,11 @@ describe('useAgentCrdtFollower', () => {
     sessionStorage.clear()
     bridgeState.current = null
     bridgeState.resetLiveSubscriptions()
+    vi.mocked(LayoutFollowerBridge).mockImplementation(function () {
+      const bridge = new bridgeState.FakeBridge()
+      bridgeState.current = bridge
+      return fromPartial<LayoutFollowerBridge>(bridge)
+    })
     clientState.transport = null
     projectionState.applyFrame
       .mockReset()
@@ -2881,6 +2879,46 @@ describe('useAgentCrdtFollower', () => {
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as BatchOutcome).state)
     expect(settledStates).toEqual(['unconfirmed'])
+    unmount()
+  })
+
+  it('holds a widget edit made while the socket is down and resends it on the reconnect ack (PM-2392)', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const edit: GraphOperation = {
+      op: 'set_widget',
+      node_id: '1',
+      widget: 'image',
+      value: 'human-choice.png'
+    }
+    const { enqueue, unmount } = mountFollower('wf-1')
+    clientState.sendOps.mockClear()
+    clientState.sendOps.mockReturnValue(false)
+
+    enqueue([edit])
+    await Promise.resolve()
+    vi.advanceTimersByTime(10_000)
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(6)
+    expect(projectionState.noteLocalWrites).toHaveBeenCalledWith([edit])
+    expect(projectionState.settleLocalWrites).not.toHaveBeenCalled()
+    expect(
+      vi
+        .mocked(recordDevEvent)
+        .mock.calls.filter(([event]) => event === 'human_ops_settled')
+    ).toEqual([])
+
+    clientState.sendOps.mockReturnValue(true)
+    agentSocket.open()
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 0 })
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(7)
+    const [, , refused] = clientState.sendOps.mock.calls[0]
+    const [, , resent] = clientState.sendOps.mock.calls[6]
+    expect(resent).toHaveLength(1)
+    expect(resent[0]).toMatchObject({ op: 'set_widget', node_id: '1' })
+    expect(resent[0].op_id).toBe(refused[0].op_id)
+    expect(resent[0].base_version).toBe(refused[0].base_version)
     unmount()
   })
 

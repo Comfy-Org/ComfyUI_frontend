@@ -307,7 +307,7 @@
     "workflowReferenceUnavailableReason": "Questo workflow di riferimento non è più disponibile oppure non hai accesso a esso.",
     "workflowSyncFailedDetail": "Questo workflow è stato creato con una versione del documento incompatibile. La tua tela non è stata modificata.",
     "workflowSyncFailedDetailCatalogMismatch": "Un nodo in questo workflow è cambiato dall'ultima volta che l'agente lo ha visualizzato. La tua area di lavoro è rimasta invariata. Il tuo prossimo messaggio invierà la tua area di lavoro affinché l'agente possa ricostruire la propria copia del workflow.",
-    "workflowSyncFailedDetailStaleClient": "Questa pagina non è aggiornata, quindi non è possibile mostrare le modifiche dell'agente. Ricarica la pagina per visualizzarle.",
+    "workflowSyncFailedDetailStaleClient": "Questa pagina non può visualizzare la versione corrente di questo documento, quindi qui non è possibile mostrare le modifiche dell'agente. Sono state conservate. Ricaricare la pagina potrebbe risolvere il problema; in caso contrario, l'aggiornamento non ha ancora raggiunto la tua app.",
     "workflowSyncFailedTitle": "Questo workflow non può essere sincronizzato",
     "workflows": "Workflow",
     "working": "In corso..."
@@ -2028,6 +2028,7 @@
     "arrangeVertically": "Disponi verticalmente",
     "asset": "{count} risorsa | {count} risorse",
     "audioFailedToLoad": "Impossibile caricare l'audio",
+    "audioPlaybackFailed": "Non è stato possibile riprodurre questo audio. Riprova oppure scaricalo per riprodurlo in un'altra app.",
     "audioProgress": "Avanzamento audio",
     "author": "Autore",
     "back": "Indietro",

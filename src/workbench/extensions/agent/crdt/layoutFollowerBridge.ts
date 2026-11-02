@@ -19,6 +19,13 @@ export interface ClassifiedDocUpdate extends DocUpdate {
   catchUp: boolean
 }
 
+export function isLiveAgentUpdate(
+  update: Pick<DocUpdate, 'actor'> &
+    Partial<Pick<ClassifiedDocUpdate, 'catchUp'>>
+): boolean {
+  return update.catchUp === false && update.actor?.startsWith('agent:') === true
+}
+
 function trySend(send: () => boolean): boolean {
   try {
     return send()
