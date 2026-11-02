@@ -8,7 +8,7 @@
       "role": "domain"
     },
     {
-      "path": "src/core/graph/nodeDef/**",
+      "path": "src/core/graph/nodeDef/inputSpecInterpreter.ts",
       "role": "domain"
     },
     {
@@ -52,7 +52,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior. The V2 schema is public through @comfyorg/object-info-parser; cross-module imports of the remaining app files are inherited debt."
+    "Inventory preserves existing exports and runtime behavior. The domain has no public entry point; cross-module imports, including the V2 schema through @comfyorg/object-info-parser, are inherited debt."
   ],
   "deepImports": "inventory"
 }

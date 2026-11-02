@@ -2352,7 +2352,9 @@
         "name": "node-definition/domain",
         "patterns": [
           "src/constants/essentialsNodes.ts",
-          "src/core/graph/nodeDef/**",
+          "src/core/graph/nodeDef/inputSpecInterpreter.ts",
+          "src/core/graph/nodeDef/inputSpecInterpreter.cap.test.ts",
+          "src/core/graph/nodeDef/inputSpecInterpreter.test.ts",
           "src/types/nodeDefAugmentation.ts",
           "src/types/nodeSource.ts",
           "src/workbench/utils/**",
