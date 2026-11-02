@@ -40,10 +40,6 @@
       "role": "application"
     },
     {
-      "path": "src/platform/billing/composables/useLegacyBilling.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/billing/composables/useNextInvoice.ts",
       "role": "application"
     },
@@ -391,12 +387,11 @@
   "allowedConsumers": ["account"],
   "characterizationScenarios": [
     {
-      "name": "Billing context routes reads and actions to the legacy or workspace billing rail",
+      "name": "Billing context routes reads and actions to workspace billing",
       "checks": [
         "src/platform/billing/composables/useBillingContext.test.ts",
         "src/platform/billing/composables/useBillingRouting.test.ts",
         "src/platform/billing/composables/billingRail.test.ts",
-        "src/platform/billing/composables/useLegacyBilling.test.ts",
         "src/platform/billing/composables/useWorkspaceBilling.test.ts",
         "src/platform/billing/composables/useWorkspaceBilling.sdk.test.ts",
         "src/platform/billing/composables/useWorkspaceBilling.subscriptionRail.test.ts",
@@ -503,7 +498,7 @@
   ],
   "compatibilityPromises": [
     "Unclassified callers, authentication, workspace, and the cloud record may continue importing billing internals during inventory; imports from classified domains remain subject to cross-domain rules.",
-    "useBillingContext remains the shared billing seam for the legacy and workspace rails, and plan selection stays in the host app while hosted billing handles checkout only.",
+    "useBillingContext remains the shared billing seam for workspace billing, and plan selection stays in the host app while hosted billing handles checkout only.",
     "Billing owns the extracted client and SDK contract; mixed membership and billing views belong to account under ADR-BILLING-0049. Remaining cross-domain imports and dialog launchers that import presentation stay visible as boundary debt."
   ],
   "deepImports": "inventory"

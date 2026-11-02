@@ -4865,7 +4865,6 @@
     "cancelDialog": {
       "endOfBillingPeriod": "la fine del tuo periodo di fatturazione",
       "failed": "Impossibile annullare l'abbonamento",
-      "finishOnStripe": "Il tuo abbonamento non è ancora annullato. Completa l'annullamento nella pagina Stripe appena aperta. Fino ad allora, il tuo piano si rinnoverà come di consueto.",
       "workspaceChanged": "Il tuo workspace attivo è cambiato. Torna indietro e riprova."
     },
     "cancelFlow": {

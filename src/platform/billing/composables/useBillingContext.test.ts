@@ -471,7 +471,37 @@ describe('useBillingContext', () => {
       expect(context.isInitialized.value).toBe(false)
     })
 
-    it('makes no billing call while unknown, then routes to workspace billing for a personal workspace', async () => {
+    it('shares one adapter initialization between concurrent callers', async () => {
+      const loaded = holdWorkspaceUnloaded('personal')
+      const context = useBillingContext()
+      vi.clearAllMocks()
+
+      let settleStatus!: () => void
+      vi.mocked(billingApi.getBillingStatus).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            settleStatus = () =>
+              resolve({ ...DEFAULT_BILLING_STATUS, ...mockBillingStatus.value })
+          })
+      )
+      const settled = { first: false, second: false }
+      const first = context.initialize().then(() => (settled.first = true))
+      const second = context.initialize().then(() => (settled.second = true))
+      loaded.value = true
+      await vi.waitFor(() =>
+        expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(1)
+      )
+
+      expect(settled).toEqual({ first: false, second: false })
+
+      settleStatus()
+      await Promise.all([first, second])
+
+      expect(settled).toEqual({ first: true, second: true })
+      expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(1)
+    })
+
+    it('reads empty and makes no billing call while unknown, then routes to workspace billing for a personal workspace', async () => {
       const loaded = holdWorkspaceUnloaded('personal')
       mockBillingRail.value = 'stripe'
       const context = useBillingContext()
@@ -482,6 +512,9 @@ describe('useBillingContext', () => {
       await context.fetchBalance()
 
       expect(context.type.value).toBe('unknown')
+      expect(context.subscription.value).toBeNull()
+      expect(context.balance.value).toBeNull()
+      expect(context.canAccessSubscriptionFeatures.value).toBe(false)
       expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
       expect(billingApi.getBillingBalance).not.toHaveBeenCalled()
       expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
@@ -495,6 +528,16 @@ describe('useBillingContext', () => {
       expect(billingApi.getBillingStatus).toHaveBeenCalled()
       expect(billingApi.getBillingBalance).toHaveBeenCalled()
       expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
+    })
+
+    it('lets off-Cloud users run workflows before any workspace loads', () => {
+      holdWorkspaceUnloaded('personal')
+      mockIsCloud.value = false
+      const context = useBillingContext()
+
+      expect(context.type.value).toBe('unknown')
+      expect(context.canAccessSubscriptionFeatures.value).toBe(true)
+      expect(context.canRunWorkflows.value).toBe(true)
     })
 
     it('makes no billing call while unknown, then routes to workspace billing for a team', async () => {

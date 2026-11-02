@@ -38,7 +38,7 @@ function createBillingContextMock(): BillingContext {
     subscribe: vi.fn(async () => {}),
     previewSubscribe: vi.fn(async () => null),
     manageSubscription: vi.fn(async () => ({ ok: true }) as const),
-    cancelSubscription: vi.fn(async () => 'workspace' as const),
+    cancelSubscription: vi.fn(async () => undefined),
     resubscribe: vi.fn(async () => {}),
     topup: vi.fn(async () => {}),
     fetchPlans: vi.fn(async () => {}),
