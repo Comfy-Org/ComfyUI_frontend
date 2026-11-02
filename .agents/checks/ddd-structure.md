@@ -23,7 +23,7 @@ Flag NEW files added to these folders; they belong in a domain folder under the 
 - `src/components/` → `src/renderer/` or `src/workbench/extensions/{feature}/components/`
 - `src/stores/` → `src/platform/{domain}/` or `src/workbench/extensions/{feature}/stores/`
 - `src/services/` → `src/platform/{domain}/`
-- `src/composables/` → `src/renderer/` or `src/platform/{domain}/ui/`
+- `src/composables/` → `src/renderer/`, `src/platform/{domain}/ui/`, or `src/workbench/extensions/{feature}/composables/`
 
 Do not flag changes to existing files in these folders.
 

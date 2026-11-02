@@ -26,7 +26,7 @@ Custom node extensions consume these, so treat a rename, removal, or signature c
 - **Extension hooks**: `app.registerExtension`, the `ComfyExtension` lifecycle, and `ComfyApp` / `ComfyApi` members.
 - **Entity callbacks and fields** listed under "Extension ecosystem impact" in the root `AGENTS.md`.
 
-Do not flag additions or internal changes. Check whether the diff already keeps a re-export or compatibility shim before flagging.
+Do not flag additive exports, optional members, or internal changes. A required member added to a public interface that extensions implement, such as `ComfyExtension`, is breaking. Check whether the diff already keeps a re-export or compatibility shim before flagging.
 
 ## Method
 

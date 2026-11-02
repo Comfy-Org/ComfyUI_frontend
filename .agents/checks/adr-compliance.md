@@ -71,13 +71,13 @@ Skip ADRs whose status is `Rejected`, `Deprecated`, or `Superseded` unless the d
 
 ## How to Check
 
-1. Identify changed files in the entity/litegraph layer: `src/lib/litegraph/`, `src/platform/`, entity-related stores
+1. Identify changed files in the entity/litegraph layer: `src/lib/litegraph/`, `src/platform/`, `src/renderer/core/layout/`, `src/systems/`, entity-related stores
 2. For Priority 1 patterns, use targeted searches:
 
    ```
    # Direct position mutation
-   Grep: pattern="\.pos\s*=" path="src/lib/litegraph"
-   Grep: pattern="\.size\s*=" path="src/lib/litegraph"
+   Grep: pattern="\.pos\s*=" path="src"
+   Grep: pattern="\.size\s*=" path="src"
 
    # God object growth (new methods)
    Grep: pattern="(class LGraphNode|class LGraphCanvas|class LGraph\b)" path="src/lib/litegraph"
