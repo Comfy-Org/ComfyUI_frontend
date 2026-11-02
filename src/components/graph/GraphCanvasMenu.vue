@@ -24,10 +24,6 @@
           :button-styles="stringifiedMinimapStyles.buttonStyles"
         />
 
-        <ZipTieToolButton
-          :button-styles="stringifiedMinimapStyles.buttonStyles"
-        />
-
         <div class="h-[27px] w-px self-center bg-border" />
 
         <Button
@@ -118,7 +114,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import CanvasModeSelector from './CanvasModeSelector.vue'
 import ZoomControlsModal from './modals/ZoomControlsModal.vue'
-import ZipTieToolButton from './ZipTieToolButton.vue'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()

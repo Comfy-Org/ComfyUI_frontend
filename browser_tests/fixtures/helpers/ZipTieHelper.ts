@@ -37,7 +37,7 @@ export class ZipTieHelper {
     })
   }
 
-  async beginMarquee(withShortcut = true) {
+  async beginMarquee() {
     const handle = await this.comfyPage.page.waitForFunction(() => {
       const app = window.app!
       const graph = app.graph
@@ -66,10 +66,8 @@ export class ZipTieHelper {
     if (!box)
       throw new Error('Workflow wires must render before the zip gesture')
     await this.comfyPage.canvas.focus()
-    if (withShortcut) {
-      await this.comfyPage.page.keyboard.down('Meta')
-      await this.comfyPage.page.keyboard.down('Shift')
-    }
+    await this.comfyPage.page.keyboard.down('Meta')
+    await this.comfyPage.page.keyboard.down('Shift')
     await this.comfyPage.page.mouse.move(box.from[0], box.from[1])
     await this.comfyPage.page.mouse.down()
     await this.comfyPage.page.mouse.move(box.to[0], box.to[1], { steps: 10 })

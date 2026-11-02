@@ -104,7 +104,6 @@ import {
 } from '@comfyorg/design-system/lib/menu/menuStyles'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useZipTieToolStore } from './zipTieToolStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 interface Props {
@@ -140,7 +139,6 @@ const lockCommandText = computed(() =>
 )
 
 const setMode = (mode: 'select' | 'hand') => {
-  useZipTieToolStore().deactivate()
   if (mode === 'select' && isCanvasReadOnly.value) {
     void commandStore.execute('Comfy.Canvas.Unlock')
   } else if (mode === 'hand' && !isCanvasReadOnly.value) {

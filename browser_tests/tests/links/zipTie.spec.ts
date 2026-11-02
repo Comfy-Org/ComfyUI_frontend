@@ -7,7 +7,6 @@ test.describe('Zip ties', { tag: ['@canvas', '@vue-nodes'] }, () => {
   test.use({
     initialSettings: {
       'Comfy.Canvas.NavigationMode': 'standard',
-      'Comfy.Graph.CanvasMenu': true,
       'Comfy.Minimap.Visible': false
     }
   })
@@ -83,35 +82,5 @@ test.describe('Zip ties', { tag: ['@canvas', '@vue-nodes'] }, () => {
 
     await expect(comfyPage.page.getByTestId('selection-rectangle')).toBeHidden()
     expect(await zipTie.routing()).toEqual(initial)
-  })
-
-  test('the visible tool creates a tie without modifiers and Escape exits it', async ({
-    comfyPage,
-    zipTie
-  }) => {
-    const tool = comfyPage.page.getByRole('button', {
-      name: 'Zip tie',
-      exact: true
-    })
-    await expect(tool).toBeVisible()
-    await tool.click()
-    await expect(tool).toHaveAttribute('aria-pressed', 'true')
-
-    await zipTie.beginMarquee(false)
-    await expect(
-      comfyPage.page.getByTestId('selection-rectangle')
-    ).toBeVisible()
-    await zipTie.finishMarquee()
-    await expect.poll(async () => (await zipTie.routing()).ties).toBe(1)
-    await expect(tool).toHaveAttribute('aria-pressed', 'false')
-    const created = await zipTie.routing()
-
-    await tool.click()
-    await zipTie.beginMarquee(false)
-    await zipTie.cancelMarquee()
-
-    await expect(tool).toHaveAttribute('aria-pressed', 'false')
-    await expect(comfyPage.page.getByTestId('selection-rectangle')).toBeHidden()
-    expect(await zipTie.routing()).toEqual(created)
   })
 })

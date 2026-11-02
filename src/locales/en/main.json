@@ -6272,9 +6272,7 @@
   },
   "zipTie": {
     "bundle": "Zip tie selected links",
-    "release": "Release zip tie",
-    "tool": "Zip tie",
-    "toolHint": "Drag a box across two or more wires. Press Escape to cancel."
+    "release": "Release zip tie"
   },
   "lateCustomNodes": {
     "starting": "Custom nodes are starting... {seconds} s",
