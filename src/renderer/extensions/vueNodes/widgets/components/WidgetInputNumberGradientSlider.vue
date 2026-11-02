@@ -1,11 +1,12 @@
 <template>
-  <WidgetLayoutField :widget="widget">
+  <WidgetLayoutField :widget="widget" fill-width>
     <template #between><slot name="between" /></template>
     <div
       :class="
         cn(
           WidgetInputBaseClass,
           'flex items-center gap-2 pr-2 pl-3',
+          unifiedRows && 'not-disabled:bg-transparent',
           useWidgetHeight()
         )
       "
@@ -32,14 +33,17 @@
         }"
         class="h-auto w-16 shrink-0 bg-transparent hover:bg-transparent"
       >
-        <NumberFieldInput :aria-label="widget.name" class="text-xs" />
+        <NumberFieldInput
+          :aria-label="widget.name"
+          :class="cn('text-xs', unifiedRows && 'text-right')"
+        />
       </NumberField>
     </div>
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 
 import GradientSlider from '@comfyorg/design-system/slider/GradientSlider'
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
@@ -47,6 +51,7 @@ import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldIn
 import type { ColorStop } from '@comfyorg/graph-model/interfaces'
 import type { IWidgetGradientSliderOptions } from '@comfyorg/graph-model/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -64,6 +69,7 @@ const { widget } = defineProps<{
 }>()
 
 const modelValue = defineModel<number>({ default: 0 })
+const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 
 const gradientStops = computed<ColorStop[]>(() => {
   const stops = widget.options?.gradient_stops

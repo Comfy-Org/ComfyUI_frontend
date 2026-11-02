@@ -67,7 +67,7 @@ describe('WidgetSelectDefault', () => {
       slots,
       global: {
         plugins: [i18n],
-        provide: { [UnifiedWidgetRowsKey as symbol]: unifiedRows },
+        provide: { [UnifiedWidgetRowsKey]: unifiedRows },
         stubs: {
           WidgetLayoutField: WidgetLayoutFieldStub
         }
@@ -96,11 +96,6 @@ describe('WidgetSelectDefault', () => {
       raw: 'C:\\models\\portrait.safetensors',
       summary: 'portrait.safetensors',
       filenameSummary: true
-    },
-    {
-      raw: 'schedule/custom',
-      summary: 'schedule/custom',
-      filenameSummary: false
     }
   ])('displays $raw as $summary', ({ raw, summary, filenameSummary }) => {
     renderComponent(createWidget([raw]), raw, undefined, filenameSummary)

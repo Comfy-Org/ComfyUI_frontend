@@ -4,6 +4,40 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
+  for (const type of ['slider', 'gradientslider'] as const) {
+    test(`${type} retains a usable drag range`, async ({ comfyPage }) => {
+      await comfyPage.page.evaluate((widgetType) => {
+        const node = window.app!.graph.nodes.find(
+          (node) => node.type === 'KSampler'
+        )!
+        node.addWidget(widgetType, 'strength', 0.25, () => {}, {
+          min: 0,
+          max: 1,
+          precision: 2
+        })
+      }, type)
+      const [node] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+      await node.centerOnNode()
+      const slider = comfyPage.vueNodes
+        .getWidgetRowByLabel('KSampler', 'strength')
+        .getByRole('slider')
+      await expect(slider).toHaveAttribute('aria-valuenow', '0.25')
+      await slider.hover()
+      const box = (await slider.boundingBox())!
+      await comfyPage.page.mouse.down()
+      await comfyPage.page.mouse.move(box.x + 40, box.y + box.height / 2, {
+        steps: 10
+      })
+      await comfyPage.page.mouse.up()
+      await expect
+        .poll(async () => Number(await slider.getAttribute('aria-valuenow')))
+        .toBeGreaterThan(0.25)
+      await expect
+        .poll(async () => Number(await slider.getAttribute('aria-valuenow')))
+        .toBeLessThan(1)
+    })
+  }
+
   test('steps the Float primitive by the increment its node definition declares', async ({
     comfyPage
   }) => {
@@ -14,7 +48,7 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
     )
 
     const valueWidget = comfyPage.vueNodes
-      .getWidgetByName('Float', 'value')
+      .getWidgetRowByLabel('Float', 'value')
       .first()
     const controls = comfyPage.vueNodes.getInputNumberControls(valueWidget)
 
@@ -39,12 +73,10 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
 
     const cfgWidget = comfyPage.vueNodes
-      .getWidgetByName('KSampler', 'cfg')
+      .getWidgetRowByLabel('KSampler', 'cfg')
       .first()
     const { input } = comfyPage.vueNodes.getInputNumberControls(cfgWidget)
 
-    // 2.1 + 1.23 = 3.33 — well away from any half-point, so the expected
-    // value is the same under half-up, half-even, and half-away-from-zero.
     await input.fill('2.1 + 1.23')
     await input.blur()
 
@@ -56,10 +88,8 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
 
-    // cfg has room to grow (initial 8, max 100); denoise is at its max (1)
-    // so its increment button is disabled and can't be used here.
     const cfgWidget = comfyPage.vueNodes
-      .getWidgetByName('KSampler', 'cfg')
+      .getWidgetRowByLabel('KSampler', 'cfg')
       .first()
     const controls = comfyPage.vueNodes.getInputNumberControls(cfgWidget)
 
@@ -83,11 +113,10 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
 
     const cfgWidget = comfyPage.vueNodes
-      .getWidgetByName('KSampler', 'cfg')
+      .getWidgetRowByLabel('KSampler', 'cfg')
       .first()
     const { input } = comfyPage.vueNodes.getInputNumberControls(cfgWidget)
 
-    // KSampler's cfg is precision=1, so pick a value that lands on the grid
     await input.fill('7.5')
     await input.blur()
     await expect(input).toHaveValue('7.5')
@@ -100,9 +129,6 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
     const cfgWidgetAfterReload = await ksamplerNode.getWidgetByName('cfg')
     await expect.poll(() => cfgWidgetAfterReload.getValue()).toBe(7.5)
 
-    // Also assert the Vue input mirrors the persisted value, so a broken
-    // rehydration path that keeps litegraph state correct but renders stale
-    // UI (or vice versa) still fails this test.
     await expect(input).toHaveValue('7.5')
   })
 })

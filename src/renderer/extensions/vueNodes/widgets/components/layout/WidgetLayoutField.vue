@@ -14,10 +14,14 @@ const { widget, rootClass, valueText } = defineProps<{
   rootClass?: string
   valueText?: string
   noBorder?: boolean
+  fillWidth?: boolean
 }>()
 
 const hideLayoutField = useHideLayoutField()
 const unifiedRows = inject(UnifiedWidgetRowsKey, false)
+const label = computed(
+  () => widget.displayLabel ?? (widget.label || widget.name)
+)
 const borderStyle = computed(() =>
   cn('focus-within:ring focus-within:ring-ring', widget.borderStyle)
 )
@@ -37,7 +41,7 @@ const borderStyle = computed(() =>
   >
     <div
       v-if="!hideLayoutField"
-      :title="widget.displayLabel ?? (widget.label || widget.name)"
+      :title="label"
       :class="
         cn(
           'content-center-safe truncate',
@@ -50,14 +54,18 @@ const borderStyle = computed(() =>
         :class="unifiedRows && 'block truncate'"
       >
         <template v-if="widget.name">
-          {{ widget.displayLabel ?? (widget.label || widget.name) }}
+          {{ label }}
         </template>
       </span>
     </div>
     <slot name="between" />
     <div
       :class="
-        cn('min-w-0', unifiedRows ? 'ml-auto grid shrink' : 'relative flex-1')
+        cn(
+          'min-w-0',
+          unifiedRows ? 'ml-auto grid shrink' : 'relative flex-1',
+          fillWidth && 'flex-1'
+        )
       "
     >
       <span
@@ -71,8 +79,7 @@ const borderStyle = computed(() =>
           cn(
             'min-w-0 cursor-default rounded-md transition-all',
             !noBorder && !unifiedRows && borderStyle,
-            unifiedRows &&
-              'col-start-1 row-start-1 [&_button[role=combobox]_span]:text-right [&_input]:text-right [&_input]:not-disabled:bg-transparent [&>div]:not-disabled:bg-transparent'
+            unifiedRows && 'col-start-1 row-start-1'
           )
         "
         @pointerdown.stop

@@ -181,6 +181,7 @@ const inputAriaAttrs = computed(() => ({
             cn(
               WidgetInputBaseClass,
               'flex grow text-xs',
+              unifiedRows && 'not-disabled:bg-transparent',
               !unifiedRows && 'relative',
               useWidgetHeight()
             )

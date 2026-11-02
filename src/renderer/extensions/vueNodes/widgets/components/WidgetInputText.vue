@@ -15,7 +15,7 @@
             'h-auto min-w-[4ch] truncate',
             !isReadOnly && 'hover:bg-muted',
             size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
-            unifiedRows && 'pr-7 pl-2',
+            unifiedRows && 'pr-7 pl-2 text-right not-disabled:bg-transparent',
             loading && 'pl-9'
           )
         "

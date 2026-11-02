@@ -36,7 +36,8 @@
         :disabled
         :class="
           cn(
-            'absolute inset-0 truncate border-0 bg-transparent p-1 text-xs focus:outline-0'
+            'absolute inset-0 truncate border-0 bg-transparent p-1 text-xs focus:outline-0',
+            edgeButtons && 'text-right'
           )
         "
         inputmode="decimal"

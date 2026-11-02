@@ -36,7 +36,7 @@ function renderField(
     global: {
       provide: {
         [HideLayoutFieldKey as symbol]: hideLayoutField,
-        [UnifiedWidgetRowsKey as symbol]: unifiedRows
+        [UnifiedWidgetRowsKey]: unifiedRows
       }
     }
   })
