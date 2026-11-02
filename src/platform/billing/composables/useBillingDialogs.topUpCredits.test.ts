@@ -85,6 +85,7 @@ describe('showTopUpCreditsDialog', () => {
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
     useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'not_workspace_owner')
 
     await useBillingDialogs().showTopUpCreditsDialog({
       isInsufficientCredits: true
@@ -106,45 +107,41 @@ describe('showTopUpCreditsDialog', () => {
 
   it.for([
     {
-      type: 'workspace',
-      canTopUp: false,
       denial: 'payment_past_due',
-      opensRecovery: true,
-      storeDialogs: []
+      recovery: 1,
+      dialogs: [],
+      plans: 0,
+      toast: 0
     },
     {
-      type: 'workspace',
-      canTopUp: false,
       denial: 'not_workspace_owner',
-      opensRecovery: false,
-      storeDialogs: ['insufficient-credits-member']
+      recovery: 0,
+      dialogs: ['insufficient-credits-member'],
+      plans: 0,
+      toast: 0
+    },
+    { denial: 'free_plan', recovery: 0, dialogs: [], plans: 1, toast: 0 },
+    { denial: 'no_subscription', recovery: 0, dialogs: [], plans: 1, toast: 0 },
+    {
+      denial: 'subscription_ended',
+      recovery: 0,
+      dialogs: [],
+      plans: 1,
+      toast: 0
     },
     {
-      type: 'workspace',
-      canTopUp: false,
-      denial: 'free_plan',
-      opensRecovery: false,
-      storeDialogs: ['insufficient-credits-member']
+      denial: 'billing_operation_in_progress',
+      recovery: 0,
+      dialogs: [],
+      plans: 0,
+      toast: 1
     },
-    {
-      type: 'workspace',
-      canTopUp: false,
-      denial: undefined,
-      opensRecovery: false,
-      storeDialogs: ['insufficient-credits-member']
-    },
-    {
-      type: 'workspace',
-      canTopUp: true,
-      denial: undefined,
-      opensRecovery: false,
-      storeDialogs: ['top-up-credits']
-    }
+    { denial: 'sales_managed', recovery: 0, dialogs: [], plans: 0, toast: 1 },
+    { denial: undefined, recovery: 0, dialogs: [], plans: 0, toast: 1 }
   ] as const)(
-    'routes a $type top-up denied as $denial (recovery: $opensRecovery, dialogs: $storeDialogs)',
-    async ({ type, canTopUp, denial, opensRecovery, storeDialogs }) => {
-      useBillingContext().type = computed(() => type)
-      useBillingCapabilities().canTopUp = computed(() => canTopUp)
+    'routes a denied top-up served as $denial',
+    async ({ denial, recovery, dialogs, plans, toast }) => {
+      useBillingCapabilities().canTopUp = computed(() => false)
       useBillingCapabilities().topUpDenial = computed(() => denial)
 
       await useBillingDialogs().showTopUpCreditsDialog({
@@ -154,37 +151,35 @@ describe('showTopUpCreditsDialog', () => {
       const storeDialogKeys = vi
         .mocked(useDialogStore().showDialog)
         .mock.calls.map(([args]) => args.key)
-      expect(mockShowPaymentRecoveryDialog).toHaveBeenCalledTimes(
-        opensRecovery ? 1 : 0
-      )
-      expect(storeDialogKeys).toEqual(storeDialogs)
-      expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
+      expect(mockShowPaymentRecoveryDialog).toHaveBeenCalledTimes(recovery)
+      expect(storeDialogKeys).toEqual(dialogs)
+      expect(useSubscriptionDialog().show).toHaveBeenCalledTimes(plans)
+      expect(useToast().error).toHaveBeenCalledTimes(toast)
     }
   )
 
-  it.for(['subscription_ended', 'free_plan', 'no_subscription'])(
-    'sends a personal owner denied as %s to the plans dialog, not the admin notice',
-    async (denial) => {
-      Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
-      useBillingCapabilities().canTopUp = computed(() => false)
-      useBillingCapabilities().topUpDenial = computed(() => denial)
+  it('opens the plans dialog for a team owner on the free plan', async () => {
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'free_plan')
 
-      await useBillingDialogs().showTopUpCreditsDialog({
-        isInsufficientCredits: true,
-        source: 'agent_paywall'
-      })
+    await useBillingDialogs().showTopUpCreditsDialog({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
 
-      expect(useSubscriptionDialog().show).toHaveBeenCalledExactlyOnceWith({
-        reason: 'agent_paywall'
-      })
-      expect(useDialogStore().showDialog).not.toHaveBeenCalled()
-    }
-  )
+    expect(useSubscriptionDialog().show).toHaveBeenCalledExactlyOnceWith({
+      reason: 'agent_paywall'
+    })
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
+  })
 
-  it('tells a personal owner to retry when the capability read failed', async () => {
+  it('tells a personal owner a billing change is in progress instead of opening a dialog', async () => {
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().hasResolvedCapabilities = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(
+      () => 'billing_operation_in_progress'
+    )
 
     await useBillingDialogs().showTopUpCreditsDialog({
       isInsufficientCredits: true

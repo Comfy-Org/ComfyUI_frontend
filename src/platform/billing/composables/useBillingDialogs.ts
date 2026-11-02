@@ -7,7 +7,6 @@ import type {
   SubscriptionDialogOptions,
   TopUpCreditsDialogOptions
 } from '@/platform/billing/composables/types'
-import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { t } from '@/i18n'
 import { provideBillingDialogs } from '@/platform/billing/subscription/composables/billingDialogsAccess'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
@@ -39,14 +38,8 @@ export function useBillingDialogs() {
         options?.source ??
         (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
     })
-    const { type } = useBillingContext()
-    const {
-      canTopUp,
-      topUpDenial,
-      isReady,
-      initialize,
-      hasResolvedCapabilities
-    } = useBillingCapabilities()
+    const { canTopUp, topUpDenial, isReady, initialize } =
+      useBillingCapabilities()
     if (!isReady.value) await initialize()
     if (!isReady.value) return
 
@@ -55,32 +48,37 @@ export function useBillingDialogs() {
     }
 
     if (!canTopUp.value) {
-      if (type.value !== 'workspace') return
-      if (useWorkspaceIdentity().isInPersonalWorkspace) {
-        // Personal owners have no admins to ask: send them to a plan, or say
-        // the read failed.
-        if (!hasResolvedCapabilities.value) {
+      switch (topUpDenial.value) {
+        case 'not_workspace_owner':
+          return dialogStore.showDialog({
+            key: 'insufficient-credits-member',
+            component: InsufficientCreditsMemberDialog,
+            props: {
+              onClose: () =>
+                dialogStore.closeDialog({ key: 'insufficient-credits-member' })
+            },
+            dialogComponentProps: {
+              headless: true
+            }
+          })
+        case 'free_plan':
+        case 'no_subscription':
+        case 'subscription_ended':
+          await useSubscriptionDialog().show({
+            reason: options?.source ?? 'out_of_credits'
+          })
+          return
+        case 'billing_operation_in_progress':
+          useToast().error(
+            t('subscription.planUnavailable.billingOperationInProgress')
+          )
+          return
+        default:
           useToast().error(
             t('subscription.planUnavailable.billingStateUnknown')
           )
           return
-        }
-        await useSubscriptionDialog().show({
-          reason: options?.source ?? 'out_of_credits'
-        })
-        return
       }
-      return dialogStore.showDialog({
-        key: 'insufficient-credits-member',
-        component: InsufficientCreditsMemberDialog,
-        props: {
-          onClose: () =>
-            dialogStore.closeDialog({ key: 'insufficient-credits-member' })
-        },
-        dialogComponentProps: {
-          headless: true
-        }
-      })
     }
 
     return dialogStore.showDialog({
