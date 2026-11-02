@@ -105,8 +105,6 @@ describe('useOAuthPostLoginRedirect', () => {
       oauth_request_id: VALID_REQUEST_ID
     })
 
-    // Empty messages → useI18n returns the key itself, which is what we
-    // assert on (per docs/testing/vitest-patterns.md).
     expect(result).toEqual({
       kind: 'error',
       message: 'oauth.consent.sessionError'

@@ -179,12 +179,12 @@ A regression test that never proves red does not pin the bug.
 
 ## Key Files to Read
 
-| Purpose                              | Path                                                                                                              |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| Composable mocking patterns          | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#shared-manual-mocks)                                 |
-| Store testing patterns               | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#pinia-stores)                                        |
-| Repo-wide Vitest setup defaults      | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md)                                                     |
-| Component testing rule for new tests | [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)                                 |
-| LiteGraph test patterns              | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#mocking)                                             |
-| Shared LiteGraph factories           | [`src/utils/__tests__/litegraphTestUtils.ts`](../../../src/utils/__tests__/litegraphTestUtils.ts)                 |
-| Real i18n setup                      | [`src/components/searchbox/v2/__test__/testUtils.ts`](../../../src/components/searchbox/v2/__test__/testUtils.ts) |
+| Purpose                              | Path                                                                                              |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Composable mocking patterns          | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#shared-manual-mocks)                 |
+| Store testing patterns               | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#pinia-stores)                        |
+| Repo-wide Vitest setup defaults      | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md)                                     |
+| Component testing rule for new tests | [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)                 |
+| LiteGraph test patterns              | [`docs/guidance/vitest.md`](../../../docs/guidance/vitest.md#mocking)                             |
+| Shared LiteGraph factories           | [`src/utils/__tests__/litegraphTestUtils.ts`](../../../src/utils/__tests__/litegraphTestUtils.ts) |
+| Real i18n setup                      | [`src/utils/__tests__/testI18n.ts`](../../../src/utils/__tests__/testI18n.ts)                     |
