@@ -70,7 +70,7 @@ test.describe('Agent panel neighbor layout', { tag: ['@cloud', '@ui'] }, () => {
     {
       sidebarLocation: 'left',
       propertiesSide: 'right',
-      background: 'rgb(23, 23, 24)',
+      background: 'rgb(9, 9, 10)',
       borderWidth: '1px',
       gutterWidth: '8px'
     },
@@ -147,7 +147,7 @@ test.describe('Agent panel neighbor layout', { tag: ['@cloud', '@ui'] }, () => {
       await expect(gutter).toHaveCSS('margin-right', '0px')
 
       await comfyPage.menu.nodeLibraryTab.open()
-      await expect(shell).toHaveCSS('background-color', 'rgb(23, 23, 24)')
+      await expect(shell).toHaveCSS('background-color', 'rgb(9, 9, 10)')
       await expect(shell).toHaveCSS('border-left-width', '1px')
       await expect(gutter).toHaveCSS('margin-right', '8px')
 

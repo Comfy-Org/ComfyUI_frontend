@@ -227,7 +227,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
       await expect(page.locator('body')).toHaveCSS(
         'background-color',
-        'rgb(255, 255, 255)'
+        'rgb(250, 250, 250)'
       )
     })
 
@@ -235,11 +235,11 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       await requestConsentFromOpenPanel(page)
       await expect(page.getByTestId('agent-consent-card')).toHaveCSS(
         'background-color',
-        'rgb(23, 23, 24)'
+        'rgb(9, 9, 10)'
       )
       await expect(page.getByTestId('agent-consent-card')).toHaveCSS(
         'border-color',
-        'rgb(73, 74, 80)'
+        'rgb(63, 63, 68)'
       )
       await expect(
         page.getByRole('heading', { name: enMessages.agent.consent.title })
