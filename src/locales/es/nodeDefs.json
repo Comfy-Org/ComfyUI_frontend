@@ -26714,7 +26714,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "Mejoramiento y escalado de imagen estándar de la industria.",
+    "description": "Escalado y mejora de imágenes de estándar industrial. Salida máxima: 179 megapíxeles.",
     "display_name": "Mejora de Imagen Topaz",
     "inputs": {
       "image": {
@@ -26752,11 +26752,11 @@
       },
       "output_height": {
         "name": "output_height",
-        "tooltip": "Un valor de cero significa que la salida tendrá la misma altura que el original o se escalará proporcionalmente a output_width si se especifica. Wonder 3.5 solo admite factores de escalado de 1x a 6x. Bloom 2 y Wonder 3.5 preservan la relación de aspecto de entrada y tratan el tamaño solicitado como un objetivo."
+        "tooltip": "Un valor de cero significa generar la salida con la misma altura que el original o escalarla proporcionalmente a output_width si se especifica. Wonder 3.5 y Wonder 4 admiten factores de escalado de 1x a 6x; Bloom 2, de 1x a 12x. Bloom 2, Wonder 3.5 y Wonder 4 siempre mantienen la relación de aspecto de entrada: si se establecen ambos tamaños y su proporción difiere, prevalece la escala mayor y la salida (y el precio) es mayor que el tamaño solicitado."
       },
       "output_width": {
         "name": "output_width",
-        "tooltip": "Un valor de cero significa calcular automáticamente (usualmente será el tamaño original o escalado proporcionalmente a output_height si se especifica). Wonder 3.5 solo admite factores de escalado de 1x a 6x. Bloom 2 y Wonder 3.5 preservan la relación de aspecto de entrada y tratan el tamaño solicitado como un objetivo."
+        "tooltip": "Un valor de cero significa calcular automáticamente (por lo general, será el tamaño original o se escalará proporcionalmente a output_height si se especifica). Wonder 3.5 y Wonder 4 admiten factores de escalado de 1x a 6x; Bloom 2, de 1x a 12x. Bloom 2, Wonder 3.5 y Wonder 4 siempre mantienen la relación de aspecto de entrada: si se establecen ambos tamaños y su proporción difiere, prevalece la escala mayor y la salida (y el precio) es mayor que el tamaño solicitado."
       }
     },
     "outputs": {

@@ -26715,7 +26715,7 @@
   },
   "TopazImageEnhanceV2": {
     "display_name": "Topaz Image Enhance",
-    "description": "Industry-standard upscaling and image enhancement.",
+    "description": "Industry-standard upscaling and image enhancement. Maximum output: 179 megapixels.",
     "inputs": {
       "image": {
         "name": "image"
@@ -26725,11 +26725,11 @@
       },
       "output_width": {
         "name": "output_width",
-        "tooltip": "Zero value means to calculate automatically (usually it will be original size or scaled proportionally to output_height if specified). Wonder 3.5 supports upscale factors from 1x to 6x only. Bloom 2 and Wonder 3.5 preserve the input aspect ratio and treat the requested size as a target."
+        "tooltip": "Zero value means to calculate automatically (usually it will be original size or scaled proportionally to output_height if specified). Wonder 3.5 and Wonder 4 support upscale factors from 1x to 6x, Bloom 2 from 1x to 12x. Bloom 2, Wonder 3.5 and Wonder 4 always keep the input aspect ratio: if both sizes are set and their ratio differs, the larger scale wins and the output (and price) is bigger than the requested size."
       },
       "output_height": {
         "name": "output_height",
-        "tooltip": "Zero value means to output in the same height as original or scaled proportionally to output_width if specified. Wonder 3.5 supports upscale factors from 1x to 6x only. Bloom 2 and Wonder 3.5 preserve the input aspect ratio and treat the requested size as a target."
+        "tooltip": "Zero value means to output in the same height as original or scaled proportionally to output_width if specified. Wonder 3.5 and Wonder 4 support upscale factors from 1x to 6x, Bloom 2 from 1x to 12x. Bloom 2, Wonder 3.5 and Wonder 4 always keep the input aspect ratio: if both sizes are set and their ratio differs, the larger scale wins and the output (and price) is bigger than the requested size."
       },
       "model_color_preservation": {
         "name": "color_preservation"

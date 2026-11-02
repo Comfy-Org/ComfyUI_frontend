@@ -26714,7 +26714,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "Aprimoramento e upscaling de imagem padrão da indústria.",
+    "description": "Ampliação e aprimoramento de imagem padrão do setor. Saída máxima: 179 megapixels.",
     "display_name": "Topaz Aprimoramento de Imagem",
     "inputs": {
       "image": {
@@ -26752,11 +26752,11 @@
       },
       "output_height": {
         "name": "altura de saída",
-        "tooltip": "Valor zero significa manter a mesma altura do original ou proporcional à output_width, se especificado. Wonder 3.5 suporta fatores de upscaling de 1x a 6x apenas. Bloom 2 e Wonder 3.5 preservam a proporção da entrada e tratam o tamanho solicitado como alvo."
+        "tooltip": "O valor zero significa gerar a saída com a mesma altura da original ou dimensionada proporcionalmente a output_width, se especificado. Wonder 3.5 e Wonder 4 oferecem suporte a fatores de ampliação de 1x a 6x, e Bloom 2, de 1x a 12x. Bloom 2, Wonder 3.5 e Wonder 4 sempre mantêm a proporção de aspecto da entrada: se ambos os tamanhos forem definidos e suas proporções forem diferentes, a maior escala prevalecerá, e a saída (e o preço) será maior do que o tamanho solicitado."
       },
       "output_width": {
         "name": "largura de saída",
-        "tooltip": "Valor zero significa calcular automaticamente (normalmente será o tamanho original ou proporcional à output_height, se especificado). Wonder 3.5 suporta fatores de upscaling de 1x a 6x apenas. Bloom 2 e Wonder 3.5 preservam a proporção da entrada e tratam o tamanho solicitado como alvo."
+        "tooltip": "O valor zero significa calcular automaticamente (normalmente será o tamanho original ou dimensionado proporcionalmente a output_height, se especificado). Wonder 3.5 e Wonder 4 oferecem suporte a fatores de ampliação de 1x a 6x, e Bloom 2, de 1x a 12x. Bloom 2, Wonder 3.5 e Wonder 4 sempre mantêm a proporção de aspecto da entrada: se ambos os tamanhos forem definidos e suas proporções forem diferentes, a maior escala prevalecerá, e a saída (e o preço) será maior do que o tamanho solicitado."
       }
     },
     "outputs": {

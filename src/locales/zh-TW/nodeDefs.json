@@ -26714,7 +26714,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "業界標準的放大與影像增強。",
+    "description": "業界標準的放大與影像增強。最大輸出：179 百萬像素。",
     "display_name": "Topaz 影像增強",
     "inputs": {
       "image": {
@@ -26752,11 +26752,11 @@
       },
       "output_height": {
         "name": "output_height",
-        "tooltip": "設為 0 代表與原始高度相同，或依 output_width 等比例縮放。Wonder 3.5 僅支援 1x 至 6x 放大。Bloom 2 與 Wonder 3.5 會保留輸入長寬比，並將指定尺寸視為目標。"
+        "tooltip": "值為零表示以與原始影像相同的高度輸出，或在指定 output_width 時按比例縮放。Wonder 3.5 與 Wonder 4 支援 1x 至 6x 的放大倍率，Bloom 2 支援 1x 至 12x。Bloom 2、Wonder 3.5 與 Wonder 4 一律維持輸入影像的長寬比：若同時設定兩個尺寸且其比例不同，將以較大的縮放比例為準，輸出結果（及費用）會大於所要求的尺寸。"
       },
       "output_width": {
         "name": "output_width",
-        "tooltip": "設為 0 代表自動計算（通常為原始尺寸，或依 output_height 等比例縮放）。Wonder 3.5 僅支援 1x 至 6x 放大。Bloom 2 與 Wonder 3.5 會保留輸入長寬比，並將指定尺寸視為目標。"
+        "tooltip": "值為零表示自動計算（通常會使用原始尺寸，或在指定 output_height 時按比例縮放）。Wonder 3.5 與 Wonder 4 支援 1x 至 6x 的放大倍率，Bloom 2 支援 1x 至 12x。Bloom 2、Wonder 3.5 與 Wonder 4 一律維持輸入影像的長寬比：若同時設定兩個尺寸且其比例不同，將以較大的縮放比例為準，輸出結果（及費用）會大於所要求的尺寸。"
       }
     },
     "outputs": {
