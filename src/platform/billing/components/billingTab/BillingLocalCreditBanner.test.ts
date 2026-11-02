@@ -1,3 +1,4 @@
+import type { BillingTopUpDenial } from '@comfyorg/billing-core'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
@@ -59,7 +60,7 @@ function arrange(options: {
   balance?: BalanceInfo | null
   renewalDate?: string | null
   canTopUp?: boolean
-  topUpDenial?: string
+  topUpDenial?: BillingTopUpDenial
   canManageBilling?: boolean
   canManageSubscription?: boolean
   autoTopUp?: 'autoTopUpFailed' | 'autoTopUpOff'

@@ -166,6 +166,34 @@ describe('createCapabilitiesReader', () => {
   )
 
   it.for([
+    {
+      served: { state: 'frozen', reason: 'payment_past_due' },
+      expected: { state: 'frozen', reason: 'payment_past_due' }
+    },
+    { served: { state: 'ready' }, expected: { state: 'ready' } },
+    { served: undefined, expected: undefined }
+  ] as const)(
+    'keeps auto_top_up_setup $served.state instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined ? {} : { auto_top_up_setup: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.autoTopUpSetup).toEqual(expected)
+    }
+  )
+
+  it.for([
     { served: true, expected: true },
     { served: false, expected: false },
     { served: undefined, expected: undefined }
