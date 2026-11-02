@@ -31,7 +31,13 @@ import BillingStatusBanner from './BillingStatusBanner.vue'
 const meta: Meta<typeof BillingStatusBanner> = {
   title: 'Platform/Workspace/BillingStatusBanner',
   component: BillingStatusBanner,
-  parameters: { layout: 'fullscreen' }
+  parameters: { layout: 'fullscreen' },
+  argTypes: {
+    section: {
+      control: 'select',
+      options: ['planCredits', 'members', 'allowlist', 'billing']
+    }
+  }
 }
 
 export default meta
@@ -309,18 +315,3 @@ export const PlanEndedPersonal: Story = story(
   }),
   personalOwner
 )
-
-export const BillingTabEndingOwner: Story = {
-  ...EndingOwner,
-  args: { section: 'billing' }
-}
-
-export const BillingTabPlanEndedOwner: Story = {
-  ...PlanEndedOwner,
-  args: { section: 'billing' }
-}
-
-export const BillingTabPlanChangeOwner: Story = {
-  ...PlanChangeOwner,
-  args: { section: 'billing' }
-}
