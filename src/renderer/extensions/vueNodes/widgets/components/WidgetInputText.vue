@@ -3,8 +3,17 @@
     :widget="layoutWidget"
     :input-id="inputId"
     :value-text="modelValue"
+    full-width-control
+    :root-class="
+      unifiedRows
+        ? cn(
+            !isReadOnly && 'hover:bg-muted',
+            size === 'large' && 'py-3 text-sm'
+          )
+        : undefined
+    "
   >
-    <div class="relative">
+    <div :class="cn('relative', unifiedRows && 'h-full')">
       <Loader
         v-if="loading"
         size="sm"
@@ -18,9 +27,10 @@
           cn(
             WidgetInputBaseClass,
             'h-auto min-w-[4ch] truncate',
-            !isReadOnly && 'hover:bg-muted',
+            !unifiedRows && !isReadOnly && 'hover:bg-muted',
             size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
-            unifiedRows && 'pr-8 pl-2 text-right not-disabled:bg-transparent',
+            unifiedRows &&
+              'h-full px-2 text-right not-disabled:bg-transparent focus-visible:ring-0 aria-invalid:ring-0',
             loading && 'pl-9'
           )
         "
