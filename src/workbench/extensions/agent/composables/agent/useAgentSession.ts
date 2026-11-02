@@ -2494,22 +2494,71 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function isRetryableSettledRead(outcome: TurnOutcome): boolean {
+    if (outcome.kind === 'streaming') return true
+    return (
+      outcome.kind === 'error' &&
+      isRetryableRequestFailure(outcome.cause, false)
+    )
+  }
+
   async function fetchSettledTurnOutcome(
     turn: LiveTurn,
     generation: number,
-    signal: AbortSignal
+    signal: AbortSignal,
+    observe: (outcome: TurnOutcome) => void
   ): Promise<TurnOutcome> {
     let outcome = await fetchTurnOutcome(turn, signal)
+    observe(outcome)
     for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
-      // A failed read is retried like a still-streaming row: the turn has
-      // already settled, so only its stored thinking is at stake, and one
-      // transient failure would otherwise drop it for good.
-      const retryable = outcome.kind === 'streaming' || outcome.kind === 'error'
-      if (!retryable || generation !== sessionGeneration) return outcome
+      if (!isRetryableSettledRead(outcome) || generation !== sessionGeneration)
+        return outcome
       await delay(ms, { signal })
       outcome = await fetchTurnOutcome(turn, signal)
+      observe(outcome)
     }
     return outcome
+  }
+
+  function reportSettledReadFailure(cause: unknown): void {
+    reportError(cause, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  }
+
+  function applySettledRead(turn: LiveTurn, outcome: TurnOutcome): void {
+    if (outcome.kind === 'error') reportSettledReadFailure(outcome.cause)
+    else if (outcome.kind === 'terminal')
+      conversationStore.reconcileSettledTurn(turn, outcome.parts)
+  }
+
+  function settledReadAbortFailure(
+    error: unknown,
+    signal: AbortSignal,
+    deadlineReason: unknown,
+    latest: TurnOutcome | undefined
+  ): { cause: unknown } | undefined {
+    if (!signal.aborted) return { cause: error }
+    if (signal.reason === deadlineReason && latest?.kind === 'error')
+      return { cause: latest.cause }
+    return undefined
+  }
+
+  function releaseSettledRead(
+    key: string,
+    recovery: AbortController,
+    state: RunningRecovery,
+    turn: LiveTurn,
+    generation: number
+  ): void {
+    const ownsKey = recoveringTurns.get(key) === state
+    if (ownsKey && generation === sessionGeneration)
+      conversationStore.reconcileSettledTurn(turn, undefined)
+    finishRecovery(key, recovery, state, turn)
+    if (!ownsKey) return
+    recoveryPendingAskObservations.delete(key)
+    recoveryThreadMissingCounts.delete(key)
   }
 
   async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
@@ -2525,43 +2574,37 @@ export function useAgentSession(deps: AgentSessionDeps) {
       automaticRerun: false
     }
     recoveringTurns.set(key, state)
+    const latest: { outcome?: TurnOutcome } = {}
+    const deadlineReason = new Error('settled read deadline')
     const deadline = setTimeout(
-      () => recovery.abort(),
+      () => recovery.abort(deadlineReason),
       TURN_RECOVERY_DEADLINE_MS
     )
     try {
       const outcome = await fetchSettledTurnOutcome(
         turn,
         generation,
-        recovery.signal
+        recovery.signal,
+        (observed) => {
+          latest.outcome = observed
+        }
       )
-      if (generation !== sessionGeneration) return
-      if (outcome.kind === 'error') {
-        reportError(outcome.cause, {
-          surface: 'agent',
-          errorType: 'failure_recovering_agent_turn'
-        })
-        return
-      }
-      if (outcome.kind !== 'terminal') return
-      conversationStore.reconcileSettledTurn(turn, outcome.parts)
+      if (
+        generation === sessionGeneration &&
+        recoveringTurns.get(key) === state
+      )
+        applySettledRead(turn, outcome)
     } catch (error) {
-      if (!recovery.signal.aborted)
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'failure_recovering_agent_turn'
-        })
+      const failure = settledReadAbortFailure(
+        error,
+        recovery.signal,
+        deadlineReason,
+        latest.outcome
+      )
+      if (failure) reportSettledReadFailure(failure.cause)
     } finally {
       clearTimeout(deadline)
-      if (recoveringTurns.get(key) === state) {
-        if (generation === sessionGeneration)
-          conversationStore.reconcileSettledTurn(turn, undefined)
-        // Only while this read still owns the key: a superseding recovery
-        // keeps its own ask observation and thread-missing count.
-        recoveryPendingAskObservations.delete(key)
-        recoveryThreadMissingCounts.delete(key)
-      }
-      finishRecovery(key, recovery, state, turn)
+      releaseSettledRead(key, recovery, state, turn, generation)
     }
   }
 
