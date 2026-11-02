@@ -133,15 +133,18 @@
     </p>
 
     <div class="flex flex-col gap-8 p-8">
-      <Button
-        :disabled="!isValidAmount || loading"
-        :loading="loading"
-        variant="primary"
-        size="lg"
-        @click="handleBuy"
-      >
-        {{ $t('credits.topUp.buyCredits') }}
-      </Button>
+      <div class="flex flex-col gap-4">
+        <TopUpAutoTopUpCard />
+        <Button
+          :disabled="!isValidAmount || loading"
+          :loading="loading"
+          variant="primary"
+          size="lg"
+          @click="handleBuy"
+        >
+          {{ $t('credits.topUp.buyCredits') }}
+        </Button>
+      </div>
       <div class="flex items-center justify-center gap-1">
         <a
           :href="pricingUrl"
@@ -173,6 +176,7 @@ import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrem
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
 import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
+import TopUpAutoTopUpCard from '@/platform/workspace/components/TopUpAutoTopUpCard.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
