@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -14,7 +14,8 @@ vi.mock(
   import('@/platform/workflow/deploy/composables/useAgentHandoff'),
   () => {
     const copyBrief = vi.fn(() => Promise.resolve(true))
-    return { useAgentHandoff: () => fromPartial({ copyBrief }) }
+    const openBriefIn = vi.fn()
+    return { useAgentHandoff: () => fromPartial({ copyBrief, openBriefIn }) }
   }
 )
 
@@ -42,7 +43,19 @@ function renderCard() {
     props: { onDone, onDismiss },
     global: { plugins: [i18n] }
   })
-  return { onDone, onDismiss, user: userEvent.setup() }
+  return {
+    onDone,
+    onDismiss,
+    user: userEvent.setup({ pointerEventsCheck: 0 })
+  }
+}
+
+async function pickAgentRow(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string
+) {
+  await user.click(screen.getByTestId('deploy-setup-agent'))
+  await user.click(await screen.findByRole('menuitem', { name }))
 }
 
 describe('DeploySetupCard', () => {
@@ -72,10 +85,44 @@ describe('DeploySetupCard', () => {
     expect(onDone).toHaveBeenCalledOnce()
   })
 
-  it('copies the brief, then says so on the button and stays open', async () => {
+  it('offers the desktop apps in its marks, and three rows in its menu', async () => {
+    const { user } = renderCard()
+    const button = screen.getByTestId('deploy-setup-agent')
+
+    expect(
+      within(button).getByTestId('agent-marks-desktopAgents')
+    ).toBeInTheDocument()
+    await user.click(button)
+    expect(
+      (await screen.findAllByRole('menuitem')).map((row) =>
+        row.textContent.trim()
+      )
+    ).toEqual([
+      'Open in Claude desktop',
+      'Open in ChatGPT desktop',
+      'Copy prompt'
+    ])
+  })
+
+  it.for([
+    { row: 'Open in Claude desktop', app: 'claude' },
+    { row: 'Open in ChatGPT desktop', app: 'chatGpt' }
+  ])(
+    '$row opens the brief in that app and keeps the card open',
+    async ({ row, app }) => {
+      const { onDone, user } = renderCard()
+
+      await pickAgentRow(user, row)
+
+      expect(useAgentHandoff().openBriefIn).toHaveBeenCalledExactlyOnceWith(app)
+      expect(onDone).not.toHaveBeenCalled()
+    }
+  )
+
+  it('Copy prompt copies the brief, then says so on the button and stays open', async () => {
     const { onDone, user } = renderCard()
 
-    await user.click(screen.getByTestId('deploy-setup-agent'))
+    await pickAgentRow(user, 'Copy prompt')
 
     expect(useAgentHandoff().copyBrief).toHaveBeenCalledOnce()
     expect(screen.getByTestId('deploy-setup-agent')).toHaveTextContent(
@@ -84,11 +131,22 @@ describe('DeploySetupCard', () => {
     expect(onDone).not.toHaveBeenCalled()
   })
 
+  it('shows the agent label again when the menu reopens after Copy prompt', async () => {
+    const { user } = renderCard()
+
+    await pickAgentRow(user, 'Copy prompt')
+    await user.click(screen.getByTestId('deploy-setup-agent'))
+
+    expect(screen.getByTestId('deploy-setup-agent')).toHaveTextContent(
+      'Build with your agent'
+    )
+  })
+
   it('keeps the original label when the brief did not reach the clipboard', async () => {
     vi.mocked(useAgentHandoff().copyBrief).mockResolvedValueOnce(false)
     const { user } = renderCard()
 
-    await user.click(screen.getByTestId('deploy-setup-agent'))
+    await pickAgentRow(user, 'Copy prompt')
 
     expect(screen.getByTestId('deploy-setup-agent')).toHaveTextContent(
       'Build with your agent'
