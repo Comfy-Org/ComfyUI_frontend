@@ -258,6 +258,10 @@ export function sanitizeNodeName(string: string) {
   })
 }
 
+type WorkflowFileData =
+  | Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+  | Awaited<ReturnType<typeof importHostedFile>>
+
 async function finishWorkflowLoad(): Promise<void> {
   await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
   notifyWorkflowLoaded()
@@ -2196,7 +2200,7 @@ export class ComfyApp implements IComfyApp {
     this.fileLoadDiscoveryQueue = new Promise<void>((resolve) => {
       releaseDiscovery = resolve
     })
-    let workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+    let workflowData: WorkflowFileData
     try {
       workflowData =
         (await importHostedFile(file)) ?? (await getWorkflowDataFromFile(file))
@@ -2228,7 +2232,7 @@ export class ComfyApp implements IComfyApp {
           onNodeCreated?: (node: LGraphNode) => void
         }
       | undefined,
-    workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>,
+    workflowData: WorkflowFileData,
     fromGraphLoadHook: boolean
   ) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
