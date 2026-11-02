@@ -118,7 +118,7 @@
         <NodeHeader
           :node-data
           :collapsed="isCollapsed"
-          :last-press-dragged="lastPressDragged"
+          :recent-press-dragged="recentPressDragged"
           @collapse="handleCollapse"
           @update:title="handleHeaderTitleUpdate"
         />
@@ -426,7 +426,7 @@ const nodeSizeStyle = computed(() =>
       }
 )
 
-const { pointerHandlers, lastPressDragged } = useNodePointerInteractions(
+const { pointerHandlers, recentPressDragged } = useNodePointerInteractions(
   () => nodeData
 )
 const badges = usePartitionedBadges(nodeData)

@@ -88,7 +88,7 @@ export function useNodePointerInteractions(
     }
   }
 
-  function lastPressDragged() {
+  function recentPressDragged() {
     return pressDragged || previousPressDragged
   }
 
@@ -285,6 +285,6 @@ export function useNodePointerInteractions(
 
   return {
     pointerHandlers,
-    lastPressDragged
+    recentPressDragged
   }
 }
