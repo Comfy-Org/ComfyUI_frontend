@@ -16,9 +16,11 @@ const i18n = createI18n({
       g: {
         noResultsFound: 'No results found',
         search: 'Search',
+        back: 'Back',
         previous: 'Previous',
         next: 'Next'
-      }
+      },
+      icon: { folder: 'Folder' }
     }
   }
 })
@@ -210,6 +212,141 @@ describe('WidgetSelectDefault', () => {
     await user.click(screen.getByRole('option', { name: second }))
     expect(onUpdate).toHaveBeenCalledWith(second)
   })
+
+  it.for([
+    { path: 'studio/models/portrait.safetensors' },
+    { path: 'studio\\models\\portrait.safetensors' }
+  ])(
+    'browses nested folders without changing $path until a file is selected',
+    async ({ path }) => {
+      const { user, onUpdate } = renderComponent(
+        createWidget(['None', path, 'other/portrait.safetensors']),
+        'None',
+        undefined,
+        true,
+        true
+      )
+      await openDropdown(user)
+      expect(optionLabels()).toEqual(['studio', 'other', 'None'])
+      await user.click(screen.getByRole('option', { name: 'Folder: studio' }))
+      await user.click(screen.getByRole('option', { name: 'Folder: models' }))
+      expect(
+        screen.getByRole('option', { name: 'Back: studio / models' })
+      ).toBeVisible()
+      expect(onUpdate).not.toHaveBeenCalled()
+      expect(screen.getByRole('combobox', { name: 'Search' })).toHaveFocus()
+      await user.click(
+        screen.getByRole('option', { name: 'Back: studio / models' })
+      )
+      expect(
+        screen.getByRole('option', { name: 'Folder: models' })
+      ).toBeVisible()
+      await user.click(screen.getByRole('option', { name: 'Folder: models' }))
+      await user.click(
+        screen.getByRole('option', { name: 'portrait.safetensors' })
+      )
+      expect(onUpdate).toHaveBeenCalledWith(path)
+      expect(
+        screen.queryByTestId('widget-select-default-overlay')
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it('searches every directory and preserves duplicate filename identities', async () => {
+    const { user, onUpdate } = renderComponent(
+      createWidget([
+        'None',
+        'studio/portrait.safetensors',
+        'archive/portrait.safetensors'
+      ]),
+      'None',
+      undefined,
+      true,
+      true
+    )
+    await openDropdown(user)
+    const search = screen.getByRole('combobox', { name: 'Search' })
+    const listbox = screen.getByRole('listbox', { name: 'test_combo' })
+    expect(listbox).not.toContainElement(search)
+    expect(search).toHaveAttribute('aria-controls', listbox.id)
+    await user.click(screen.getByRole('option', { name: 'Folder: studio' }))
+    await user.type(search, 'missing')
+    expect(screen.queryByRole('option')).not.toBeInTheDocument()
+    expect(listbox).not.toContainElement(screen.getByRole('status'))
+    expect(search).not.toHaveAttribute('aria-activedescendant')
+    expect(search).toHaveFocus()
+    await user.clear(search)
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search' }),
+      'PORTRAIT'
+    )
+    expect(optionLabels()).toEqual([
+      'studio/portrait.safetensors',
+      'archive/portrait.safetensors'
+    ])
+    await user.click(
+      screen.getByRole('option', { name: 'archive/portrait.safetensors' })
+    )
+    expect(onUpdate).toHaveBeenCalledWith('archive/portrait.safetensors')
+  })
+
+  it('navigates into and out of folders with the keyboard before selecting a file', async () => {
+    const { user, onUpdate } = renderComponent(
+      createWidget(['studio/models/portrait.safetensors']),
+      '',
+      undefined,
+      true,
+      true
+    )
+    await openDropdown(user)
+    await user.keyboard('{Home}{Enter}')
+    await expectHighlightedOption('Back: studio')
+    await user.keyboard('{ArrowDown}{Enter}')
+    await expectHighlightedOption('Back: studio / models')
+    await user.keyboard('{Enter}')
+    await expectHighlightedOption('Back: studio')
+    expect(onUpdate).not.toHaveBeenCalled()
+    await user.keyboard('{ArrowDown}{Enter}')
+    await expectHighlightedOption('Back: studio / models')
+    await user.keyboard('{End}')
+    await expectHighlightedOption('portrait.safetensors')
+    await user.keyboard('{Enter}')
+    expect(onUpdate).toHaveBeenCalledWith('studio/models/portrait.safetensors')
+  })
+
+  it.for([
+    {
+      values: ['schedule/custom', 'N/A'],
+      options: {},
+      unifiedRows: true,
+      labels: ['schedule/custom', 'N/A']
+    },
+    {
+      values: ['studio/portrait.safetensors'],
+      options: { getOptionLabel: () => 'Studio / approved' },
+      unifiedRows: true,
+      labels: ['Studio / approved']
+    },
+    {
+      values: ['studio/portrait.safetensors'],
+      options: {},
+      unifiedRows: false,
+      labels: ['studio/portrait.safetensors']
+    }
+  ])(
+    'retains flat labels $labels outside unlabeled Nodes 2.0 file paths',
+    async ({ values, options, unifiedRows, labels }) => {
+      const { user } = renderComponent(
+        createWidget(values, options),
+        values[0],
+        undefined,
+        false,
+        unifiedRows
+      )
+      await openDropdown(user)
+      expect(optionLabels()).toEqual(labels)
+    }
+  )
 
   async function expectHighlightedOption(name: string) {
     await waitFor(() => {
