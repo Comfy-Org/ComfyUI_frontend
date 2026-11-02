@@ -1,11 +1,13 @@
 import userEvent from '@testing-library/user-event'
 import { screen } from '@testing-library/vue'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { ContextMenu, LGraph } from '@/lib/litegraph/src/litegraph'
 import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+import { useZipTieToolStore } from '@/components/graph/zipTieToolStore'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
@@ -73,6 +75,88 @@ function setupMarquee() {
 }
 
 describe('zip tie interaction', () => {
+  it('creates a tie with a plain drag after activating the tool', async () => {
+    const { canvas, graph } = setupMarquee()
+    const tool = useZipTieToolStore()
+    const previousCursor = canvas.canvas.style.cursor
+    tool.toggle()
+    await nextTick()
+    expect(canvas.canvas.style.cursor).toBe('crosshair')
+
+    canvas.canvas.dispatchEvent(pointer('pointerdown', 320, 130))
+    canvas.canvas.dispatchEvent(pointer('pointermove', 480, 190))
+    expect(canvas.dragging_rectangle).not.toBeNull()
+    canvas.canvas.dispatchEvent(pointer('pointerup', 480, 190))
+    await nextTick()
+
+    expect(getZipTies(graph)).toHaveLength(1)
+    expect(tool.active).toBe(false)
+    expect(canvas.dragging_rectangle).toBeNull()
+    expect(canvas.canvas.style.cursor).toBe(previousCursor)
+  })
+
+  it('keeps the tool available when the box crosses only one wire', () => {
+    const { canvas, graph } = setupMarquee()
+    const tool = useZipTieToolStore()
+    tool.toggle()
+    canvas.canvas.dispatchEvent(pointer('pointerdown', 320, 140))
+    canvas.canvas.dispatchEvent(pointer('pointermove', 480, 160))
+    canvas.canvas.dispatchEvent(pointer('pointerup', 480, 160))
+
+    expect(getZipTies(graph)).toEqual([])
+    expect(tool.active).toBe(true)
+  })
+
+  it.for([
+    {
+      name: 'Escape',
+      cancel: (canvas: ReturnType<typeof createTestCanvas>) =>
+        canvas.canvas.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+        )
+    },
+    {
+      name: 'changing workflows',
+      cancel: (canvas: ReturnType<typeof createTestCanvas>) =>
+        canvas.setGraph(new LGraph())
+    },
+    {
+      name: 'switching to the hand tool',
+      cancel: (canvas: ReturnType<typeof createTestCanvas>) => {
+        canvas.read_only = true
+      }
+    }
+  ])('exits the tool without creating a tie on $name', async ({ cancel }) => {
+    const { canvas, graph } = setupMarquee()
+    const tool = useZipTieToolStore()
+    tool.toggle()
+    await nextTick()
+    canvas.canvas.dispatchEvent(pointer('pointerdown', 320, 130))
+    canvas.canvas.dispatchEvent(pointer('pointermove', 480, 190))
+
+    cancel(canvas)
+    await nextTick()
+    canvas.canvas.dispatchEvent(pointer('pointerup', 480, 190))
+
+    expect(tool.active).toBe(false)
+    expect(getZipTies(graph)).toEqual([])
+    expect(graph.reroutes.size).toBe(0)
+    expect(canvas.dragging_rectangle).toBeNull()
+  })
+
+  it('exits the armed tool on Escape before dragging', () => {
+    const { canvas, graph } = setupMarquee()
+    const tool = useZipTieToolStore()
+    tool.toggle()
+
+    canvas.canvas.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    )
+
+    expect(tool.active).toBe(false)
+    expect(getZipTies(graph)).toEqual([])
+  })
+
   it.for([
     { from: [320, 130], to: [480, 190] },
     { from: [480, 190], to: [320, 130] }
@@ -191,13 +275,21 @@ describe('zip tie interaction', () => {
     canvas.graph_mouse[0] = 180
     canvas.graph_mouse[1] = 150
     const items = zipTieExtension.getCanvasMenuItems?.(canvas)
-    const action = items?.[0]
-    assert.exists(action)
+    assert.exists(items)
+    const menu = new ContextMenu(items, {
+      event: pointer('pointerdown', 180, 150, 2)
+    })
+    onTestFinished(() => menu.close())
     canvas.graph_mouse[0] = 800
     canvas.graph_mouse[1] = 800
 
-    await action.callback?.call(document.createElement('div'))
+    await userEvent
+      .setup()
+      .click(screen.getByRole('menuitem', { name: 'Zip tie selected links' }))
 
+    expect(
+      screen.queryByRole('menuitem', { name: 'Zip tie selected links' })
+    ).not.toBeInTheDocument()
     expect(getZipTies(graph)).toHaveLength(1)
     expect(
       [...graph.reroutes.values()].map((reroute) => [...reroute.pos])

@@ -1,3 +1,5 @@
+import { watch } from 'vue'
+
 import { t } from '@/i18n'
 import {
   clearLinkSelection,
@@ -13,6 +15,7 @@ import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geomet
 import { moveRerouteLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { app } from '@/scripts/app'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
+import { useZipTieToolStore } from '@/components/graph/zipTieToolStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import {
@@ -38,17 +41,48 @@ function isZipTieMarquee(event: MouseEvent): boolean {
   )
 }
 
+function isUnmodifiedPrimary(event: MouseEvent): boolean {
+  return (
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.shiftKey &&
+    !event.ctrlKey &&
+    !event.altKey
+  )
+}
+
+function isZipTieGesture(event: MouseEvent, usingTool: boolean): boolean {
+  return usingTool
+    ? useZipTieToolStore().active && isUnmodifiedPrimary(event)
+    : isZipTieMarquee(event)
+}
+
+function isZipTieClaspEvent(
+  canvas: LGraphCanvas,
+  event: PointerEvent
+): boolean {
+  return (
+    event.target === canvas.canvas &&
+    !useZipTieToolStore().active &&
+    canEdit(canvas) &&
+    !canvas.dragging_canvas &&
+    (event.button === 0 || event.button === 2)
+  )
+}
+
 function beginZipTieMarquee(
   canvas: LGraphCanvas,
   event: CanvasPointerEvent,
   finish: () => void
 ): boolean {
   const { graph, pointer } = canvas
+  const tool = useZipTieToolStore()
+  const usingTool = tool.active && isUnmodifiedPrimary(event)
   if (
     !graph ||
     !event.isPrimary ||
     !canEdit(canvas) ||
-    !isZipTieMarquee(event) ||
+    !isZipTieGesture(event, usingTool) ||
     canvas.dragging_canvas
   )
     return false
@@ -64,7 +98,11 @@ function beginZipTieMarquee(
     canvas.dragging_rectangle = [...origin, 0, 0]
   }
   pointer.onDragEnd = (upEvent) => {
-    if (canvas.graph !== graph || !canEdit(canvas) || !isZipTieMarquee(upEvent))
+    if (
+      canvas.graph !== graph ||
+      !canEdit(canvas) ||
+      !isZipTieGesture(upEvent, usingTool)
+    )
       return
     selectLinksInMarquee(
       canvas,
@@ -115,7 +153,7 @@ function bundleSelectedLinks(canvas: LGraphCanvas, position?: Point): void {
   const { marquee } = selection
   canvas.emitBeforeChange()
   try {
-    createZipTie(
+    const tie = createZipTie(
       graph,
       links,
       position ?? [
@@ -123,6 +161,7 @@ function bundleSelectedLinks(canvas: LGraphCanvas, position?: Point): void {
         marquee.y + marquee.height / 2
       ]
     )
+    if (tie) useZipTieToolStore().deactivate()
     clearLinkSelection(canvas)
     canvas.setDirty(true, true)
   } finally {
@@ -207,6 +246,32 @@ export function installZipTieInteraction(canvas: LGraphCanvas): () => void {
   const options = { capture: true, signal: controller.signal }
   const pointer = new CanvasPointer(canvas.canvas)
   let marqueePointer: CanvasPointer | undefined
+  const tool = useZipTieToolStore()
+  const stopToolCursor = watch(
+    () => tool.active,
+    (active, _, onCleanup) => {
+      if (!active) return
+      const previousCursor = canvas.canvas.style.cursor
+      const shouldSetCursor = canvas.state.shouldSetCursor
+      canvas.state.shouldSetCursor = false
+      canvas.canvas.style.cursor = 'crosshair'
+      onCleanup(() => {
+        marqueePointer?.reset()
+        canvas.state.shouldSetCursor = shouldSetCursor
+        canvas.canvas.style.cursor = previousCursor
+      })
+    }
+  )
+  canvas.canvas.addEventListener(
+    'litegraph:set-graph',
+    tool.deactivate,
+    options
+  )
+  canvas.canvas.addEventListener(
+    'litegraph:read-only-changed',
+    tool.deactivate,
+    options
+  )
   const originalMouse = canvas.onMouse
   canvas.onMouse = function (event) {
     if (originalMouse?.call(this, event)) return true
@@ -218,13 +283,7 @@ export function installZipTieInteraction(canvas: LGraphCanvas): () => void {
   }
 
   function start(event: PointerEvent) {
-    if (
-      event.target !== canvas.canvas ||
-      !canEdit(canvas) ||
-      canvas.dragging_canvas ||
-      (event.button !== 0 && event.button !== 2)
-    )
-      return
+    if (!isZipTieClaspEvent(canvas, event)) return
     const graph = canvas.graph
     const origin = canvas.convertEventToCanvasOffset(event)
     const tie = tieAtPoint(canvas, origin)
@@ -253,11 +312,15 @@ export function installZipTieInteraction(canvas: LGraphCanvas): () => void {
     'keydown',
     (event) => {
       const activePointer = marqueePointer ?? pointer
-      if (activePointer.pointerId === undefined || event.key !== 'Escape')
+      if (
+        event.key !== 'Escape' ||
+        (!tool.active && activePointer.pointerId === undefined)
+      )
         return
       event.preventDefault()
       event.stopImmediatePropagation()
       activePointer.reset()
+      tool.deactivate()
     },
     options
   )
@@ -291,6 +354,8 @@ export function installZipTieInteraction(canvas: LGraphCanvas): () => void {
   return () => {
     marqueePointer?.reset()
     pointer.reset()
+    stopToolCursor()
+    tool.deactivate()
     controller.abort()
     canvas.onMouse = originalMouse
     canvas.onDrawForeground = originalDraw
@@ -301,11 +366,21 @@ export const zipTieExtension: ComfyExtension = {
   name: 'Comfy.ZipTie',
   commands: [
     {
+      id: 'Comfy.Canvas.ToggleZipTieTool',
+      label: () => t('zipTie.tool'),
+      icon: 'icon-[lucide--cable]',
+      function: () => {
+        if (canEdit(app.canvas)) useZipTieToolStore().toggle()
+      }
+    },
+    {
       id: 'Comfy.Canvas.ZipTieSelectedLinks',
       label: () => t('zipTie.bundle'),
       icon: 'icon-[lucide--cable]',
       mutatesGraph: true,
-      function: () => bundleSelectedLinks(app.canvas)
+      function: () => {
+        bundleSelectedLinks(app.canvas)
+      }
     }
   ],
   setup() {
