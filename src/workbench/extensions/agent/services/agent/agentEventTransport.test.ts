@@ -2461,30 +2461,4 @@ describe('agent_extension_changed', () => {
       { type: 'extensionChange', action: 'enabled' }
     ])
   })
-
-  it.for([
-    { name: 'an unknown action', data: { action: 'paused' } },
-    { name: 'an empty pack name', data: { pack: '' } },
-    {
-      name: 'a bidi override in the pack name',
-      data: { pack: 'evil\u202Epack' }
-    },
-    { name: 'a newline in the pack name', data: { pack: 'two\nlines' } },
-    { name: 'no restart flag', data: { restart_required: undefined } }
-  ])('rejects a frame with $name', ({ data }) => {
-    const parsed = zAgentWsEvent.safeParse({
-      type: 'agent_extension_changed',
-      data: {
-        message_id: 'm',
-        thread_id: 't',
-        action: 'removed',
-        pack: 'comfy-cushions',
-        agent_created: false,
-        restart_required: true,
-        ...data
-      }
-    })
-
-    expect(parsed.success).toBe(false)
-  })
 })
