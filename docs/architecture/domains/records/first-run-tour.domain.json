@@ -33,8 +33,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["keybindings"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Getting-started entry and nudge open the first-run experience",
