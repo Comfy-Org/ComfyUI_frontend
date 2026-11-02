@@ -7020,6 +7020,16 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(sent).toBe(false)
     expect(postMessage).toHaveBeenCalledTimes(1)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: "This tab's canvas isn't ready yet, so your message wasn't sent. Try again in a moment."
+        }
+      ]
+    })
   })
 
   it('(h10c) once the re-flagged mint is adopted, the next turn names it instead of minting again', async () => {
