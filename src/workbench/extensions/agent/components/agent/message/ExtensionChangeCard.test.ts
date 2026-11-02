@@ -24,11 +24,23 @@ function renderCard(part: Partial<ExtensionChangePart>) {
 
 describe('ExtensionChangeCard', () => {
   it.for([
-    { action: 'disabled', text: 'Turned off the node pack comfy-cushions' },
-    { action: 'enabled', text: 'Turned on the node pack comfy-cushions' },
-    { action: 'removed', text: 'Removed the node pack comfy-cushions' }
-  ] as const)('names the pack it $action', ({ action, text }) => {
-    renderCard({ action })
+    {
+      action: 'disabled',
+      pack: "Alice's A&B-pack",
+      text: "Turned off the node pack Alice's A&B-pack"
+    },
+    {
+      action: 'enabled',
+      pack: 'comfy-cushions',
+      text: 'Turned on the node pack comfy-cushions'
+    },
+    {
+      action: 'removed',
+      pack: 'comfy-cushions',
+      text: 'Removed the node pack comfy-cushions'
+    }
+  ] as const)('names the pack it $action', ({ action, pack, text }) => {
+    renderCard({ action, pack })
 
     expect(screen.getByRole('status')).toHaveTextContent(text)
   })

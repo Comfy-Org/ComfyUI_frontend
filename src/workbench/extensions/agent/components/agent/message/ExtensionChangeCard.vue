@@ -27,7 +27,11 @@ const ACTIONS: Record<
 }
 
 const title = computed(() =>
-  t(ACTIONS[part.action].titleKey, { pack: part.pack })
+  t(
+    ACTIONS[part.action].titleKey,
+    { pack: part.pack },
+    { escapeParameter: false }
+  )
 )
 </script>
 
