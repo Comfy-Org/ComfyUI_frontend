@@ -56,7 +56,17 @@
   },
   "packages/api-client/src/ComfyApi.ts": {
     "comfy/no-new-error-throw": {
-      "count": 8
+      "count": 11
+    }
+  },
+  "packages/api-client/src/fetchJobs.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 2
+    }
+  },
+  "packages/api-client/src/fetchWithRetry.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 4
     }
   },
   "packages/settings-core/src/settingStore.ts": {
