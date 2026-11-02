@@ -8,7 +8,7 @@ globs:
 # Engineering Guidelines
 
 1. If a complex type definition is inlined in multiple related places, extract and name it for reuse.
-2. Minimize the surface area (exported values) of each module and composable. Do not use barrel files that re-export within `src/`; import from the module that defines the value.
+2. Minimize the surface area (exported values) of each module and composable. Do not add barrel files that re-export within `src/`.
 3. Use function declarations instead of function expressions where possible.
 4. Minimize nesting; prefer early returns.
 5. Do not add alias helpers whose implementation is just a single-line call to another function.
