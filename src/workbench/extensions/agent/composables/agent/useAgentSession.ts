@@ -67,6 +67,7 @@ import {
 import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
 import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentModelStore } from '@/workbench/extensions/agent/stores/agent/agentModelStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
@@ -471,6 +472,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   clearLegacyAgentStorage()
 
   const conversationStore = useAgentConversationStore()
+  const modelStore = useAgentModelStore()
   const sendGateStore = useAgentSendGateStore()
   const skillPacks = useSkillPacksStore()
   const skillTurnUsage = new Map<string, { scope: string; used: boolean }>()
@@ -1068,6 +1070,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       selection: selectedNodes(tags, selectedWorkflowId),
       attachments: attachments?.map((attachment) => attachment.ref),
       clientMessageId,
+      model: modelStore.modelForSend(threadId === 'new' ? null : threadId),
       ...buildTargetFields(threadId, wfContext, draft, unboundTarget)
     }
   }
@@ -1218,6 +1221,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
+    if (startsThread) modelStore.adoptDraft(ack.thread_id)
     let adoptWorkflow: (() => void) | undefined
     const workflowId = ack.workflow_id
     if (workflowId !== undefined) {
@@ -1455,6 +1459,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       rememberMint(input, wfContext, ack.workflow_id)
       return true
     } catch (error) {
+      modelStore.handleSendRefusal(
+        error,
+        threadAtSend === 'new' ? null : threadAtSend
+      )
       return recoverFailedSend({
         error,
         text,

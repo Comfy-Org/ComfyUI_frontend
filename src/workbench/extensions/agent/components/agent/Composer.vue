@@ -43,6 +43,7 @@ import ComposerAddMenu from './composer/ComposerAddMenu.vue'
 import ComposerPlaceholder from './composer/ComposerPlaceholder.vue'
 import MentionMenuItem from './composer/MentionMenuItem.vue'
 import MentionMenuStatus from './composer/MentionMenuStatus.vue'
+import ModelPicker from './composer/ModelPicker.vue'
 import RunModePopover from './composer/RunModePopover.vue'
 
 const {
@@ -715,6 +716,7 @@ defineExpose({
         </div>
 
         <div class="flex items-center gap-1">
+          <ModelPicker />
           <RunModePopover />
           <Button
             :tooltip="primaryActionTooltip"
