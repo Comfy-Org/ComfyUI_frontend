@@ -200,6 +200,26 @@ describe('updateLocales generation', () => {
     expect(repo.readCatalog('ru/main.json')).toEqual({ used: russian })
   })
 
+  it('regenerates hand-written Russian plural forms whose placeholders do not match English', async () => {
+    const appConfig = translationTargets.app
+    const repo = createCatalogRepo({
+      ...appConfig,
+      outputLocales: appConfig.outputLocales.filter(({ code }) => code === 'ru')
+    })
+    repo.recordEnglish({ 'main.json': {} })
+    repo.writeCatalog('en/main.json', { used: '{n} credit | {n} credits' })
+    repo.writeCatalog('ru/main.json', {
+      used: '{count} кредит | {count} кредита | {count} кредитов | {count} кредита'
+    })
+    const translator = createTranslator()
+
+    await repo.run(false, translator.translate)
+
+    expect(translator.sourcesByLocale()).toEqual({
+      ru: ['{n} credit | {n} credits']
+    })
+  })
+
   it('writes only catalogs and a blob-ID manifest, then reruns without translating or rewriting', async () => {
     const repo = createCatalogRepo()
     const english = {

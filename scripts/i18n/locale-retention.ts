@@ -39,6 +39,32 @@ function hasLocalePluralForms(
   )
 }
 
+export type LeafCorrupted = (
+  source: LocaleTrackedLeaf,
+  target: LocaleTrackedLeaf
+) => boolean
+
+function retainLocalePluralForms(
+  sourceLeaves: ReadonlyMap<string, LocaleLeafEntry>,
+  existing: LocaleObject,
+  modifiedKeys: ReadonlySet<string>,
+  pluralFormCount: number | undefined,
+  leafCorrupted: LeafCorrupted
+): Map<string, LocaleTrackedLeaf> {
+  const retained = new Map<string, LocaleTrackedLeaf>()
+  if (pluralFormCount === undefined) return retained
+  for (const [key, leaf] of sourceLeaves) {
+    const current = getLeaf(existing, leaf.path)
+    if (
+      !modifiedKeys.has(key) &&
+      hasLocalePluralForms(leaf.value, current, pluralFormCount) &&
+      !leafCorrupted(leaf.value, current)
+    )
+      retained.set(key, current)
+  }
+  return retained
+}
+
 export function partitionLocale({
   sourceLeaves,
   previousEnglish,
@@ -46,7 +72,8 @@ export function partitionLocale({
   modifiedKeys,
   policy,
   excludedKeys,
-  pluralFormCount
+  pluralFormCount,
+  leafCorrupted = () => false
 }: {
   sourceLeaves: ReadonlyMap<string, LocaleLeafEntry>
   previousEnglish: LocaleObject
@@ -55,24 +82,24 @@ export function partitionLocale({
   policy: TranslationPipelineConfig['existingCopy']
   excludedKeys: ReadonlySet<string>
   pluralFormCount?: number
+  leafCorrupted?: LeafCorrupted
 }): {
   omitted: Set<string>
   retained: Map<string, LocaleTrackedLeaf>
 } {
   const omitted = new Set<string>()
   const retained = new Map<string, LocaleTrackedLeaf>()
-  if (policy.kind === 'regenerate') {
-    if (pluralFormCount === undefined) return { omitted, retained }
-    for (const [key, leaf] of sourceLeaves) {
-      const current = getLeaf(existing, leaf.path)
-      if (
-        !modifiedKeys.has(key) &&
-        hasLocalePluralForms(leaf.value, current, pluralFormCount)
+  if (policy.kind === 'regenerate')
+    return {
+      omitted,
+      retained: retainLocalePluralForms(
+        sourceLeaves,
+        existing,
+        modifiedKeys,
+        pluralFormCount,
+        leafCorrupted
       )
-        retained.set(key, current)
     }
-    return { omitted, retained }
-  }
   for (const [key, leaf] of sourceLeaves) {
     const excluded = excludedKeys.has(key)
     const current = getLeaf(existing, leaf.path)
