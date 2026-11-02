@@ -79,7 +79,7 @@ test.describe(
                 await comfyPage.vueNodes.getFixtureByTitle('KSampler')
               await comfyMouse.dragElementBy(fixture.title, { x: 120, y: 80 })
               const cfgWidget = comfyPage.vueNodes
-                .getWidgetByName('KSampler', 'cfg')
+                .getWidgetRowByLabel('KSampler', 'cfg')
                 .first()
               await comfyPage.vueNodes.setInputNumberValue(cfgWidget, '7.5')
             }

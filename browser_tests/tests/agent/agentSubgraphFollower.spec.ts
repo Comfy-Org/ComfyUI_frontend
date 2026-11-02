@@ -214,7 +214,7 @@ test.describe(
           AGENT_SUBGRAPH_INITIAL_TEXT
         )
         await expect(
-          node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+          node.getByRole('spinbutton', { name: 'seed', exact: true })
         ).toHaveValue(String(AGENT_SUBGRAPH_EDITED_SEED))
         await expect
           .poll(() =>
@@ -330,7 +330,7 @@ test.describe(
           AGENT_SUBGRAPH_INITIAL_TEXT
         )
         await expect(
-          reused.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+          reused.getByRole('spinbutton', { name: 'seed', exact: true })
         ).toHaveValue(String(AGENT_SUBGRAPH_INITIAL_SEED))
 
         const secondInstanceText = 'a photo of a lighthouse'
@@ -611,7 +611,7 @@ test.describe(
         AGENT_SUBGRAPH_INITIAL_TEXT
       )
       await expect(
-        node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+        node.getByRole('spinbutton', { name: 'seed', exact: true })
       ).toHaveValue(String(AGENT_SUBGRAPH_INITIAL_SEED))
     })
   }

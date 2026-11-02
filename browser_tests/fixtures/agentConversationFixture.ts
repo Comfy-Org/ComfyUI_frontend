@@ -681,11 +681,8 @@ export class AgentConversationHarness {
         .getNodeLocator(nodeId)
         .getByLabel(widget, { exact: true })
       if (typeof value === 'number') {
-        // Number widgets format their input (0.5 renders as 0.50), so compare the number.
         await expect
-          .poll(async () =>
-            Number(await field.locator('input').first().inputValue())
-          )
+          .poll(async () => Number(await field.inputValue()))
           .toBe(value)
         continue
       }
@@ -725,8 +722,6 @@ export class AgentConversationHarness {
     )
     links.sort(byLinkKey)
     await expect.poll(() => this.renderedLinks()).toEqual(links)
-    // A widget-backed input renders no slot row on an uncollapsed node
-    // (NodeSlots.vue); the wire above already covers that end.
     for (const link of links) {
       await expect(
         this.vueNodes.getOutputSlotRow(link.fromNode, link.fromSlot)
