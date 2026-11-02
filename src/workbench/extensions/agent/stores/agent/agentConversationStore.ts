@@ -422,8 +422,6 @@ export const useAgentConversationStore = defineStore(
       if (index >= 0) messages.value[index] = message
     }
 
-    // The snapshot turn's transport publishes through here, so a settled
-    // snapshot turn is announced once its last held tool call clears.
     function publishSnapshotMessage(
       turnId: TurnId,
       message: AssistantMessage
@@ -761,8 +759,6 @@ export const useAgentConversationStore = defineStore(
       persistedParts: AssistantMessage['parts'] | undefined
     ): void {
       const unreconciled = unreconciledSnapshotTurns.get(turn.messageId)
-      // An unannounced registration belongs to a later settle whose read has
-      // not started; a read still finishing for an earlier one must not take it.
       if (unreconciled === undefined || !unreconciled.announced) return
       unreconciledSnapshotTurns.delete(turn.messageId)
       if (persistedParts === undefined || threadId.value !== turn.threadId)
