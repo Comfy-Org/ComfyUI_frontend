@@ -7,7 +7,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import type { SettingPanelType } from '@/platform/settings/types'
+import type { SettingPanelType } from '@comfyorg/settings-core/types'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.SETTINGS
 

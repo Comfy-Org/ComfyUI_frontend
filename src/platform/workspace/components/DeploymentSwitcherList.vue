@@ -1,5 +1,5 @@
 <template>
-  <template v-if="notice || changeSinceBoot">
+  <template v-if="notice || changeSinceBootMessage">
     <div
       v-if="notice"
       role="status"
@@ -12,13 +12,13 @@
       />
       <span class="text-pretty">{{ notice }}</span>
     </div>
-    <template v-if="changeSinceBoot">
+    <template v-if="changeSinceBootMessage">
       <p
         role="status"
         class="m-0 w-0 min-w-full px-2 py-1.5 text-xs text-pretty text-muted-foreground"
         data-testid="deployment-switcher-changed"
       >
-        {{ changeMessage }}
+        {{ changeSinceBootMessage }}
       </p>
       <MenuItem
         :class="switcherItemClass"
@@ -147,10 +147,9 @@ const {
   goneDeployment,
   canSetDefault,
   isSwitching,
-  changeSinceBoot,
   followsWorkspace
 } = storeToRefs(useDeploymentPickStore())
-const { currentLabel } = useDeploymentLabels()
+const { currentLabel, changeSinceBootMessage } = useDeploymentLabels()
 const { sections, pickedValue, pickedRow } = useDeploymentRows()
 const startStore = useDeploymentStartStore()
 const sectionLabelId = useId()
@@ -191,16 +190,6 @@ const notice = computed(() => {
     ? t('deploymentSwitcher.defaultGoneOwner')
     : t('deploymentSwitcher.defaultGone')
 })
-
-const changeMessage = computed(() =>
-  changeSinceBoot.value === 'release'
-    ? t('deploymentSwitcher.releaseChanged')
-    : t(
-        'deploymentSwitcher.deploymentChanged',
-        { deployment: currentLabel.value },
-        { escapeParameter: false }
-      )
-)
 
 const switchingNote = computed(() =>
   settingStore.get('Comfy.Workflow.Persist')

@@ -289,7 +289,11 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     reportedLoadFailure = true
     reportError(err, {
       surface: 'workspace',
-      errorType: 'error_loading_deployment_listing'
+      errorType: 'error_loading_deployment_listing',
+      ...(isSessionRefused(err) && {
+        level: 'warning',
+        tags: { status: 401, outcome: 'denied' }
+      })
     })
   }
 
@@ -612,6 +616,10 @@ function isTransient(err: unknown): boolean {
   return (
     status === undefined || status === 408 || status === 429 || status >= 500
   )
+}
+
+function isSessionRefused(err: unknown): boolean {
+  return err instanceof WorkspaceApiError && err.status === 401
 }
 
 function loadFailure(

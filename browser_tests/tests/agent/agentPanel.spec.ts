@@ -249,6 +249,43 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
+  test(
+    'shows a rebound canvas shortcut as semantic keycaps in a reply',
+    { tag: '@keyboard' },
+    async ({ agentPanel, comfyPage, getAgentSocket, postedMessages }) => {
+      const commandId = 'Comfy.Canvas.ToggleSelectedNodes.Bypass'
+      const keybindingPanel = comfyPage.settingDialog.keybindingPanel
+
+      await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.category('Keybinding').click()
+      await keybindingPanel.search(commandId)
+      await keybindingPanel.commandLabel(commandId).dblclick()
+      await keybindingPanel.pressCombo('Alt+q')
+      await keybindingPanel.saveKeybinding()
+      await comfyPage.settingDialog.close()
+
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      const ws = await getAgentSocket()
+      await agentPanel.sendMessage('How do I bypass the selected node?')
+      await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
+
+      pushEvent(
+        ws,
+        agentMessageDeltaEvent('Select it and press Ctrl+B to bypass the node.')
+      )
+      pushEvent(ws, MESSAGE_DONE_EVENT)
+
+      const reply = agentPanel.root
+        .getByTestId('markdown-stream')
+        .filter({ hasText: 'Select it and press' })
+      await expect(reply).toBeVisible()
+      await expect(reply.locator('kbd')).toHaveText(['Alt', 'Q'])
+      await expect(reply).toContainText('Alt+Q')
+      await expect(reply).not.toContainText('Ctrl+B')
+    }
+  )
+
   test('identifies a generated video and honors its play affordance', async ({
     agentPanel,
     comfyPage,

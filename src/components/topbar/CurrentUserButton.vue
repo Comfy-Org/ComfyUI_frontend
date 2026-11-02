@@ -65,7 +65,7 @@ import { storeToRefs } from 'pinia'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { unrefElement } from '@vueuse/core'
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -78,11 +78,8 @@ import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspa
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
-
-const CurrentUserPopoverWorkspace = defineAsyncComponent(
-  () => import('@/platform/account/components/CurrentUserPopoverWorkspace.vue')
-)
 
 const { showArrow = true, compact = false } = defineProps<{
   showArrow?: boolean

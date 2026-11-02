@@ -28,6 +28,8 @@ import type {
   UpDirection
 } from './interfaces'
 import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
+import { computeModelStats } from './modelStats'
+import type { ModelStats } from './modelStats'
 
 export type Load3dDeps = Viewport3dDeps & {
   hdriManager: HDRIManager
@@ -463,6 +465,7 @@ class Load3d extends Viewport3d {
     this.modelManager.clearModel()
     this.adapterRef.current = null
     this.hasLoadedModel = false
+    this.eventManager.emitEvent('modelCleared', null)
     this.forceRender()
   }
 
@@ -565,6 +568,12 @@ class Load3d extends Viewport3d {
 
   public hasSkeleton(): boolean {
     return this.modelManager.hasSkeleton()
+  }
+
+  public async getModelStats(signal?: AbortSignal): Promise<ModelStats | null> {
+    const model = this.modelManager.currentModel
+    if (!model || this.isSplatModel()) return null
+    return computeModelStats(model, signal)
   }
 
   public setShowSkeleton(show: boolean): void {

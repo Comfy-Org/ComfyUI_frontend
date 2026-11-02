@@ -6,11 +6,11 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -78,12 +78,13 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   const showHdrPreviewIfApplicable = wrapWithErrorHandlingAsync(
     async (widgetValue: string | undefined) => {
-      if (!widgetValue || !isHdrImageFilename(widgetValue)) return
+      if (!widgetValue) return
+      const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
+      if (!isHdrImageFilename(filename)) return
 
       const asset = await resolveWidgetValueAsset(widgetValue)
       if (!asset?.preview_id || modelValue.value !== widgetValue) return
 
-      const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
       setPreviewImage({
         filename,
         preview_id: asset.preview_id,

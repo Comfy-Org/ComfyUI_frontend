@@ -2,12 +2,12 @@ import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
-import { themeSchema } from '@/schemas/colorPaletteSchema'
+import { themeSchema } from '@comfyorg/settings-core/colorPaletteSchema'
 import type {
   Colors,
   CompletedPalette,
   Theme
-} from '@/schemas/colorPaletteSchema'
+} from '@comfyorg/settings-core/colorPaletteSchema'
 
 const THEME_KEYS = themeSchema.keyof().options
 

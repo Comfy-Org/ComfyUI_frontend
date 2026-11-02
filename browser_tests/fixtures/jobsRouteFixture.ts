@@ -12,7 +12,7 @@ import type {
   JobStatus,
   RawJobListItem,
   zJobsListResponse
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+} from '@comfyorg/api-client/jobTypes'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
 type HistoryManageRequest = z.infer<typeof zHistoryManageRequest>

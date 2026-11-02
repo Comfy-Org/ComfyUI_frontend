@@ -177,6 +177,31 @@ describe('invariant 3 — the wire values still fit the live widgets', () => {
   })
 })
 
+describe('the last writer of the payload', () => {
+  class RewritesAfterCore extends LGraphNode {
+    override serializeFromStoreState(
+      ...args: Parameters<LGraphNode['serializeFromStoreState']>
+    ): ISerialisedNode {
+      const serialized = super.serializeFromStoreState(...args)
+      serialized.widgets_values_named = { prompt: 'a' }
+      return serialized
+    }
+  }
+
+  it('refuses a class that rewrites the named keys after core wrote them', () => {
+    const node = new RewritesAfterCore('LastWriter', 'LastWriter')
+    node.serialize_widgets = true
+    node.addWidget('text', 'prompt', 'a', () => {})
+    node.addWidget('text', 'extra', 'b', () => {})
+    new LGraph().add(node)
+
+    expect(widgetValuesFormVerdict(node)).toMatchObject({
+      declared: false,
+      reason: 'hook_changed_serialized_widgets'
+    })
+  })
+})
+
 describe('positional compatibility data', () => {
   it('ignores positional values because the Agent wire sends named values', () => {
     const node = nodeWith('Rewriting', (n) => {

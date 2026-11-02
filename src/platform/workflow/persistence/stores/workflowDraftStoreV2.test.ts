@@ -477,6 +477,22 @@ describe('workflowDraftStoreV2', () => {
       expect(newDraft!.data).toBe('{"data":"test"}')
     })
 
+    it('keeps the draft when moved onto its own path', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/same.json', '{"data":"test"}', {
+        name: 'same',
+        isTemporary: true
+      })
+
+      store.moveDraft('workflows/same.json', 'workflows/same.json', 'same')
+
+      const draft = store.getDraft('workflows/same.json')
+      expect(draft).not.toBeNull()
+      expect(draft!.data).toBe('{"data":"test"}')
+      expect(draft!.name).toBe('same')
+    })
+
     it('preserves payload updatedAt when moving a draft', () => {
       const store = useWorkflowDraftStoreV2()
 

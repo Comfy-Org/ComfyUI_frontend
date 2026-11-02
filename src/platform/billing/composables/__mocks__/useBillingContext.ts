@@ -26,6 +26,7 @@ function createBillingContextMock(): BillingContext {
     tier: computed(() => null),
     renewalDate: computed(() => null),
     renewalInvoice: computed(() => null),
+    periodCreditGrant: computed(() => null),
     isLegacyTeamPlan: computed(() => false),
     isTeamPlan: computed(() => false),
     canRunWorkflows: computed(() => false),

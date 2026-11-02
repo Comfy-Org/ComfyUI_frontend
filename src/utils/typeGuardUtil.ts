@@ -4,7 +4,7 @@ import type {
   Subgraph
 } from '@comfyorg/graph-model/entityRegistry'
 import type { INodeSlot } from '@comfyorg/graph-model/interfaces'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 
 /**
  * Check if an error is an AbortError triggered by `AbortController#abort`

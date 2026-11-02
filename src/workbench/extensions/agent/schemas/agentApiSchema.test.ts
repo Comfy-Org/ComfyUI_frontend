@@ -436,6 +436,7 @@ describe('agentApiSchema contract subtleties', () => {
     'agent_message_done',
     'agent_message_draft',
     'agent_thinking',
+    'agent_thinking_draft',
     'agent_tool_call'
   ])('recognizes %s as an Agent event', (type) => {
     expect(isAgentEvent(type)).toBe(true)

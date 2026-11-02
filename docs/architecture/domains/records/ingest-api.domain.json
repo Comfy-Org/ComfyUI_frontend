@@ -1,7 +1,7 @@
 {
   "id": "ingest-api",
   "capability": "Shared ingest transport contracts",
-  "description": "The error, URL, web-session adapter, and capability-revision contracts extracted from the workspace and billing clients. ComfyUI backend wire schemas remain in comfyui-api. Only previously cataloged modules are included; other ingest transport files remain unclassified.",
+  "description": "The error, URL, web-session adapter, and capability-revision contracts extracted from the workspace and billing clients. Also the generated @comfyorg/ingest-types API types and Zod schemas. ComfyUI backend wire schemas remain in comfyui-api. Other ingest transport files remain unclassified.",
   "modules": [
     {
       "path": "src/platform/remote/ingest/ingestApiError.ts",
@@ -18,6 +18,10 @@
     {
       "path": "src/platform/remote/ingest/capabilityRevision.ts",
       "role": "infrastructure"
+    },
+    {
+      "path": "packages/ingest-types/src/**",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [

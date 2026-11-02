@@ -59,10 +59,10 @@ describe('buildReturnUrl', () => {
     expect(parseReturnResult(url?.href ?? '')).toEqual({ reference: 'op_42' })
   })
 
-  it('returns nothing for a target the environment cannot resolve', () => {
+  it('returns nothing for a target outside the registry', () => {
     expect(
       buildReturnUrl({
-        target: 'platform_account',
+        target: 'workshop_credits',
         environment: 'test',
         workspace: 'ws_team'
       })

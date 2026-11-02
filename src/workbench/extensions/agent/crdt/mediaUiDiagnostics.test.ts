@@ -3,7 +3,7 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
 import type { DOMWidget } from '@/types/domWidget'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 

@@ -21,7 +21,7 @@ import PackUpdateButton from '@/platform/customNodes/manager/components/manager/
 import ManagerProgressToast from '@/platform/customNodes/manager/components/ManagerProgressToast.vue'
 import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
-import type { components as ManagerComponents } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import type { components as ManagerComponents } from '@comfyorg/api-client/generatedManagerTypes'
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']

@@ -5473,6 +5473,11 @@
   "templates": {
     "logoProviderSeparator": " & "
   },
+  "textEditor": {
+    "characterCount": "{count} симв.",
+    "expand": "Развернуть",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Не удалось загрузить рабочий процесс, так как в этой установке ComfyUI отсутствуют основные узлы. Проверьте, что сервер запущен корректно.",
     "a1111EmbeddingsUnavailable": "Не удалось загрузить embeddings с сервера. Рабочий процесс импортирован, но имена embeddings оставлены в виде обычного текста.",
