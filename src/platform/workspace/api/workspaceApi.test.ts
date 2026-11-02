@@ -178,6 +178,37 @@ describe('workspaceApi', () => {
     })
 
     it.for([
+      {
+        operation: 'getBillingOpStatus',
+        call: () => workspaceApi.getBillingOpStatus('op-1'),
+        code: undefined
+      },
+      {
+        operation: 'acceptInvite',
+        call: () => workspaceApi.acceptInvite('token'),
+        code: undefined
+      },
+      {
+        operation: 'getCurrentWorkspace',
+        call: () => workspaceApi.getCurrentWorkspace(),
+        code: 'no_workspace_access'
+      }
+    ])(
+      'names $operation as the failed operation',
+      async ({ operation, call, code }) => {
+        const axiosErr = {
+          isAxiosError: true,
+          response: { status: 403, data: { message: 'Forbidden', code } },
+          message: 'Request failed'
+        }
+        mockAxiosInstance.get.mockRejectedValue(axiosErr)
+        mockAxiosInstance.post.mockRejectedValue(axiosErr)
+
+        await expect(call()).rejects.toMatchObject({ operation })
+      }
+    )
+
+    it.for([
       { status: 403, code: 'no_workspace_access', typed: true },
       { status: 403, code: undefined, typed: false },
       { status: 404, code: 'no_workspace_access', typed: false }
