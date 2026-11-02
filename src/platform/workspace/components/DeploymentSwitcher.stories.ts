@@ -31,6 +31,7 @@ const studioProd: WorkspaceDeployment = {
   build_id: 'b-1',
   build_name: 'Studio Build',
   release_version: 2,
+  can_start: false,
   status: 'ready',
   created_at: '2026-09-16T18:00:00Z'
 }
@@ -42,6 +43,7 @@ const studioStaging: WorkspaceDeployment = {
   build_id: 'b-1',
   build_name: 'Studio Build',
   release_version: 3,
+  can_start: false,
   status: 'starting',
   created_at: '2026-09-12T09:30:00Z'
 }
@@ -52,6 +54,7 @@ const experiments: WorkspaceDeployment = {
   build_id: 'b-2',
   build_name: 'Experiments',
   release_version: 3,
+  can_start: true,
   status: 'stopped',
   created_at: '2026-09-15T12:00:00Z'
 }
@@ -160,12 +163,14 @@ export const BuildsHidden: Story = seeded({
       deployment_id: studioProd.deployment_id,
       deployment_name: studioProd.deployment_name,
       release_id: studioProd.release_id,
+      can_start: false,
       status: 'ready',
       created_at: studioProd.created_at
     },
     {
       deployment_id: experiments.deployment_id,
       release_id: experiments.release_id,
+      can_start: true,
       status: 'stopped',
       created_at: experiments.created_at
     }

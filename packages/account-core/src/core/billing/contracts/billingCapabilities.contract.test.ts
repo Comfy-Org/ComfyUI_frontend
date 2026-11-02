@@ -47,6 +47,7 @@ function capabilitiesBody(
   overrides: Partial<CapabilitiesResponseBody> = {}
 ): CapabilitiesResponseBody {
   return {
+    auto_top_up_enabled: false,
     capabilities: capabilities(),
     expires_at: '2024-06-15T12:01:00.000Z',
     resolved_for: { user_id: 'uid-1', workspace_id: 'ws-1' },
@@ -101,7 +102,7 @@ expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_view_team_usage: boolean
 }>()
 expectTypeOf<ServerDenialReason>().toEqualTypeOf<
-  Exclude<CapabilityDenialReason, 'unspecified'>
+  Exclude<CapabilityDenialReason, 'unspecified'> | 'topup_purchases_paused'
 >()
 expectTypeOf<CapabilityScope>().toEqualTypeOf<{
   user_id: string

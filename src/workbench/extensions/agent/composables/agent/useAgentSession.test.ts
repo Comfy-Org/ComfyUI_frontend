@@ -35,7 +35,8 @@ import type {
 import {
   zAgentAdmissionError,
   zAgentTurnAccepted,
-  zAgentWsEvent
+  zAgentWsEvent,
+  toTurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   AgentApiError,
@@ -933,6 +934,336 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await vi.waitFor(() => expect(reopened.isStreaming.value).toBe(true))
     expect(conversation.activeTurnId).toBe('msg-1')
+  })
+
+  it('keeps socket parts and releases the composer when a settled snapshot read fails', async () => {
+    const readFailure = new AgentApiError('history unavailable', 503, undefined)
+    let rejectSettledRead: ((error: AgentApiError) => void) | undefined
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentMessages>((_resolve, reject) => {
+            rejectSettledRead = reject
+          })
+      )
+      .mockRejectedValue(readFailure)
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    emit(thinking('msg-1', 'live after reload'))
+    emit(done('msg-1'))
+
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'thinking',
+          text: 'live after reload',
+          state: 'done'
+        }
+      ]
+    })
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(3))
+    assert.exists(rejectSettledRead)
+    vi.useFakeTimers()
+    try {
+      rejectSettledRead(readFailure)
+      await vi.advanceTimersByTimeAsync(40_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(getMessages).toHaveBeenCalledTimes(8)
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(readFailure, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'thinking',
+          text: 'live after reload',
+          state: 'done'
+        }
+      ]
+    })
+
+    conversation.reconcileSettledTurn(
+      { threadId: 'th-1', messageId: toTurnId('msg-1') },
+      [{ type: 'text', text: 'a later read', state: 'done' }]
+    )
+    expect(session.entries.value.at(-1)).toMatchObject({
+      parts: [{ type: 'thinking', text: 'live after reload' }]
+    })
+  })
+
+  it('does not retry a settled snapshot read the server refused', async () => {
+    const refused = new AgentApiError('unauthorized', 401, undefined)
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockRejectedValue(refused)
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    vi.useFakeTimers()
+    try {
+      emit(thinking('msg-1', 'live after reload'))
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(40_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(getMessages).toHaveBeenCalledTimes(3)
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(refused, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  })
+
+  it('reports a settled snapshot read that is still failing when its deadline passes', async () => {
+    const slowFailure = new AgentApiError('gateway timeout', 504, undefined)
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockImplementation(
+        () =>
+          new Promise<AgentMessages>((_resolve, reject) => {
+            setTimeout(() => reject(slowFailure), 25_000)
+          })
+      )
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    vi.useFakeTimers()
+    try {
+      emit(thinking('msg-1', 'live after reload'))
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(90_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(slowFailure, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  })
+
+  it('reads a settled snapshot turn again after a transient read failure', async () => {
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockRejectedValueOnce(
+        new AgentApiError('history unavailable', 503, undefined)
+      )
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', 'Added it.', 'msg-1'),
+          content: {
+            text: 'Added it.',
+            thinking: [{ text: 'before the reload' }]
+          }
+        }
+      ])
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    emit(thinking('msg-1', 'live after reload'))
+    emit(done('msg-1'))
+
+    await vi.waitFor(
+      () =>
+        expect(session.entries.value.at(-1)).toMatchObject({
+          role: 'assistant',
+          parts: [{ type: 'thinking', text: 'before the reload' }, {}]
+        }),
+      { timeout: 5000 }
+    )
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reads a settled snapshot turn again while its row still reads as streaming', async () => {
+    const streamingRow = {
+      ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+      content: {},
+      status: 'streaming' as const
+    }
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        streamingRow
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        streamingRow
+      ])
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', 'Added it.', 'msg-1'),
+          content: {
+            text: 'Added it.',
+            thinking: [{ text: 'before the reload' }]
+          }
+        }
+      ])
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    emit(thinking('msg-1', 'live after reload'))
+    emit(done('msg-1'))
+
+    await vi.waitFor(
+      () => {
+        const last = session.entries.value.at(-1)
+        expect(
+          last?.role === 'assistant'
+            ? last.parts.flatMap((part) =>
+                part.type === 'thinking' ? [part.text] : []
+              )
+            : []
+        ).toContain('before the reload')
+      },
+      { timeout: 5000 }
+    )
+  })
+
+  it('honors a hydrate deferred behind an in-flight settled snapshot read', async () => {
+    const restored: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ]
+    const finished: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', 'Added it.', 'msg-1'),
+        content: {
+          text: 'Added it.',
+          thinking: [{ text: 'before the reload' }]
+        }
+      }
+    ]
+    let settleRead: ((history: AgentMessages) => void) | undefined
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce(restored)
+      .mockImplementationOnce(hangingGetMessages)
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            settleRead = resolve
+          })
+      )
+      .mockResolvedValueOnce(restored)
+      .mockResolvedValue(finished)
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    emit(thinking('msg-1', 'live after reload'))
+    emit(done('msg-1'))
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(3))
+
+    session.newChat('new_chat_button')
+    void session.loadThread('th-1')
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
+
+    assert.exists(settleRead)
+    settleRead(finished)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false), {
+      timeout: 2000
+    })
+    expect(conversation.activeTurnId).toBeNull()
   })
 
   it('re-attaches to the running turn when a send is refused with TURN_IN_PROGRESS', async () => {
