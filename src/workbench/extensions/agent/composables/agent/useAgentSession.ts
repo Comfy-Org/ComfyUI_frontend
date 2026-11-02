@@ -1899,18 +1899,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
     turn: LiveTurn,
     generation: number,
     signal: AbortSignal,
-    observe: (outcome: TurnOutcome) => void
+    deadlineReason: Error
   ): Promise<TurnOutcome> {
-    let outcome = await fetchTurnOutcome(turn, signal)
-    observe(outcome)
-    for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
-      if (!isRetryableSettledRead(outcome) || generation !== sessionGeneration)
-        return outcome
-      await delay(ms, { signal })
+    let outcome: TurnOutcome | undefined
+    try {
       outcome = await fetchTurnOutcome(turn, signal)
-      observe(outcome)
+      for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
+        if (
+          !isRetryableSettledRead(outcome) ||
+          generation !== sessionGeneration
+        )
+          return outcome
+        await delay(ms, { signal })
+        outcome = await fetchTurnOutcome(turn, signal)
+      }
+      return outcome
+    } catch (error) {
+      if (signal.reason === deadlineReason && outcome?.kind === 'error')
+        return outcome
+      throw error
     }
-    return outcome
   }
 
   function reportSettledReadFailure(cause: unknown): void {
@@ -1924,18 +1932,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (outcome.kind === 'error') reportSettledReadFailure(outcome.cause)
     else if (outcome.kind === 'terminal')
       conversationStore.reconcileSettledTurn(turn, outcome.parts)
-  }
-
-  function settledReadAbortFailure(
-    error: unknown,
-    signal: AbortSignal,
-    deadlineReason: unknown,
-    latest: TurnOutcome | undefined
-  ): { cause: unknown } | undefined {
-    if (!signal.aborted) return { cause: error }
-    if (signal.reason === deadlineReason && latest?.kind === 'error')
-      return { cause: latest.cause }
-    return undefined
   }
 
   function releaseSettledRead(
@@ -1957,7 +1953,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     recoveringTurns.get(key)?.abort()
     const recovery = new AbortController()
     recoveringTurns.set(key, recovery)
-    const latest: { outcome?: TurnOutcome } = {}
     const deadlineReason = new Error('settled read deadline')
     const deadline = setTimeout(
       () => recovery.abort(deadlineReason),
@@ -1968,9 +1963,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         turn,
         generation,
         recovery.signal,
-        (observed) => {
-          latest.outcome = observed
-        }
+        deadlineReason
       )
       if (
         generation === sessionGeneration &&
@@ -1978,13 +1971,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
         applySettledRead(turn, outcome)
     } catch (error) {
-      const failure = settledReadAbortFailure(
-        error,
-        recovery.signal,
-        deadlineReason,
-        latest.outcome
-      )
-      if (failure) reportSettledReadFailure(failure.cause)
+      if (!recovery.signal.aborted) reportSettledReadFailure(error)
     } finally {
       clearTimeout(deadline)
       releaseSettledRead(key, recovery, turn, generation)
