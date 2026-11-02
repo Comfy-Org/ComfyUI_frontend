@@ -5,7 +5,11 @@ import {
   proveWidgetForm
 } from '@/lib/litegraph/src/widgets/widgetFormProof'
 
-const serializing = { serializeWidgets: true, coreIsLastWriter: true }
+const serializing = {
+  serializeWidgets: true,
+  replayed: false,
+  coreIsLastWriter: true
+}
 
 describe('proveWidgetForm', () => {
   it('proves an ordinary node whose values it produced itself', () => {
@@ -88,19 +92,6 @@ describe('proveWidgetForm', () => {
 
       expect(proof.refusal).toBe('replayed_serialization')
     })
-
-    it('and also when the replay is signalled by has_errors', () => {
-      const values = [1]
-
-      const proof = proveWidgetForm(
-        [{ name: 'UNKNOWN' }],
-        { widgets_values: values, has_errors: true },
-        values,
-        serializing
-      )
-
-      expect(proof.refusal).toBe('replayed_serialization')
-    })
   })
 
   describe('refuses when the widget list and the values disagree', () => {
@@ -109,7 +100,7 @@ describe('proveWidgetForm', () => {
         [{ name: 'mode' }, { name: 'filter' }],
         {},
         undefined,
-        { serializeWidgets: false, coreIsLastWriter: true }
+        { ...serializing, serializeWidgets: false }
       )
 
       expect(proof.refusal).toBe('widgets_not_serialized')
@@ -192,7 +183,7 @@ describe('proveWidgetForm', () => {
       [{ name: 'promoted_a' }, { name: 'promoted_b' }],
       { widgets_values: values },
       values,
-      { serializeWidgets: true, coreIsLastWriter: false }
+      { ...serializing, coreIsLastWriter: false }
     )
 
     expect(proof).toEqual({
@@ -221,6 +212,15 @@ describe('needsFormButHasNone', () => {
     expect(needsFormButHasNone({ widgets_values: { video: 'clip.mp4' } })).toBe(
       true
     )
+  })
+
+  it('flags an object-shaped payload whose form is null', () => {
+    expect(
+      needsFormButHasNone({
+        widgets_values: { video: 'clip.mp4' },
+        widgets_values_form: null
+      })
+    ).toBe(true)
   })
 
   it('does not flag one that already declares a form', () => {
