@@ -3,6 +3,7 @@ import _ from 'es-toolkit/compat'
 
 import { assert } from '@/base/assert'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
+import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -561,6 +562,18 @@ export class ChangeTracker implements WorkflowChangeTracker {
     this.updateModified(previousState)
   }, 50)
 
+  /**
+   * Marks the workflow modified and sends graphChanged with the committed
+   * state, without adding undo history or reading the canvas.
+   */
+  markModified() {
+    if (!isActiveTracker(this) || ChangeTracker.isLoadingGraph) return
+
+    const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
+    if (workflow) workflow.isModified = true
+    api.dispatchCustomEvent('graphChanged', this.activeState)
+  }
+
   /** @deprecated Use {@link captureCanvasState} instead. */
   checkState() {
     if (!ChangeTracker._checkStateWarned) {
@@ -726,12 +739,11 @@ export class ChangeTracker implements WorkflowChangeTracker {
       }
     })
 
-    // Handle clicking DOM elements (e.g. widgets)
     window.addEventListener('mouseup', () => {
+      if (dialogStore.isDialogOpen(TEXT_EDITOR_DIALOG_KEY)) return
       captureState()
     })
 
-    // Handle prompt queue event for dynamic widget changes
     api.addEventListener('promptQueued', () => {
       captureState()
     })

@@ -30,11 +30,6 @@ export function getExtensionPath(script: string): string | undefined {
   }
 }
 
-export function isSafeExtensionBoot(search: string): boolean {
-  const value = new URLSearchParams(search).get('safe')
-  return value === '' || value === '1' || value === 'true'
-}
-
 export function shouldLoadCustomNodeScript(
   script: string,
   {
@@ -139,9 +134,6 @@ export function reportCustomNodeLoadFailures(
 /**
  * Imports the custom node scripts among `servedScripts` in parallel and reports the failures.
  * With a CPU server reading, scripts that miss the deadline turn on late until `signal` aborts.
- *
- * Scripts under a disabled extension path, and every script during a safe boot, are dropped
- * here — before the import — so a disabled pack never executes.
  */
 export async function loadCustomNodeScripts(
   servedScripts: string[],

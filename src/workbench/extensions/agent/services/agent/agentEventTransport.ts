@@ -102,6 +102,11 @@ export interface AgentEventTransport {
   dispose: () => void
 }
 
+const TOOLS_THAT_KEEP_ANSWER_DRAFT: ReadonlySet<string> = new Set([
+  'remember',
+  'forget'
+])
+
 function updateSkill(part: ToolPart, skill: string | null | undefined): void {
   if (skill) part.skill = skill
 }
@@ -120,6 +125,7 @@ export function createAgentEventTransport(
 ): AgentEventTransport {
   let openText: TextPart | null = null
   let draft: TextPart | null = null
+  let answerToolRunning = false
   let openThinking: ThinkingPart | null = null
   let openThinkingStartedAt = 0
   let thinkingDraft: ThinkingPart | null = null
@@ -292,7 +298,8 @@ export function createAgentEventTransport(
         type: 'tool',
         callId: data.tool_call_id,
         name: data.tool_name,
-        state: 'streaming'
+        state: 'streaming',
+        ...(data.status === 'running' && { startedAtMs: Date.now() })
       }
       tools.set(data.tool_call_id, part)
       message.parts.push(part)
@@ -303,6 +310,20 @@ export function createAgentEventTransport(
     if (data.status !== 'running') {
       resolveToolCallState(part, data.status, data.duration_ms, data)
     }
+  }
+
+  function handleToolCallFrame(data: AgentToolCallEvent['data']): void {
+    if (TOOLS_THAT_KEEP_ANSWER_DRAFT.has(data.tool_name)) {
+      answerToolRunning = data.status === 'running'
+      dropThinkingDraft()
+    } else {
+      dropDrafts()
+    }
+    closeOpenText()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    handleToolCallEvent(data)
   }
 
   function handleActiveTabEvent(data: AgentActiveTabEvent['data']): boolean {
@@ -338,7 +359,8 @@ export function createAgentEventTransport(
     }
     const part = toAskOrNoticePart(data)
     if (part.type === 'askUnavailable') reportUnrenderedAsk(data)
-    dropDrafts()
+    if (!answerToolRunning) dropDraft()
+    dropThinkingDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
@@ -496,12 +518,7 @@ export function createAgentEventTransport(
         handleThinkingEvent(event.data)
         return true
       case 'agent_tool_call':
-        dropDrafts()
-        closeOpenText()
-        closeOpenThinking()
-        message.thinking = false
-        message.thinkingText = undefined
-        handleToolCallEvent(event.data)
+        handleToolCallFrame(event.data)
         return true
       case 'agent_active_tab':
         return handleActiveTabEvent(event.data)

@@ -1,12 +1,8 @@
 {
   "id": "billing",
   "capability": "Billing",
-  "description": "Billing for personal and team workspaces: the billing context that routes between legacy and workspace rails, billing dialogs, the billing SDK store and its operation projections, billing operation tracking, subscription checkout, plan change, resubscribe, downgrade, top-ups and pending top-ups, billing capabilities and capability revisions, billing banners, invoices, plan credits, pricing tables, hosted billing hand-off, and checkout journey telemetry. Cloud subscription plans, tier constants, and cancellation live under platform/billing/subscription; identity belongs to authentication and membership to workspace. The billing core of @comfyorg/account-core, the payment views of @comfyorg/account-ui, @comfyorg/billing-core, @comfyorg/billing-contract, and credit formatting from @comfyorg/shared-frontend-utils belong here.",
+  "description": "Billing for personal and team workspaces: the billing context, billing dialogs, the billing SDK store and its operation projections, billing operation tracking, subscription checkout, plan change, resubscribe, downgrade, top-ups and pending top-ups, billing capabilities and capability revisions, billing banners, invoices, plan credits, pricing tables, hosted billing hand-off, and checkout journey telemetry. Cloud subscription plans, tier constants, and cancellation live under platform/billing/subscription; identity belongs to authentication and membership to workspace. The billing core of @comfyorg/account-core, the payment views of @comfyorg/account-ui, @comfyorg/billing-core, @comfyorg/billing-contract, and credit formatting from @comfyorg/shared-frontend-utils belong here.",
   "modules": [
-    {
-      "path": "src/platform/billing/components/TopUpCreditsDialogContentLegacy.vue",
-      "role": "presentation"
-    },
     {
       "path": "src/platform/billing/components/TopbarSubscribeButton.vue",
       "role": "presentation"
@@ -18,10 +14,6 @@
     {
       "path": "src/platform/billing/composables/__mocks__/**",
       "role": "application"
-    },
-    {
-      "path": "src/platform/billing/composables/billingRail.ts",
-      "role": "domain"
     },
     {
       "path": "src/platform/billing/composables/topupBalanceRefresh.ts",
@@ -41,10 +33,6 @@
     },
     {
       "path": "src/platform/billing/composables/useBillingRouting.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/billing/composables/useLegacyBilling.ts",
       "role": "application"
     },
     {
@@ -236,6 +224,10 @@
       "role": "application"
     },
     {
+      "path": "src/platform/billing/composables/readWorkspaceBillingEvents.ts",
+      "role": "application"
+    },
+    {
       "path": "src/platform/billing/composables/useBillingBanner.ts",
       "role": "application"
     },
@@ -320,20 +312,12 @@
       "role": "domain"
     },
     {
-      "path": "src/platform/billing/subscription/utils/checkoutAttributionLoader.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/billing/subscription/utils/paymentReturnUrl.ts",
       "role": "infrastructure"
     },
     {
       "path": "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.ts",
-      "role": "application"
     },
     {
       "path": "src/platform/billing/utils/**",
@@ -395,12 +379,10 @@
   "allowedConsumers": ["account"],
   "characterizationScenarios": [
     {
-      "name": "Billing context routes reads and actions to the legacy or workspace billing rail",
+      "name": "Billing context routes reads and actions to workspace billing",
       "checks": [
         "src/platform/billing/composables/useBillingContext.test.ts",
         "src/platform/billing/composables/useBillingRouting.test.ts",
-        "src/platform/billing/composables/billingRail.test.ts",
-        "src/platform/billing/composables/useLegacyBilling.test.ts",
         "src/platform/billing/composables/useWorkspaceBilling.test.ts",
         "src/platform/billing/composables/useWorkspaceBilling.sdk.test.ts",
         "src/platform/billing/composables/useWorkspaceBilling.subscriptionRail.test.ts",
@@ -457,11 +439,10 @@
       ]
     },
     {
-      "name": "Credits panel, usage logs, and legacy top-up dialog show balances and start top-ups",
+      "name": "Credits panel and usage logs show balances and start top-ups",
       "checks": [
         "src/platform/billing/components/settings/CreditsPanel.test.ts",
         "src/platform/billing/components/settings/UsageLogsTable.test.ts",
-        "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts",
         "src/platform/billing/components/credit-slider/CreditSlider.test.ts"
       ]
     },
@@ -489,7 +470,6 @@
         "src/platform/billing/subscription/constants/tierPricing.test.ts",
         "src/platform/billing/subscription/utils/subscriptionTierRank.test.ts",
         "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.test.ts",
-        "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts",
         "src/platform/billing/subscription/utils/retentionOffer.test.ts",
         "src/platform/billing/subscription/composables/useSubscription.test.ts",
         "src/platform/billing/subscription/launchCancellationFlow.test.ts",
@@ -508,7 +488,7 @@
   ],
   "compatibilityPromises": [
     "Unclassified callers, authentication, workspace, and the cloud record may continue importing billing internals during inventory; imports from classified domains remain subject to cross-domain rules.",
-    "useBillingContext remains the shared billing seam for the legacy and workspace rails, and plan selection stays in the host app while hosted billing handles checkout only.",
+    "useBillingContext remains the shared billing seam for workspace billing, and plan selection stays in the host app while hosted billing handles checkout only.",
     "Billing owns the extracted client and SDK contract; mixed membership and billing views belong to account under ADR-BILLING-0049. Remaining cross-domain imports and dialog launchers that import presentation stay visible as boundary debt."
   ],
   "deepImports": "inventory"

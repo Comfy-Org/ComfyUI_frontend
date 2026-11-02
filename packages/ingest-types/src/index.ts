@@ -1243,6 +1243,7 @@ export type {
   MoveUserdataFileErrors,
   MoveUserdataFileResponse,
   MoveUserdataFileResponses,
+  NextCharge,
   NodeInfo,
   OAuthAuthorizationServerMetadata,
   OAuthAuthorizeRedirectResponse,
@@ -1635,11 +1636,14 @@ export type {
   WorkflowVersionResponse,
   Workspace,
   WorkspaceApiKeyInfo,
+  WorkspaceCreationDenials,
+  WorkspaceCreationLimitError,
   WorkspaceDeletionDenialParams,
   WorkspaceDeployment,
   WorkspaceDeploymentCpuServer,
   WorkspaceDeploymentList,
   WorkspaceMemberCapabilities,
+  WorkspacePlanSummary,
   WorkspaceSummary,
   WorkspaceWithRole
 } from './types.gen'

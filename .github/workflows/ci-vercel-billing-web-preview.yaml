@@ -127,13 +127,13 @@ jobs:
           section-name: billing-web-preview
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
-            ## 💳 Billing Web Preview
-
-            **Billing Web Preview:** ${{ steps.urls.outputs.stable-url }}
+            ## 💳 Billing Web Preview: ✅ Deployed — [View Preview](${{ steps.urls.outputs.stable-url }})
 
             <details>
-            <summary>Deployment details</summary>
+            <summary>Details</summary>
 
-            <sub>This commit: ${{ steps.deploy.outputs.url }}</sub>
+            **Links**
+            - 🔗 Preview: ${{ steps.urls.outputs.stable-url }}
+            - 📌 This commit: ${{ steps.deploy.outputs.url }}
 
             </details>
