@@ -1,28 +1,35 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from 'vue'
 
+type Point = { x: number; y: number }
+
 const zoomPane = useTemplateRef('zoomPane')
 
 const zoom = ref(1.0)
 const panX = ref(0.0)
 const panY = ref(0.0)
 
-function handleWheel(e: WheelEvent) {
+const activePointers = new Map<number, Point>()
+
+function zoomAt(zoomDelta: number, clientX: number, clientY: number) {
   const zoomPaneEl = zoomPane.value
-  if (!zoomPaneEl || (e.deltaY < 0 ? zoom.value > 1200 : zoom.value < -500))
+  if (!zoomPaneEl || (zoomDelta > 0 ? zoom.value > 1200 : zoom.value < -500))
     return
 
-  zoom.value -= e.deltaY
+  zoom.value += zoomDelta
   const { x, y, width, height } = zoomPaneEl.getBoundingClientRect()
-  const offsetX = e.clientX - x - width / 2
-  const offsetY = e.clientY - y - height / 2
-  const scaler = 1.1 ** (e.deltaY / -30)
+  const offsetX = clientX - x - width / 2
+  const offsetY = clientY - y - height / 2
+  const scaler = 1.1 ** (zoomDelta / 30)
 
   panY.value = panY.value * scaler - offsetY * (scaler - 1)
   panX.value = panX.value * scaler - offsetX * (scaler - 1)
 }
 
-let dragging = false
+function handleWheel(e: WheelEvent) {
+  zoomAt(-e.deltaY, e.clientX, e.clientY)
+}
+
 function handleDown(e: PointerEvent) {
   if (e.button !== 0 && e.button !== 1) return
 
@@ -31,12 +38,49 @@ function handleDown(e: PointerEvent) {
   zoomPaneEl.parentElement?.focus()
 
   zoomPaneEl.setPointerCapture(e.pointerId)
-  dragging = true
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
 }
+
+function distance(a: Point, b: Point) {
+  return Math.hypot(a.x - b.x, a.y - b.y)
+}
+
+function midpoint(a: Point, b: Point): Point {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+}
+
+function pinch(previous: Point, current: Point, anchor: Point) {
+  const previousDistance = distance(previous, anchor)
+  if (previousDistance === 0) return
+
+  const previousCenter = midpoint(previous, anchor)
+  const center = midpoint(current, anchor)
+  panX.value += center.x - previousCenter.x
+  panY.value += center.y - previousCenter.y
+
+  const ratio = distance(current, anchor) / previousDistance
+  zoomAt((30 * Math.log(ratio)) / Math.log(1.1), center.x, center.y)
+}
+
 function handleMove(e: PointerEvent) {
-  if (!dragging) return
-  panX.value += e.movementX
-  panY.value += e.movementY
+  const previous = activePointers.get(e.pointerId)
+  if (!previous) return
+
+  const current = { x: e.clientX, y: e.clientY }
+  const anchor = [...activePointers].find(([id]) => id !== e.pointerId)?.[1]
+  activePointers.set(e.pointerId, current)
+
+  if (activePointers.size > 2) return
+  if (anchor) {
+    pinch(previous, current, anchor)
+    return
+  }
+  panX.value += current.x - previous.x
+  panY.value += current.y - previous.y
+}
+
+function handleUp(e: PointerEvent) {
+  activePointers.delete(e.pointerId)
 }
 
 const transform = computed(() => {
@@ -48,12 +92,12 @@ const transform = computed(() => {
 <template>
   <div
     ref="zoomPane"
-    class="place-content-center contain-size"
+    class="touch-none place-content-center contain-size"
     @wheel="handleWheel"
     @pointerdown.prevent="handleDown"
     @pointermove="handleMove"
-    @pointerup="dragging = false"
-    @pointercancel="dragging = false"
+    @pointerup="handleUp"
+    @pointercancel="handleUp"
   >
     <slot :style="{ transform }" />
   </div>

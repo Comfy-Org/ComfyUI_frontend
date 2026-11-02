@@ -42,6 +42,34 @@ export class MobileAppHelper {
   async navigateTab(name: 'run' | 'outputs' | 'assets') {
     await this.navigation.getByRole('tab', { name }).click()
   }
+  async pinch(
+    locator: Locator,
+    { from, to, steps = 5 }: { from: number; to: number; steps?: number }
+  ) {
+    const box = await locator.boundingBox()
+    if (!box) throw new Error('Cannot pinch an element without a layout box')
+    const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    const touchPoints = (spread: number) => [
+      { id: 1, x: center.x - spread, y: center.y },
+      { id: 2, x: center.x + spread, y: center.y }
+    ]
+    const client = await this.page.context().newCDPSession(this.page)
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: touchPoints(from)
+    })
+    for (let step = 1; step <= steps; step++) {
+      await client.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: touchPoints(from + ((to - from) * step) / steps)
+      })
+    }
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: []
+    })
+    await client.detach()
+  }
   async tap(locator: Locator, { count = 1 }: { count?: number } = {}) {
     for (let i = 0; i < count; i++) await locator.tap()
   }
