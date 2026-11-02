@@ -47,6 +47,12 @@ export interface FetchHistoryPageResult {
   hasMore: boolean
 }
 
+export interface FetchQueueResult {
+  Running: JobListItem[]
+  Pending: JobListItem[]
+  total: number
+}
+
 /**
  * Fetches raw jobs from /jobs endpoint
  * @internal
@@ -136,14 +142,14 @@ export async function fetchHistoryPage(
 }
 
 /**
- * Fetches queue (in_progress + pending jobs)
- * Pending jobs get highest priority, then running jobs.
+ * Fetches the first page of in_progress and pending jobs, plus the server's
+ * total count of them. Pending jobs get highest priority, then running jobs.
  */
 export async function fetchQueue(
   fetchApi: (url: string) => Promise<Response>,
   options?: FetchJobsOptions
-): Promise<{ Running: JobListItem[]; Pending: JobListItem[] }> {
-  const { jobs } = await fetchJobsRaw(
+): Promise<FetchQueueResult> {
+  const { jobs, total } = await fetchJobsRaw(
     fetchApi,
     ['in_progress', 'pending'],
     200,
@@ -154,14 +160,13 @@ export async function fetchQueue(
   const running = jobs.filter((j) => j.status === 'in_progress')
   const pending = jobs.filter((j) => j.status === 'pending')
 
-  // Pending gets highest priority, then running
-  // Both are above any history job due to QUEUE_PRIORITY_BASE
   return {
     Running: assignPriority(running, QUEUE_PRIORITY_BASE + running.length),
     Pending: assignPriority(
       pending,
       QUEUE_PRIORITY_BASE + running.length + pending.length
-    )
+    ),
+    total
   }
 }
 

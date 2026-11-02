@@ -312,9 +312,7 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const hasPendingTasks = computed<boolean>(() => pendingTasks.value.length > 0)
-  const activeJobsCount = computed(
-    () => pendingTasks.value.length + runningTasks.value.length
-  )
+  const activeJobsCount = shallowRef(0)
 
   let currentUpdate: Promise<void> = Promise.resolve()
 
@@ -347,9 +345,9 @@ export const useQueueStore = defineStore('queue', () => {
 
       if (queueResult.status === 'fulfilled') {
         const queue = queueResult.value
-        // API returns pre-sorted data (sort_by=create_time&order=desc)
         runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
         pendingTasks.value = queue.Pending.map((job) => new TaskItemImpl(job))
+        activeJobsCount.value = queue.total
 
         const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
         const executionStore = useExecutionStore()
@@ -375,13 +373,10 @@ export const useQueueStore = defineStore('queue', () => {
         const history = historyResult.value
         const currentHistory = toValue(historyTasks)
 
-        // Sort by create_time descending and limit to maxItems
         const sortedHistory = [...history]
           .sort((a, b) => b.create_time - a.create_time)
           .slice(0, toValue(maxHistoryItems))
 
-        // Reuse existing TaskItemImpl instances or create new
-        // Must recreate if outputs_count changed (e.g., API started returning it)
         const existingByJobId = new Map(
           currentHistory.map((impl) => [impl.jobId, impl])
         )
@@ -389,7 +384,6 @@ export const useQueueStore = defineStore('queue', () => {
         const nextHistoryTasks = sortedHistory.map((job) => {
           const existing = existingByJobId.get(job.id)
           if (!existing) return new TaskItemImpl(job)
-          // Recreate if outputs_count changed to ensure lazy loading works
           if (
             existing.outputsCount !== (job.outputs_count ?? undefined) ||
             existing.previewableOutputsCount !==

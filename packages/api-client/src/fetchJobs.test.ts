@@ -244,6 +244,29 @@ describe('fetchJobs', () => {
       expect(result.Pending[0].id).toBe('pending1')
     })
 
+    it('reports the server total when more jobs are active than one page holds', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse(
+              [
+                createMockJob('running1', 'in_progress'),
+                createMockJob('pending1', 'pending')
+              ],
+              350,
+              { has_more: true }
+            )
+          )
+      })
+
+      const result = await fetchQueue(mockFetch)
+
+      expect(result.Running).toHaveLength(1)
+      expect(result.Pending).toHaveLength(1)
+      expect(result.total).toBe(350)
+    })
+
     it('assigns queue priorities above history', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -272,7 +295,7 @@ describe('fetchJobs', () => {
 
       const result = await fetchQueue(mockFetch)
 
-      expect(result).toEqual({ Running: [], Pending: [] })
+      expect(result).toEqual({ Running: [], Pending: [], total: 0 })
     })
 
     it('propagates errors when requested', async () => {

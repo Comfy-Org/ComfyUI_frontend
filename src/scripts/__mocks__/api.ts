@@ -119,7 +119,7 @@ const actions = vi.mockObject<
     getGlobalSubgraphs: async () => ({}),
     getNodeDefs: async () => ({}),
     getEmbeddings: async () => [],
-    getQueue: async () => ({ Running: [], Pending: [] }),
+    getQueue: async () => ({ Running: [], Pending: [], total: 0 }),
     getHistory: async () => [],
     async clearItems() {},
     async deleteItem() {},

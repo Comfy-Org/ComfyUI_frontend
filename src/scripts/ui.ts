@@ -194,6 +194,11 @@ export interface LegacyMenuHost {
   enterFocusMode(): void
 }
 
+async function getQueueSections() {
+  const { Running, Pending } = await api.getQueue()
+  return { Running, Pending }
+}
+
 class ComfyList {
   private _type: string
   private _text: string
@@ -230,7 +235,7 @@ class ComfyList {
     const items =
       this._type === 'history'
         ? { history: await api.getHistory() }
-        : await api.getQueue()
+        : await getQueueSections()
     this.element.replaceChildren(
       ...Object.entries(items).flatMap(([section, sectionItems]) => [
         $el('h4', {
@@ -240,7 +245,6 @@ class ComfyList {
           'div.comfy-list-items',
           (this._reverse ? sectionItems.reverse() : sectionItems).map(
             (item) => {
-              // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
               const removeAction =
                 section === 'Running'
                   ? {

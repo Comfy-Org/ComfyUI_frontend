@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { FetchQueueResult } from '@comfyorg/api-client/fetchJobs'
 import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import type { TaskOutput } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
@@ -63,8 +64,18 @@ const createTaskOutput = (
   }
 })
 
-type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
-type QueueResolver = (value: QueueResponse) => void
+function queueResult(
+  running: JobListItem[] = [],
+  pending: JobListItem[] = []
+): FetchQueueResult {
+  return {
+    Running: running,
+    Pending: pending,
+    total: running.length + pending.length
+  }
+}
+
+type QueueResolver = (value: FetchQueueResult) => void
 
 vi.mock(import('@/scripts/api'))
 
@@ -381,10 +392,9 @@ describe('useQueueStore', () => {
       const pendingJob2 = createPendingJob(3, 'pend-2')
 
       // API returns pre-sorted data (newest first)
-      vi.mocked(api.getQueue).mockResolvedValue({
-        Running: [runningJob],
-        Pending: [pendingJob2, pendingJob1] // Pre-sorted by create_time desc
-      })
+      vi.mocked(api.getQueue).mockResolvedValue(
+        queueResult([runningJob], [pendingJob2, pendingJob1])
+      )
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.update()
@@ -394,6 +404,19 @@ describe('useQueueStore', () => {
       expect(store.runningTasks[0].jobId).toBe('run-1')
       expect(store.pendingTasks[0].jobId).toBe('pend-2')
       expect(store.pendingTasks[1].jobId).toBe('pend-1')
+    })
+
+    it('counts active jobs from the server total, including those beyond the fetched page', async () => {
+      vi.mocked(api.getQueue).mockResolvedValue({
+        Running: [createRunningJob(1, 'run-1')],
+        Pending: [createPendingJob(2, 'pend-1')],
+        total: 350
+      })
+      vi.mocked(api.getHistory).mockResolvedValue([])
+
+      await store.update()
+
+      expect(store.activeJobsCount).toBe(350)
     })
 
     it('drops the model download of a job the queue no longer lists', async () => {
@@ -416,10 +439,9 @@ describe('useQueueStore', () => {
         ...download,
         prompt_id: 'gone'
       })
-      vi.mocked(api.getQueue).mockResolvedValue({
-        Running: [createRunningJob(1, 'run-1')],
-        Pending: []
-      })
+      vi.mocked(api.getQueue).mockResolvedValue(
+        queueResult([createRunningJob(1, 'run-1')])
+      )
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.update()
@@ -432,7 +454,7 @@ describe('useQueueStore', () => {
       const historyJob1 = createHistoryJob(5, 'hist-1')
       const historyJob2 = createHistoryJob(4, 'hist-2')
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([historyJob1, historyJob2])
 
       await store.update()
@@ -443,7 +465,7 @@ describe('useQueueStore', () => {
     })
 
     it('should set loading state correctly', async () => {
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       expect(store.isLoading).toBe(false)
@@ -469,7 +491,7 @@ describe('useQueueStore', () => {
       let resolveQueue!: QueueResolver
       vi.mocked(api.getQueue).mockImplementation(
         () =>
-          new Promise<QueueResponse>((resolve) => {
+          new Promise<FetchQueueResult>((resolve) => {
             resolveQueue = resolve
           })
       )
@@ -488,7 +510,7 @@ describe('useQueueStore', () => {
       expect(api.getQueue).toHaveBeenCalledTimes(1)
 
       // Resolve the in-flight request
-      resolveQueue({ Running: [], Pending: [] })
+      resolveQueue(queueResult())
       await first
 
       // A single re-fetch should fire because dirty was set
@@ -502,7 +524,7 @@ describe('useQueueStore', () => {
       let resolveQueue!: QueueResolver
       vi.mocked(api.getQueue).mockImplementation(
         () =>
-          new Promise<QueueResponse>((resolve) => {
+          new Promise<FetchQueueResult>((resolve) => {
             resolveQueue = resolve
           })
       )
@@ -515,14 +537,14 @@ describe('useQueueStore', () => {
       void store.update()
 
       // Resolve first — data should be applied (not discarded)
-      resolveQueue({ Running: [firstRunning], Pending: [] })
+      resolveQueue(queueResult([firstRunning]))
       await first
 
       expect(store.runningTasks).toHaveLength(1)
       expect(store.runningTasks[0].jobId).toBe('run-1')
 
       // The coalesced re-fetch fires; resolve it with new data
-      resolveQueue({ Running: [secondRunning], Pending: [] })
+      resolveQueue(queueResult([secondRunning]))
       // Wait for the re-fetch to complete
       await new Promise((r) => setTimeout(r, 0))
 
@@ -531,7 +553,7 @@ describe('useQueueStore', () => {
     })
 
     it('should not fire duplicate requests when no calls arrive during flight', async () => {
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.update()
@@ -544,7 +566,7 @@ describe('useQueueStore', () => {
       let resolveQueue!: QueueResolver
       vi.mocked(api.getQueue).mockImplementation(
         () =>
-          new Promise<QueueResponse>((resolve) => {
+          new Promise<FetchQueueResult>((resolve) => {
             resolveQueue = resolve
           })
       )
@@ -553,20 +575,20 @@ describe('useQueueStore', () => {
       const first = store.update()
       void store.update() // coalesce
 
-      resolveQueue({ Running: [], Pending: [] })
+      resolveQueue(queueResult())
       await first
 
       // isLoading should be true again for the re-fetch
       expect(store.isLoading).toBe(true)
 
-      resolveQueue({ Running: [], Pending: [] })
+      resolveQueue(queueResult())
       await new Promise((r) => setTimeout(r, 0))
 
       expect(store.isLoading).toBe(false)
     })
 
     it('should allow new requests after coalesced re-fetch completes', async () => {
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.update()
@@ -582,7 +604,7 @@ describe('useQueueStore', () => {
       const resolvers: QueueResolver[] = []
       vi.mocked(api.getQueue).mockImplementation(
         () =>
-          new Promise<QueueResponse>((resolve) => {
+          new Promise<FetchQueueResult>((resolve) => {
             resolvers.push(resolve)
           })
       )
@@ -593,12 +615,12 @@ describe('useQueueStore', () => {
         fresh = true
       })
 
-      resolvers[0]({ Running: [createRunningJob(1, 'stale')], Pending: [] })
+      resolvers[0](queueResult([createRunningJob(1, 'stale')]))
       await stale
       await vi.advanceTimersByTimeAsync(0)
       expect(fresh).toBe(false)
 
-      resolvers[1]({ Running: [], Pending: [] })
+      resolvers[1](queueResult())
       await freshUpdate
       expect(store.runningTasks).toEqual([])
       expect(api.getQueue).toHaveBeenCalledTimes(2)
@@ -611,7 +633,7 @@ describe('useQueueStore', () => {
       const job2 = createHistoryJob(5, 'hist-2')
       const job3 = createHistoryJob(3, 'hist-3')
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([job1, job2, job3])
 
       await store.update()
@@ -627,10 +649,9 @@ describe('useQueueStore', () => {
       const pend3 = createPendingJob(12, 'pend-3')
 
       // API returns pre-sorted data (newest first)
-      vi.mocked(api.getQueue).mockResolvedValue({
-        Running: [],
-        Pending: [pend2, pend3, pend1] // Pre-sorted by create_time desc
-      })
+      vi.mocked(api.getQueue).mockResolvedValue(
+        queueResult([], [pend2, pend3, pend1])
+      )
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.update()
@@ -645,7 +666,7 @@ describe('useQueueStore', () => {
     it('should NOT confuse different prompts with same job.priority', async () => {
       const hist1 = createHistoryJob(50, 'prompt-uuid-aaa')
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([hist1])
 
       await store.update()
@@ -666,7 +687,7 @@ describe('useQueueStore', () => {
       const hist1 = createHistoryJob(100, 'first-prompt-at-100')
       const hist2 = createHistoryJob(99, 'prompt-at-99')
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([hist1, hist2])
 
       await store.update()
@@ -689,7 +710,7 @@ describe('useQueueStore', () => {
       const hist2 = createHistoryJob(20, 'old-at-20')
       const hist3 = createHistoryJob(30, 'keep-at-30')
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([hist3, hist2, hist1])
 
       await store.update()
@@ -712,7 +733,7 @@ describe('useQueueStore', () => {
       const hist1 = createHistoryJob(10, 'existing-1')
       const hist2 = createHistoryJob(9, 'existing-2')
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([hist1, hist2])
 
       await store.update()
@@ -733,7 +754,7 @@ describe('useQueueStore', () => {
       const hist1 = createHistoryJob(10, 'remove-me')
       const hist2 = createHistoryJob(9, 'keep-me')
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([hist1, hist2])
 
       await store.update()
@@ -750,7 +771,7 @@ describe('useQueueStore', () => {
     it('should add new items from server', async () => {
       const hist1 = createHistoryJob(5, 'old-1')
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([hist1])
 
       await store.update()
@@ -771,7 +792,7 @@ describe('useQueueStore', () => {
       const jobWithoutOutputsCount = createHistoryJob(10, 'job-1')
       delete jobWithoutOutputsCount.outputs_count
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([jobWithoutOutputsCount])
 
       await store.update()
@@ -802,7 +823,7 @@ describe('useQueueStore', () => {
         outputs_count: 2
       }
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([job])
 
       await store.update()
@@ -829,7 +850,7 @@ describe('useQueueStore', () => {
         createHistoryJob(10 - i, `hist-${i}`)
       )
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue(jobs)
 
       await store.update()
@@ -847,7 +868,7 @@ describe('useQueueStore', () => {
         createHistoryJob(10 + i, `existing-${i}`)
       )
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue(initial)
 
       await store.update()
@@ -869,7 +890,7 @@ describe('useQueueStore', () => {
 
       const jobs = [createHistoryJob(10, 'hist-1')]
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue(jobs)
 
       await store.update()
@@ -885,7 +906,7 @@ describe('useQueueStore', () => {
         createHistoryJob(9, 'hist-2')
       ]
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue(jobs)
 
       await store.update()
@@ -901,7 +922,7 @@ describe('useQueueStore', () => {
         createHistoryJob(20 - i, `hist-${i}`)
       )
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue(jobs)
 
       await store.update()
@@ -923,10 +944,9 @@ describe('useQueueStore', () => {
       const hist1 = createHistoryJob(3, 'hist-1')
       const hist2 = createHistoryJob(4, 'hist-2')
 
-      vi.mocked(api.getQueue).mockResolvedValue({
-        Running: [running],
-        Pending: [pending1, pending2]
-      })
+      vi.mocked(api.getQueue).mockResolvedValue(
+        queueResult([running], [pending1, pending2])
+      )
       vi.mocked(api.getHistory).mockResolvedValue([hist2, hist1])
 
       await store.update()
@@ -940,10 +960,9 @@ describe('useQueueStore', () => {
     })
 
     it('hasPendingTasks should be true when pending tasks exist', async () => {
-      vi.mocked(api.getQueue).mockResolvedValue({
-        Running: [],
-        Pending: [createPendingJob(1, 'pend-1')]
-      })
+      vi.mocked(api.getQueue).mockResolvedValue(
+        queueResult([], [createPendingJob(1, 'pend-1')])
+      )
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.update()
@@ -951,7 +970,7 @@ describe('useQueueStore', () => {
     })
 
     it('hasPendingTasks should be false when no pending tasks', async () => {
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.update()
@@ -963,7 +982,7 @@ describe('useQueueStore', () => {
       const hist2 = createHistoryJob(25, 'hist-2')
       const hist3 = createHistoryJob(15, 'hist-3')
 
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([hist1, hist2, hist3])
 
       await store.update()
@@ -971,7 +990,7 @@ describe('useQueueStore', () => {
     })
 
     it('lastJobHistoryPriority should be -1 when no history', async () => {
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.update()
@@ -981,10 +1000,12 @@ describe('useQueueStore', () => {
 
   describe('clear()', () => {
     beforeEach(async () => {
-      vi.mocked(api.getQueue).mockResolvedValue({
-        Running: [createRunningJob(1, 'run-1')],
-        Pending: [createPendingJob(2, 'pend-1')]
-      })
+      vi.mocked(api.getQueue).mockResolvedValue(
+        queueResult(
+          [createRunningJob(1, 'run-1')],
+          [createPendingJob(2, 'pend-1')]
+        )
+      )
       vi.mocked(api.getHistory).mockResolvedValue([
         createHistoryJob(3, 'hist-1')
       ])
@@ -993,7 +1014,7 @@ describe('useQueueStore', () => {
 
     it('should clear both queue and history by default', async () => {
       vi.mocked(api.clearItems).mockResolvedValue(undefined)
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.clear()
@@ -1008,7 +1029,7 @@ describe('useQueueStore', () => {
 
     it('should clear only queue when specified', async () => {
       vi.mocked(api.clearItems).mockResolvedValue(undefined)
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([
         createHistoryJob(3, 'hist-1')
       ])
@@ -1022,10 +1043,12 @@ describe('useQueueStore', () => {
 
     it('should clear only history when specified', async () => {
       vi.mocked(api.clearItems).mockResolvedValue(undefined)
-      vi.mocked(api.getQueue).mockResolvedValue({
-        Running: [createRunningJob(1, 'run-1')],
-        Pending: [createPendingJob(2, 'pend-1')]
-      })
+      vi.mocked(api.getQueue).mockResolvedValue(
+        queueResult(
+          [createRunningJob(1, 'run-1')],
+          [createPendingJob(2, 'pend-1')]
+        )
+      )
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.clear(['history'])
@@ -1049,7 +1072,7 @@ describe('useQueueStore', () => {
       const task = new TaskItemImpl(job)
 
       vi.mocked(api.deleteItem).mockResolvedValue(undefined)
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.delete(task)
@@ -1062,7 +1085,7 @@ describe('useQueueStore', () => {
       const task = new TaskItemImpl(job, createTaskOutput())
 
       vi.mocked(api.deleteItem).mockResolvedValue(undefined)
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.delete(task)
@@ -1075,7 +1098,7 @@ describe('useQueueStore', () => {
       const task = new TaskItemImpl(job)
 
       vi.mocked(api.deleteItem).mockResolvedValue(undefined)
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.delete(task)
@@ -1091,7 +1114,7 @@ describe('useQueueStore', () => {
 
       vi.mocked(api.getQueue).mockImplementation(
         () =>
-          new Promise<QueueResponse>((resolve) => {
+          new Promise<FetchQueueResult>((resolve) => {
             resolveQueue = resolve
           })
       )
@@ -1107,7 +1130,7 @@ describe('useQueueStore', () => {
       await secondUpdate
 
       // Resolve the in-flight request
-      resolveQueue({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
+      resolveQueue(queueResult([], [createPendingJob(2, 'new-job')]))
       await firstUpdate
 
       expect(store.pendingTasks).toHaveLength(1)
@@ -1122,7 +1145,7 @@ describe('useQueueStore', () => {
 
       vi.mocked(api.getQueue).mockImplementation(
         () =>
-          new Promise<QueueResponse>((resolve) => {
+          new Promise<FetchQueueResult>((resolve) => {
             resolveQueue = resolve
           })
       )
@@ -1134,14 +1157,14 @@ describe('useQueueStore', () => {
       // Second call coalesces and returns immediately
       void store.update()
 
-      resolveQueue({ Running: [], Pending: [] })
+      resolveQueue(queueResult())
       await firstUpdate
 
       // isLoading is true again because re-fetch was triggered
       expect(store.isLoading).toBe(true)
 
       // Resolve the re-fetch
-      resolveQueue({ Running: [], Pending: [] })
+      resolveQueue(queueResult())
       await new Promise((r) => setTimeout(r, 0))
 
       expect(store.isLoading).toBe(false)
@@ -1156,7 +1179,7 @@ describe('useQueueStore', () => {
         if (callCount === 1) {
           return Promise.reject(new Error('network error'))
         }
-        return new Promise<QueueResponse>((resolve) => {
+        return new Promise<FetchQueueResult>((resolve) => {
           resolveSecond = resolve
         })
       })
@@ -1170,7 +1193,7 @@ describe('useQueueStore', () => {
       await firstUpdate
       expect(api.getQueue).toHaveBeenCalledTimes(2)
 
-      resolveSecond({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
+      resolveSecond(queueResult([], [createPendingJob(2, 'new-job')]))
       await new Promise((r) => setTimeout(r, 0))
 
       expect(store.pendingTasks).toHaveLength(1)
@@ -1181,7 +1204,7 @@ describe('useQueueStore', () => {
 
   describe('update() partial failures', () => {
     it('reconciles when the queue fetch succeeds, even with an empty snapshot', async () => {
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getQueue).mockResolvedValue(queueResult())
       vi.mocked(api.getHistory).mockResolvedValue([])
       const executionStore = useExecutionStore()
       const reconcileSpy = vi.spyOn(executionStore, 'reconcileInitializingJobs')
@@ -1193,10 +1216,7 @@ describe('useQueueStore', () => {
 
     it('preserves prior queue state and skips reconcile when the queue fetch fails', async () => {
       vi.mocked(api.getQueue)
-        .mockResolvedValueOnce({
-          Running: [createRunningJob(0, 'run-1')],
-          Pending: []
-        })
+        .mockResolvedValueOnce(queueResult([createRunningJob(0, 'run-1')]))
         .mockRejectedValueOnce(new Error('network down'))
       vi.mocked(api.getHistory).mockResolvedValue([])
       const executionStore = useExecutionStore()
@@ -1226,10 +1246,9 @@ describe('useQueueStore', () => {
     })
 
     it('still updates queue when only the history fetch fails', async () => {
-      vi.mocked(api.getQueue).mockResolvedValue({
-        Running: [createRunningJob(0, 'run-1')],
-        Pending: []
-      })
+      vi.mocked(api.getQueue).mockResolvedValue(
+        queueResult([createRunningJob(0, 'run-1')])
+      )
       vi.mocked(api.getHistory).mockRejectedValue(new Error('history down'))
 
       await store.update()
@@ -1240,10 +1259,7 @@ describe('useQueueStore', () => {
 
     it('preserves prior state and skips reconcile when both fetches fail', async () => {
       vi.mocked(api.getQueue)
-        .mockResolvedValueOnce({
-          Running: [createRunningJob(0, 'run-1')],
-          Pending: []
-        })
+        .mockResolvedValueOnce(queueResult([createRunningJob(0, 'run-1')]))
         .mockRejectedValueOnce(new Error('queue down'))
       vi.mocked(api.getHistory)
         .mockResolvedValueOnce([createHistoryJob(0, 'hist-1')])

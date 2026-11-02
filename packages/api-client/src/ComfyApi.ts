@@ -82,6 +82,7 @@ import {
   fetchJobDetail,
   fetchQueue
 } from './fetchJobs'
+import type { FetchQueueResult } from './fetchJobs'
 
 const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
 
@@ -1486,16 +1487,15 @@ export class ComfyApi extends EventTarget {
    * Gets the current state of the queue
    * @returns The currently running and queued items
    */
-  async getQueue(options?: { throwOnError?: boolean }): Promise<{
-    Running: JobListItem[]
-    Pending: JobListItem[]
-  }> {
+  async getQueue(options?: {
+    throwOnError?: boolean
+  }): Promise<FetchQueueResult> {
     try {
       return await fetchQueue(this.fetchApi.bind(this), options)
     } catch (error) {
       if (options?.throwOnError) throw error
       console.error('Failed to fetch queue:', error)
-      return { Running: [], Pending: [] }
+      return { Running: [], Pending: [], total: 0 }
     }
   }
 
