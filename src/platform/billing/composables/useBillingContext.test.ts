@@ -471,7 +471,7 @@ describe('useBillingContext', () => {
       expect(context.isInitialized.value).toBe(false)
     })
 
-    it('makes no billing call while unknown, then routes to workspace billing for a personal workspace', async () => {
+    it('reads empty and makes no billing call while unknown, then routes to workspace billing for a personal workspace', async () => {
       const loaded = holdWorkspaceUnloaded('personal')
       mockBillingRail.value = 'stripe'
       const context = useBillingContext()

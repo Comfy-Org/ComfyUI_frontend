@@ -113,8 +113,6 @@ function useBillingContextInternal(): BillingContext {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // While routing is `unknown` reads return empty values; fetches and actions
-  // below are guarded so they make no call.
   const activeContext = computed(() => getWorkspaceBilling())
 
   // Proxy state from active context
@@ -145,11 +143,10 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.occupiedSeats)
   )
 
-  // Off Cloud there is no subscription gate, including before a workspace loads.
-  const canAccessSubscriptionFeatures = computed(
-    () =>
-      (type.value === 'unknown' && !isCloud) ||
-      toValue(activeContext.value.canAccessSubscriptionFeatures)
+  const canAccessSubscriptionFeatures = computed(() =>
+    type.value === 'unknown'
+      ? !isCloud
+      : toValue(activeContext.value.canAccessSubscriptionFeatures)
   )
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
@@ -310,8 +307,6 @@ function useBillingContextInternal(): BillingContext {
     )
   }
 
-  // For actions whose caller shows no outcome: reports a timeout once and
-  // resolves false so the caller stops.
   async function whenRoutingKnown(): Promise<boolean> {
     try {
       return await waitForRouting()

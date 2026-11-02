@@ -87,11 +87,20 @@ const moveSelectedNodesVersionAdded = '1.22.2'
 let onboardingReplayInProgress: Promise<void> | undefined
 
 export function useCoreCommands(): ComfyCommand[] {
-  const { canAccessSubscriptionFeatures, subscription } = useBillingContext()
+  const {
+    canAccessSubscriptionFeatures,
+    subscription,
+    isInitialized,
+    initialize,
+    type: billingType
+  } = useBillingContext()
   const { showSubscriptionDialog } = useSubscriptionPaywall()
 
-  function blockRunWithoutSubscription(): boolean {
-    if (!isCloud || canAccessSubscriptionFeatures.value) return false
+  async function blockRunWithoutSubscription(): Promise<boolean> {
+    if (!isCloud) return false
+    if (!isInitialized.value) await initialize().catch(() => undefined)
+    if (billingType.value === 'unknown') return true
+    if (canAccessSubscriptionFeatures.value) return false
     if (isSalesManagedTier(subscription.value?.tier)) {
       toast.warning(t('subscription.salesManagedRunBlockedTitle'), {
         description: t('subscription.salesManagedRunBlockedDetail'),
@@ -530,7 +539,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (blockRunWithoutSubscription()) return
+        if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
 
@@ -550,7 +559,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (blockRunWithoutSubscription()) return
+        if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
 
@@ -569,7 +578,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (blockRunWithoutSubscription()) return
+        if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
         const selectedNodes = getSelectedNodes()

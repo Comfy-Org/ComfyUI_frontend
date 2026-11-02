@@ -105,13 +105,8 @@ const {
 const { t, n } = useI18n()
 const dialogStore = useDialogStore()
 const toast = useToast()
-const {
-  cancelSubscription,
-  fetchStatus,
-  subscription,
-  tier,
-  whenRoutingKnown
-} = useBillingContext()
+const { cancelSubscription, fetchStatus, subscription, tier } =
+  useBillingContext()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { canCancel } = useBillingCapabilities()
 const { permissions } = useBillingUI()
@@ -294,17 +289,6 @@ async function onConfirmCancel() {
   if (confirmedBeforeCall) reportWorkspaceConfirmed()
   isLoading.value = true
   try {
-    if (!confirmedBeforeCall) {
-      if (!(await whenRoutingKnown())) {
-        isLoading.value = false
-        return
-      }
-      if (!isScopeCurrent()) return abortForScopeChange()
-      if (lacksWorkspaceCancelPermission()) {
-        isLoading.value = false
-        return
-      }
-    }
     await cancelSubscription(isScopeCurrent)
   } catch (error) {
     return handleCancelError(error, confirmedBeforeCall)
