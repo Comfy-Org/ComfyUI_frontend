@@ -2394,31 +2394,54 @@ describe('agent_extension_changed', () => {
     })
   }
 
-  it('shows the pack change in place, between the text around it', () => {
-    const message = drive([
-      delta('Turning it off.'),
-      extensionChanged({
+  it.for([
+    {
+      data: {
         action: 'disabled',
-        pack: 'comfy-cushions',
-        agent_created: true,
+        pack: 'pack-a',
+        agent_created: false,
         restart_required: true
-      }),
-      delta('Done.')
-    ])
+      },
+      expected: {
+        type: 'extensionChange',
+        action: 'disabled',
+        pack: 'pack-a',
+        agentCreated: false,
+        restartRequired: true
+      }
+    },
+    {
+      data: {
+        action: 'removed',
+        pack: 'pack-b',
+        agent_created: true,
+        restart_required: false
+      },
+      expected: {
+        type: 'extensionChange',
+        action: 'removed',
+        pack: 'pack-b',
+        agentCreated: true,
+        restartRequired: false
+      }
+    }
+  ])(
+    'shows $data.pack in place with its server flags',
+    ({ data, expected }) => {
+      const message = drive([
+        delta('Changing it.'),
+        extensionChanged(data),
+        delta('Done.')
+      ])
 
-    expect(message.parts.map((part) => part.type)).toEqual([
-      'text',
-      'extensionChange',
-      'text'
-    ])
-    expect(message.parts[1]).toEqual({
-      type: 'extensionChange',
-      action: 'disabled',
-      pack: 'comfy-cushions',
-      agentCreated: true,
-      restartRequired: true
-    })
-  })
+      expect(message.parts.map((part) => part.type)).toEqual([
+        'text',
+        'extensionChange',
+        'text'
+      ])
+      expect(message.parts[1]).toEqual(expected)
+    }
+  )
 
   it('stops showing the agent as thinking once the card arrives', () => {
     const message = drive([
