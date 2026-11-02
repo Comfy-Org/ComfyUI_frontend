@@ -107,32 +107,29 @@ export type BillingCapabilitiesRead = Omit<
 export type BillingTopUpDenial = NonNullable<
   BillingCapabilityDenials['can_top_up']
 >
-const BILLING_TOP_UP_DENIALS = [
-  'not_a_member',
-  'not_workspace_owner',
-  'creator_only_provisioning',
-  'payment_past_due',
-  'tier_not_self_serve',
-  'subscription_status_unrecognized',
-  'topup_purchases_paused',
-  'free_plan',
-  'no_subscription',
-  'subscription_ended'
-] as const satisfies readonly BillingTopUpDenial[]
+const SERVED_TOP_UP_DENIALS: Record<BillingTopUpDenial, true> = {
+  not_a_member: true,
+  not_workspace_owner: true,
+  creator_only_provisioning: true,
+  payment_past_due: true,
+  tier_not_self_serve: true,
+  subscription_status_unrecognized: true,
+  topup_purchases_paused: true,
+  free_plan: true,
+  no_subscription: true,
+  subscription_ended: true
+}
 
-// Fails to compile if the served enum gains a reason missing from the list.
-const _allTopUpDenialsListed: Exclude<
-  BillingTopUpDenial,
-  (typeof BILLING_TOP_UP_DENIALS)[number]
-> extends never
-  ? true
-  : never = true
-void _allTopUpDenialsListed
+function isBillingTopUpDenial(reason: string): reason is BillingTopUpDenial {
+  return Object.hasOwn(SERVED_TOP_UP_DENIALS, reason)
+}
 
 export function parseBillingTopUpDenial(
   reason: string | undefined
 ): BillingTopUpDenial | undefined {
-  return BILLING_TOP_UP_DENIALS.find((denial) => denial === reason)
+  return reason !== undefined && isBillingTopUpDenial(reason)
+    ? reason
+    : undefined
 }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
