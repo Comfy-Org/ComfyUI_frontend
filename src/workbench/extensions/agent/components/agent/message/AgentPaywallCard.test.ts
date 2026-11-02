@@ -79,7 +79,7 @@ describe('AgentPaywallCard visual contract', () => {
     },
     {
       presentation: { kind: 'local' as const },
-      body: "You've spent your credit balance. Add credits to keep the agent running.",
+      body: 'Your account has no credits available for the agent. Add credits to use it.',
       action: 'Add credits',
       emitted: 'addCredits'
     },
