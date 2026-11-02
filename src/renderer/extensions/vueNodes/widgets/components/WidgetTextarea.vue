@@ -91,7 +91,14 @@
 <script setup lang="ts">
 import { refAutoReset } from '@vueuse/core'
 import { omit } from 'es-toolkit'
-import { computed, onBeforeUnmount, ref, toRaw, useId, useTemplateRef } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  ref,
+  toRaw,
+  useId,
+  useTemplateRef
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
