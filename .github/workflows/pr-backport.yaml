@@ -295,6 +295,7 @@ jobs:
         run: |
           FAILED=""
           SUCCESS=""
+          ALREADY_APPLIED=""
 
           # Get PR data for manual triggers
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -378,7 +379,7 @@ jobs:
 
               if [ "$CHANGES_ALREADY_ON_TARGET" = true ]; then
                 echo "::notice::${TARGET_BRANCH} already has the changes from ${MERGE_COMMIT}, skipping backport"
-                FAILED="${FAILED}${TARGET_BRANCH}:already-exists "
+                ALREADY_APPLIED="${ALREADY_APPLIED}${TARGET_BRANCH} "
               else
                 echo "::error::Cherry-pick failed due to conflicts"
                 FAILED="${FAILED}${TARGET_BRANCH}:conflicts:${CONFLICTS} "
@@ -394,6 +395,7 @@ jobs:
 
           echo "success=${SUCCESS}" >> $GITHUB_OUTPUT
           echo "failed=${FAILED}" >> $GITHUB_OUTPUT
+          echo "already-applied=${ALREADY_APPLIED}" >> $GITHUB_OUTPUT
 
           # Do not exit non-zero when only some targets failed: the clean
           # backports must still get their PRs (next step) and the conflicts
@@ -473,8 +475,11 @@ jobs:
         if: >-
           !cancelled() &&
           steps.filter-targets.outputs.skip != 'true' &&
-          steps.backport.outputs.failed != ''
+          (steps.backport.outputs.failed != '' ||
+           steps.backport.outputs.already-applied != '')
         env:
+          FAILED_TARGETS: ${{ steps.backport.outputs.failed }}
+          ALREADY_APPLIED_TARGETS: ${{ steps.backport.outputs.already-applied }}
           FORCE_RERUN: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.force_rerun
             || 'false' }}
@@ -578,7 +583,11 @@ jobs:
               )' <<<"${comments}${issues}" >/dev/null
           }
 
-          for failure in ${{ steps.backport.outputs.failed }}; do
+          for target in ${ALREADY_APPLIED_TARGETS}; do
+            notify "@${PR_AUTHOR} \`${target}\` already has the changes from \`${MERGE_COMMIT}\`, so no backport PR was opened." "changes already on ${target}"
+          done
+
+          for failure in ${FAILED_TARGETS}; do
             IFS=':' read -r target reason conflicts <<< "${failure}"
 
             SAFE_TARGET=$(echo "$target" | tr '/' '-')

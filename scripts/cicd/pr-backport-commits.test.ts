@@ -97,7 +97,7 @@ function runBackport(mergeCommit: string) {
 }
 
 describe('pr-backport cherry-pick step', () => {
-  it('reports a target that already has the change by hand as already backported, not as a conflict', () => {
+  it('skips a target that already has the change by hand without failing it or reporting a conflict', () => {
     git('checkout', '--quiet', TARGET)
     commitFile('two\n', 'hand-made backport')
     git('checkout', '--quiet', 'main')
@@ -105,8 +105,9 @@ describe('pr-backport cherry-pick step', () => {
 
     const { outputs } = runBackport(mergeCommit)
 
-    expect(outputs).toContain(`failed=${TARGET}:already-exists `)
-    expect(outputs).not.toContain('conflicts')
+    expect(outputs).toContain(`already-applied=${TARGET} `)
+    expect(outputs).toContain('failed=\n')
+    expect(outputs).toContain('success=\n')
   })
 
   it('still reports a real conflict', () => {
