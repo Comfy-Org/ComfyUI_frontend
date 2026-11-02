@@ -5,246 +5,72 @@ description: 'Diagnoses and fixes flaky Playwright e2e tests by replacing race-p
 
 # Hardening Flaky E2E Tests
 
-Fix flaky Playwright specs by identifying race-prone patterns and replacing them with retry-safe alternatives. This skill covers diagnosis, pattern matching, and mechanical transforms — not writing new tests (see `writing-playwright-tests` for that). The general rules behind every transform here (wait on the real readiness boundary, never sleep, never weaken an assertion, check history before removing a guard) are in `docs/guidance/testing-principles.md`.
+Fix flaky specs by finding the race and waiting on the real readiness boundary.
+The general rules (never sleep, never weaken an assertion, read the history
+before removing a guard) are in `docs/guidance/testing-principles.md`. The
+assertion primitives, readiness boundaries, and the common flake patterns
+table are in `docs/guidance/playwright.md` under "Flake prevention". This
+skill is the workflow around them.
 
-## Workflow
-
-### 1. Gather CI Evidence
-
-```bash
-gh run list --workflow=ci-test.yaml --limit=5
-gh run download <run-id> -n playwright-report
-```
-
-- Open `report.json` and search for `"status": "flaky"` entries.
-- Collect file paths, test titles, and error messages.
-- Do NOT trust green checks alone — flaky tests that passed on retry still need fixing.
-- Use `error-context.md`, traces, and page snapshots before editing code.
-- Pull the newest run after each push instead of assuming the flaky set is unchanged.
-
-### 2. Classify the Flake
-
-Read the failing assertion and match it against the pattern table. Most flakes fall into one of these categories:
-
-| #   | Pattern                               | Signature in Code                                         | Fix                                                              |
-| --- | ------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| 1   | **Snapshot-then-assert**              | `expect(await evaluate()).toBe(x)`                        | `await expect.poll(() => evaluate()).toBe(x)`                    |
-| 2   | **Immediate count**                   | `const n = await loc.count(); expect(n).toBe(3)`          | `await expect(loc).toHaveCount(3)`                               |
-| 3   | **nextFrame after menu click**        | `clickMenuItem(x); nextFrame()`                           | `clickMenuItem(x); contextMenu.waitForHidden()`                  |
-| 4   | **Tight poll timeout**                | `expect.poll(..., { timeout: 250 })`                      | ≥2000 ms; prefer default 5000 ms                                 |
-| 5   | **Immediate evaluate after mutation** | `setSetting(k, v); expect(await evaluate()).toBe(x)`      | `await expect.poll(() => evaluate()).toBe(x)`                    |
-| 6   | **Screenshot without readiness**      | `loadWorkflow(); nextFrame(); toHaveScreenshot()`         | Assert the expected node state with a retrying assertion first   |
-| 7   | **Non-deterministic node order**      | `getNodeRefsByType('X')[0]` with >1 match                 | `getNodeRefById(id)` or guard `toHaveLength(1)`                  |
-| 8   | **Fake readiness helper**             | Helper clicks but doesn't assert state                    | Remove; poll the actual value                                    |
-| 9   | **Immediate graph state after drop**  | `expect(await getLinkCount()).toBe(1)`                    | `await expect.poll(() => getLinkCount()).toBe(1)`                |
-| 10  | **Immediate boundingBox/layout read** | `const box = await loc.boundingBox(); expect(box!.width)` | `await expect.poll(() => loc.boundingBox().then(b => b?.width))` |
-
-### 3. Apply the Transform
-
-#### Rule: Choose the Smallest Correct Assertion
-
-- **Locator state** → use built-in retrying assertions: `toBeVisible()`, `toHaveText()`, `toHaveCount()`, `toHaveClass()`
-- **Single async value** → `expect.poll(() => asyncFn()).toBe(expected)`
-- **Multiple assertions that must settle together** → `expect(async () => { ... }).toPass()`
-- **Never** use `waitForTimeout()` to hide a race.
-
-```typescript
-// ✅ Single value — use expect.poll
-await expect
-  .poll(() => comfyPage.page.evaluate(() => window.app!.graph.links.length))
-  .toBe(3)
-
-// ✅ Locator count — use toHaveCount
-await expect(comfyPage.page.locator('.dom-widget')).toHaveCount(2)
-
-// ✅ Multiple conditions — use toPass
-await expect(async () => {
-  expect(await node1.getValue()).toBe('foo')
-  expect(await node2.getValue()).toBe('bar')
-}).toPass({ timeout: 5000 })
-```
-
-#### Rule: Wait for the Real Readiness Boundary
-
-Visible is not always ready. Prefer user-facing assertions when possible; poll internal state only when there is no UI surface to assert on.
-
-Vue-node tests must use `@vue-nodes`; the fixture enables the renderer and waits
-for initial readiness. Never manually set `Comfy.VueNodes.Enabled` or call
-`comfyPage.vueNodes.waitForNodes()` in tests.
-
-Common readiness boundaries:
-
-| After this action...                   | Wait for...                                                  |
-| -------------------------------------- | ------------------------------------------------------------ |
-| Canvas interaction (drag, click node)  | `await comfyPage.nextFrame()`                                |
-| Menu item click                        | `await contextMenu.waitForHidden()`                          |
-| Workflow load                          | `await comfyPage.workflow.loadWorkflow(...)` (built-in wait) |
-| Settings write                         | Poll the setting value with `expect.poll()`                  |
-| Node pin/bypass/collapse toggle        | `await expect.poll(() => nodeRef.isPinned()).toBe(true)`     |
-| Graph mutation (add/remove node, link) | Poll link/node count                                         |
-| Clipboard write                        | Poll pasted value                                            |
-| Screenshot                             | Assert expected node state with a retrying assertion         |
-
-#### Rule: Expose Locators for Retrying Assertions
-
-When a helper returns a count via `await loc.count()`, callers can't use `toHaveCount()`. Expose the underlying `Locator` as a getter so callers choose between:
-
-```typescript
-// Helper exposes locator
-get domWidgets(): Locator {
-  return this.page.locator('.dom-widget')
-}
-
-// Caller uses retrying assertion
-await expect(comfyPage.domWidgets).toHaveCount(2)
-```
-
-Replace count methods with locator getters so callers can use retrying assertions directly.
-
-#### Rule: Fix Check-then-Act Races in Helpers
-
-```typescript
-// ❌ Race: count can change between check and waitFor
-const count = await locator.count()
-if (count > 0) {
-  await locator.waitFor({ state: 'hidden' })
-}
-
-// ✅ Direct: waitFor handles both cases
-await locator.waitFor({ state: 'hidden' })
-```
-
-#### Rule: Remove force:true from Clicks
-
-`force: true` bypasses actionability checks, hiding real animation/visibility races. Remove it and fix the underlying timing issue.
-
-```typescript
-// ❌ Hides the race
-await closeButton.click({ force: true })
-
-// ✅ Surfaces the real issue — fix with proper wait
-await closeButton.click()
-await dialog.waitForHidden()
-```
-
-#### Rule: Handle Non-deterministic Element Order
-
-When `getNodeRefsByType` returns multiple nodes, the order is not guaranteed. Don't use index `[0]` blindly.
-
-```typescript
-// ❌ Assumes order
-const node = (await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))[0]
-
-// ✅ Find by ID or proximity
-const nodes = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-let target = nodes[0]
-for (const n of nodes) {
-  const pos = await n.getPosition()
-  if (Math.abs(pos.y - expectedY) < minDist) target = n
-}
-```
-
-Or guard the assumption:
-
-```typescript
-const nodes = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-expect(nodes).toHaveLength(1)
-const node = nodes[0]
-```
-
-#### Rule: Use toPass for Timing-sensitive Dismiss Guards
-
-Some UI elements (e.g. LiteGraph's graphdialog) have built-in dismiss delays. Retry the entire dismiss action:
-
-```typescript
-// ✅ Retry click+assert together
-await expect(async () => {
-  await comfyPage.canvas.click({ position: { x: 10, y: 10 } })
-  await expect(dialog).toBeHidden({ timeout: 500 })
-}).toPass({ timeout: 5000 })
-```
-
-### 4. Keep Changes Narrow
-
-- Shared helpers should drive setup to a stable boundary.
-- Do not encode one-spec timing assumptions into generic helpers.
-- If a race only matters to one spec, prefer a local wait in that spec.
-- If a helper fails before the real test begins, remove or relax the brittle precondition and let downstream UI interaction prove readiness.
-
-### 5. Verify Narrowly
+## 1. Gather CI evidence
 
 ```bash
-# Targeted rerun with repetition
-pnpm test:browser:local -- browser_tests/tests/myFile.spec.ts --repeat-each 10
-
-# Single test by line number (avoids grep quoting issues on Windows)
-pnpm test:browser:local -- browser_tests/tests/myFile.spec.ts:42
+gh run list --workflow="CI: Tests E2E" --branch=<branch> --limit=5
+gh run download <run-id> -p 'playwright-report-*'
 ```
 
-- Use `--repeat-each 10` for targeted flake verification (use 20 for single test cases).
-- Verify with the smallest command that exercises the flaky path.
+- Search each `report.json` for `"status": "flaky"`. A test that passed on
+  retry still needs fixing; a green check is not evidence.
+- Read `error-context.md`, the trace (`pnpm dlx playwright show-trace
+trace.zip`), and page snapshots before editing code.
+- Pull the newest run after each push; the flaky set changes.
 
-### 6. Watch CI E2E Runs
+## 2. Classify the flake
 
-After pushing, use `gh` to monitor the E2E workflow:
+Match the failing assertion against the common flake patterns table in
+`docs/guidance/playwright.md`. State the root cause as a race or readiness
+mismatch before changing code. If no pattern fits, find the state the behavior
+depends on and wait for it.
+
+Before removing a wait, assertion, or guard you did not write, `git blame` the
+line and read the commit that introduced it.
+
+## 3. Fix narrowly
+
+- Change timing and retry strategy only; the test's behavior stays the same.
+- Keep the fix in the spec unless a shared helper owns the race. Do not encode
+  one spec's timing into a generic helper.
+- If a helper fails before the real test begins, relax the brittle
+  precondition and let the downstream interaction prove readiness.
+
+## 4. Verify narrowly
 
 ```bash
-# Find the run for the current branch
-gh run list --workflow="CI: Tests E2E" --branch=$(git branch --show-current) --limit=1
-
-# Watch it live (blocks until complete, streams logs)
-gh run watch <run-id>
-
-# One-liner: find and watch the latest E2E run for the current branch
-gh run list --workflow="CI: Tests E2E" --branch=$(git branch --show-current) --limit=1 --json databaseId --jq ".[0].databaseId" | xargs gh run watch
+pnpm test:browser:local browser_tests/tests/<area>/<file>.spec.ts --repeat-each 10
+pnpm test:browser:local browser_tests/tests/<area>/<file>.spec.ts:<line> --repeat-each 20
 ```
 
-On Windows (PowerShell):
-
-```powershell
-# One-liner equivalent
-gh run watch (gh run list --workflow="CI: Tests E2E" --branch=$(git branch --show-current) --limit=1 --json databaseId --jq ".[0].databaseId")
-```
-
-After the run completes:
+Prefer `file:line` over `--grep` on Windows. After pushing, watch the run:
 
 ```bash
-# Download the Playwright report artifact
-gh run download <run-id> -n playwright-report
-
-# View the run summary in browser
-gh run view <run-id> --web
+gh run list --workflow="CI: Tests E2E" --branch=<branch> --limit=1 --json databaseId --jq '.[0].databaseId' | xargs gh run watch
 ```
 
-Also watch the unit test workflow in parallel if you changed helpers:
+If you changed a helper, also check `CI: Tests Unit`.
 
-```bash
-gh run list --workflow="CI: Tests Unit" --branch=$(git branch --show-current) --limit=1
-```
-
-### 7. Pre-merge Checklist
-
-Before merging a flaky-test fix, confirm:
+## 5. Pre-merge checklist
 
 - [ ] The latest CI artifact was inspected directly
 - [ ] The root cause is stated as a race or readiness mismatch
 - [ ] The fix waits on the real readiness boundary
-- [ ] The assertion primitive matches the job (poll vs toHaveCount vs toPass)
-- [ ] The fix stays local unless a shared helper truly owns the race
-- [ ] Local verification uses a targeted rerun
-- [ ] No behavioral changes to the test — only timing/retry strategy updated
+- [ ] The assertion primitive matches the job
+- [ ] The fix stays local unless a shared helper owns the race
+- [ ] A targeted rerun with `--repeat-each` passed
+- [ ] The test's behavior is unchanged
 
-## Local Noise — Do Not Fix
+## Local noise
 
-These are local distractions, not CI root causes:
-
-- Missing local input fixture files required by the test path
-- Missing local models directory
-- Teardown `EPERM` while restoring the local browser-test user data directory
-- Local screenshot baseline differences on Windows
-
-Rules:
-
-- First confirm whether it blocks the exact flaky path under investigation.
-- Do not commit temporary local assets used only for verification.
-- Do not commit local screenshot baselines.
+Missing local input files or models, teardown `EPERM` while restoring the
+user-data directory, and Windows screenshot diffs are not CI root causes.
+Confirm whether one blocks the exact flaky path before acting. Never commit
+temporary local assets or local screenshot baselines.

@@ -86,8 +86,7 @@ async function offerAgentRefactor(
   if (adapters.length === 0) {
     info([
       'No local coding-agent CLI found (claude, codex, gemini, amp, opencode) — skipping.',
-      'You can ask one manually to refactor the spec against docs/guidance/playwright.md',
-      'and browser_tests/README.md.'
+      'You can ask one manually to refactor the spec against docs/guidance/playwright.md.'
     ])
     return
   }
@@ -468,7 +467,7 @@ export async function runRecord(
 
   info([
     'Tags help others find and filter this test — pick whatever areas it',
-    "touches, or none if you're unsure. Full list: browser_tests/README.md#test-tags"
+    "touches, or none if you're unsure. Full list: pnpm comfy-test tags"
   ])
   blank()
 

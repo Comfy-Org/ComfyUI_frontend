@@ -5,103 +5,44 @@ description: 'Transforms raw Playwright codegen output into ComfyUI convention-c
 
 # Codegen → Convention Transform
 
-Transform raw Playwright codegen output into tests that follow ComfyUI conventions.
+Turn raw Playwright codegen output (from `pnpm comfy-test record` or
+`playwright codegen`) into a spec that follows `docs/guidance/playwright.md`.
 
-## When to Use
+1. Run the mechanical pass first:
 
-- QA tester recorded a test with `pnpm comfy-test record` and wants refinement
-- Developer pasted raw `npx playwright codegen` output
-- Agent needs to post-process Playwright test agent output
-- Reviewing a test that uses raw `page.*` calls instead of fixture helpers
+   ```bash
+   pnpm comfy-test transform <file> [--name <n>] [--tags <a,b>] [--workflow <w>]
+   ```
 
-## Reference Documentation
+   The rules live in `tools/test-recorder/src/transform/rules.ts`: the
+   `comfyPageFixture` import, the `comfyPage` fixture, removing `page.goto`,
+   `comfyPage.canvas`, `comfyPage.searchBox`, replacing `waitForTimeout`, and the
+   tagged `test.describe` wrapper. Read that file instead of re-applying the
+   rules by hand.
 
-Before transforming, read these existing docs for full context:
+2. Then do what the engine cannot: apply `docs/guidance/playwright.md` to the
+   result. Most of the remaining work is replacing recorded coordinates.
 
-| Document                              | What it covers                                                          |
-| ------------------------------------- | ----------------------------------------------------------------------- |
-| `docs/guidance/playwright.md`         | Playwright conventions, type assertions, assertion best practices, tags |
-| `browser_tests/AGENTS.md`             | Directory structure, polling assertions, gotchas, quality checks        |
-| `browser_tests/fixtures/ComfyPage.ts` | Main fixture API (source of truth for all helpers)                      |
-| `browser_tests/fixtures/helpers/`     | Focused helper classes (canvas, keyboard, workflow, etc.)               |
+## Canvas coordinates → node references
 
-## Transform Rules
-
-The programmatic transform engine lives in `tools/test-recorder/src/transform/rules.ts`. Apply these replacements in order:
-
-| Raw codegen                                       | Convention replacement                                                                      | Why                                      |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `import { test, expect } from '@playwright/test'` | `import { comfyPageFixture as test, comfyExpect as expect } from '@e2e/fixtures/ComfyPage'` | Use custom fixtures with ComfyUI helpers |
-| `test('test', async ({ page }) =>`                | `test('descriptive-name', async ({ comfyPage }) =>`                                         | Use comfyPage fixture, descriptive names |
-| `await page.goto('http://...')`                   | **Remove entirely**                                                                         | Fixture handles navigation automatically |
-| `page.locator('canvas')`                          | `comfyPage.canvas`                                                                          | Pre-configured canvas locator            |
-| `page.waitForTimeout(N)`                          | `comfyPage.nextFrame()`                                                                     | Never use arbitrary waits                |
-| `page.getByPlaceholder('Search Nodes...')`        | `comfyPage.searchBox.input`                                                                 | Use search box page object               |
-| `page` (bare reference)                           | `comfyPage.page`                                                                            | Access raw page through fixture          |
-| Bare `test(...)`                                  | `test.describe('Feature', { tag: ['<scenario tag>'] }, () => { test(...) })`                | All tests need describe + tags           |
-
-## Canvas Coordinates → Node References
-
-Raw codegen records fragile pixel coordinates. Replace with node references when possible:
+Codegen records pixel positions. Replace each click on a node with a node
+reference:
 
 ```typescript
-// ❌ Raw codegen — fragile pixel coordinates
+// Raw codegen
 await page.locator('canvas').click({ position: { x: 423, y: 267 } })
 
-// ✅ If clicking a specific node
-const node = (await comfyPage.nodeOps.getNodeRefsByType('KSampler'))[0]
+// Clicking a specific node
+const node = await comfyPage.nodeOps.getNodeRefById(3)
 await node.click('title')
 
-// ✅ If double-clicking canvas to open search
+// Double-clicking empty canvas to open search
 await comfyPage.canvas.dblclick({ position: { x: 500, y: 400 } })
 await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
 ```
 
-**When to keep coordinates**: Canvas background clicks (pan, zoom), empty area clicks to deselect. These are inherently position-based.
+Keep coordinates only for empty-canvas clicks, pans, and zooms. Find node IDs
+in the workflow asset the recording loaded from `browser_tests/assets/`.
 
-## Decision Guide
-
-| Question                   | Answer                                                                                                                        |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Canvas or DOM interaction? | Canvas: `comfyPage.nodeOps.*`. Vue node DOM: `comfyPage.vueNodes.*` with `@vue-nodes`                                         |
-| Need `nextFrame()`?        | Yes after canvas mutations. No after `loadWorkflow()`, no after DOM clicks                                                    |
-| Which tag?                 | Always add `@vue-nodes` when the test needs Vue Nodes, alongside scenario tags such as `@canvas`, `@widget`, or `@screenshot` |
-| Starting settings?         | Prefer `test.use({ initialSettings })` at the narrowest file or describe scope instead of `setSetting` in `beforeEach`        |
-| Need cleanup?              | No. Each test gets a fresh page, and the fixture replaces settings with a baseline before each test                           |
-| Keep pixel coords?         | Only for empty canvas clicks. Replace with node refs for node interactions                                                    |
-| Use `page` directly?       | Only via `comfyPage.page` for Playwright APIs not wrapped by fixtures                                                         |
-
-The `@vue-nodes` tag enables the renderer before boot and makes the fixture wait
-for nodes. Never manually set `Comfy.VueNodes.Enabled`, including through
-`initialSettings`, or call `comfyPage.vueNodes.waitForNodes()` in tests.
-For tests of renderer switching, use the menu or command helpers described in
-[the Vue Nodes guide](../../../browser_tests/README.md#vue-nodes-vs-litegraph--decision-guide).
-
-Nested `test.use` calls replace the parent's `initialSettings` object, so include
-all overrides needed by the nested scope. Keep runtime `setSetting` calls only
-when a live change or persistence is the behavior under test. See
-[starting settings and isolation](../../../browser_tests/README.md#starting-settings-and-isolation)
-for baseline and manual-boot rules.
-
-## Anti-Patterns
-
-1. **Never use `waitForTimeout`** → use `nextFrame()` or retrying assertions
-2. **Never use `page.goto`** → fixture handles navigation
-3. **Never import from `@playwright/test`** → use `@e2e/fixtures/ComfyPage`
-4. **Never use bare CSS selectors** → use test IDs or semantic locators
-5. **Never share state between tests** → each test is independent
-6. **Never commit local screenshots** → Linux CI generates baselines
-
-## For Deeper Reference
-
-Read fixture code directly — it's the source of truth:
-
-| Purpose           | Path                                       |
-| ----------------- | ------------------------------------------ |
-| Main fixture      | `browser_tests/fixtures/ComfyPage.ts`      |
-| Helper classes    | `browser_tests/fixtures/helpers/`          |
-| Component objects | `browser_tests/fixtures/components/`       |
-| Test selectors    | `browser_tests/fixtures/selectors.ts`      |
-| Vue Node helpers  | `browser_tests/fixtures/VueNodeHelpers.ts` |
-| Existing tests    | `browser_tests/tests/`                     |
-| Test assets       | `browser_tests/assets/`                    |
+Keep the recorded actions and assertions; change structure and style only. Say
+which recorded action you dropped or rewrote, and why.

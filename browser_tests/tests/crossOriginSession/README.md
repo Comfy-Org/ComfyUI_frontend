@@ -3,8 +3,7 @@
 Opt-in suite for the shared web session (`unified_web_session`, TDD section 17,
 FE-2906). It never runs in the default `playwright.config.ts` run or in CI; it
 runs only through `playwright.session.config.ts` against the test environment
-(testcloud). The web session backend is not on staging yet; point the variables
-at staging instead once it is. Any non-production `comfy.org` origin works.
+(testcloud). Any non-production `comfy.org` origin works.
 
 - Cloud (`testcloud.comfy.org`) and platform are the real test deployments, so
   the cross-origin calls and the cookie are real.
@@ -89,7 +88,7 @@ pnpm exec playwright test --config playwright.session.config.ts --project=sessio
 pnpm exec playwright show-report playwright-report/session
 ```
 
-`HARNESS-01` is the one runnable test today. It loads the website on its
+`HARNESS-01` loads the website on its
 `comfy.org` name from the local upstream, checks that a request from it to Cloud
 carries that name as `Origin`, signs in on Cloud with the flag off and checks
 that the Firebase recorder saw the sign-in.

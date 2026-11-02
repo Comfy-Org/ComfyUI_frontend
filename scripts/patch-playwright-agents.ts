@@ -3,135 +3,170 @@ import { join } from 'node:path'
 
 const agentsDir = join(process.cwd(), '.claude', 'agents')
 
-const patches: Record<string, string> = {
-  'playwright-test-planner.md': `
+const CONTEXT_HEADING = '## ComfyUI Project Context'
 
-## ComfyUI Project Context
+const REMOVED_CLAUDE_TOOLS = new Set(['LS', 'MultiEdit'])
 
-### Application Overview
-ComfyUI is a **canvas-based node graph editor** for AI image generation. It is a complex SPA with:
-- A **LiteGraph canvas** where users create workflows by connecting nodes
-- A **Vue 3 sidebar** with node library, workflows panel, and settings
-- A **topbar** with queue/run buttons and workspace controls
-- A **search box** for finding and adding nodes (opens on double-click)
-- WebSocket-based real-time communication with a Python backend
+type Replacement = readonly [from: string, to: string]
 
-### Exploration Tips
-- Start by loading a workflow: the app is most useful with nodes on the canvas
-- Key UI areas to explore: canvas interactions, sidebar panels, topbar buttons, search box, context menus, settings dialog
-- Double-click the canvas to open the node search box
-- Right-click nodes/canvas for context menus
-- The bottom panel shows job queue and execution logs
-
-### Test Environment
-- The seed test uses \`comfyPageFixture\` which provides a \`comfyPage\` object with extensive helpers
-- Workflows (JSON files) are loaded via \`comfyPage.workflow.loadWorkflow('name')\`
-- Available workflow assets are in \`browser_tests/assets/\`
-- The backend MUST be running with \`--multi-user\` flag
-- A Vite dev server runs on \`:5173\`
-
-### When Creating Test Plans
-- Reference specific workflow assets when a scenario needs a starting state
-- Note that canvas interactions use pixel coordinates — these may vary across environments
-- Distinguish between "canvas tests" (LiteGraph) and "UI tests" (Vue components)
-- Include tags in your plans: \`@canvas\`, \`@widget\`, \`@sidebar\`, \`@smoke\`, \`@screenshot\`
-- Reference \`browser_tests/fixtures/ComfyPage.ts\` for available test helpers`,
-
-  'playwright-test-generator.md': `
-
-## ComfyUI Project Context
-
-### Required Import Pattern
-Generated tests MUST use ComfyUI fixtures, not generic \`@playwright/test\`:
-
-\`\`\`typescript
-import {
-  comfyPageFixture as test,
-  comfyExpect as expect
-} from '@e2e/fixtures/ComfyPage'
-\`\`\`
-
-### Fixture Object
-Tests receive \`comfyPage\` (not \`page\`) as their fixture:
-
-\`\`\`typescript
-test('my test', async ({ comfyPage }) => {
-  // Access raw page via comfyPage.page if needed
-})
-\`\`\`
-
-### Key APIs
-| Need | Use | Notes |
-|------|-----|-------|
-| Canvas element | \`comfyPage.canvas\` | Pre-configured Locator |
-| Wait for render | \`comfyPage.nextFrame()\` | After canvas mutations |
-| Load workflow | \`comfyPage.workflow.loadWorkflow('name')\` | Assets in \`browser_tests/assets/\` |
-| Get node by type | \`comfyPage.nodeOps.getNodeRefsByType('KSampler')\` | Returns NodeReference[] |
-| Search box | \`comfyPage.searchBox.fillAndSelectFirstNode('name')\` | Opens on canvas dblclick |
-| Settings | \`comfyPage.settings.setSetting(key, value)\` | Clean up in afterEach |
-| Keyboard | \`comfyPage.keyboard.press('Delete')\` | Focus canvas first |
-| Context menu | \`comfyPage.contextMenu\` | Right-click interactions |
-
-### Mandatory Test Structure
-Every generated test must:
-1. Be wrapped in \`test.describe('Name', { tag: ['<scenario tag>'] }, () => { ... })\`, using the tag the plan selected (\`@canvas\`, \`@widget\`, \`@sidebar\`, \`@smoke\`, \`@screenshot\`)
-2. Use descriptive test names (not "test" or "test1")
-
-### Anti-Patterns — NEVER Use
-- ❌ \`page.goto()\` — fixture handles navigation
-- ❌ \`page.waitForTimeout()\` — use \`comfyPage.nextFrame()\` or retrying assertions
-- ❌ \`import from '@playwright/test'\` — use \`from '@e2e/fixtures/ComfyPage'\`
-- ❌ Bare \`page.\` references — use \`comfyPage.page.\` if you need raw page access
-
-### Reference
-Read the fixture code for full API surface:
-- \`browser_tests/fixtures/ComfyPage.ts\` — main fixture
-- \`browser_tests/fixtures/helpers/\` — helper classes
-- \`browser_tests/fixtures/components/\` — page object components
-- See also: \`.claude/skills/codegen-transform/SKILL.md\` for transform rules`,
-
-  'playwright-test-healer.md': `
-
-## ComfyUI Project Context
-
-### Custom Fixtures
-Tests in this project use \`comfyPage\` fixture, not bare \`page\`. When healing:
-- Replace any \`page.\` references with \`comfyPage.page.\` if adding new code
-- Use \`comfyPage.nextFrame()\` instead of adding \`waitForTimeout()\`
-- Use fixture helpers (\`comfyPage.nodeOps\`, \`comfyPage.canvas\`, etc.) over raw locators
-
-### Common Failure Causes in ComfyUI Tests
-
-1. **Missing \`nextFrame()\`**: Canvas operations need \`await comfyPage.nextFrame()\` after mutations. This is the #1 cause of "works locally, fails in CI" issues.
-
-2. **Canvas focus required**: Keyboard shortcuts won't work unless \`await comfyPage.canvas.click()\` is called first.
-
-3. **Node position drift**: Pixel coordinates can shift between environments. When possible, replace with node references:
-   \`\`\`typescript
-   // Instead of: canvas.click({ position: { x: 423, y: 267 } })
-   const node = (await comfyPage.nodeOps.getNodeRefsByType('KSampler'))[0]
-   await node.click('title')
-   \`\`\`
-
-4. **Settings pollution**: Settings persist across tests on the backend. Always reset changed settings in \`afterEach\`.
-
-5. **Drag animation timing**: Use \`{ steps: 10 }\` option for drag operations, not \`{ steps: 1 }\`.
-
-### Healing Safety Rules
-- ❌ NEVER add \`waitForTimeout()\` — always use retrying assertions or \`nextFrame()\`
-- ❌ NEVER "fix" a test by weakening assertions (e.g., removing an assertion that fails)
-- ❌ NEVER modify the application code — only modify test code
-- ⚠️ If a test fails because expected UI elements are missing, the app may have a regression — mark as \`test.fixme()\` with explanation, don't "heal" the assertion away
-- ⚠️ If a test fails only in CI but passes locally, likely missing \`nextFrame()\` — don't mask with timeouts
-
-### Reference
-- \`browser_tests/fixtures/ComfyPage.ts\` — full fixture API
-- \`browser_tests/fixtures/helpers/\` — available helper classes
-- \`.claude/skills/writing-playwright-tests/SKILL.md\` — testing conventions
-- \`.claude/skills/codegen-transform/SKILL.md\` — transform rules`
+interface AgentPatch {
+  replacements: Replacement[]
+  context: string
 }
 
-const CONTEXT_HEADING = '## ComfyUI Project Context'
+const sharedContext = `
+- Read \`docs/guidance/testing-principles.md\` and \`docs/guidance/playwright.md\`
+  before writing or changing a spec. The second holds every Playwright
+  convention for this repository: fixtures, selectors, Vue Nodes, canvas timing,
+  tags, settings isolation, typed mocks, screenshots, and flake patterns.
+- Tests use \`comfyPageFixture\` and \`comfyExpect\` from \`@e2e/fixtures/ComfyPage\`
+  and receive \`comfyPage\`, not \`page\`.
+- Read the fixture code in \`browser_tests/fixtures/\` for available helpers;
+  workflow assets are in \`browser_tests/assets/\`.
+- \`pnpm comfy-test tags\` lists the area tags; \`docs/guidance/playwright.md\` lists
+  the project-routing tags.
+- Backend and dev server setup is in \`browser_tests/README.md\`.`
+
+const patches: Record<string, AgentPatch> = {
+  'playwright-test-planner.md': {
+    replacements: [
+      [
+        'description: Use this agent when you need to create comprehensive test plan for a web application or website',
+        'description: Use this agent to plan browser tests for supported user journeys and observable behavioral contracts'
+      ],
+      [
+        `You are an expert web test planner with extensive experience in quality assurance, user experience testing, and test
+scenario design. Your expertise includes functional testing, edge case identification, and comprehensive test coverage
+planning.`,
+        `You plan browser tests around supported user journeys. Read
+\`docs/guidance/testing-principles.md\` before selecting scenarios. Start with
+observable expectations and check existing coverage before adding cases.
+Compose relevant dimensions instead of enumerating combinations, and plan E2E
+scenarios only for behavior that no lower test level can observe.`
+      ],
+      [
+        `3. **Design Comprehensive Scenarios**
+
+   Create detailed test scenarios that cover:
+   - Happy path scenarios (normal user behavior)
+   - Edge cases and boundary conditions
+   - Error handling and validation`,
+        `3. **Select Behavioral Scenarios**
+
+   Select the smallest set of scenarios that protects the identified expectations.
+   - Ground each scenario in a requirement, supported workflow, public contract, or reproduced bug
+   - Include boundary and failure cases when their production path is reachable and their outcome matters
+   - Use implementation details to find the entry point, not to invent cases for every branch`
+      ],
+      [
+        `   - Clear, descriptive title
+   - Detailed step-by-step instructions`,
+        `   - Clear, descriptive title
+   - The behavioral expectation, its source, and the gap in existing coverage
+   - Detailed step-by-step instructions`
+      ],
+      [
+        '- Include negative testing scenarios',
+        '- Justify negative scenarios by their reachable trigger and observable consequence'
+      ]
+    ],
+    context: `
+ComfyUI is a canvas-based node graph editor: a LiteGraph canvas, Vue sidebars
+and dialogs, a topbar with run controls, a node search box opened by
+double-clicking the canvas, and a WebSocket connection to a Python backend.
+Load a workflow before exploring; the app does little on an empty canvas.
+${sharedContext}
+- Name the workflow asset each scenario starts from, and the tags it needs.`
+  },
+
+  'playwright-test-generator.md': {
+    replacements: [
+      [
+        '- Obtain the test plan with all the steps and verification specification',
+        `- Obtain the test plan with all the steps and verification specification
+- Read \`docs/guidance/testing-principles.md\`. Confirm the scenario protects an identified user expectation through a reachable workflow and adds a guarantee missing from existing tests. Omit unsupported hypothetical cases and report why.
+- Assert the observable outcome through supported interactions. Internal helpers, call sequences, and component structure are not expected results.`
+      ],
+      [
+        `  - Includes a comment with the step text before each step execution. Do not duplicate comments if step requires
+    multiple actions.`,
+        `  - Wraps each plan step in \`test.step('<step text>', ...)\`. A step that needs multiple actions is still one
+    \`test.step\`. Do not write comments.`
+      ],
+      [
+        `   // spec: specs/plan.md
+   // seed: tests/seed.spec.ts
+
+   test.describe('Adding New Todos', () => {
+     test('Add Valid Todo', async { page } => {
+       // 1. Click in the "What needs to be done?" input field
+       await page.click(...);
+`,
+        `   test.describe('Adding New Todos', () => {
+     test('Add Valid Todo', async { page } => {
+       await test.step('Click in the "What needs to be done?" input field', async () => {
+         await page.click(...);
+       });
+`
+      ]
+    ],
+    context: `${sharedContext}
+- Wrap every test in \`test.describe('Name', { tag: [...] }, () => { ... })\`
+  with the tags the plan selected, and give it a descriptive title.
+- Never use \`page.goto()\`, \`waitForTimeout()\`, or imports from
+  \`@playwright/test\`. Run \`pnpm comfy-test transform <file>\` on the written
+  spec to apply the mechanical conventions.`
+  },
+
+  'playwright-test-healer.md': {
+    replacements: [
+      [
+        'broken Playwright tests using a methodical approach.',
+        `broken Playwright tests using a methodical approach. Every fix must satisfy
+\`docs/guidance/testing-principles.md\`, especially its "Changing existing tests" section.`
+      ],
+      [
+        `- You will continue this process until the test runs successfully without any failures or errors.
+- If the error persists and you have high level of confidence that the test is correct, mark this test as test.fixme()
+  so that it is skipped during the execution. Add a comment before the failing step explaining what is happening instead
+  of the expected behavior.
+- Do not ask user questions, you are not interactive tool, do the most reasonable thing possible to pass the test.`,
+        `- Preserve the behavioral expectation through refactors. If an assertion pins internal structure, rewrite it around the supported outcome. Remove a test only after establishing that it protects no required behavior, following the shared principles.
+- If the error persists and you have high confidence the test is correct, do not auto-skip. Summarize the root-cause evidence and escalate it as a likely app regression.
+- Use \`test.fixme()\` only when a known issue is filed. Put the issue link in the \`test.fixme()\` description argument. Do not add a comment.
+- Resolve test defects within the supported behavioral contract. Report an application regression or an unclear expectation instead of changing expectations merely to pass.
+- Never modify application code; only test code.`
+      ]
+    ],
+    context: `${sharedContext}
+- Match the failure against the common flake patterns and gotchas in
+  \`docs/guidance/playwright.md\` before changing a wait or an assertion.
+- Before removing a wait, assertion, or guard, read the commit that added it.`
+  }
+}
+
+function applyReplacement(
+  content: string,
+  [from, to]: Replacement,
+  filename: string
+): string {
+  if (content.includes(to)) return content
+  if (!content.includes(from)) {
+    throw new Error(
+      `${filename}: text not found. Run scripts/update-playwright-agents.sh to regenerate the file, or update the replacement starting "${from.slice(0, 60)}"`
+    )
+  }
+  return content.replace(from, to)
+}
+
+function removeClaudeTools(content: string): string {
+  return content.replace(/^tools: (.*)$/m, (_, tools: string) => {
+    const kept = tools
+      .split(', ')
+      .filter((tool) => !REMOVED_CLAUDE_TOOLS.has(tool))
+    return `tools: ${kept.join(', ')}`
+  })
+}
 
 const missingFiles: string[] = []
 
@@ -146,11 +181,17 @@ for (const [filename, patch] of Object.entries(patches)) {
 
   const idx = content.indexOf(CONTEXT_HEADING)
   if (idx !== -1) {
-    content = content.substring(0, idx).trimEnd()
-    console.log(`  ♻️  ${filename}: stripped existing ComfyUI context`)
+    content = content.substring(0, idx)
   }
+  content = content.trimEnd()
 
-  content += patch
+  content = removeClaudeTools(content)
+  content = patch.replacements.reduce(
+    (current, replacement) => applyReplacement(current, replacement, filename),
+    content
+  )
+
+  content += `\n\n${CONTEXT_HEADING}\n${patch.context}\n`
   writeFileSync(filePath, content, 'utf-8')
   console.log(`  ✅ ${filename}: patched`)
 }
