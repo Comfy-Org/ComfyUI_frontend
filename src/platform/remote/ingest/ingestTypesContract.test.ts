@@ -51,6 +51,7 @@ describe('ingest API schemas', () => {
         max_seats: 5,
         occupied_seats: 2,
         ended_at: null,
+        next_charge: null,
         scheduled_change: null,
         team_credit_stop: null
       }

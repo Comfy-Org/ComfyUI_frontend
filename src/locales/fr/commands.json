@@ -104,6 +104,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Réduire/Étendre les nœuds sélectionnés"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Masquer/afficher les liens des nœuds sélectionnés"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Mettre en sourdine/Activer le son des nœuds sélectionnés"
   },

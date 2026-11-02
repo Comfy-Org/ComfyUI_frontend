@@ -219,6 +219,7 @@ export async function mockWorkflowPersistence(
 
 type AgentFixtures = {
   agentFlagEnabled: boolean
+  crdtDebugEnabled: boolean
 }
 
 /**
@@ -228,7 +229,17 @@ type AgentFixtures = {
  * signed-in `bootCloud`, navigate, wait for the app.
  */
 export const agentTest = cloudAppFixture.extend<AgentFixtures>({
-  agentFlagEnabled: [true, { option: true }]
+  agentFlagEnabled: [true, { option: true }],
+  crdtDebugEnabled: [false, { option: true }],
+  page: async ({ crdtDebugEnabled, page }, use) => {
+    if (crdtDebugEnabled) {
+      await page.addInitScript(() => {
+        localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+        localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
+      })
+    }
+    await use(page)
+  }
 })
 
 type RestoredTargetlessAgentThreadFixtures = {

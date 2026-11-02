@@ -97,10 +97,6 @@ runs:
         {
           printf '## %s %s: %s\n' "$INPUT_ICON" "$INPUT_TITLE" "$badge"
 
-          if [ -n "$INPUT_HEADLINE" ]; then
-            printf '\n%s\n' "$INPUT_HEADLINE"
-          fi
-
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           case "$INPUT_STATUS" in
             fail|warn)
@@ -111,19 +107,28 @@ runs:
               ;;
           esac
 
+          has_findings=''
           if [ -n "$INPUT_DETAILS_FILE" ] && [ -s "$INPUT_DETAILS_FILE" ]; then
-            printf '\n<details>\n<summary>Findings and check details</summary>\n\n'
-            cat "$INPUT_DETAILS_FILE"
-            printf '\n\n</details>\n'
+            has_findings=1
+          fi
+
+          if [ -n "$INPUT_HEADLINE" ] || [ -n "$has_findings" ] || [ -n "$INPUT_DOCS" ]; then
+            printf '\n<details>\n<summary>Findings and check details</summary>\n'
+            if [ -n "$INPUT_HEADLINE" ]; then
+              printf '\n%s\n' "$INPUT_HEADLINE"
+            fi
+            if [ -n "$has_findings" ]; then
+              printf '\n%s\n' "$(cat "$INPUT_DETAILS_FILE")"
+            fi
+            if [ -n "$INPUT_DOCS" ]; then
+              printf '\nFull docs: %s\n' "$INPUT_DOCS"
+            fi
+            printf '\n</details>\n'
           fi
 
           if [ -n "$INPUT_REPRODUCE" ]; then
             printf '\n<details>\n<summary>Reproduce locally</summary>\n\n'
             printf '```bash\n%s\n```\n\n</details>\n' "$INPUT_REPRODUCE"
-          fi
-
-          if [ -n "$INPUT_DOCS" ]; then
-            printf '\nFull docs: %s\n' "$INPUT_DOCS"
           fi
         } > "$out"
 

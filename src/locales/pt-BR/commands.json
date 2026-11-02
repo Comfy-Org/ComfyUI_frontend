@@ -104,6 +104,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Recolher/Expandir nós selecionados"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Ocultar/Mostrar Conexões dos Nós Selecionados"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Silenciar/Ativar som dos nós selecionados"
   },

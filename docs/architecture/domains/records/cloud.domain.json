@@ -8,10 +8,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/topbar/CloudBadge.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/extensions/core/cloudBadges.ts",
       "role": "integration"
     },

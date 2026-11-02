@@ -7,6 +7,7 @@ import {
   resolveSupportedLocale
 } from '@/locales/localeConfig'
 import type { SupportedLocale } from '@/locales/localeConfig'
+import { RUSSIAN_PLURAL_FORM_COUNT } from '@/i18nPluralForms'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import enCommands from './locales/en/commands.json' with { type: 'json' }
@@ -299,7 +300,7 @@ const russianPluralRule: PluralizationRule = (
   choicesLength,
   defaultRule
 ) => {
-  if (choicesLength !== 4) {
+  if (choicesLength !== RUSSIAN_PLURAL_FORM_COUNT) {
     return defaultRule ? defaultRule(choice, choicesLength) : 0
   }
 
