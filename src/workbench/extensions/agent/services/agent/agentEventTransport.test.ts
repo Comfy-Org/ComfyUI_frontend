@@ -2138,6 +2138,28 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     vi.advanceTimersByTime(STALE_AFTER_MS)
     expect(emit.mock.calls.length).toBe(callsAfterDispose)
   })
+
+  // PM-1674: a tool call that never received a terminal `agent_tool_call`
+  // status (still genuinely `running`, no success/error frame ever arrived)
+  // is not held in `pendingCanvasSync` at all, so the existing dispose
+  // coverage above never exercises it. Tearing the transport down this way
+  // happens whenever a new turn starts while the previous one is still
+  // active (`startTurn` -> `abortActiveTurn` in agentConversationStore), e.g.
+  // the user sending a follow-up message while an earlier "Run" step is
+  // still spinning. Without this clamp the part is stranded at 'streaming'
+  // forever, so its spinner never stops.
+  it('dispose clamps a never-resolved streaming tool call to done', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(toolCall('run', 'running'))
+    expect(toolParts(message)[0].state).toBe('streaming')
+    expect(toolParts(message)[0].ok).toBeUndefined()
+
+    transport.dispose()
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done', ok: false })
+  })
 })
 
 describe('agentEventTransport canvas confirmation is positive, not assumed (PM-1343)', () => {

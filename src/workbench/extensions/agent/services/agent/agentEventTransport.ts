@@ -233,8 +233,27 @@ export function createAgentEventTransport(
     return pendingCanvasSync.size > 0
   }
 
+  /**
+   * A tool call that never received a terminal `agent_tool_call` status
+   * (still genuinely `running`) is not held in `pendingCanvasSync`, so
+   * `flushPendingCanvasSync` never reaches it. Clamp it the same way
+   * `finishWithPersistedParts`'s no-persisted-parts branch already does:
+   * done, and failed if no outcome was ever recorded.
+   */
+  function clampUnresolvedToolParts(): boolean {
+    let changed = false
+    for (const part of tools.values()) {
+      if (part.state !== 'streaming' || pendingCanvasSync.has(part)) continue
+      if (part.ok === undefined) part.ok = false
+      part.state = 'done'
+      changed = true
+    }
+    return changed
+  }
+
   function dispose(): void {
     flushPendingCanvasSync()
+    if (clampUnresolvedToolParts()) emit(snapshotMessage(message))
   }
 
   function canvasConfirmationFor(
