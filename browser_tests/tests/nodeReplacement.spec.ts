@@ -53,42 +53,46 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
     })
   })
 
-  test('Replacing into Autogrow and DynamicCombo inputs keeps links and values', async ({
-    comfyPage
-  }) => {
-    await setupNodeReplacement(comfyPage, mockDynamicInputReplacements)
-    await loadWorkflowAndOpenErrorsTab(
-      comfyPage,
-      'missing/node_replacement_dynamic'
-    )
-
-    const swapGroup = getSwapNodesGroup(comfyPage.page)
-    await swapGroup
-      .getByRole('button', { name: 'Replace All', exact: true })
-      .click()
-    await expect(swapGroup).toBeHidden()
-
-    const prompt = await comfyPage.workflow.getExportedWorkflow({ api: true })
-    expect(prompt['2']).toMatchObject({
-      class_type: 'BatchImagesNode',
-      inputs: { 'images.image0': ['1', 0], 'images.image1': ['1', 0] }
+  test.describe('Dynamic input replacement', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await setupNodeReplacement(comfyPage, mockDynamicInputReplacements)
+      await loadWorkflowAndOpenErrorsTab(
+        comfyPage,
+        'missing/node_replacement_dynamic'
+      )
     })
-    expect(
-      await getInputNames(comfyPage, '2', 'images.'),
-      'Autogrow should offer an empty slot after the moved links'
-    ).toEqual(['images.image0', 'images.image1', 'images.image2'])
-    expect(prompt['3']).toMatchObject({
-      class_type: 'ResizeImageMaskNode',
-      inputs: {
-        input: ['2', 0],
-        resize_type: 'scale by multiplier',
-        'resize_type.multiplier': 1.5,
-        scale_method: 'lanczos'
-      }
-    })
-    expect(prompt['5']).toMatchObject({
-      class_type: 'ControlNetLoader',
-      inputs: { control_net_name: 't2iadapter_model.safetensors' }
+
+    test('Replacing into Autogrow and DynamicCombo inputs keeps links and values', async ({
+      comfyPage
+    }) => {
+      const swapGroup = getSwapNodesGroup(comfyPage.page)
+      await swapGroup
+        .getByRole('button', { name: 'Replace All', exact: true })
+        .click()
+      await expect(swapGroup).toBeHidden()
+
+      const prompt = await comfyPage.workflow.getExportedWorkflow({ api: true })
+      expect(prompt['2']).toMatchObject({
+        class_type: 'BatchImagesNode',
+        inputs: { 'images.image0': ['1', 0], 'images.image1': ['6', 0] }
+      })
+      expect(
+        await getInputNames(comfyPage, '2', 'images.'),
+        'Autogrow should offer an empty slot after the moved links'
+      ).toEqual(['images.image0', 'images.image1', 'images.image2'])
+      expect(prompt['3']).toMatchObject({
+        class_type: 'ResizeImageMaskNode',
+        inputs: {
+          input: ['2', 0],
+          resize_type: 'scale by multiplier',
+          'resize_type.multiplier': 1.5,
+          scale_method: 'lanczos'
+        }
+      })
+      expect(prompt['5']).toMatchObject({
+        class_type: 'ControlNetLoader',
+        inputs: { control_net_name: 't2iadapter_model.safetensors' }
+      })
     })
   })
 
