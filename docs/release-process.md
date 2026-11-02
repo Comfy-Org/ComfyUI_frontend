@@ -168,8 +168,14 @@ breakage is announced within the hour rather than on the spot.
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,
-publishing to GitHub Releases (`dist.zip`), PyPI (`comfyui-frontend-package`),
-and npm (`@comfyorg/comfyui-frontend-types`).
+publishing to GitHub Releases (`dist.zip`) and npm
+(`@comfyorg/comfyui-frontend-types`).
+
+Stable PyPI versions of `comfyui-frontend-package` are published only by
+`release-weekly-comfyui.yaml`, for the one version that run targets
+(`release-pypi-dev.yaml` publishes `.devN` builds from `main`). A patch
+released through a `Release` PR on any other line is on GitHub Releases but not
+on PyPI until that workflow runs for it.
 
 ## Weekly ComfyUI Integration
 
@@ -190,9 +196,9 @@ downgrade or do nothing.
 | Workflow                         | Purpose                                          |
 | -------------------------------- | ------------------------------------------------ |
 | `release-version-bump.yaml`      | Bump version, create Release PR                  |
-| `release-draft-create.yaml`      | Build + publish to GitHub/PyPI/npm               |
+| `release-draft-create.yaml`      | Build + publish to GitHub Releases/npm           |
 | `release-branch-create.yaml`     | Create `core/` + `cloud/` branches (minor/major) |
-| `release-weekly-comfyui.yaml`    | Weekly auto-patch + ComfyUI requirements PR      |
+| `release-weekly-comfyui.yaml`    | Auto-patch, PyPI publish, ComfyUI pin PR         |
 | `pr-backport.yaml`               | Cherry-pick fixes to stable branches             |
 | `cloud-backport-tag.yaml`        | Tag cloud branch merges                          |
 | `pr-assign-release-sheriff.yaml` | Assign the sheriff to backport/release/bot PRs   |
