@@ -168,12 +168,13 @@ breakage is announced within the hour rather than on the spot.
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,
-publishing to GitHub Releases (`dist.zip`) and npm
+publishing to GitHub Releases (`dist.zip` and `dist-desktop.zip`) and npm
 (`@comfyorg/comfyui-frontend-types`).
 
 Stable PyPI versions of `comfyui-frontend-package` are published only by
-`release-weekly-comfyui.yaml`, for the one version that run targets
-(`release-pypi-dev.yaml` publishes `.devN` builds from `main`). A patch
+`release-weekly-comfyui.yaml`, for the version each run targets
+(`release-pypi-dev.yaml` publishes `.devN` builds from the ref it is
+dispatched on, normally `main`). A patch
 released through a `Release` PR on any other line is on GitHub Releases but not
 on PyPI until that workflow runs for it.
 
