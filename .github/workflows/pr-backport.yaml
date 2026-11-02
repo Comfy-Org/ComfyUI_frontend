@@ -62,11 +62,6 @@ jobs:
             echo "::error::PR #${{ inputs.pr_number }} is not merged. Only merged PRs can be backported."
             exit 1
           fi
-
-          # needs-backport is not required here: this workflow removes it once
-          # every target has landed, so requiring it would refuse a re-check of
-          # any finished PR. "Collect backport targets" still fails a PR with
-          # no release label.
         env:
           GH_REPO: ${{ github.repository }}
 

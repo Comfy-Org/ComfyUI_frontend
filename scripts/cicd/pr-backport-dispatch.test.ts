@@ -25,7 +25,7 @@ const workflowSchema = z.object({
 
 const PR_NUMBER = '21829'
 
-const validateScript = () => {
+function validateScript() {
   const workflow = workflowSchema.parse(
     parse(readFileSync('.github/workflows/pr-backport.yaml', 'utf8'))
   )
@@ -74,9 +74,7 @@ function runValidate(state: string, labels: string[]) {
 }
 
 describe('pr-backport manual dispatch validation', () => {
-  it('accepts a merged PR the bot already finished', () => {
-    // The workflow removes needs-backport once every target has landed, so a
-    // re-check dispatch sees only the release labels.
+  it('accepts a merged PR whose needs-backport label the bot already removed', () => {
     const result = runValidate('MERGED', ['core/1.57', 'cloud/1.57'])
 
     expect(result.stdout).not.toContain('::error::')
