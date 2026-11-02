@@ -891,6 +891,7 @@ describe('PostHogTelemetryProvider', () => {
         outcome: 'timed_out',
         phase_count: 1,
         untraced_ms: 2700,
+        hidden_ms: 0,
         phases: { 'auth-gate/user-store': 2500 },
         pending: ['bootstrap/object-info']
       } satisfies BootstrapCompleteMetadata

@@ -1,7 +1,7 @@
 {
   "id": "agent",
   "capability": "In-App Agent",
-  "description": "The In-App Agent right-dock panel and its host registration: consent and first-use tour, panel visibility and workflow-target state, composer prompt and attachment state, the agent REST client and the /api/agent/events source, chat sessions, transcripts and history, reply rendering and feedback, topbar entry and target indicator, and the CRDT document follower that projects agent graph edits onto the live LiteGraph graph and sends human doc_ops back. The agent consent setting id (classified by settings) and the agent-panel telemetry helper are not claimed here; workflow, auth, workspace, billing, assets, skills, onboarding, and LiteGraph remain external.",
+  "description": "The In-App Agent right-dock panel and its host registration: consent and first-use tour, panel visibility and workflow-target state, composer prompt and attachment state, the agent REST client and the /api/agent/events source, chat sessions, transcripts and history, reply rendering and feedback, topbar entry and target indicator, and the CRDT document follower that projects agent graph edits onto the live LiteGraph graph and sends human doc_ops back. Reply rendering reads keybindings so a shortcut named in a reply is the key that user is bound to rather than the default the model remembers. The agent consent setting id (classified by settings) and the agent-panel telemetry helper are not claimed here; workflow, auth, workspace, billing, assets, skills, onboarding, and LiteGraph remain external.",
   "modules": [
     {
       "path": "src/components/graph/agentPanelMount.test.ts",
