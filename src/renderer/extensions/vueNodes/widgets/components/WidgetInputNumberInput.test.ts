@@ -5,6 +5,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -31,11 +32,13 @@ function createNumberInputWidget(
 
 function renderComponent(
   widget: SimplifiedWidget<number>,
-  modelValue: number | undefined
+  modelValue: number | undefined,
+  unifiedRows = false
 ) {
   return render(WidgetInputNumberInput, {
     global: {
-      plugins: [i18n]
+      plugins: [i18n],
+      provide: { [UnifiedWidgetRowsKey]: unifiedRows }
     },
     props: {
       widget,
@@ -51,6 +54,82 @@ function getNumberInput(container: Element) {
 }
 
 describe('WidgetInputNumberInput Value Binding', () => {
+  it('preserves the typed draft until Enter commits and formats it', async () => {
+    const user = userEvent.setup()
+    const { emitted, rerender } = renderComponent(
+      createNumberInputWidget(37, 'int', { useGrouping: true }),
+      37,
+      true
+    )
+    await rerender({
+      'onUpdate:modelValue': (value: number) => rerender({ modelValue: value })
+    })
+    const input = screen.getByRole('spinbutton')
+
+    await user.clear(input)
+    await user.type(input, '123456789')
+
+    expect(input).toHaveValue('123456789')
+    expect(emitted()['update:modelValue']).toBeUndefined()
+
+    await user.keyboard('{Enter}')
+
+    expect(input).toHaveValue('123,456,789')
+    expect(emitted()['update:modelValue']).toEqual([[123456789]])
+  })
+
+  it.for([
+    { target: 'row', disabled: false, expected: 49 },
+    { target: 'label', disabled: false, expected: 49 },
+    { target: 'input', disabled: false, expected: 37 },
+    { target: 'increment', disabled: false, expected: 39 },
+    { target: 'row', disabled: true, expected: 37 }
+  ] as const)(
+    'handles a unified $target gesture with disabled=$disabled',
+    async ({ target, disabled, expected }) => {
+      const user = userEvent.setup()
+      const { rerender } = renderComponent(
+        createNumberInputWidget(37, 'int', { step2: 2, disabled }),
+        37,
+        true
+      )
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      const targets = {
+        row: screen.getByTestId('widget-number-row'),
+        label: screen.getByText('test_input_number'),
+        input: screen.getByRole('spinbutton'),
+        increment: screen.getByTestId('increment')
+      }
+
+      await user.pointer([
+        {
+          keys: '[MouseLeft>]',
+          target: targets[target],
+          coords: { clientX: 20, clientY: 10 }
+        },
+        { target: targets[target], coords: { clientX: 80, clientY: 10 } },
+        { keys: '[/MouseLeft]', target: targets[target] }
+      ])
+
+      expect(screen.getByRole('spinbutton')).toHaveValue(String(expected))
+    }
+  )
+
+  it('keeps precision-limited steppers visible and disabled in unified rows', () => {
+    renderComponent(
+      createNumberInputWidget(18446744073709552000),
+      18446744073709552000,
+      true
+    )
+
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
+    expect(screen.getByRole('spinbutton')).toBeEnabled()
+  })
+
   it('focuses the numeric input when its label is clicked', async () => {
     const user = userEvent.setup()
     renderComponent(createNumberInputWidget(37, 'int'), 37)

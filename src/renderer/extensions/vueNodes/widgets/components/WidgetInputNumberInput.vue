@@ -163,10 +163,13 @@ const inputAriaAttrs = computed(() => ({
 <template>
   <WidgetLayoutField
     ref="layoutField"
+    data-testid="widget-number-row"
     :widget
     :input-id="inputId"
     label-class="cursor-ew-resize touch-pan-y"
-    :root-class="props.rootClass"
+    :root-class="
+      cn(unifiedRows && 'cursor-ew-resize touch-pan-y', props.rootClass)
+    "
     :value-text="formattedValue"
   >
     <template #between><slot name="between" /></template>
@@ -179,11 +182,13 @@ const inputAriaAttrs = computed(() => ({
           :step="stepValue"
           :display-value="formattedValue"
           :disabled="isDisabled"
-          :hide-buttons="buttonsDisabled"
+          :hide-buttons="buttonsDisabled && !unifiedRows"
+          :buttons-disabled="buttonsDisabled"
           :edge-buttons="unifiedRows"
           :parse-value="parseWidgetValue"
           :input-attrs="inputAriaAttrs"
           :label-element="layoutField?.labelElement"
+          :scrub-element="unifiedRows ? layoutField?.rowElement : undefined"
           :class="
             cn(
               WidgetInputBaseClass,

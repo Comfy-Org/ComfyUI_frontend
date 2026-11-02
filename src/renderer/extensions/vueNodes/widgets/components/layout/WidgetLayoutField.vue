@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, useTemplateRef } from 'vue'
+import { computed, inject, ref, useTemplateRef } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
@@ -25,17 +25,25 @@ const hideLayoutField = useHideLayoutField()
 const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 const fullWidthRow = computed(() => unifiedRows && fullWidthControl)
 const labelElement = useTemplateRef<HTMLLabelElement>('labelElement')
-defineExpose({ labelElement })
+const rowElement = useTemplateRef<HTMLDivElement>('rowElement')
+defineExpose({ labelElement, rowElement })
+const editingValue = ref<string>()
 const label = computed(() =>
   widget.name ? (widget.displayLabel ?? (widget.label || widget.name)) : ''
 )
 const borderStyle = computed(() =>
   cn('focus-within:ring focus-within:ring-ring', widget.borderStyle)
 )
+
+function measureInput(event: Event) {
+  if (event.target instanceof HTMLInputElement && event.target.type === 'text')
+    editingValue.value = event.target.value
+}
 </script>
 
 <template>
   <div
+    ref="rowElement"
     :class="
       cn(
         unifiedRows
@@ -46,6 +54,12 @@ const borderStyle = computed(() =>
         rootClass
       )
     "
+    @pointerdown.stop
+    @pointermove.stop
+    @pointerup.stop
+    @input="measureInput"
+    @focusout="editingValue = undefined"
+    @keyup.enter="editingValue = undefined"
   >
     <label
       v-if="!hideLayoutField"
@@ -60,9 +74,6 @@ const borderStyle = computed(() =>
           labelClass
         )
       "
-      @pointerdown.stop
-      @pointermove.stop
-      @pointerup.stop
     >
       <span
         data-testid="widget-layout-field-label"
@@ -84,7 +95,7 @@ const borderStyle = computed(() =>
       <span
         v-if="unifiedRows"
         aria-hidden="true"
-        :data-value="valueText"
+        :data-value="editingValue ?? valueText"
         :class="
           cn(
             'invisible col-start-1 row-start-1 truncate pl-2 after:content-[attr(data-value)]',
@@ -101,9 +112,6 @@ const borderStyle = computed(() =>
             fullWidthRow && 'absolute inset-0'
           )
         "
-        @pointerdown.stop
-        @pointermove.stop
-        @pointerup.stop
       >
         <slot :border-style />
       </div>

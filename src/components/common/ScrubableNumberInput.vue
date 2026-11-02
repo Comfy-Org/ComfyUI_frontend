@@ -32,7 +32,7 @@
       <input
         ref="inputField"
         v-bind="inputAttrs"
-        :value="displayValue ?? modelValue"
+        :value="draft ?? displayValue ?? modelValue"
         :disabled
         :class="
           cn(
@@ -44,6 +44,7 @@
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
+        @input="handleInput"
         @blur="handleBlur"
         @keyup.enter="handleBlur"
         @keydown.up.prevent="updateValueBy(step)"
@@ -59,7 +60,7 @@
             textEdit && 'pointer-events-none hidden'
           )
         "
-        @pointerup="handlePointerUp"
+        @pointerup="!scrubElement && handlePointerUp()"
       />
     </div>
     <slot />
@@ -100,25 +101,30 @@ const {
   step = 1,
   disabled = false,
   hideButtons = false,
+  buttonsDisabled = false,
   edgeButtons = false,
   displayValue,
   parseValue,
-  labelElement
+  labelElement,
+  scrubElement
 } = defineProps<{
   min?: number
   max?: number
   step?: number
   disabled?: boolean
   hideButtons?: boolean
+  buttonsDisabled?: boolean
   edgeButtons?: boolean
   displayValue?: string
   parseValue?: (raw: string) => number | undefined
   inputAttrs?: Record<string, unknown>
   labelElement?: HTMLLabelElement | null
+  scrubElement?: HTMLElement | null
 }>()
 
 const { t } = useI18n()
 const modelValue = defineModel<number>({ default: 0 })
+const draft = ref<string>()
 
 const container = useTemplateRef<HTMLDivElement>('container')
 const inputField = useTemplateRef<HTMLInputElement>('inputField')
@@ -133,11 +139,20 @@ function clamp(value: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
-const canDecrement = computed(() => modelValue.value > min && !disabled)
-const canIncrement = computed(() => modelValue.value < max && !disabled)
+const canDecrement = computed(
+  () => modelValue.value > min && !disabled && !buttonsDisabled
+)
+const canIncrement = computed(
+  () => modelValue.value < max && !disabled && !buttonsDisabled
+)
+
+function handleInput(event: Event) {
+  if (event.target instanceof HTMLInputElement) draft.value = event.target.value
+}
 
 function handleBlur(e: Event) {
-  const target = e.target as HTMLInputElement
+  const target = e.target
+  if (!(target instanceof HTMLInputElement)) return
   const raw = target.value.trim()
   const parsed = parseValue
     ? parseValue(raw)
@@ -149,6 +164,7 @@ function handleBlur(e: Event) {
   } else {
     target.value = displayValue ?? String(modelValue.value)
   }
+  draft.value = undefined
   textEdit.value = false
 }
 
@@ -165,16 +181,18 @@ function useScrubTarget(
 ) {
   let dragDelta = 0
   let dragged = false
+  let editingControl = false
   const swipe = usePointerSwipe(target, {
-    onSwipeStart: () => {
+    onSwipeStart: (event) => {
       dragDelta = 0
       dragged = false
+      editingControl = isEditingControl(event.target)
     },
     onSwipeEnd: () => (dragDelta = 0)
   })
 
   whenever(swipe.distanceX, () => {
-    if (disabled) return
+    if (disabled || editingControl) return
     const delta = ((swipe.distanceX.value - dragDelta) / 10) | 0
     dragDelta += delta * 10
     dragged ||= delta !== 0
@@ -183,14 +201,20 @@ function useScrubTarget(
 
   useEventListener(target, 'click', (event) => {
     if (dragged) event.preventDefault()
+    else if (scrubElement && !isEditingControl(event.target)) handlePointerUp()
   })
   return swipe
 }
 
-const { isSwiping } = useScrubTarget(swipeElement)
-useScrubTarget(() => labelElement)
+function isEditingControl(target: EventTarget | null) {
+  return target instanceof HTMLElement && !!target.closest('button, input')
+}
+
+const { isSwiping } = useScrubTarget(() => scrubElement ?? swipeElement.value)
+useScrubTarget(() => (scrubElement ? undefined : labelElement))
 
 function updateValueBy(delta: number) {
   modelValue.value = Math.min(max, Math.max(min, modelValue.value + delta))
+  draft.value = undefined
 }
 </script>
