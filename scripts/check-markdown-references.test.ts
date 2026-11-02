@@ -30,6 +30,7 @@ describe('findBrokenReferences', () => {
   test.for([
     ['moved file', 'See `src/types/widgetId.ts`.'],
     ['missing directory', 'Lives in `src/world/`.'],
+    ['segment starting with a placeholder prefix', '`src/somewhere/gone.ts`'],
     ['alias import', '`@/stores/missingStore`'],
     ['path inside a command', '`pnpm test:unit src/stores/gone.test.ts`'],
     ['relative link', '[guide](guide.md)'],
@@ -72,6 +73,18 @@ describe('findBrokenReferences', () => {
     const markdown = [
       '```bash',
       'pnpm test:unit src/missing.test.ts',
+      'pnpm nope',
+      '```',
+      '`src/missing.ts`'
+    ].join('\n')
+
+    expect(lines('AGENTS.md', markdown)).toEqual([3, 5])
+  })
+
+  test('keeps a fence open across an inner line with an info string', () => {
+    const markdown = [
+      '```',
+      '```bash',
       'pnpm nope',
       '```',
       '`src/missing.ts`'

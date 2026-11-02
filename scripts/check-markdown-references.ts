@@ -77,7 +77,7 @@ const PNPM_OPTIONS_WITH_VALUE = new Set([
 ])
 const MODULE_EXTENSIONS = ['.ts', '.vue', '.mts', '.js', '.tsx', '/index.ts']
 const PLACEHOLDER_SEGMENT =
-  /^(?:my|your|some)[A-Z_-]|^(?:example|foo|bar|x{2,})(?:\.|$)/i
+  /^(?:[Mm]y|[Yy]our|[Ss]ome)[A-Z_-]|^(?:[Ee]xample|[Ff]oo|[Bb]ar|[Xx]{2,})(?:\.|$)/
 const PLACEHOLDER_CHARACTERS = /[<>*{}$[\]…]|\.\.\./
 const URL_SCHEME = /^[a-z][a-z\d+.-]*:|^\/\//i
 const INLINE_CODE = /(`+)(.+?)\1/g
@@ -182,7 +182,11 @@ function classifyLines(contents: string): { text: string; fenced: boolean }[] {
       fence = marker
       return { text: marker ? '' : text, fenced: false }
     }
-    if (marker?.[0] === fence[0] && marker.length >= fence.length) {
+    if (
+      text.trim() === marker &&
+      marker[0] === fence[0] &&
+      marker.length >= fence.length
+    ) {
       fence = undefined
       return { text: '', fenced: true }
     }
@@ -248,10 +252,7 @@ function git(args: string[]): string {
 
 function withAncestors(files: string[]): Set<string> {
   return new Set(
-    files.flatMap((file) => [
-      file,
-      ...ancestors(posix.dirname(file)).filter((path) => path !== '.')
-    ])
+    files.flatMap((file) => [file, ...ancestors(posix.dirname(file))])
   )
 }
 
