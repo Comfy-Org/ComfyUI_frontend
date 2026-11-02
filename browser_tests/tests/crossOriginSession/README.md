@@ -3,7 +3,8 @@
 Opt-in suite for the shared web session (`unified_web_session`, TDD section 17,
 FE-2906). It never runs in the default `playwright.config.ts` run or in CI; it
 runs only through `playwright.session.config.ts` against the test environment
-(testcloud). Any non-production `comfy.org` origin works.
+(testcloud). Use a non-production `comfy.org` origin that is on the test
+environment's trusted-origin list.
 
 - Cloud (`testcloud.comfy.org`) and platform are the real test deployments, so
   the cross-origin calls and the cookie are real.
