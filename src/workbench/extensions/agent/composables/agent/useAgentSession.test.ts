@@ -1017,6 +1017,92 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('does not retry a settled snapshot read the server refused', async () => {
+    const refused = new AgentApiError('unauthorized', 401, undefined)
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockRejectedValue(refused)
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    vi.useFakeTimers()
+    try {
+      emit(thinking('msg-1', 'live after reload'))
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(40_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(getMessages).toHaveBeenCalledTimes(3)
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(refused, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  })
+
+  it('reports a settled snapshot read that is still failing when its deadline passes', async () => {
+    const slowFailure = new AgentApiError('gateway timeout', 504, undefined)
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockImplementation(
+        () =>
+          new Promise<AgentMessages>((_resolve, reject) => {
+            setTimeout(() => reject(slowFailure), 25_000)
+          })
+      )
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    vi.useFakeTimers()
+    try {
+      emit(thinking('msg-1', 'live after reload'))
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(90_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(slowFailure, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  })
+
   it('reads a settled snapshot turn again after a transient read failure', async () => {
     const getMessages = vi
       .fn<AgentRestClient['getMessages']>()
