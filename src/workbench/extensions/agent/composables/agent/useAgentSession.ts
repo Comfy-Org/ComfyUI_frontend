@@ -12,6 +12,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   AgentErrorClass,
   AgentErrorMetadata,
+  AgentSessionRefusalReason,
   AgentStopClickedMetadata,
   AgentStopMethod,
   AgentThreadStartSource,
@@ -23,6 +24,7 @@ import {
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
 import { createUuidv4 } from '@/utils/uuid'
+import { agentClientSessionId } from '@/workbench/extensions/agent/agentClientSession'
 import type {
   AgentActiveTabData,
   AgentAnswerReceipt,
@@ -1173,7 +1175,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
     ])
   }
 
-  function recordUnavailableTarget(text: string): void {
+  function trackSendRefused(
+    reason: AgentSessionRefusalReason,
+    clientMessageId: string | undefined
+  ): void {
+    useTelemetry()?.trackAgentSendGated({
+      gate: 'composer',
+      outcome: 'dropped',
+      reason,
+      client_message_id: clientMessageId ?? null,
+      held_ms: null,
+      thread_id: conversationStore.threadId,
+      client_session_id: agentClientSessionId()
+    })
+  }
+
+  function recordUnavailableTarget(
+    text: string,
+    clientMessageId: string | undefined
+  ): void {
+    trackSendRefused('target_unavailable', clientMessageId)
     conversationStore.recordFailedSend(
       nextLocalErrorId(),
       text,
@@ -1185,12 +1206,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     originContext: WorkflowTurnContext | undefined,
     wfContext: WorkflowTurnContext | undefined,
-    draft: DraftSnapshot | undefined
+    draft: DraftSnapshot | undefined,
+    clientMessageId: string | undefined
   ): boolean {
     const refused =
       workflowTargetChanged(originContext, wfContext) ||
       lacksCanvasForRemint(wfContext, draft)
-    if (refused) recordUnavailableTarget(text)
+    if (refused) recordUnavailableTarget(text, clientMessageId)
     return refused
   }
 
@@ -1591,7 +1613,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
       const draft = workflow?.draft?.(origin)
-      if (refusesTarget(text, originContext, wfContext, draft)) return false
+      if (refusesTarget(text, originContext, wfContext, draft, clientMessageId))
+        return false
       sentContext = wfContext
       const input = buildPostInput(
         threadAtSend,
@@ -1660,6 +1683,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onAccepted?: () => void
   ): Promise<boolean> {
     if (sending.value) {
+      trackSendRefused('send_busy', clientMessageId)
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
         text,
