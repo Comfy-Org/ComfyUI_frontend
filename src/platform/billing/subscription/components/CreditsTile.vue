@@ -177,8 +177,12 @@
       </div>
     </template>
 
-    <div v-if="canTopUp" class="flex flex-col gap-3">
+    <div
+      v-if="addCredits.kind !== 'hidden' || paymentRecoveryAvailable"
+      class="flex flex-col gap-3"
+    >
       <Button
+        v-if="addCredits.kind !== 'hidden'"
         :variant="isOutOfCredits ? 'inverted' : 'secondary'"
         size="lg"
         :class="
@@ -187,31 +191,34 @@
             !isOutOfCredits && 'bg-muted text-foreground'
           )
         "
+        :disabled="addCredits.kind === 'disabled'"
+        :aria-describedby="refusalReason ? refusalReasonId : undefined"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsTile"
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
       </Button>
-      <span v-if="creditsUseNote" class="text-sm text-muted-foreground">
-        {{ creditsUseNote }}
-      </span>
-    </div>
-    <div v-else-if="paymentRecoveryAvailable" class="flex flex-col gap-3">
+      <p
+        v-if="refusalReason"
+        :id="refusalReasonId"
+        class="m-0 text-sm text-muted-foreground"
+      >
+        {{ refusalReason }}
+      </p>
       <Button
-        :variant="isOutOfCredits ? 'inverted' : 'secondary'"
+        v-if="paymentRecoveryAvailable"
+        variant="secondary"
         size="lg"
-        :class="
-          cn(
-            'w-full font-normal',
-            !isOutOfCredits && 'bg-muted text-foreground'
-          )
-        "
-        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsTile"
-        @click="handleAddCredits"
+        class="w-full font-normal"
+        :loading="isUpdatingPayment"
+        @click="updatePayment"
       >
-        {{ $t('subscription.addCredits') }}
+        {{ $t('workspacePanel.billingStatus.updatePayment') }}
       </Button>
-      <span v-if="creditsUseNote" class="text-sm text-muted-foreground">
+      <span
+        v-if="creditsUseNote && addCredits.kind === 'enabled'"
+        class="text-sm text-muted-foreground"
+      >
         {{ creditsUseNote }}
       </span>
     </div>
@@ -222,7 +229,7 @@
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -250,6 +257,8 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { addCreditsAvailability } from '@/platform/billing/addCreditsAvailability'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 const { zeroState = false, inactivePlan } = defineProps<{
@@ -269,7 +278,24 @@ const {
   fetchBalance,
   fetchStatus
 } = useBillingContext()
-const { canTopUp, paymentRecoveryAvailable } = useBillingCapabilities()
+const {
+  canTopUp,
+  topUpDenial,
+  hasResolvedCapabilities,
+  paymentRecoveryAvailable
+} = useBillingCapabilities()
+const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
+const addCredits = computed(() =>
+  addCreditsAvailability({
+    resolved: hasResolvedCapabilities.value,
+    canTopUp: canTopUp.value,
+    denial: topUpDenial.value
+  })
+)
+const refusalReasonId = useId()
+const refusalReason = computed(() =>
+  addCredits.value.kind === 'disabled' ? t(addCredits.value.reasonKey) : null
+)
 const {
   prepaidCredits,
   totalCredits,

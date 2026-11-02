@@ -2,6 +2,7 @@ import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__m
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,6 +20,7 @@ import { useSubscription } from '@/platform/billing/subscription/composables/use
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingEventsResponse,
+  BillingTopUpDenial,
   TeamCreditStopSummary
 } from '@comfyorg/billing-core'
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
@@ -70,6 +72,8 @@ vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
+vi.mock(import('@/platform/billing/composables/usePaymentRecoveryDialog'))
+
 vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/billing/composables/readWorkspaceBillingEvents'))
@@ -90,6 +94,18 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      credits: {
+        addCreditsRefusal: {
+          topupPurchasesPaused:
+            "Buying credits isn't available right now. Try again later, or message support.",
+          paymentPastDue: 'Update your payment method to add credits.',
+          unavailable:
+            "Adding credits isn't available for this workspace right now."
+        }
+      },
+      workspacePanel: {
+        billingStatus: { updatePayment: 'Update payment' }
+      },
       subscription: {
         totalCredits: 'Total credits',
         remaining: 'remaining',
@@ -239,6 +255,14 @@ describe('CreditsTile', () => {
     state.type = 'workspace'
     state.telemetryUnavailable = false
     mockIsCloud.value = true
+    useBillingCapabilities().topUpDenial = computed(() => 'not_workspace_owner')
+    vi.mocked(usePaymentRecoveryDialog).mockReturnValue({
+      showPaymentRecoveryDialog: vi.fn(),
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => null),
+      refreshCapabilities: vi.fn(async () => undefined)
+    })
   })
 
   it('renders the total balance (cents converted to credits) with the remaining suffix', () => {
@@ -551,18 +575,74 @@ describe('CreditsTile', () => {
     }
   )
 
-  it('keeps Add credits when top-up is refused because payment is past due', async () => {
+  it.for<{ denial: BillingTopUpDenial | undefined; reason: string }>([
+    {
+      denial: 'topup_purchases_paused',
+      reason:
+        "Buying credits isn't available right now. Try again later, or message support."
+    },
+    {
+      denial: 'payment_past_due',
+      reason: 'Update your payment method to add credits.'
+    },
+    {
+      denial: 'creator_only_provisioning',
+      reason: "Adding credits isn't available for this workspace right now."
+    },
+    {
+      denial: undefined,
+      reason: "Adding credits isn't available for this workspace right now."
+    }
+  ])(
+    'shows Add credits disabled with the reason for a $denial refusal',
+    ({ denial, reason }) => {
+      activeProSubscription()
+      useBillingCapabilities().canTopUp = computed(() => false)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+      renderTile()
+
+      const addCredits = screen.getByRole('button', { name: 'Add credits' })
+      expect(addCredits).toBeDisabled()
+      expect(addCredits).toHaveAccessibleDescription(reason)
+    }
+  )
+
+  it.for(['not_workspace_owner', 'not_a_member'] as const)(
+    'hides Add credits for a %s refusal',
+    (denial) => {
+      activeProSubscription()
+      useBillingCapabilities().canTopUp = computed(() => false)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+      renderTile()
+
+      expect(
+        screen.queryByRole('button', { name: 'Add credits' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it('enables Add credits when the server allows a top-up', () => {
+    activeProSubscription()
+    useBillingCapabilities().canTopUp = computed(() => true)
+    renderTile()
+
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+  })
+
+  it('keeps a past-due owner a way to update payment', async () => {
     activeProSubscription()
     useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
     useBillingCapabilities().paymentRecoveryAvailable =
       paymentRecoveryAvailableFact(true)
     renderTile()
 
-    await userEvent.click(screen.getByText('Add credits'))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
 
-    expect(
-      useBillingDialogs().showTopUpCreditsDialog
-    ).toHaveBeenCalledExactlyOnceWith({ source: 'settings_billing_panel' })
+    expect(usePaymentRecoveryDialog().updatePayment).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
   })
 
   it('gives an inactive sales-managed plan the disabled shape with account-manager copy', () => {
