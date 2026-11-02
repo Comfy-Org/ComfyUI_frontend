@@ -7,6 +7,13 @@ Open `/?template=zip_tie_demo` for a model-free example with three wires already
 bundled. Drag the clasp in the middle of the canvas, or right-click it to release
 the tie. The example opens as a new workflow.
 
+Click **Zip tie** in the bottom canvas toolbar, then drag a box from empty canvas
+space across two or more wires. The highlighted button and crosshair cursor show
+that the tool is active. Creating a tie returns to normal selection. Press
+**Escape** or click **Zip tie** again to exit without creating a tie. Switching
+workflows or the hand tool also exits. A box crossing fewer than two wires keeps
+the tool active so you can try again.
+
 For a one-gesture zip tie, hold **Command + Shift** on macOS or **Windows + Shift**
 on Windows, then drag a box from empty canvas space across two or more wires.
 Release the mouse while holding both keys to zip the crossed wires at the box's
@@ -40,8 +47,9 @@ pnpm test:browser:local --project=chromium browser_tests/tests/links/zipTie.spec
 The tests use real keyboard and pointer input to create, move, save, reload, and
 release a tie. They check the workflow saved by the backend and preserve the
 original connections and earlier reroutes. A second test verifies that Escape
-cancels the marquee without changing the graph. Both run in the normal E2E CI
-suite, which also records a video walkthrough for newly added specs.
-Both tests retain a Playwright trace on successful runs. Open the test's trace
-attachment in the report to inspect screenshots, DOM snapshots, actions, network
-requests, and the timeline.
+cancels the marquee without changing the graph. A third test clicks the visible
+tool, creates a tie without modifiers, and checks that Escape exits the tool.
+All run in the normal E2E CI suite, which also records a video walkthrough for
+newly added specs. The tests retain a Playwright trace on successful runs. Open
+the test's trace attachment in the report to inspect screenshots, DOM snapshots,
+actions, network requests, and the timeline.
