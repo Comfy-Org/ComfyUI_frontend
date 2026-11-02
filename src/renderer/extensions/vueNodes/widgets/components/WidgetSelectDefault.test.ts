@@ -252,6 +252,28 @@ describe('WidgetSelectDefault', () => {
     }
   )
 
+  it.for([
+    'studio/models/portrait.safetensors',
+    'studio\\models\\portrait.safetensors'
+  ])('opens the directory containing the selected %s', async (path) => {
+    const { user, onUpdate } = renderComponent(
+      createWidget(['None', path, 'archive/portrait.safetensors']),
+      path,
+      undefined,
+      true,
+      true
+    )
+    await openDropdown(user)
+    expect(optionLabels()).toEqual(['studio / models', 'portrait.safetensors'])
+    expect(
+      screen.getByRole('option', {
+        name: 'portrait.safetensors',
+        selected: true
+      })
+    ).toBeVisible()
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
   it('searches every directory and preserves duplicate filename identities', async () => {
     const { user, onUpdate } = renderComponent(
       createWidget([
