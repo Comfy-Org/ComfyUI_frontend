@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url'
  * - `ingest-types` releases only when a schema an SDK package imports, or one
  *   such a schema is built from, changed. Endpoints no SDK package reads do
  *   not ship a release.
- * - The hand-written SDK packages release when their published source changed.
+ * - The hand-written SDK packages release when their published source or any
+ *   published manifest field changed.
  *
  * `account-core` resolves `ingest-types` as a caret range and keeps it
  * external, so a schema change reaches it through the `ingest-types` release
@@ -23,14 +24,20 @@ const INGEST_IMPORT =
 const SCHEMA_START = /^export const (z[A-Z]\w*) = /gm
 const SCHEMA_REFERENCE = /\bz[A-Z]\w*\b/g
 const TEST_FILE = /(\.test\.ts|\.spec\.ts|\/__fixtures__\/|\/__mocks__\/)/
+const WORKSPACE = 'pnpm-workspace.yaml'
+const CATALOG_ENTRY = /^[ \t]+['"]?([^'":\s]+)['"]?:[ \t]*['"]?([^'"#\s]+)/gm
+const CATALOG_RESOLVED_FIELDS = [
+  'dependencies',
+  'peerDependencies',
+  'optionalDependencies'
+]
+const UNPUBLISHED_MANIFEST_FIELDS = new Set([
+  'version',
+  'scripts',
+  'devDependencies'
+])
 
 type Package = (typeof SDK_PACKAGES)[number] | 'ingest-types'
-
-interface Manifest {
-  dependencies?: Record<string, string>
-  peerDependencies?: Record<string, string>
-  publishConfig?: { exports?: unknown }
-}
 
 export interface ReleaseReason {
   package: Package
@@ -131,32 +138,54 @@ function changedSourceFiles(name: Package, since: string): string[] {
     .filter((file) => file && !TEST_FILE.test(file))
 }
 
-/** The published manifest fields that differ between two `package.json` texts. */
-export function changedManifestFields(
-  released: string,
-  current: string
-): string[] {
-  const before = JSON.parse(released)
-  const after = JSON.parse(current)
-  const fields = {
-    dependencies: (manifest: Manifest) => manifest.dependencies,
-    peerDependencies: (manifest: Manifest) => manifest.peerDependencies,
-    'publishConfig.exports': (manifest: Manifest) =>
-      manifest.publishConfig?.exports
-  }
-  return Object.entries(fields)
-    .filter(
-      ([, read]) => JSON.stringify(read(before)) !== JSON.stringify(read(after))
-    )
-    .map(([field]) => field)
+/** The default `catalog:` block of a `pnpm-workspace.yaml`, as package name to range. */
+export function catalogRanges(workspaceYaml: string): Map<string, string> {
+  const block = /^catalog:\n((?:[ \t]+.*\n?)*)/m.exec(workspaceYaml)?.[1] ?? ''
+  return new Map(
+    [...block.matchAll(CATALOG_ENTRY)].map(([, name, range]) => [name, range])
+  )
 }
 
-function changedManifest(name: Package, since: string): string[] {
-  const manifest = `packages/${name}/package.json`
-  return changedManifestFields(
-    git('show', `${since}:${manifest}`),
-    readFileSync(manifest, 'utf8')
+function withCatalogResolved(
+  manifest: Record<string, unknown>,
+  catalog: Map<string, string>
+): Record<string, unknown> {
+  const resolved = { ...manifest }
+  for (const field of CATALOG_RESOLVED_FIELDS) {
+    const ranges = manifest[field]
+    if (!ranges || typeof ranges !== 'object') continue
+    resolved[field] = Object.fromEntries(
+      Object.entries(ranges).map(([name, range]) => [
+        name,
+        range === 'catalog:' ? (catalog.get(name) ?? range) : range
+      ])
+    )
+  }
+  return resolved
+}
+
+/** The top-level `package.json` fields that ship to npm and differ between the two manifests, `catalog:` ranges resolved. */
+export function changedManifestFields(
+  released: string,
+  current: string,
+  releasedWorkspace = '',
+  currentWorkspace = ''
+): string[] {
+  const before = withCatalogResolved(
+    JSON.parse(released),
+    catalogRanges(releasedWorkspace)
   )
+  const after = withCatalogResolved(
+    JSON.parse(current),
+    catalogRanges(currentWorkspace)
+  )
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])]
+    .filter(
+      (field) =>
+        !UNPUBLISHED_MANIFEST_FIELDS.has(field) &&
+        JSON.stringify(before[field]) !== JSON.stringify(after[field])
+    )
+    .sort()
 }
 
 function sdkSources(): string[] {
@@ -182,9 +211,15 @@ export function planRelease(): ReleaseReason[] {
 
   for (const name of SDK_PACKAGES) {
     const released = releasedCommit(name)
+    const manifest = `packages/${name}/package.json`
     const reasons = [
       ...changedSourceFiles(name, released),
-      ...changedManifest(name, released)
+      ...changedManifestFields(
+        git('show', `${released}:${manifest}`),
+        readFileSync(manifest, 'utf8'),
+        git('show', `${released}:${WORKSPACE}`),
+        readFileSync(WORKSPACE, 'utf8')
+      ).map((field) => `${manifest}#${field}`)
     ]
     if (reasons.length > 0) plan.push({ package: name, reasons })
   }

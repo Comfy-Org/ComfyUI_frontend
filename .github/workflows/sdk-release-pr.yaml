@@ -14,6 +14,7 @@ on:
       - 'packages/account-ui/package.json'
       - 'packages/billing-contract/src/**'
       - 'packages/billing-contract/package.json'
+      - 'pnpm-workspace.yaml'
   workflow_dispatch:
 
 concurrency:

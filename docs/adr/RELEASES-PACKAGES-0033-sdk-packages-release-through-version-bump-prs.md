@@ -251,8 +251,11 @@ and an exact pin is the lockfile conflict this ADR rejects below.
 > that set its current version. `ingest-types` is bumped (patch) only when a
 > schema an SDK package imports, or one it is built from, changed; endpoints
 > no SDK package reads ship nothing. The hand-written packages get an `alpha`
-> prerelease bump when their published source, `dependencies`,
-> `peerDependencies` or `publishConfig.exports` changed. The
+> prerelease bump when their published source or any published manifest field
+> (everything but `version`, `scripts` and `devDependencies`, so
+> `dependencies`, `peerDependencies`, `exports` and `publishConfig.exports`
+> among them, with `catalog:` ranges resolved through `pnpm-workspace.yaml`)
+> changed. The
 > bumps land in one `Release`-labelled PR on `sdk-release/auto`, refreshed on
 > every push, so a release is still a reviewed merge. The on-merge publish now
 > runs its matrix one package at a time in dependency order (`ingest-types`
@@ -263,7 +266,8 @@ and an exact pin is the lockfile conflict this ADR rejects below.
 - **Picking the `ingest-types` increment stays a human judgement.** The
   planner always proposes `patch` for a regeneration; a reviewer raises it on
   the release PR when the schema change warrants `minor` or `major`, per the
-  Versioning policy.
+  Versioning policy. A later push to `main` regenerates the PR from `main`
+  and resets it to `patch`, so the reviewer raises it again before merging.
 - **Pre-merge snapshots ship separately.** A `pull_request` run executes the
   workflow definition from the pull request's own merge ref, so a publish step
   triggered that way is PR-authored code holding `NPM_TOKEN`. This would be
@@ -278,8 +282,8 @@ and an exact pin is the lockfile conflict this ADR rejects below.
   range against the registry, so an unpublished `ingest-types` change can only
   be tested when the same PR touches both.
 - **`account-ui` has no version of its own on npm yet.** It is registered in
-  the tables and the latch is off, but nothing is published until someone runs
-  the bump workflow for it. Until then the export map
+  the tables and the latch is off, but nothing is published until the first
+  `sdk-release/auto` PR that bumps it merges. Until then the export map
   [ADR-PACKAGES-ACCOUNT-UI-0034](PACKAGES-ACCOUNT-UI-0034-payment-ui-belongs-to-the-shared-account-ui-package.md)
   governs is an external contract only in intent.
 
