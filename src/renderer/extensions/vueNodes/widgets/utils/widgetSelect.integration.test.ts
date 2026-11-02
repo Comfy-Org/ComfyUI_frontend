@@ -1,10 +1,9 @@
 import { render, screen } from '@testing-library/vue'
-import { it, expect } from 'vitest'
+import { it, expect, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { assetService } from '@/platform/assets/services/assetService'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 
 it.for([
@@ -29,19 +28,10 @@ it.for([
 ])(
   'summarizes $name with node rows $unifiedRows',
   ({ name, unifiedRows, value, expected }) => {
-    useModelToNodeStore().registerNodeProvider('checkpoints', {
-      nodeDef: new ComfyNodeDefImpl({
-        name: 'ModelLoader',
-        display_name: 'ModelLoader',
-        category: 'loaders',
-        python_module: 'nodes',
-        description: '',
-        input: { required: {} },
-        output: [],
-        output_node: false
-      }),
-      key: 'model'
-    })
+    vi.spyOn(assetService, 'isAssetBrowserEligible').mockImplementation(
+      (nodeType, widgetName) =>
+        nodeType === 'ModelLoader' && widgetName === 'model'
+    )
     render(WidgetSelect, {
       props: {
         widget: { name, type: 'combo', value, options: { values: [value] } },
