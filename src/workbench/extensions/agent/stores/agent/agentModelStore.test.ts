@@ -71,7 +71,7 @@ describe('agentModelStore', () => {
     expect(store.modelForSend('t1')).toBeUndefined()
   })
 
-  it('offers only the available models and sends the default', async () => {
+  it('offers only the available models and shows the default without sending it', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(jsonResponse(200, SIGNED_IN))
     const store = useAgentModelStore()
     await store.load()
@@ -85,7 +85,8 @@ describe('agentModelStore', () => {
       'cloud:claude-opus-4-8',
       'local'
     ])
-    expect(store.modelForSend(null)).toBe('cloud:claude-opus-4-8')
+    expect(store.selectedFor(null)?.id).toBe('cloud:claude-opus-4-8')
+    expect(store.modelForSend(null)).toBeUndefined()
   })
 
   it('remembers the pick per chat and moves a new chat pick to its id', async () => {
@@ -98,8 +99,9 @@ describe('agentModelStore', () => {
     store.adoptDraft('t1')
 
     expect(store.modelForSend('t1')).toBe('local')
-    expect(store.modelForSend(null)).toBe('cloud:claude-opus-4-8')
-    expect(store.modelForSend('t2')).toBe('cloud:claude-opus-4-8')
+    expect(store.modelForSend(null)).toBeUndefined()
+    expect(store.selectedFor('t2')?.id).toBe('cloud:claude-opus-4-8')
+    expect(store.modelForSend('t2')).toBeUndefined()
     await nextTick()
     expect(
       JSON.parse(localStorage.getItem('Comfy.Agent.ModelChoiceByThread')!)
@@ -118,7 +120,7 @@ describe('agentModelStore', () => {
 
     expect(store.available.map((model) => model.id)).toEqual(['local'])
     expect(store.selectedFor('t1')?.id).toBe('local')
-    expect(store.modelForSend('t1')).toBe('local')
+    expect(store.modelForSend('t1')).toBeUndefined()
   })
 
   it('ignores a stored choice map it cannot read', () => {
@@ -150,6 +152,22 @@ describe('agentModelStore', () => {
     )
   })
 
+  it('asks again when the first list predates a restored sign-in', async () => {
+    vi.useFakeTimers()
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(jsonResponse(200, SIGNED_OUT))
+      .mockResolvedValueOnce(jsonResponse(200, SIGNED_IN))
+    const store = useAgentModelStore()
+    await store.load()
+    expect(store.selectedFor(null)?.id).toBe('local')
+
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+    expect(store.selectedFor(null)?.id).toBe('cloud:claude-opus-4-8')
+    expect(store.modelForSend(null)).toBeUndefined()
+  })
+
   it('drops the pick and refreshes the list when the host refuses it', async () => {
     vi.mocked(api.fetchApi)
       .mockResolvedValueOnce(jsonResponse(200, SIGNED_IN))
@@ -168,7 +186,8 @@ describe('agentModelStore', () => {
     await vi.waitFor(() =>
       expect(store.available.map((model) => model.id)).toEqual(['local'])
     )
-    expect(store.modelForSend('t1')).toBe('local')
+    expect(store.selectedFor('t1')?.id).toBe('local')
+    expect(store.modelForSend('t1')).toBeUndefined()
   })
 
   it('leaves other send errors alone', async () => {

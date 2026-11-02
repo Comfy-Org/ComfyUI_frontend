@@ -14,9 +14,15 @@ import {
 
 const CHOICES_STORAGE_KEY = 'Comfy.Agent.ModelChoiceByThread'
 const MAX_REMEMBERED_THREADS = 200
-/** Cloud has not answered the login check yet: ask again shortly. */
-const CHECKING_RETRY_MS = 3000
-const MAX_CHECKING_RETRIES = 5
+/**
+ * When to ask for the list again on its own. `checking`: Cloud has not
+ * answered the login check yet. `not_signed_in`: the page asked before
+ * Firebase restored a sign-in, which happens a few seconds after load.
+ */
+const RETRY_PLAN: Record<string, { ms: number; tries: number }> = {
+  checking: { ms: 3000, tries: 5 },
+  not_signed_in: { ms: 10_000, tries: 6 }
+}
 
 function readChoices(value: string): Record<string, string> {
   try {
@@ -51,8 +57,9 @@ export const useAgentModelStore = defineStore('agentModel', () => {
   /** The pick made in a new chat, before the host has given it an id. */
   const draftChoice = ref<string | null>(null)
   let loadSeq = 0
-  let checkingRetries = 0
-  let checkingTimer: ReturnType<typeof setTimeout> | undefined
+  let retryReason: string | null = null
+  let retries = 0
+  let retryTimer: ReturnType<typeof setTimeout> | undefined
 
   const available = computed<AgentModelChoice[]>(
     () => listing.value?.models.filter((model) => model.available) ?? []
@@ -81,12 +88,13 @@ export const useAgentModelStore = defineStore('agentModel', () => {
   }
 
   /**
-   * The `model` for a turn POST. The id is sent even when it is the default,
-   * so the turn runs on what the picker showed, not on a default that moved
-   * since (a sign-in changes it).
+   * The `model` for a turn POST: the chat's own pick while it is offered.
+   * Without one nothing is sent and the host uses its default as of that
+   * request, which stays right when a sign-in has changed it since the list
+   * was fetched.
    */
   function modelForSend(threadId: string | null): string | undefined {
-    return selectedFor(threadId)?.id
+    return findAvailable(pickFor(threadId))?.id
   }
 
   function select(threadId: string | null, id: string): void {
@@ -106,18 +114,21 @@ export const useAgentModelStore = defineStore('agentModel', () => {
     draftChoice.value = null
   }
 
-  function scheduleCheckingRetry(models: AgentModels): void {
-    clearTimeout(checkingTimer)
-    const checking = models.models.some((model) => model.reason === 'checking')
-    if (!checking) {
-      checkingRetries = 0
-      return
+  function scheduleRetry(models: AgentModels): void {
+    clearTimeout(retryTimer)
+    const reasons = new Set(models.models.map((model) => model.reason))
+    const reason = Object.keys(RETRY_PLAN).find((r) => reasons.has(r)) ?? null
+    if (reason !== retryReason) {
+      retryReason = reason
+      retries = 0
     }
-    if (checkingRetries >= MAX_CHECKING_RETRIES) return
-    checkingRetries += 1
-    checkingTimer = setTimeout(() => {
+    if (reason === null) return
+    const plan = RETRY_PLAN[reason]
+    if (retries >= plan.tries) return
+    retries += 1
+    retryTimer = setTimeout(() => {
       void load().catch(() => {})
-    }, CHECKING_RETRY_MS)
+    }, plan.ms)
   }
 
   async function load(): Promise<void> {
@@ -126,7 +137,7 @@ export const useAgentModelStore = defineStore('agentModel', () => {
       const models = await api.getModels()
       if (seq !== loadSeq) return
       listing.value = models
-      scheduleCheckingRetry(models)
+      scheduleRetry(models)
     } catch (error) {
       if (seq !== loadSeq) return
       if (error instanceof AgentApiError && error.status === 404) {
