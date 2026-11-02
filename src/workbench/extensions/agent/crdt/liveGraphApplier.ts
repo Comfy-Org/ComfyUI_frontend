@@ -36,7 +36,7 @@ import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { zComfyNode } from '@comfyorg/graph-model/workflowSchema'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
-import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
+import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
@@ -745,8 +745,8 @@ function positionalWidgetValues(
 ): WidgetValue[] | undefined {
   if (widgets === undefined) return undefined
   if (Array.isArray(widgets)) {
-    return widgets.map(
-      (value): WidgetValue => (isWidgetValue(value) ? value : undefined)
+    return widgets.map((value): WidgetValue =>
+      isWidgetValue(value) ? value : undefined
     )
   }
   return serializableWidgets(node).map((widget, index) => {
