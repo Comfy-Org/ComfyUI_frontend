@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import {
   redactTelemetryError,
@@ -312,6 +312,15 @@ describe('redactTelemetryUrls', () => {
   it('handles a short dotted non-URL run without pathological rescanning', () => {
     const text = 'a' + '.'.repeat(70) + '!'
     expect(redactTelemetryUrls(text)).toBe(text)
+  })
+
+  it('handles a long spaced near-miss query run without pathological rescanning', () => {
+    const text = `https://h/x?${' '.repeat(16_000)}!`
+    const expected = `https://h/x${' '.repeat(16_000)}!`
+    vi.useRealTimers()
+    const start = performance.now()
+    expect(redactTelemetryUrls(text)).toBe(expected)
+    expect(performance.now() - start).toBeLessThan(300)
   })
 })
 
