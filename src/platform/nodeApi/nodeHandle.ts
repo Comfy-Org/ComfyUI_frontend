@@ -9,14 +9,11 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import {
-  LGraphEventMode,
-  RenderShape
-} from '@/lib/litegraph/src/types/globalEnums'
+import { LGraphEventMode, RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { createHandleFactory } from './closedProxy'
 import type { HandleCommon } from './closedProxy'

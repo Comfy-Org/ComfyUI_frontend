@@ -18,10 +18,10 @@
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 import { st } from '@/i18n'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import { ComfyApiError } from './errors'
 import type { NodeHandle, Size } from './nodeHandle'

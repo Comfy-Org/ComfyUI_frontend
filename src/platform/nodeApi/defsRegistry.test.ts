@@ -7,8 +7,8 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/slots'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { setActiveLocale } from '@/i18n'
 
 import { createComfyApi } from './comfyApi'

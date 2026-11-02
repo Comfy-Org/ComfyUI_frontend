@@ -4,7 +4,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 // Installs LGraphNode.prototype.addDOMWidget as a side effect.
 import '@/scripts/domWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { parseWidgetId } from '@/types/widgetId'
+import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
 
 import { ComfyApiError, ComfyReadonlyError } from './errors'
 import { createGraphApi } from './graphHandle'

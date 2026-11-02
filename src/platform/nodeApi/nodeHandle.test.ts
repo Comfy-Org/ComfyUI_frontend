@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import {
-  LGraphEventMode,
-  RenderShape
-} from '@/lib/litegraph/src/types/globalEnums'
+import { LGraphEventMode, RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 import { ComfyDeletedError, ComfyReadonlyError } from './errors'

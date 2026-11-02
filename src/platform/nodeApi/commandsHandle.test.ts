@@ -7,10 +7,10 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { ComfyApi } from '@/scripts/api'
-import { useCommandStore } from '@/stores/commandStore'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import { createCommandsApi } from './commandsHandle'
 import type { CommandsHandle } from './commandsHandle'

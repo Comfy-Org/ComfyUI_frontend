@@ -10,7 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 
 import { ComfyApiError } from './errors'
 import { createSettingsApi } from './settingsHandle'

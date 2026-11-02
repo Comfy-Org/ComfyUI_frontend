@@ -19,7 +19,7 @@
  * the same reason `onCreated` waits for `onAdded`.
  */
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { registerDeclaredWidget } from './declaredWidgetTypes'
 

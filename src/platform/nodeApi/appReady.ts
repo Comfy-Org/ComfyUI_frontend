@@ -7,7 +7,7 @@
  * exist — so converted packs either ran setup work too early or hand-rolled a
  * poll for the DOM to appear. Both are the same bug at different volumes.
  */
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
