@@ -11,6 +11,7 @@ import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/t
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { i18n, te } from '@/i18n'
+import enMessages from '@/locales/en/main.json'
 
 function nodeValidationError(
   type: string,
@@ -1064,7 +1065,7 @@ describe('errorMessageResolver', () => {
         catalogId: 'timeout',
         displayTitle: 'Generation timed out',
         displayMessage:
-          'This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.'
+          "This workflow reached your plan's maximum run time (10 min on Free, 1 hr on Pro, 30 min on all other plans). Try reducing image resolution, batch size, or workflow length and run again."
       }
     },
     {
@@ -1453,10 +1454,38 @@ describe('errorMessageResolver', () => {
     ).toMatchObject({
       catalogId: 'timeout',
       displayMessage:
-        'This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.',
+        "This workflow reached your plan's maximum run time (10 min on Free, 1 hr on Pro, 30 min on all other plans). Try reducing image resolution, batch size, or workflow length and run again.",
       toastMessage:
-        'This workflow reached the maximum run time. Try reducing image resolution, batch size, or workflow length and run again.'
+        "This workflow reached your plan's maximum run time (10 min on Free, 1 hr on Pro, 30 min on all other plans). Try reducing image resolution, batch size, or workflow length and run again."
     })
+  })
+
+  it('follows the pricing-table durations when they change', () => {
+    const original = { ...enMessages.subscription.maxDuration }
+    i18n.global.mergeLocaleMessage('en', {
+      subscription: {
+        maxDuration: { free: '7 min', pro: '2 hr', standard: '45 min' }
+      }
+    })
+    try {
+      const resolved = resolveRunErrorMessage({
+        kind: 'execution',
+        nodeDisplayName: 'KSampler',
+        error: executionError(
+          'ServiceError',
+          'Job execution time exceeded maximum limit'
+        )
+      })
+
+      expect(resolved.displayMessage).toContain(
+        '(7 min on Free, 2 hr on Pro, 45 min on all other plans)'
+      )
+      expect(resolved.toastMessage).toBe(resolved.displayMessage)
+    } finally {
+      i18n.global.mergeLocaleMessage('en', {
+        subscription: { maxDuration: original }
+      })
+    }
   })
 
   it('does not over-match runtime error lookalikes', () => {
@@ -1710,7 +1739,7 @@ describe('errorMessageResolver', () => {
       catalogId: 'missing_node',
       displayTitle: 'Missing Node Packs',
       displayMessage:
-        "These nodes aren't on Studio Build v2. Replace them, or pick a deployment that has them.",
+        "These nodes aren't on Studio Build v2. Add their packs to its build, or replace them.",
       toastTitle: "FooNode isn't on Studio Build v2",
       toastMessage: 'Replace this node, or pick a deployment that has it.'
     })
@@ -1744,7 +1773,7 @@ describe('errorMessageResolver', () => {
       catalogId: 'missing_model',
       displayTitle: 'Missing Models',
       displayMessage:
-        "These models aren't on Studio Build v2. Open the node to choose one it has.",
+        "These models aren't on Studio Build v2. Add them to its build, or open the node to choose one it has.",
       toastTitle: "sdxl.safetensors isn't on Studio Build v2",
       toastMessage:
         'Choose a different model, or pick a deployment that has it.'

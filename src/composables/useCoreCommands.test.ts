@@ -149,12 +149,28 @@ vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
-  subscriptionTier: null as string | null
+  subscriptionTier: null as string | null,
+  initialized: true,
+  routing: 'workspace' as 'workspace' | 'unknown',
+  onInitialize: null as (() => void) | null
 }))
 vi.mock<unknown>(
   import('@/platform/billing/composables/useBillingContext'),
   () => ({
     useBillingContext: vi.fn(() => ({
+      isInitialized: {
+        get value() {
+          return mockBillingState.initialized
+        }
+      },
+      initialize: vi.fn(async () => {
+        mockBillingState.onInitialize?.()
+      }),
+      type: {
+        get value() {
+          return mockBillingState.routing
+        }
+      },
       canAccessSubscriptionFeatures: {
         get value() {
           return mockBillingState.canAccessSubscriptionFeatures
@@ -233,6 +249,9 @@ describe('useCoreCommands', () => {
     mockDistributionState.isCloud = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
+    mockBillingState.initialized = true
+    mockBillingState.routing = 'workspace'
+    mockBillingState.onInitialize = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     vi.mocked(useModelStore().refresh).mockResolvedValue(true)
     vi.mocked(useMissingModelStore().refreshMissingModels).mockResolvedValue(
@@ -854,6 +873,39 @@ describe('useCoreCommands', () => {
         expect(useToast().warning).toHaveBeenCalled()
       }
     )
+
+    it('Comfy.QueuePrompt waits for billing to load on Cloud instead of denying a subscribed user', async () => {
+      mockDistributionState.isCloud = true
+      mockBillingState.canAccessSubscriptionFeatures = false
+      mockBillingState.initialized = false
+      mockBillingState.routing = 'unknown'
+      mockBillingState.onInitialize = () => {
+        mockBillingState.routing = 'workspace'
+        mockBillingState.initialized = true
+        mockBillingState.canAccessSubscriptionFeatures = true
+      }
+
+      await findCmd('Comfy.QueuePrompt').function()
+
+      expect(app.queuePrompt).toHaveBeenCalledWith(0, 1, expect.anything())
+      expect(
+        useSubscriptionPaywall().showSubscriptionDialog
+      ).not.toHaveBeenCalled()
+    })
+
+    it('Comfy.QueuePrompt neither queues nor shows the paywall when billing never loads on Cloud', async () => {
+      mockDistributionState.isCloud = true
+      mockBillingState.canAccessSubscriptionFeatures = false
+      mockBillingState.initialized = false
+      mockBillingState.routing = 'unknown'
+
+      await findCmd('Comfy.QueuePrompt').function()
+
+      expect(app.queuePrompt).not.toHaveBeenCalled()
+      expect(
+        useSubscriptionPaywall().showSubscriptionDialog
+      ).not.toHaveBeenCalled()
+    })
 
     it('Comfy.QueuePrompt queues on Cloud with an active subscription', async () => {
       mockDistributionState.isCloud = true
