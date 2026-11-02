@@ -36,7 +36,7 @@ watch(controlModel, props.widget.controlWidget.update)
             <ValueControlButton
               :mode="controlModel"
               :variant="unifiedRows ? 'button' : 'badge'"
-              class="mr-1 self-center"
+              :class="unifiedRows ? 'mx-1 self-center' : 'mr-1 self-center'"
               @pointerdown.stop
               @pointermove.stop
               @pointerup.stop
