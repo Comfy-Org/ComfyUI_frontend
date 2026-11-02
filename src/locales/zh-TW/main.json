@@ -5473,6 +5473,11 @@
   "templates": {
     "logoProviderSeparator": " ＆ "
   },
+  "textEditor": {
+    "characterCount": "{count} 個字元",
+    "expand": "放大",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "無法載入工作流程，因為此 ComfyUI 安裝缺少核心節點。請確認後端是否正確啟動。",
     "a1111EmbeddingsUnavailable": "無法從伺服器載入嵌入向量。工作流程已匯入，但嵌入向量名稱保留為純文字。",

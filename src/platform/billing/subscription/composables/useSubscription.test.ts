@@ -686,6 +686,53 @@ describe('useSubscription', () => {
       expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
     })
 
+    it('reads again after the shared read when a caller asks for a fresh answer', async () => {
+      let resolveStartup!: (status: BillingStatusResponse) => void
+      mockGetBillingStatus.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStartup = resolve
+        })
+      )
+      mockGetBillingStatus.mockResolvedValueOnce(
+        buildStatus({ is_active: true, renewal_date: 'after-consent' })
+      )
+      const { fetchStatusDirect, subscriptionStatus } =
+        useSubscriptionWithScope()
+
+      const startup = fetchStatusDirect()
+      const fresh = fetchStatusDirect({ fresh: true })
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(1)
+      resolveStartup(
+        buildStatus({ is_active: true, renewal_date: 'before-consent' })
+      )
+      await Promise.all([startup, fresh])
+
+      expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
+      expect(subscriptionStatus.value?.renewal_date).toBe('after-consent')
+    })
+
+    it('keeps the shared answer when the fresh read after it fails', async () => {
+      let resolveStartup!: (status: BillingStatusResponse) => void
+      mockGetBillingStatus.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStartup = resolve
+        })
+      )
+      mockGetBillingStatus.mockRejectedValueOnce(new Error('status down'))
+      const { fetchStatusDirect, subscriptionStatus } =
+        useSubscriptionWithScope()
+
+      const startup = fetchStatusDirect()
+      const fresh = fetchStatusDirect({ fresh: true })
+      resolveStartup(
+        buildStatus({ is_active: true, renewal_date: 'before-consent' })
+      )
+      await startup
+      await expect(fresh).rejects.toThrow('status down')
+
+      expect(subscriptionStatus.value?.renewal_date).toBe('before-consent')
+    })
+
     it('does not downgrade known-good status on a failed fetch', async () => {
       mockGetBillingStatus.mockResolvedValueOnce({
         is_active: true,
