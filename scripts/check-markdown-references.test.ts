@@ -23,8 +23,9 @@ const index: RepoIndex = {
   commands: new Set(['install', 'test:unit', 'vitest'])
 }
 
-const lines = (path: string, markdown: string) =>
-  findBrokenReferences(path, markdown, index).map(({ line }) => line)
+function lines(path: string, markdown: string): number[] {
+  return findBrokenReferences(path, markdown, index).map(({ line }) => line)
+}
 
 describe('findBrokenReferences', () => {
   test.for([

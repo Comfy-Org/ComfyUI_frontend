@@ -320,10 +320,13 @@ function main(argv: string[]): number {
   )
   const changed = base ? changedMarkdown(base) : undefined
   const removed = base ? removedPaths(base, index.paths) : new Set<string>()
-  const isReported = (file: string, finding: Finding) =>
-    !changed ||
-    changed.has(file) ||
-    finding.targets.some((target) => exists(removed, target))
+  function isReported(file: string, finding: Finding): boolean {
+    return (
+      !changed ||
+      changed.has(file) ||
+      finding.targets.some((target) => exists(removed, target))
+    )
+  }
 
   const failures = markdownFiles.flatMap((file) =>
     findBrokenReferences(file, readFileSync(file, 'utf8'), index)
