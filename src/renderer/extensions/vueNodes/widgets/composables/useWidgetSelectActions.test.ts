@@ -316,36 +316,47 @@ describe('useWidgetSelectActions', () => {
   })
 
   describe('HDR preview', () => {
-    it('splits a backslash-separated value into subfolder and filename', async () => {
-      vi.mocked(resolveWidgetValueAsset).mockResolvedValue(
-        fromPartial({ preview_id: 'preview-1' })
-      )
-      const locatorId = fromPartial<NodeLocatorId>('7')
+    it.for([
+      {
+        value: 'scenes\\sky.exr',
+        image: { filename: 'sky.exr', subfolder: 'scenes', type: 'input' }
+      },
+      {
+        value: 'sky.exr [output]',
+        image: { filename: 'sky.exr', subfolder: '', type: 'output' }
+      },
+      {
+        value: 'renders/sky.hdr [temp]',
+        image: { filename: 'sky.hdr', subfolder: 'renders', type: 'temp' }
+      }
+    ])(
+      'previews $value from its root, subfolder and filename',
+      async ({ value, image }) => {
+        vi.mocked(resolveWidgetValueAsset).mockResolvedValue(
+          fromPartial({ preview_id: 'preview-1' })
+        )
+        const locatorId = fromPartial<NodeLocatorId>('7')
 
-      useWidgetSelectActions({
-        modelValue: ref<string | undefined>('scenes\\sky.exr'),
-        dropdownItems: computed(() => []),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'image',
-            type: 'combo',
-            value: 'scenes\\sky.exr'
-          }),
-        uploadFolder: () => 'input',
-        uploadSubfolder: () => undefined,
-        locatorId: () => locatorId
-      })
+        useWidgetSelectActions({
+          modelValue: ref<string | undefined>(value),
+          dropdownItems: computed(() => []),
+          widget: () =>
+            fromPartial<SimplifiedWidget<string | undefined>>({
+              name: 'image',
+              type: 'combo',
+              value
+            }),
+          uploadFolder: () => 'input',
+          uploadSubfolder: () => undefined,
+          locatorId: () => locatorId
+        })
 
-      await vi.waitFor(() =>
-        expect(useNodeOutputStore().nodeOutputs[locatorId]?.images).toEqual([
-          {
-            filename: 'sky.exr',
-            subfolder: 'scenes',
-            preview_id: 'preview-1',
-            type: 'input'
-          }
-        ])
-      )
-    })
+        await vi.waitFor(() =>
+          expect(useNodeOutputStore().nodeOutputs[locatorId]?.images).toEqual([
+            { ...image, preview_id: 'preview-1' }
+          ])
+        )
+      }
+    )
   })
 })

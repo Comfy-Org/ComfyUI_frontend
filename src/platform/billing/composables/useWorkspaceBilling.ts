@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import {
   computed,
   getCurrentScope,
@@ -238,6 +237,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       scheduledChange: status.scheduled_change ?? null,
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
+      endedAt: status.ended_at,
       isCancelled: status.subscription_status === 'canceled',
       hasFunds: status.has_funds,
       agentHasFunds:
@@ -276,6 +276,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const renewalDate = computed(() => statusData.value?.renewal_date ?? null)
   const renewalInvoice = computed(
     () => statusData.value?.renewal_invoice ?? null
+  )
+  const periodCreditGrant = computed(
+    () => statusData.value?.period_credit_grant ?? null
   )
 
   const plans = computed(() => billingPlans.plans.value)
@@ -394,12 +397,6 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       seatCapacity.value = seatCapacityFrom(status)
       statusData.value = status
       statusReadAuthoritative.value = true
-      if (workspaceId && status.billing_rail) {
-        useWorkspaceBillingStateStore().setWorkspaceBillingRail(
-          workspaceId,
-          status.billing_rail
-        )
-      }
       adoption = resumePendingOperation(status)
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
@@ -880,6 +877,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     tier,
     renewalDate,
     renewalInvoice,
+    periodCreditGrant,
     readAndAdoptPendingOperation,
 
     // Actions

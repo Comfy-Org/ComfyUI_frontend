@@ -71,8 +71,6 @@
   "publicEntryPoints": [
     "src/platform/workflowErrors/panel/LocateNodeButton.vue"
   ],
-  "allowedDependencies": ["extension-manager", "keybindings"],
-  "allowedConsumers": ["missing-media", "missing-models", "node-replacement"],
   "characterizationScenarios": [
     {
       "name": "Error groups classify execution errors, missing nodes, missing models, and swappable nodes",
