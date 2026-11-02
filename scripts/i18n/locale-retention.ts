@@ -7,7 +7,7 @@ import type {
   LocaleTrackedLeaf
 } from './locale-tree'
 import { getLeaf } from './locale-tree'
-import { countPluralForms } from './protected-tokens'
+import { countPluralForms, hasBlankPluralForm } from './protected-tokens'
 
 function usesEnglishFallback({
   current,
@@ -26,16 +26,15 @@ function usesEnglishFallback({
 }
 
 function hasLocalePluralForms(
-  source: LocaleTrackedLeaf,
-  current: LocaleTrackedLeaf | undefined,
+  source: string,
+  current: string,
   pluralFormCount: number
-): current is string {
+): boolean {
   return (
-    typeof source === 'string' &&
-    typeof current === 'string' &&
     countPluralForms(source) > 1 &&
     countPluralForms(source) !== pluralFormCount &&
-    countPluralForms(current) === pluralFormCount
+    countPluralForms(current) === pluralFormCount &&
+    !hasBlankPluralForm(current)
   )
 }
 
@@ -57,6 +56,8 @@ function retainLocalePluralForms(
     const current = getLeaf(existing, leaf.path)
     if (
       !modifiedKeys.has(key) &&
+      typeof leaf.value === 'string' &&
+      typeof current === 'string' &&
       hasLocalePluralForms(leaf.value, current, pluralFormCount) &&
       !leafCorrupted(leaf.value, current)
     )

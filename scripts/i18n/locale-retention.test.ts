@@ -163,7 +163,12 @@ describe('locale retention', () => {
           existing: { used: '{n} кредит | {n} кредитов' },
           pluralFormCount: 4
         },
-        { label: 'a locale without its own plural rule', existing: russian }
+        { label: 'a locale without its own plural rule', existing: russian },
+        {
+          label: 'copy with a blank plural form',
+          existing: { used: '{n} кредит | {n} кредита |  | {n} кредита' },
+          pluralFormCount: 4
+        }
       ]
     )('regenerates $label', ({ existing, pluralFormCount }) => {
       expect(
