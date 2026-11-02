@@ -119,7 +119,9 @@ function onSelect(value: unknown): void {
                   )
                 "
               />
-              <span class="min-w-0 flex-1 text-sm/5">{{ model.label }}</span>
+              <span class="min-w-0 flex-1 text-sm/5 text-foreground">{{
+                model.label
+              }}</span>
               <span
                 aria-hidden="true"
                 :class="
