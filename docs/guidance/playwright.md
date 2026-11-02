@@ -268,19 +268,19 @@ const test = comfyPageFixture.extend({
 })
 ```
 
-| Endpoint                                          | Type source                                                              |
-| ------------------------------------------------- | ------------------------------------------------------------------------ |
-| Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types`                                                 |
-| Registry (releases, nodes, publishers)            | `@comfyorg/registry-types`                                               |
-| Manager (queue tasks, packages)                   | `@comfyorg/api-client/generatedManagerTypes`                             |
-| Local webserver responses that differ from ingest | `@comfyorg/api-client/types`                                             |
-| WebSocket messages and custom-node outputs        | `@comfyorg/api-client/executionTypes`                                    |
-| Frontend settings                                 | `@comfyorg/settings-core/types`                                          |
-| Node definitions                                  | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts` |
-| Templates                                         | `@comfyorg/api-client/templateTypes`                                     |
-| Jobs API                                          | `@comfyorg/api-client/jobTypes`                                          |
-| Workflow JSON                                     | `@comfyorg/graph-model/workflowSchema`                                   |
-| Asset metadata                                    | `src/types/metadataTypes.ts`                                             |
+| Endpoint                                          | Type source                                                                            |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types`                                                               |
+| Registry (releases, nodes, publishers)            | `@comfyorg/registry-types`                                                             |
+| Manager (queue tasks, packages)                   | `@comfyorg/api-client/generatedManagerTypes`                                           |
+| Local webserver responses that differ from ingest | `@comfyorg/api-client/types`                                                           |
+| WebSocket messages and custom-node outputs        | `@comfyorg/api-client/executionTypes`                                                  |
+| Frontend settings                                 | `@comfyorg/settings-core/types`                                                        |
+| Node definitions                                  | `@comfyorg/object-info-parser`, `@comfyorg/object-info-parser/schemas/nodeDefSchemaV2` |
+| Templates                                         | `@comfyorg/api-client/templateTypes`                                                   |
+| Jobs API                                          | `@comfyorg/api-client/jobTypes`                                                        |
+| Workflow JSON                                     | `@comfyorg/graph-model/workflowSchema`                                                 |
+| Asset metadata                                    | `src/types/metadataTypes.ts`                                                           |
 
 When mocking a raw endpoint body, annotate it with the generated type, not an
 app-facing type derived from it. Keep values stable: no current dates or

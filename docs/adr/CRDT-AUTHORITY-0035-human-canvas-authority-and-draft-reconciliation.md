@@ -24,7 +24,8 @@ Two channels carry the human's canvas to the server:
    into `doc_ops`, and `opSender.ts` delivers them. The minter's document-bound
    gate is closed when no thread is bound: before the first turn acknowledges,
    and after "new chat". The sender drops queued operations as `undeliverable`
-   when the binding changes or the transport stays refused. Remote follower
+   when the binding changes, and holds them through a refused transport
+   ([CRDT-REPLAY-0039](CRDT-REPLAY-0039-retain-exhausted-operations-for-same-page-replay.md)). Remote follower
    writes use the same graph API with `agent-remote` provenance, so they update
    the live graph and stores without minting operations back to the host.
 2. **The turn draft.** Every turn whose target has a cloud workflow id, and
@@ -73,7 +74,8 @@ depends on it.
    thread, the retained id and the cleared draft, not a different id.
 3. **Operations are best-effort delivery; the draft is the reconciliation
    primitive.** The frontend does not persist or re-send operations dropped as
-   `undeliverable`. Operations minted in one tick form one sender admission
+   `undeliverable`; transport exhaustion is no longer such a drop
+   (CRDT-REPLAY-0039). Operations minted in one tick form one sender admission
    (`opCoalescer.ts`), which `OpSender` splits into the minimum number of
    wire-capped batches. Edits within the wire cap therefore take one round trip
    instead of N, narrowing the window in which a clear made while bound is lost
@@ -98,10 +100,11 @@ depends on it.
    assumes that one.
 6. **The server's sequence check is the guard against a stale canvas.** A
    human-authored draft posted from a canvas that missed follower frames (gap,
-   disconnect) would revert agent work the user never saw. We rely on the
-   sequence check the assumed backend change carries and record as a
-   follow-up that the client should withhold `draft` while a bound follower
-   is disconnected or in a gap.
+   disconnect) would revert agent work the user never saw. The server's
+   sequence check is one guard; the client also withholds `draft` when the
+   follower marks the canvas stale after a disconnect, gap, or reset. A fresh
+   subscription awaiting its first catch-up does not itself mark the canvas
+   stale: `isCatchingUp` gates operation sends, not the draft.
 
 Alternatives considered and rejected:
 
@@ -143,8 +146,11 @@ Alternatives considered and rejected:
   target whose document diverged from the cleared canvas) still fails in
   production; the frontend cannot fix it alone, and nothing in this
   repository can confirm when that happens.
-- The stale-canvas risk in decision 6 is accepted, not removed, until the
-  withhold-draft follow-up lands.
+- The draft path is a whole-document replace, not a CRDT merge. It stays the
+  reconciliation primitive for what ops cannot carry (edits made while unbound
+  or in a subgraph interior). Conflicts on a bound document are settled by op
+  stamps under
+  [CRDT-STAMPS-0051](CRDT-STAMPS-0051-human-ops-stamp-above-what-they-have-received.md).
 - Coalescing shares one batch's prefix-abort semantics across operations that
   were independent before: a host rejection of one operation leaves the later
   operations of that batch unapplied, where separate batches were independent.
