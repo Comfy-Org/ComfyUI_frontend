@@ -1,8 +1,13 @@
 import type {
   ListInvitesResponse,
-  ListMembersResponse
+  ListMembersResponse,
+  ListWorkspacesResponse
 } from '@comfyorg/ingest-types'
 import { computed, nextTick } from 'vue'
+import { disposePinia, getActivePinia, setActivePinia } from 'pinia'
+import type { Pinia } from 'pinia'
+import { createDisposablePinia } from '@/testing/pinia'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
@@ -502,6 +507,104 @@ describe('useTeamWorkspaceStore', () => {
       await store.initialize()
 
       expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+    })
+
+    it.for([
+      {
+        owner: 'store',
+        dispose: (pinia: Pinia) => useTeamWorkspaceStore(pinia).$dispose()
+      },
+      { owner: 'Pinia', dispose: disposePinia }
+    ])(
+      'cancels an initialization retry when its $owner scope stops',
+      async ({ dispose }) => {
+        using oldOwner = createDisposablePinia()
+        setActivePinia(oldOwner.pinia)
+        const auth = useWorkspaceAuthStore(oldOwner.pinia)
+        const initializeFromSession = vi.spyOn(auth, 'initializeFromSession')
+        const store = useTeamWorkspaceStore(oldOwner.pinia)
+        mockWorkspaceApi.list.mockRejectedValue(new Error('temporary failure'))
+        let settled = false
+        const initialization = store.initialize().then(
+          () => {
+            settled = true
+          },
+          (error: unknown) => error
+        )
+        await vi.advanceTimersByTimeAsync(0)
+
+        dispose(oldOwner.pinia)
+        using freshOwner = createDisposablePinia()
+        setActivePinia(freshOwner.pinia)
+        useSelectionStore(freshOwner.pinia)
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(settled).toBe(true)
+        expect(vi.getTimerCount()).toBe(0)
+        await vi.advanceTimersByTimeAsync(1000)
+        expect(await initialization).toBeUndefined()
+        expect(getActivePinia() === freshOwner.pinia).toBe(true)
+        expect(useSelectionStore().getRevision()).toBe(0)
+        expect(initializeFromSession).toHaveBeenCalledOnce()
+        expect(mockWorkspaceApi.list).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('ignores a pending session-cookie completion after its scope stops', async () => {
+      using oldOwner = createDisposablePinia()
+      setActivePinia(oldOwner.pinia)
+      const auth = useWorkspaceAuthStore(oldOwner.pinia)
+      const initializeFromSession = vi.spyOn(auth, 'initializeFromSession')
+      const cookie = deferred<void>()
+      mockEnsureSessionCookie.mockReturnValue(cookie.promise)
+      mockWorkspaceApi.list.mockRejectedValue(
+        new NoWorkspaceAccessError('terminal diagnostic result')
+      )
+      const store = useTeamWorkspaceStore(oldOwner.pinia)
+      const initialization = store.initialize().catch((error: unknown) => error)
+      await vi.advanceTimersByTimeAsync(0)
+
+      disposePinia(oldOwner.pinia)
+      using freshOwner = createDisposablePinia()
+      setActivePinia(freshOwner.pinia)
+      useSelectionStore(freshOwner.pinia)
+      cookie.resolve(undefined)
+
+      expect(await initialization).toBeUndefined()
+      expect(initializeFromSession).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.list).not.toHaveBeenCalled()
+      expect(getActivePinia() === freshOwner.pinia).toBe(true)
+      expect(useSelectionStore().getRevision()).toBe(0)
+    })
+
+    it('ignores a pending workspace response after its scope stops', async () => {
+      using oldOwner = createDisposablePinia()
+      setActivePinia(oldOwner.pinia)
+      const auth = useWorkspaceAuthStore(oldOwner.pinia)
+      const switchWorkspace = vi
+        .spyOn(auth, 'switchWorkspace')
+        .mockResolvedValue(undefined)
+      const listing = deferred<ListWorkspacesResponse>()
+      mockWorkspaceApi.list.mockReturnValue(listing.promise)
+      const store = useTeamWorkspaceStore(oldOwner.pinia)
+      const initialization = store.initialize().catch((error: unknown) => error)
+      await vi.advanceTimersByTimeAsync(0)
+
+      disposePinia(oldOwner.pinia)
+      using freshOwner = createDisposablePinia()
+      setActivePinia(freshOwner.pinia)
+      useSelectionStore(freshOwner.pinia)
+      listing.resolve({
+        workspaces: [mockPersonalWorkspace],
+        can_create_workspace: true,
+        max_owned_workspaces: 5
+      })
+
+      expect(await initialization).toBeUndefined()
+      expect(store.workspaces).toEqual([])
+      expect(switchWorkspace).not.toHaveBeenCalled()
+      expect(getActivePinia() === freshOwner.pinia).toBe(true)
+      expect(useSelectionStore().getRevision()).toBe(0)
     })
 
     it('sets error state when workspaces fetch fails after retries', async () => {
