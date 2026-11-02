@@ -5,11 +5,8 @@ import {
   derivePlanRow,
   formatPlanDate,
   planRowAction
-} from '@/platform/billing/components/billingTab/planRow'
-import type {
-  PlanRowFacts,
-  PlanRowState
-} from '@/platform/billing/components/billingTab/planRow'
+} from './planRow'
+import type { PlanRowFacts, PlanRowState } from './planRow'
 
 const baseFacts: PlanRowFacts = {
   subscriptionStatus: 'active',

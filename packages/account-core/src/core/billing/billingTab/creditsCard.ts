@@ -1,13 +1,21 @@
-import type { BalanceInfo } from '@/platform/billing/composables/types'
-import type { AutoReloadSettings, BillingStatus } from '@comfyorg/billing-core'
-import type { PeriodCreditGrant } from '@comfyorg/ingest-types'
 import type {
-  PlanKind,
-  PlanRowState
-} from '@/platform/billing/components/billingTab/planRow'
+  AutoReloadSettings,
+  BillingStatus,
+  PeriodCreditGrant
+} from '@comfyorg/ingest-types'
+
+import type { PlanKind, PlanRowState } from './planRow'
+
+export interface CreditsCardBalance {
+  amountMicros: number
+  effectiveBalanceMicros?: number
+  effectiveBalanceAuthoritative?: boolean
+  prepaidBalanceMicros?: number
+  cloudCreditBalanceMicros?: number
+}
 
 export interface CreditsCardFacts {
-  balance: BalanceInfo | null
+  balance: CreditsCardBalance | null
   planKind: PlanRowState['kind']
   servedPlanKind: PlanKind | null
   billingStatus: BillingStatus | null

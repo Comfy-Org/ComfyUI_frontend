@@ -176,11 +176,11 @@ import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanChe
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/billing/components/billingTab/BillingPlanRow.vue'
-import { addCreditsEmphasis } from '@/platform/billing/components/billingTab/creditsCard'
 import {
+  addCreditsEmphasis,
   deriveBillingTabLoad,
   planRowAction
-} from '@/platform/billing/components/billingTab/planRow'
+} from '@comfyorg/account-core/billing'
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'

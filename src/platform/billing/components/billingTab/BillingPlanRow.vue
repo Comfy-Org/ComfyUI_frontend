@@ -60,12 +60,12 @@ import BillingPlanLifecycle from '@/platform/billing/components/billingTab/Billi
 import {
   CONTACT_SALES_URL,
   formatPlanDate
-} from '@/platform/billing/components/billingTab/planRow'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+} from '@comfyorg/account-core/billing'
 import type {
   PlanRowAction,
   PlanRowState
-} from '@/platform/billing/components/billingTab/planRow'
+} from '@comfyorg/account-core/billing'
+import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
 
 const {
   state,
