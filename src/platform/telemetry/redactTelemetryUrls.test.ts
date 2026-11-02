@@ -267,7 +267,6 @@ describe('redactTelemetryUrls', () => {
     const redacted = redactTelemetryUrls(
       'https://a.test/x|https://user:pw@b.test/y'
     )
-    expect(redacted).not.toContain('user:pw@')
     expect(redacted).toBe('https://a.test/x|https://b.test/y')
   })
 
@@ -472,13 +471,17 @@ describe('redactTelemetryValues', () => {
 
   it('disambiguates distinct keys that redact to the same string instead of dropping one', () => {
     const redacted = redactTelemetryValues({
+      'https://h/x~2': 'literal',
       'https://h/x?job=1': 'ok',
-      'https://h/x?job=2': 'timeout'
+      'https://h/x?job=2': 'timeout',
+      'https://h/x?job=3': 'failed'
     })
 
     expect(redacted).toEqual({
+      'https://h/x~2': 'literal',
       'https://h/x': 'ok',
-      'https://h/x~2': 'timeout'
+      'https://h/x~3': 'timeout',
+      'https://h/x~4': 'failed'
     })
   })
 
