@@ -101,9 +101,6 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
       jsonRoute(createBillingCapabilities('ws-personal', { can_cancel: true }))
     )
   )
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 0, currency: 'usd' }))
-  )
 
   await page.route('**/api/billing/subscription/cancel', async (r) => {
     requests.push(r.request())

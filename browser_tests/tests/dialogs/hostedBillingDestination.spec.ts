@@ -133,9 +133,6 @@ async function mockCloudBoot(page: Page): Promise<CloudBootRequests> {
   await page.route('**/api/billing/balance', (r) =>
     r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
   )
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
-  )
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
   )

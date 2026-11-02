@@ -108,14 +108,6 @@ const test = comfyPageFixture.extend({
       route.fulfill({ status: 204 })
     )
 
-    await page.route('**/customers/balance', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBalance)
-      })
-    )
-
     // The popover sources its data from the workspace billing endpoints.
     await page.route('**/api/billing/capabilities', (route) => {
       if (route.request().method() !== 'GET') return route.fallback()

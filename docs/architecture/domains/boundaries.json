@@ -710,6 +710,7 @@
           "src/platform/billing/composables/deriveBillingBanner.test.ts",
           "src/platform/billing/composables/readOnRail.ts",
           "src/platform/billing/composables/readOnRail.test.ts",
+          "src/platform/billing/composables/readWorkspaceBillingEvents.ts",
           "src/platform/billing/composables/useBillingBanner.ts",
           "src/platform/billing/composables/useBillingBanner.test.ts",
           "src/platform/billing/composables/useBillingCapabilities.ts",
@@ -736,9 +737,7 @@
           "src/platform/billing/composables/useWorkspaceBilling.test.ts",
           "src/platform/billing/composables/useWorkspacePlanPricing.ts",
           "src/platform/billing/stores/billingOperationStore.ts",
-          "src/platform/billing/stores/billingOperationStore.test.ts",
-          "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.ts",
-          "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts"
+          "src/platform/billing/stores/billingOperationStore.test.ts"
         ]
       },
       {
@@ -750,7 +749,6 @@
           "src/platform/billing/hostedBillingRoutes.ts",
           "src/platform/billing/hostedBillingRoutes.test.ts",
           "src/platform/billing/subscribeInput.ts",
-          "src/platform/billing/subscription/utils/checkoutAttributionLoader.ts",
           "src/platform/billing/subscription/utils/paymentReturnUrl.ts",
           "src/platform/billing/subscription/utils/paymentReturnUrl.test.ts",
           "src/platform/billing/subscription/utils/subscriptionCheckoutTracker.ts",
@@ -1014,7 +1012,6 @@
         "patterns": [
           "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue",
           "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
-          "src/components/topbar/CloudBadge.vue",
           "src/platform/cloud/notification/components/**",
           "src/platform/cloud/oauth/OAuthConsentView.stories.ts",
           "src/platform/cloud/oauth/OAuthConsentView.vue",
