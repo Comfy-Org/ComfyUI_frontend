@@ -40,6 +40,7 @@ import type {
   TeamCreditStopSummary
 } from '@comfyorg/ingest-types'
 import {
+  zBillingCapabilityDenials,
   zRetentionAcceptance,
   zRetentionFlowResponse
 } from '@comfyorg/ingest-types/zod'
@@ -107,6 +108,11 @@ export type BillingCapabilitiesRead = Omit<
 export type BillingTopUpDenial = NonNullable<
   BillingCapabilityDenials['can_top_up']
 >
+export function parseBillingTopUpDenial(
+  reason: string | undefined
+): BillingTopUpDenial | undefined {
+  return zBillingCapabilityDenials.shape.can_top_up.safeParse(reason).data
+}
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
 export type { SavedPaymentMethod }

@@ -9,10 +9,8 @@ import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/remote/ingest/capabilityRevision'
-import type {
-  BillingCapabilitiesRead,
-  BillingTopUpDenial
-} from '@comfyorg/billing-core'
+import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
+import { parseBillingTopUpDenial } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
@@ -118,11 +116,8 @@ function useBillingCapabilitiesInternal() {
   )
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
   const canTopUp = computed(() => capabilities.value?.can_top_up ?? false)
-  const topUpDenial = computed<BillingTopUpDenial | undefined>(
-    () =>
-      resolvedResponse.value?.denied_reasons?.can_top_up as
-        | BillingTopUpDenial
-        | undefined
+  const topUpDenial = computed(() =>
+    parseBillingTopUpDenial(resolvedResponse.value?.denied_reasons?.can_top_up)
   )
   const canManageBilling = computed(() =>
     receiveServerFact(
