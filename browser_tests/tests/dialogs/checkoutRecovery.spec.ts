@@ -73,6 +73,8 @@ const LEGACY_ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
+  next_charge: null,
   team_credit_stop: null,
   scheduled_change: null,
   max_seats: 1,

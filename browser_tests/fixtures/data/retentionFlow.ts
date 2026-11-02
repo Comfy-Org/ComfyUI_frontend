@@ -22,7 +22,9 @@ export const PERSONAL_PRO_BILLING_STATUS = {
   team_credit_stop: null,
   scheduled_change: null,
   max_seats: 1,
-  occupied_seats: 1
+  occupied_seats: 1,
+  ended_at: null,
+  next_charge: null
 } satisfies BillingStatusResponse
 
 const subscription: RetentionFlowResponse['subscription'] = {

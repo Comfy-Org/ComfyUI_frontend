@@ -17,6 +17,7 @@ const deployment: WorkspaceDeployment = {
   release_id: 'r-1',
   build_name: 'Studio Build',
   release_version: 1,
+  can_start: false,
   status: 'ready',
   created_at: '2026-10-01T00:00:00Z'
 }
