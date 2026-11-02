@@ -2,6 +2,7 @@ import { watch } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { BillingTopUpDenial } from '@comfyorg/billing-core'
 import type {
   DowngradeToPersonalResult,
   SubscriptionDialogOptions,
@@ -26,6 +27,25 @@ import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdenti
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
+const DENIED_TOP_UP_OUTCOME: Record<
+  BillingTopUpDenial | 'unresolved',
+  'member' | 'plans' | 'handled' | { toast: string }
+> = {
+  not_workspace_owner: 'member',
+  free_plan: 'plans',
+  no_subscription: 'plans',
+  subscription_ended: 'plans',
+  payment_past_due: 'handled',
+  topup_purchases_paused: { toast: 'credits.topUp.deniedTopupsPaused' },
+  creator_only_provisioning: { toast: 'credits.topUp.deniedCreatorOnly' },
+  tier_not_self_serve: { toast: 'subscription.planUnavailable.salesManaged' },
+  not_a_member: { toast: 'subscription.planUnavailable.notAMember' },
+  subscription_status_unrecognized: {
+    toast: 'subscription.planUnavailable.billingStateUnknown'
+  },
+  unresolved: { toast: 'subscription.planUnavailable.billingStateUnknown' }
+}
+
 export function useBillingDialogs() {
   const dialogStore = useDialogStore()
 
@@ -48,47 +68,28 @@ export function useBillingDialogs() {
     }
 
     if (!canTopUp.value) {
-      switch (topUpDenial.value) {
-        case 'not_workspace_owner':
-          return dialogStore.showDialog({
-            key: 'insufficient-credits-member',
-            component: InsufficientCreditsMemberDialog,
-            props: {
-              onClose: () =>
-                dialogStore.closeDialog({ key: 'insufficient-credits-member' })
-            },
-            dialogComponentProps: {
-              headless: true
-            }
-          })
-        case 'free_plan':
-        case 'no_subscription':
-        case 'subscription_ended':
-          await useSubscriptionDialog().show({
-            reason: options?.source ?? 'out_of_credits'
-          })
-          return
-        case 'payment_past_due':
-          return // handled above
-        case 'topup_purchases_paused':
-          useToast().error(t('credits.topUp.deniedTopupsPaused'))
-          return
-        case 'creator_only_provisioning':
-          useToast().error(t('credits.topUp.deniedCreatorOnly'))
-          return
-        case 'tier_not_self_serve':
-          useToast().error(t('subscription.planUnavailable.salesManaged'))
-          return
-        case 'not_a_member':
-          useToast().error(t('subscription.planUnavailable.notAMember'))
-          return
-        case 'subscription_status_unrecognized':
-        case undefined:
-          useToast().error(
-            t('subscription.planUnavailable.billingStateUnknown')
-          )
-          return
+      const outcome = DENIED_TOP_UP_OUTCOME[topUpDenial.value ?? 'unresolved']
+      if (outcome === 'member') {
+        return dialogStore.showDialog({
+          key: 'insufficient-credits-member',
+          component: InsufficientCreditsMemberDialog,
+          props: {
+            onClose: () =>
+              dialogStore.closeDialog({ key: 'insufficient-credits-member' })
+          },
+          dialogComponentProps: {
+            headless: true
+          }
+        })
       }
+      if (outcome === 'plans') {
+        await useSubscriptionDialog().show({
+          reason: options?.source ?? 'out_of_credits'
+        })
+      } else if (outcome !== 'handled') {
+        useToast().error(t(outcome.toast))
+      }
+      return
     }
 
     return dialogStore.showDialog({

@@ -6,7 +6,6 @@ import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
@@ -197,38 +196,6 @@ describe('showTopUpCreditsDialog', () => {
       else expect(useToast().error).toHaveBeenCalledExactlyOnceWith(toast)
     }
   )
-
-  it('opens the plans dialog for a team owner on the free plan', async () => {
-    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().topUpDenial = computed(() => 'free_plan')
-
-    await useBillingDialogs().showTopUpCreditsDialog({
-      isInsufficientCredits: true,
-      source: 'agent_paywall'
-    })
-
-    expect(useSubscriptionDialog().show).toHaveBeenCalledExactlyOnceWith({
-      reason: 'agent_paywall'
-    })
-    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
-  })
-
-  it('tells a personal owner top-ups are paused instead of opening a dialog', async () => {
-    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().topUpDenial = computed(
-      () => 'topup_purchases_paused'
-    )
-
-    await useBillingDialogs().showTopUpCreditsDialog({
-      isInsufficientCredits: true
-    })
-
-    expect(useToast().error).toHaveBeenCalledOnce()
-    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
-    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
-  })
 
   it('awaits an in-flight capability read instead of dropping the request', async () => {
     const canTopUp = ref(false)

@@ -1,7 +1,3 @@
-import type { BillingCapabilityDenials,
-  BillingCapabilitiesResponse,
-  HostedTopupCheckout,
-  SubscriptionState } from '@comfyorg/ingest-types'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -9,6 +5,11 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type {
+  BillingCapabilitiesResponse,
+  HostedTopupCheckout,
+  SubscriptionState
+} from '@comfyorg/ingest-types'
 
 import { i18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json'
@@ -21,7 +22,7 @@ import type {
 } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import type { Plan } from '@comfyorg/billing-core'
+import type { BillingTopUpDenial, Plan } from '@comfyorg/billing-core'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -94,7 +95,7 @@ interface Scenario {
   autoTopUpEnabled?: boolean
   canManageAutoTopUp?: boolean
   canTopUp?: boolean
-  topUpDenial?: NonNullable<BillingCapabilityDenials['can_top_up']>
+  topUpDenial?: BillingTopUpDenial
   isPaused?: boolean
   billingStatus?: 'paid' | 'paused'
   hasParkedBillingOperation?: boolean

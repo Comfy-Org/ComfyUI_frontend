@@ -2,6 +2,7 @@ import type {
   AutoReloadSettings,
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
+  BillingCapabilityDenials,
   BillingEventsResponse,
   BillingOpStatusResponse,
   BillingPlansResponse,
@@ -103,6 +104,9 @@ export type BillingCapabilitiesRead = Omit<
   Partial<Pick<BillingCapabilitiesResponse, 'auto_top_up_enabled'>> & {
     denied_reasons?: Readonly<Partial<Record<string, string>>>
   }
+export type BillingTopUpDenial = NonNullable<
+  BillingCapabilityDenials['can_top_up']
+>
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
 export type { SavedPaymentMethod }
