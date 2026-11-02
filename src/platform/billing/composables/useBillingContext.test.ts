@@ -476,11 +476,28 @@ describe('useBillingContext', () => {
       const context = useBillingContext()
       vi.clearAllMocks()
 
-      const first = context.initialize()
-      const second = context.initialize()
+      let settleStatus!: () => void
+      vi.mocked(billingApi.getBillingStatus).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            settleStatus = () =>
+              resolve({ ...DEFAULT_BILLING_STATUS, ...mockBillingStatus.value })
+          })
+      )
+      const settled = { first: false, second: false }
+      const first = context.initialize().then(() => (settled.first = true))
+      const second = context.initialize().then(() => (settled.second = true))
       loaded.value = true
+      await vi.waitFor(() =>
+        expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(1)
+      )
+
+      expect(settled).toEqual({ first: false, second: false })
+
+      settleStatus()
       await Promise.all([first, second])
 
+      expect(settled).toEqual({ first: true, second: true })
       expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(1)
     })
 
