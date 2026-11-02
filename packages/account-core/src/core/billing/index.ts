@@ -384,3 +384,5 @@ export {
   addCreditsAvailability,
   isMemberTopUpDenial
 } from './billingTab/addCreditsAvailability'
+export type { TopUpBound } from './topUpBounds'
+export { servedTopUpBound } from './topUpBounds'
