@@ -685,8 +685,6 @@
           "src/platform/billing/composables/useBillingDialogs.topUpCredits.test.ts",
           "src/platform/billing/composables/useBillingRouting.ts",
           "src/platform/billing/composables/useBillingRouting.test.ts",
-          "src/platform/billing/composables/useLegacyBilling.ts",
-          "src/platform/billing/composables/useLegacyBilling.test.ts",
           "src/platform/billing/composables/useNextInvoice.ts",
           "src/platform/billing/composables/useNextInvoice.test.ts",
           "src/platform/billing/composables/usePendingTopup.ts",
@@ -764,8 +762,6 @@
       {
         "name": "billing/presentation",
         "patterns": [
-          "src/platform/billing/components/TopUpCreditsDialogContentLegacy.vue",
-          "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts",
           "src/platform/billing/components/TopbarSubscribeButton.vue",
           "src/platform/billing/components/TopbarSubscribeButton.test.ts",
           "src/platform/billing/components/credit-slider/**",

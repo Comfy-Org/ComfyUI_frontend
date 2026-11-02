@@ -4865,7 +4865,6 @@
     "cancelDialog": {
       "endOfBillingPeriod": "el final de tu período de facturación",
       "failed": "Error al cancelar la suscripción",
-      "finishOnStripe": "Tu suscripción aún no está cancelada. Termina de cancelarla en la página de Stripe que se acaba de abrir. Hasta que lo hagas, tu plan se renovará como de costumbre.",
       "workspaceChanged": "Tu espacio de trabajo activo ha cambiado. Vuelve al anterior e inténtalo de nuevo."
     },
     "cancelFlow": {

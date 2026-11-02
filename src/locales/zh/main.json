@@ -4865,7 +4865,6 @@
     "cancelDialog": {
       "endOfBillingPeriod": "您的计费周期结束时",
       "failed": "取消订阅失败",
-      "finishOnStripe": "您的订阅尚未取消。请在刚刚打开的 Stripe 页面完成取消操作。在此之前，您的套餐将照常续订。",
       "workspaceChanged": "您的活跃工作区已更改。请切换回去后重试。"
     },
     "cancelFlow": {
