@@ -21,7 +21,7 @@ import type {
   TerminalSize
 } from '@comfyorg/api-client/executionTypes'
 import type { Settings } from '@comfyorg/settings-core/types'
-import type { Comfy as ComfyNodeApi } from '@/platform/nodeApi/comfyApi'
+import type { createComfyApi } from '@/platform/nodeApi/comfyApi'
 import type { ComfyApp } from '@/types/comfy'
 import type { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
@@ -60,6 +60,7 @@ export { slotId } from '@comfyorg/graph-model/slotId'
 export type { ComfyExtension } from './comfy'
 export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 export type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
+export type ComfyNodeApi = ReturnType<typeof createComfyApi>
 export type { ComfyApp } from '@/types/comfy'
 export type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 export type { InputSpec } from '@comfyorg/object-info-parser'
