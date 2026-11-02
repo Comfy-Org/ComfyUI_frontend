@@ -73,6 +73,92 @@ test.describe(
   }
 )
 
+test.describe('Add Node Menu', { tag: ['@canvas', '@ui'] }, () => {
+  test('Opens category submenus on hover', async ({ comfyPage }) => {
+    const { contextMenu } = comfyPage
+    const canvasMenu = contextMenu.litegraphMenuContaining('Add Node >')
+    const addNodeMenu = contextMenu.litegraphMenuContaining('model >')
+    const modelMenu = contextMenu.litegraphMenuContaining('loaders >')
+    const loadersMenu = contextMenu.litegraphMenuContaining('Load VAE')
+    const category = (name: string) =>
+      addNodeMenu.getByRole('menuitem', { name, exact: true })
+
+    await test.step('Hovering a category opens its submenu', async () => {
+      await comfyPage.canvas.click({
+        button: 'right',
+        position: DefaultGraphPositions.emptySpace
+      })
+      await contextMenu.clickLitegraphMenuItem('Add Node')
+      await category('model >').hover()
+      await expect(modelMenu).toBeVisible()
+    })
+
+    await test.step('Clicking an open category keeps nested submenus', async () => {
+      await modelMenu
+        .getByRole('menuitem', { name: 'loaders >', exact: true })
+        .hover()
+      await expect(loadersMenu).toBeVisible()
+      await category('model >').click()
+      await expect(loadersMenu).toBeVisible()
+    })
+
+    await test.step('Gliding diagonally past sibling categories keeps the open submenu', async () => {
+      const sampling = modelMenu.getByRole('menuitem', {
+        name: 'sampling >',
+        exact: true
+      })
+      await category('model >').hover({ position: { x: 10, y: 5 } })
+      const target = (await sampling.boundingBox())!
+      await comfyPage.page.mouse.move(
+        target.x + target.width / 2,
+        target.y + target.height / 2,
+        { steps: 10 }
+      )
+      await expect(sampling).toHaveAttribute('aria-expanded', 'true')
+      await expect(modelMenu).toBeVisible()
+    })
+
+    await test.step('Hovering another category swaps the submenu', async () => {
+      await category('latent >').hover()
+      await expect(modelMenu).toBeHidden()
+      await expect(category('latent >')).toHaveAttribute(
+        'aria-expanded',
+        'true'
+      )
+      await expect(contextMenu.litegraphContextMenu).toHaveCount(3)
+    })
+
+    await test.step('Submenus at the right edge open leftward', async () => {
+      const { width, height } = (await comfyPage.canvas.boundingBox())!
+      await comfyPage.canvas.click({
+        position: { x: DefaultGraphPositions.emptySpace.x, y: height - 50 }
+      })
+      await contextMenu.waitForHidden()
+      await comfyPage.toast.closeToasts()
+      await comfyPage.canvas.click({
+        button: 'right',
+        position: { x: width - 10, y: DefaultGraphPositions.emptySpace.y }
+      })
+      await contextMenu.clickLitegraphMenuItem('Add Node')
+      await category('model >').hover()
+      await expect(modelMenu).toBeVisible()
+      await expect
+        .poll(async () => {
+          const [parent, child, grandchild] = await Promise.all(
+            [canvasMenu, addNodeMenu, modelMenu].map((menu) =>
+              menu.boundingBox()
+            )
+          )
+          return (
+            child!.x + child!.width <= parent!.x + 1 &&
+            grandchild!.x + grandchild!.width <= child!.x + 1
+          )
+        }, 'each submenu sits left of its parent')
+        .toBe(true)
+    })
+  })
+})
+
 test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
   test('Can open properties panel', async ({ comfyPage }) => {
     await comfyPage.canvas.click({

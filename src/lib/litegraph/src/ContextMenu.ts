@@ -7,6 +7,8 @@ import type {
 } from './types/contextMenu'
 import { litegraph } from './litegraphInstance'
 
+const HOVER_OPEN_DELAY_MS = 150
+
 const ALLOWED_TAGS = ['span', 'b', 'i', 'em', 'strong']
 const ALLOWED_STYLE_PROPS = new Set([
   'display',
@@ -58,6 +60,9 @@ export class ContextMenu<TValue = unknown> {
   root: ContextMenuDivElement<TValue>
   current_submenu?: ContextMenu<TValue>
   lock?: boolean
+  private opensLeft = false
+  private submenuEntry?: HTMLElement
+  private hoverTimer?: ReturnType<typeof setTimeout>
 
   controller: AbortController = new AbortController()
 
@@ -77,7 +82,6 @@ export class ContextMenu<TValue = unknown> {
   ) {
     this.options = options
 
-    // to link a menu with its parent
     const parent = options.parentMenu
     if (parent) {
       if (!(parent instanceof ContextMenu)) {
@@ -93,7 +97,6 @@ export class ContextMenu<TValue = unknown> {
       }
     }
 
-    // use strings because comparing classes between windows doesnt work
     const eventClass = options.event ? options.event.constructor.name : null
     if (
       eventClass !== 'MouseEvent' &&
@@ -113,7 +116,6 @@ export class ContextMenu<TValue = unknown> {
     root.style.minWidth = '100'
     root.style.minHeight = '100'
 
-    // Close the context menu when a click occurs outside this context menu or its submenus
     const { signal } = this.controller
     const eventOptions = { capture: true, signal }
 
@@ -129,10 +131,8 @@ export class ContextMenu<TValue = unknown> {
       )
     }
 
-    // this prevents the default context browser menu to open in case this menu was created when pressing right button
     root.addEventListener('pointerup', (e) => e.preventDefault(), eventOptions)
 
-    // Right button
     root.addEventListener(
       'contextmenu',
       (e) => {
@@ -154,7 +154,6 @@ export class ContextMenu<TValue = unknown> {
 
     this.root = root
 
-    // title
     if (options.title) {
       const element = document.createElement('div')
       element.className = 'litemenu-title'
@@ -162,7 +161,6 @@ export class ContextMenu<TValue = unknown> {
       root.append(element)
     }
 
-    // entries
     for (let i = 0; i < values.length; i++) {
       const value = values[i]
       let name = Array.isArray(values) ? value : String(i)
@@ -179,7 +177,6 @@ export class ContextMenu<TValue = unknown> {
       this.addItem(name, value, options)
     }
 
-    // insert before checking position
     const ownerDocument = (options.event?.target as Node | null | undefined)
       ?.ownerDocument
     const root_document = ownerDocument || document
@@ -188,7 +185,6 @@ export class ContextMenu<TValue = unknown> {
       root_document.fullscreenElement.append(root)
     else root_document.body.append(root)
 
-    // compute best position
     let left = options.left || 0
     let top = options.top || 0
     if (options.event) {
@@ -198,7 +194,10 @@ export class ContextMenu<TValue = unknown> {
 
       if (parent) {
         const rect = parent.root.getBoundingClientRect()
-        left = rect.left + rect.width
+        const { width } = root.getBoundingClientRect()
+        this.opensLeft =
+          parent.opensLeft || rect.right + width > window.innerWidth
+        left = this.opensLeft ? Math.max(0, rect.left - width) : rect.right
       }
 
       const body_rect = document.body.getBoundingClientRect()
@@ -208,7 +207,11 @@ export class ContextMenu<TValue = unknown> {
           'document.body height is 0. That is dangerous, set html,body { height: 100%; }'
         )
 
-      if (body_rect.width && left > body_rect.width - root_rect.width - 10)
+      if (
+        !parent &&
+        body_rect.width &&
+        left > body_rect.width - root_rect.width - 10
+      )
         left = body_rect.width - root_rect.width - 10
       if (body_rect.height && top > body_rect.height - root_rect.height - 10)
         top = body_rect.height - root_rect.height - 10
@@ -255,7 +258,6 @@ export class ContextMenu<TValue = unknown> {
       if (typeof value === 'string') {
         element.textContent = label
       } else {
-        // Use innerHTML for content that contains HTML tags, textContent otherwise
         const hasHtmlContent =
           value.content !== undefined && /<[a-z][\s\S]*>/i.test(value.content)
         if (hasHtmlContent) {
@@ -297,11 +299,11 @@ export class ContextMenu<TValue = unknown> {
       element.setAttribute('aria-expanded', 'true')
     }
 
-    // menu option clicked
     const inner_onclick = (e: MouseEvent) => {
       const value = element.value
       let close_parent = true
 
+      if (this.current_submenu && this.submenuEntry === element) return
       this.current_submenu?.close(e)
       if (
         (value as IContextMenuValue).has_submenu ||
@@ -310,7 +312,6 @@ export class ContextMenu<TValue = unknown> {
         setAriaExpanded()
       }
 
-      // global callback
       if (options.callback) {
         const r = options.callback.call(
           element,
@@ -323,14 +324,12 @@ export class ContextMenu<TValue = unknown> {
         if (r === true) close_parent = false
       }
 
-      // special cases
       if (typeof value === 'object') {
         if (
           value.callback &&
           !options.ignore_item_callbacks &&
           value.disabled !== true
         ) {
-          // item callback
           const r = value.callback.call(
             element,
             value,
@@ -355,27 +354,37 @@ export class ContextMenu<TValue = unknown> {
         }
       }
 
+      if (this.current_submenu) this.submenuEntry = element
       if (close_parent && !this.lock) this.close()
     }
 
-    const inner_over = (e: MouseEvent) => {
-      const value = element.value
-      if (!value || !(value as IContextMenuValue).has_submenu) return
-
-      // if it is a submenu, autoopen like the item was clicked
-      inner_onclick(e)
-      setAriaExpanded()
+    const inner_over = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return
+      clearTimeout(this.hoverTimer)
+      this.hoverTimer = setTimeout(() => {
+        if (
+          !disabled &&
+          (element.value as IContextMenuValue | null)?.has_submenu
+        )
+          inner_onclick(e)
+        else this.current_submenu?.close(e)
+      }, HOVER_OPEN_DELAY_MS)
     }
 
     this.root.append(element)
     if (!disabled) element.addEventListener('click', inner_onclick)
-    if (!disabled && options.autoopen)
+    if (options.autoopen) {
       element.addEventListener('pointerenter', inner_over)
+      element.addEventListener('pointerleave', () =>
+        clearTimeout(this.hoverTimer)
+      )
+    }
 
     return element
   }
 
   close(e?: MouseEvent, ignore_parent_menu?: boolean): void {
+    clearTimeout(this.hoverTimer)
     this.controller.abort()
     this.root.remove()
     if (this.parentMenu && !ignore_parent_menu) {
