@@ -87,6 +87,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
         preference: AgentRunModePreference
       ): Promise<AgentRunModePreference> => preference
     ),
+    getModels: vi.fn(async () => ({ models: [], default: 'local' })),
     listCloudWorkflows: vi.fn(async () => ({
       entries: [],
       complete: true

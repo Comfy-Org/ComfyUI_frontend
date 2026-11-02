@@ -247,6 +247,9 @@ export interface PostMessageInput {
   model?: string
 }
 
+/** The turn body plus the local agent host's `model` (not in the cloud types). */
+type PostMessageBody = AgentPostMessageRequest & { model?: string }
+
 const CLIENT_VERSION = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
 
 /**
@@ -674,7 +677,7 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body = withoutUndefined<AgentPostMessageRequest & { model?: string }>({
+    const body = withoutUndefined<PostMessageBody>({
       content: req.content,
       ask_kinds: [...RENDERED_ASK_KINDS],
       workflow_id: req.workflowId,
@@ -764,7 +767,12 @@ export function createAgentRestClient() {
   }
 
   async function getModels(): Promise<AgentModels> {
-    return request('get_models', '/agent/models', { method: 'GET' }, zAgentModels)
+    return request(
+      'get_models',
+      '/agent/models',
+      { method: 'GET' },
+      zAgentModels
+    )
   }
 
   async function listCloudWorkflows(): Promise<CloudWorkflowListing> {
