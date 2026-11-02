@@ -2501,8 +2501,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): Promise<TurnOutcome> {
     let outcome = await fetchTurnOutcome(turn, signal)
     for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
-      if (outcome.kind !== 'streaming' || generation !== sessionGeneration)
-        return outcome
+      // A failed read is retried like a still-streaming row: the turn has
+      // already settled, so only its stored thinking is at stake, and one
+      // transient failure would otherwise drop it for good.
+      const retryable = outcome.kind === 'streaming' || outcome.kind === 'error'
+      if (!retryable || generation !== sessionGeneration) return outcome
       await delay(ms, { signal })
       outcome = await fetchTurnOutcome(turn, signal)
     }
@@ -2550,14 +2553,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
         })
     } finally {
       clearTimeout(deadline)
-      if (
-        generation === sessionGeneration &&
-        recoveringTurns.get(key) === state
-      )
-        conversationStore.reconcileSettledTurn(turn, undefined)
+      if (recoveringTurns.get(key) === state) {
+        if (generation === sessionGeneration)
+          conversationStore.reconcileSettledTurn(turn, undefined)
+        // Only while this read still owns the key: a superseding recovery
+        // keeps its own ask observation and thread-missing count.
+        recoveryPendingAskObservations.delete(key)
+        recoveryThreadMissingCounts.delete(key)
+      }
       finishRecovery(key, recovery, state, turn)
-      recoveryPendingAskObservations.delete(key)
-      recoveryThreadMissingCounts.delete(key)
     }
   }
 
