@@ -471,6 +471,19 @@ describe('useBillingContext', () => {
       expect(context.isInitialized.value).toBe(false)
     })
 
+    it('shares one adapter initialization between concurrent callers', async () => {
+      const loaded = holdWorkspaceUnloaded('personal')
+      const context = useBillingContext()
+      vi.clearAllMocks()
+
+      const first = context.initialize()
+      const second = context.initialize()
+      loaded.value = true
+      await Promise.all([first, second])
+
+      expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(1)
+    })
+
     it('reads empty and makes no billing call while unknown, then routes to workspace billing for a personal workspace', async () => {
       const loaded = holdWorkspaceUnloaded('personal')
       mockBillingRail.value = 'stripe'

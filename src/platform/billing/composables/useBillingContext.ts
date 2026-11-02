@@ -316,11 +316,29 @@ function useBillingContextInternal(): BillingContext {
     }
   }
 
+  let inFlightInit: {
+    adapter: WorkspaceBilling
+    promise: Promise<void>
+  } | null = null
+
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
     if (!(await whenRoutingKnown())) return
 
     const adapter = activeContext.value
+    if (inFlightInit?.adapter === adapter) return inFlightInit.promise
+
+    const promise = initializeAdapter(adapter)
+    const entry = { adapter, promise }
+    inFlightInit = entry
+    try {
+      await promise
+    } finally {
+      if (inFlightInit === entry) inFlightInit = null
+    }
+  }
+
+  async function initializeAdapter(adapter: WorkspaceBilling): Promise<void> {
     isLoading.value = true
     error.value = null
     try {
