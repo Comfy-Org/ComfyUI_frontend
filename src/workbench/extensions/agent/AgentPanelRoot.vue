@@ -2483,8 +2483,6 @@ function onPanelDragOver(event: DragEvent): void {
 
 async function onPanelDrop(event: DragEvent): Promise<void> {
   clearAssetDrag()
-  // Swallow the drop rather than returning: `document` loads an uncancelled
-  // one as a workflow or canvas input (`src/scripts/app.ts`).
   if (hostFenced.value) {
     event.preventDefault()
     event.stopPropagation()
