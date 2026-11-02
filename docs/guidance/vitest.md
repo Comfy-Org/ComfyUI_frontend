@@ -213,8 +213,7 @@ A component that needs Pinia injection receives the same instance:
 Core extension modules register nothing on import. Most export their
 `ComfyExtension` object; call the hook under test on that object and assert on
 the node, widget, or store state it changes. Do not mock `registerExtension` to
-capture it. `agentPanel.ts` and `electronAdapter.ts` export a function that
-registers the extension when called instead:
+capture it:
 
 ```ts
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
@@ -231,7 +230,9 @@ await customWidgetsExtension.beforeRegisterNodeDef?.(
 )
 ```
 
-`src/extensions/core/index.test.ts` covers registration order.
+`agentPanel.ts` and `electronAdapter.ts` instead export a function that
+registers the extension when called. `src/extensions/core/index.test.ts`
+covers registration order.
 
 ## Real `vue-i18n`
 
