@@ -1,4 +1,12 @@
-import { assert, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { captureSafeExtensionBoot } from '@/platform/customNodes/safeExtensionBoot'
