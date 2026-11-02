@@ -953,11 +953,12 @@ describe('CreditsTile', () => {
     let resolveReply!: (
       value: Awaited<ReturnType<typeof readWorkspaceBillingEvents>>
     ) => void
-    vi.mocked(readWorkspaceBillingEvents).mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveReply = resolve
-      })
-    )
+    const reply = new Promise<
+      Awaited<ReturnType<typeof readWorkspaceBillingEvents>>
+    >((resolve) => {
+      resolveReply = resolve
+    })
+    vi.mocked(readWorkspaceBillingEvents).mockReturnValueOnce(reply)
 
     renderTile()
     await waitFor(() => expect(readWorkspaceBillingEvents).toHaveBeenCalled())
@@ -970,7 +971,7 @@ describe('CreditsTile', () => {
         }
       ])
     )
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await reply
 
     expect(localStorage.getItem('pending_topup_timestamp')).not.toBeNull()
     expect(useTelemetry()?.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()

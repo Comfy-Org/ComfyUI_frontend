@@ -435,11 +435,6 @@ export const useAuthStore = defineStore('auth', () => {
         currentUser.value?.uid ??
         useApiKeyAuthStore().getApiKey())
 
-  /**
-   * Response data from a user-scoped endpoint belongs to the identity that
-   * asked for it; a credential swap mid-request must not hand the previous
-   * account's result to the current session.
-   */
   const assertIdentityUnchanged = (requestOwner: string | null): void => {
     if (currentUserIdentity() !== requestOwner) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))

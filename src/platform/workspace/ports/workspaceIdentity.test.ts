@@ -7,11 +7,12 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useWorkspaceIdentity } from './workspaceIdentity'
 
 describe('useWorkspaceIdentity initSettled', () => {
-  const signIn = (userEmail: string | null, isApiKeyLogin = false) =>
+  function signIn(userEmail: string | null, isApiKeyLogin = false) {
     provideCurrentUser(() => ({
       userEmail: computed(() => userEmail),
       isApiKeyLogin: computed(() => isApiKeyLogin)
     }))
+  }
 
   it.for([
     { initState: 'ready', user: 'a@b.c', settled: true },
