@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
 import { createMockWidget } from './widgetTestUtils'
 
@@ -18,9 +19,11 @@ const i18n = createI18n({
 // Mock state for asset service
 const mockShouldUseWidgetAssetPicker = vi.hoisted(() => vi.fn(() => false))
 const mockIsWidgetAssetPickerEnabled = vi.hoisted(() => vi.fn(() => false))
+const mockIsAssetBrowserEligible = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
+    isAssetBrowserEligible: mockIsAssetBrowserEligible,
     shouldUseWidgetAssetPicker: mockShouldUseWidgetAssetPicker,
     isWidgetAssetPickerEnabled: mockIsWidgetAssetPickerEnabled
   }
@@ -63,6 +66,47 @@ const globalConfig = {
     }
   }
 }
+
+it.for([
+  {
+    name: 'model',
+    eligible: true,
+    unifiedRows: true,
+    value: 'studio/model.safetensors',
+    expected: 'model.safetensors'
+  },
+  {
+    name: 'schedule',
+    eligible: false,
+    unifiedRows: true,
+    value: 'schedule/custom',
+    expected: 'schedule/custom'
+  },
+  {
+    name: 'model',
+    eligible: true,
+    unifiedRows: false,
+    value: 'studio/model.safetensors',
+    expected: 'studio/model.safetensors'
+  }
+])(
+  'summarizes $name with node rows $unifiedRows',
+  ({ name, eligible, unifiedRows, value, expected }) => {
+    mockIsAssetBrowserEligible.mockReturnValue(eligible)
+    render(WidgetSelect, {
+      props: {
+        widget: { name, type: 'combo', value, options: { values: [value] } },
+        nodeType: 'ModelLoader',
+        modelValue: value
+      },
+      global: {
+        plugins: [i18n],
+        provide: { [UnifiedWidgetRowsKey]: unifiedRows }
+      }
+    })
+    expect(screen.getByRole('combobox').textContent.trim()).toBe(expected)
+  }
+)
 
 describe('WidgetSelect Value Binding', () => {
   beforeEach(() => {
