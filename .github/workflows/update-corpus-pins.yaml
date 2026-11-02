@@ -14,7 +14,7 @@ name: 'Update corpus pins'
 
 on:
   schedule:
-    - cron: '0 9 1 * *'
+    - cron: '17 9 1 * *'
   workflow_dispatch:
 
 permissions:
@@ -31,6 +31,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+      pull-requests: read
     outputs:
       sheriff: ${{ steps.sheriff.outputs.login }}
     steps:
@@ -38,6 +39,12 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+
+      - name: Read the release sheriff
+        id: sheriff
+        run: |
+          login="$(jq -er '.sheriff | select(test("^[A-Za-z0-9-]+$"))' .github/release-sheriff.json)"
+          echo "login=$login" >> "$GITHUB_OUTPUT"
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -79,13 +86,8 @@ jobs:
               print('\n</details>')
           PY
 
-      - name: Read the release sheriff
-        id: sheriff
-        run: |
-          login="$(jq -er '.sheriff | select(test("^[A-Za-z0-9-]+$"))' .github/release-sheriff.json)"
-          echo "login=$login" >> "$GITHUB_OUTPUT"
-
       - name: Open the bump PR
+        id: bump
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
@@ -107,6 +109,19 @@ jobs:
             See the step summary on the triggering run for the moved/added/dropped
             breakdown.
           add-paths: scripts/registry-census/corpus.pins.json
+
+      # GitHub drops a non-assignable login without an error, so read it back.
+      - name: Check the sheriff is assigned
+        if: steps.bump.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.bump.outputs.pull-request-number }}
+          SHERIFF: ${{ steps.sheriff.outputs.login }}
+        run: |
+          gh pr view "$PR_NUMBER" --json assignees --jq '.assignees[].login' \
+            | grep -qx "$SHERIFF" \
+            || { echo "::error::#$PR_NUMBER is not assigned to $SHERIFF"; exit 1; }
 
   # A separate job so the issue-writing token never sits next to the
   # fetch step that contacts every registry pack's remote.
