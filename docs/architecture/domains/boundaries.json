@@ -19,6 +19,15 @@
         "patterns": ["packages/api-client/src/executionTypes.ts"]
       },
       {
+        "name": "image-compare/public",
+        "patterns": [
+          "src/extensions/core/imageCompare.ts",
+          "src/lib/litegraph/src/widgets/ImageCompareWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts"
+        ]
+      },
+      {
         "name": "image-compositor/public",
         "patterns": [
           "src/extensions/core/imageCompositor.ts",
@@ -2016,6 +2025,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2036,6 +2046,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2051,13 +2062,36 @@
         ]
       },
       {
+        "from": "image-compare/public",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "node-definition/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "_inventory",
+          "image-compare",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "image-compositor/public",
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
           "node-definition/public",
           "remote-config/public",
           "server-facts/public",
@@ -2074,6 +2108,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2094,6 +2129,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2113,6 +2149,8 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2132,6 +2170,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2151,6 +2190,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2170,6 +2210,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2190,6 +2231,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2210,6 +2252,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2230,6 +2273,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2249,6 +2293,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2269,6 +2314,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2289,6 +2335,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2309,6 +2356,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2329,6 +2377,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2349,6 +2398,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2369,6 +2419,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2389,6 +2440,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2409,6 +2461,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2428,6 +2481,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
@@ -2447,6 +2501,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
