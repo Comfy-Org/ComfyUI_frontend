@@ -23,6 +23,8 @@ import {
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { UUID } from '@/utils/uuid'
 import type { MissingNodeType, NodeReplacement } from './types'
 
@@ -1246,6 +1248,31 @@ describe('useNodeReplacement', () => {
 
       const predicate = capturedPredicate()
       expect(predicate(freshNode)).toBe(false)
+    })
+
+    it('detects an installed node without last_serialization when its definition is deprecated', () => {
+      const installedNode = createPlaceholderNode(1, 'OldNode')
+      installedNode.last_serialization = fromAny<
+        LGraphNode['last_serialization'],
+        unknown
+      >(undefined)
+      Object.assign(app, { rootGraph: createMockGraph([installedNode]) })
+      useNodeDefStore().nodeDefsByName = {
+        OldNode: fromPartial<ComfyNodeDefImpl>({ deprecated: true })
+      }
+      vi.mocked(collectAllNodes).mockReturnValue([])
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(capturedPredicate()(installedNode)).toBe(true)
     })
 
     it('should fall back to node.type when last_serialization.type is undefined', () => {

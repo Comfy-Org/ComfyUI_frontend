@@ -16,6 +16,7 @@ import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type {
   MissingNodeType,
@@ -29,6 +30,7 @@ import {
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
@@ -435,11 +437,8 @@ function replaceWithMapping(
 }
 
 function removeReplacedMissingNodeTypes(types: string[]): void {
-  // Remove from the rendered store directly rather than re-projecting the
-  // cache into it: entries surfaced outside the load path (e.g. the
-  // missing_node_type rescan) exist only in the store, and a projection from
-  // a cache that never saw them would wipe them.
   useMissingNodesErrorStore().removeMissingNodesByType(types)
+  useDeprecatedNodesStore().removeByType(types)
 
   const activeWorkflow = useWorkflowStore().activeWorkflow
   if (!activeWorkflow) return
@@ -474,13 +473,6 @@ export function useNodeReplacement() {
       useWorkflowStore().activeWorkflow?.changeTracker ?? null
     changeTracker?.beforeChange()
 
-    // Target types come from node_replacements fetched at workflow load time
-    // and the missing nodes detected at that point — not from the current
-    // registered_node_types. This ensures replacement still works even if
-    // the user has since installed the missing node pack.
-    // Also include sanitized variants so that when the fallback path reads
-    // n.type (which app.ts may have already run through sanitizeNodeName),
-    // we can still match against the original type stored in selectedTypes.
     const targetTypes = new Set([
       ...selectedTypes.map((t) => (typeof t === 'string' ? t : t.type)),
       ...selectedTypes.map((t) =>
@@ -489,13 +481,11 @@ export function useNodeReplacement() {
     ])
 
     try {
+      const { nodeDefsByName } = useNodeDefStore()
       const placeholders = collectAllNodes(graph, (n) => {
-        if (!n.last_serialization) return false
-        // Prefer the original serialized type; fall back to the live type
-        // for nodes whose serialization predates the type field.
-        // n.type may have been sanitized by app.ts (HTML special chars stripped);
-        // the sanitized variants in targetTypes ensure we still match correctly.
-        const originalType = n.last_serialization.type || n.type
+        if (!n.last_serialization && !nodeDefsByName[n.type]?.deprecated)
+          return false
+        const originalType = n.last_serialization?.type || n.type
         return !!originalType && targetTypes.has(originalType)
       })
 

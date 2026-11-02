@@ -37,6 +37,7 @@ import {
 } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
@@ -537,6 +538,7 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
   modelStore.removeMissingModelsBySourceScope(execId)
   mediaStore.removeMissingMediaByNodeId(execId)
   nodesStore.removeMissingNodesByNodeId(execId)
+  useDeprecatedNodesStore().removeByNodeId(execId)
 
   // For subgraph containers, also remove errors from interior nodes.
   // The trailing colon in the prefix is load-bearing: it prevents sibling

@@ -7,6 +7,7 @@ import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { app } from '@/scripts/app'
@@ -118,6 +119,30 @@ function resolveNodeInfo(nodeId: NodeExecutionId) {
     }),
     graphNodeId: graphNode ? String(graphNode.id) : undefined
   }
+}
+
+function groupSwapNodes(
+  nodeTypes: readonly MissingNodeType[]
+): SwapNodeGroup[] {
+  const map = new Map<string, SwapNodeGroup>()
+
+  for (const nodeType of nodeTypes) {
+    if (typeof nodeType === 'string' || !nodeType.isReplaceable) continue
+
+    const typeName = nodeType.type
+    const existing = map.get(typeName)
+    if (existing) {
+      existing.nodeTypes.push(nodeType)
+    } else {
+      map.set(typeName, {
+        type: typeName,
+        newNodeId: nodeType.replacement?.new_node_id,
+        nodeTypes: [nodeType]
+      })
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => a.type.localeCompare(b.type))
 }
 
 function getOrCreateGroup(
@@ -266,6 +291,7 @@ export function useErrorGroups(
 ) {
   const executionErrorStore = useExecutionErrorStore()
   const missingNodesStore = useMissingNodesErrorStore()
+  const deprecatedNodesStore = useDeprecatedNodesStore()
   const missingModelStore = useMissingModelStore()
   const missingMediaStore = useMissingMediaStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
@@ -674,29 +700,13 @@ export function useErrorGroups(
       }))
   })
 
-  const swapNodeGroups = computed<SwapNodeGroup[]>(() => {
-    const nodeTypes =
-      missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
-    const map = new Map<string, SwapNodeGroup>()
+  const swapNodeGroups = computed(() =>
+    groupSwapNodes(missingNodesStore.visibleMissingNodesError?.nodeTypes ?? [])
+  )
 
-    for (const nodeType of nodeTypes) {
-      if (typeof nodeType === 'string' || !nodeType.isReplaceable) continue
-
-      const typeName = nodeType.type
-      const existing = map.get(typeName)
-      if (existing) {
-        existing.nodeTypes.push(nodeType)
-      } else {
-        map.set(typeName, {
-          type: typeName,
-          newNodeId: nodeType.replacement?.new_node_id,
-          nodeTypes: [nodeType]
-        })
-      }
-    }
-
-    return Array.from(map.values()).sort((a, b) => a.type.localeCompare(b.type))
-  })
+  const deprecatedNodeGroups = computed(() =>
+    groupSwapNodes(deprecatedNodesStore.nodeTypes)
+  )
 
   /**
    * Builds ErrorGroups from missingNodesError. Returns [] when none present.
@@ -1046,6 +1056,7 @@ export function useErrorGroups(
     missingModelGroups,
     missingMediaGroups,
     swapNodeGroups,
+    deprecatedNodeGroups,
     hasSelection,
     selectedNodeCount,
     selectedNodeTitle,

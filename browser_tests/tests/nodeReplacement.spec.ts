@@ -3,12 +3,17 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import {
+  mockDeprecatedNodeReplacements,
   mockDynamicInputReplacements,
   mockNodeReplacements,
   mockNodeReplacementsSingle
 } from '@e2e/fixtures/data/nodeReplacements'
-import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
+  loadWorkflowAndOpenErrorsTab,
+  openErrorsTab
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import {
+  getDeprecatedNodesGroup,
   getSwapNodesGroup,
   setupNodeReplacement
 } from '@e2e/fixtures/helpers/NodeReplacementHelper'
@@ -93,6 +98,35 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
       expect(prompt['5']).toMatchObject({
         class_type: 'ControlNetLoader',
         inputs: { control_net_name: 't2iadapter_model.safetensors' }
+      })
+    })
+  })
+
+  test.describe('Deprecated node replacement', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await setupNodeReplacement(comfyPage, mockDeprecatedNodeReplacements)
+      await comfyPage.workflow.loadWorkflow('nodes/deprecated_image_batch')
+    })
+
+    test('Offers installed deprecated nodes for replacement without reporting an error', async ({
+      comfyPage
+    }) => {
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+      ).toBeHidden()
+      await openErrorsTab(comfyPage)
+
+      const deprecatedGroup = getDeprecatedNodesGroup(comfyPage.page)
+      await expect(deprecatedGroup).toContainText('ImageBatch')
+      await deprecatedGroup
+        .getByRole('button', { name: 'Replace All', exact: true })
+        .click()
+      await expect(deprecatedGroup).toBeHidden()
+
+      const prompt = await comfyPage.workflow.getExportedWorkflow({ api: true })
+      expect(prompt['2']).toMatchObject({
+        class_type: 'BatchImagesNode',
+        inputs: { 'images.image0': ['1', 0], 'images.image1': ['6', 0] }
       })
     })
   })

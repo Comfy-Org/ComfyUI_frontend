@@ -16,7 +16,7 @@
 
     <div class="min-w-0 flex-1 overflow-y-auto bg-background p-3">
       <div
-        v-if="filteredGroups.length === 0"
+        v-if="filteredGroups.length === 0 && deprecatedNodeGroups.length === 0"
         role="status"
         class="px-1 pt-5 pb-15 text-center text-sm text-muted-foreground"
       >
@@ -27,7 +27,10 @@
         }}
       </div>
 
-      <div v-else class="overflow-hidden rounded-lg border border-secondary">
+      <div
+        v-else-if="filteredGroups.length > 0"
+        class="overflow-hidden rounded-lg border border-secondary"
+      >
         <!-- Errors summary hero -->
         <div data-testid="errors-summary-hero" class="bg-foreground/5">
           <div role="status" class="flex items-center gap-2 p-2">
@@ -390,6 +393,40 @@
           </ErrorCardSection>
         </TransitionGroup>
       </div>
+
+      <div
+        v-if="deprecatedNodeGroups.length > 0"
+        class="overflow-hidden rounded-lg border border-secondary not-first:mt-3"
+      >
+        <ErrorCardSection
+          data-testid="deprecated-nodes-group"
+          :title="t('nodeReplacement.deprecatedNodesTitle')"
+          :count="deprecatedNodeGroups.length"
+          severity="notice"
+          :collapse="isSectionCollapsed(DEPRECATED_NODES_KEY)"
+          @update:collapse="setSectionCollapsed(DEPRECATED_NODES_KEY, $event)"
+        >
+          <div class="flex flex-col items-start gap-2 px-3 pb-2">
+            <p class="m-0 text-xs/relaxed text-muted-foreground">
+              {{ t('nodeReplacement.deprecatedNodesMessage') }}
+            </p>
+            <Button
+              :tooltip="t('nodeReplacement.replaceAllWarning')"
+              variant="secondary"
+              size="sm"
+              @click="replaceAllGroups(deprecatedNodeGroups)"
+            >
+              {{ t('nodeReplacement.replaceAll') }}
+            </Button>
+          </div>
+          <SwapNodesCard
+            :swap-node-groups="deprecatedNodeGroups"
+            :highlighted-node-ids="selectionMatchedAssetNodeIds"
+            @locate-node="handleLocateAssetNode"
+            @replace="replaceGroup"
+          />
+        </ErrorCardSection>
+      </div>
     </div>
   </div>
 </template>
@@ -497,6 +534,7 @@ const { missingNodePacks } = manager.useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   manager.usePackInstall(() => missingNodePacks.value)
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
+const DEPRECATED_NODES_KEY = 'deprecated_nodes'
 
 const searchQuery = ref('')
 const expandDetailsToken = ref(0)
@@ -568,6 +606,7 @@ const {
   missingModelGroups,
   missingMediaGroups,
   swapNodeGroups,
+  deprecatedNodeGroups,
   hasSelection,
   selectedNodeCount,
   selectedNodeTitle,
