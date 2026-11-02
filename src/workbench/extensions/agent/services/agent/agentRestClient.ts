@@ -36,6 +36,7 @@ import {
   zAgentError,
   zAgentIdentity,
   zAgentMessages,
+  zAgentModels,
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
@@ -46,6 +47,7 @@ import type {
   AgentAnswerReceipt,
   AgentCancelAccepted,
   AgentMessages,
+  AgentModels,
   AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
@@ -85,6 +87,7 @@ type AgentApiOperation =
   | 'cancel_thread_message'
   | 'get_agent_identity'
   | 'get_cloud_workflow'
+  | 'get_models'
   | 'get_run_mode'
   | 'get_thread_messages'
   | 'list_cloud_workflows'
@@ -237,6 +240,11 @@ export interface PostMessageInput {
    * gap in the funnel read, never a failed send.
    */
   clientMessageId?: string
+  /**
+   * An id from the local agent host's `GET /agent/models`, for this turn only.
+   * Omitted means the host's default, which is also all an older host knows.
+   */
+  model?: string
 }
 
 const CLIENT_VERSION = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
@@ -666,7 +674,7 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body = withoutUndefined<AgentPostMessageRequest>({
+    const body = withoutUndefined<AgentPostMessageRequest & { model?: string }>({
       content: req.content,
       ask_kinds: [...RENDERED_ASK_KINDS],
       workflow_id: req.workflowId,
@@ -683,7 +691,8 @@ export function createAgentRestClient() {
       // events reach this canvas (PM-1875). Read ambiently rather than taken
       // from `req` because it belongs to the socket, not to the message.
       client_id: api.clientId,
-      client_version: CLIENT_VERSION
+      client_version: CLIENT_VERSION,
+      model: req.model
     })
     return request(
       'post_thread_message',
@@ -752,6 +761,10 @@ export function createAgentRestClient() {
       jsonInit('PUT', preference),
       zAgentRunMode
     )
+  }
+
+  async function getModels(): Promise<AgentModels> {
+    return request('get_models', '/agent/models', { method: 'GET' }, zAgentModels)
   }
 
   async function listCloudWorkflows(): Promise<CloudWorkflowListing> {
@@ -838,6 +851,7 @@ export function createAgentRestClient() {
     getIdentity,
     getRunMode,
     putRunMode,
+    getModels,
     listCloudWorkflows,
     getCloudWorkflow,
     cancelMessage,

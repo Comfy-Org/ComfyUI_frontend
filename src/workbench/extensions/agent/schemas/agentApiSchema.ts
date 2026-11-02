@@ -388,3 +388,34 @@ export interface AgentServerFeature {
   state: 'starting' | 'ready' | 'failed'
   reason?: string | null
 }
+
+/**
+ * `GET /agent/models` on the local agent host (synap5e/comfy-agent, OBL-204).
+ * Not in the generated cloud types: only that host serves it, and an older
+ * host has no such route at all.
+ */
+export const zAgentModelRoute = z.enum(['cloud', 'local', 'openrouter'])
+
+export const zAgentModelChoice = z.object({
+  id: z.string().min(1),
+  label: z.string(),
+  // Kept open so a host that adds a route does not break the whole list.
+  route: z.union([zAgentModelRoute, z.string()]),
+  available: z.boolean(),
+  reason: z.string().nullish()
+})
+
+export const zAgentModels = z.object({
+  models: z.array(zAgentModelChoice),
+  default: z.string().min(1)
+})
+
+export type AgentModelChoice = z.infer<typeof zAgentModelChoice>
+export type AgentModels = z.infer<typeof zAgentModels>
+
+/** The host's refusal of a `model` on a turn POST (400 or 409). */
+export const zAgentModelRefusal = z.object({
+  code: z.enum(['MODEL_UNKNOWN', 'MODEL_UNAVAILABLE']),
+  model: z.string(),
+  reason: z.string().nullish()
+})

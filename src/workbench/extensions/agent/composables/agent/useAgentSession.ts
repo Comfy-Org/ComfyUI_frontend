@@ -58,6 +58,7 @@ import { toAskResolution } from '@/workbench/extensions/agent/services/agent/age
 import { normalizeAgentTranscript } from '@/workbench/extensions/agent/services/agent/agentTranscript'
 import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentModelStore } from '@/workbench/extensions/agent/stores/agent/agentModelStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
@@ -445,6 +446,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   clearLegacyAgentStorage()
 
   const conversationStore = useAgentConversationStore()
+  const modelStore = useAgentModelStore()
   const sendGateStore = useAgentSendGateStore()
   const skillPacks = useSkillPacksStore()
   const skillTurnUsage = new Map<string, { scope: string; used: boolean }>()
@@ -1000,6 +1002,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // app:agent_message_sent event, and the only value that can appear on both
       // sides of the message -> turn step.
       clientMessageId,
+      model: modelStore.modelForSend(threadId === 'new' ? null : threadId),
       ...buildTargetFields(threadId, wfContext, draft, unboundTarget)
     }
   }
@@ -1104,6 +1107,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
+    if (startsThread) modelStore.adoptDraft(ack.thread_id)
     onThreadActivated?.(ack.thread_id)
     localStorage.setItem(threadStorageKey, ack.thread_id)
     if (ack.workflow_id !== undefined) {
@@ -1301,6 +1305,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // persisted, so a refusal that lands after newChat()/loadThread() has
       // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
+      modelStore.handleSendRefusal(
+        error,
+        threadAtSend === 'new' ? null : threadAtSend
+      )
       if (generation !== loadGeneration) return false
       const reattached = await reattachRefusedTurn(
         error,

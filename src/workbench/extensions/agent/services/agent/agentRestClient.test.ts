@@ -624,6 +624,18 @@ describe('postMessage wire body', () => {
     })
   })
 
+  it('sends the picked model for the turn', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'hi', model: 'local' })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'hi',
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      client_version: buildVersion,
+      model: 'local'
+    })
+  })
+
   // The id this send already reports on app:agent_message_sent has to reach the
   // server, which echoes it onto agent_turn_started. Without it on the wire the
   // message -> turn step of the activation funnel is countable but not

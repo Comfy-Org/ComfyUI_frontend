@@ -57,6 +57,7 @@ import { useI18n } from 'vue-i18n'
 import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentModelStore } from '@/workbench/extensions/agent/stores/agent/agentModelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
 const AgentPanelLoadError = defineComponent({
@@ -119,6 +120,17 @@ void agentRunModeStore.load().catch((error: unknown) => {
     errorType: 'agent_run_mode_load_failure'
   })
 })
+
+// After the run-mode load: a host without the model list answers 404, and the
+// picker then stays hidden.
+void useAgentModelStore()
+  .load()
+  .catch((error: unknown) => {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_model_list_load_failure'
+    })
+  })
 
 const isResizing = ref(false)
 let resizeStartX = 0
