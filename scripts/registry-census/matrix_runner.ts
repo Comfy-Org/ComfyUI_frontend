@@ -94,8 +94,7 @@ const NOT_CAPTURED = Symbol('widgets_values not captured')
 
 const HARNESS_VERDICT = {
   threw: '!serialize_threw',
-  uncreatable: '!createNode_null',
-  unnamed: '!no_refusal_named'
+  uncreatable: '!createNode_null'
 } as const
 
 function coreIsLastWriter(node: LGraphNode, base: typeof LGraphNode): boolean {
@@ -150,9 +149,7 @@ function verdictOf(
     coreIsLastWriter: options.lastWriter
   })
   return {
-    verdict: proof.provable
-      ? 'provable'
-      : (proof.refusal ?? HARNESS_VERDICT.unnamed),
+    verdict: proof.provable ? 'provable' : proof.refusal,
     order: proof.order
   }
 }
