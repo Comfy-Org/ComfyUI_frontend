@@ -104,6 +104,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Свернуть/Развернуть выбранные ноды"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Скрыть/показать связи выбранных нод"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Отключить/Включить звук выбранных нод"
   },

@@ -621,7 +621,11 @@ describe('useInviteUrlLoader', () => {
           kind: 'info',
           title: enMessages.workspace.inviteNeedsSignIn,
           description: enMessages.workspace.inviteNeedsSignInDetail,
-          actions: [{ label: enMessages.workspace.inviteSignIn }]
+          actions: [
+            expect.objectContaining({
+              label: enMessages.workspace.inviteSignIn
+            })
+          ]
         })
         expect(location.assign).not.toHaveBeenCalled()
 
