@@ -6336,7 +6336,7 @@
         "subscriptionRequired": "You've run out of available credits.",
         "member": "This workspace has used all its credits. Ask your workspace owner to add more.",
         "salesManaged": "This workspace is billed through your Comfy account team. Contact them to add credits.",
-        "local": "You've spent your credit balance. Add credits to keep the agent running."
+        "local": "Your account has no credits available for the agent. Add credits to use it."
       },
       "addCredits": "Add credits",
       "subscribe": "Subscribe",
