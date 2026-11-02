@@ -343,7 +343,7 @@ export const useQueueStore = defineStore('queue', () => {
     isLoading.value = true
     try {
       const [queueResult, historyResult] = await Promise.allSettled([
-        api.getQueue({ throwOnError: true }),
+        api.getQueuePage({ throwOnError: true }),
         api.getHistory(maxHistoryItems.value)
       ])
 

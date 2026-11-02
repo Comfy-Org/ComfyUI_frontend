@@ -21,7 +21,7 @@ vi.mock(import('@/scripts/api'))
 
 describe('useReconnectQueueRefresh', () => {
   beforeEach(() => {
-    vi.mocked(api.getQueue).mockResolvedValue({
+    vi.mocked(api.getQueuePage).mockResolvedValue({
       Running: [],
       Pending: [],
       runningTotal: 0,
@@ -37,7 +37,7 @@ describe('useReconnectQueueRefresh', () => {
   })
 
   it('forwards running+pending job ids to clearActiveJobIfStale', async () => {
-    vi.mocked(api.getQueue).mockResolvedValue({
+    vi.mocked(api.getQueuePage).mockResolvedValue({
       Running: [makeJob('run-1', 'in_progress')],
       Pending: [makeJob('pend-1', 'pending'), makeJob('pend-2', 'pending')],
       runningTotal: 1,
@@ -70,7 +70,7 @@ describe('useReconnectQueueRefresh', () => {
   })
 
   it('reuses the prior queue snapshot when the fetch fails, so a still-running job is not falsely cleared', async () => {
-    vi.mocked(api.getQueue)
+    vi.mocked(api.getQueuePage)
       .mockResolvedValueOnce({
         Running: [makeJob('run-1', 'in_progress')],
         Pending: [],
@@ -380,7 +380,7 @@ describe('useReconnectQueueRefresh', () => {
 
     it('leaves a run that is still going to the live socket', async () => {
       followRun('job-1')
-      vi.mocked(api.getQueue).mockResolvedValue({
+      vi.mocked(api.getQueuePage).mockResolvedValue({
         Running: [makeJob('job-1', 'in_progress')],
         Pending: [],
         runningTotal: 1,
@@ -609,7 +609,7 @@ describe('useReconnectQueueRefresh', () => {
 
     it('restores a run that finished during an interrupted refresh on the rerun, once', async () => {
       followRun('job-1')
-      vi.mocked(api.getQueue)
+      vi.mocked(api.getQueuePage)
         .mockResolvedValueOnce({
           Running: [makeJob('job-1', 'in_progress')],
           Pending: [],
@@ -631,7 +631,7 @@ describe('useReconnectQueueRefresh', () => {
         ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
       ])
       expect(useExecutionStore().activeJobId).toBeNull()
-      expect(api.getQueue).toHaveBeenCalledTimes(2)
+      expect(api.getQueuePage).toHaveBeenCalledTimes(2)
     })
 
     it('does not clear a queued run that started during the refresh', async () => {
@@ -656,7 +656,7 @@ describe('useReconnectQueueRefresh', () => {
       const executionStore = useExecutionStore()
       executionStore.queuedJobs['job-0'] = { nodes: {} }
       followRun('job-1')
-      vi.mocked(api.getQueue).mockResolvedValue({
+      vi.mocked(api.getQueuePage).mockResolvedValue({
         Running: [makeJob('job-1', 'in_progress')],
         Pending: [],
         runningTotal: 1,
@@ -691,7 +691,7 @@ describe('useReconnectQueueRefresh', () => {
 
     it('reads a fresh queue when a queue fetch was already in flight at reconnect', async () => {
       const queueStore = useQueueStore()
-      vi.mocked(api.getQueue).mockResolvedValueOnce({
+      vi.mocked(api.getQueuePage).mockResolvedValueOnce({
         Running: [makeJob('job-1', 'in_progress')],
         Pending: [],
         runningTotal: 1,
@@ -700,7 +700,7 @@ describe('useReconnectQueueRefresh', () => {
       await queueStore.update()
       followRun('job-1')
       let answerStaleFetch!: () => void
-      vi.mocked(api.getQueue)
+      vi.mocked(api.getQueuePage)
         .mockImplementationOnce(
           () =>
             new Promise((resolve) => {

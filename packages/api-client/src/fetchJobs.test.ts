@@ -7,7 +7,8 @@ import {
   fetchHistoryPage,
   fetchJobAssets,
   fetchJobDetail,
-  fetchQueue
+  fetchQueue,
+  fetchQueuePage
 } from './fetchJobs'
 import type { RawJobListItem, zJobsListResponse } from './jobTypes'
 import type { z } from 'zod'
@@ -219,7 +220,7 @@ describe('fetchJobs', () => {
     })
   })
 
-  describe('fetchQueue', () => {
+  describe('fetchQueuePage', () => {
     function mockQueueFetch(
       running: JobsListResponse,
       pending: JobsListResponse
@@ -244,7 +245,7 @@ describe('fetchJobs', () => {
         ])
       )
 
-      const result = await fetchQueue(mockFetch)
+      const result = await fetchQueuePage(mockFetch)
 
       expect(mockFetch).toHaveBeenCalledWith(
         '/jobs?status=in_progress&limit=200&offset=0'
@@ -267,7 +268,7 @@ describe('fetchJobs', () => {
         })
       )
 
-      const result = await fetchQueue(mockFetch)
+      const result = await fetchQueuePage(mockFetch)
 
       expect(result.runningTotal).toBe(1)
       expect(result.pendingTotal).toBe(349)
@@ -282,7 +283,7 @@ describe('fetchJobs', () => {
         ])
       )
 
-      const result = await fetchQueue(mockFetch)
+      const result = await fetchQueuePage(mockFetch)
 
       expect(result.Running.map((job) => job.id)).toEqual(['job1'])
       expect(result.Pending.map((job) => job.id)).toEqual(['pending1'])
@@ -294,7 +295,7 @@ describe('fetchJobs', () => {
         createMockResponse([createMockJob('pending1', 'pending')])
       )
 
-      const result = await fetchQueue(mockFetch)
+      const result = await fetchQueuePage(mockFetch)
 
       expect(result.Running[0].priority).toBeGreaterThan(1_000_000)
       expect(result.Pending[0].priority).toBeGreaterThan(1_000_000)
@@ -306,7 +307,7 @@ describe('fetchJobs', () => {
     it('returns an empty queue on error', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-      const result = await fetchQueue(mockFetch)
+      const result = await fetchQueuePage(mockFetch)
 
       expect(result).toEqual({
         Running: [],
@@ -314,6 +315,38 @@ describe('fetchJobs', () => {
         runningTotal: 0,
         pendingTotal: 0
       })
+    })
+
+    it('propagates errors when requested', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 500 })
+
+      await expect(
+        fetchQueuePage(mockFetch, { throwOnError: true })
+      ).rejects.toThrow('Failed to fetch jobs: 500')
+    })
+  })
+
+  describe('fetchQueue', () => {
+    it('returns only the Running and Pending sections', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse([createMockJob('running1', 'in_progress')])
+          )
+      })
+
+      const result = await fetchQueue(mockFetch)
+
+      expect(Object.keys(result)).toEqual(['Running', 'Pending'])
+    })
+
+    it('returns empty arrays on error', async () => {
+      const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
+
+      const result = await fetchQueue(mockFetch)
+
+      expect(result).toEqual({ Running: [], Pending: [] })
     })
 
     it('propagates errors when requested', async () => {

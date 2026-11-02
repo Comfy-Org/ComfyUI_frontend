@@ -47,7 +47,7 @@ export interface FetchHistoryPageResult {
   hasMore: boolean
 }
 
-export interface FetchQueueResult {
+export interface FetchQueuePageResult {
   Running: JobListItem[]
   Pending: JobListItem[]
   runningTotal: number
@@ -145,13 +145,25 @@ export async function fetchHistoryPage(
 const QUEUE_PAGE_SIZE = 200
 
 /**
- * Fetches the first page of in_progress jobs and of pending jobs, each with its
- * server total. Pending jobs get highest priority, then running jobs.
+ * Fetches queue (in_progress + pending jobs)
+ * Pending jobs get highest priority, then running jobs.
  */
 export async function fetchQueue(
   fetchApi: (url: string) => Promise<Response>,
   options?: FetchJobsOptions
-): Promise<FetchQueueResult> {
+): Promise<{ Running: JobListItem[]; Pending: JobListItem[] }> {
+  const { Running, Pending } = await fetchQueuePage(fetchApi, options)
+  return { Running, Pending }
+}
+
+/**
+ * Fetches the first page of in_progress jobs and of pending jobs, each with its
+ * server total. Pending jobs get highest priority, then running jobs.
+ */
+export async function fetchQueuePage(
+  fetchApi: (url: string) => Promise<Response>,
+  options?: FetchJobsOptions
+): Promise<FetchQueuePageResult> {
   const [running, pending] = await Promise.all([
     fetchJobsRaw(fetchApi, ['in_progress'], QUEUE_PAGE_SIZE, 0, options),
     fetchJobsRaw(fetchApi, ['pending'], QUEUE_PAGE_SIZE, 0, options)

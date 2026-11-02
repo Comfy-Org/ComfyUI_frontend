@@ -61,6 +61,7 @@ const actions = vi.mockObject<
     | 'getNodeDefs'
     | 'getEmbeddings'
     | 'getQueue'
+    | 'getQueuePage'
     | 'getHistory'
     | 'clearItems'
     | 'deleteItem'
@@ -119,7 +120,8 @@ const actions = vi.mockObject<
     getGlobalSubgraphs: async () => ({}),
     getNodeDefs: async () => ({}),
     getEmbeddings: async () => [],
-    getQueue: async () => ({
+    getQueue: async () => ({ Running: [], Pending: [] }),
+    getQueuePage: async () => ({
       Running: [],
       Pending: [],
       runningTotal: 0,
