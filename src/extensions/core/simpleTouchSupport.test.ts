@@ -12,22 +12,22 @@ type Viewport = Pick<
   'scale' | 'offset' | 'min_scale' | 'max_scale'
 >
 
-const { canvasEl, container, canvasAvailability } = vi.hoisted(() => {
+const { canvasEl, container, canvasAvailability, ds } = vi.hoisted(() => {
   const container = document.createElement('div')
   const canvasEl = document.createElement('canvas')
   container.append(canvasEl)
-  return { container, canvasEl, canvasAvailability: { missing: false } }
-})
-
-const processMouseDown = vi.fn()
-
-vi.mock(import('@/scripts/app'), () => {
   const ds: Viewport = {
     scale: 1,
     offset: [0, 0],
     min_scale: 0.1,
     max_scale: 10
   }
+  return { container, canvasEl, canvasAvailability: { missing: false }, ds }
+})
+
+const processMouseDown = vi.fn()
+
+vi.mock(import('@/scripts/app'), () => {
   const canvas = fromPartial<LGraphCanvas>({
     ds,
     pointer: { isDown: false },
@@ -153,12 +153,79 @@ describe('Comfy.SimpleTouchSupport', () => {
 
   it('ignores a pinch when no canvas exists', () => {
     withoutCanvas()
+    const listenerErrors = vi.fn()
+    window.addEventListener('error', listenerErrors)
+    onTestFinished(() => window.removeEventListener('error', listenerErrors))
     const twoFingers = [touchAt(canvasEl), touchAt(canvasEl, 100)]
 
     dispatchTouch('touchstart', twoFingers)
     dispatchTouch('touchmove', twoFingers)
     pressPointer({ isPrimary: true })
 
+    expect(listenerErrors).not.toHaveBeenCalled()
     expect(processMouseDown).toHaveBeenCalledOnce()
+  })
+
+  describe('pinch zoom', () => {
+    function resetViewport() {
+      ds.scale = 1
+      ds.offset[0] = 0
+      ds.offset[1] = 0
+    }
+
+    it.for([
+      { name: 'start on the same point', start: 0, move: 100 },
+      { name: 'start and stay on the same point', start: 0, move: 0 },
+      { name: 'end on the same point', start: 100, move: 0 }
+    ])(
+      'leaves the viewport unchanged when two fingers $name',
+      ({ start, move }) => {
+        resetViewport()
+
+        dispatchTouch('touchstart', [
+          touchAt(canvasEl),
+          touchAt(canvasEl, start)
+        ])
+        dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, move)])
+
+        expect({ scale: ds.scale, offset: [...ds.offset] }).toEqual({
+          scale: 1,
+          offset: [0, 0]
+        })
+      }
+    )
+
+    it('waits for a usable distance before measuring a pinch', () => {
+      resetViewport()
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 7)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
+
+      expect(ds.scale).toBe(1)
+    })
+
+    it('zooms once fingers that started on the same point move apart', () => {
+      resetViewport()
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 50)])
+      dispatchTouch('touchmove', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+
+      expect(ds.scale).toBe(2)
+    })
+
+    it('uses the minimum scale when converting pinch movement to an offset', () => {
+      resetViewport()
+      ds.scale = ds.min_scale
+
+      dispatchTouch('touchstart', [touchAt(canvasEl), touchAt(canvasEl, 100)])
+      dispatchTouch('touchmove', [touchAt(canvasEl, 20), touchAt(canvasEl, 70)])
+
+      expect({ scale: ds.scale, offset: [...ds.offset] }).toEqual({
+        scale: 0.1,
+        offset: [-50, 0]
+      })
+    })
   })
 })

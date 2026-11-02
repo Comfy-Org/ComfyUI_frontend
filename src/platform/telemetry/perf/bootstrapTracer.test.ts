@@ -152,6 +152,15 @@ describe('bootstrapTracer', () => {
     expect([before, tracer.outcome]).toEqual(['pending', 'failed'])
   })
 
+  it('exposes a timed-out startup as timed out, not pending', async () => {
+    const tracer = new BootstrapTracer()
+
+    tracer.armWatchdog(30_000)
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(tracer.outcome).toBe('timed_out')
+  })
+
   it('reports only once', () => {
     const telemetry = sharedUseTelemetry()
     if (!telemetry) throw new Error('Expected telemetry mock')
@@ -245,6 +254,7 @@ describe('bootstrapTracer', () => {
         .mocked(telemetry.trackBootstrapComplete)
         .mock.calls.map(([metadata]) => metadata.outcome)
     ).toEqual(['timed_out', 'completed'])
+    expect(tracer.outcome).toBe('completed')
   })
 
   it('does not report a watchdog row once startup has completed', async () => {

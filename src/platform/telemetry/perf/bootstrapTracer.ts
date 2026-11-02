@@ -106,6 +106,7 @@ export class BootstrapTracer {
   private _completed = false
   private _outcome: 'completed' | 'failed' | undefined
   private _watchdog: ReturnType<typeof setTimeout> | undefined
+  private _timeoutReported = false
 
   /**
    * Start timing a phase. Returns a handle; call `.stop()` when complete.
@@ -176,8 +177,12 @@ export class BootstrapTracer {
     return [...this._timings].sort((a, b) => a.startMs - b.startMs)
   }
 
-  get outcome(): 'completed' | 'failed' | 'pending' {
-    return this._outcome ?? 'pending'
+  /**
+   * `timed_out` is not terminal: startup can still finish after the watchdog
+   * fires, and the outcome then becomes `completed` or `failed`.
+   */
+  get outcome(): 'completed' | 'failed' | 'timed_out' | 'pending' {
+    return this._outcome ?? (this._timeoutReported ? 'timed_out' : 'pending')
   }
 
   /**
@@ -206,6 +211,7 @@ export class BootstrapTracer {
     clearTimeout(this._watchdog)
     this._watchdog = setTimeout(() => {
       if (this._completed) return
+      this._timeoutReported = true
       this._report('timed_out', [...this._spans.keys()])
     }, deadlineMs)
   }
