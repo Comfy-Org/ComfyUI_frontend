@@ -1,9 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type {
-  JobListItem,
-  JobStatus
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobListItem, JobStatus } from '@comfyorg/api-client/jobTypes'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 

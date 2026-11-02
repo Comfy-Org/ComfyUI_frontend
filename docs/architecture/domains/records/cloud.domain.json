@@ -130,6 +130,10 @@
     {
       "path": "src/utils/textCaseUtil.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/piiUtil.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],

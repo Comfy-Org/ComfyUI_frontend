@@ -1,7 +1,7 @@
 {
   "id": "billing",
   "capability": "Billing",
-  "description": "Billing for personal and team workspaces: the billing context that routes between legacy and workspace rails, billing dialogs, the billing SDK store and its operation projections, billing operation tracking, subscription checkout, plan change, resubscribe, downgrade, top-ups and pending top-ups, billing capabilities and capability revisions, billing banners, invoices, plan credits, pricing tables, hosted billing hand-off, and checkout journey telemetry. Cloud subscription plans, tier constants, and cancellation live under platform/billing/subscription; identity belongs to authentication and membership to workspace; the account packages outside src are not in this catalog.",
+  "description": "Billing for personal and team workspaces: the billing context that routes between legacy and workspace rails, billing dialogs, the billing SDK store and its operation projections, billing operation tracking, subscription checkout, plan change, resubscribe, downgrade, top-ups and pending top-ups, billing capabilities and capability revisions, billing banners, invoices, plan credits, pricing tables, hosted billing hand-off, and checkout journey telemetry. Cloud subscription plans, tier constants, and cancellation live under platform/billing/subscription; identity belongs to authentication and membership to workspace. The billing core of @comfyorg/account-core, the payment views of @comfyorg/account-ui, @comfyorg/billing-core, @comfyorg/billing-contract, and credit formatting from @comfyorg/shared-frontend-utils belong here.",
   "modules": [
     {
       "path": "src/platform/billing/components/TopUpCreditsDialogContentLegacy.vue",
@@ -358,6 +358,30 @@
     {
       "path": "src/utils/__tests__/mockBillingContext.ts",
       "role": "integration"
+    },
+    {
+      "path": "packages/account-core/src/core/billing/**",
+      "role": "domain"
+    },
+    {
+      "path": "packages/account-ui/src/billing/**",
+      "role": "presentation"
+    },
+    {
+      "path": "packages/account-ui/src/billing/catalog.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/billing-contract/src/**",
+      "role": "domain"
+    },
+    {
+      "path": "packages/billing-core/src/**",
+      "role": "domain"
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/creditsUtil.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

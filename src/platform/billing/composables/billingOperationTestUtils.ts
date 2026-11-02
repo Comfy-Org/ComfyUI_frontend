@@ -15,6 +15,7 @@ export function billingOperation(
     startedAt: 0,
     operationStartedAt: 0,
     actionUrl: null,
+    paymentMethodUrl: null,
     authenticationState: null,
     isAuthenticating: false,
     canRetryAuthentication: false,
