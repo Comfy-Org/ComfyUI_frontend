@@ -39,6 +39,7 @@ test.describe(
 
     test('@mobile settings dialog', async ({ comfyPage }) => {
       await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.root.getByRole('button').first().focus()
       await comfyPage.expectScreenshot(
         comfyPage.settingDialog.root,
         'mobile-settings-dialog.png',
