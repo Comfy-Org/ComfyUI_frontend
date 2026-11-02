@@ -49,18 +49,7 @@ A file whose exports differ by one prop value each is the pattern to fix, not co
 
 ## Title Patterns
 
-Do not invent titles from scratch when a close sibling story already exists. Match the nearest domain pattern.
-
-| Component area                                                       | Typical title pattern             |
-| -------------------------------------------------------------------- | --------------------------------- |
-| `packages/design-system/src/components/button/Button.vue`            | `Components/Button/Button`        |
-| `packages/design-system/src/components/input/Input.vue`              | `Components/Input`                |
-| `packages/design-system/src/components/search-input/SearchInput.vue` | `Components/Input/SearchInput`    |
-| `src/components/common/SearchBox.vue`                                | `Components/Input/SearchBox`      |
-| `src/renderer/extensions/vueNodes/widgets/components/*`              | `Widgets/<WidgetName>`            |
-| `src/platform/assets/components/*`                                   | `Platform/Assets/<ComponentName>` |
-
-If multiple patterns seem plausible, follow the closest sibling story in the same folder tree.
+Do not invent titles. Copy the `title` pattern of the closest sibling story in the same folder tree; the title search in step 3 lists them.
 
 ## Common Story Shapes
 
@@ -181,9 +170,8 @@ export const AllVariants: Story = {
 - [ ] Every export is a scenario from the "Controls Versus Scenarios" table, not a single prop value
 - [ ] Add `tags: ['autodocs']`
 - [ ] Keep the story co-located with the component
-- [ ] Run `pnpm storybook`
-- [ ] Run `pnpm typecheck`
-- [ ] Run `pnpm lint`
+- [ ] Run `pnpm storybook` and check each story renders
+- [ ] Run `pnpm lint:unstaged:fix` on the files you changed; the pre-commit hook formats, lints and typechecks what you stage. Do not run repo-wide `pnpm lint` or `pnpm typecheck`
 
 ## Avoid
 

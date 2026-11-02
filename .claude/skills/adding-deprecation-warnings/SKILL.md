@@ -22,9 +22,11 @@ properties using the `defineDeprecatedProperty` helper in
 Before implementing, assess impact by searching for usage of the
 deprecated property across ComfyUI custom nodes:
 
-```text
-Use the comfy_codesearch tool to search for the old property name.
-Search for both `widget.oldProp` and just `oldProp` to catch all patterns.
+Search for both `widget.oldProp` and just `oldProp` to catch all patterns. Use the `comfy_codesearch` tool when it is available; otherwise use GitHub code search:
+
+```bash
+gh search code 'oldProp' --language javascript --limit 100
+gh search code 'oldProp' --language typescript --limit 100
 ```
 
 Document the usage patterns found (property access, truthiness checks,
@@ -53,24 +55,13 @@ defineDeprecatedProperty(
 - [ ] `defineDeprecatedProperty` call added after the new property is assigned
 - [ ] JSDoc `@deprecated` tag added above the call for IDE support
 - [ ] Warning message names both old and new property clearly
-- [ ] `pnpm typecheck` passes
-- [ ] `pnpm lint` passes
+- [ ] `pnpm lint:unstaged:fix` passes on the changed files, and the pre-commit hook (format, lint, typecheck of staged files) passes. Do not run repo-wide `pnpm lint` or `pnpm typecheck`
 
 ### 4. PR Comment
 
 Add a PR comment summarizing the ecosystem search results: which repos
 use the deprecated property, what access patterns were found, and
 confirmation that all patterns are compatible with the ODP getter/setter.
-
-## How `defineDeprecatedProperty` Works
-
-- Creates an `Object.defineProperty` getter/setter on the target object
-- Getter returns `this[currentKey]`, setter assigns `this[currentKey]`
-- Both log via `warnDeprecated`, which deduplicates (once per unique
-  message per session via a `Set`)
-- `enumerable: false` keeps the alias out of `Object.keys()` / `for...in`
-  / `JSON.stringify`
-- `configurable: true` allows further redefinition if needed
 
 ## Edge Cases
 
