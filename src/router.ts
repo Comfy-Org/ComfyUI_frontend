@@ -213,14 +213,18 @@ function installCloudAuthGuards(router: Router): void {
         : 'signed_out'
     })
     let hadAccount = false
+    let rerouteEnabled = false
     watch(
-      account,
-      (state) => {
-        if (state === 'signed_in') hadAccount = true
+      [account, () => flags.signedOutRerouteEnabled],
+      ([state, enabled]) => {
+        if (state === 'signed_in') {
+          hadAccount = true
+          rerouteEnabled = enabled
+        }
         if (state !== 'signed_out' || !hadAccount) return
         hadAccount = false
         const { path, query, hash, meta } = router.currentRoute.value
-        if (!flags.signedOutRerouteEnabled || !meta.requiresAuth) return
+        if (!rerouteEnabled || !meta.requiresAuth) return
         void router.replace({ path, query, hash, force: true })
       },
       { immediate: true }

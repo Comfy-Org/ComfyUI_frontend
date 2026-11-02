@@ -6,6 +6,7 @@ import type { WebSession } from '@comfyorg/account-core/webSession'
 
 import { cloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { createAppRouter } from '@/router'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -54,6 +55,7 @@ describe('a requiresAuth route whose account leaves the tab', () => {
 
   afterEach(() => {
     localStorage.removeItem(REROUTE_FLAG)
+    remoteConfig.value = {}
   })
 
   it('stays on the page with the reroute flag off', async () => {
@@ -69,6 +71,18 @@ describe('a requiresAuth route whose account leaves the tab', () => {
     localStorage.setItem(REROUTE_FLAG, 'true')
     const router = await openSurveySignedIn()
 
+    useAuthStore().currentUser = null
+
+    await vi.waitFor(() =>
+      expect(router.currentRoute.value.name).toBe('cloud-login')
+    )
+  })
+
+  it('lands on sign-in when signing out clears the remote config that enabled the reroute', async () => {
+    remoteConfig.value = { signed_out_reroute_enabled: true }
+    const router = await openSurveySignedIn()
+
+    remoteConfig.value = {}
     useAuthStore().currentUser = null
 
     await vi.waitFor(() =>
