@@ -142,7 +142,7 @@ jobs:
         run: |
           set -euo pipefail
           title='Monthly corpus pin bump failed'
-          body="The scheduled bump failed, so the ecosystem matrix pins stay stale until it runs: $RUN_URL"
+          body="The scheduled corpus pin bump failed. Check the run: either no bump PR opened, so the pins stay stale, or it opened without the sheriff assigned. $RUN_URL"
           if [ -n "$SHERIFF" ] && gh issue create --title "$title" --body "$body" --assignee "$SHERIFF"; then
             exit 0
           fi
