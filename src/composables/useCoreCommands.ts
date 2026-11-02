@@ -692,7 +692,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Canvas.ToggleSelectedNodes.Links',
       icon: 'icon-[lucide--eye-off]',
       label: 'Hide/Show Links on Selected Nodes',
-      versionAdded: '1.60.0',
+      versionAdded: '1.61.0',
       mutatesGraph: true,
       function: () => {
         toggleNodeLinks(app.canvas, getSelectedNodesShallow())
