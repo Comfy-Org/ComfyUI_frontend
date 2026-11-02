@@ -3668,12 +3668,12 @@
         "plan": "Plan",
         "planOfPool": "{remaining} of {total}",
         "planUsed": "{percent}% used",
-        "planTooltip": "Plan credits are spent before top-up credits. Unused plan credits don't carry over.",
+        "planTooltip": "Plan credits are spent before top-up credits.",
         "tooltipLabel": "About credits",
         "tooltip": "Credits work across Comfy Cloud, ComfyUI, and Comfy API.",
         "title": "Credits",
         "topUp": "Top-up",
-        "topUpTooltip": "Used after plan credits run out. Top-up credits expire 1 year after purchase.",
+        "topUpTooltip": "Used after plan credits run out.",
         "unavailable": "Couldn't load your balance."
       },
       "footer": {
