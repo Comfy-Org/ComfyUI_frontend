@@ -167,8 +167,9 @@ and the ECS runs that system on demand.
 ## Amended (2026-10-26): a per-node widget form is emitted only where it can be _proven_
 
 `widgets_values_form` is a per-node declaration of which widgets serialize and in what order
-(`comfy-multi-player` schema amendment A24). A node carrying one is addressed through that form
-and **consults no widget catalog on any leg**. That makes the error asymmetry total:
+(`comfy-multi-player` schema amendment A24). Object-shaped forms are closed and catalog-free.
+Array-form writes still require the pinned catalog for A25's dynamic-combo overlay; projection
+uses the stored form. An incorrect form can still misassociate values:
 
 - A node with **no** form keeps today's catalog behaviour, which is imperfect but visible — a
   name that does not resolve is refused loudly.
@@ -182,11 +183,13 @@ So the rule is not "derive the order from `node.widgets`". It is:
 
 Deriving is a guess dressed as a declaration; proving is not. `proveWidgetForm`
 (`src/lib/litegraph/src/widgets/widgetFormProof.ts`) is that predicate, and it returns an order
-**only** alongside `provable: true` — never a partial order beside a refusal.
+**only** alongside `provable: true` — never a partial order beside a refusal. The result type is a
+discriminated union, so reading `order` without checking `provable` does not compile, and an empty
+serializing order is refused (`widgets_not_serialized`) because the document rejects an empty form.
 
 ### Why deriving does not work, measured
 
-The obvious implementation — derive after `runExtensionSerializeHook`, since that hook sees the
+The obvious implementation — derive after `runExtensionSerializeHook`, since that hook receives the
 final values — is wrong for two independent reasons.
 
 **`LGraphNode.serialize` is not the last writer.** `SubgraphNode.serializeFromStoreState` calls
@@ -219,14 +222,12 @@ Three predicates look interchangeable and are deliberately different:
 (`control_after_generate`) and every `LoadImage` serializes 2 (its upload button). A form built from `options.serialize` is one slot
 short on both.
 
-`LGraphNode.widgetFormProof.test.ts` pins the _rule_ against the real serializer: the flag cases
-build an `LGraphNode` in a graph, add widgets through `addWidget`, and read `node.serialize()`, so
-the assertion is on production's own `widgets_values` rather than on a filter the test duplicates.
-Measured there: `addWidget('combo', …, { serialize: false, values: [...] })` leaves
-`widget.serialize` `undefined` with `widget.options.serialize === false`, and the widget still
-occupies a slot. It lives beside `LGraphNode` rather than in `widgets/` because importing
-`LGraphNode` is what the `node-widgets` → `litegraph-api` boundary below forbids;
-`widgetFormProof.test.ts` keeps the pure-predicate cases and stays inside that boundary.
+`widgets/widgetFormProof.serialize.test.ts` pins the _rule_ against the real serializer: the flag
+cases build an `LGraphNode` in a graph, add widgets through `addWidget`, and read
+`node.serialize()`, so the assertion is on production's own `widgets_values` rather than on a
+filter the test duplicates. A widget added with `{ serialize: false }` in its options bag still
+occupies a slot. It imports `LGraphNode` through the LiteGraph barrel, which the `litegraph-api`
+compatibility contract permits; `widgetFormProof.test.ts` keeps the pure-predicate cases.
 
 It does **not** instantiate a real `KSampler` or `LoadImage`, so the 7 and the 2 above remain
 measurements of production code rather than assertions this file makes. Pinning them against the
@@ -244,10 +245,10 @@ Four are worth calling out. **`replayed_serialization`** covers an unregistered 
 payload is replayed verbatim and never reaches the hook, and whose widgets are _synthesised from
 the stored values_ with names `UNKNOWN`, `UNKNOWN_1`, … A form there would be syntactically
 valid, authoritative, and meaningless, so it is refused before any other check can accept it.
-**`duplicate_widget_name`** covers two serializing widgets sharing a name: the named projection
-collapses them via `defineProperty`, and the document rejects the second address outright, so
-listing both would promise an address that does not resolve. Measured in the corpus: `RecordAudio`
-stores 2 values under 1 name and `LoadAudio` 3 under 2.
+**`duplicate_widget_name`** conservatively refuses serializing widgets sharing a name. Core's
+named projection overwrites duplicate keys, although the document's positional array-form path
+can represent duplicate occurrences. Measured in the corpus: `RecordAudio` stores 2 values under
+1 name.
 
 **`values_missing`** and **`values_replaced`** are deliberately distinct, because they send a
 reader to different problems. `values_missing` is an absent `widgets_values` — the
@@ -266,10 +267,12 @@ _contents_ were untouched: a serialize hook can reorder `node.widgets`, or mutat
 array in place, while preserving both identity and length. `proveWidgetForm` would then report
 `provable: true` with an order that does not match the values.
 
-That is a known limit, not an oversight, and it is why nothing calls this predicate yet. A
-producer must close it first — by snapshotting the pre-hook order, or by validating contents
-rather than identity — and that belongs in the change that adds the producer, where the pre-hook
-state is in scope.
+That is a known limit, not an oversight, and it is why no production code calls this predicate
+yet; its only consumer is the registry census, which reports refusal rates and emits nothing. A
+producer must close both mutation paths before calling this predicate. A pre-hook order snapshot
+handles later widget-list reordering, but the producer must also detect changes to the produced
+values or otherwise prove that the final name/value association is unchanged. That belongs in
+the producer change, where the pre-hook state is in scope.
 
 ### The call site is part of the rule, not an implementation detail
 
@@ -317,6 +320,7 @@ this up. The Agent wire already declares forms on its own `add_node` path:
 `docOpMinter.wireNodeSnapshot` attaches `widgets_values_form` from
 `provenWidgetValuesForm` (`src/workbench/extensions/agent/crdt/widgetValuesForm.ts`, per
 [ADR-WIDGET-SERIALIZATION-0047](WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md)).
-That producer reads the post-hook payload and reaches the same conclusion by a different route;
-reconciling the two, so core serialization and the Agent wire share one predicate, is the
-follow-up this amendment makes possible rather than something it does.
+The Agent producer proves the filtered named payload, while this predicate checks positional-array
+provenance. Their acceptance policies intentionally differ: #22505 and #22508 show that importing
+the positional identity or class-override refusals into the Agent wire would reject valid
+uncatalogued nodes. Any future consolidation must preserve those separate contracts.

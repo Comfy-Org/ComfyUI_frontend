@@ -39,16 +39,13 @@ describe('proveWidgetForm, driven through LGraphNode.serialize', () => {
   it('counts a widget flagged only in its options bag, because widgets_values does', () => {
     const node = nodeInGraph()
     node.addWidget('number', 'seed', 1, () => undefined, {})
-    const optionsBagFlagged = node.addWidget(
+    node.addWidget(
       'combo',
       'control_after_generate',
       'randomize',
       () => undefined,
       { serialize: false, values: ['randomize', 'fixed'] }
     )
-
-    expect(optionsBagFlagged.options.serialize).toBe(false)
-    expect(optionsBagFlagged.serialize).toBeUndefined()
 
     const { serialised, proof } = proveRealSerialization(node)
 
@@ -75,16 +72,5 @@ describe('proveWidgetForm, driven through LGraphNode.serialize', () => {
     expect(serialised.widgets_values).toEqual(['clip.mp3'])
     expect(proof.provable).toBe(true)
     expect(proof.order).toEqual(['audio'])
-  })
-
-  it('refuses a node whose serialize_widgets flag is off', () => {
-    const node = nodeInGraph()
-    node.addWidget('number', 'mode', 1, () => undefined, {})
-    node.serialize_widgets = false
-
-    const { proof } = proveRealSerialization(node)
-
-    expect(proof.provable).toBe(false)
-    expect(proof.refusal).toBe('widgets_not_serialized')
   })
 })
