@@ -120,7 +120,7 @@ jobs:
           SHERIFF: ${{ steps.sheriff.outputs.login }}
         run: |
           gh pr view "$PR_NUMBER" --json assignees --jq '.assignees[].login' \
-            | grep -qx "$SHERIFF" \
+            | grep -iFqx -- "$SHERIFF" \
             || { echo "::error::#$PR_NUMBER is not assigned to $SHERIFF"; exit 1; }
 
   # A separate job so the issue-writing token never sits next to the
@@ -142,7 +142,7 @@ jobs:
         run: |
           set -euo pipefail
           title='Monthly corpus pin bump failed'
-          body="The scheduled corpus pin bump failed. Check the run: either no bump PR opened, so the pins stay stale, or it opened without the sheriff assigned. $RUN_URL"
+          body="The scheduled corpus pin bump failed; the failed step in the run log names the cause. Until a bump lands the ecosystem matrix pins stay as they are. $RUN_URL"
           if [ -n "$SHERIFF" ] && gh issue create --title "$title" --body "$body" --assignee "$SHERIFF"; then
             exit 0
           fi
