@@ -26,6 +26,7 @@ const DECODED: BillingStatusData = {
   is_active: true,
   has_funds: true,
   max_seats: 5,
+  next_charge: null,
   occupied_seats: 2,
   subscription_tier: 'TEAM',
   team_credit_stop: CURRENT_STOP,
@@ -126,6 +127,42 @@ describe('projectBillingStatus', () => {
       projectBillingStatus({ ...DECODED, period_credit_grant: grant })
         ?.period_credit_grant
     ).toStrictEqual({ state: 'amount', credits: 21_100 })
+  })
+
+  it('reads the next charge amount back as a number', () => {
+    const nextCharge = {
+      amount: 3100n,
+      currency: 'usd',
+      date: '2026-12-01T00:00:00.000Z',
+      reflects_scheduled_change: false
+    }
+
+    expect(
+      projectBillingStatus({ ...DECODED, next_charge: nextCharge })?.next_charge
+    ).toStrictEqual({ ...nextCharge, amount: 3100 })
+  })
+
+  it('drops only a next charge amount a number cannot hold exactly', () => {
+    const projected = projectBillingStatus({
+      ...DECODED,
+      next_charge: {
+        amount: TOO_LARGE,
+        currency: 'usd',
+        date: '2026-12-01T00:00:00.000Z',
+        reflects_scheduled_change: false
+      }
+    })
+
+    expect(projected).toBeDefined()
+    expect(projected?.next_charge).toBeNull()
+  })
+
+  it('preserves an omitted next charge from an older server', () => {
+    const { next_charge: _nextCharge, ...olderStatus } = DECODED
+    const projected = projectBillingStatus(olderStatus)
+
+    expect(projected).toBeDefined()
+    expect(Object.hasOwn(projected ?? {}, 'next_charge')).toBe(false)
   })
 
   it('drops only a period credit grant whose credits a number cannot hold exactly', () => {

@@ -53,6 +53,7 @@ async function mockCloudBoot(
     ended_at: null,
     team_credit_stop: null,
     scheduled_change: null,
+    next_charge: null,
     ...subscriptionStatus
   }
   const billingRequests = {
