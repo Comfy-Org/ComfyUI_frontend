@@ -25,7 +25,7 @@
       >
         <div
           :data-current="isCurrentWorkspace(workspace)"
-          class="group flex h-[54px] w-full items-center gap-2 rounded-sm px-2 py-4 hover:bg-accent data-[current=true]:bg-secondary data-[current=true]:hover:bg-accent"
+          class="group flex h-[54px] w-full items-center gap-2 rounded-sm px-2 py-4 hover:bg-secondary/50 data-[current=true]:bg-secondary data-[current=true]:hover:bg-secondary"
         >
           <button
             class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
