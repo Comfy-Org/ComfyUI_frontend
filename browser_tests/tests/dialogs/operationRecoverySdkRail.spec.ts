@@ -70,7 +70,9 @@ const STATUS_WITH_PENDING_SUBSCRIPTION = {
   max_seats: 1,
   occupied_seats: 1,
   pending_billing_op_id: RECOVERY_OPERATION_ID,
-  pending_billing_op_type: 'subscription'
+  pending_billing_op_type: 'subscription',
+  ended_at: null,
+  next_charge: null
 } satisfies BillingStatusResponse
 
 const NEW_CREATOR_SUBSCRIPTION = {

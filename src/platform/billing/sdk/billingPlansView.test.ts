@@ -14,6 +14,14 @@ const DECODED: BillingPlansData = {
       action: 'subscribe',
       availability: { available: true },
       credits_cents: 6900n,
+      feature_items: [
+        {
+          key: 'membersUpTo',
+          params: { count: 3n },
+          status: 'available',
+          text: 'Up to 3 members'
+        }
+      ],
       max_seats: 1n,
       price_cents: 2800n,
       seat_summary: {
@@ -58,6 +66,14 @@ describe('projectBillingPlans', () => {
         action: 'subscribe',
         availability: { available: true },
         credits_cents: 6900,
+        feature_items: [
+          {
+            key: 'membersUpTo',
+            params: { count: 3 },
+            status: 'available',
+            text: 'Up to 3 members'
+          }
+        ],
         max_seats: 1,
         price_cents: 2800,
         seat_summary: {
@@ -113,6 +129,40 @@ describe('projectBillingPlans', () => {
     expect(projectBillingPlans(withGrant)?.plans[0].credits).toBe(7_400)
   })
 
+  it('leaves an absent feature list absent', () => {
+    const withoutFeatures: BillingPlansData = {
+      ...DECODED,
+      plans: [{ ...DECODED.plans[0], feature_items: undefined }]
+    }
+
+    const plan = projectBillingPlans(withoutFeatures)?.plans[0]
+
+    expect(plan).toBeDefined()
+    expect(plan && 'feature_items' in plan).toBe(false)
+  })
+
+  it('preserves feature items without interpolation params', () => {
+    const withoutParams: BillingPlansData = {
+      ...DECODED,
+      plans: [
+        {
+          ...DECODED.plans[0],
+          feature_items: [
+            {
+              key: 'shortRuntime',
+              status: 'available',
+              text: 'Short runtime'
+            }
+          ]
+        }
+      ]
+    }
+
+    expect(projectBillingPlans(withoutParams)?.plans[0].feature_items).toEqual(
+      withoutParams.plans[0].feature_items
+    )
+  })
+
   it('refuses a catalog with a credit grant a number cannot hold exactly', () => {
     const tooLarge: BillingPlansData = {
       ...DECODED,
@@ -136,5 +186,32 @@ describe('projectBillingPlans', () => {
     }
 
     expect(projectBillingPlans(tooLarge)).toBeUndefined()
+  })
+
+  it('drops an unsafe display count without rejecting the catalog', () => {
+    const tooLarge: BillingPlansData = {
+      ...DECODED,
+      plans: [
+        {
+          ...DECODED.plans[0],
+          feature_items: [
+            {
+              key: 'membersUpTo',
+              params: { count: BigInt(Number.MAX_SAFE_INTEGER) + 1n },
+              status: 'available',
+              text: 'Too many members'
+            }
+          ]
+        }
+      ]
+    }
+
+    expect(projectBillingPlans(tooLarge)?.plans[0].feature_items).toEqual([
+      {
+        key: 'membersUpTo',
+        status: 'available',
+        text: 'Too many members'
+      }
+    ])
   })
 })

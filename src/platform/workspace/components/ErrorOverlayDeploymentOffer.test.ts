@@ -87,6 +87,7 @@ function deployment(id: string, build: string): WorkspaceDeployment {
     build_id: `b-${id}`,
     build_name: build,
     release_version: 2,
+    can_start: false,
     status: 'ready',
     created_at: '2026-10-01T00:00:00Z'
   }

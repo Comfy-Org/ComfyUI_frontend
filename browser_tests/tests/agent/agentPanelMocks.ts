@@ -96,7 +96,9 @@ const FUNDED_BILLING_STATUS = {
   subscription_duration: 'MONTHLY',
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
-  team_credit_stop: null
+  team_credit_stop: null,
+  ended_at: null,
+  next_charge: null
 } satisfies BillingStatusResponse
 
 export type AgentFundingState = 'funded' | 'exhausted' | 'scopedExhausted'
