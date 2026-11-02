@@ -327,6 +327,25 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await comfyPage.workflow.loadWorkflow('large-graph-workflow')
     })
 
+    test.describe('workflow image', () => {
+      test.use({ initialSettings: { 'Comfy.PromptFilename': false } })
+
+      test('export', async ({ comfyPage }) => {
+        const download = comfyPage.page.waitForEvent('download')
+        await comfyPage.perf.startMeasuring()
+        await comfyPage.command.executeCommand('Comfy.ExportWorkflowImage')
+        await download
+
+        const m = await comfyPage.perf.stopMeasuring(
+          'vue-large-graph-export-workflow-image'
+        )
+        recordMeasurement(m)
+        console.log(
+          `Vue large graph workflow image export: ${m.durationMs.toFixed(0)}ms wall, ${m.taskDurationMs.toFixed(0)}ms task, ${m.scriptDurationMs.toFixed(0)}ms script, ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.domNodes} DOM nodes`
+        )
+      })
+    })
+
     test('idle', async ({ comfyPage }) => {
       await comfyPage.perf.startMeasuring()
 

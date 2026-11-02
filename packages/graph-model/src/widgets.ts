@@ -713,6 +713,14 @@ export interface IBaseWidget<
   ): boolean
 
   onRemove?(): void
+  /**
+   * Adjusts this widget's detached clone before workflow image export; must
+   * not modify `source`.
+   */
+  prepareImageExport?(
+    clone: HTMLElement,
+    source: HTMLElement
+  ): void | Promise<void>
   beforeQueued?(options?: WidgetCallbackOptions): unknown
   afterQueued?(options?: WidgetCallbackOptions): unknown
   serializeValue?(

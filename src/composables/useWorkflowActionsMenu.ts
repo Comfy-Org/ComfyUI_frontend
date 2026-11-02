@@ -189,6 +189,17 @@ export function useWorkflowActionsMenu(
     })
 
     addItem({
+      id: 'export-image',
+      label: t('menuLabels.Export (Workflow Image)'),
+      icon: 'icon-[lucide--image-down]',
+      command: async () => {
+        await ensureWorkflowActive(workflow)
+        await commandStore.execute('Comfy.ExportWorkflowImage')
+      },
+      visible: isRoot
+    })
+
+    addItem({
       id: 'share',
       label: t('breadcrumbsMenu.share'),
       icon: 'icon-[comfy--send]',

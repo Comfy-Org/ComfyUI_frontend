@@ -5675,12 +5675,68 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.dirty_bgcanvas = false
 
-    const viewport = this.viewport || [
-      0,
-      0,
-      ctx.canvas.width,
-      ctx.canvas.height
-    ]
+    this.paintBackground(
+      ctx,
+      this.dpr,
+      this.viewport,
+      nodesInFrameOrder,
+      nodesGraph
+    )
+
+    if (redrawFrontCanvas) this.dirty_canvas = true
+  }
+
+  drawGraphImage(
+    ctx: CanvasRenderingContext2D,
+    area: ReadOnlyRect,
+    pixelRatio: number
+  ): void {
+    const { graph, ds, visible_area } = this
+    if (!graph) return
+
+    const scale = ds.scale
+    const offset: Point = [ds.offset[0], ds.offset[1]]
+    const visibleArea = Array.from(visible_area)
+    const isLowQuality = this._isLowQuality
+
+    try {
+      ds.scale = 1
+      ds.offset = [-area[0], -area[1]]
+      visible_area.set(area)
+      this._isLowQuality = false
+
+      const nodes = nodesInRenderOrder(graph)
+      this.paintBackground(ctx, pixelRatio, undefined, nodes, graph)
+
+      ctx.save()
+      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+      ds.toCanvasContext(ctx)
+      for (const node of nodes) {
+        ctx.save()
+        ctx.translate(node.pos[0], node.pos[1])
+        this.drawNode(node, ctx)
+        ctx.restore()
+      }
+      this.subgraph?.draw(ctx, this.colourGetter, undefined, this.editor_alpha)
+      ctx.restore()
+    } finally {
+      ds.scale = scale
+      ds.offset = offset
+      visible_area.set(visibleArea)
+      this._isLowQuality = isLowQuality
+      this.setDirty(true, true)
+    }
+  }
+
+  private paintBackground(
+    ctx: CanvasRenderingContext2D,
+    dpr: number,
+    viewportRect: Rect | undefined,
+    nodesInFrameOrder: LGraphNode[] | undefined,
+    nodesGraph: LGraph | Subgraph | null
+  ): void {
+    const { canvas } = ctx
+    const viewport = viewportRect || [0, 0, canvas.width, canvas.height]
 
     // clear
     if (this.clear_background) {
@@ -5692,8 +5748,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       : false
 
     // reset in case of error
-    if (!this.viewport) {
-      const { dpr } = this
+    if (!viewportRect) {
       ctx.restore()
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
@@ -5801,8 +5856,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // restore state
       ctx.restore()
     }
-
-    if (redrawFrontCanvas) this.dirty_canvas = true
   }
 
   /**
