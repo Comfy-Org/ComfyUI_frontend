@@ -169,6 +169,7 @@ const displayLabel = customRef((track, trigger) => {
     "
   >
     <div
+      data-testid="parameter-widget-row-header"
       :class="
         cn(
           'mb-1.5 flex min-h-8 min-w-0 items-center justify-between gap-1',

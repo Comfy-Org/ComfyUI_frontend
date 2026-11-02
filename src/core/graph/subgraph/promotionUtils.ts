@@ -429,20 +429,11 @@ export function promoteWidget(
   })
 }
 
-/**
- * Removes the host input projecting a linked promotion identified by source.
- * Returns true when an input was found and demoted.
- */
-function demotePromotedInput(
+export function demotePromotedInput(
   subgraphNode: SubgraphNode,
-  source: PromotedWidgetSource
+  hostInput: SubgraphNode['inputs'][number]
 ): boolean {
-  const hostInput = findHostInputForPromotion(
-    subgraphNode,
-    source.sourceNodeId,
-    source.sourceWidgetName
-  )
-  const linkedInput = hostInput?._subgraphSlot
+  const linkedInput = hostInput._subgraphSlot
   if (!linkedInput) return false
   const hostWidgetId = hostInput.widgetId
 
@@ -462,7 +453,12 @@ export function demoteWidget(
 ) {
   const source = toPromotionSource(node, widget)
   for (const parent of parents) {
-    if (demotePromotedInput(parent, source)) continue
+    const hostInput = findHostInputForPromotion(
+      parent,
+      source.sourceNodeId,
+      source.sourceWidgetName
+    )
+    if (hostInput && demotePromotedInput(parent, hostInput)) continue
 
     if (isPreviewPseudoWidget(widget)) {
       const previewStore = usePreviewExposureStore()

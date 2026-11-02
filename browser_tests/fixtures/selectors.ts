@@ -140,6 +140,7 @@ export const TestIds = {
   },
   propertiesPanel: {
     root: 'properties-panel',
+    widgetRowHeader: 'parameter-widget-row-header',
     errorsTab: 'panel-tab-errors',
     tabIcon: 'panel-tab-icon',
     selectionContextStrip: 'selection-context-strip',

@@ -6,6 +6,7 @@ import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
+  demotePromotedInput,
   demoteWidget,
   getPromotableWidgets,
   isRecommendedWidget,
@@ -278,12 +279,7 @@ function demoteRow(row: ActiveRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   if (row.kind === 'promoted') {
-    const subgraphSlot = row.input._subgraphSlot
-    if (subgraphSlot) {
-      const inputIndex = subgraphNode.inputs.indexOf(row.input)
-      if (subgraphNode.isInputConnected(inputIndex)) subgraphSlot.disconnect()
-      else subgraphNode.subgraph.removeInput(subgraphSlot)
-    }
+    demotePromotedInput(subgraphNode, row.input)
     refreshActiveNodeRendering()
     return
   }

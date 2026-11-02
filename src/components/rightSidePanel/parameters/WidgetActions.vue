@@ -6,13 +6,11 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import { inputForWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import {
-  inputForWidget,
-  resolveImmediatePromotedWidgetSource
-} from '@/core/graph/subgraph/promotedInputWidget'
-import {
-  demoteWidget,
-  promoteWidget
+  demotePromotedInput,
+  promoteWidget,
+  refreshPromotedWidgetRendering
 } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -83,9 +81,10 @@ function handleShowInput() {
 
 function handleHideInput() {
   if (!host) return
-  const source = resolveImmediatePromotedWidgetSource(node, widget)
-  if (!source) return
-  demoteWidget(source.sourceNode, source.sourceWidget, [host])
+  const input = inputForWidget(host, widget)
+  if (!input) return
+  demotePromotedInput(host, input)
+  refreshPromotedWidgetRendering([host])
 }
 
 function handleToggleFavorite() {

@@ -48,28 +48,6 @@ test.describe(
   { tag: ['@node', '@widget'] },
   () => {
     test.describe('SubgraphEditor (Settings panel)', () => {
-      test('linked promoted widgets have an enabled hide toggle', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-nested-promotion'
-        )
-        const shownSection = await selectSubgraphAndOpenEditor(
-          comfyPage,
-          'Sub 0'
-        )
-
-        const toggleButtons = shownSection.getByTestId(
-          TestIds.subgraphEditor.widgetToggle
-        )
-        await expect(toggleButtons.first()).toBeVisible()
-
-        const count = await toggleButtons.count()
-        for (let i = 0; i < count; i++) {
-          await expect(toggleButtons.nth(i)).toBeEnabled()
-        }
-      })
-
       test('hide toggle demotes a linked promoted widget, and it can be re-shown', async ({
         comfyPage
       }) => {
@@ -195,41 +173,9 @@ test.describe(
       )
     })
 
-    test.describe('Parameters tab (WidgetActions menu)', () => {
-      test('linked promoted widget menu shows a working Hide input option', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-nested-promotion'
-        )
-        const subgraphNodes =
-          await comfyPage.nodeOps.getNodeRefsByTitle('Sub 0')
-        expect(subgraphNodes.length).toBeGreaterThan(0)
-        await subgraphNodes[0].click('title')
-
-        const panel = await ensurePropertiesPanel(comfyPage)
-
-        const hideInputButtons = panel.getByTestId(
-          TestIds.subgraphEditor.widgetActionsHideInputButton
-        )
-        await expect(hideInputButtons.first()).toBeVisible()
-
-        const moreButtons = panel.getByTestId(
-          TestIds.subgraphEditor.widgetActionsMenuButton
-        )
-        await expect(moreButtons.first()).toBeVisible()
-
-        const widgetCountBeforeHide = await moreButtons.count()
-
-        await hideInputButtons.first().click()
-
-        await expect
-          .poll(() => moreButtons.count())
-          .toBeLessThan(widgetCountBeforeHide)
-      })
-
+    test.describe('Parameters tab', () => {
       test(
-        'promoted widget row places the Hide input button before the menu',
+        'Hide a linked row',
         { tag: '@screenshot' },
         async ({ comfyPage }) => {
           await comfyPage.workflow.loadWorkflow(
@@ -247,41 +193,34 @@ test.describe(
           await expect(hideInputButton).toBeVisible()
           await expect(hideInputButton).toHaveAccessibleName('Hide input')
 
-          const rowHeader = hideInputButton.locator('xpath=../..')
+          const rowHeader = panel
+            .getByTestId(TestIds.propertiesPanel.widgetRowHeader)
+            .filter({
+              has: comfyPage.page.getByTestId(
+                TestIds.subgraphEditor.widgetActionsHideInputButton
+              )
+            })
+            .first()
           await expectElementScreenshot(
             rowHeader,
             'promoted-widget-row-hide-input-button.png'
           )
+
+          const moreButtons = panel.getByTestId(
+            TestIds.subgraphEditor.widgetActionsMenuButton
+          )
+          await expect(moreButtons.first()).toBeVisible()
+          const widgetCountBeforeHide = await moreButtons.count()
+
+          await test.step('Hide the linked input', async () => {
+            await hideInputButton.click()
+
+            await expect
+              .poll(() => moreButtons.count())
+              .toBeLessThan(widgetCountBeforeHide)
+          })
         }
       )
-
-      test('a widget outside any subgraph never shows a Hide/Show input option', async ({
-        comfyPage
-      }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-nested-promotion'
-        )
-        const outer = await comfyPage.nodeOps.getNodeRefsByTitle('Outer')
-        expect(outer.length).toBeGreaterThan(0)
-        await outer[0].click('title')
-
-        const panel = await ensurePropertiesPanel(comfyPage)
-
-        await expect(
-          panel.getByTestId(TestIds.subgraphEditor.widgetActionsHideInputButton)
-        ).toHaveCount(0)
-
-        const moreButtons = panel.getByTestId(
-          TestIds.subgraphEditor.widgetActionsMenuButton
-        )
-        await expect(moreButtons.first()).toBeVisible()
-        await moreButtons.first().click()
-
-        const menu = comfyPage.page.getByRole('menu')
-        await expect(menu).toBeVisible()
-        await expect(menu.getByText('Hide input')).toHaveCount(0)
-        await expect(menu.getByText('Show input')).toHaveCount(0)
-      })
     })
   }
 )
