@@ -1608,6 +1608,27 @@ describe('useBillingCapabilities on the SDK rail', () => {
       expect(billingCapabilities.runWorkflowsDenial.value).toBe(denial)
     }
   )
+
+  it.for([
+    { denial: 'not_workspace_owner' },
+    { denial: 'not_a_member' },
+    { denial: undefined }
+  ])(
+    'exposes a can_manage_auto_top_up denial of $denial as the server sent it',
+    async ({ denial }) => {
+      readCapabilities.mockResolvedValueOnce({
+        status: 'ok',
+        value: {
+          ...capabilitiesResponse(true),
+          denied_reasons: { can_manage_auto_top_up: denial }
+        }
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.manageAutoTopUpDenial.value).toBe(denial)
+    }
+  )
 })
 
 describe('useBillingCapabilities capability gates', () => {
