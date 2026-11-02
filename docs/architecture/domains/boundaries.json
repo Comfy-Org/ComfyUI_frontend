@@ -19,6 +19,20 @@
         "patterns": ["packages/api-client/src/executionTypes.ts"]
       },
       {
+        "name": "image-compositor/public",
+        "patterns": [
+          "src/extensions/core/imageCompositor.ts",
+          "src/extensions/core/layerEditor.ts",
+          "src/lib/litegraph/src/widgets/CompositorWidget.ts",
+          "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
+          "src/renderer/extensions/layerEditor/composables/useLayerEditor.ts",
+          "src/renderer/extensions/layerEditor/layerEditorDialogKey.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
+          "packages/layer-editor/src/mode.ts",
+          "packages/layer-editor/src/node.ts"
+        ]
+      },
+      {
         "name": "ingest-api/public",
         "patterns": [
           "src/platform/remote/ingest/ingestApiError.ts",
@@ -2002,6 +2016,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2021,6 +2036,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2035,10 +2051,30 @@
         ]
       },
       {
+        "from": "image-compositor/public",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "image-compositor/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "node-definition/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "_inventory",
+          "image-compositor",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "ingest-api/public",
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2058,6 +2094,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2095,6 +2132,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2113,6 +2151,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2131,6 +2170,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2150,6 +2190,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2169,6 +2210,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2188,6 +2230,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2206,6 +2249,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2225,6 +2269,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2244,6 +2289,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2263,6 +2309,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2282,6 +2329,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2301,6 +2349,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2320,6 +2369,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2339,6 +2389,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2358,6 +2409,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2376,6 +2428,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
@@ -2394,6 +2447,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compositor/public",
           "ingest-api/public",
           "keybindings/public",
           "mask-editor/public",
