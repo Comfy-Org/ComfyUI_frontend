@@ -4181,7 +4181,12 @@
       "modelsMissing": "Models missing",
       "nodePacksAndModelsMissing": "Node packs and models missing",
       "checking": "Checking",
+      "account": "Account",
+      "signedIn": "Signed in",
       "signedOut": "Signed out",
+      "library": "Library",
+      "libraryLacksModels": "Lacks the models",
+      "libraryHasModels": "Has the models",
       "localAgent": "Local agent",
       "agentFound": "Found",
       "agentNotFound": "Not found",
@@ -4198,9 +4203,8 @@
     "runDialog": {
       "title": "Run on Comfy Cloud",
       "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
-      "signedOut": "Sign in to check whether Comfy Cloud can run this workflow.",
-      "openOnCloud": "Open on Comfy Cloud",
-      "signIn": "Sign in"
+      "asksToSignIn": "Comfy Cloud will ask you to sign in.",
+      "openOnCloud": "Open on Comfy Cloud"
     },
     "agentMenu": {
       "useLocalAgent": "Use local agent",
@@ -4219,6 +4223,7 @@
       "body": "Upload these models to run this workflow on Comfy Cloud.",
       "total": "{size} in total. They go to your models on Comfy Cloud.",
       "upload": "Upload",
+      "signInToUpload": "Sign in to upload",
       "uploadingTitle": "Uploading {count} model | Uploading {count} models",
       "uploadingBody": "Hide this and keep working. The upload carries on, and the Comfy Cloud button shows how far it has got.",
       "uploaded": "Uploaded",

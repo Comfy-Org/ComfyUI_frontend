@@ -10,7 +10,12 @@
       >
         {{ $t('openOnCloud.runDialog.title') }}
       </h2>
-      <p class="my-0 text-sm/5 text-muted-foreground">{{ body }}</p>
+      <p class="my-0 text-sm/5 text-muted-foreground">
+        {{ $t('openOnCloud.runDialog.ready') }}
+      </p>
+      <p v-if="asksToSignIn" class="my-0 text-sm/5 text-muted-foreground">
+        {{ $t('openOnCloud.runDialog.asksToSignIn') }}
+      </p>
       <footer class="flex items-center justify-end gap-2.5 pt-3">
         <Button variant="secondary" size="lg" @click="emit('dismiss')">
           {{ $t('g.cancel') }}
@@ -19,15 +24,10 @@
           variant="inverted"
           size="lg"
           data-testid="run-on-cloud-primary"
-          @click="runPrimary"
+          @click="openOnCloud"
         >
-          <template v-if="state.kind === 'signedOut'">
-            {{ $t('openOnCloud.runDialog.signIn') }}
-          </template>
-          <template v-else>
-            {{ $t('openOnCloud.runDialog.openOnCloud') }}
-            <i class="icon-[lucide--external-link]" aria-hidden="true" />
-          </template>
+          {{ $t('openOnCloud.runDialog.openOnCloud') }}
+          <i class="icon-[lucide--external-link]" aria-hidden="true" />
         </Button>
       </footer>
     </section>
@@ -35,18 +35,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import Button from '@comfyorg/design-system/button/Button'
-import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
-import type { RunOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 
-const { state } = defineProps<{
+defineProps<{
   titleId?: string
-  state: Extract<RunOnCloudModalState, { kind: 'ready' | 'signedOut' }>
+  asksToSignIn: boolean
 }>()
 
 const emit = defineEmits<{
@@ -56,25 +51,8 @@ const emit = defineEmits<{
 
 defineOptions({ inheritAttrs: false })
 
-const { t } = useI18n()
-const { showSignInDialog } = useAuthDialogs()
-
-const BODY_KEYS = {
-  ready: 'openOnCloud.runDialog.ready',
-  signedOut: 'openOnCloud.runDialog.signedOut'
-} as const
-
-const body = computed(() => t(BODY_KEYS[state.kind]))
-
-function runPrimary() {
-  switch (state.kind) {
-    case 'ready':
-      void openWorkflowOnCloud()
-      break
-    case 'signedOut':
-      void showSignInDialog()
-      break
-  }
+function openOnCloud() {
+  void openWorkflowOnCloud()
   emit('done')
 }
 </script>

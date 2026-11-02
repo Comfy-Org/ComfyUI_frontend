@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+import { defineStore, storeToRefs } from 'pinia'
 import { ref, shallowRef, watch } from 'vue'
 
 import type {
@@ -12,25 +12,33 @@ import {
   prototypeVerdict,
   reduceCloudWorkflowCheck
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import { useLocalSignInStore } from '@/platform/openOnCloud/stores/localSignInStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+
+type PrototypeLibrary = 'lacksModels' | 'hasModels'
 
 /**
  * Whether Comfy Cloud can run the open workflow, rechecked on each call and
- * answered at once when the prototype panel changes its answer.
+ * on each sign-in or sign-out, and answered at once when the prototype panel
+ * changes its answer.
  */
 export const useCloudWorkflowCheckStore = defineStore(
   'cloudWorkflowCheck',
   () => {
+    const { signedIn } = storeToRefs(useLocalSignInStore())
     const prototypeScenario = ref<PrototypeScenario>('compatible')
+    const prototypeLibrary = ref<PrototypeLibrary>('lacksModels')
     const uploadedModels = ref<string[]>([])
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
     const pick = () => ({
       scenario: prototypeScenario.value,
+      signedIn: signedIn.value,
+      libraryHasModels: prototypeLibrary.value === 'hasModels',
       uploadedModels: uploadedModels.value
     })
     const checker = prototypeCloudWorkflowChecker(pick)
     let lastRun = 0
-    let hasChecked = false
+    let lastWorkflow: ComfyWorkflowJSON | undefined
 
     function dispatch(event: CloudWorkflowCheckEvent) {
       state.value = reduceCloudWorkflowCheck(state.value, event)
@@ -46,7 +54,7 @@ export const useCloudWorkflowCheckStore = defineStore(
     }
 
     function check(workflow: ComfyWorkflowJSON): Promise<void> {
-      hasChecked = true
+      lastWorkflow = workflow
       return run(workflow, checker)
     }
 
@@ -65,13 +73,18 @@ export const useCloudWorkflowCheckStore = defineStore(
       uploadedModels.value = []
     }
 
-    watch([prototypeScenario, uploadedModels], () => {
-      if (hasChecked) answerFromPanel()
+    watch([prototypeScenario, prototypeLibrary, uploadedModels], () => {
+      if (lastWorkflow) answerFromPanel()
+    })
+
+    watch(signedIn, () => {
+      if (lastWorkflow) void run(lastWorkflow, checker)
     })
 
     return {
       state,
       prototypeScenario,
+      prototypeLibrary,
       check,
       markUploaded,
       forgetUploads

@@ -17,7 +17,6 @@ export interface CloudWorkflowGaps {
 export type CloudWorkflowVerdict =
   | { kind: 'canOpen' }
   | { kind: 'missing'; gaps: CloudWorkflowGaps }
-  | { kind: 'signedOut' }
 
 /** Asks Comfy Cloud whether it can run a workflow. */
 export type CloudWorkflowChecker = (
@@ -55,16 +54,14 @@ export type PrototypeScenario =
   | 'modelsMissing'
   | 'nodePacksAndModelsMissing'
   | 'checking'
-  | 'signedOut'
 
-type ScenarioWithGaps = Exclude<
-  PrototypeScenario,
-  'compatible' | 'checking' | 'signedOut'
->
+type ScenarioWithGaps = Exclude<PrototypeScenario, 'compatible' | 'checking'>
 
 /** What the stand-in checker answers from. */
 export interface PrototypeCheckInput {
   scenario: PrototypeScenario
+  signedIn: boolean
+  libraryHasModels: boolean
   uploadedModels: readonly string[]
 }
 
@@ -97,23 +94,25 @@ export const PROTOTYPE_GAPS: Record<ScenarioWithGaps, CloudWorkflowGaps> = {
   }
 }
 
-/** The stand-in's answer: Comfy Cloud has every model already uploaded. */
-export function prototypeVerdict({
-  scenario,
-  uploadedModels
-}: PrototypeCheckInput): CloudWorkflowVerdict | null {
-  switch (scenario) {
+function isInLibrary(
+  { signedIn, libraryHasModels, uploadedModels }: PrototypeCheckInput,
+  model: CloudMissingModel
+): boolean {
+  return signedIn && (libraryHasModels || uploadedModels.includes(model.name))
+}
+
+/** The stand-in's answer: a signed-in person's library models count. */
+export function prototypeVerdict(
+  input: PrototypeCheckInput
+): CloudWorkflowVerdict | null {
+  switch (input.scenario) {
     case 'checking':
       return null
     case 'compatible':
       return { kind: 'canOpen' }
-    case 'signedOut':
-      return { kind: 'signedOut' }
   }
-  const { nodePacks, models } = PROTOTYPE_GAPS[scenario]
-  const stillMissing = models.filter(
-    (model) => !uploadedModels.includes(model.name)
-  )
+  const { nodePacks, models } = PROTOTYPE_GAPS[input.scenario]
+  const stillMissing = models.filter((model) => !isInLibrary(input, model))
   return nodePacks.length === 0 && stillMissing.length === 0
     ? { kind: 'canOpen' }
     : { kind: 'missing', gaps: { nodePacks, models: stillMissing } }

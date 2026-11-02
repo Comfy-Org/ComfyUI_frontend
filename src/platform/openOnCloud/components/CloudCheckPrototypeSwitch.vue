@@ -27,7 +27,37 @@
         </ToggleGroupItem>
       </ToggleGroup>
       <div class="flex items-center gap-1.5">
-        <span class="px-1 text-muted-foreground">
+        <span class="w-20 shrink-0 px-1 text-muted-foreground">
+          {{ $t('openOnCloud.prototype.account') }}
+        </span>
+        <ToggleGroup v-model="account" type="single" :allow-empty="false">
+          <ToggleGroupItem value="signedIn" size="sm" class="px-2.5">
+            {{ $t('openOnCloud.prototype.signedIn') }}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="signedOut" size="sm" class="px-2.5">
+            {{ $t('openOnCloud.prototype.signedOut') }}
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="w-20 shrink-0 px-1 text-muted-foreground">
+          {{ $t('openOnCloud.prototype.library') }}
+        </span>
+        <ToggleGroup
+          v-model="prototypeLibrary"
+          type="single"
+          :allow-empty="false"
+        >
+          <ToggleGroupItem value="lacksModels" size="sm" class="px-2.5">
+            {{ $t('openOnCloud.prototype.libraryLacksModels') }}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="hasModels" size="sm" class="px-2.5">
+            {{ $t('openOnCloud.prototype.libraryHasModels') }}
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="w-20 shrink-0 px-1 text-muted-foreground">
           {{ $t('openOnCloud.prototype.localAgent') }}
         </span>
         <ToggleGroup
@@ -84,6 +114,7 @@ import type { PrototypeScenario } from '@/platform/openOnCloud/cloudWorkflowChec
 import { prototypeOutOfMemoryError } from '@/platform/openOnCloud/prototypeOutOfMemory'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useLocalAgentStore } from '@/platform/openOnCloud/stores/localAgentStore'
+import { useLocalSignInStore } from '@/platform/openOnCloud/stores/localSignInStore'
 import { useModelUploadStore } from '@/platform/openOnCloud/stores/modelUploadStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -101,17 +132,27 @@ const scenarios = computed<{ value: PrototypeScenario; label: string }[]>(
       value: 'nodePacksAndModelsMissing',
       label: t('openOnCloud.prototype.nodePacksAndModelsMissing')
     },
-    { value: 'checking', label: t('openOnCloud.prototype.checking') },
-    { value: 'signedOut', label: t('openOnCloud.prototype.signedOut') }
+    { value: 'checking', label: t('openOnCloud.prototype.checking') }
   ]
 )
 
-const { prototypeScenario } = storeToRefs(useCloudWorkflowCheckStore())
+const { prototypeScenario, prototypeLibrary } = storeToRefs(
+  useCloudWorkflowCheckStore()
+)
+const { signedIn } = storeToRefs(useLocalSignInStore())
+const account = computed({
+  get: () => (signedIn.value ? 'signedIn' : 'signedOut'),
+  set: (value) => {
+    signedIn.value = value === 'signedIn'
+  }
+})
 const { prototypeAgent } = storeToRefs(useLocalAgentStore())
 const uploadStore = useModelUploadStore()
 const executionErrorStore = useExecutionErrorStore()
 
-watch(prototypeScenario, () => uploadStore.cancel())
+watch([prototypeScenario, prototypeLibrary, signedIn], () =>
+  uploadStore.cancel()
+)
 
 function simulateOutOfMemory() {
   const error = prototypeOutOfMemoryError(app.rootGraph.nodes, Date.now())

@@ -66,6 +66,13 @@ describe(reduceCloudWorkflowCheck, () => {
   })
 })
 
+const signedOut: Omit<PrototypeCheckInput, 'scenario'> = {
+  signedIn: false,
+  libraryHasModels: false,
+  uploadedModels: []
+}
+const signedIn = { ...signedOut, signedIn: true }
+
 describe(prototypeVerdict, () => {
   const { modelsMissing, nodePacksAndModelsMissing } = PROTOTYPE_GAPS
   const allModels = modelsMissing.models.map((model) => model.name)
@@ -76,28 +83,27 @@ describe(prototypeVerdict, () => {
     expected: CloudWorkflowVerdict | null
   }>([
     {
-      name: 'compatible can open',
-      input: { scenario: 'compatible', uploadedModels: [] },
+      name: 'compatible can open, signed out too',
+      input: { ...signedOut, scenario: 'compatible' },
       expected: { kind: 'canOpen' }
     },
     {
-      name: 'signed out says so',
-      input: { scenario: 'signedOut', uploadedModels: [] },
-      expected: { kind: 'signedOut' }
-    },
-    {
       name: 'checking never answers',
-      input: { scenario: 'checking', uploadedModels: [] },
+      input: { ...signedOut, scenario: 'checking' },
       expected: null
     },
     {
       name: 'models missing names each model',
-      input: { scenario: 'modelsMissing', uploadedModels: [] },
+      input: { ...signedIn, scenario: 'modelsMissing' },
       expected: { kind: 'missing', gaps: modelsMissing }
     },
     {
       name: 'an uploaded model is no longer missing',
-      input: { scenario: 'modelsMissing', uploadedModels: allModels.slice(1) },
+      input: {
+        ...signedIn,
+        scenario: 'modelsMissing',
+        uploadedModels: allModels.slice(1)
+      },
       expected: {
         kind: 'missing',
         gaps: { nodePacks: [], models: modelsMissing.models.slice(0, 1) }
@@ -105,13 +111,44 @@ describe(prototypeVerdict, () => {
     },
     {
       name: 'once every model is uploaded it can open',
-      input: { scenario: 'modelsMissing', uploadedModels: allModels },
+      input: {
+        ...signedIn,
+        scenario: 'modelsMissing',
+        uploadedModels: allModels
+      },
       expected: { kind: 'canOpen' }
     },
     {
+      name: 'signed in, models in the library count',
+      input: { ...signedIn, scenario: 'modelsMissing', libraryHasModels: true },
+      expected: { kind: 'canOpen' }
+    },
+    {
+      name: 'signed out, the library does not count',
+      input: {
+        ...signedOut,
+        scenario: 'modelsMissing',
+        libraryHasModels: true,
+        uploadedModels: allModels
+      },
+      expected: { kind: 'missing', gaps: modelsMissing }
+    },
+    {
       name: 'node packs and models missing names both',
-      input: { scenario: 'nodePacksAndModelsMissing', uploadedModels: [] },
+      input: { ...signedOut, scenario: 'nodePacksAndModelsMissing' },
       expected: { kind: 'missing', gaps: nodePacksAndModelsMissing }
+    },
+    {
+      name: 'the library has the models, the node packs are still missing',
+      input: {
+        ...signedIn,
+        scenario: 'nodePacksAndModelsMissing',
+        libraryHasModels: true
+      },
+      expected: {
+        kind: 'missing',
+        gaps: { nodePacks: nodePacksAndModelsMissing.nodePacks, models: [] }
+      }
     }
   ])('$name', ({ input, expected }) => {
     expect(prototypeVerdict(input)).toEqual(expected)
@@ -120,8 +157,8 @@ describe(prototypeVerdict, () => {
 
 describe(prototypeCloudWorkflowChecker, () => {
   const compatible: PrototypeCheckInput = {
-    scenario: 'compatible',
-    uploadedModels: []
+    ...signedOut,
+    scenario: 'compatible'
   }
 
   it('answers after the pause it was made with', async () => {
@@ -140,8 +177,8 @@ describe(prototypeCloudWorkflowChecker, () => {
   it('keeps checking while the panel says checking', async () => {
     const onAnswer = vi.fn()
     void prototypeCloudWorkflowChecker(() => ({
-      scenario: 'checking',
-      uploadedModels: []
+      ...signedOut,
+      scenario: 'checking'
     }))(defaultGraph).then(onAnswer)
 
     await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS * 10)

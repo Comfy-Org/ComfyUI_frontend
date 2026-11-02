@@ -13,6 +13,7 @@ import {
   openRunOnCloudDialog
 } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useLocalSignInStore } from '@/platform/openOnCloud/stores/localSignInStore'
 import {
   PROTOTYPE_UPLOAD_MS,
   useModelUploadStore
@@ -112,8 +113,25 @@ describe('CloudButton', () => {
     expect(closeRunOnCloudDialog).toHaveBeenCalledOnce()
     expect(cloudButton()).toHaveAccessibleName('Checking Comfy Cloud…')
 
-    checkStore.prototypeScenario = 'signedOut'
+    checkStore.prototypeScenario = 'nodePacksMissing'
     await vi.advanceTimersByTimeAsync(0)
+
+    expect(openRunOnCloudDialog).toHaveBeenCalledTimes(2)
+  })
+
+  it('checks again after a sign-in, then reopens the modal with the answer', async () => {
+    const user = renderButton()
+    await user.hover(cloudButton())
+    await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
+    await user.click(cloudButton())
+
+    useLocalSignInStore().signedIn = true
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(closeRunOnCloudDialog).toHaveBeenCalledOnce()
+    expect(cloudButton()).toHaveAccessibleName('Checking Comfy Cloud…')
+
+    await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
 
     expect(openRunOnCloudDialog).toHaveBeenCalledTimes(2)
   })

@@ -45,45 +45,60 @@ describe(runOnCloudModalState, () => {
   it.for<{
     name: string
     check: CloudWorkflowCheckState
-    expected: RunOnCloudModalState
+    signedIn: RunOnCloudModalState
+    signedOut: RunOnCloudModalState
   }>([
     {
-      name: 'no check yet opens the checking modal',
+      name: 'no check yet: checking',
       check: { phase: 'idle' },
-      expected: { kind: 'checking' }
+      signedIn: { kind: 'checking' },
+      signedOut: { kind: 'checking' }
     },
     {
-      name: 'a running check opens the checking modal',
+      name: 'a running check: checking',
       check: { phase: 'checking', run: 3 },
-      expected: { kind: 'checking' }
+      signedIn: { kind: 'checking' },
+      signedOut: { kind: 'checking' }
     },
     {
-      name: 'Comfy Cloud can run it: the ready modal',
+      name: 'Comfy Cloud can run it: Open, which asks a signed-out person to sign in',
       check: answered({ kind: 'canOpen' }),
-      expected: { kind: 'ready' }
-    },
-    {
-      name: 'signed out: the signed-out modal',
-      check: answered({ kind: 'signedOut' }),
-      expected: { kind: 'signedOut' }
+      signedIn: { kind: 'ready', asksToSignIn: false },
+      signedOut: { kind: 'ready', asksToSignIn: true }
     },
     {
       name: 'node packs missing: Deploy your setup',
       check: answered({ kind: 'missing', gaps: packsOnly }),
-      expected: { kind: 'deploySetup' }
+      signedIn: { kind: 'deploySetup' },
+      signedOut: { kind: 'deploySetup' }
     },
     {
       name: 'node packs and models missing: Deploy your setup',
       check: answered({ kind: 'missing', gaps: packsAndModel }),
-      expected: { kind: 'deploySetup' }
+      signedIn: { kind: 'deploySetup' },
+      signedOut: { kind: 'deploySetup' }
     },
     {
-      name: 'only models missing: the Upload models dialog',
+      name: 'only models missing: Upload models, which signs a signed-out person in first',
       check: answered({ kind: 'missing', gaps: modelsOnly }),
-      expected: { kind: 'uploadModels', models: [lora, checkpoint] }
+      signedIn: {
+        kind: 'uploadModels',
+        models: [lora, checkpoint],
+        signInToUpload: false
+      },
+      signedOut: {
+        kind: 'uploadModels',
+        models: [lora, checkpoint],
+        signInToUpload: true
+      }
     }
-  ])('$name', ({ check, expected }) => {
-    expect(runOnCloudModalState(check, idleUpload)).toEqual(expected)
+  ])('$name', ({ check, signedIn, signedOut }) => {
+    expect(runOnCloudModalState(check, idleUpload, { signedIn: true })).toEqual(
+      signedIn
+    )
+    expect(
+      runOnCloudModalState(check, idleUpload, { signedIn: false })
+    ).toEqual(signedOut)
   })
 
   it('shows a running upload and how far it has got over the answer', () => {
@@ -96,7 +111,8 @@ describe(runOnCloudModalState, () => {
     expect(
       runOnCloudModalState(
         answered({ kind: 'missing', gaps: modelsOnly }),
-        upload
+        upload,
+        { signedIn: true }
       )
     ).toEqual({ kind: 'uploading', models: [lora, checkpoint], percent: 38 })
   })

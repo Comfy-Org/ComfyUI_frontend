@@ -9,6 +9,7 @@ import type { PrototypeScenario } from '@/platform/openOnCloud/cloudWorkflowChec
 import { PROTOTYPE_CHECK_MS } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useLocalSignInStore } from '@/platform/openOnCloud/stores/localSignInStore'
 import {
   PROTOTYPE_UPLOAD_MS,
   useModelUploadStore
@@ -32,6 +33,7 @@ const READY_BODY =
   'Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.'
 const DEPLOY_BODY =
   'This creates a deployment of your setup on Comfy Cloud. You manage it from Comfy Platform.'
+const SIGN_IN_NOTE = 'Comfy Cloud will ask you to sign in.'
 
 function renderDialog() {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
@@ -41,14 +43,15 @@ function renderDialog() {
   return { user, emitted }
 }
 
-function startCheck(scenario: PrototypeScenario) {
+function startCheck(scenario: PrototypeScenario, signedIn = true) {
+  useLocalSignInStore().signedIn = signedIn
   const checkStore = useCloudWorkflowCheckStore()
   checkStore.prototypeScenario = scenario
   void checkStore.check(defaultGraph)
 }
 
-async function renderAnswered(scenario: PrototypeScenario) {
-  startCheck(scenario)
+async function renderAnswered(scenario: PrototypeScenario, signedIn = true) {
+  startCheck(scenario, signedIn)
   await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
   return renderDialog()
 }
@@ -56,48 +59,79 @@ async function renderAnswered(scenario: PrototypeScenario) {
 describe('RunOnCloudDialog', () => {
   it.for<{
     scenario: PrototypeScenario
+    signedIn: boolean
     heading: string
     body: string
     primary: string
+    asksToSignIn: boolean
   }>([
     {
       scenario: 'compatible',
+      signedIn: true,
       heading: 'Run on Comfy Cloud',
       body: READY_BODY,
-      primary: 'Open on Comfy Cloud'
+      primary: 'Open on Comfy Cloud',
+      asksToSignIn: false
+    },
+    {
+      scenario: 'compatible',
+      signedIn: false,
+      heading: 'Run on Comfy Cloud',
+      body: READY_BODY,
+      primary: 'Open on Comfy Cloud',
+      asksToSignIn: true
     },
     {
       scenario: 'nodePacksMissing',
+      signedIn: true,
       heading: 'Deploy your setup to Comfy Cloud',
       body: DEPLOY_BODY,
-      primary: 'Build with your agent'
+      primary: 'Build with your agent',
+      asksToSignIn: false
+    },
+    {
+      scenario: 'nodePacksMissing',
+      signedIn: false,
+      heading: 'Deploy your setup to Comfy Cloud',
+      body: DEPLOY_BODY,
+      primary: 'Build with your agent',
+      asksToSignIn: false
     },
     {
       scenario: 'nodePacksAndModelsMissing',
+      signedIn: false,
       heading: 'Deploy your setup to Comfy Cloud',
       body: DEPLOY_BODY,
-      primary: 'Build with your agent'
+      primary: 'Build with your agent',
+      asksToSignIn: false
     },
     {
       scenario: 'modelsMissing',
+      signedIn: true,
       heading: 'Upload 2 models',
       body: 'Upload these models to run this workflow on Comfy Cloud.',
-      primary: 'Upload'
+      primary: 'Upload',
+      asksToSignIn: false
     },
     {
-      scenario: 'signedOut',
-      heading: 'Run on Comfy Cloud',
-      body: 'Sign in to check whether Comfy Cloud can run this workflow.',
-      primary: 'Sign in'
+      scenario: 'modelsMissing',
+      signedIn: false,
+      heading: 'Upload 2 models',
+      body: 'Upload these models to run this workflow on Comfy Cloud.',
+      primary: 'Sign in to upload',
+      asksToSignIn: false
     }
   ])(
-    'opens the modal for $scenario',
-    async ({ scenario, heading, body, primary }) => {
-      await renderAnswered(scenario)
+    'opens $scenario with $primary, signed in: $signedIn',
+    async ({ scenario, signedIn, heading, body, primary, asksToSignIn }) => {
+      await renderAnswered(scenario, signedIn)
 
       expect(screen.getByRole('heading')).toHaveTextContent(heading)
       expect(screen.getByText(body)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: primary })).toBeEnabled()
+      expect(screen.queryAllByText(SIGN_IN_NOTE)).toHaveLength(
+        asksToSignIn ? 1 : 0
+      )
     }
   )
 
@@ -111,33 +145,66 @@ describe('RunOnCloudDialog', () => {
   it('switches at once when the panel picks another scenario', async () => {
     await renderAnswered('compatible')
 
-    useCloudWorkflowCheckStore().prototypeScenario = 'signedOut'
+    useCloudWorkflowCheckStore().prototypeScenario = 'modelsMissing'
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeInTheDocument()
   })
 
-  it.for<{ scenario: PrototypeScenario; primary: string; ran: () => void }>([
+  it.for([true, false])(
+    'Open on Comfy Cloud opens the workflow there and closes the modal, signed in: %s',
+    async (signedIn) => {
+      const { user, emitted } = await renderAnswered('compatible', signedIn)
+
+      await user.click(
+        screen.getByRole('button', { name: 'Open on Comfy Cloud' })
+      )
+
+      expect(openWorkflowOnCloud).toHaveBeenCalledOnce()
+      expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+      expect(emitted()).toHaveProperty('done')
+    }
+  )
+
+  it('Sign in to upload shows the sign-in dialog and keeps the modal', async () => {
+    const { user, emitted } = await renderAnswered('modelsMissing', false)
+
+    await user.click(screen.getByRole('button', { name: 'Sign in to upload' }))
+
+    expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+    expect(useModelUploadStore().state).toEqual({ phase: 'idle' })
+    expect(emitted()).not.toHaveProperty('done')
+  })
+
+  it.for<{
+    library: 'lacksModels' | 'hasModels'
+    heading: string
+    primary: string
+  }>([
+    { library: 'lacksModels', heading: 'Upload 2 models', primary: 'Upload' },
     {
-      scenario: 'compatible',
-      primary: 'Open on Comfy Cloud',
-      ran: () => expect(openWorkflowOnCloud).toHaveBeenCalledOnce()
-    },
-    {
-      scenario: 'signedOut',
-      primary: 'Sign in',
-      ran: () =>
-        expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+      library: 'hasModels',
+      heading: 'Run on Comfy Cloud',
+      primary: 'Open on Comfy Cloud'
     }
   ])(
-    '$primary runs and closes the modal',
-    async ({ scenario, primary, ran }) => {
-      const { user, emitted } = await renderAnswered(scenario)
+    'after sign-in, the check runs again and the library $library: $primary',
+    async ({ library, heading, primary }) => {
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(true)
+      useCloudWorkflowCheckStore().prototypeLibrary = library
+      const { user } = await renderAnswered('modelsMissing', false)
 
-      await user.click(screen.getByRole('button', { name: primary }))
+      await user.click(
+        screen.getByRole('button', { name: 'Sign in to upload' })
+      )
 
-      ran()
-      expect(emitted()).toHaveProperty('done')
+      expect(screen.queryByRole('heading')).not.toBeInTheDocument()
+
+      await vi.advanceTimersByTimeAsync(PROTOTYPE_CHECK_MS)
+
+      expect(screen.getByRole('heading')).toHaveTextContent(heading)
+      expect(screen.getByRole('button', { name: primary })).toBeEnabled()
+      expect(screen.queryByText(SIGN_IN_NOTE)).not.toBeInTheDocument()
     }
   )
 

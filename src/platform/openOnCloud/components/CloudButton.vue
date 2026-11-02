@@ -45,6 +45,7 @@ import {
 import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useLocalSignInStore } from '@/platform/openOnCloud/stores/localSignInStore'
 import { useModelUploadStore } from '@/platform/openOnCloud/stores/modelUploadStore'
 
 const isDevBuild = import.meta.env.DEV
@@ -54,8 +55,13 @@ const { toastErrorHandler } = useErrorHandling()
 const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
 const { state: upload } = storeToRefs(useModelUploadStore())
+const { signedIn } = storeToRefs(useLocalSignInStore())
 
-const modal = computed(() => runOnCloudModalState(check.value, upload.value))
+const modal = computed(() =>
+  runOnCloudModalState(check.value, upload.value, {
+    signedIn: signedIn.value
+  })
+)
 const isChecking = computed(
   () => modal.value.kind === 'checking' && check.value.phase === 'checking'
 )

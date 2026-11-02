@@ -87,6 +87,16 @@
             {{ $t('g.cancel') }}
           </Button>
           <Button
+            v-if="signInToUpload"
+            variant="inverted"
+            size="lg"
+            data-testid="upload-models-sign-in"
+            @click="signInStore.signIn()"
+          >
+            {{ $t('openOnCloud.uploadDialog.signInToUpload') }}
+          </Button>
+          <Button
+            v-else
             variant="inverted"
             size="lg"
             data-testid="upload-models-start"
@@ -116,12 +126,14 @@ import {
   uploadFiles,
   uploadPercent
 } from '@/platform/openOnCloud/modelUpload'
+import { useLocalSignInStore } from '@/platform/openOnCloud/stores/localSignInStore'
 import { useModelUploadStore } from '@/platform/openOnCloud/stores/modelUploadStore'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 
-const { models } = defineProps<{
+const { models, signInToUpload } = defineProps<{
   titleId?: string
   models: CloudMissingModel[]
+  signInToUpload: boolean
 }>()
 
 const emit = defineEmits<{
@@ -133,6 +145,7 @@ defineOptions({ inheritAttrs: false })
 
 const { t, locale } = useI18n()
 const uploadStore = useModelUploadStore()
+const signInStore = useLocalSignInStore()
 const { state: upload } = storeToRefs(uploadStore)
 
 const isUploading = computed(() => upload.value.phase === 'uploading')

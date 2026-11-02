@@ -3,6 +3,7 @@
     v-if="state.kind === 'uploadModels' || state.kind === 'uploading'"
     :title-id
     :models="state.models"
+    :sign-in-to-upload="state.kind === 'uploadModels' && state.signInToUpload"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
   />
@@ -15,9 +16,9 @@
     @dismiss="emit('dismiss')"
   />
   <RunOnCloudCard
-    v-else-if="state.kind !== 'checking'"
+    v-else-if="state.kind === 'ready'"
     :title-id
-    :state
+    :asks-to-sign-in="state.asksToSignIn"
     @done="emit('done')"
     @dismiss="emit('dismiss')"
   />
@@ -32,6 +33,7 @@ import RunOnCloudCard from '@/platform/openOnCloud/components/RunOnCloudCard.vue
 import UploadModelsCard from '@/platform/openOnCloud/components/UploadModelsCard.vue'
 import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useLocalSignInStore } from '@/platform/openOnCloud/stores/localSignInStore'
 import { useModelUploadStore } from '@/platform/openOnCloud/stores/modelUploadStore'
 import {
   DEPLOY_VIDEO_POSTER_SRC,
@@ -49,5 +51,10 @@ const emit = defineEmits<{
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
 const { state: upload } = storeToRefs(useModelUploadStore())
-const state = computed(() => runOnCloudModalState(check.value, upload.value))
+const { signedIn } = storeToRefs(useLocalSignInStore())
+const state = computed(() =>
+  runOnCloudModalState(check.value, upload.value, {
+    signedIn: signedIn.value
+  })
+)
 </script>

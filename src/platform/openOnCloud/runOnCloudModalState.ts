@@ -8,16 +8,23 @@ import { uploadPercent } from '@/platform/openOnCloud/modelUpload'
 /** The one modal the Comfy Cloud button opens. */
 export type RunOnCloudModalState =
   | { kind: 'checking' }
-  | { kind: 'signedOut' }
-  | { kind: 'ready' }
+  | { kind: 'ready'; asksToSignIn: boolean }
   | { kind: 'deploySetup' }
-  | { kind: 'uploadModels'; models: CloudMissingModel[] }
+  | {
+      kind: 'uploadModels'
+      models: CloudMissingModel[]
+      signInToUpload: boolean
+    }
   | { kind: 'uploading'; models: CloudMissingModel[]; percent: number }
 
-/** Renders Comfy Cloud's answer as received; a running upload shows over it. */
+/**
+ * Renders Comfy Cloud's answer as received; a running upload shows over it.
+ * Signed out, Comfy Cloud asks for a sign-in on Open, and Upload signs in here.
+ */
 export function runOnCloudModalState(
   check: CloudWorkflowCheckState,
-  upload: ModelUploadState
+  upload: ModelUploadState,
+  { signedIn }: { signedIn: boolean }
 ): RunOnCloudModalState {
   if (upload.phase === 'uploading')
     return {
@@ -29,12 +36,14 @@ export function runOnCloudModalState(
   const { verdict } = check
   switch (verdict.kind) {
     case 'canOpen':
-      return { kind: 'ready' }
-    case 'signedOut':
-      return { kind: 'signedOut' }
+      return { kind: 'ready', asksToSignIn: !signedIn }
     case 'missing':
       return verdict.gaps.nodePacks.length > 0
         ? { kind: 'deploySetup' }
-        : { kind: 'uploadModels', models: verdict.gaps.models }
+        : {
+            kind: 'uploadModels',
+            models: verdict.gaps.models,
+            signInToUpload: !signedIn
+          }
   }
 }
