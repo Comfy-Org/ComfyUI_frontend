@@ -1142,16 +1142,11 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(done('msg-1'))
 
     await vi.waitFor(
-      () => {
-        const last = session.entries.value.at(-1)
-        expect(
-          last?.role === 'assistant'
-            ? last.parts.flatMap((part) =>
-                part.type === 'thinking' ? [part.text] : []
-              )
-            : []
-        ).toEqual(['before the reload'])
-      },
+      () =>
+        expect(session.entries.value.at(-1)).toMatchObject({
+          role: 'assistant',
+          parts: [{ type: 'thinking', text: 'before the reload' }, {}]
+        }),
       { timeout: 5000 }
     )
     expect(reportError).not.toHaveBeenCalled()
