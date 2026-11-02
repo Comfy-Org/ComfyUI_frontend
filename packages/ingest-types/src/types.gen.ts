@@ -6261,6 +6261,15 @@ export type BillingCapabilityDenialParams = {
  * Effective billing UI guidance for one authenticated user and workspace.
  */
 export type BillingCapabilitiesResponse = {
+  /**
+   * Whether auto top-up is rolled out to this user: the auto_top_up_enabled
+   * rollout flag, evaluated by ingest the same way GET /api/features
+   * evaluates it. Any evaluation failure reads as false. It gates
+   * visibility only; capabilities.can_manage_auto_top_up still decides
+   * who may manage auto top-up.
+   *
+   */
+  auto_top_up_enabled?: boolean
   auto_top_up_setup?: AutoTopUpSetup
   capabilities: BillingCapabilities
   denied_reason_params?: BillingCapabilityDenialParams
