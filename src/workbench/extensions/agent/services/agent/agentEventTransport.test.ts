@@ -2456,6 +2456,10 @@ describe('agent_extension_changed', () => {
 
     expect(message.thinking).toBe(false)
     expect(message.thinkingText).toBeUndefined()
+    expect(message.parts).toMatchObject([
+      { type: 'thinking', text: 'Finding the pack.', state: 'done' },
+      { type: 'extensionChange', action: 'enabled' }
+    ])
   })
 
   it.for([
