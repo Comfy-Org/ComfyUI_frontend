@@ -1,3 +1,4 @@
+import type { BillingCapabilityDenials } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
@@ -59,7 +60,7 @@ function arrange(options: {
   balance?: BalanceInfo | null
   renewalDate?: string | null
   canTopUp?: boolean
-  topUpDenial?: string
+  topUpDenial?: NonNullable<BillingCapabilityDenials['can_top_up']>
   canManageBilling?: boolean
   canManageSubscription?: boolean
   autoTopUp?: 'autoTopUpFailed' | 'autoTopUpOff'

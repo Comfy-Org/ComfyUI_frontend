@@ -5,6 +5,8 @@ import {
 } from '@vueuse/core'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
+import type { BillingCapabilityDenials } from '@comfyorg/ingest-types'
+
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -115,8 +117,11 @@ function useBillingCapabilitiesInternal() {
   )
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
   const canTopUp = computed(() => capabilities.value?.can_top_up ?? false)
-  const topUpDenial = computed<string | undefined>(
-    () => resolvedResponse.value?.denied_reasons?.can_top_up
+  const topUpDenial = computed<TopUpDenial | undefined>(
+    () =>
+      resolvedResponse.value?.denied_reasons?.can_top_up as
+        | TopUpDenial
+        | undefined
   )
   const canManageBilling = computed(() =>
     receiveServerFact(
@@ -591,6 +596,8 @@ function useBillingCapabilitiesInternal() {
     refresh
   }
 }
+
+type TopUpDenial = NonNullable<BillingCapabilityDenials['can_top_up']>
 
 export const useBillingCapabilities = createSharedComposable(
   useBillingCapabilitiesInternal

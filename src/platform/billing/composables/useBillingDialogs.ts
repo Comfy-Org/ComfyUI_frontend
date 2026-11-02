@@ -68,12 +68,22 @@ export function useBillingDialogs() {
             reason: options?.source ?? 'out_of_credits'
           })
           return
-        case 'billing_operation_in_progress':
-          useToast().error(
-            t('subscription.planUnavailable.billingOperationInProgress')
-          )
+        case 'payment_past_due':
+          return // handled above
+        case 'topup_purchases_paused':
+          useToast().error(t('credits.topUp.deniedTopupsPaused'))
           return
-        default:
+        case 'creator_only_provisioning':
+          useToast().error(t('credits.topUp.deniedCreatorOnly'))
+          return
+        case 'tier_not_self_serve':
+          useToast().error(t('subscription.planUnavailable.salesManaged'))
+          return
+        case 'not_a_member':
+          useToast().error(t('subscription.planUnavailable.notAMember'))
+          return
+        case 'subscription_status_unrecognized':
+        case undefined:
           useToast().error(
             t('subscription.planUnavailable.billingStateUnknown')
           )

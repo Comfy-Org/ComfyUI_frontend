@@ -111,33 +111,72 @@ describe('showTopUpCreditsDialog', () => {
       recovery: 1,
       dialogs: [],
       plans: 0,
-      toast: 0
+      toast: null
     },
     {
       denial: 'not_workspace_owner',
       recovery: 0,
       dialogs: ['insufficient-credits-member'],
       plans: 0,
-      toast: 0
+      toast: null
     },
-    { denial: 'free_plan', recovery: 0, dialogs: [], plans: 1, toast: 0 },
-    { denial: 'no_subscription', recovery: 0, dialogs: [], plans: 1, toast: 0 },
+    { denial: 'free_plan', recovery: 0, dialogs: [], plans: 1, toast: null },
+    {
+      denial: 'no_subscription',
+      recovery: 0,
+      dialogs: [],
+      plans: 1,
+      toast: null
+    },
     {
       denial: 'subscription_ended',
       recovery: 0,
       dialogs: [],
       plans: 1,
-      toast: 0
+      toast: null
     },
     {
-      denial: 'billing_operation_in_progress',
+      denial: 'topup_purchases_paused',
       recovery: 0,
       dialogs: [],
       plans: 0,
-      toast: 1
+      toast: 'credits.topUp.deniedTopupsPaused'
     },
-    { denial: 'sales_managed', recovery: 0, dialogs: [], plans: 0, toast: 1 },
-    { denial: undefined, recovery: 0, dialogs: [], plans: 0, toast: 1 }
+    {
+      denial: 'creator_only_provisioning',
+      recovery: 0,
+      dialogs: [],
+      plans: 0,
+      toast: 'credits.topUp.deniedCreatorOnly'
+    },
+    {
+      denial: 'tier_not_self_serve',
+      recovery: 0,
+      dialogs: [],
+      plans: 0,
+      toast: 'subscription.planUnavailable.salesManaged'
+    },
+    {
+      denial: 'not_a_member',
+      recovery: 0,
+      dialogs: [],
+      plans: 0,
+      toast: 'subscription.planUnavailable.notAMember'
+    },
+    {
+      denial: 'subscription_status_unrecognized',
+      recovery: 0,
+      dialogs: [],
+      plans: 0,
+      toast: 'subscription.planUnavailable.billingStateUnknown'
+    },
+    {
+      denial: undefined,
+      recovery: 0,
+      dialogs: [],
+      plans: 0,
+      toast: 'subscription.planUnavailable.billingStateUnknown'
+    }
   ] as const)(
     'routes a denied top-up served as $denial',
     async ({ denial, recovery, dialogs, plans, toast }) => {
@@ -154,7 +193,8 @@ describe('showTopUpCreditsDialog', () => {
       expect(mockShowPaymentRecoveryDialog).toHaveBeenCalledTimes(recovery)
       expect(storeDialogKeys).toEqual(dialogs)
       expect(useSubscriptionDialog().show).toHaveBeenCalledTimes(plans)
-      expect(useToast().error).toHaveBeenCalledTimes(toast)
+      if (toast === null) expect(useToast().error).not.toHaveBeenCalled()
+      else expect(useToast().error).toHaveBeenCalledExactlyOnceWith(toast)
     }
   )
 
@@ -174,11 +214,11 @@ describe('showTopUpCreditsDialog', () => {
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
-  it('tells a personal owner a billing change is in progress instead of opening a dialog', async () => {
+  it('tells a personal owner top-ups are paused instead of opening a dialog', async () => {
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     useBillingCapabilities().canTopUp = computed(() => false)
     useBillingCapabilities().topUpDenial = computed(
-      () => 'billing_operation_in_progress'
+      () => 'topup_purchases_paused'
     )
 
     await useBillingDialogs().showTopUpCreditsDialog({
