@@ -108,3 +108,25 @@ export async function encodeRgbaAsPng(image: RgbaImage): Promise<Blob> {
     { type: 'image/png' }
   )
 }
+
+export async function insertPngTextChunk(
+  png: Blob,
+  keyword: string,
+  text: string
+): Promise<Blob> {
+  const bytes = new Uint8Array(await png.arrayBuffer())
+  const ihdrEnd =
+    PNG_SIGNATURE.length +
+    12 +
+    new DataView(bytes.buffer).getUint32(PNG_SIGNATURE.length)
+  const data = new TextEncoder().encode(`${keyword}\0\0\0\0\0${text}`)
+
+  return new Blob(
+    [
+      bytes.subarray(0, ihdrEnd),
+      ...pngChunk('iTXt', data),
+      bytes.subarray(ihdrEnd)
+    ],
+    { type: 'image/png' }
+  )
+}
