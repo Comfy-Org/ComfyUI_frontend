@@ -1247,6 +1247,8 @@
       "noPaymentMethodCheckoutHint": "Este espacio de trabajo no tiene ninguna tarjeta guardada para recargas con un solo clic. En su lugar, paga en una página de pago o establece una tarjeta predeterminada para que las futuras recargas se carguen directamente a ella.",
       "openCheckout": "Abrir página de pago",
       "openPaymentPage": "Abrir página de pago",
+      "planRequiredResubscribe": "Comprar créditos no reinicia tu plan de Cloud. Vuelve a suscribirte para ejecutar flujos de trabajo en Cloud.",
+      "planRequiredSubscribe": "Comprar créditos no inicia un plan de Cloud. Suscríbete para ejecutar flujos de trabajo en Cloud.",
       "payAmount": "Pagar {amount}",
       "purchaseError": "Compra fallida",
       "purchaseErrorDetail": "No se pudo comprar créditos: {error}",

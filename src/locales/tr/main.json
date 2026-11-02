@@ -1247,6 +1247,8 @@
       "noPaymentMethodCheckoutHint": "Bu çalışma alanında tek tıklamayla bakiye yükleme için kaydedilmiş bir kart yok. Bunun yerine ödeme sayfasından ödeme yapın veya gelecekteki bakiye yüklemelerinin doğrudan bu karttan çekilmesi için varsayılan bir kart belirleyin.",
       "openCheckout": "Ödeme sayfasını aç",
       "openPaymentPage": "Ödeme sayfasını aç",
+      "planRequiredResubscribe": "Kredi satın almak Bulut planınızı yeniden başlatmaz. İş akışlarını Bulutta çalıştırmak için yeniden abone olun.",
+      "planRequiredSubscribe": "Kredi satın almak bir Bulut planı başlatmaz. İş akışlarını Bulutta çalıştırmak için abone olun.",
       "payAmount": "{amount} öde",
       "purchaseError": "Satın Alma Başarısız",
       "purchaseErrorDetail": "Kredi satın alınamadı: {error}",

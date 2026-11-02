@@ -2977,6 +2977,8 @@
       "defaultCardBlockedTitle": "Payment page didn't open",
       "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
       "openPaymentPage": "Open payment page",
+      "planRequiredResubscribe": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
+      "planRequiredSubscribe": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",

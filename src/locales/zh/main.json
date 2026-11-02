@@ -1247,6 +1247,8 @@
       "noPaymentMethodCheckoutHint": "此工作区未保存可用于一键充值的卡。请改为在结账页面付款，或设置默认卡，以便日后充值时直接从该卡扣款。",
       "openCheckout": "打开结账页面",
       "openPaymentPage": "打开付款页面",
+      "planRequiredResubscribe": "购买积分不会重新启动您的 Cloud 套餐。请重新订阅以在 Cloud 上运行工作流。",
+      "planRequiredSubscribe": "购买积分不会启动 Cloud 套餐。请订阅以在 Cloud 上运行工作流。",
       "payAmount": "支付 {amount}",
       "purchaseError": "购买失败",
       "purchaseErrorDetail": "购买积分失败：{error}",

@@ -1247,6 +1247,8 @@
       "noPaymentMethodCheckoutHint": "此工作區未儲存可供一鍵儲值使用的信用卡。請改在結帳頁面付款，或設定預設信用卡，以便日後儲值時直接扣款。",
       "openCheckout": "開啟結帳頁面",
       "openPaymentPage": "開啟付款頁面",
+      "planRequiredResubscribe": "購買點數不會重新啟用您的 Cloud 方案。請重新訂閱以在 Cloud 上執行工作流程。",
+      "planRequiredSubscribe": "購買點數不會啟用 Cloud 方案。請訂閱以在 Cloud 上執行工作流程。",
       "payAmount": "支付 {amount}",
       "purchaseError": "購買失敗",
       "purchaseErrorDetail": "購買點數失敗：{error}",

@@ -1247,6 +1247,8 @@
       "noPaymentMethodCheckoutHint": "このワークスペースにはワンクリックチャージ用のカードが保存されていません。代わりにチェックアウトページで支払うか、デフォルトのカードを設定して今後のチャージを直接そのカードに請求してください。",
       "openCheckout": "チェックアウトを開く",
       "openPaymentPage": "支払いページを開く",
+      "planRequiredResubscribe": "クレジットを購入しても Cloud プランは再開されません。Cloud でワークフローを実行するには、再登録してください。",
+      "planRequiredSubscribe": "クレジットを購入しても Cloud プランは開始されません。Cloud でワークフローを実行するには、登録してください。",
       "payAmount": "{amount} を支払う",
       "purchaseError": "購入に失敗しました",
       "purchaseErrorDetail": "クレジットの購入に失敗しました: {error}",
