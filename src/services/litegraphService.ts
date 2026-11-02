@@ -48,20 +48,20 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
 import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
 import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV2ToV1 } from '@comfyorg/object-info-parser/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec,
   OutputSpec
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec as InputSpecV1
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import {
   getInputSpecType,
   zDynamicGroupInputSpec
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { useApp } from '@/scripts/appInstance'
 import { provideLitegraphService } from '@/core/graph/litegraphServiceAccess'
 import {
