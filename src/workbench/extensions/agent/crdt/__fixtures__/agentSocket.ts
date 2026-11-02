@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 
-import type { AgentEventSocket } from '../../services/agent/agentEventSource'
-import { createAgentDocFrameTransport } from '../agentDocFrameTransport'
+import type { AgentEventSocket } from '@/workbench/extensions/agent/services/agent/agentEventSource'
+import { createAgentDocFrameTransport } from '@/workbench/extensions/agent/crdt/agentDocFrameTransport'
 
 export function createFakeAgentSocket() {
   const listeners = new Set<(raw: unknown) => void>()

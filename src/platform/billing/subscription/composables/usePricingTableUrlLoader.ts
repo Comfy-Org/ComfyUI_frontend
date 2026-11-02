@@ -1,0 +1,205 @@
+import { useRoute, useRouter } from 'vue-router'
+
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import {
+  clearPreservedQuery,
+  hydratePreservedQuery,
+  mergePreservedQueryIntoQuery
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import type { TeamCreditStops } from '@comfyorg/billing-core'
+import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+
+const NAMESPACE = PRESERVED_QUERY_NAMESPACES.PRICING
+
+function isCheckoutTier(
+  value: string
+): value is Extract<
+  SubscriptionCheckoutSelection,
+  { planMode: 'personal' }
+>['tierKey'] {
+  return value === 'standard' || value === 'creator' || value === 'pro'
+}
+
+function isBillingCycle(
+  value: unknown
+): value is SubscriptionCheckoutSelection['billingCycle'] {
+  return value === 'monthly' || value === 'yearly'
+}
+
+function getTeamCheckoutRequest(
+  pricing: string,
+  stop: unknown,
+  cycle: unknown
+):
+  | {
+      stop: string
+      billingCycle: SubscriptionCheckoutSelection['billingCycle']
+    }
+  | undefined {
+  if (
+    pricing !== 'team' ||
+    typeof stop !== 'string' ||
+    !stop ||
+    !isBillingCycle(cycle)
+  ) {
+    return
+  }
+
+  return { stop, billingCycle: cycle }
+}
+
+export function getPricingCheckoutSelection(
+  pricing: string,
+  stop: unknown,
+  cycle: unknown,
+  teamCreditStops: TeamCreditStops | null
+): SubscriptionCheckoutSelection | undefined {
+  if (isCheckoutTier(pricing)) {
+    if (stop !== undefined || !isBillingCycle(cycle)) return
+
+    return {
+      planMode: 'personal',
+      tierKey: pricing,
+      billingCycle: cycle
+    }
+  }
+
+  const teamCheckoutRequest = getTeamCheckoutRequest(pricing, stop, cycle)
+  if (!teamCheckoutRequest) return
+
+  const catalogStop = teamCreditStops?.stops.find(
+    (candidate) => candidate.id === teamCheckoutRequest.stop
+  )
+  if (!catalogStop) return
+
+  return {
+    planMode: 'team',
+    stop: {
+      id: catalogStop.id,
+      credits: catalogStop.credits,
+      usd: catalogStop[teamCheckoutRequest.billingCycle].list_price_cents / 100,
+      discountedUsd:
+        catalogStop[teamCheckoutRequest.billingCycle].price_cents / 100,
+      periodChargeUsd: {
+        monthly: catalogStop.monthly.period_charge_cents / 100,
+        yearly: catalogStop.yearly.period_charge_cents / 100
+      }
+    },
+    billingCycle: teamCheckoutRequest.billingCycle
+  }
+}
+
+export function usePricingTableUrlLoader() {
+  const route = useRoute()
+  const router = useRouter()
+  const subscriptionDialog = useSubscriptionDialog()
+  const { teamCreditStops, fetchPlans } = useBillingContext()
+  const { permissions, canOpenPricingSurface } = useBillingUI()
+  const { initialize: initializeCapabilities } = useBillingCapabilities()
+
+  async function loadPricingTableFromUrl() {
+    hydratePreservedQuery(NAMESPACE)
+    const query =
+      mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query
+    const param = query.pricing
+    if (
+      param === undefined &&
+      query.stop === undefined &&
+      query.cycle === undefined
+    ) {
+      return
+    }
+
+    const cleanQuery = { ...query }
+    delete cleanQuery.pricing
+    delete cleanQuery.stop
+    delete cleanQuery.cycle
+    router.replace({ query: cleanQuery }).catch((error) => {
+      console.warn(
+        '[usePricingTableUrlLoader] Failed to clean URL params:',
+        error
+      )
+    })
+    clearPreservedQuery(NAMESPACE)
+
+    if (typeof param !== 'string' || !param) return
+
+    await initializeCapabilities()
+    if (!permissions.value.canManageSubscription) return
+    if (!canOpenPricingSurface.value) return
+
+    const teamCheckoutRequest = getTeamCheckoutRequest(
+      param,
+      query.stop,
+      query.cycle
+    )
+    if (teamCheckoutRequest && !teamCreditStops.value) {
+      try {
+        await fetchPlans()
+      } catch (error) {
+        console.error(
+          '[usePricingTableUrlLoader] Failed to load Team pricing plans:',
+          error
+        )
+      }
+
+      const canManageSubscription: unknown =
+        permissions.value.canManageSubscription
+      if (canManageSubscription !== true) return
+      const availableTeamCreditStops: unknown = teamCreditStops.value
+      if (!availableTeamCreditStops) {
+        await subscriptionDialog.showPricingTable({
+          reason: 'deep_link',
+          planMode: 'team'
+        })
+        return
+      }
+    }
+
+    const initialCheckout = getPricingCheckoutSelection(
+      param,
+      query.stop,
+      query.cycle,
+      teamCreditStops.value
+    )
+    if (isCheckoutTier(param) && !initialCheckout) return
+    if (teamCheckoutRequest && !initialCheckout) {
+      await subscriptionDialog.showPricingTable({
+        reason: 'deep_link',
+        planMode: 'team'
+      })
+      return
+    }
+    if (
+      !initialCheckout &&
+      (query.stop !== undefined || query.cycle !== undefined)
+    ) {
+      return
+    }
+
+    const planMode = initialCheckout
+      ? initialCheckout.planMode
+      : param === 'team' || param === 'personal'
+        ? param
+        : undefined
+
+    if (!initialCheckout && !['1', 'team', 'personal'].includes(param)) return
+    const canManageSubscription: unknown =
+      permissions.value.canManageSubscription
+    if (canManageSubscription !== true) return
+
+    await subscriptionDialog.showPricingTable({
+      reason: 'deep_link',
+      planMode,
+      initialCheckout
+    })
+  }
+
+  return {
+    loadPricingTableFromUrl
+  }
+}

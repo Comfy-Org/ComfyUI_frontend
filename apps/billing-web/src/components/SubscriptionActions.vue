@@ -130,14 +130,10 @@ async function resubscribe() {
     v-if="allowed?.can_cancel || allowed?.can_reactivate"
     class="flex flex-col gap-3"
   >
-    <p v-if="notice" role="status" class="m-0 text-sm text-base-foreground">
+    <p v-if="notice" role="status" class="m-0 text-sm text-foreground">
       {{ notice }}
     </p>
-    <p
-      v-if="failure"
-      role="alert"
-      class="m-0 text-sm text-destructive-background"
-    >
+    <p v-if="failure" role="alert" class="m-0 text-sm text-destructive">
       {{ failure }}
     </p>
 
@@ -150,7 +146,7 @@ async function resubscribe() {
           ref="confirmCancelAction"
           type="button"
           :disabled="busy"
-          class="h-11 cursor-pointer rounded-lg bg-destructive-background px-5 font-semibold text-base-background disabled:cursor-not-allowed disabled:opacity-40"
+          class="h-11 cursor-pointer rounded-lg bg-destructive px-5 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40"
           @click="cancelSubscription"
         >
           {{ t('hosted.subscription.cancelConfirmAction') }}
@@ -158,7 +154,7 @@ async function resubscribe() {
         <button
           type="button"
           :disabled="busy"
-          class="h-11 cursor-pointer rounded-lg bg-secondary-background px-5 font-medium text-base-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          class="h-11 cursor-pointer rounded-lg bg-secondary px-5 font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-40"
           @click="keepPlan"
         >
           {{ t('hosted.subscription.keepPlan') }}
@@ -172,7 +168,7 @@ async function resubscribe() {
         ref="cancelTrigger"
         type="button"
         :disabled="busy"
-        class="h-11 cursor-pointer rounded-lg bg-secondary-background px-5 font-medium text-base-foreground disabled:cursor-not-allowed disabled:opacity-40"
+        class="h-11 cursor-pointer rounded-lg bg-secondary px-5 font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-40"
         @click="askToCancel"
       >
         {{ t('hosted.subscription.cancel') }}
@@ -181,7 +177,7 @@ async function resubscribe() {
         v-if="allowed?.can_reactivate"
         type="button"
         :disabled="busy"
-        class="h-11 cursor-pointer rounded-lg bg-base-foreground px-5 font-semibold text-base-background disabled:cursor-not-allowed disabled:opacity-40"
+        class="h-11 cursor-pointer rounded-lg bg-foreground px-5 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40"
         @click="resubscribe"
       >
         {{ t('hosted.subscription.resubscribe') }}

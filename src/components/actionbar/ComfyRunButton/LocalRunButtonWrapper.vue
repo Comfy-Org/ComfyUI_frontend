@@ -7,12 +7,12 @@
       tooltip-side="bottom"
       variant="secondary"
       size="unset"
-      class="h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
+      class="h-8 gap-1.5 rounded-lg px-4"
       data-testid="partner-sign-in-to-run-button"
       aria-describedby="partner-run-gate-caption"
       @click="openPartnerSignInDialog"
     >
-      <i class="icon-[lucide--log-in] size-4" aria-hidden="true" />
+      <i class="icon-[lucide--log-in]" aria-hidden="true" />
       {{ t('actionbar.partnerRunGate.signInToRun') }}
     </Button>
   </div>
@@ -23,8 +23,8 @@ import { nextTick, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
-import Button from '@/components/ui/button/Button.vue'
-import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
+import Button from '@comfyorg/design-system/button/Button'
+import { usePartnerNodesRunGate } from '@/platform/billing/composables/usePartnerNodesRunGate'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 
 const { t } = useI18n()

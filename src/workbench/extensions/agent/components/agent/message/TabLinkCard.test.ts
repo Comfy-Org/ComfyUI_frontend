@@ -11,7 +11,7 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import TabLinkCard from './TabLinkCard.vue'
-import { AgentTargetNavigationError } from '../../../services/agent/targetAwareAgentNavigation'
+import { AgentTargetNavigationError } from '@/workbench/extensions/agent/services/agent/targetAwareAgentNavigation'
 
 const apiEvents: EventTarget = api
 
@@ -31,22 +31,25 @@ const mocks = vi.hoisted(() => ({
   reportError: vi.fn()
 }))
 
-vi.mock(import('../../../composables/agent/useAgentTargetNavigation'), () => ({
-  useAgentTargetNavigation: () => ({ navigate: mocks.navigate })
-}))
+vi.mock(
+  import('@/workbench/extensions/agent/composables/agent/useAgentTargetNavigation'),
+  () => ({
+    useAgentTargetNavigation: () => ({ navigate: mocks.navigate })
+  })
+)
 
 vi.mock(import('@/scripts/api'))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const { useAgentWorkflowTabBindingStore } =
-  await import('../../../stores/agent/agentWorkflowTabBindingStore')
+  await import('@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore')
 const { useAgentPanelStore } =
-  await import('../../../stores/agent/agentPanelStore')
+  await import('@/workbench/extensions/agent/stores/agent/agentPanelStore')
 
 function mount(workflowId: string, name?: string) {
   return render(TabLinkCard, {

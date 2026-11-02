@@ -5,7 +5,7 @@ import type {
   IBaseWidget,
   IComboWidget,
   IStringWidget
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'

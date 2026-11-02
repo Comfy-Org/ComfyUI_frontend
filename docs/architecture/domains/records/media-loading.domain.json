@@ -8,10 +8,6 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useTextFileContent.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useTextFileContent.ts",
       "role": "application"
     },

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { TurnId } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
-import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
-import type { WorkflowReference } from '../../types/workflowReference'
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { AgentChatEvent } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import { useAgentConversationStore } from './agentConversationStore'
 
 const done = (id: string): AgentChatEvent =>

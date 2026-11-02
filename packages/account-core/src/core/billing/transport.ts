@@ -15,12 +15,12 @@
  * reported as SUPERSEDED instead of being handed to a caller that would
  * attribute it to the wrong account.
  */
-import type { SessionRequestOptions } from '../session.js'
+import type { SessionRequestOptions } from '#/core/session'
 import type {
   AccountCredential,
   SessionErrorCode,
   SessionFailure
-} from '../sessionContracts.js'
+} from '#/core/sessionContracts'
 import type {
   BillingErrorCode,
   BillingFailure,
@@ -29,12 +29,12 @@ import type {
   BillingResult,
   BillingSession,
   BillingTransport
-} from './billingContracts.js'
+} from './billingContracts'
 import {
   DEFAULT_BILLING_TIMEOUT_MS,
   exchangeBillingRequest,
   startRequestBudget
-} from './transportExchange.js'
+} from './transportExchange'
 
 export interface SessionBillingTransportOptions {
   readonly session: BillingSession

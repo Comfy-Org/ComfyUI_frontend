@@ -89,6 +89,9 @@
   "Comfy_Canvas_SelectAll": {
     "label": "Select All"
   },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "Show Selected Links"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Canvas Toggle Link Visibility"
   },

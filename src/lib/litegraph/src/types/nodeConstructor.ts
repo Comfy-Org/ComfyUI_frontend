@@ -1,6 +1,9 @@
-import type { LGraphNode } from './entityRegistry'
-import type { Size } from '../interfaces'
-import type { RenderShape, TitleMode } from './globalEnums'
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
+
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import type { SizeTuple as Size } from '@comfyorg/shared-frontend-utils/geometry'
+import type { RenderShape, TitleMode } from '@comfyorg/graph-model/globalEnums'
 
 export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   new (title: string, type?: string): T
@@ -23,4 +26,8 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   keepAllLinksOnBypass: boolean
   resizeHandleSize?: number
   resizeEdgeSize?: number
+
+  comfyClass?: string
+  nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2 & { [key: symbol]: unknown }
+  category?: string
 }

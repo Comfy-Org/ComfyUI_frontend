@@ -1,7 +1,7 @@
 import type {
   BillingSurface,
   BillingTelemetryEvent
-} from './billingTelemetryEvent.js'
+} from './billingTelemetryEvent'
 
 type BillingTelemetryPayload = Record<string, unknown>
 
@@ -30,9 +30,11 @@ export const BILLING_PAYLOAD_FIELD_HANDLING = {
   reason: 'required',
   result: 'required',
   source: 'required',
+  status: 'required',
   step: 'required',
   target: 'required',
   to: 'required',
+  action: 'optional',
   amount_cents: 'optional',
   amount_preset: 'optional',
   billing_client: 'optional',

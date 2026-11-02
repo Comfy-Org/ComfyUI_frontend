@@ -34,7 +34,9 @@ test.describe(
       await agentPanel.open()
       await agentPanel.selectWorkflow()
       const panel = agentPanel.root
-      const placeholder = panel.getByText(/^Describe ideas/)
+      const placeholder = panel.getByText(enMessages.agent.placeholder, {
+        exact: true
+      })
       await expect(placeholder).toBeVisible()
 
       await panel

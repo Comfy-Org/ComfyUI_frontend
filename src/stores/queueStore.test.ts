@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
+import type { JobListItem } from '@comfyorg/api-client/jobTypes'
+import type { TaskOutput } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import {
   TaskItemImpl,
   useQueuePendingTaskCountStore,
@@ -395,6 +396,38 @@ describe('useQueueStore', () => {
       expect(store.pendingTasks[1].jobId).toBe('pend-1')
     })
 
+    it('drops the model download of a job the queue no longer lists', async () => {
+      const downloads = useJobModelDownloadStore()
+      const download = {
+        status: 'downloading',
+        name: 'my_style_v2.safetensors',
+        dir: 'loras',
+        index: 1,
+        count: 1,
+        bytes_downloaded: 1,
+        bytes_total: 2,
+        progress: 0.5
+      } as const
+      api.dispatchCustomEvent('model_download', {
+        ...download,
+        prompt_id: 'run-1'
+      })
+      api.dispatchCustomEvent('model_download', {
+        ...download,
+        prompt_id: 'gone'
+      })
+      vi.mocked(api.getQueue).mockResolvedValue({
+        Running: [createRunningJob(1, 'run-1')],
+        Pending: []
+      })
+      vi.mocked(api.getHistory).mockResolvedValue([])
+
+      await store.update()
+
+      expect(downloads.downloadFor('run-1')).toBeDefined()
+      expect(downloads.downloadFor('gone')).toBeUndefined()
+    })
+
     it('should load history tasks from API', async () => {
       const historyJob1 = createHistoryJob(5, 'hist-1')
       const historyJob2 = createHistoryJob(4, 'hist-2')
@@ -540,6 +573,34 @@ describe('useQueueStore', () => {
       expect(api.getQueue).toHaveBeenCalledTimes(1)
 
       await store.update()
+      expect(api.getQueue).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('updateFresh()', () => {
+    it('waits for the trailing re-fetch when a fetch is already in flight', async () => {
+      const resolvers: QueueResolver[] = []
+      vi.mocked(api.getQueue).mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolvers.push(resolve)
+          })
+      )
+      vi.mocked(api.getHistory).mockResolvedValue([])
+      const stale = store.update()
+      let fresh = false
+      const freshUpdate = store.updateFresh().then(() => {
+        fresh = true
+      })
+
+      resolvers[0]({ Running: [createRunningJob(1, 'stale')], Pending: [] })
+      await stale
+      await vi.advanceTimersByTimeAsync(0)
+      expect(fresh).toBe(false)
+
+      resolvers[1]({ Running: [], Pending: [] })
+      await freshUpdate
+      expect(store.runningTasks).toEqual([])
       expect(api.getQueue).toHaveBeenCalledTimes(2)
     })
   })

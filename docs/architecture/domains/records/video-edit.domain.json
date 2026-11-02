@@ -12,23 +12,11 @@
       "role": "application"
     },
     {
-      "path": "src/composables/video/useVideoEditFormats.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/composables/video/useVideoEditFormats.ts",
       "role": "domain"
     },
     {
-      "path": "src/composables/video/useVideoFilmstrip.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/composables/video/useVideoFilmstrip.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/composables/video/useVideoSourceUrl.test.ts",
       "role": "infrastructure"
     },
     {
@@ -36,16 +24,8 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/utils/videoFrameUtil.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/videoFrameUtil.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/utils/videoMetadataUtil.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/utils/videoMetadataUtil.ts",

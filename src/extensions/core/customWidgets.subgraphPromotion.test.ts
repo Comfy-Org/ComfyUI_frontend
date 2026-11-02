@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -12,14 +12,8 @@ import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphToPrompt } from '@/utils/executionUtil'
 
-const extensions = await vi.hoisted(async () => {
-  const { createExtensionCapture } =
-    await import('@/utils/__tests__/extensionTestUtils')
-  return createExtensionCapture()
-})
-app.registerExtension = extensions.registerExtension
-await import('./customWidgets')
-const extension = extensions.getExtension('Comfy.CustomWidgets')
+import { customWidgetsExtension } from './customWidgets'
+
 // Regression coverage for https://github.com/Comfy-Org/ComfyUI/issues/15060
 // (FE-1456): once a Custom Combo node's `choice` widget is promoted through
 // a subgraph boundary (ADR-SUBGRAPH-PROMOTION-0009 link-only promotion), the hidden `index`
@@ -72,12 +66,12 @@ function findWidget(node: LGraphNode, name: string) {
 
 describe('CustomCombo index widget after subgraph promotion', () => {
   beforeAll(async () => {
-    await extension.beforeRegisterNodeDef?.(
+    await customWidgetsExtension.beforeRegisterNodeDef?.(
       TestCustomComboNode,
       { name: 'CustomCombo' } as ComfyNodeDef,
       app
     )
-    await extension.beforeRegisterNodeDef?.(
+    await customWidgetsExtension.beforeRegisterNodeDef?.(
       TestCustomComboNodeWithoutInput,
       { name: 'CustomCombo' } as ComfyNodeDef,
       app

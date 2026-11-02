@@ -1,40 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
-import { sessionBillingScopeSource } from './billingScope.js'
+import type { SessionClient, SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
+import { sessionBillingScopeSource } from './billingScope'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
+} from './billingContracts'
 import type {
   BillingOperationLifecycleOptions,
   BillingOperationTelemetryEvent,
   IssuedBillingOperation
-} from './operationLifecycle.js'
+} from './operationLifecycle'
 import {
   createBillingOperationLifecycle,
   operationRoute
-} from './operationLifecycle.js'
-import type { BillingOperationPointerStorage } from './operationPointer.js'
-import { operationPointerKey } from './operationPointer.js'
-import {
-  OPERATION_POLL_BUDGET,
-  OPERATION_POLL_TIMING
-} from './operationPolicy.js'
+} from './operationLifecycle'
+import type { BillingOperationPointerStorage } from './operationPointer'
+import { operationPointerKey } from './operationPointer'
+import { OPERATION_POLL_BUDGET, OPERATION_POLL_TIMING } from './operationPolicy'
 import type {
   BillingChargeBreakdown,
   BillingOperationState,
   BillingOpStatus,
   HostedBillingDestination
-} from './operationState.js'
+} from './operationState'
 import type {
   BillingStatusData,
   BillingStatusReader,
   BillingStatusSnapshot
-} from './status.js'
+} from './status'
 
 const NOW = 1_000_000
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
@@ -94,6 +91,7 @@ const STATUS_DATA: BillingStatusData = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   scheduled_change: null,
   team_credit_stop: null
 }

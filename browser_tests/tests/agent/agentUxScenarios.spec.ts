@@ -48,7 +48,7 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
 
       await agentPanel.resizeTo(width, agentPanel.dockedPanel)
 
-      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const composer = agentPanel.composer
       const send = panel.getByRole('button', { name: 'Send' })
       await composer.fill('Keep controls usable')
 

@@ -11,37 +11,20 @@ import { isRumErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
 import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
 import {
+  CUSTOM_NODE_FAILURES_TRUNCATED_FIELD,
+  CUSTOM_NODE_LOAD_ERROR_TYPE,
+  getCustomNodeFailureSignals
+} from './customNodeLoadTelemetry'
+import type { TelemetryErrorOrigin } from './errorOrigin'
+import { classifyTelemetryErrorOrigin } from './errorOrigin'
+import {
   redactTelemetryUrls,
   redactTelemetryValues
-} from './redactTelemetryUrls'
-
-const FIRST_PARTY_EXTENSION_FOLDERS = new Set(['cloud', 'core'])
+} from '@comfyorg/telemetry/redactTelemetryUrls'
 
 const FIREBASE_PENDING_PROMISE_ASSERTION =
   'INTERNAL ASSERTION FAILED: Pending promise was never set'
 const FIREBASE_PENDING_PROMISE_FINGERPRINT = 'firebase-auth-pending-promise'
-
-type RumErrorOrigin =
-  | { origin: 'first_party' }
-  | { origin: 'extension'; extension: string }
-  | { origin: 'third_party' }
-
-export function classifyRumErrorOrigin(stack?: string): RumErrorOrigin {
-  if (!stack) return { origin: 'third_party' }
-
-  for (const line of stack.split('\n')) {
-    const extensionFolder = /\/extensions\/([^/?#]+)\//.exec(line)?.[1]
-    if (extensionFolder) {
-      return FIRST_PARTY_EXTENSION_FOLDERS.has(extensionFolder)
-        ? { origin: 'first_party' }
-        : { origin: 'extension', extension: extensionFolder }
-    }
-
-    if (line.includes('/assets/')) return { origin: 'first_party' }
-  }
-
-  return { origin: 'third_party' }
-}
 
 function fingerprintFirebasePendingPromise(event: RumErrorEvent): void {
   if (event.error.message.endsWith(FIREBASE_PENDING_PROMISE_ASSERTION)) {
@@ -84,7 +67,10 @@ function hasUnmodifiableUrlMetadata(event: RumErrorEvent): boolean {
 
 function tagRumErrorOrigin(event: RumErrorEvent): void {
   try {
-    const errorOrigin = classifyRumErrorOrigin(event.error.stack)
+    const context = event.context ?? {}
+    const errorOrigin = isCustomNodeLoadReport(context)
+      ? classifyCustomNodeLoadReport(context, event.error.stack)
+      : classifyTelemetryErrorOrigin(event.error.stack)
     const existingErrorContext = event.context?.error
     const errorContext =
       typeof existingErrorContext === 'object' && existingErrorContext !== null
@@ -131,6 +117,60 @@ function redactRumViewPerformance(event: RumViewEvent): void {
       event.view.performance.lcp.resource_url
     )
   }
+}
+
+function getCustomNodeFailureOrigins(
+  context: Record<string, unknown>
+): TelemetryErrorOrigin[] {
+  const failures = context.failures
+  if (!Array.isArray(failures)) return []
+
+  return failures.map((failure: unknown) => {
+    const signals = getCustomNodeFailureSignals(failure)
+    const origins = signals.map(classifyTelemetryErrorOrigin)
+    return (
+      origins.find((origin) => origin.origin === 'extension') ??
+      origins.find((origin) => origin.origin === 'first_party') ?? {
+        origin: 'third_party'
+      }
+    )
+  })
+}
+
+function classifyCustomNodeLoadReport(
+  context: Record<string, unknown>,
+  stack?: string
+): TelemetryErrorOrigin {
+  if (context[CUSTOM_NODE_FAILURES_TRUNCATED_FIELD] === true) {
+    return { origin: 'first_party' }
+  }
+
+  const origins = getCustomNodeFailureOrigins(context)
+  const extensionOrigin = origins.find(
+    (
+      origin
+    ): origin is Extract<TelemetryErrorOrigin, { origin: 'extension' }> =>
+      origin.origin === 'extension'
+  )
+
+  if (
+    extensionOrigin &&
+    origins.every(
+      (origin) =>
+        origin.origin === 'extension' &&
+        origin.extension === extensionOrigin.extension
+    )
+  ) {
+    return extensionOrigin
+  }
+
+  return origins.length > 0
+    ? { origin: 'first_party' }
+    : classifyTelemetryErrorOrigin(stack)
+}
+
+function isCustomNodeLoadReport(context: Record<string, unknown>): boolean {
+  return context.error_type === CUSTOM_NODE_LOAD_ERROR_TYPE
 }
 
 export const rumBeforeSend: RumBeforeSend = (event) => {

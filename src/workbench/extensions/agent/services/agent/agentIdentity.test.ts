@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { isRetryableRequestFailure } from '../../composables/agent/useAgentSession'
+import { isRetryableRequestFailure } from '@/workbench/extensions/agent/composables/agent/useAgentSession'
 import { resolveAgentIdentity } from './agentIdentity'
 import { AgentApiError } from './agentRestClient'
 
@@ -266,5 +266,63 @@ describe('resolveAgentIdentity', () => {
       status: 'resolved',
       userId: 'local-user'
     })
+  })
+
+  it('stops reporting once the report budget is spent, so a flapping socket cannot flood telemetry', async () => {
+    const getIdentity = failing()
+    const identity = harness(getIdentity)
+
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    expect(identity.onFailure).toHaveBeenCalledTimes(8)
+
+    for (let reopen = 0; reopen < 3; reopen += 1) {
+      identity.connect()
+      await vi.advanceTimersByTimeAsync(10 * 60_000)
+    }
+
+    // 8 reports for the first window, then exactly one marker saying the rest are
+    // suppressed -- without it this is indistinguishable from a cycle that ended.
+    expect(getIdentity).toHaveBeenCalledTimes(32)
+    expect(identity.onFailure).toHaveBeenCalledTimes(9)
+    // The ninth failure, not the first of the second window: `failures` restarts on
+    // every reopen, so the marker has to count cumulatively or it reads "after 1".
+    expect(identity.onFailure).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('after 9 attempts')
+      })
+    )
+  })
+
+  it('reports a terminal failure even after the retryable budget is spent', async () => {
+    const transient = new Error('agent still starting')
+    const terminal = new AgentApiError('forbidden', 403, undefined)
+    const getIdentity = vi
+      .fn<() => Promise<{ userId: string }>>()
+      .mockRejectedValue(transient)
+    const identity = harness(getIdentity, (error) => error !== terminal)
+
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    identity.onFailure.mockClear()
+
+    // The budget is spent. A 401/403 or a missing route is the most actionable
+    // failure there is, so it must not be swallowed by the transient pool.
+    getIdentity.mockRejectedValue(terminal)
+    identity.connect()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(identity.onFailure).toHaveBeenCalledWith(terminal)
+    expect(identity.state.value).toEqual({ status: 'rejected' })
+  })
+
+  it('reports again for a new account, because reset refreshes the report budget', async () => {
+    const getIdentity = failing()
+    const identity = harness(getIdentity)
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    expect(identity.onFailure).toHaveBeenCalledTimes(8)
+
+    identity.reset()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(identity.onFailure).toHaveBeenCalledTimes(16)
   })
 })

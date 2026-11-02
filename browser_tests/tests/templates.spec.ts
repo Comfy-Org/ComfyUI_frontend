@@ -7,7 +7,8 @@ import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { trackElementFlash } from '@e2e/fixtures/utils/flashDetector'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import type { WorkflowTemplates } from '@comfyorg/api-client/templateTypes'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 async function checkTemplateFileExists(
   page: Page,
@@ -55,7 +56,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     // Load a template
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
@@ -67,10 +68,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await firstPopularTemplate.click()
     await expect(comfyPage.templates.content).toBeHidden()
 
-    // Ensure we now have some nodes
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBeGreaterThan(0)
+    await comfyPage.expectNodeCountMinimum(1)
   })
 
   test('dialog should open Popular for first-time users', async ({
@@ -276,14 +274,12 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       const sortBySelect = comfyPage.templatesDialog.getCombobox(/Sort/)
       await expect(sortBySelect).toBeVisible()
 
-      // Screenshot the filter bar containing MultiSelect and SingleSelect
       const filterBar = comfyPage.templatesDialog.filterBar
       await expect(filterBar).toBeVisible()
-      await expect(filterBar).toHaveScreenshot(
+      await expectElementScreenshot(
+        filterBar,
         'template-filter-bar-select-components.png',
-        {
-          mask: [comfyPage.toast.visibleToasts]
-        }
+        { mask: [comfyPage.toast.visibleToasts] }
       )
     }
   )
@@ -349,7 +345,8 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       await expect(taggedCard.getByText('Image Edit')).toBeVisible()
 
       const templateGrid = comfyPage.page.getByTestId(TestIds.templates.content)
-      await expect(templateGrid).toHaveScreenshot(
+      await expectElementScreenshot(
+        templateGrid,
         'template-cards-with-overlay-tags.png'
       )
     }
@@ -359,7 +356,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     comfyPage
   }) => {
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
 
     await comfyPage.page.route('**/templates/index.json', async (route) => {
       const response: WorkflowTemplates[] = [
@@ -457,7 +454,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(disclosure).toBeVisible()
     await expectOnTop()
     await expect(comfyPage.templates.content).toBeVisible()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
   })
 
   test('Can open associated tutorial', async ({ comfyPage }) => {
@@ -531,12 +528,10 @@ test.describe(
       // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup({
         clearStorage: true,
-        url: '/?template=default'
+        url: '/?template=image_z_image_turbo'
       })
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBeGreaterThan(0)
+      await comfyPage.expectNodeCountMinimum(1)
 
       expect(await templatesFlash.hasFlashed()).toBe(false)
       await expect(comfyPage.templates.content).toBeHidden()

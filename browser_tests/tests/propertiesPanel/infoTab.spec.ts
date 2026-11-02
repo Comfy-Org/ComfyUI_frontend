@@ -4,6 +4,7 @@ import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Properties panel - Info tab', () => {
   let panel: PropertiesPanelHelper
@@ -94,7 +95,8 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
         await expect(
           panel.contentArea.getByRole('cell', { name: ADVANCED_INPUT_TOOLTIP })
         ).toBeVisible()
-        await expect(panel.contentArea).toHaveScreenshot(
+        await expectElementScreenshot(
+          panel.contentArea,
           'info-tab-dynamic-combo-advanced-input.png'
         )
       } finally {

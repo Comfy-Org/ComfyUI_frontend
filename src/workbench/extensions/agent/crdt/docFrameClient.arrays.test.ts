@@ -38,6 +38,7 @@ describe('document frame result arrays and acknowledgements', () => {
       data: {
         workflowId: 'wf-1',
         seq: 1,
+        lineageSeq: 1,
         update: new Uint8Array([1])
       }
     })

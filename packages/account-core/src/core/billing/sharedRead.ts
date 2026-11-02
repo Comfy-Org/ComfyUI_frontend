@@ -17,14 +17,14 @@ import type {
   BillingRequest,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import type { BillingScopeContext } from './billingScope.js'
-import { sameBillingScope } from './billingScope.js'
+} from './billingContracts'
+import type { BillingScopeContext } from './billingScope'
+import { sameBillingScope } from './billingScope'
 import {
   readBillingErrorCode,
   readBillingErrorMessage
-} from './billingErrorBody.js'
-import { codeForHttpStatus } from './httpStatus.js'
+} from './billingErrorBody'
+import { codeForHttpStatus } from './httpStatus'
 
 /**
  * An abandoned wait is transient, the same bucket the transport reports an

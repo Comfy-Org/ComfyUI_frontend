@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { makeClient } from './__fixtures__/sessionClientFixture.js'
+import { makeClient } from './__fixtures__/sessionClientFixture'
 import {
   EXCHANGE_URL,
   jsonResponse,
@@ -9,19 +9,19 @@ import {
   mintBody,
   okFetch,
   testUser
-} from './__fixtures__/sessionFakes.js'
+} from './__fixtures__/sessionFakes'
 import type {
   AccountCredential,
   AccountUser,
   CredentialStorage,
   SessionErrorCode
-} from './session.js'
+} from './session'
 import {
   SESSION_ERROR_CODES,
   createSessionClient,
   isCredentialFresh,
   isPermanentSessionError
-} from './session.js'
+} from './session'
 
 function seedCache(
   storage: CredentialStorage,

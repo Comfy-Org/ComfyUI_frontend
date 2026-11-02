@@ -3,11 +3,11 @@ import type {
   Reroute,
   SubgraphInput,
   SubgraphOutput
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { remove } from 'es-toolkit'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
@@ -17,17 +17,19 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
-import type { LinkSegment, Point } from '@/lib/litegraph/src/interfaces'
+import type { EventListeners } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
+import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   ConnectingLink,
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import type {
   ItemLocator,
   LinkNetwork
-} from '@/lib/litegraph/src/types/linkNetwork'
+} from '@comfyorg/graph-model/linkNetwork'
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
@@ -35,9 +37,9 @@ import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 
 import { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 import { FloatingRenderLink } from './FloatingRenderLink'
 import { MovingInputLink } from './MovingInputLink'
@@ -1165,8 +1167,8 @@ export class LinkConnector {
    */
   listenUntilReset<K extends keyof LinkConnectorEventMap>(
     eventName: K,
-    listener: Parameters<typeof this.events.addEventListener<K>>[1],
-    options?: Parameters<typeof this.events.addEventListener<K>>[2]
+    listener: EventListeners<LinkConnectorEventMap>[K],
+    options?: boolean | AddEventListenerOptions
   ) {
     this.events.addEventListener(eventName, listener, options)
     this.events.addEventListener(
@@ -1251,6 +1253,6 @@ function canConnectInputLinkToReroute(
 
 type RegisteredLinkConnector = LinkConnector
 
-declare module '../types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface LinkConnector extends RegisteredLinkConnector {}
 }

@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "noEmitOnError": true,
+    "outDir": "${configDir}/dist-types",
+    "tsBuildInfoFile": "${configDir}/dist-types/.tsbuildinfo",
+    "types": [],
+    "paths": {}
+  },
+  "include": ["${configDir}/src/**/*.ts"],
+  "exclude": [
+    "${configDir}/src/**/*.test.ts",
+    "${configDir}/src/**/*.stories.ts",
+    "${configDir}/src/**/__fixtures__/**"
+  ]
+}

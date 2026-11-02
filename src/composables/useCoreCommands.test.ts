@@ -4,9 +4,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
-import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -20,12 +20,12 @@ import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -110,7 +110,7 @@ vi.mock(import('@/platform/onboarding/onboardingReset'))
 
 vi.mock(import('@/services/litegraphService'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
@@ -145,30 +145,49 @@ let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
+vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
-  subscriptionTier: null as string | null
+  subscriptionTier: null as string | null,
+  initialized: true,
+  routing: 'workspace' as 'workspace' | 'unknown',
+  onInitialize: null as (() => void) | null
 }))
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: {
-      get value() {
-        return mockBillingState.canAccessSubscriptionFeatures
+vi.mock<unknown>(
+  import('@/platform/billing/composables/useBillingContext'),
+  () => ({
+    useBillingContext: vi.fn(() => ({
+      isInitialized: {
+        get value() {
+          return mockBillingState.initialized
+        }
+      },
+      initialize: vi.fn(async () => {
+        mockBillingState.onInitialize?.()
+      }),
+      type: {
+        get value() {
+          return mockBillingState.routing
+        }
+      },
+      canAccessSubscriptionFeatures: {
+        get value() {
+          return mockBillingState.canAccessSubscriptionFeatures
+        }
+      },
+      subscription: {
+        get value() {
+          return mockBillingState.subscriptionTier
+            ? { tier: mockBillingState.subscriptionTier }
+            : null
+        }
       }
-    },
-    subscription: {
-      get value() {
-        return mockBillingState.subscriptionTier
-          ? { tier: mockBillingState.subscriptionTier }
-          : null
-      }
-    }
-  }))
-}))
+    }))
+  })
+)
 
-vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
+vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 
 describe('useCoreCommands', () => {
   const createMockNode = (id: number, comfyClass: string): LGraphNode => {
@@ -230,6 +249,9 @@ describe('useCoreCommands', () => {
     mockDistributionState.isCloud = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
+    mockBillingState.initialized = true
+    mockBillingState.routing = 'workspace'
+    mockBillingState.onInitialize = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     vi.mocked(useModelStore().refresh).mockResolvedValue(true)
     vi.mocked(useMissingModelStore().refreshMissingModels).mockResolvedValue(
@@ -851,6 +873,39 @@ describe('useCoreCommands', () => {
         expect(useToast().warning).toHaveBeenCalled()
       }
     )
+
+    it('Comfy.QueuePrompt waits for billing to load on Cloud instead of denying a subscribed user', async () => {
+      mockDistributionState.isCloud = true
+      mockBillingState.canAccessSubscriptionFeatures = false
+      mockBillingState.initialized = false
+      mockBillingState.routing = 'unknown'
+      mockBillingState.onInitialize = () => {
+        mockBillingState.routing = 'workspace'
+        mockBillingState.initialized = true
+        mockBillingState.canAccessSubscriptionFeatures = true
+      }
+
+      await findCmd('Comfy.QueuePrompt').function()
+
+      expect(app.queuePrompt).toHaveBeenCalledWith(0, 1, expect.anything())
+      expect(
+        useSubscriptionPaywall().showSubscriptionDialog
+      ).not.toHaveBeenCalled()
+    })
+
+    it('Comfy.QueuePrompt neither queues nor shows the paywall when billing never loads on Cloud', async () => {
+      mockDistributionState.isCloud = true
+      mockBillingState.canAccessSubscriptionFeatures = false
+      mockBillingState.initialized = false
+      mockBillingState.routing = 'unknown'
+
+      await findCmd('Comfy.QueuePrompt').function()
+
+      expect(app.queuePrompt).not.toHaveBeenCalled()
+      expect(
+        useSubscriptionPaywall().showSubscriptionDialog
+      ).not.toHaveBeenCalled()
+    })
 
     it('Comfy.QueuePrompt queues on Cloud with an active subscription', async () => {
       mockDistributionState.isCloud = true

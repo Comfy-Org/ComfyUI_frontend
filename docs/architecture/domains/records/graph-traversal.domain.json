@@ -8,10 +8,6 @@
       "role": "application"
     },
     {
-      "path": "src/utils/graphTraversalUtil.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/utils/graphTraversalUtil.ts",
       "role": "application"
     }

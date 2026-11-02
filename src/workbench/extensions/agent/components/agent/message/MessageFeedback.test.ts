@@ -6,10 +6,8 @@ import { i18n } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 
-import type { ReplyAsset } from '../../../utils/replyAssets'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/scripts/api'))
 
@@ -82,7 +80,9 @@ describe('MessageFeedback', () => {
 
       await user.hover(action)
 
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(label)
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+        label
+      )
     }
   )
 
@@ -103,7 +103,9 @@ describe('MessageFeedback', () => {
     await screen.findByRole('tooltip')
     await user.click(copy)
 
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Copied')
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      'Copied'
+    )
   })
 
   it('the chevron menu exposes only Copy as markdown and copies the raw source', async () => {

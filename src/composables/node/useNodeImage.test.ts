@@ -1,13 +1,13 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/telemetry/imageFailureDiagnostics'), () => ({
   describeImageLoadFailure: vi.fn(async () => ({
     source: 'node_image_preview' as const,

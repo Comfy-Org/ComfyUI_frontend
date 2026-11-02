@@ -21,36 +21,32 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-const observers = vi.hoisted(() => {
-  const observers: TestResizeObserver[] = []
-  class TestResizeObserver implements ResizeObserver {
-    elements = new Set<Element>()
-    constructor(readonly callback: ResizeObserverCallback) {
-      observers.push(this)
-    }
-    observe(element: Element) {
-      this.elements.add(element)
-    }
-    unobserve(element: Element) {
-      this.elements.delete(element)
-    }
-    disconnect() {
-      this.elements.clear()
-    }
-    resize(element: Element) {
-      if (this.elements.has(element)) {
-        this.callback(
-          [fromPartial<ResizeObserverEntry>({ target: element })],
-          this
-        )
-      }
+const observers: TestResizeObserver[] = []
+class TestResizeObserver implements ResizeObserver {
+  elements = new Set<Element>()
+  constructor(readonly callback: ResizeObserverCallback) {
+    observers.push(this)
+  }
+  observe(element: Element) {
+    this.elements.add(element)
+  }
+  unobserve(element: Element) {
+    this.elements.delete(element)
+  }
+  disconnect() {
+    this.elements.clear()
+  }
+  resize(element: Element) {
+    if (this.elements.has(element)) {
+      this.callback(
+        [fromPartial<ResizeObserverEntry>({ target: element })],
+        this
+      )
     }
   }
-  vi.stubGlobal('ResizeObserver', TestResizeObserver)
-  return observers
-})
+}
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'),
@@ -165,7 +161,8 @@ function renderLayoutGrid(syncLayout = true) {
 
 describe('WidgetGrid', () => {
   beforeEach(() => {
-    for (const observer of observers) observer.disconnect()
+    observers.length = 0
+    vi.stubGlobal('ResizeObserver', TestResizeObserver)
     useCanvasStore().canvas = fromPartial({
       canvas: document.createElement('canvas'),
       graph: fromPartial({ rootGraph: { id: 'widget-grid-graph' } }),

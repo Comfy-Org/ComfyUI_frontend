@@ -1,6 +1,6 @@
 import { getActivePinia } from 'pinia'
 
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import { reactive, ref } from 'vue'
@@ -400,6 +400,29 @@ describe('FormDropdown', () => {
 
     expect(searcher).toHaveBeenCalledWith('alp', items, expect.any(Function))
     expect(onUpdateSelected).not.toHaveBeenCalled()
+  })
+
+  it('restores trigger focus after Escape', async () => {
+    const { user } = mountDropdown([createItem('1', 'alpha')])
+    await openDropdown(user)
+    await user.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+    )
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    { type: 'resize', target: window },
+    { type: 'scroll', target: document }
+  ])('dismisses on viewport $type', async ({ type, target }) => {
+    const { user } = mountDropdown([createItem('1', 'alpha')])
+    await openDropdown(user)
+    await fireEvent(target, new Event(type))
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+    )
   })
 
   it('closes on a pointerdown outside the menu and trigger', async () => {

@@ -4,19 +4,7 @@
   "description": "Template discovery, ranking, metadata, education, and thumbnail presentation.",
   "modules": [
     {
-      "path": "src/components/actionbar/PartnerNodesEducationCard.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/actionbar/PartnerNodesEducationCard.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/custom/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/SidebarTemplatesButton.test.ts",
       "role": "presentation"
     },
     {
@@ -24,72 +12,40 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/templates/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/composables/useLazyPagination.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useLazyPagination.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useTemplateFiltering.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useTemplateFiltering.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useWorkflowTemplateSelectorDialog.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useWorkflowTemplateSelectorDialog.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workflow/templates/**",
       "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/templates/components/**",
+      "role": "presentation"
     },
     {
       "path": "src/platform/workflow/templates/repositories/workflowTemplatesStore.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workflow/templates/schemas/templateSchema.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/templates/types/**",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/workflow/templates/utils/**",
       "role": "domain"
     },
     {
-      "path": "src/stores/templateInputDownloadStore.test.ts",
-      "role": "application"
+      "path": "packages/shared-frontend-utils/src/templateRanking.ts",
+      "role": "domain"
     },
     {
-      "path": "src/stores/templateInputDownloadStore.ts",
-      "role": "application"
+      "path": "packages/shared-frontend-utils/src/templateSearch.ts",
+      "role": "domain"
     },
     {
-      "path": "src/stores/templateRankingStore.test.ts",
-      "role": "application"
+      "path": "packages/api-client/src/templateSchema.ts",
+      "role": "domain"
     },
     {
-      "path": "src/stores/templateRankingStore.ts",
-      "role": "application"
+      "path": "packages/api-client/src/templateTypes.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["telemetry"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
@@ -109,10 +65,10 @@
     {
       "name": "Template selector dialog filters templates, shows detail and model download status",
       "checks": [
-        "src/components/custom/widget/WorkflowTemplateSelectorDialog.test.ts",
-        "src/components/custom/widget/WorkflowTemplateSelectorDialog.detail.test.ts",
-        "src/components/custom/widget/TemplateFilterControls.test.ts",
-        "src/components/custom/widget/WorkflowTemplateDownloadFailure.test.ts"
+        "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.test.ts",
+        "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.detail.test.ts",
+        "src/platform/workflow/templates/components/TemplateFilterControls.test.ts",
+        "src/platform/workflow/templates/components/WorkflowTemplateDownloadFailure.test.ts"
       ]
     },
     {
@@ -125,16 +81,16 @@
     {
       "name": "Template ranking scores and desktop template input downloads track their state",
       "checks": [
-        "src/stores/templateRankingStore.test.ts",
-        "src/stores/templateInputDownloadStore.test.ts"
+        "src/platform/workflow/templates/stores/templateRankingStore.test.ts",
+        "src/platform/workflow/templates/stores/templateInputDownloadStore.test.ts"
       ]
     },
     {
       "name": "Template selector dialog filters, sorts, and lazily paginates templates",
       "checks": [
-        "src/composables/useTemplateFiltering.test.ts",
-        "src/composables/useLazyPagination.test.ts",
-        "src/composables/useWorkflowTemplateSelectorDialog.test.ts"
+        "src/platform/workflow/templates/composables/useTemplateFiltering.test.ts",
+        "src/platform/workflow/templates/composables/useLazyPagination.test.ts",
+        "src/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog.test.ts"
       ]
     }
   ],

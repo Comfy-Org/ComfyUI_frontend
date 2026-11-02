@@ -4,7 +4,7 @@ const { title, body } = defineProps<{ title: string; body: string }>()
 
 <template>
   <main
-    class="dark-theme fixed inset-0 flex items-center justify-center overflow-auto bg-base-background p-6 font-inter"
+    class="fixed inset-0 flex items-center justify-center overflow-auto bg-background p-6 font-inter"
   >
     <section
       class="flex w-full max-w-96 flex-col items-center gap-8 text-center"
@@ -12,7 +12,7 @@ const { title, body } = defineProps<{ title: string; body: string }>()
       <div class="flex flex-col items-center gap-3">
         <slot name="icon" />
         <h1
-          class="m-0 text-2xl font-semibold text-balance text-base-foreground sm:whitespace-nowrap"
+          class="m-0 text-2xl font-semibold text-balance text-foreground sm:whitespace-nowrap"
         >
           {{ title }}
         </h1>

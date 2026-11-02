@@ -6,13 +6,13 @@ import type {
   SessionClient,
   SessionRequestOptions,
   SessionSnapshot
-} from '../session.js'
-import type { AccountCredential, SessionResult } from '../sessionContracts.js'
-import type { BillingHttpResponse, BillingResult } from './billingContracts.js'
-import type { BillingScope, BillingScopeSource } from './billingScope.js'
-import { createCredentialedBillingTransport } from './credentialedTransport.js'
-import { codeForHttpStatus } from './httpStatus.js'
-import { createSessionBillingTransport } from './transport.js'
+} from '#/core/session'
+import type { AccountCredential, SessionResult } from '#/core/sessionContracts'
+import type { BillingHttpResponse, BillingResult } from './billingContracts'
+import type { BillingScope, BillingScopeSource } from './billingScope'
+import { createCredentialedBillingTransport } from './credentialedTransport'
+import { codeForHttpStatus } from './httpStatus'
+import { createSessionBillingTransport } from './transport'
 
 const BASE = 'https://cloud.test/api'
 

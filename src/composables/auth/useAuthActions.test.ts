@@ -6,9 +6,9 @@ import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import type { UserCredential } from 'firebase/auth'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -29,8 +29,6 @@ let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
-const mockStartPendingTopup = vi.hoisted(() => vi.fn())
-const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({
   isCloud: false,
   isDesktop: false
@@ -72,14 +70,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/platform/telemetry'))
-
-vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
-  usePendingTopup: () => ({
-    startPendingTopup: mockStartPendingTopup,
-    clearPendingTopup: mockClearPendingTopup
-  })
-}))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
@@ -124,9 +115,6 @@ beforeEach(() => {
   stubFirebaseAuthHarness()
   mockAuthStore = useAuthStore()
   mockWorkflowStore = useWorkflowStore()
-  vi.mocked(mockAuthStore.initiateCreditPurchase).mockResolvedValue({
-    checkout_url: 'https://checkout.stripe.test'
-  })
   vi.mocked(mockAuthStore.logout).mockResolvedValue(undefined)
   vi.mocked(mockAuthStore.sendPasswordReset).mockResolvedValue(undefined)
   const credential = fromPartial<UserCredential>({ user: { uid: 'test-user' } })
@@ -135,65 +123,6 @@ beforeEach(() => {
   vi.mocked(mockAuthStore.loginWithGoogle).mockResolvedValue(credential)
   mockDistributionState.isCloud = false
   mockDistributionState.isDesktop = false
-})
-
-describe('useAuthActions.purchaseCreditsDirect', () => {
-  it('starts top-up tracking before opening Stripe checkout', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => window)
-    const { purchaseCreditsDirect } = useAuthActions()
-
-    await purchaseCreditsDirect(25)
-
-    expect(mockStartPendingTopup).toHaveBeenCalledOnce()
-    expect(open).toHaveBeenCalledWith('https://checkout.stripe.test', '_blank')
-    expect(mockStartPendingTopup.mock.invocationCallOrder[0]).toBeLessThan(
-      open.mock.invocationCallOrder[0]
-    )
-  })
-
-  it('does not start tracking or open checkout when no checkout URL is returned', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    vi.mocked(mockAuthStore.initiateCreditPurchase).mockResolvedValueOnce({})
-    const { purchaseCreditsDirect } = useAuthActions()
-
-    await expect(purchaseCreditsDirect(25)).rejects.toThrow()
-
-    expect(mockStartPendingTopup).not.toHaveBeenCalled()
-    expect(open).not.toHaveBeenCalled()
-  })
-
-  it('does not start tracking or open checkout when the purchase request rejects', async () => {
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    vi.mocked(mockAuthStore.initiateCreditPurchase).mockRejectedValueOnce(
-      new Error('network down')
-    )
-    const { purchaseCreditsDirect } = useAuthActions()
-
-    await expect(purchaseCreditsDirect(25)).rejects.toThrow('network down')
-
-    expect(mockStartPendingTopup).not.toHaveBeenCalled()
-    expect(open).not.toHaveBeenCalled()
-  })
-
-  it('reports a blocked checkout popup on the web', async () => {
-    vi.spyOn(window, 'open').mockImplementation(() => null)
-    const { purchaseCreditsDirect } = useAuthActions()
-
-    await expect(purchaseCreditsDirect(25)).rejects.toThrow()
-
-    expect(mockClearPendingTopup).toHaveBeenCalledOnce()
-  })
-
-  it('keeps tracking the top-up when Desktop hands checkout to the system browser', async () => {
-    mockDistributionState.isDesktop = true
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    const { purchaseCreditsDirect } = useAuthActions()
-
-    await purchaseCreditsDirect(25)
-
-    expect(open).toHaveBeenCalledWith('https://checkout.stripe.test', '_blank')
-    expect(mockClearPendingTopup).not.toHaveBeenCalled()
-  })
 })
 
 describe('useAuthActions.logout', () => {
@@ -652,6 +581,41 @@ describe('useAuthActions.reportError', () => {
       expect(mockToastErrorHandler).not.toHaveBeenCalled()
     }
   )
+
+  describe('inside Comfy Desktop, which takes over the sign-in popup', () => {
+    beforeEach(() => {
+      window.__comfyDesktop2 = {}
+    })
+
+    afterEach(() => {
+      delete window.__comfyDesktop2
+    })
+
+    it('points a blocked popup at the system browser instead of the pop-up blocker', () => {
+      const { reportError } = useAuthActions()
+
+      reportError(new FirebaseError('auth/popup-blocked', 'raw firebase'))
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'info',
+          title: 'auth.desktopHost.continueInBrowser'
+        })
+      ])
+    })
+
+    it.for(
+      popupPermissionCodes.filter((code) => code !== 'auth/popup-blocked')
+    )('still warns for %s, which the user caused', (code) => {
+      const { reportError } = useAuthActions()
+
+      reportError(new FirebaseError(code, 'raw firebase'))
+
+      expect(useToast().warning).toHaveBeenCalledWith('g.warning', {
+        description: `auth.errors.${code}`
+      })
+    })
+  })
 
   it('reports an account collision as an error, not a popup warning', () => {
     const { reportError, accessError } = useAuthActions()

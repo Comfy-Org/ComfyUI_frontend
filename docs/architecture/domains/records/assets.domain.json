@@ -40,10 +40,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/assets/composables/useAssetsQuery.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/assets/composables/useAssetsQuery.ts",
       "role": "infrastructure"
     },
@@ -60,15 +56,7 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/assets/utils/assetDragUtil.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/assets/utils/assetDragUtil.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/assets/utils/assetPreviewUtil.test.ts",
       "role": "infrastructure"
     },
     {
@@ -76,23 +64,11 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/assets/utils/assetUrlUtil.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/assets/utils/assetUrlUtil.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/assets/utils/clearDeletedAssetWidgetValues.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/assets/utils/clearDeletedAssetWidgetValues.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/assets/utils/clearNodePreviewCacheForValues.test.ts",
       "role": "application"
     },
     {
@@ -100,48 +76,24 @@
       "role": "application"
     },
     {
-      "path": "src/platform/assets/utils/createAssetWidget.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/platform/assets/utils/createAssetWidget.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/platform/assets/utils/markDeletedAssetsAsMissingMedia.test.ts",
-      "role": "application"
     },
     {
       "path": "src/platform/assets/utils/markDeletedAssetsAsMissingMedia.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/assets/utils/mediaIconUtil.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/assets/utils/mediaIconUtil.ts",
       "role": "presentation"
-    },
-    {
-      "path": "src/platform/assets/utils/outputAssetUtil.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/platform/assets/utils/outputAssetUtil.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/assets/utils/outputExportUtil.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/assets/utils/outputExportUtil.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/assets/utils/resolveModelNodeFromAsset.test.ts",
-      "role": "application"
     },
     {
       "path": "src/platform/assets/utils/resolveModelNodeFromAsset.ts",
@@ -152,15 +104,7 @@
       "role": "application"
     },
     {
-      "path": "src/stores/assetDownloadStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/assetDownloadStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/assetExportStore.test.ts",
       "role": "application"
     },
     {
@@ -168,15 +112,7 @@
       "role": "application"
     },
     {
-      "path": "src/stores/assetsStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/assetsStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/assetsSidebarBadgeStore.test.ts",
       "role": "application"
     },
     {
@@ -188,24 +124,12 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/utils/eventUtils.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/utils/eventUtils.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/utils/loaderNodeUtil.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/loaderNodeUtil.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/utils/requestUtil.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/utils/requestUtil.ts",

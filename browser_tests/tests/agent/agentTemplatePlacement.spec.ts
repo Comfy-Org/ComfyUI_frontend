@@ -16,8 +16,10 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 // Agent template placement (ADR-CRDT-PLACEMENT-0035): when the in-app Comfy
 // Agent inserts a workflow template onto a canvas that already has a node on
@@ -199,7 +201,7 @@ class TemplatePlacementHarness {
 
   async sendPrompt(content: string): Promise<void> {
     const panel = this.page.locator('#agent-panel-root')
-    const composer = panel.getByRole('textbox', { name: /Describe ideas/ })
+    const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
     await composer.fill(content)
     await panel.getByRole('button', { name: 'Send' }).click()
     await expect(panel.getByText(content).first()).toBeVisible()
@@ -243,8 +245,8 @@ class TemplatePlacementHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
+    await page.route('**/api/agent/threads?*', (route) =>
+      route.fulfill(jsonRoute(emptyAgentThreadList()))
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() === 'POST') {

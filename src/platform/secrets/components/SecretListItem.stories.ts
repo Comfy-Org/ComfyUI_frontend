@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { SecretMetadata } from '../types'
+import type { SecretMetadata } from '@/platform/secrets/types'
 import SecretListItem from './SecretListItem.vue'
 
 const sampleSecret: SecretMetadata = {
@@ -21,7 +21,7 @@ const meta: Meta<typeof SecretListItem> = {
   decorators: [
     () => ({
       template: `
-        <div class="w-[480px] bg-base-background p-8">
+        <div class="w-[480px] bg-background p-8">
           <story />
         </div>
       `

@@ -390,6 +390,62 @@ describe('useNodeDefStore', () => {
     })
   })
 
+  describe('dynamic combo input ownership', () => {
+    it('returns the live selector for a child owned by its selected option', () => {
+      store.updateNodeDefs([
+        createMockNodeDef({
+          input: {
+            required: {
+              mode: [
+                'COMFY_DYNAMICCOMBO_V3',
+                {
+                  options: [
+                    {
+                      key: 'scale',
+                      inputs: { required: { multiplier: ['FLOAT', {}] } }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        })
+      ])
+      const node = new LGraphNode('TestNode', 'TestNode')
+      node.addWidget('combo', 'mode', 'scale', () => undefined, {
+        values: ['scale']
+      })
+
+      expect(
+        store.getDynamicComboSelectionForInput(node, 'mode.multiplier')
+      ).toEqual({ widget: 'mode', value: 'scale' })
+    })
+
+    it('does not claim a dynamic-group child with a dotted name', () => {
+      store.updateNodeDefs([
+        createMockNodeDef({
+          input: {
+            required: {
+              mode: [
+                'COMFY_DYNAMICGROUP_V3',
+                {
+                  min: 0,
+                  max: 2,
+                  template: { required: { multiplier: ['FLOAT', {}] } }
+                }
+              ]
+            }
+          }
+        })
+      ])
+      const node = new LGraphNode('TestNode', 'TestNode')
+
+      expect(
+        store.getDynamicComboSelectionForInput(node, 'mode.0.multiplier')
+      ).toBeUndefined()
+    })
+  })
+
   describe('performance', () => {
     it('should perform single traversal for multiple filters', () => {
       let filterCallCount = 0

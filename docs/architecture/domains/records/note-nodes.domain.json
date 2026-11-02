@@ -12,16 +12,8 @@
       "role": "integration"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue",
       "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.test.ts",
-      "role": "integration"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.ts",

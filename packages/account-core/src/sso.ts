@@ -11,14 +11,14 @@ import {
   zErrorResponse
 } from '@comfyorg/ingest-types/zod'
 
-import { timedSignal } from './core/requestTimeout.js'
-import { safeInternalPath } from './redirect.js'
+import { timedSignal } from './core/requestTimeout'
+import { safeInternalPath } from './redirect'
 
 export {
   isAccountOutsideOrganizationRefusal,
   isSsoRequiredRefusal,
   ssoRequiredOrganizationId
-} from './core/ssoRequired.js'
+} from './core/ssoRequired'
 
 const SSO_DISCOVER_PATH = '/api/auth/sso/discover'
 const SSO_START_PATH = '/api/auth/sso/start'
@@ -130,15 +130,21 @@ function isApiRoute(url: URL): boolean {
   return pathname === '/api' || pathname.startsWith('/api/')
 }
 
+function absoluteUrl(raw: string): URL | null {
+  try {
+    return new URL(raw)
+  } catch {
+    return null
+  }
+}
+
 function ssoReturnTo(
   raw: string,
   origin: string,
   appOrigin: string | undefined
 ): string {
-  if (appOrigin !== undefined && URL.canParse(raw)) {
-    const url = new URL(raw)
-    if (url.origin === appOrigin) return isApiRoute(url) ? '/' : url.href
-  }
+  const url = appOrigin === undefined ? null : absoluteUrl(raw)
+  if (url && url.origin === appOrigin) return isApiRoute(url) ? '/' : url.href
   const path = safeInternalPath(raw, origin, '/')
   return isApiRoute(new URL(path, origin)) ? '/' : path
 }
@@ -196,6 +202,7 @@ const SSO_ERROR_CODES = [
   'SSO_ORG_DISABLED',
   'SSO_ORG_MISMATCH',
   'SSO_ORG_NOT_ATTACHED',
+  'SSO_SEAT_LIMIT_REACHED',
   'SSO_SIGN_IN_FAILED',
   'SSO_UNAVAILABLE',
   'SSO_USER_SUSPENDED'

@@ -1,0 +1,161 @@
+import { vi } from 'vitest'
+import type { billingApi as realBillingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+
+export const billingApi = vi.mockObject<typeof realBillingApi>(
+  {
+    getBillingStatus: async () => ({
+      ended_at: null,
+      is_active: false,
+      has_funds: false,
+      subscription_tier: 'FREE',
+      max_seats: 1,
+      occupied_seats: 1,
+      scheduled_change: null,
+      team_credit_stop: null
+    }),
+    getBillingBalance: async () => ({
+      amount_micros: 0,
+      currency: 'USD'
+    }),
+    getBillingCapabilities: async (signal) => {
+      signal?.throwIfAborted()
+      return {
+        auto_top_up_enabled: false,
+        capabilities: {
+          can_cancel: false,
+          can_change_seats: false,
+          can_downgrade_to_personal: false,
+          can_invite_members: false,
+          can_manage_members: false,
+          can_delete_workspace: false,
+          can_leave_workspace: false,
+          can_manage_billing: false,
+          can_manage_partner_node_access: false,
+          can_view_pending_invites: false,
+          can_view_team_usage: false,
+          can_edit_workspace: false,
+          can_manage_auto_top_up: false,
+          can_manage_subscription: false,
+          can_open_plans: false,
+          can_run_workflows: false,
+          can_upgrade: false,
+          can_reactivate: false,
+          can_revert_scheduled_change: false,
+          can_subscribe_self_serve: false,
+          can_top_up: false
+        },
+        expires_at: '2026-01-01T00:00:00Z',
+        resolved_for: { user_id: 'user-1', workspace_id: 'workspace-1' },
+        revision: 0,
+        rollout_defaults_applied: {
+          can_downgrade_to_personal: false,
+          can_subscribe_self_serve: false,
+          can_top_up: false
+        }
+      }
+    },
+    getBillingAutoReload: async () => ({
+      card_expiry: null,
+      configured: false,
+      cycle_resets_at: null,
+      declined_payment_method: null,
+      disabled_reason: null,
+      enabled: false,
+      last_failure_at: null,
+      last_failure_reason: null,
+      max_monthly_budget_cents: 0,
+      max_reload_credits: null,
+      min_reload_credits: 0,
+      monthly_budget_cents: null,
+      monthly_budget_is_default: false,
+      paused_by_budget: false,
+      paused_by_budget_remainder: false,
+      paused_by_decline: false,
+      reload_amount_cents: null,
+      reload_credits: null,
+      spent_this_cycle_cents: 0,
+      status: 'off',
+      target_credits: null,
+      threshold_credits: null
+    }),
+    getBillingPlans: async () => ({ plans: [] }),
+    listSavedPaymentMethods: async () => [],
+    previewSubscribe: async (slug) => ({
+      allowed: true,
+      transition_type: 'new_subscription',
+      effective_at: '2026-01-01T00:00:00Z',
+      is_immediate: true,
+      cost_today_cents: 0,
+      cost_next_period_cents: 0,
+      credits_today_cents: 0,
+      credits_next_period_cents: 0,
+      new_plan: {
+        slug,
+        tier: 'FREE',
+        duration: 'MONTHLY',
+        price_cents: 0,
+        credits_cents: 0,
+        seat_summary: {
+          seat_count: 1,
+          total_cost_cents: 0,
+          total_credits_cents: 0
+        }
+      }
+    }),
+    subscribe: async () => ({
+      billing_op_id: 'op-1',
+      status: 'subscribed'
+    }),
+    cancelSubscription: async () => ({
+      billing_op_id: 'op-1',
+      cancel_at: '2026-02-01T00:00:00Z'
+    }),
+    prepareRetentionFlow: async () => {
+      throw new WorkspaceApiError('unavailable', 503)
+    },
+    acceptRetentionOffer: async () => ({
+      billing_op_id: 'op-retention',
+      status: 'pending'
+    }),
+    recordRetentionFlowEvent: async () => {},
+    resubscribe: async () => ({
+      billing_op_id: 'op-1',
+      status: 'active'
+    }),
+    revertScheduledChange: async () => ({
+      billing_op_id: 'op-1',
+      status: 'reverted'
+    }),
+    getPaymentPortalUrl: async () => ({ url: '' }),
+    createTopup: async (amount_cents) => ({
+      amount_cents,
+      billing_op_id: 'op-1',
+      topup_id: 'op-1',
+      status: 'completed'
+    }),
+    createTopupCheckout: async () => ({
+      checkout_url: 'https://checkout.stripe.com/c/pay/cs_mock'
+    }),
+    listTopupCheckouts: async () => ({ checkouts: [], next_cursor: null }),
+    getTopupCheckout: async (sessionId) => ({
+      session_id: sessionId,
+      amount_cents: 0,
+      payment_amount_cents: null,
+      state: 'fulfilled'
+    }),
+    getBillingEvents: async () => ({
+      events: [],
+      limit: 20,
+      page: 1,
+      total: 0,
+      totalPages: 0
+    }),
+    getBillingOpStatus: async (id) => ({
+      id,
+      started_at: '2026-01-01T00:00:00Z',
+      status: 'succeeded'
+    })
+  },
+  { spy: true }
+)

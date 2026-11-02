@@ -1,6 +1,6 @@
 <template>
   <div
-    class="m-auto w-[min(90vw,42rem)] rounded-2xl bg-base-background/80 p-8 backdrop-blur-sm"
+    class="m-auto w-[min(90vw,42rem)] rounded-2xl bg-background/80 p-8 backdrop-blur-sm"
   >
     <WaveAudioPlayer
       :src="resultItemUrl(result)"
