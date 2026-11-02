@@ -3,7 +3,6 @@
   "ignorePatterns": [
     "**/vite.config.*.timestamp*",
     "**/vitest.config.*.timestamp*",
-    ".agents/checks/eslint.strict.config.js",
     "ComfyUI/**",
     "apps/*/coverage/**",
     "apps/*/dist/**",

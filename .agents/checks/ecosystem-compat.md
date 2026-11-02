@@ -16,6 +16,17 @@ Check whether this PR introduces breaking changes to exported symbols that downs
 - Changed event names or event payload shapes
 - Changed global registrations or extension hooks
 - Modified integration points with external systems
+- Narrowed parameter types or changed defaults on optional parameters
+
+## Public Surface
+
+Custom node extensions consume these, so treat a rename, removal, or signature change as breaking:
+
+- **Window globals** assigned in `src/composables/useGlobalLitegraph.ts` (`window.LiteGraph`, `window.LGraphNode`, `window.LGraphCanvas`, and the other LiteGraph classes), plus `window.app`.
+- **Extension hooks**: `app.registerExtension`, the `ComfyExtension` lifecycle, and `ComfyApp` / `ComfyApi` members.
+- **Entity callbacks and fields** listed under "Extension ecosystem impact" in the root `AGENTS.md`.
+
+Do not flag additions or internal changes. Check whether the diff already keeps a re-export or compatibility shim before flagging.
 
 ## Method
 
