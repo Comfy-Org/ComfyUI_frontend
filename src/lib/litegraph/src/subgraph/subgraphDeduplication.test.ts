@@ -210,6 +210,27 @@ describe('topologicalSortSubgraphs', () => {
     expect(result.map((s) => s.id)).toEqual(['inner', 'outer'])
   })
 
+  it('sorts a parent that nests the same child twice after that child', () => {
+    const inner = makeSubgraph('inner')
+    const outer = makeSubgraph('outer', ['inner', 'inner'])
+
+    expect(topologicalSortSubgraphs([outer, inner])).toEqual([inner, outer])
+  })
+
+  it('sorts acyclic definitions first and keeps a cycle in input order', () => {
+    const a = makeSubgraph('a', ['b'])
+    const b = makeSubgraph('b', ['a'])
+    const inner = makeSubgraph('inner')
+    const outer = makeSubgraph('outer', ['inner'])
+
+    expect(topologicalSortSubgraphs([b, outer, a, inner])).toEqual([
+      inner,
+      outer,
+      b,
+      a
+    ])
+  })
+
   it('handles diamond dependencies', () => {
     const shared = makeSubgraph('shared')
     const left = makeSubgraph('left', ['shared'])
