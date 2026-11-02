@@ -16,7 +16,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 // callback a production LoadImage node does.
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'

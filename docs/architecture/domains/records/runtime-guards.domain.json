@@ -9,8 +9,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["error-reporting"],
   "characterizationScenarios": [
     {
       "name": "Runtime type guards preserves its existing behavior",

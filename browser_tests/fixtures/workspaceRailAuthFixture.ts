@@ -9,22 +9,10 @@ import {
   createSubscriptionHelper,
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
-import type { SubscriptionOperator } from '@e2e/fixtures/helpers/SubscriptionHelper'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
-
-// The subscription fixture pins billing_rail to legacy_stripe, which routes
-// local billing through the legacy rail and its Local exemption from the
-// subscription gate. The 1.51 QA finding #11 (no way to add credits without
-// an active subscription) only reproduces on the workspace rail, so this
-// fixture overrides the rail; localAuthFixture keeps the legacy-rail
-// coverage.
-const onWorkspaceRail: SubscriptionOperator = (config) => ({
-  ...config,
-  status: { ...config.status, billing_rail: 'stripe' }
-})
 
 /**
  * Boots the local (non-Cloud) build as a logged-in unsubscribed workspace
@@ -69,8 +57,7 @@ export const workspaceRailAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
     )
     const subscriptionHelper = createSubscriptionHelper(
       page,
-      withUnsubscribed(),
-      onWorkspaceRail
+      withUnsubscribed()
     )
     await subscriptionHelper.mock()
 

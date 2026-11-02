@@ -1,4 +1,5 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
+import type { Surface } from '@comfyorg/telemetry/reportError'
 import { tryOnScopeDispose, useMediaControls, whenever } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
@@ -16,12 +17,19 @@ interface WaveformBar {
 interface UseWaveAudioPlayerOptions {
   src: Readonly<Ref<string | undefined>>
   logicalSrc?: Readonly<Ref<string | undefined>>
+  surface?: Surface
   barCount?: number
   waveform?: boolean
 }
 
 export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
-  const { src, logicalSrc = src, barCount = 40, waveform = true } = options
+  const {
+    src,
+    logicalSrc = src,
+    surface = 'assets',
+    barCount = 40,
+    waveform = true
+  } = options
 
   const audioRef = ref<HTMLAudioElement>()
   const waveformRef = ref<HTMLElement>()
@@ -147,7 +155,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
       }
       reportError(error, {
         errorType: 'error_playing_audio',
-        surface: 'assets',
+        surface,
         level: 'warning'
       })
       toast.error(t('g.error'), {

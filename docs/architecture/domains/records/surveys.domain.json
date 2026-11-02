@@ -41,8 +41,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Survey eligibility follows feature usage, distribution, and dismissal state",

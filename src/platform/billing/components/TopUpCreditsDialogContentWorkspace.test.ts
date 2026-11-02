@@ -40,6 +40,14 @@ import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import type { CreateTopupResponse } from '@comfyorg/billing-core'
 import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import type { BillingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
+import {
+  autoTopUpCardState,
+  loadedAutoTopUp
+} from '@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard'
+import {
+  autoTopUpEnabledFact,
+  canManageAutoTopUpFact
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
@@ -67,6 +75,8 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+
+vi.mock(import('@/platform/billing/composables/useBillingAutoTopUpCard'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
@@ -1756,6 +1766,40 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     open.mockRestore()
   })
 
+  it('says when to verify by while the top-up serves its authentication deadline', () => {
+    setTopupActionOperation({
+      opId: 'op-deadline',
+      status: 'pending',
+      actionUrl: 'https://verify.example/token',
+      authenticationDeadline: '2026-10-30T15:40:00Z'
+    })
+
+    renderDialog()
+
+    expect(
+      screen.getByText(
+        'Your bank is waiting for you to confirm it. Verify it by October 30, 3:40 PM to finish this top-up.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the open-ended verification copy when no deadline is served', () => {
+    setTopupActionOperation({
+      opId: 'op-no-deadline',
+      status: 'pending',
+      actionUrl: 'https://verify.example/token'
+    })
+
+    renderDialog()
+
+    expect(
+      screen.getByText(
+        'Your bank requires additional verification to complete this payment.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Verify by/)).not.toBeInTheDocument()
+  })
+
   it('reopens in verification while the action URL is loading', () => {
     setIsAddingCredits(true)
     setTopupActionOperation({
@@ -2509,6 +2553,52 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       state: 'payment_processing'
     })
   }
+
+  describe('the auto top-up card', () => {
+    const AUTO_TOP_UP_PROMPT = 'Running low on credits? Turn on auto top-up.'
+
+    beforeEach(() => {
+      const capabilities = useBillingCapabilities()
+      capabilities.autoTopUpEnabled = autoTopUpEnabledFact(true)
+      capabilities.canManageAutoTopUp = canManageAutoTopUpFact(true)
+      capabilities.autoTopUpSetup = computed(() => ({
+        state: 'ready' as const
+      }))
+      autoTopUpCardState.value = loadedAutoTopUp('off')
+    })
+
+    it('sits above Add credits on the amount step', () => {
+      renderDialog()
+
+      const setUp = screen.getByRole('link', { name: 'Set up' })
+      expect(screen.getByText(AUTO_TOP_UP_PROMPT)).toBeInTheDocument()
+      expect(
+        setUp.compareDocumentPosition(
+          screen.getByRole('button', { name: 'Add credits' })
+        ) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+    })
+
+    it('is gone on the payment step', async () => {
+      renderDialog()
+
+      await clickAddCredits()
+
+      expect(
+        screen.getByRole('button', { name: 'Pay $50.00' })
+      ).toBeInTheDocument()
+      expect(screen.queryByText(AUTO_TOP_UP_PROMPT)).not.toBeInTheDocument()
+    })
+
+    it('gives way to the payment processing notice', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveProcessingCheckout(2500)
+      renderDialog()
+
+      await screen.findByRole('status')
+      expect(screen.queryByText(AUTO_TOP_UP_PROMPT)).not.toBeInTheDocument()
+    })
+  })
 
   describe('a top-up payment still processing', () => {
     it('keeps add credits available and names the served amount', async () => {

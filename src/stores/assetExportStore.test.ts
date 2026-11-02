@@ -306,11 +306,11 @@ describe('assetExportStore triggerDownload', () => {
     })
     vi.mocked(assetService.getExportDownloadUrl).mockResolvedValue({ url })
     const clickedHrefs: string[] = []
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
-      function (this: HTMLAnchorElement) {
-        clickedHrefs.push(this.href)
-      }
-    )
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement
+    ) {
+      clickedHrefs.push(this.href)
+    })
     const store = useAssetExportStore()
     store.trackExport('task-1')
     const [exportJob] = store.exportList

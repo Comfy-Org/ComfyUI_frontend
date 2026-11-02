@@ -35,7 +35,8 @@ import type {
 import {
   zAgentAdmissionError,
   zAgentTurnAccepted,
-  zAgentWsEvent
+  zAgentWsEvent,
+  toTurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   AgentApiError,
@@ -54,7 +55,11 @@ import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
-import type { AgentEventSource, TurnOrigin } from './useAgentSession'
+import type {
+  AgentEventSource,
+  TurnOrigin,
+  WorkflowTurnContext
+} from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
@@ -67,25 +72,21 @@ const telemetry = vi.mocked(telemetryProvider)
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
-    postMessage: vi.fn(
-      async (): Promise<AgentTurnAccepted> => ({
-        thread_id: 'th-1',
-        message_id: 'msg-1',
-        workflow_id: 'wf-1'
-      })
-    ),
+    postMessage: vi.fn(async (): Promise<AgentTurnAccepted> => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    })),
     getIdentity: vi.fn(async () => ({ userId: 'user-test' })),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
     listThreads: vi.fn<AgentRestClient['listThreads']>(async () => ({
       status: 'complete',
       threads: []
     })),
-    getRunMode: vi.fn(
-      async (): Promise<AgentRunModePreference> => ({
-        mode: 'auto',
-        credit_limit: null
-      })
-    ),
+    getRunMode: vi.fn(async (): Promise<AgentRunModePreference> => ({
+      mode: 'auto',
+      credit_limit: null
+    })),
     putRunMode: vi.fn(
       async (
         preference: AgentRunModePreference
@@ -102,25 +103,19 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       created_at: '2026-09-11T10:00:00Z',
       updated_at: '2026-09-11T10:00:00Z'
     })),
-    cancelMessage: vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({
-        status: 'cancelling'
-      })
-    ),
-    answerAsk: vi.fn(
-      async (): Promise<AgentAnswerAccepted> => ({
-        status: 'answered',
-        selected: []
-      })
-    ),
+    cancelMessage: vi.fn(async (): Promise<AgentCancelAccepted> => ({
+      status: 'cancelling'
+    })),
+    answerAsk: vi.fn(async (): Promise<AgentAnswerAccepted> => ({
+      status: 'answered',
+      selected: []
+    })),
     refreshCredential: vi.fn(async () => {}),
-    uploadImage: vi.fn(
-      async (): Promise<UploadImageResponse> => ({
-        name: 'n',
-        subfolder: '',
-        type: 'input'
-      })
-    )
+    uploadImage: vi.fn(async (): Promise<UploadImageResponse> => ({
+      name: 'n',
+      subfolder: '',
+      type: 'input'
+    }))
   }
   return { ...base, ...overrides }
 }
@@ -399,26 +394,24 @@ async function restoredTurnStaysStreaming(
   conversation.setThreadId(thread)
   const successor = useAgentSession({
     rest: fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          {
-            ...historyRow(1, 'user', `cap-turn-${index}`, 'go'),
-            thread_id: thread
-          },
-          {
-            ...historyRow(
-              2,
-              'assistant',
-              `cap-turn-${index}`,
-              '',
-              capMessage(index)
-            ),
-            thread_id: thread,
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        {
+          ...historyRow(1, 'user', `cap-turn-${index}`, 'go'),
+          thread_id: thread
+        },
+        {
+          ...historyRow(
+            2,
+            'assistant',
+            `cap-turn-${index}`,
+            '',
+            capMessage(index)
+          ),
+          thread_id: thread,
+          content: {},
+          status: 'streaming'
+        }
+      ])
     }),
     events: fakeEvents().source
   })
@@ -548,15 +541,13 @@ describe('useAgentSession (v1 composition root)', () => {
     const text =
       '[Use the saved skill /portrait](skill://portrait?description=Original)'
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', text),
-          {
-            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
-            status: 'error'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', text),
+        {
+          ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+          status: 'error'
+        }
+      ])
     })
     const { source, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -720,14 +711,13 @@ describe('useAgentSession (v1 composition root)', () => {
     'keeps the open chat until a kept-open load %s',
     async (outcome) => {
       let answer = (_loaded: boolean) => {}
-      const getMessages = vi.fn(
-        (threadId: string): Promise<AgentMessages> =>
-          threadId === 'th-next'
-            ? new Promise((resolve, reject) => {
-                answer = (loaded) =>
-                  loaded ? resolve([]) : reject(new Error('unavailable'))
-              })
-            : Promise.resolve([])
+      const getMessages = vi.fn((threadId: string): Promise<AgentMessages> =>
+        threadId === 'th-next'
+          ? new Promise((resolve, reject) => {
+              answer = (loaded) =>
+                loaded ? resolve([]) : reject(new Error('unavailable'))
+            })
+          : Promise.resolve([])
       )
       const session = useAgentSession({
         rest: fakeRest({ getMessages }),
@@ -904,16 +894,14 @@ describe('useAgentSession (v1 composition root)', () => {
   it('(b4a) a reopen over a turn the server still runs restores it as live', async () => {
     const conversation = useAgentConversationStore()
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'turn-1', 'add an audio output node'),
-          {
-            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
     })
 
     const minimized = useAgentSession({ rest, events: fakeEvents().source })
@@ -928,6 +916,336 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await vi.waitFor(() => expect(reopened.isStreaming.value).toBe(true))
     expect(conversation.activeTurnId).toBe('msg-1')
+  })
+
+  it('keeps socket parts and releases the composer when a settled snapshot read fails', async () => {
+    const readFailure = new AgentApiError('history unavailable', 503, undefined)
+    let rejectSettledRead: ((error: AgentApiError) => void) | undefined
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentMessages>((_resolve, reject) => {
+            rejectSettledRead = reject
+          })
+      )
+      .mockRejectedValue(readFailure)
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    emit(thinking('msg-1', 'live after reload'))
+    emit(done('msg-1'))
+
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'thinking',
+          text: 'live after reload',
+          state: 'done'
+        }
+      ]
+    })
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(3))
+    assert.exists(rejectSettledRead)
+    vi.useFakeTimers()
+    try {
+      rejectSettledRead(readFailure)
+      await vi.advanceTimersByTimeAsync(40_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(getMessages).toHaveBeenCalledTimes(8)
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(readFailure, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'thinking',
+          text: 'live after reload',
+          state: 'done'
+        }
+      ]
+    })
+
+    conversation.reconcileSettledTurn(
+      { threadId: 'th-1', messageId: toTurnId('msg-1') },
+      [{ type: 'text', text: 'a later read', state: 'done' }]
+    )
+    expect(session.entries.value.at(-1)).toMatchObject({
+      parts: [{ type: 'thinking', text: 'live after reload' }]
+    })
+  })
+
+  it('does not retry a settled snapshot read the server refused', async () => {
+    const refused = new AgentApiError('unauthorized', 401, undefined)
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockRejectedValue(refused)
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    vi.useFakeTimers()
+    try {
+      emit(thinking('msg-1', 'live after reload'))
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(40_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(getMessages).toHaveBeenCalledTimes(3)
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(refused, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  })
+
+  it('reports a settled snapshot read that is still failing when its deadline passes', async () => {
+    const slowFailure = new AgentApiError('gateway timeout', 504, undefined)
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockImplementation(
+        () =>
+          new Promise<AgentMessages>((_resolve, reject) => {
+            setTimeout(() => reject(slowFailure), 25_000)
+          })
+      )
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    vi.useFakeTimers()
+    try {
+      emit(thinking('msg-1', 'live after reload'))
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(90_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(slowFailure, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  })
+
+  it('reads a settled snapshot turn again after a transient read failure', async () => {
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockRejectedValueOnce(
+        new AgentApiError('history unavailable', 503, undefined)
+      )
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', 'Added it.', 'msg-1'),
+          content: {
+            text: 'Added it.',
+            thinking: [{ text: 'before the reload' }]
+          }
+        }
+      ])
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    emit(thinking('msg-1', 'live after reload'))
+    emit(done('msg-1'))
+
+    await vi.waitFor(
+      () =>
+        expect(session.entries.value.at(-1)).toMatchObject({
+          role: 'assistant',
+          parts: [{ type: 'thinking', text: 'before the reload' }, {}]
+        }),
+      { timeout: 5000 }
+    )
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reads a settled snapshot turn again while its row still reads as streaming', async () => {
+    const streamingRow = {
+      ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+      content: {},
+      status: 'streaming' as const
+    }
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        streamingRow
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        streamingRow
+      ])
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', 'Added it.', 'msg-1'),
+          content: {
+            text: 'Added it.',
+            thinking: [{ text: 'before the reload' }]
+          }
+        }
+      ])
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    emit(thinking('msg-1', 'live after reload'))
+    emit(done('msg-1'))
+
+    await vi.waitFor(
+      () => {
+        const last = session.entries.value.at(-1)
+        expect(
+          last?.role === 'assistant'
+            ? last.parts.flatMap((part) =>
+                part.type === 'thinking' ? [part.text] : []
+              )
+            : []
+        ).toContain('before the reload')
+      },
+      { timeout: 5000 }
+    )
+  })
+
+  it('honors a hydrate deferred behind an in-flight settled snapshot read', async () => {
+    const restored: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        content: {},
+        status: 'streaming'
+      }
+    ]
+    const finished: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', 'Added it.', 'msg-1'),
+        content: {
+          text: 'Added it.',
+          thinking: [{ text: 'before the reload' }]
+        }
+      }
+    ]
+    let settleRead: ((history: AgentMessages) => void) | undefined
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce(restored)
+      .mockImplementationOnce(hangingGetMessages)
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            settleRead = resolve
+          })
+      )
+      .mockResolvedValueOnce(restored)
+      .mockResolvedValue(finished)
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    emit(thinking('msg-1', 'live after reload'))
+    emit(done('msg-1'))
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(3))
+
+    session.newChat('new_chat_button')
+    void session.loadThread('th-1')
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
+
+    assert.exists(settleRead)
+    settleRead(finished)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false), {
+      timeout: 2000
+    })
+    expect(conversation.activeTurnId).toBeNull()
   })
 
   it('re-attaches to the running turn when a send is refused with TURN_IN_PROGRESS', async () => {
@@ -951,18 +1269,16 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     const rest = fakeRest({
       postMessage,
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'turn-1', 'add an audio output node'),
-          historyRow(2, 'assistant', 'turn-1', 'Done.', 'msg-1'),
-          historyRow(3, 'user', 'turn-2', 'run it again', 'row-3'),
-          {
-            ...historyRow(4, 'assistant', 'turn-2', '', 'msg-2'),
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        historyRow(2, 'assistant', 'turn-1', 'Done.', 'msg-1'),
+        historyRow(3, 'user', 'turn-2', 'run it again', 'row-3'),
+        {
+          ...historyRow(4, 'assistant', 'turn-2', '', 'msg-2'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
     })
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -1350,16 +1666,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
     const reopened = useAgentSession({
       rest: fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'turn-1', 'go'),
-            {
-              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-              content: {},
-              status: 'streaming'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
       }),
       events: fakeEvents().source
     })
@@ -1541,16 +1855,14 @@ describe('useAgentSession (v1 composition root)', () => {
       // `done` is owed to it -- dropping it is the stranded turn this whole
       // change is against, and (b4d) states the same invariant.
       const second = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'turn-1', 'go'),
-            {
-              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-              content: {},
-              status: 'streaming'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
       })
       conversation.setThreadId('th-1')
       const successor = useAgentSession({
@@ -1599,16 +1911,14 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
 
       const second = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'turn-1', 'go'),
-            {
-              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-              content: {},
-              status: 'streaming'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
       })
       conversation.setThreadId('th-1')
       const successor = useAgentSession({
@@ -2200,12 +2510,10 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('answers a run approval once and stays busy until its resolution event', async () => {
-    const answerAsk = vi.fn(
-      async (): Promise<AgentAnswerAccepted> => ({
-        status: 'answered',
-        selected: ['run']
-      })
-    )
+    const answerAsk = vi.fn(async (): Promise<AgentAnswerAccepted> => ({
+      status: 'answered',
+      selected: ['run']
+    }))
     const rest = fakeRest({ answerAsk })
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -2980,12 +3288,10 @@ describe('useAgentSession (v1 composition root)', () => {
     const PAST_ASK_RESOLUTION_GRACE_MS = 60_000
 
     const parkedOnApproval = async () => {
-      const answerAsk = vi.fn(
-        async (): Promise<AgentAnswerAccepted> => ({
-          status: 'answered',
-          selected: ['run']
-        })
-      )
+      const answerAsk = vi.fn(async (): Promise<AgentAnswerAccepted> => ({
+        status: 'answered',
+        selected: ['run']
+      }))
       const rest = fakeRest({ answerAsk })
       const events = fakeEvents()
       const session = useAgentSession({ rest, events: events.source })
@@ -3688,11 +3994,9 @@ describe('useAgentSession (v1 composition root)', () => {
   it('tracks one committed stop with its method, turn, and elapsed time', async () => {
     let currentTime = 1_000
     const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
-    const cancelMessage = vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({
-        status: 'cancelling'
-      })
-    )
+    const cancelMessage = vi.fn(async (): Promise<AgentCancelAccepted> => ({
+      status: 'cancelling'
+    }))
     const { source } = fakeEvents()
     const session = useAgentSession({
       rest: fakeRest({ cancelMessage }),
@@ -3726,16 +4030,14 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     const rest = fakeRest({
       cancelMessage,
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'turn-1', 'go'),
-          {
-            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
     })
     const conversation = useAgentConversationStore()
 
@@ -3799,16 +4101,14 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     const rest = fakeRest({
       cancelMessage,
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'turn-1', 'go'),
-          {
-            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'turn-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
     })
     const conversation = useAgentConversationStore()
 
@@ -3842,16 +4142,14 @@ describe('useAgentSession (v1 composition root)', () => {
         .mockRejectedValue(new AgentApiError('no turn', status, undefined))
       const rest = fakeRest({
         cancelMessage,
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'turn-1', 'go'),
-            {
-              ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
-              content: {},
-              status: 'streaming'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'turn-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
       })
       const conversation = useAgentConversationStore()
 
@@ -4322,24 +4620,20 @@ describe('useAgentSession (v1 composition root)', () => {
             rejectPost = reject
           })
       )
-    const cancelMessage = vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({
-        status: 'cancelling'
-      })
-    )
+    const cancelMessage = vi.fn(async (): Promise<AgentCancelAccepted> => ({
+      status: 'cancelling'
+    }))
     const rest = fakeRest({
       postMessage,
       cancelMessage,
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'turn-2', 'other client'),
-          {
-            ...historyRow(2, 'assistant', 'turn-2', '', 'msg-2'),
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'turn-2', 'other client'),
+        {
+          ...historyRow(2, 'assistant', 'turn-2', '', 'msg-2'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
     })
     const { source, emit } = fakeEvents()
     const session = useAgentSession({
@@ -4393,11 +4687,9 @@ describe('useAgentSession (v1 composition root)', () => {
           })
       )
       .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
-    const cancelMessage = vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({
-        status: 'cancelling'
-      })
-    )
+    const cancelMessage = vi.fn(async (): Promise<AgentCancelAccepted> => ({
+      status: 'cancelling'
+    }))
     const session = useAgentSession({
       rest: fakeRest({ postMessage, cancelMessage }),
       events: fakeEvents().source
@@ -4450,12 +4742,10 @@ describe('useAgentSession (v1 composition root)', () => {
     // reconnect transition (e.g. the socket hasn't opened yet). That must not
     // abort a turn that survived a remount.
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          historyRow(2, 'assistant', 'msg-1', 'recovered', 'msg-1')
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        historyRow(2, 'assistant', 'msg-1', 'recovered', 'msg-1')
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4495,16 +4785,14 @@ describe('useAgentSession (v1 composition root)', () => {
   // blanks the reply on screen.
   const streamingTurnRest = () =>
     fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          {
-            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
-            content: {},
-            status: 'streaming'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
     })
 
   it('(g3) a reconnect leaves the turn running instead of settling it', async () => {
@@ -4553,12 +4841,10 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(g5) a turn that ended during the drop is settled from its persisted row and its stale approval card is dropped', async () => {
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          historyRow(2, 'assistant', 'msg-1', 'final answer', 'msg-1')
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        historyRow(2, 'assistant', 'msg-1', 'final answer', 'msg-1')
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4590,13 +4876,11 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(g5a) recovery preserves every persisted assistant row in a turn', async () => {
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          historyRow(2, 'assistant', 'msg-1', 'first ', 'msg-1'),
-          historyRow(3, 'assistant', 'msg-1', 'second')
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        historyRow(2, 'assistant', 'msg-1', 'first ', 'msg-1'),
+        historyRow(3, 'assistant', 'msg-1', 'second')
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4629,14 +4913,12 @@ describe('useAgentSession (v1 composition root)', () => {
       ]
     }
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          historyRow(2, 'assistant', 'msg-1', 'before ', 'msg-1'),
-          toolRow,
-          historyRow(4, 'assistant', 'msg-1', 'after')
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        historyRow(2, 'assistant', 'msg-1', 'before ', 'msg-1'),
+        toolRow,
+        historyRow(4, 'assistant', 'msg-1', 'after')
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4669,12 +4951,10 @@ describe('useAgentSession (v1 composition root)', () => {
       content: {}
     }
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          terminalWithoutParts
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        terminalWithoutParts
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4701,12 +4981,10 @@ describe('useAgentSession (v1 composition root)', () => {
       status: 'error' as const
     }
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          failedWithoutParts
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        failedWithoutParts
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4740,21 +5018,19 @@ describe('useAgentSession (v1 composition root)', () => {
     'reports a turn recovered with rows $statuses as completed: $completes',
     async ({ statuses, completes }) => {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            ...statuses.map((rowStatus, index) => ({
-              ...historyRow(
-                2 + index,
-                'assistant',
-                'msg-1',
-                'answer',
-                index === 0 ? 'msg-1' : `msg-1-${index}`
-              ),
-              status: rowStatus
-            }))
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          ...statuses.map((rowStatus, index) => ({
+            ...historyRow(
+              2 + index,
+              'assistant',
+              'msg-1',
+              'answer',
+              index === 0 ? 'msg-1' : `msg-1-${index}`
+            ),
+            status: rowStatus
+          }))
+        ])
       })
       useWorkflowStore().attachWorkflow(
         fromPartial<LoadedComfyWorkflow>({
@@ -4792,12 +5068,10 @@ describe('useAgentSession (v1 composition root)', () => {
       status: 'interrupted' as const
     }
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          interruptedWithoutParts
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        interruptedWithoutParts
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -4818,6 +5092,7 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(g6) a row still streaming on the first check is polled with backoff until it goes terminal', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const getMessages = vi
       .fn<() => Promise<AgentMessages>>()
       .mockResolvedValueOnce([
@@ -4860,15 +5135,13 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(g6a) a stopped turn settled from REST becomes editable after reconnect', async () => {
     const rest = fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          {
-            ...historyRow(2, 'assistant', 'msg-1', 'interrupted', 'msg-1'),
-            status: 'interrupted'
-          }
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'msg-1', 'interrupted', 'msg-1'),
+          status: 'interrupted'
+        }
+      ])
     })
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -5091,6 +5364,71 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toEqual([])
   })
 
+  it('(g11a) a deleted thread invalidates an in-flight send before its acknowledgement', async () => {
+    let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockResolvedValueOnce({
+        thread_id: 'th-1',
+        message_id: 'msg-1',
+        workflow_id: 'wf-bound'
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve) => {
+            resolvePost = resolve
+          })
+      )
+      .mockResolvedValueOnce({
+        thread_id: 'th-2',
+        message_id: 'msg-3',
+        workflow_id: 'wf-fresh'
+      })
+    const rest = fakeRest({
+      postMessage,
+      getMessages: vi.fn(async (): Promise<AgentMessages> => {
+        throw new AgentApiError('gone', 404, undefined)
+      })
+    })
+    const { source, emit, status } = fakeEvents()
+    let target: WorkflowTurnContext = {
+      id: 'wf-bound',
+      tabPath: 'workflows/bound.json'
+    }
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => target,
+        adopted: vi.fn(),
+        draft: () => ({ content: { nodes: [{ id: 1 }], links: [] } })
+      }
+    })
+    session.start()
+    status(true)
+
+    await session.sendMessage('first')
+    emit(delta('msg-1', 'partial'))
+    target = { tabPath: 'workflows/Unsaved Workflow.json' }
+    const staleSend = session.sendMessage('second')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
+
+    status(false)
+    status(true)
+    await vi.waitFor(() => expect(session.threadId.value).toBeNull())
+    resolvePost?.({
+      thread_id: 'th-1',
+      message_id: 'msg-2',
+      workflow_id: 'wf-minted'
+    })
+
+    await expect(staleSend).resolves.toBe(false)
+    expect(session.threadId.value).toBeNull()
+    await session.sendMessage('start over')
+    expect(postMessage.mock.calls[2][0]).toBe('new')
+    expect(postMessage.mock.calls[2][1].currentTabUnbound).toBe(true)
+  })
+
   it('(g15) a deleted team-workspace thread is forgotten without touching another workspace', async () => {
     sessionStorage.setItem(
       'Comfy.Workspace.Current',
@@ -5191,6 +5529,7 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(g18) a history fetch that never answers stops at its deadline', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const getMessages = vi.fn(hangingGetMessages)
     const rest = fakeRest({ getMessages })
     const { source, emit, status } = fakeEvents()
@@ -5449,12 +5788,10 @@ describe('useAgentSession (v1 composition root)', () => {
 
   const parkedOnApprovalRest = () =>
     fakeRest({
-      getMessages: vi.fn(
-        async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          parkedRow()
-        ]
-      )
+      getMessages: vi.fn(async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        parkedRow()
+      ])
     })
 
   const approvalParts = (session: ReturnType<typeof useAgentSession>) => {
@@ -5629,12 +5966,10 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            parkedRow()
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          parkedRow()
+        ])
       })
       vi.mocked(rest.answerAsk).mockRejectedValue(
         new AgentApiError('already answered', 409, undefined)
@@ -5833,20 +6168,18 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            {
-              ...parkedRow(),
-              status: 'interrupted'
-            },
-            {
-              ...historyRow(3, 'assistant', 'msg-1', '', 'row-3'),
-              content: {},
-              status: 'streaming'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...parkedRow(),
+            status: 'interrupted'
+          },
+          {
+            ...historyRow(3, 'assistant', 'msg-1', '', 'row-3'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -5932,12 +6265,10 @@ describe('useAgentSession (v1 composition root)', () => {
       // because hydrate and its first poll share the 0ms head of the schedule.
       let parked = false
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            parked ? parkedRow() : unparkedRow()
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          parked ? parkedRow() : unparkedRow()
+        ])
       })
       const { source, status } = fakeEvents()
       localStorage.setItem(StorageKeys.agentThread('personal'), 'th-1')
@@ -5970,15 +6301,13 @@ describe('useAgentSession (v1 composition root)', () => {
     try {
       const currentAskId = 'turn-1:call-2'
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            {
-              ...parkedRow(),
-              pending_ask: { ...PARKED_ASK, ask_id: currentAskId }
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...parkedRow(),
+            pending_ask: { ...PARKED_ASK, ask_id: currentAskId }
+          }
+        ])
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -6003,12 +6332,10 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            unparkedRow()
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          unparkedRow()
+        ])
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -6031,12 +6358,10 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            unparkedRow()
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          unparkedRow()
+        ])
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -6061,11 +6386,9 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go')
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go')
+        ])
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -6088,16 +6411,14 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            parkedRow(),
-            {
-              ...historyRow(3, 'assistant', 'msg-1', 'done', 'row-3'),
-              status: 'complete'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          parkedRow(),
+          {
+            ...historyRow(3, 'assistant', 'msg-1', 'done', 'row-3'),
+            status: 'complete'
+          }
+        ])
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -6172,17 +6493,15 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            historyRow(1, 'user', 'msg-1', 'go'),
-            parkedRow(),
-            {
-              ...historyRow(3, 'assistant', 'msg-1', '', 'row-3'),
-              content: {},
-              status: 'streaming'
-            }
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          parkedRow(),
+          {
+            ...historyRow(3, 'assistant', 'msg-1', '', 'row-3'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
       })
       const { source, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
@@ -6553,6 +6872,7 @@ describe('useAgentSession (v1 composition root)', () => {
     draft: () => DraftSnapshot | undefined
     tabs?: () => OpenTabsSnapshot | undefined
     adoptIntoStore?: boolean
+    currentTabPath?: () => string
   }) {
     const postMessage = vi.fn<AgentRestClient['postMessage']>()
     options.acks.forEach((workflowId, index) =>
@@ -6564,12 +6884,13 @@ describe('useAgentSession (v1 composition root)', () => {
     )
     const bindingStore = useAgentWorkflowTabBindingStore()
     bindingStore.bind('wf-other-tab', 'workflows/other.json')
-    const tabPath = 'workflows/Unsaved Workflow.json'
+    const defaultTabPath = 'workflows/Unsaved Workflow.json'
     const session = useAgentSession({
       rest: fakeRest({ postMessage }),
       events: fakeEvents().source,
       workflow: {
         current: () => {
+          const tabPath = options.currentTabPath?.() ?? defaultTabPath
           const id = bindingStore.workflowIdFor(tabPath)
           return id === undefined ? { tabPath } : { id, tabPath }
         },
@@ -6582,14 +6903,15 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     })
     session.start()
-    return { session, postMessage }
+    return { session, postMessage, bindingStore }
   }
 
   it('(h10) a continuing turn re-flags a tab that never adopted the workflow another tab holds, with its draft', async () => {
     const draftSnapshot = { content: { nodes: [], links: [] } }
+    const draft = vi.fn(() => draftSnapshot)
     const { session, postMessage } = unboundTabSession({
       acks: ['wf-other-tab', 'wf-minted'],
-      draft: () => draftSnapshot
+      draft
     })
 
     await session.sendMessage('add a text input node')
@@ -6599,21 +6921,38 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(second).not.toHaveProperty('workflowId')
     expect(second.currentTabUnbound).toBe(true)
     expect(second.draft).toEqual(draftSnapshot)
+    expect(draft).toHaveBeenCalledTimes(2)
   })
 
-  it('(h10b) a continuing turn with no draft is not re-flagged, so it cannot mint an empty workflow', async () => {
+  it('(h10b) a continuing turn with no canvas is held instead of retargeting the remembered workflow', async () => {
     let draft: DraftSnapshot | undefined = { content: { nodes: [], links: [] } }
     const { session, postMessage } = unboundTabSession({
-      acks: ['wf-other-tab', 'wf-other-tab'],
+      acks: ['wf-other-tab'],
       draft: () => draft
     })
 
     await session.sendMessage('add a text input node')
     draft = undefined
-    await session.sendMessage('and a load image node')
+    const sent = await session.sendMessage(
+      'and a load image node',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-refused'
+    )
 
-    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
-    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('draft')
+    expect(sent).toBe(false)
+    expect(postMessage).toHaveBeenCalledTimes(1)
+    expect(telemetry.trackAgentSendGated).toHaveBeenCalledWith({
+      gate: 'composer',
+      outcome: 'dropped',
+      reason: 'target_unavailable',
+      client_message_id: 'cm-refused',
+      held_ms: null,
+      thread_id: expect.any(String),
+      client_session_id: expect.any(String)
+    })
   })
 
   it('(h10c) once the re-flagged mint is adopted, the next turn names it instead of minting again', async () => {
@@ -6633,9 +6972,9 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(third.workflowId).toBe('wf-minted')
   })
 
-  it('(h10d) a continuing turn is not re-flagged when the bound workflow is open in no tab', async () => {
+  it('(h10d) a mint the tab could not adopt is not minted again', async () => {
     const { session, postMessage } = unboundTabSession({
-      acks: ['wf-closed', 'wf-closed'],
+      acks: ['wf-minted', 'wf-minted'],
       draft: () => ({ content: { nodes: [], links: [] } }),
       tabs: () => ({ open_tabs: [] })
     })
@@ -6645,6 +6984,213 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(postMessage.mock.calls[0][1].currentTabUnbound).toBe(true)
     expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
+  })
+
+  it('(h10e) a continuing turn re-flags the tab once the tab holding the remembered workflow has closed', async () => {
+    const draftSnapshot = { content: { nodes: [{ id: 1 }], links: [] } }
+    const { session, postMessage, bindingStore } = unboundTabSession({
+      acks: ['wf-other-tab', 'wf-minted'],
+      draft: () => draftSnapshot,
+      tabs: () => ({ open_tabs: [] })
+    })
+
+    await session.sendMessage('add a text input node')
+    bindingStore.unbindWorkflow('wf-other-tab')
+    await session.sendMessage('and a load image node')
+
+    const second = postMessage.mock.calls[1][1]
+    expect(second).not.toHaveProperty('workflowId')
+    expect(second.currentTabUnbound).toBe(true)
+    expect(second.draft).toEqual(draftSnapshot)
+  })
+
+  it('(h10e2) a blank tab keeps the thread workflow once the tab holding it has closed', async () => {
+    const { session, postMessage, bindingStore } = unboundTabSession({
+      acks: ['wf-other-tab', 'wf-other-tab'],
+      draft: () => ({ content: { nodes: [], links: [] } }),
+      tabs: () => ({ open_tabs: [] })
+    })
+
+    await session.sendMessage('build a workflow')
+    bindingStore.unbindWorkflow('wf-other-tab')
+    await session.sendMessage('now add a sampler')
+
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('draft')
+  })
+
+  it('(h10e2b) a tab holding only a group is not blank', async () => {
+    let currentTabPath = 'workflows/other.json'
+    const draftSnapshot = {
+      content: { nodes: [], links: [], groups: [{ id: 1 }] }
+    }
+    const { session, postMessage, bindingStore } = unboundTabSession({
+      acks: ['wf-other-tab', 'wf-minted'],
+      draft: () => draftSnapshot,
+      tabs: () => ({ open_tabs: [] }),
+      currentTabPath: () => currentTabPath
+    })
+
+    await session.sendMessage('build a workflow')
+    currentTabPath = 'workflows/Unsaved Workflow.json'
+    bindingStore.unbindWorkflow('wf-other-tab')
+    await session.sendMessage('what is in the group?')
+
+    expect(postMessage.mock.calls[1][1].currentTabUnbound).toBe(true)
+  })
+
+  it('(h10e3) a new tab reusing the path of a closed adopted tab mints for itself', async () => {
+    const draftSnapshot = { content: { nodes: [{ id: 1 }], links: [] } }
+    const { session, postMessage, bindingStore } = unboundTabSession({
+      acks: ['wf-minted', 'wf-minted', 'wf-reused'],
+      draft: () => draftSnapshot,
+      adoptIntoStore: true
+    })
+
+    await session.sendMessage('add a text input node')
+    await session.sendMessage('and a load image node')
+    bindingStore.unbindWorkflow('wf-minted')
+    await session.sendMessage('and a sampler')
+
+    const third = postMessage.mock.calls[2][1]
+    expect(third.currentTabUnbound).toBe(true)
+    expect(third.draft).toEqual(draftSnapshot)
+  })
+
+  it('(h10f) a reply without a workflow id does not mint again on every later turn', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-9',
+      message_id: 'msg-1'
+    }))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/Unsaved Workflow.json' }),
+        adopted: vi.fn(),
+        draft: () => ({ content: { nodes: [], links: [] } })
+      }
+    })
+    session.start()
+
+    await session.sendMessage('add a text input node')
+    await session.sendMessage('and a load image node')
+
+    expect(postMessage.mock.calls[0][1].currentTabUnbound).toBe(true)
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
+  })
+
+  function movableTabSession(acks: (string | undefined)[]) {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>()
+    acks.forEach((workflowId, index) =>
+      postMessage.mockResolvedValueOnce({
+        thread_id: 'th-9',
+        message_id: `msg-${index + 1}`,
+        ...(workflowId === undefined ? {} : { workflow_id: workflowId })
+      })
+    )
+    const target: { context: WorkflowTurnContext } = {
+      context: { id: 'wf-a', tabPath: 'workflows/a.json' }
+    }
+    const canvas: { draft: DraftSnapshot | undefined } = {
+      draft: { content: { nodes: [{ id: 1 }], links: [] } }
+    }
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => target.context,
+        adopted: vi.fn(),
+        draft: () => canvas.draft
+      }
+    })
+    session.start()
+    return { session, postMessage, target, canvas }
+  }
+
+  it('(h10f2) an id-less reply stops suppressing the mint once the binding moves', async () => {
+    const { session, postMessage, target } = movableTabSession([
+      'wf-a',
+      undefined,
+      'wf-b',
+      'wf-minted'
+    ])
+    const unsaved = { tabPath: 'workflows/Unsaved Workflow.json' }
+
+    await session.sendMessage('on a')
+    target.context = unsaved
+    await session.sendMessage('on the unsaved tab')
+    target.context = { id: 'wf-b', tabPath: 'workflows/b.json' }
+    await session.sendMessage('on b')
+    target.context = unsaved
+    await session.sendMessage('back on the unsaved tab')
+
+    expect(postMessage.mock.calls[1][1].currentTabUnbound).toBe(true)
+    expect(postMessage.mock.calls[3][1].currentTabUnbound).toBe(true)
+  })
+
+  it('(h10f3) a tab with a recorded mint still holds a send with no canvas', async () => {
+    const { session, postMessage, target, canvas } = movableTabSession([
+      'wf-a',
+      undefined
+    ])
+
+    await session.sendMessage('on a')
+    target.context = { tabPath: 'workflows/Unsaved Workflow.json' }
+    await session.sendMessage('on the unsaved tab')
+    canvas.draft = undefined
+    const sent = await session.sendMessage('with no canvas')
+
+    expect(sent).toBe(false)
+    expect(postMessage).toHaveBeenCalledTimes(2)
+  })
+
+  it('(h10f4) a host with no canvas provider still sends', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-9',
+      message_id: 'msg-1',
+      workflow_id: 'wf-a'
+    }))
+    let context: WorkflowTurnContext = {
+      id: 'wf-a',
+      tabPath: 'workflows/a.json'
+    }
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: { current: () => context, adopted: vi.fn() }
+    })
+    session.start()
+
+    await session.sendMessage('on a')
+    context = { tabPath: 'workflows/Unsaved Workflow.json' }
+
+    expect(await session.sendMessage('on the unsaved tab')).toBe(true)
+  })
+
+  it('(h10g) a new chat forgets the mint a tab already requested', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-9',
+      message_id: 'msg-1'
+    }))
+    const conversation = useAgentConversationStore()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/Unsaved Workflow.json' }),
+        adopted: vi.fn(),
+        draft: () => ({ content: { nodes: [], links: [] } })
+      }
+    })
+    session.start()
+
+    await session.sendMessage('add a text input node')
+    session.newChat()
+    conversation.setThreadId('th-10')
+    await session.sendMessage('start over')
+
+    expect(postMessage.mock.calls[1][1].currentTabUnbound).toBe(true)
   })
 
   const LINKED_DRAFT: DraftSnapshot = {
@@ -7461,13 +8007,12 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(l5) a done landing during the return hydrate still renders the full reply', async () => {
     let resolveHistory: ((rows: AgentMessages) => void) | undefined
-    const getMessages = vi.fn(
-      (threadId: string): Promise<AgentMessages> =>
-        threadId === 'th-1'
-          ? new Promise((resolve) => {
-              resolveHistory = resolve
-            })
-          : Promise.resolve([])
+    const getMessages = vi.fn((threadId: string): Promise<AgentMessages> =>
+      threadId === 'th-1'
+        ? new Promise((resolve) => {
+            resolveHistory = resolve
+          })
+        : Promise.resolve([])
     )
     const rest = fakeRest({ getMessages })
     const { source, emit } = fakeEvents()
@@ -7712,13 +8257,12 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('(l13) newChat during a pending thread load discards that load and keeps the stash', async () => {
     const resolvers: Array<(rows: AgentMessages) => void> = []
-    const getMessages = vi.fn(
-      (threadId: string): Promise<AgentMessages> =>
-        threadId === 'th-1'
-          ? new Promise((resolve) => {
-              resolvers.push(resolve)
-            })
-          : Promise.resolve([])
+    const getMessages = vi.fn((threadId: string): Promise<AgentMessages> =>
+      threadId === 'th-1'
+        ? new Promise((resolve) => {
+            resolvers.push(resolve)
+          })
+        : Promise.resolve([])
     )
     const rest = fakeRest({ getMessages })
     const { source, emit } = fakeEvents()
@@ -7974,7 +8518,14 @@ describe('useAgentSession (v1 composition root)', () => {
     session.start()
 
     const first = session.sendMessage('first')
-    const second = await session.sendMessage('second')
+    const second = await session.sendMessage(
+      'second',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-second'
+    )
     expect(second).toBe(false)
     expect(postMessage).toHaveBeenCalledTimes(1)
 
@@ -7987,6 +8538,15 @@ describe('useAgentSession (v1 composition root)', () => {
         )
     )
     expect(busyNotice).toBeDefined()
+    expect(telemetry.trackAgentSendGated).toHaveBeenCalledWith({
+      gate: 'composer',
+      outcome: 'dropped',
+      reason: 'send_busy',
+      client_message_id: 'cm-second',
+      held_ms: null,
+      thread_id: null,
+      client_session_id: expect.any(String)
+    })
 
     resolvePost?.({ thread_id: 'th-1', message_id: 'msg-1' })
     await first
@@ -8187,12 +8747,10 @@ describe('thread resume (B17)', () => {
   })
 
   it('panel reopen refreshes the surviving conversation without losing the sent message', async () => {
-    const getMessages = vi.fn(
-      async (): Promise<AgentMessages> => [
-        historyRow(1, 'user', 'turn-A', 'live message'),
-        historyRow(2, 'assistant', 'turn-A', 'finished while closed')
-      ]
-    )
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => [
+      historyRow(1, 'user', 'turn-A', 'live message'),
+      historyRow(2, 'assistant', 'turn-A', 'finished while closed')
+    ])
     const rest = fakeRest({ getMessages })
     const first = useAgentSession({ rest, events: fakeEvents().source })
     first.start()
@@ -8349,13 +8907,11 @@ describe('thread resume (B17)', () => {
     const restored = vi.fn()
     const session = useAgentSession({
       rest: fakeRest({
-        getMessages: vi.fn(
-          async (): Promise<AgentMessages> => [
-            latest,
-            historyRow(2, 'assistant', 'turn-a', 'Done'),
-            older
-          ]
-        )
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          latest,
+          historyRow(2, 'assistant', 'turn-a', 'Done'),
+          older
+        ])
       }),
       events: fakeEvents().source,
       workflow: {

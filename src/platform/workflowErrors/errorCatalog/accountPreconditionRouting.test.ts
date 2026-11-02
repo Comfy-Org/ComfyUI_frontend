@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   isAccountPreconditionCatalogId,
   preconditionForCatalogId,
+  promptErrorHasLockedCredits,
   resolveAccountPrecondition
 } from './accountPreconditionRouting'
 import {
@@ -164,5 +165,27 @@ describe('preconditionForCatalogId / isAccountPreconditionCatalogId', () => {
       false
     )
     expect(isAccountPreconditionCatalogId(undefined)).toBe(false)
+  })
+})
+
+describe('promptErrorHasLockedCredits', () => {
+  it('is true only when the refusal says the credits are locked', () => {
+    expect(
+      promptErrorHasLockedCredits({
+        type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+        credits_locked: true
+      })
+    ).toBe(true)
+    expect(
+      promptErrorHasLockedCredits({
+        type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+        credits_locked: false
+      })
+    ).toBe(false)
+    expect(promptErrorHasLockedCredits({ type: 'FREE_TIER_EXHAUSTED' })).toBe(
+      false
+    )
+    expect(promptErrorHasLockedCredits('a plain string error')).toBe(false)
+    expect(promptErrorHasLockedCredits(null)).toBe(false)
   })
 })

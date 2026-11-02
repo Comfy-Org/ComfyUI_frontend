@@ -7,7 +7,7 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { getRootGraph, setRootGraph } from '@/scripts/__tests__/appTestUtils'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
