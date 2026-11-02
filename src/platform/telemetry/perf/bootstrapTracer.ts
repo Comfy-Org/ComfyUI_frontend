@@ -113,7 +113,9 @@ type BootstrapSubphase<Namespace extends BootstrapPhaseNamespace> =
   (typeof BOOTSTRAP_PHASES)[Namespace][number]
 
 export type BootstrapPhase = {
-  [Namespace in BootstrapPhaseNamespace]: `${Namespace}/${BootstrapSubphase<Namespace>}`
+  [
+    Namespace in BootstrapPhaseNamespace
+  ]: `${Namespace}/${BootstrapSubphase<Namespace>}`
 }[BootstrapPhaseNamespace]
 
 function untracedMs(rows: BootstrapPhaseTiming[], totalMs: number): number {
