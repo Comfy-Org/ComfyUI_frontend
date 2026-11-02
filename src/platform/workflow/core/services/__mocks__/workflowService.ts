@@ -10,6 +10,7 @@ const workflowService: ReturnType<typeof realUseWorkflowService> = {
   loadBlankWorkflow: vi.fn(async () => true),
   reloadCurrentWorkflow: vi.fn(async () => {}),
   openWorkflow: vi.fn(async () => true),
+  loadWorkflowInBackground: vi.fn(async (workflow) => workflow.load()),
   closeWorkflow: vi.fn(async () => true),
   renameWorkflow: vi.fn(async () => {}),
   deleteWorkflow: vi.fn(async () => true),
