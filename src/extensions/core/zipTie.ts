@@ -114,7 +114,7 @@ function beginZipTieMarquee(
       ],
       upEvent.canvasX
     )
-    if (bundleSelectedLinks(canvas) && usingTool) tool.deactivate()
+    bundleSelectedLinks(canvas)
   }
   pointer.finally = () => {
     canvas.dragging_rectangle = null
@@ -141,15 +141,15 @@ function tieAtPoint(canvas: LGraphCanvas, [x, y]: Point) {
   })
 }
 
-function bundleSelectedLinks(canvas: LGraphCanvas, position?: Point): boolean {
+function bundleSelectedLinks(canvas: LGraphCanvas, position?: Point): void {
   const { graph } = canvas
   const selection = useLinkSelectionStore().selection
-  if (!graph || !selection || !canEdit(canvas)) return false
+  if (!graph || !selection || !canEdit(canvas)) return
   const links = getSelectedLinkIds(graph).flatMap((id) => {
     const link = graph.getLink(id)
     return link ? [link] : []
   })
-  if (links.length < 2) return false
+  if (links.length < 2) return
   const { marquee } = selection
   canvas.emitBeforeChange()
   try {
@@ -161,9 +161,9 @@ function bundleSelectedLinks(canvas: LGraphCanvas, position?: Point): boolean {
         marquee.y + marquee.height / 2
       ]
     )
+    if (tie) useZipTieToolStore().deactivate()
     clearLinkSelection(canvas)
     canvas.setDirty(true, true)
-    return tie !== undefined
   } finally {
     canvas.emitAfterChange()
   }
