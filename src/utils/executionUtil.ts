@@ -263,9 +263,6 @@ export const graphToPrompt = async (
         continue
       }
 
-      // A frontend node stands for something else — the source a reroute
-      // forwards, the value a Get node reads. Substitute it, or the prompt
-      // would reference a node the backend has never heard of.
       const resolved = resolutions.get(
         `${resolvedInput.origin_id}:${resolvedInput.origin_slot}`
       )

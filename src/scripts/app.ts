@@ -225,6 +225,7 @@ import {
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { SUPPORTED_MESH_EXTENSIONS } from '@comfyorg/viewport3d/load3d/constants'
+import { currentExtensionHost } from '@/services/extensionHostProvider'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   pasteAudioNode,
@@ -257,9 +258,25 @@ export function sanitizeNodeName(string: string) {
   })
 }
 
+type WorkflowFileData =
+  | Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+  | Awaited<ReturnType<typeof importHostedFile>>
+
 async function finishWorkflowLoad(): Promise<void> {
   await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
   notifyWorkflowLoaded()
+}
+
+async function importHostedFile(file: File) {
+  try {
+    return await currentExtensionHost()?.importFile?.(file)
+  } catch (error) {
+    reportError(error, {
+      surface: 'platform',
+      errorType: 'failure_importing_extension_file'
+    })
+    return undefined
+  }
 }
 
 function createNodeOutputsMutationView(
@@ -2183,9 +2200,10 @@ export class ComfyApp implements IComfyApp {
     this.fileLoadDiscoveryQueue = new Promise<void>((resolve) => {
       releaseDiscovery = resolve
     })
-    let workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
+    let workflowData: WorkflowFileData
     try {
-      workflowData = await getWorkflowDataFromFile(file)
+      workflowData =
+        (await importHostedFile(file)) ?? (await getWorkflowDataFromFile(file))
     } catch (error) {
       await previousDiscovery
       releaseDiscovery()
@@ -2214,7 +2232,7 @@ export class ComfyApp implements IComfyApp {
           onNodeCreated?: (node: LGraphNode) => void
         }
       | undefined,
-    workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>,
+    workflowData: WorkflowFileData,
     fromGraphLoadHook: boolean
   ) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension

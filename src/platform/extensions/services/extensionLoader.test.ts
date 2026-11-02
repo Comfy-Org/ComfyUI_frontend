@@ -1,4 +1,12 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { captureSafeExtensionBoot } from '@/platform/customNodes/safeExtensionBoot'
@@ -7,6 +15,7 @@ import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { provideExtensionHost } from '@/services/extensionHostProvider'
 
 import { loadExtensions } from './extensionLoader'
 
@@ -42,6 +51,39 @@ describe('extension loading', () => {
   })
 
   describe('loadExtensions', () => {
+    it('delegates claimed extension URLs to the installed host', async () => {
+      const extension = '/extensions/comfyui-broken/main.js'
+      const load = vi.fn(async () => {})
+      provideExtensionHost({ name: 'test-host', canLoad: () => true, load })
+      onTestFinished(() => provideExtensionHost(null))
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([extension])
+      await loadExtensions()
+      expect(load).toHaveBeenCalledExactlyOnceWith(extension)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('aggregates host failures while continuing to load other extensions', async () => {
+      const broken = '/extensions/comfyui-broken/main.js'
+      const failure = new Error('host rejected pack')
+      const healthy = '/extensions/healthy/main.js'
+      const load = vi.fn(async (url: string) => {
+        if (url === broken) throw failure
+      })
+      provideExtensionHost({ name: 'test-host', canLoad: () => true, load })
+      onTestFinished(() => provideExtensionHost(null))
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([broken, healthy])
+      await loadExtensions()
+      expect(load).toHaveBeenCalledTimes(2)
+      expect(load).toHaveBeenCalledWith(healthy)
+      expect(reportError).toHaveBeenCalledOnce()
+      const [cause, options] = vi.mocked(reportError).mock.calls[0]
+      assert(cause instanceof AggregateError)
+      expect(cause.errors).toEqual([
+        expect.objectContaining({ message: failure.message })
+      ])
+      expect(options.tags).toEqual({ failed_extension_count: 1 })
+    })
+
     it('keeps custom modules inert while core extensions register in safe mode', async () => {
       const customExtensionLoaded = vi.fn()
       vi.stubGlobal('customExtensionLoaded', customExtensionLoaded)

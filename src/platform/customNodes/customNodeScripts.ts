@@ -11,6 +11,7 @@ import type { CustomNodeFailureDiagnostic } from '@/platform/telemetry/customNod
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { resolveExtensionHost } from '@/services/extensionHostProvider'
 import {
   getErrorMessage,
   toError
@@ -95,6 +96,11 @@ async function importCustomNodeScript(
   const base = api.fileURL(ext)
   const url = retry ? `${base}${base.includes('?') ? '&' : '?'}retry=1` : base
   try {
+    const host = resolveExtensionHost(ext)
+    if (host) {
+      await host.load(ext)
+      return
+    }
     await (late
       ? importNoticingFetchFailure(url, importModule)
       : importModule(url))
