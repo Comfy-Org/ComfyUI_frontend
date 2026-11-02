@@ -43,6 +43,7 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   not_original_owner: 'unknown',
   creator_only_provisioning: 'unknown',
   payment_past_due: 'unknown',
+  topup_purchases_paused: 'unknown',
   free_plan: 'unknown',
   no_subscription: 'unknown',
   subscription_ended: 'unknown',
