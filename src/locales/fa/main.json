@@ -1247,6 +1247,8 @@
       "noPaymentMethodCheckoutHint": "برای این فضای کاری کارتی برای شارژهای تک‌کلیکی ذخیره نشده است. در عوض در صفحه پرداخت پرداخت کنید، یا یک کارت پیش‌فرض تعیین کنید تا شارژهای بعدی مستقیماً از آن برداشت شوند.",
       "openCheckout": "باز کردن صفحه پرداخت",
       "openPaymentPage": "باز کردن صفحه پرداخت",
+      "planRequiredResubscribe": "خرید اعتبار، طرح Cloud شما را دوباره فعال نمی‌کند. برای اجرای workflowها در Cloud، دوباره اشتراک تهیه کنید.",
+      "planRequiredSubscribe": "خرید اعتبار، طرح Cloud را شروع نمی‌کند. برای اجرای workflowها در Cloud اشتراک تهیه کنید.",
       "payAmount": "پرداخت {amount}",
       "purchaseError": "خرید ناموفق بود",
       "purchaseErrorDetail": "خرید اعتبار ناموفق بود: {error}",

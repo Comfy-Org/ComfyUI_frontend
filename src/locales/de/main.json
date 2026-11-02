@@ -1247,6 +1247,8 @@
       "noPaymentMethodCheckoutHint": "Für diesen Workspace ist keine Karte für Aufladungen mit einem Klick hinterlegt. Zahlen Sie stattdessen auf einer Checkout-Seite oder legen Sie eine Standardkarte fest, damit zukünftige Aufladungen direkt darüber abgerechnet werden.",
       "openCheckout": "Checkout öffnen",
       "openPaymentPage": "Zahlungsseite öffnen",
+      "planRequiredResubscribe": "Der Kauf von Credits startet Ihr Cloud-Abo nicht erneut. Abonnieren Sie erneut, um Workflows in der Cloud auszuführen.",
+      "planRequiredSubscribe": "Der Kauf von Credits startet kein Cloud-Abo. Abonnieren Sie, um Workflows in der Cloud auszuführen.",
       "payAmount": "{amount} bezahlen",
       "purchaseError": "Kauf fehlgeschlagen",
       "purchaseErrorDetail": "Credits konnten nicht gekauft werden: {error}",

@@ -1247,6 +1247,8 @@
       "noPaymentMethodCheckoutHint": "לא נשמר כרטיס בסביבת עבודה זו לטעינות בלחיצה אחת. יש לשלם בדף תשלום במקום זאת, או להגדיר כרטיס ברירת מחדל כדי שיחויב ישירות בטעינות עתידיות.",
       "openCheckout": "פתח את דף התשלום",
       "openPaymentPage": "פתח את דף התשלום",
+      "planRequiredResubscribe": "רכישת קרדיטים אינה מפעילה מחדש את תוכנית ה-Cloud שלך. הירשם מחדש כמנוי כדי להריץ תהליכי עבודה ב-Cloud.",
+      "planRequiredSubscribe": "רכישת קרדיטים אינה מפעילה תוכנית Cloud. הירשם כמנוי כדי להריץ תהליכי עבודה ב-Cloud.",
       "payAmount": "שלם {amount}",
       "purchaseError": "הרכישה נכשלה",
       "purchaseErrorDetail": "רכישת הקרדיטים נכשלה: {error}",

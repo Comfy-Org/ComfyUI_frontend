@@ -1247,6 +1247,8 @@
       "noPaymentMethodCheckoutHint": "Questo spazio di lavoro non ha una carta salvata per le ricariche con un clic. Paga invece nella pagina di checkout oppure imposta una carta predefinita affinché le ricariche future vengano addebitate direttamente su di essa.",
       "openCheckout": "Apri il checkout",
       "openPaymentPage": "Apri la pagina di pagamento",
+      "planRequiredResubscribe": "L'acquisto di crediti non riavvia il tuo piano Cloud. Rinnova l'abbonamento per eseguire workflow su Cloud.",
+      "planRequiredSubscribe": "L'acquisto di crediti non avvia un piano Cloud. Abbonati per eseguire workflow su Cloud.",
       "payAmount": "Paga {amount}",
       "purchaseError": "Acquisto fallito",
       "purchaseErrorDetail": "Impossibile acquistare crediti: {error}",

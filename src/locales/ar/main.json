@@ -1247,6 +1247,8 @@
       "noPaymentMethodCheckoutHint": "لا توجد بطاقة محفوظة في مساحة العمل هذه لعمليات الشحن بنقرة واحدة. ادفع من صفحة إتمام الدفع بدلاً من ذلك، أو عيّن بطاقة افتراضية لكي تُخصم منها عمليات الشحن المستقبلية مباشرةً.",
       "openCheckout": "فتح صفحة إتمام الدفع",
       "openPaymentPage": "فتح صفحة الدفع",
+      "planRequiredResubscribe": "شراء الرصيد لا يعيد تفعيل خطة Cloud الخاصة بك. أعد الاشتراك لتشغيل مهام سير العمل على Cloud.",
+      "planRequiredSubscribe": "شراء الرصيد لا يفعّل خطة Cloud. اشترك لتشغيل مهام سير العمل على Cloud.",
       "payAmount": "ادفع {amount}",
       "purchaseError": "فشل الشراء",
       "purchaseErrorDetail": "فشل شراء الرصيد: {error}",

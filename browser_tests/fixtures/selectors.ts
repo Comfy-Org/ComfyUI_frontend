@@ -47,6 +47,7 @@ export const TestIds = {
     zoomPercentageInput: 'zoom-percentage-input'
   },
   dialogs: {
+    creditsLockedNotice: 'credits-locked-notice',
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',

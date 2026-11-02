@@ -1247,6 +1247,8 @@
       "noPaymentMethodCheckoutHint": "Cet espace de travail n’a aucune carte enregistrée pour les recharges en un clic. Payez plutôt sur une page de paiement ou définissez une carte par défaut afin que les prochaines recharges soient directement débitées.",
       "openCheckout": "Ouvrir la page de paiement",
       "openPaymentPage": "Ouvrir la page de paiement",
+      "planRequiredResubscribe": "L’achat de crédits ne redémarre pas votre forfait Cloud. Réabonnez-vous pour exécuter des workflows sur Cloud.",
+      "planRequiredSubscribe": "L’achat de crédits ne démarre pas un forfait Cloud. Abonnez-vous pour exécuter des workflows sur Cloud.",
       "payAmount": "Payer {amount}",
       "purchaseError": "Échec de l'achat",
       "purchaseErrorDetail": "Échec de l'achat de crédits : {error}",

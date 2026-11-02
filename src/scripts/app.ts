@@ -96,7 +96,10 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
-import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import {
+  promptErrorHasLockedCredits,
+  resolveAccountPrecondition
+} from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
@@ -1972,8 +1975,20 @@ export class ComfyApp implements IComfyApp {
                 })
               : undefined
             if (promptPrecondition) {
-              const opened =
-                await useAccountPreconditionDialog().open(promptPrecondition)
+              const opened = await useAccountPreconditionDialog().open(
+                promptPrecondition,
+                {
+                  creditsLocked: promptErrorHasLockedCredits(
+                    error instanceof PromptExecutionError
+                      ? error.response.error
+                      : null
+                  ),
+                  ...(promptError?.type &&
+                    promptError.type !== 'error' && {
+                      refusalType: promptError.type
+                    })
+                }
+              )
               if (opened) {
                 console.error(error)
                 break

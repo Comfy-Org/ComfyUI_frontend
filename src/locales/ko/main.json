@@ -1247,6 +1247,8 @@
       "noPaymentMethodCheckoutHint": "이 워크스페이스에는 원클릭 충전에 사용할 카드가 저장되어 있지 않습니다. 대신 결제 페이지에서 결제하거나, 기본 카드를 설정하여 이후 충전 시 해당 카드로 바로 결제하세요.",
       "openCheckout": "결제 페이지 열기",
       "openPaymentPage": "결제 페이지 열기",
+      "planRequiredResubscribe": "크레딧을 구매해도 Cloud 요금제가 다시 시작되지는 않습니다. Cloud에서 워크플로를 실행하려면 다시 구독하세요.",
+      "planRequiredSubscribe": "크레딧을 구매해도 Cloud 요금제가 시작되지는 않습니다. Cloud에서 워크플로를 실행하려면 구독하세요.",
       "payAmount": "{amount} 결제하기",
       "purchaseError": "구매 실패",
       "purchaseErrorDetail": "크레딧 구매 실패: {error}",
