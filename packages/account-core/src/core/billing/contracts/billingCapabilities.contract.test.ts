@@ -61,6 +61,7 @@ function capabilitiesBody(
 }
 
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
+  | 'auto_top_up_enabled'
   | 'auto_top_up_setup'
   | 'capabilities'
   | 'denied_reason_params'
