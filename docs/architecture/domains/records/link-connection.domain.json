@@ -4,10 +4,6 @@
   "description": "Dragging, moving, and dropping links between node slots, reroutes, and subgraph IO nodes through LinkConnector and its render-link strategies. Both the LiteGraph canvas and Vue-node slot interactions drive this controller.",
   "modules": [
     {
-      "path": "src/extensions/core/slotDefaultTypes.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/extensions/core/slotDefaultTypes.ts",
       "role": "domain"
     },
@@ -16,27 +12,7 @@
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/FloatingRenderLink.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/lib/litegraph/src/canvas/FloatingRenderLink.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/lib/litegraph/src/canvas/LinkConnector.core.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/lib/litegraph/src/canvas/LinkConnector.dropOnNode.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/lib/litegraph/src/canvas/LinkConnector.integration.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/lib/litegraph/src/canvas/LinkConnector.test.ts",
       "role": "application"
     },
     {
@@ -80,10 +56,6 @@
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/canvas/ToOutputRenderLink.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/lib/litegraph/src/canvas/ToOutputRenderLink.ts",
       "role": "application"
     },
@@ -92,7 +64,7 @@
       "role": "domain"
     },
     {
-      "path": "src/types/searchBoxTypes.ts",
+      "path": "packages/settings-core/src/searchBoxTypes.ts",
       "role": "domain"
     }
   ],

@@ -8,25 +8,29 @@
       "role": "domain"
     },
     {
-      "path": "src/schemas/resultItemTypeSchema.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/createAnnotatedPath.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/createAnnotatedPath.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/executionTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/resultItemTypeSchema.ts",
+      "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/types.ts",
       "role": "domain"
     }
   ],
-  "publicEntryPoints": ["src/platform/remote/comfyui/execution/types.ts"],
+  "publicEntryPoints": ["packages/api-client/src/executionTypes.ts"],
   "allowedDependencies": [],
   "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
     {
       "name": "Websocket execution-output schemas accept backend result items and task outputs",
-      "checks": ["src/platform/remote/comfyui/execution/types.test.ts"]
+      "checks": ["packages/api-client/src/executionTypes.test.ts"]
     },
     {
       "name": "HTTP error payloads parse into stable codes and bounded user-facing messages",
@@ -41,7 +45,7 @@
   "compatibilityPromises": [
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "Message and response type names stay stable because scripts/api, extension types, and execution, queue, asset, billing, and workspace callers import them.",
-    "execution/types is the public entry point for graph-model. Its import of TaskStatus from the tasks record and errors.ts recognizing billing and workspace error shapes remain visible as cross-domain coupling without dependency exceptions."
+    "The api-client executionTypes module is the public entry point for graph-model. Its import of TaskStatus from the tasks record and errors.ts recognizing billing and workspace error shapes remain visible as cross-domain coupling without dependency exceptions."
   ],
   "deepImports": "inventory"
 }

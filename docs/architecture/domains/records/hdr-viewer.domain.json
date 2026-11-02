@@ -20,16 +20,8 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/services/hdrViewerService.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/services/hdrViewerService.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/utils/hdrFormatUtil.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/utils/hdrFormatUtil.ts",

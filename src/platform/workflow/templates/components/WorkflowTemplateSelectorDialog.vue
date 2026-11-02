@@ -1,10 +1,12 @@
 <template>
   <BaseModalLayout
     ref="modalLayout"
+    :labels="modalLayoutLabels"
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
     content-padding="none"
     size="md"
     close-button-variant="textonly"
+    @close="onClose"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
@@ -442,7 +444,6 @@ import {
   nextTick,
   onBeforeUnmount,
   onMounted,
-  provide,
   ref,
   watch
 } from 'vue'
@@ -452,7 +453,7 @@ import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-t
 import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
 import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
 import CardTop from '@comfyorg/design-system/content-card/CardTop'
-import Tag from '@/components/chip/Tag.vue'
+import Tag from '@comfyorg/design-system/chip/Tag'
 import PaidTemplateBadge from '@/platform/workflow/templates/components/PaidTemplateBadge.vue'
 import TemplateFilterControls from '@/platform/workflow/templates/components/TemplateFilterControls.vue'
 import WorkflowTemplateDetail from '@/platform/workflow/templates/components/WorkflowTemplateDetail.vue'
@@ -465,8 +466,8 @@ import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { selectCountBadgeClass } from '@comfyorg/design-system/select.variants'
 import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import AppSpinner from '@/components/common/AppSpinner.vue'
-import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
-import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/platform/workflow/templates/composables/useLazyPagination'
 import { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
@@ -479,8 +480,8 @@ import {
   isModelDownloadable,
   modelDownloadNeedsFolderPaths
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
 import { useTemplateModelAvailability } from '@/platform/workflow/templates/composables/useTemplateModelAvailability'
 import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
@@ -489,8 +490,8 @@ import type { PreparedWorkflowTemplate } from '@/platform/workflow/templates/com
 import type {
   TemplateInfo,
   TemplateTypeFilter
-} from '@/platform/workflow/templates/types/template'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+} from '@comfyorg/api-client/templateTypes'
+import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import type {
   TemplateDetailGroup,
   TemplateDetailRow,
@@ -517,8 +518,11 @@ import type {
   TemplateModelSetupRow
 } from '@/platform/workflow/templates/utils/templateModelSetup'
 import { resolveTemplateInputAssets } from '@/platform/workflow/templates/utils/templateInputAssets'
-import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import { OnCloseKey } from '@/types/widgetTypes'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { formatSize } from '@/utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -554,7 +558,7 @@ const onClose = () => {
   originalOnClose()
 }
 
-provide(OnCloseKey, onClose)
+const modalLayoutLabels = useModalLayoutLabels()
 
 // Workflow templates store and composable
 const workflowTemplatesStore = useWorkflowTemplatesStore()

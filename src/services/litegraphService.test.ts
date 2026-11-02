@@ -5,7 +5,7 @@ vi.mock(import('@/scripts/app'))
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'

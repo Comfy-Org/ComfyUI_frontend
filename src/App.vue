@@ -16,6 +16,7 @@
 import { computed, markRaw, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { useAgentExtensionNotices } from '@/composables/useAgentExtensionNotices'
 import config from '@/config'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
@@ -28,7 +29,7 @@ import { app } from '@/scripts/app'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
-import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
+import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = Object.assign(workspaceStore, {
@@ -36,6 +37,7 @@ app.extensionManager = Object.assign(workspaceStore, {
 })
 
 const conflictDetection = useConflictDetection()
+useAgentExtensionNotices()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
 
 watch(

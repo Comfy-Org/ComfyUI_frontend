@@ -12,15 +12,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/queue/job/useJobErrorReporting.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/queue/job/useJobErrorReporting.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/queue/job/useQueueEstimates.test.ts",
       "role": "application"
     },
     {
@@ -36,24 +28,12 @@
       "role": "application"
     },
     {
-      "path": "src/composables/queue/jobTabs.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/composables/queue/jobTabs.ts",
       "role": "domain"
     },
     {
-      "path": "src/composables/sidebarTabs/useJobHistorySidebarTab.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/composables/sidebarTabs/useJobHistorySidebarTab.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/composables/useReconnectQueueRefresh.test.ts",
-      "role": "application"
     },
     {
       "path": "src/composables/useReconnectQueueRefresh.ts",
@@ -64,14 +44,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/remote/comfyui/jobs/jobTypes.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/remote/comfyui/useQueuePolling.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/remote/comfyui/useQueuePolling.ts",
       "role": "application"
     },
@@ -80,16 +52,8 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/services/autoQueueService.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/services/autoQueueService.ts",
       "role": "application"
-    },
-    {
-      "path": "src/services/jobOutputCache.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/services/jobOutputCache.ts",
@@ -100,20 +64,8 @@
       "role": "application"
     },
     {
-      "path": "src/stores/queueStore.loadWorkflow.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/queueStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/stores/queueStore.ts",
       "role": "application"
-    },
-    {
-      "path": "src/stores/resultItemParsing.test.ts",
-      "role": "domain"
     },
     {
       "path": "src/stores/resultItemParsing.ts",
@@ -125,10 +77,6 @@
     },
     {
       "path": "src/types/queue.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/queueDisplay.test.ts",
       "role": "domain"
     },
     {
@@ -144,22 +92,30 @@
       "role": "domain"
     },
     {
-      "path": "src/utils/resultItemUrl.test.ts",
+      "path": "src/utils/resultItemUrl.ts",
       "role": "domain"
     },
     {
-      "path": "src/utils/resultItemUrl.ts",
+      "path": "packages/api-client/src/fetchJobs.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/__mocks__/fetchJobs.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/jobTypes.ts",
       "role": "domain"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["keybindings"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Jobs client fetches queue, history pages, details, and assets with schema validation",
       "checks": [
-        "src/platform/remote/comfyui/jobs/fetchJobs.test.ts",
+        "packages/api-client/src/fetchJobs.test.ts",
         "src/stores/resultItemParsing.test.ts"
       ]
     },

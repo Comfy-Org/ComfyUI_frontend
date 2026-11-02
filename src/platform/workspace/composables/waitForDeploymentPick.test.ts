@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,
   DEPLOYMENT_LISTING_NO_HINT_WAIT_MS
@@ -21,7 +21,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: mockWorkspaceApi
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 const failures = [
   { failure: 'a 500', error: new WorkspaceApiError('Server error', 500) },
@@ -47,6 +47,7 @@ function listingOn(
         build_name: 'Studio Build',
         release_version: 2,
         status: 'ready',
+        can_start: false,
         created_at: '2026-10-01T00:00:00Z'
       }
     ]

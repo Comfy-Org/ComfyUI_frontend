@@ -2,7 +2,10 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 
 const lazyModules = vi.hoisted(() => {
   const defineExtension = (name: string) => ({
@@ -11,7 +14,10 @@ const lazyModules = vi.hoisted(() => {
   })
   return {
     load3d: {
-      load3dExtension: defineExtension('Comfy.Load3D'),
+      load3dExtension: {
+        ...defineExtension('Comfy.Load3D'),
+        commands: [{ id: 'test.lazy3d.command', function: vi.fn() }]
+      },
       preview3DExtension: defineExtension('Comfy.Preview3D'),
       preview3DAdvancedExtension: defineExtension('Comfy.Preview3DAdvanced'),
       save3DAdvancedExtension: defineExtension('Comfy.Save3DAdvanced')
@@ -36,7 +42,6 @@ const lazyModules = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/scripts/app'), () => ({
   app: fromAny({ __mockApp: true })
 }))
@@ -124,9 +129,10 @@ async function loadLazyExtensionFresh() {
   vi.resetModules()
   const { load3dLazyExtension } =
     await import('@/extensions/core/load3d/load3dLazy')
-  const { useExtensionStore } = await import('@/stores/extensionStore')
+  const { useExtensionStore } =
+    await import('@/platform/extensions/stores/extensionStore')
   const { app } = await import('@/scripts/app')
-  const { reportError } = await import('@/platform/telemetry/reportError')
+  const { reportError } = await import('@comfyorg/telemetry/reportError')
   const extensionStore = useExtensionStore()
   return {
     app,
@@ -350,14 +356,48 @@ describe('load3dLazy', () => {
     ).toHaveBeenCalledOnce()
   })
 
+  it('keeps disabled lazy core commands after startup without exempting third-party extensions', async () => {
+    const { extensionStore, configureGraph } = await loadLazyExtensionFresh()
+    extensionStore.registerExtension({ name: 'Comfy.StartupCore' })
+    extensionStore.captureCoreExtensions()
+    extensionStore.loadDisabledExtensionNames([
+      'Comfy.Load3D',
+      'Comfy.ThirdParty'
+    ])
+
+    await configureGraph(makeWorkflow(['Load3D']))
+
+    expect(useCommandStore().isRegistered('test.lazy3d.command')).toBe(true)
+    expect(extensionStore.isCoreExtension('Comfy.StartupCore')).toBe(true)
+    expect(extensionStore.hasThirdPartyExtensions).toBe(false)
+
+    useExtensionService().registerExtension({
+      name: 'Comfy.ThirdParty',
+      commands: [{ id: 'test.thirdParty.command', function: vi.fn() }]
+    })
+
+    expect(useCommandStore().isRegistered('test.thirdParty.command')).toBe(
+      false
+    )
+    expect(extensionStore.hasThirdPartyExtensions).toBe(true)
+  })
+
   it('rolls back a partial registration when a lazy 3D extension name is taken, then retries once it is free', async () => {
     const { extensionStore, registeredNames, createNode, reportError } =
       await loadLazyExtensionFresh()
-    extensionStore.registerExtension({ name: 'Comfy.CreateLightInfo' })
+    extensionStore.captureCoreExtensions()
+    extensionStore.loadDisabledExtensionNames(['Comfy.CreateLightInfo'])
+    extensionStore.registerExtension({
+      name: 'Comfy.CreateLightInfo',
+      topbarBadges: [{ text: 'Disabled third-party badge' }]
+    })
+    expect(useTopbarBadgeStore().badges).toEqual([])
 
     await expect(createNode(makeNode('Load3D'))).resolves.toBeUndefined()
 
     expect(registeredNames()).toEqual(['Comfy.CreateLightInfo'])
+    expect(useTopbarBadgeStore().badges).toEqual([])
+    expect(extensionStore.hasThirdPartyExtensions).toBe(true)
     expect(replayedNodes()).toEqual(lazyExtensions.map(() => []))
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
       errorType: 'error_loading_3d_extensions',
@@ -368,5 +408,15 @@ describe('load3dLazy', () => {
     await createNode(makeNode('Preview3D'))
 
     expect(registeredNames()).toEqual(LAZY_EXTENSION_REGISTRATION_ORDER)
+    expect(extensionStore.hasThirdPartyExtensions).toBe(false)
+
+    extensionStore.unregisterExtension('Comfy.CreateLightInfo')
+    extensionStore.registerExtension({
+      name: 'Comfy.CreateLightInfo',
+      topbarBadges: [{ text: 'Replacement third-party badge' }]
+    })
+
+    expect(useTopbarBadgeStore().badges).toEqual([])
+    expect(extensionStore.hasThirdPartyExtensions).toBe(true)
   })
 })

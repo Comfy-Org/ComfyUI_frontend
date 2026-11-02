@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { isDesktop } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { electronAPI } from '@/utils/envUtil'
 
 export interface ElectronDownload extends Pick<

@@ -3,6 +3,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { disposePinia, setActivePinia } from 'pinia'
 import { afterEach, beforeAll, beforeEach, vi } from 'vitest'
 
+import './vitest.mocks.setup'
 import './vitest.network.setup'
 
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'

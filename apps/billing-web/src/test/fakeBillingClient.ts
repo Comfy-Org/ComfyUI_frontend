@@ -145,6 +145,7 @@ export function createFakeBillingClient(
       max_seats: 1,
       occupied_seats: 1,
       scheduled_change: null,
+      ended_at: null,
       team_credit_stop: null
     },
     topupQuote = { status: 'error', code: 'REQUEST_FAILED' },

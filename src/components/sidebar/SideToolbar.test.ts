@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useUserStore } from '@/stores/userStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
@@ -38,7 +38,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const i18n = createI18n({
   legacy: false,

@@ -1,11 +1,15 @@
 import { render, waitFor } from '@testing-library/vue'
 import type { WorkflowResponse } from '@comfyorg/ingest-types'
+import { getActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -17,9 +21,11 @@ import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './useAgentWorkflowSelection'
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
-function setup() {
+function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
   const workflows = useWorkflowStore()
+  if (tabsRestored) workflows.markTabsRestored()
   const bindings = useAgentWorkflowTabBindingStore()
   const panel = useAgentPanelStore()
   panel.beginWorkflowRestoration()
@@ -364,6 +370,14 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow).toBeNull()
     expect(panel.targetUnavailable).toBe(false)
     expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      new Error('No saved workflow resolves to the chat target'),
+      {
+        surface: 'agent',
+        errorType: 'agent_workflow_restore_failed',
+        context: { workflowId: 'wf-saved' }
+      }
+    )
   })
 
   it.for([
@@ -407,20 +421,23 @@ describe('historical workflow restoration', () => {
     }
   )
 
+  const openFailure = new Error('Cannot open')
   it.for([
     {
       opening: 'returns false',
-      open: async () => false
+      open: async () => false,
+      cause: new Error('The chat target workflow did not open')
     },
     {
       opening: 'throws',
       open: async (): Promise<never> => {
-        throw new Error('Cannot open')
-      }
+        throw openFailure
+      },
+      cause: openFailure
     }
   ])(
     'reports a failed restore when opening the saved workflow $opening',
-    async ({ open }) => {
+    async ({ open, cause }) => {
       const { selection, workflows, panel, current, warnRestoreFailed } =
         setup()
       workflows.attachWorkflow(
@@ -439,6 +456,11 @@ describe('historical workflow restoration', () => {
       expect(workflows.activeWorkflow?.path).toBe(current.path)
       expect(panel.targetUnavailable).toBe(false)
       expect(warnRestoreFailed).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledWith(cause, {
+        surface: 'agent',
+        errorType: 'agent_workflow_restore_failed',
+        context: { workflowId: 'wf-saved' }
+      })
     }
   )
 
@@ -696,6 +718,147 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
+  const draftPath = 'workflows/Agent draft.json'
+  const draftGraphId = '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
+
+  async function bindDraftThenReload(): Promise<void> {
+    const beforeReload = useWorkflowStore()
+    const draft = beforeReload.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: draftGraphId
+    })
+    beforeReload.openWorkflowsInBackground({ right: [draft.path] })
+    const bindingsBeforeReload = useAgentWorkflowTabBindingStore()
+    bindingsBeforeReload.bind('wf-draft', draft.path)
+    await nextTick()
+    bindingsBeforeReload.$dispose()
+    delete getActivePinia()?.state.value[bindingsBeforeReload.$id]
+    await beforeReload.closeWorkflow(draft)
+  }
+
+  function restoreDraftTab(workflows: ReturnType<typeof useWorkflowStore>) {
+    const restored = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: draftGraphId
+    })
+    workflows.openWorkflowsInBackground({ right: [restored.path] })
+    workflows.markTabsRestored()
+    return restored
+  }
+
+  it('PM-2332 waits for a page reload to restore the unsaved draft tab before calling the chat target unavailable', async () => {
+    await bindDraftThenReload()
+    const {
+      selection,
+      workflows,
+      panel,
+      listCloudWorkflows,
+      getCloudWorkflow,
+      warnRestoreFailed
+    } = setup({ tabsRestored: false })
+
+    const restoration = selection.restoreTarget('wf-draft', () => true)
+    await vi.waitFor(() => expect(listCloudWorkflows).toHaveBeenCalled())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(panel.targetUnavailable).toBe(false)
+
+    const restored = restoreDraftTab(workflows)
+
+    expect((await restoration).ready).toBe(true)
+    expect(restored.path).toBe(draftPath)
+    expect(getCloudWorkflow).toHaveBeenCalledWith('wf-draft')
+    expect(panel.targetUnavailable).toBe(false)
+    expect(panel.selectedWorkflow?.path).toBe(draftPath)
+    expect(workflows.activeWorkflow?.path).toBe(draftPath)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
+  it('waits for the reloaded draft tab even when the listing is incomplete', async () => {
+    await bindDraftThenReload()
+    const {
+      selection,
+      workflows,
+      panel,
+      listCloudWorkflows,
+      warnRestoreFailed
+    } = setup({ tabsRestored: false })
+    listCloudWorkflows.mockImplementationOnce(async () =>
+      listing([{ id: 'wf-saved', name: 'saved' }], false)
+    )
+
+    const restoration = selection.restoreTarget('wf-draft', () => true)
+    await vi.waitFor(() => expect(listCloudWorkflows).toHaveBeenCalled())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(workflows.syncWorkflows).not.toHaveBeenCalled()
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+
+    restoreDraftTab(workflows)
+
+    expect(await restoration).toEqual({
+      ready: true,
+      committedWorkflowId: 'wf-draft'
+    })
+    expect(panel.selectedWorkflow?.path).toBe(draftPath)
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
+  it('calls the target unavailable when startup never finishes restoring tabs', async () => {
+    vi.useFakeTimers()
+    try {
+      const { selection, panel, listCloudWorkflows, getCloudWorkflow } = setup({
+        tabsRestored: false
+      })
+      let settled = false
+      const restoration = selection
+        .restoreTarget('wf-deleted', () => true)
+        .finally(() => {
+          settled = true
+        })
+      await vi.waitFor(() => expect(listCloudWorkflows).toHaveBeenCalled())
+
+      await vi.advanceTimersByTimeAsync(14_000)
+      expect(settled).toBe(false)
+      expect(panel.targetUnavailable).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(settled).toBe(true)
+      expect(await restoration).toEqual({
+        ready: true,
+        committedWorkflowId: null
+      })
+      expect(panel.targetUnavailable).toBe(true)
+      expect(getCloudWorkflow).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('still calls the target unavailable once a reload restores no tab for it', async () => {
+    const {
+      selection,
+      panel,
+      getCloudWorkflow,
+      listCloudWorkflows,
+      workflows
+    } = setup({ tabsRestored: false })
+
+    const restoration = selection.restoreTarget('wf-deleted', () => true)
+    await vi.waitFor(() => expect(listCloudWorkflows).toHaveBeenCalled())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(panel.targetUnavailable).toBe(false)
+
+    workflows.markTabsRestored()
+
+    expect(await restoration).toEqual({
+      ready: true,
+      committedWorkflowId: null
+    })
+    expect(panel.targetUnavailable).toBe(true)
+    expect(getCloudWorkflow).not.toHaveBeenCalled()
+  })
+
   it('does not mark a superseded restoration unavailable when its listing omits the workflow', async () => {
     const { selection, panel, current, listCloudWorkflows, warnRestoreFailed } =
       setup()
@@ -717,5 +880,114 @@ describe('historical workflow restoration', () => {
     expect(panel.targetUnavailable).toBe(false)
     expect(panel.selectedWorkflow?.path).toBe(current.path)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+})
+
+describe('picking a target tab', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('loads an unsaved tab a reload left unopened before saving it', async () => {
+    const { selection, workflows, panel, listCloudWorkflows } = setup()
+    const graph = { ...blankGraph, id: 'b6c1d1e6-7f00-4a7e-9a52-0d1a2b3c4d5e' }
+    const restored = workflows.createTemporary(
+      'Unsaved Workflow (2).json',
+      graph
+    )
+    workflows.openWorkflowsInBackground({ right: [restored.path] })
+    expect(restored.isLoaded).toBe(false)
+    let saved = false
+    vi.spyOn(restored, 'isTemporary', 'get').mockImplementation(() => !saved)
+    vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
+      async (tab) => {
+        if (!tab.isLoaded)
+          throw new Error(
+            `Cannot save workflow '${tab.path}' before it is loaded`
+          )
+        saved = true
+        return true
+      }
+    )
+    listCloudWorkflows.mockImplementation(async () =>
+      listing([
+        { id: 'wf-current', name: 'current' },
+        ...(saved ? [{ id: 'wf-restored', name: 'Unsaved Workflow (2)' }] : [])
+      ])
+    )
+    const toast = useToast()
+
+    expect(await selection.selectTarget(restored.path)).toBe(true)
+
+    expect(useWorkflowService().saveWorkflowAs).toHaveBeenCalledWith(restored, {
+      filename: 'Unsaved Workflow (2)'
+    })
+    expect(panel.selectedWorkflow?.path).toBe(restored.path)
+    expect(workflows.activeWorkflow?.path).toBe(restored.path)
+    expect(toast.toasts).toHaveLength(0)
+  })
+
+  it('does not save a second copy when loading the tab finds it already saved', async () => {
+    const { selection, workflows, panel, listCloudWorkflows } = setup()
+    const restored = workflows.createTemporary('Restored.json', {
+      ...blankGraph,
+      id: '0f7a3c52-0d55-4e43-9d1e-6a8d5c2b7e11'
+    })
+    workflows.openWorkflowsInBackground({ right: [restored.path] })
+    let saved = false
+    vi.spyOn(restored, 'isTemporary', 'get').mockImplementation(() => !saved)
+    vi.mocked(
+      useWorkflowService().loadWorkflowInBackground
+    ).mockImplementationOnce(async (workflow) => {
+      const loaded = await workflow.load()
+      saved = true
+      return loaded
+    })
+    listCloudWorkflows.mockImplementation(async () =>
+      listing([
+        { id: 'wf-current', name: 'current' },
+        ...(saved ? [{ id: 'wf-restored', name: 'Restored' }] : [])
+      ])
+    )
+
+    expect(await selection.selectTarget(restored.path)).toBe(true)
+
+    expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
+    expect(panel.selectedWorkflow?.path).toBe(restored.path)
+  })
+
+  it('keeps the visible workflow when an unopened unsaved tab is picked as a reference', async () => {
+    const { selection, workflows, current, listCloudWorkflows } = setup()
+    const restored = workflows.createTemporary('Reference.json', {
+      ...blankGraph,
+      id: '4c6e8a0b-2d4f-4a6b-8c0d-1e2f3a4b5c6d'
+    })
+    workflows.openWorkflowsInBackground({ right: [restored.path] })
+    let saved = false
+    vi.spyOn(restored, 'isTemporary', 'get').mockImplementation(() => !saved)
+    vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
+      async (tab) => {
+        if (!tab.isLoaded)
+          throw new Error(
+            `Cannot save workflow '${tab.path}' before it is loaded`
+          )
+        saved = true
+        return true
+      }
+    )
+    listCloudWorkflows.mockImplementation(async () =>
+      listing([
+        { id: 'wf-current', name: 'current' },
+        ...(saved ? [{ id: 'wf-reference', name: 'Reference' }] : [])
+      ])
+    )
+
+    expect(
+      await selection.selectReference({
+        name: 'Reference',
+        tabPath: restored.path
+      })
+    ).toMatchObject({ id: 'wf-reference' })
+
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 })

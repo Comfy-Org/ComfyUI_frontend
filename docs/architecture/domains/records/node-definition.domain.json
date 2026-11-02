@@ -1,7 +1,7 @@
 {
   "id": "node-definition",
   "capability": "Node definition contracts (shared technical module)",
-  "description": "Shared technical module, not a business domain. The node definition contract read from /object_info: the V1 schema re-export from @comfyorg/object-info-parser, the V2 schema and V1-to-V2 migration, input spec tree diagnostics and flattening, searchable slot type collection, node source classification, upload input augmentation, input ordering for widget values, node help base URLs, and the essentials node list. The node definition store, node library and search UI, and widget constructors that consume these contracts belong to their own records.",
+  "description": "Shared technical module, not a business domain. The node definition contract read from /object_info: the @comfyorg/object-info-parser V1 schemas, node source classifier, and pack grouping helpers with their re-export, the V2 schema and V1-to-V2 migration, input spec tree diagnostics and flattening, searchable slot type collection, node source classification, upload input augmentation, input ordering for widget values, node help base URLs, and the essentials node list. The node definition store, node library and search UI, and widget constructors that consume these contracts belong to their own records.",
   "modules": [
     {
       "path": "src/constants/essentialsNodes.ts",
@@ -22,10 +22,14 @@
     {
       "path": "src/workbench/utils/**",
       "role": "domain"
+    },
+    {
+      "path": "packages/object-info-parser/src/**",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"],
-  "allowedDependencies": [],
+  "allowedDependencies": ["extension-manager"],
   "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
     {

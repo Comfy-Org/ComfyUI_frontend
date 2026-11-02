@@ -58,7 +58,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -94,12 +94,9 @@ async function onAgentEntryClick(): Promise<void> {
   isOpeningAgent.value = true
 
   try {
-    if (
-      agentPanelStore.onboarding.agentButton === 'togglePanel' ||
-      agentPanelStore.isVisible
-    ) {
+    if (agentPanelStore.isVisible) {
       useTelemetry()?.trackAgentEntryButtonClicked({
-        resulting_state: agentPanelStore.isVisible ? 'closed' : 'opened'
+        resulting_state: 'closed'
       })
       agentPanelStore.toggle()
       return

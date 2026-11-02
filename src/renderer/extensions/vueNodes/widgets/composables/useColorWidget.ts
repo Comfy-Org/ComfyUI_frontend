@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IColorWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IColorWidget } from '@comfyorg/graph-model/widgets'
 import { isColorInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type {
   ColorInputSpec,

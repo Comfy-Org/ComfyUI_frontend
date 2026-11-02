@@ -6,8 +6,8 @@ import type { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { app } from '@/scripts/app'
 import type { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import * as graphTraversal from '@/utils/graphTraversalUtil'
 import {
   previewGaussianSplatExtension,

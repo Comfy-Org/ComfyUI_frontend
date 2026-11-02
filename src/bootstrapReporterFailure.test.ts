@@ -1,10 +1,10 @@
 import { expect, it, vi } from 'vitest'
 
-vi.mock(import('@/platform/telemetry/reportError'), () => {
+vi.mock(import('@comfyorg/telemetry/reportError'), () => {
   throw new Error('Reporter chunk unavailable')
 })
 vi.mock(import('./main'), async () => {
-  await import('@/platform/telemetry/reportError')
+  await import('@comfyorg/telemetry/reportError')
   return {}
 })
 

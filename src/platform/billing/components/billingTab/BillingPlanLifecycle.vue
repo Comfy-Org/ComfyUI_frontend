@@ -115,10 +115,7 @@ function copyFor(intent: PlanLifecycleIntent) {
   if (intent.kind === 'stay') {
     return {
       title: t(`${key}.stayConfirm.title`, { plan: intent.targetPlanName }),
-      body: t(`${key}.stayConfirm.body`, {
-        plan: intent.targetPlanName,
-        date: formatPlanDate(intent.effectiveAt, locale.value, null)
-      }),
+      body: t(`${key}.stayConfirm.bodyNoAmount`, { current: intent.planName }),
       confirm: t(`${key}.actions.stay`, { plan: intent.planName })
     }
   }

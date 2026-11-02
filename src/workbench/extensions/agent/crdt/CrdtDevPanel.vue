@@ -14,8 +14,8 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { resolveDeployEnv } from '@/platform/telemetry/rumContext'
-import { reportError } from '@/platform/telemetry/reportError'
+import { resolveDeployEnv } from '@comfyorg/telemetry/rumContext'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'

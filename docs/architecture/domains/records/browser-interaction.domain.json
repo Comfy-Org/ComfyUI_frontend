@@ -8,24 +8,12 @@
       "role": "domain"
     },
     {
-      "path": "src/composables/useClickDragGuard.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useClickDragGuard.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useDismissableOverlay.test.ts",
       "role": "application"
     },
     {
       "path": "src/composables/useDismissableOverlay.ts",
       "role": "application"
-    },
-    {
-      "path": "src/composables/usePragmaticDragAndDrop.test.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/composables/usePragmaticDragAndDrop.ts",

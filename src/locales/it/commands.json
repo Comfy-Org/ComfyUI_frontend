@@ -104,6 +104,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Comprimi/Espandi nodi selezionati"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Nascondi/mostra collegamenti dei nodi selezionati"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Silenzia/Attiva nodi selezionati"
   },

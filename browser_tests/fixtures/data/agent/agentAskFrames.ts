@@ -159,6 +159,22 @@ export function pausedAskFrame(askId: string): AgentAskFrame {
   }
 }
 
+export function unknownKindAskFrame(askId: string): AgentAskFrame {
+  return {
+    type: 'agent_ask',
+    data: {
+      ...askTurnIds,
+      ask_id: askId,
+      kind: 'a_kind_from_a_newer_server',
+      prompt: 'Pick a branch to keep.',
+      options: [{ id: 'keep', label: 'Keep' }],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+  } as unknown as AgentAskFrame
+}
+
 export function deleteApprovalFrame(askId: string): AgentAskFrame {
   return {
     type: 'agent_ask',

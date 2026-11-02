@@ -168,7 +168,7 @@ const extraMenuItems = (
 ) => [
   {
     label: t('g.customize'),
-    icon: 'pi pi-palette',
+    icon: 'icon-[lucide--palette]',
     command: () => {
       if (!menuTargetNode.data) return
 

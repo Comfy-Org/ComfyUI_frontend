@@ -91,7 +91,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { useAudioPlayback } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'

@@ -10,8 +10,11 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { getAncestorExecutionIds } from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import { getAncestorExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 
 /**

@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest'
 
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const { initialize } = vi.hoisted(() => ({ initialize: vi.fn() }))
 vi.mock(import('./main'), async () => {
@@ -12,7 +12,7 @@ vi.mock(import('./main'), async () => {
 
 it('reports an unregistered app during boot and stops dependent initialization', async () => {
   vi.stubEnv('DEV', false)
-  const { reportError } = await import('@/platform/telemetry/reportError')
+  const { reportError } = await import('@comfyorg/telemetry/reportError')
 
   await import('./bootstrap')
 

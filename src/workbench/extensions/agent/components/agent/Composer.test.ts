@@ -12,7 +12,15 @@ import {
   within
 } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import type { ShallowRef } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -20,10 +28,10 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
@@ -34,7 +42,7 @@ setupInlinePromptEditorDom()
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 const fetchApi = vi.mocked(api.fetchApi)
 const telemetryProvider = useTelemetry()
@@ -591,6 +599,88 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
     await userEvent.keyboard('{Escape}')
     expect(emitted().stop).toHaveLength(1)
+  })
+
+  async function mountRunningWithAttachment(onStop: () => void) {
+    vi.useFakeTimers()
+    const composer = ref<InstanceType<typeof Composer> | null>(null)
+    const Host = defineComponent({
+      setup: () => () =>
+        h(Composer, {
+          ref: composer,
+          hasWorkflowTarget: true,
+          streaming: true,
+          onStop
+        })
+    })
+    render(Host, { global: { plugins: [i18n] } })
+    composer.value?.addAttachment({
+      id: 'attachment-1',
+      name: 'cat.png',
+      ref: 'uploaded_cat.png',
+      previewUrl: 'https://example.com/cat.png'
+    })
+    await nextTick()
+    return {
+      user: userEvent.setup({ advanceTimers: vi.advanceTimersByTimeAsync }),
+      trigger: screen.getByRole('button', { name: 'Preview cat.png' }),
+      previewed: () => screen.queryByRole('dialog', { name: 'cat.png' })
+    }
+  }
+
+  it('lets Escape close an attachment preview before it stops a run', async () => {
+    const onStop = vi.fn()
+    const { user, trigger, previewed } =
+      await mountRunningWithAttachment(onStop)
+
+    await user.click(screen.getByRole('textbox'))
+    await user.hover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    expect(previewed()).toBeVisible()
+
+    await user.keyboard('{Escape}')
+    expect(previewed()).toBeNull()
+    expect(onStop).not.toHaveBeenCalled()
+
+    await user.unhover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    await user.hover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    expect(previewed()).toBeVisible()
+    await user.keyboard('{Escape}')
+    expect(previewed()).toBeNull()
+    expect(onStop).not.toHaveBeenCalled()
+
+    await user.unhover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    await user.click(screen.getByRole('textbox'))
+    await user.keyboard('{Escape}')
+    expect(onStop).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps an Escape that closed an attachment preview away from the page', async () => {
+    const pageEscape = vi.fn()
+    window.addEventListener('keydown', pageEscape)
+    onTestFinished(() => window.removeEventListener('keydown', pageEscape))
+    const onStop = vi.fn()
+    const { user, trigger, previewed } =
+      await mountRunningWithAttachment(onStop)
+
+    await user.hover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    expect(previewed()).toBeVisible()
+    expect(trigger).not.toHaveFocus()
+    expect(previewed()).not.toHaveFocus()
+
+    await user.keyboard('{Escape}')
+    expect(previewed()).toBeNull()
+    expect(pageEscape).not.toHaveBeenCalled()
+    expect(onStop).not.toHaveBeenCalled()
+
+    await user.unhover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    await user.keyboard('{Escape}')
+    expect(pageEscape).toHaveBeenCalledTimes(1)
   })
 
   it('keeps handled Escapes inside the composer and lets idle Escape bubble', async () => {

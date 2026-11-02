@@ -101,7 +101,7 @@ testWithMockedObjectInfo.describe(
     )
 
     testWithMockedObjectInfo(
-      'shows pricing badge in VueNodes node header',
+      'shows pricing badge in VueNodes floating badges',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
         await comfyPage.settings.setSetting(
@@ -117,17 +117,13 @@ testWithMockedObjectInfo.describe(
           return node!.id
         })
 
-        const header = comfyPage.page.locator(
-          `[data-testid="node-header-${nodeId}"]`
-        )
-        await expect(header).toBeVisible()
+        const badges = comfyPage.vueNodes
+          .getNodeLocator(String(nodeId))
+          .getByTestId('node-badges')
+        await expect(badges).toBeVisible()
 
-        // CreditBadge uses icon-[lucide--coins] for the credits icon
-        const creditsBadge = header.locator('i[class*="lucide--coins"]')
-        await expect(creditsBadge).toBeVisible()
-
-        // Verify the badge text contains expected credit amount (10.6 credits for $0.05)
-        const badgeContainer = header.getByTestId('credit-badge-required')
+        const badgeContainer = badges.getByTestId('node-badge-group-credits')
+        await expect(badgeContainer).toBeVisible()
         await expect
           .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
           .toContain('10.6')
@@ -135,7 +131,7 @@ testWithMockedObjectInfo.describe(
     )
 
     testWithMockedObjectInfo(
-      'shows range pricing in VueNodes node header',
+      'shows range pricing in VueNodes floating badges',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
         await comfyPage.settings.setSetting(
@@ -151,13 +147,12 @@ testWithMockedObjectInfo.describe(
           return node!.id
         })
 
-        const header = comfyPage.page.locator(
-          `[data-testid="node-header-${nodeId}"]`
-        )
-        await expect(header).toBeVisible()
+        const badges = comfyPage.vueNodes
+          .getNodeLocator(String(nodeId))
+          .getByTestId('node-badges')
+        await expect(badges).toBeVisible()
 
-        // Verify range format (2.1-21.1 credits for $0.01-$0.10)
-        const badgeContainer = header.getByTestId('credit-badge-required')
+        const badgeContainer = badges.getByTestId('node-badge-group-credits')
         await expect
           .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
           .toContain('2.1-21.1')
@@ -165,7 +160,7 @@ testWithMockedObjectInfo.describe(
     )
 
     testWithMockedObjectInfo(
-      'shows list pricing in VueNodes node header',
+      'shows list pricing in VueNodes floating badges',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
         await comfyPage.settings.setSetting(
@@ -181,13 +176,12 @@ testWithMockedObjectInfo.describe(
           return node!.id
         })
 
-        const header = comfyPage.page.locator(
-          `[data-testid="node-header-${nodeId}"]`
-        )
-        await expect(header).toBeVisible()
+        const badges = comfyPage.vueNodes
+          .getNodeLocator(String(nodeId))
+          .getByTestId('node-badges')
+        await expect(badges).toBeVisible()
 
-        // Verify list format (4.2/10.6 credits for [$0.02, $0.05])
-        const badgeContainer = header.getByTestId('credit-badge-required')
+        const badgeContainer = badges.getByTestId('node-badge-group-credits')
         await expect
           .poll(async () => (await badgeContainer.textContent())?.trim() ?? '')
           .toContain('4.2/10.6')

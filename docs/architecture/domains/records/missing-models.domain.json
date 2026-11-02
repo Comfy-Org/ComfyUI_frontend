@@ -12,24 +12,12 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/folderPathCache.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/workflowErrors/missingModel/folderPathCache.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/missingModelDownload.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workflowErrors/missingModel/missingModelDownload.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/workflowErrors/missingModel/missingModelGrouping.test.ts",
-      "role": "domain"
     },
     {
       "path": "src/platform/workflowErrors/missingModel/missingModelGrouping.ts",
@@ -40,15 +28,7 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/missingModelPipeline.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workflowErrors/missingModel/missingModelPipeline.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflowErrors/missingModel/missingModelScan.test.ts",
       "role": "application"
     },
     {
@@ -56,16 +36,8 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workflowErrors/missingModel/missingModelStore.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workflowErrors/missingModel/missingModelStore.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/workflowErrors/missingModel/missingModelViewUtils.test.ts",
-      "role": "domain"
     },
     {
       "path": "src/platform/workflowErrors/missingModel/missingModelViewUtils.ts",

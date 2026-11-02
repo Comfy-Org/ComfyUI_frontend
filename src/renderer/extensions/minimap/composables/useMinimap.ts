@@ -15,7 +15,7 @@ import {
 } from '@/platform/canvas/minimapDecorationRegistry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 import { MINIMAP_DECORATION_POP_MS } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type {

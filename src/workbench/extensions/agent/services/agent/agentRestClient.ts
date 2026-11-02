@@ -19,12 +19,9 @@ import {
   authRejectionTags,
   isAuthRejectionStatus
 } from '@/platform/auth/authRejection'
-import {
-  markErrorReported,
-  reportError
-} from '@/platform/telemetry/reportError'
+import { markErrorReported, reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
-import type { AuthCredential, AuthScheme } from '@/types/authTypes'
+import type { AuthCredential, AuthScheme } from '@comfyorg/api-client/authTypes'
 
 import { refusedAttachmentsMessage } from '@/workbench/extensions/agent/utils/attachmentMessages'
 import { withAgentAuth } from './agentAuth'

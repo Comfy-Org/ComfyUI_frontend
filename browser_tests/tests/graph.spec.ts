@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 

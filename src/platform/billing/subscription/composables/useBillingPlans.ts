@@ -5,7 +5,7 @@ import type {
   Plan,
   TeamCreditStops
 } from '@comfyorg/billing-core'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'

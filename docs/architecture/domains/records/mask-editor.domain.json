@@ -1,14 +1,10 @@
 {
   "id": "mask-editor",
   "capability": "Mask editor",
-  "description": "Mask editing UI, host adapters (loader, saver, image widget, dialog, brush persistence), and the core extension contract. The stroke, GPU, pan/zoom, canvas-history and tool-manager engine lives in the @comfyorg/mask-editor package.",
+  "description": "Mask editing UI, host adapters (loader, saver, image widget, dialog, brush persistence), and the core extension contract. The @comfyorg/mask-editor package holds the stroke, GPU, pan/zoom, canvas-history and tool-manager engine.",
   "modules": [
     {
       "path": "src/extensions/core/clipspace.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/maskeditor.test.ts",
       "role": "integration"
     },
     {
@@ -28,10 +24,6 @@
       "role": "application"
     },
     {
-      "path": "src/scripts/clipspace.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/scripts/clipspace.ts",
       "role": "application"
     },
@@ -40,12 +32,12 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/utils/pngEncodeUtil.test.ts",
+      "path": "src/utils/pngEncodeUtil.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/utils/pngEncodeUtil.ts",
-      "role": "infrastructure"
+      "path": "packages/mask-editor/src/**",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],

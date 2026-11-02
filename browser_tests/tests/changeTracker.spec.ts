@@ -5,7 +5,6 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 type ChangeTrackerDebugState = {
@@ -500,8 +499,11 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
 
       await input.fill('40')
       await node.title.click()
-      await comfyPage.page
-        .getByTestId(TestIds.selectionToolbox.convertSubgraph)
+      await comfyPage.selectionToolbox
+        .getByRole('button', {
+          name: 'Convert Selection to Subgraph',
+          exact: true
+        })
         .click()
       await expect(input).toBeHidden()
 

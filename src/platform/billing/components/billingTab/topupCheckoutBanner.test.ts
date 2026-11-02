@@ -2,10 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
 
-import {
-  addCreditsEmphasis,
-  selectTopupCheckoutBanner
-} from './topupCheckoutBanner'
+import { selectTopupCheckoutBanner } from './topupCheckoutBanner'
 import type { TopupCheckoutBanner } from './topupCheckoutBanner'
 
 function checkout(
@@ -113,44 +110,6 @@ describe('selectTopupCheckoutBanner', () => {
       sessionId: 'cs_bank'
     })
   })
-
-  it.for([
-    {
-      case: 'a failed top-up at 0',
-      availableCents: 0,
-      banner: { kind: 'failed', sessionId: 'cs', paymentAmountCents: 2500 },
-      variant: 'inverted'
-    },
-    {
-      case: 'a payment still processing at 0',
-      availableCents: 0,
-      banner: { kind: 'processing', sessionId: 'cs' },
-      variant: 'secondary'
-    },
-    {
-      case: 'credits still landing at 0',
-      availableCents: 0,
-      banner: { kind: 'creditsApplying', sessionId: 'cs' },
-      variant: 'secondary'
-    },
-    {
-      case: 'a failed top-up with credits left',
-      availableCents: 500,
-      banner: { kind: 'failed', sessionId: 'cs', paymentAmountCents: 2500 },
-      variant: 'secondary'
-    },
-    {
-      case: 'no banner at 0',
-      availableCents: 0,
-      banner: null,
-      variant: 'secondary'
-    }
-  ] as const)(
-    'uses $variant for $case',
-    ({ availableCents, banner, variant }) => {
-      expect(addCreditsEmphasis(availableCents, banner)).toBe(variant)
-    }
-  )
 
   it('shows a dismissed processing payment again once its credits apply', () => {
     expect(

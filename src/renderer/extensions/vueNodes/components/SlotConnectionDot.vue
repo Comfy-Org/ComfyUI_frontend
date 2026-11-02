@@ -3,8 +3,8 @@ import { computed } from 'vue'
 
 import { getSlotColor, MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
-import type { SlotId } from '@/types/slotId'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
+import type { SlotId } from '@comfyorg/graph-model/slotId'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
 

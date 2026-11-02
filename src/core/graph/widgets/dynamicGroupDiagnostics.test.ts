@@ -4,11 +4,11 @@ import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { applyRemoteDynamicGroupRowCount } from './dynamicGroupDiagnostics'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { followedDoc } from '@/workbench/extensions/agent/crdt/__fixtures__/followedDoc'
 import { LiveGraphApplier } from '@/workbench/extensions/agent/crdt/liveGraphApplier'
 
@@ -19,8 +19,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return distribution.isCloud
   }
 }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 function addGroup(node: LGraphNode, min = 0) {
   useLitegraphService().addNodeInput(node, {

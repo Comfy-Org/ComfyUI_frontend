@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   loadFolderPathsOnce,
   resetFolderPathCache
 } from '@/platform/workflowErrors/missingModel/folderPathCache'
 import { api } from '@/scripts/api'
 
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 describe('loadFolderPathsOnce', () => {
   beforeEach(() => {

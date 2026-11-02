@@ -1,4 +1,4 @@
-import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { AssetDownloadWsMessage } from '@comfyorg/api-client/executionTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ModelImportProgressToast } from '@e2e/fixtures/components/ModelImportProgressToast'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'

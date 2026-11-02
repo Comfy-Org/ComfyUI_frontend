@@ -3,7 +3,7 @@ import type {
   IVideoEditWidget,
   IWidgetVideoEditOptions,
   VideoEditValue
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import type {
   InputSpec as InputSpecV2,
   VideoEditInputSpec

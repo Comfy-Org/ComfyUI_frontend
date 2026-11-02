@@ -12,10 +12,6 @@
       "role": "application"
     },
     {
-      "path": "src/scripts/pnginfo.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/scripts/pnginfo.ts",
       "role": "integration"
     },

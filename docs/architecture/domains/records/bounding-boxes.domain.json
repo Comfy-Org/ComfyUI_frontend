@@ -12,23 +12,11 @@
       "role": "application"
     },
     {
-      "path": "src/composables/boundingBoxes/boundingBoxesUtil.test.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/composables/boundingBoxes/boundingBoxesUtil.ts",
       "role": "domain"
     },
     {
-      "path": "src/extensions/core/createBoundingBoxes.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/extensions/core/createBoundingBoxes.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/widgets/BoundingBoxesWidget.test.ts",
       "role": "integration"
     },
     {
@@ -36,29 +24,16 @@
       "role": "integration"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources.ts",
       "role": "application"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/types/boundingBoxes.ts",
-      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [
-    "color-conversion",
     "design-system",
     "dialog-host",
     "graph-model",

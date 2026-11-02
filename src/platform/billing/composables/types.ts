@@ -1,10 +1,13 @@
-import type { SubscriptionState } from '@comfyorg/ingest-types'
+import type {
+  PeriodCreditGrant,
+  SubscriptionState
+} from '@comfyorg/ingest-types'
 import type { ComputedRef, Ref } from 'vue'
 
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
 import type {
   BillingStatus,
@@ -24,7 +27,7 @@ import type {
 } from '@comfyorg/billing-core'
 
 /** `unknown` until the active workspace has loaded; no billing call may be made yet. */
-export type BillingType = 'legacy' | 'workspace' | 'unknown'
+export type BillingType = 'workspace' | 'unknown'
 
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -52,6 +55,10 @@ export interface SubscriptionDialogOptions {
   planMode?: 'personal' | 'team'
   /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
   initialCheckout?: SubscriptionCheckoutSelection
+  /** The refused account holds credits, so the dialog says why they did not help. */
+  creditsLocked?: boolean
+  /** Server `error.type` of the refused run, reported with the paywall opening. */
+  refusalType?: string
 }
 
 // A type alias, not an interface: `showDialog`'s props are index-signature
@@ -76,6 +83,8 @@ export interface SubscriptionInfo {
   renewalDate: string | null
   /** ISO 8601; format at the display site. */
   endDate: string | null
+  /** Served `ended_at`; absent when the server omits the field. */
+  endedAt?: string | null
   isCancelled: boolean
   hasFunds: boolean
   /** Agent funds across shared credits and the Agent-scoped balance. */
@@ -86,10 +95,12 @@ export interface SubscriptionInfo {
    * disabled, absent when the server does not report it.
    */
   agentScopedHasFunds?: boolean
+  /** True only when the billing status names the rail that supplied the grant. */
+  agentScopedHasFundsAuthoritative?: boolean
 }
 
 /**
- * Balance amounts from `GET /customers/balance` and `GET /api/billing/balance`.
+ * Balance amounts from `GET /api/billing/balance`.
  * Despite the `Micros` suffixes every field is in CENTS: the backend reports
  * Metronome's USD-cents credit balance verbatim, so format with
  * `formatCreditsFromCents` (credits) or `formatMetronomeCurrency` (dollars)
@@ -116,9 +127,14 @@ export type BillingPortalOutcome =
       reason: 'routing_unavailable' | 'blocked' | 'missing_url' | 'failed'
     }
 
+export interface BillingStatusReadOptions {
+  /** Read after any read already in flight, instead of joining it. */
+  fresh?: boolean
+}
+
 export interface BillingActions {
   initialize: () => Promise<void>
-  fetchStatus: () => Promise<void>
+  fetchStatus: (options?: BillingStatusReadOptions) => Promise<void>
   fetchBalance: () => Promise<void>
   subscribe: (
     planSlug: string,
@@ -131,23 +147,18 @@ export interface BillingActions {
   manageSubscription: () => Promise<BillingPortalOutcome>
   cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<void>
   /**
-   * Reactivates a cancelled-but-still-active subscription. Legacy has no
-   * dedicated endpoint, so the legacy adapter re-runs the checkout flow.
-   * The workspace adapter refreshes status and balance internally on success.
+   * Reactivates a cancelled-but-still-active subscription. The adapter
+   * refreshes status and balance internally on success.
    *
-   * `source` identifies the click-time UI surface. The workspace adapter
-   * ignores it (its resubscribe call is itself terminal); the legacy adapter
-   * carries it through to the pending-checkout-recovery terminal event, since
-   * that recovery path is shared with plain subscribes and has no other way
-   * to attribute a later-confirmed success back to a resubscribe click.
+   * `source` identifies the click-time UI surface; the adapter ignores it
+   * (its resubscribe call is itself terminal).
    */
   resubscribe: (options?: {
     source?: 'pricing_dialog' | 'settings_billing_panel'
   }) => Promise<void>
   /**
    * Purchases additional credits. Standardized on **whole-dollar cents**
-   * (multiples of 100); the legacy adapter divides by 100 for the
-   * dollar-based /customers/credit endpoint.
+   * (multiples of 100).
    * Pass-through by design: the caller owns the completed/pending follow-up
    * (balance refresh or billing-op polling), so this does not refresh.
    */
@@ -183,15 +194,12 @@ export interface BillingState {
   renewalDate: ComputedRef<string | null>
   /** Open renewal invoice to pay; owners while payment_failed or paused. */
   renewalInvoice: ComputedRef<RenewalInvoice | null>
+  /** Served configured plan allowance; null when the server omits it. */
+  periodCreditGrant: ComputedRef<PeriodCreditGrant | null>
 }
 
-/** The rail a cancel actually ran on, fixed when the call was dispatched. */
-export type CancelRail = Exclude<BillingType, 'unknown'>
-
-export interface BillingContext
-  extends BillingState, Omit<BillingActions, 'cancelSubscription'> {
+export interface BillingContext extends BillingState, BillingActions {
   type: ComputedRef<BillingType>
-  cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<CancelRail>
   reconcileSubscriptionSuccess: () => Promise<void>
   /**
    * Waits up to ten seconds for the workspace type to load. False when the

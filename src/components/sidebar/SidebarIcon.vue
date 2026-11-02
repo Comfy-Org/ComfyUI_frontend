@@ -10,8 +10,9 @@
     "
     variant="muted-textonly"
     size="unset"
-    :aria-label="computedTooltip"
+    :aria-label="accessibleName"
     @click="emit('click', $event)"
+    @contextmenu="emit('contextmenu', $event)"
   >
     <div class="side-bar-button-content flex flex-col items-center gap-2">
       <slot name="icon">
@@ -36,6 +37,12 @@
             "
           >
             {{ overlayValue }}
+          </span>
+          <span
+            v-if="provenanceBadge"
+            class="sidebar-icon-provenance-badge absolute -bottom-1 -left-1 min-w-[16px] rounded-full bg-secondary py-0.25 text-2xs leading-[14px] font-medium text-foreground"
+          >
+            {{ provenanceBadge }}
           </span>
         </div>
       </slot>
@@ -65,6 +72,8 @@ const {
   tooltipSuffix = '',
   iconBadge = '',
   badgeClass = '',
+  provenanceBadge = '',
+  provenanceLabel = '',
   label = '',
   isSmall = false
 } = defineProps<{
@@ -74,12 +83,15 @@ const {
   tooltipSuffix?: string
   iconBadge?: string | (() => string | null)
   badgeClass?: string
+  provenanceBadge?: string
+  provenanceLabel?: string
   label?: string
   isSmall?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void
+  (e: 'contextmenu', event: MouseEvent): void
 }>()
 const overlayValue = computed(() =>
   typeof iconBadge === 'function' ? (iconBadge() ?? '') : iconBadge
@@ -93,6 +105,11 @@ const computedTooltip = computed(() => {
   const text = tooltip || label
   return st(text, text) + tooltipSuffix
 })
+const accessibleName = computed(() =>
+  provenanceLabel
+    ? `${computedTooltip.value} (${provenanceLabel})`
+    : computedTooltip.value
+)
 </script>
 
 <style>

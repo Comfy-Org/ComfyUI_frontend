@@ -3,18 +3,18 @@ import type {
   LGraphNode,
   Subgraph,
   SubgraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
 
-import type { SerializedNodeId } from '@/types/nodeId'
-import type { LinkId } from '@/types/linkId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexError'
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 
 export type ExecutionId = string
@@ -441,7 +441,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 type RegisteredExecutableLGraphNode = ExecutableLGraphNode
 type RegisteredExecutionId = ExecutionId
 
-declare module '../types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface LitegraphEntityRegistry {
     ExecutableLGraphNode: RegisteredExecutableLGraphNode
     ExecutionId: RegisteredExecutionId

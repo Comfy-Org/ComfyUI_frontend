@@ -3,16 +3,19 @@ import { reactive, ref } from 'vue'
 
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { UUID } from '@/utils/uuid'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   isWidgetId,
   parseWidgetId,
   widgetId as createWidgetId
-} from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
-import type { WidgetValue } from '@/types/widgetValue'
-import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+} from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
+import type {
+  WidgetState,
+  WidgetStateInit
+} from '@comfyorg/graph-model/widgetState'
 import {
   applyLegacyHiddenWrite,
   deriveWidgetVisibility,
@@ -21,11 +24,14 @@ import {
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
+
+interface ConvertedRestoredValue {
+  nodeId: NodeId
+  input: string
+  stored: WidgetValue
+}
 
 export interface WidgetRenderState {
   hasLayoutSize?: boolean
@@ -101,6 +107,7 @@ export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgets = ref(new Map<UUID, Map<WidgetId, WidgetEntity>>())
   const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
+  const convertedRestoredValues = new Map<string, ConvertedRestoredValue>()
   const graphWidgetRestorations = new Map<
     UUID,
     Map<NodeId, WidgetRestorationState>
@@ -141,6 +148,32 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeScoped(graphWidgetRestorations, graphId, nodeId, restoration)
   }
 
+  function flushConvertedRestoredValues(): void {
+    console.warn(
+      'Converted saved widget values to their widget type. The workflow file still stores them with the wrong type.',
+      [...convertedRestoredValues.values()]
+    )
+    convertedRestoredValues.clear()
+  }
+
+  function convertRestoredValue(
+    graphId: UUID,
+    nodeId: NodeId,
+    widget: Pick<IBaseWidget, 'name' | 'type' | 'options'>,
+    saved: WidgetValue
+  ): WidgetValue {
+    const value = coerceRestoredWidgetValue(widget, saved)
+    if (value === saved) return value
+    if (convertedRestoredValues.size === 0)
+      queueMicrotask(flushConvertedRestoredValues)
+    convertedRestoredValues.set(`${graphId}:${nodeId}:${widget.name}`, {
+      nodeId,
+      input: widget.name,
+      stored: saved
+    })
+    return value
+  }
+
   /** Returns the saved value for `widget`, converted to its value type. */
   function getRestoredWidgetValue(
     graphId: UUID,
@@ -153,27 +186,23 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (restoration.restoreNamed && restoration.named) {
       if (!Object.hasOwn(restoration.named, widget.name)) return
       return {
-        value: coerceRestoredWidgetValue(widget, restoration.named[widget.name])
+        value: convertRestoredValue(
+          graphId,
+          nodeId,
+          widget,
+          restoration.named[widget.name]
+        )
       }
     }
     if (positionalIndex >= restoration.positional.length) return
     return {
-      value: coerceRestoredWidgetValue(
+      value: convertRestoredValue(
+        graphId,
+        nodeId,
         widget,
         restoration.positional[positionalIndex]
       )
     }
-  }
-
-  function getRestoredWidgetValueCount(
-    graphId: UUID,
-    nodeId: NodeId
-  ): number | undefined {
-    const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
-    if (!restoration) return
-    return restoration.restoreNamed && restoration.named
-      ? Object.keys(restoration.named).length
-      : restoration.positional.length
   }
 
   function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
@@ -345,7 +374,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function restoreValue(widgetId: WidgetId, saved: WidgetValue): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
-    state.value = coerceRestoredWidgetValue(state, saved)
+    const { graphId, nodeId } = parseWidgetId(widgetId)
+    state.value = convertRestoredValue(graphId, nodeId, state, saved)
     return true
   }
 
@@ -578,7 +608,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeWidgetRestoration,
     clearNodeWidgetRestoration,
     getRestoredWidgetValue,
-    getRestoredWidgetValueCount,
     getWidget,
     getWidgetRenderState,
     getWidgetVisibility,

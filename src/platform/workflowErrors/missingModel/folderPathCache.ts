@@ -1,4 +1,4 @@
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 type FolderPaths = Record<string, string[]>

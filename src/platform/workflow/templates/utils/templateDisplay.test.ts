@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import type { TemplateInfo } from '@comfyorg/api-client/templateTypes'
 import {
   filterTemplatesByType,
   getProviderBadges,

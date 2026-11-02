@@ -76,7 +76,7 @@
         role="alert"
         class="m-0 px-8 pt-4 text-sm text-destructive"
       >
-        {{ $t('credits.topUp.checkoutOpenFailed') }}
+        {{ checkoutRefusal ?? $t('credits.topUp.checkoutOpenFailed') }}
       </p>
     </template>
 
@@ -95,7 +95,7 @@
         role="alert"
         class="m-0 text-sm text-destructive"
       >
-        {{ $t('credits.topUp.checkoutOpenFailed') }}
+        {{ checkoutRefusal ?? $t('credits.topUp.checkoutOpenFailed') }}
       </p>
     </div>
 
@@ -295,6 +295,10 @@
             {{ $t('credits.topUp.paymentProcessingBody') }}
           </p>
         </div>
+        <TopUpAutoTopUpCard
+          v-if="step === 'amount' && !processingPayment"
+          class="mb-2"
+        />
         <Button
           v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
@@ -364,7 +368,10 @@
 import Card from '@comfyorg/design-system/card/Card'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
-import { getTopupAmountPreset } from '@comfyorg/account-core/billing'
+import {
+  getTopupAmountPreset,
+  PURCHASE_REFUSAL_SERVER_CODES
+} from '@comfyorg/account-core/billing'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -378,14 +385,15 @@ import {
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import TopUpAmountFields from './TopUpAmountFields.vue'
+import TopUpAutoTopUpCard from './TopUpAutoTopUpCard.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { CreateTopupResponse } from '@comfyorg/billing-core'
@@ -416,14 +424,14 @@ import {
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
   source?: PaymentIntentSource
 }>()
 
-const { locale, n, t } = useI18n()
+const { d, locale, n, t } = useI18n()
 const { payment: processingPayment } = useProcessingTopupPayment()
 const processingNoticeTitle = computed(() => {
   const cents = processingPayment.value?.paymentAmountCents
@@ -523,7 +531,12 @@ const verifyingBody = computed(() => {
   if (topupIsParkedWithoutLink.value) {
     return t('credits.topUp.awaitingBankApprovalBody')
   }
-  return t('credits.topUp.verifyBody')
+  const deadline = new Date(topupOperation.value?.authenticationDeadline ?? '')
+  if (Number.isNaN(deadline.getTime())) return t('credits.topUp.verifyBody')
+  return t('credits.topUp.verifyByBody', {
+    date: d(deadline, { month: 'long', day: 'numeric' }),
+    time: d(deadline, { hour: 'numeric', minute: '2-digit' })
+  })
 })
 
 // Constants
@@ -556,6 +569,7 @@ watch(suggestedAmount, (amount) => {
 const loading = ref(false)
 const paymentSubmitted = ref(false)
 const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
+const checkoutRefusal = ref<string | null>(null)
 const blockedDefaultCardUrl = ref<string | null>(null)
 const checkoutReopenFailed = ref(false)
 const stepBeforeCheckoutBlocked = ref<'confirm' | 'checkoutOpened'>('confirm')
@@ -987,6 +1001,7 @@ async function reopenCheckout() {
 async function openCheckoutInReservedTab(): Promise<
   'opened' | 'blocked' | 'failed' | 'abandoned'
 > {
+  checkoutRefusal.value = null
   const returnUrl = topupCheckoutReturnUrl()
   if (!returnUrl) return 'failed'
   const checkoutTab = reserveBillingTab()
@@ -1017,6 +1032,7 @@ async function openCheckoutInReservedTab(): Promise<
   } catch (error) {
     checkoutTab.close()
     console.error('Hosted top-up checkout failed to open', error)
+    checkoutRefusal.value = purchaseRefusalMessage(error)
     return unmounted || scope.signal.aborted ? 'abandoned' : 'failed'
   } finally {
     if (checkoutScope === scope) checkoutScope = null
@@ -1092,7 +1108,17 @@ function reportTerminal(
   })
 }
 
+function purchaseRefusalMessage(error: unknown): string | null {
+  return error instanceof WorkspaceApiError &&
+    error.code !== undefined &&
+    PURCHASE_REFUSAL_SERVER_CODES.includes(error.code)
+    ? error.message
+    : null
+}
+
 function purchaseErrorDetail(error?: unknown): string {
+  const refusal = purchaseRefusalMessage(error)
+  if (refusal !== null) return refusal
   const code = error instanceof WorkspaceApiError ? error.code : undefined
   // Only one billing operation is open at a time, so this refusal means the
   // previous purchase has not settled or expired yet — not that anything failed.

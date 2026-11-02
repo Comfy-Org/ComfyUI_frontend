@@ -83,6 +83,7 @@
     "copyMarkdown": "复制为 Markdown",
     "copyUnavailable": "此版本只能复制当前对话",
     "creditTransitionNotice": "您已用完免费的智能体积分。后续智能体活动将使用您工作区的积分，其中可能包含付费积分。",
+    "creditsUsed": "智能体使用了 {credits} 个积分 | 智能体使用了 {credits} 个积分",
     "currentTab": "当前标签页",
     "delete": "删除",
     "deleteApproval": {
@@ -4845,12 +4846,6 @@
     "additionalCreditsInUse": "正在使用",
     "additionalCreditsInfo": "关于额外点数",
     "additionalCreditsTooltip": "在套餐额度之外额外添加的额度。套餐额度用尽后使用。每笔额度自购买之日起一年后到期。",
-    "benefits": {
-      "benefit1": "合作伙伴节点的月度积分 — 按需充值",
-      "benefit1FreeTier": "每月更多积分，随时补充",
-      "benefit2": "每个队列最长运行 30 分钟",
-      "benefit3": "支持自带模型（Creator & Pro）"
-    },
     "beta": "测试版",
     "billedMonthly": "每月付款",
     "billedYearly": "{total} 每年付款",
@@ -4864,7 +4859,6 @@
     "cancelDialog": {
       "endOfBillingPeriod": "您的计费周期结束时",
       "failed": "取消订阅失败",
-      "finishOnStripe": "您的订阅尚未取消。请在刚刚打开的 Stripe 页面完成取消操作。在此之前，您的套餐将照常续订。",
       "workspaceChanged": "您的活跃工作区已更改。请切换回去后重试。"
     },
     "cancelFlow": {
@@ -5014,7 +5008,6 @@
     "monthlyCreditsUsedUpTitleNoDate": "本月点数已用完",
     "monthlyUsageProgress": "本月已用 {used} / {total} 点数",
     "mostPopular": "最受欢迎",
-    "needTeamWorkspace": "需要团队工作区？",
     "nextBillingCycle": "下一个计费周期",
     "outOfCreditsDescription": "请添加更多点数以继续生成。",
     "outOfCreditsTitle": "您的点数已用完。点数将于 {date} 补充",
@@ -5180,7 +5173,6 @@
       "pollingSuccess": "订阅激活成功！",
       "pollingTimeout": "等待订阅超时。请刷新并重试。",
       "subscribe": "订阅",
-      "title": "订阅",
       "waitingForSubscription": "请在新标签页中完成订阅。我们会自动检测到您已完成！"
     },
     "resubscribe": "重新订阅",
@@ -5229,7 +5221,6 @@
     "saveYearly": "立省 20%",
     "saveYearlyUpTo": "最高可节省 20%",
     "scheduledChangeNotice": "你的套餐将于 {date} 变更为 {plan}。",
-    "soloUseOnly": "仅限个人使用",
     "subscribe": "订阅",
     "subscribeFailed": "订阅失败",
     "subscribeForMore": "升级",
@@ -5329,7 +5320,6 @@
     "workspaceNotSubscribed": "此工作区未订阅",
     "yearly": "年度",
     "yearlyCredits": "每年额度",
-    "yearlyCreditsLabel": "总共年度积分",
     "yearlyCreditsPerMemberLabel": "年度额度 / 成员",
     "yearlyCreditsUsedUpTitle": "年度额度已用尽。将于 {date} 补充",
     "yearlyCreditsUsedUpTitleNoDate": "年度额度已用尽",
@@ -5472,6 +5462,11 @@
   "templates": {
     "logoProviderSeparator": " 与 "
   },
+  "textEditor": {
+    "characterCount": "{count} 个字符",
+    "expand": "放大",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "无法加载工作流，因为此 ComfyUI 安装缺少核心节点。请检查后端是否已正确启动。",
     "a1111EmbeddingsUnavailable": "无法从服务器加载嵌入。工作流已导入，但嵌入名称保留为纯文本。",
@@ -5492,19 +5487,15 @@
     "failedToConvertToSubgraph": "无法将项目转换为子工作流",
     "failedToCreateCustomer": "创建客户失败：{error}",
     "failedToExportModel": "无法将模型导出为 {format}",
-    "failedToFetchBalance": "获取余额失败：{error}",
     "failedToFetchLogs": "无法获取服务器日志",
     "failedToFetchSubscription": "获取订阅状态失败：{error}",
     "failedToInitializeCameraAngleViewer": "无法初始化相机角度查看器。请尝试重新加载页面。",
     "failedToInitializeCameraInfoViewer": "初始化相机信息查看器失败。请尝试重新加载页面。",
     "failedToInitializeLightInfoViewer": "初始化光照信息查看器失败。请尝试重新加载页面。",
     "failedToInitializeLoad3dViewer": "初始化3D查看器失败",
-    "failedToInitiateCreditPurchase": "发起积分购买失败：{error}",
-    "failedToInitiateSubscription": "订阅启动失败：{error}",
     "failedToLoadBackgroundImage": "无法加载背景图片",
     "failedToLoadHDRI": "HDRI文件加载失败",
     "failedToLoadModel": "无法加载3D模型",
-    "failedToPurchaseCredits": "购买积分失败：{error}",
     "failedToQueue": "排队失败",
     "failedToRegisterSubgraph": "注册子图失败",
     "failedToSaveDraft": "保存工作流草稿失败",
@@ -5858,13 +5849,11 @@
         "onHold": "没有默认付款方式。请设置一个以恢复自动充值。",
         "paused": "已达到每月限额。将于 {date} 恢复。",
         "pausedNoDate": "已达到每月限额。",
-        "rule": "当积分低于 {threshold} 时，添加 {amount}（{credits} 积分）。",
         "status": {
           "failed": "失败",
           "off": "关闭",
           "on": "开启",
           "onHold": "已暂停",
-          "paused": "暂停",
           "turnedOff": "已关闭"
         },
         "title": "自动充值",
@@ -5927,7 +5916,6 @@
         },
         "scheduledChange": "将于 {date} 更改为 {plan}。",
         "stayConfirm": {
-          "body": "你的套餐不会于 {date} 更改为 {plan}。你可以随时再次安排更改。",
           "title": "取消更改为 {plan}？"
         },
         "unknown": {

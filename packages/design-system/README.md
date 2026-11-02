@@ -21,6 +21,9 @@ Import the full theme from your app's entry stylesheet:
 @import '@comfyorg/design-system/css/style.css';
 ```
 
+Use this package import rather than a filesystem path into the package. Its
+published export registers the compiled component sources for Tailwind.
+
 This pulls in the fonts, the color palette, the Tailwind theme and utilities
 layers, `tw-animate-css`, the PrimeUI plugin, and the Comfy and Lucide icon
 plugins.
@@ -36,6 +39,7 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 | Path                            | Contents                                                                         |
 | ------------------------------- | -------------------------------------------------------------------------------- |
 | `./css/style.css`               | Full theme — palette, fonts, Tailwind layers, icon plugins                       |
+| `./css/theme.css`               | Full theme without automatic component source registration                       |
 | `./css/base.css`                | Palette and fonts only                                                           |
 | `./css/_palette.css`            | Color variables                                                                  |
 | `./css/fonts.css`               | Font faces                                                                       |
@@ -58,15 +62,16 @@ utilities. Size them with `size-*`, not font-size classes.
 Install the component peers alongside the package:
 
 ```sh
-pnpm add vue reka-ui vue-component-type-helpers
+pnpm add vue reka-ui vue-component-type-helpers @vueuse/core @vueuse/integrations
 ```
 
 Published components are compiled ES modules with declarations for TypeScript's
 `Bundler` module resolution; workspace imports use their Vue source. Reka is a
 peer so host providers and packaged components share its injection contexts.
 Its declarations require `vue-component-type-helpers`, which Reka currently
-omits from its published dependencies. These peers are optional for CSS-only
-consumers.
+omits from its published dependencies. VueUse provides the component composables
+and search integration. These peers are optional for CSS-only consumers and are
+not automatically installed. Install them explicitly when using Vue components.
 
 With strict dependency checking, VueUse also requires the `web-bluetooth`
 ambient types. Install `@types/web-bluetooth` and include `web-bluetooth` if your

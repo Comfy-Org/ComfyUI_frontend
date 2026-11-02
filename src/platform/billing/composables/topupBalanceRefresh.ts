@@ -1,5 +1,3 @@
-import { useAuthStore } from '@/stores/authStore'
-
 /**
  * A Stripe credit top-up completes in a separate tab, and the balance only
  * changes once Stripe's webhook reaches comfy-api. Nothing re-reads the balance
@@ -25,23 +23,17 @@ interface TopupBalanceSource {
   fetch: () => Promise<number | null>
 }
 
-const customerBalanceSource: TopupBalanceSource = {
-  current: () => useAuthStore().balance?.amount_micros ?? null,
-  fetch: async () =>
-    (await useAuthStore().fetchBalance())?.amount_micros ?? null
-}
-
 /**
  * Watch for the user returning from a Stripe top-up and refresh the balance.
  * Safe to call repeatedly: a new call replaces any watch still pending.
  */
 export function watchForTopupBalanceUpdate({
-  source = customerBalanceSource,
+  source,
   onBalanceIncreased
 }: {
-  source?: TopupBalanceSource
+  source: TopupBalanceSource
   onBalanceIncreased?: () => Promise<unknown>
-} = {}): void {
+}): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return
 
   stopActiveWatch?.()

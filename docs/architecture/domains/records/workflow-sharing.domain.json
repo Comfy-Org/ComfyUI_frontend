@@ -28,10 +28,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workflow/sharing/utils/shareAuthAttribution.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/platform/workflow/sharing/utils/shareAuthAttribution.ts",
       "role": "application"
     },

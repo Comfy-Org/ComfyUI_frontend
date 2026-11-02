@@ -17,9 +17,9 @@ import {
   intToHex,
   isColorFormat,
   toHexFromFormat
-} from '@/utils/colorUtil'
+} from '@comfyorg/shared-frontend-utils/colorUtil'
 
-import type { IColorWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { IColorWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import AppColorPicker from '@/components/common/AppColorPicker.vue'
 

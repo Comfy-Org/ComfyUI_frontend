@@ -20,7 +20,12 @@
       <p class="m-0 pl-6 text-sm text-muted-foreground">{{ copy?.body }}</p>
     </div>
     <div class="flex shrink-0 flex-wrap items-center gap-2 pl-6 sm:pl-0">
-      <Button variant="textonly" size="md" @click="emit('dismiss')">
+      <Button
+        v-if="banner.kind !== 'verifyPayment'"
+        variant="textonly"
+        size="md"
+        @click="emit('dismiss')"
+      >
         {{ $t('workspacePanel.billingStatus.planCheckout.dismiss') }}
       </Button>
       <Button
@@ -29,7 +34,7 @@
         :href="banner.actionUrl"
         target="_blank"
         rel="noopener"
-        variant="secondary"
+        variant="inverted"
         size="md"
         class="no-underline"
       >

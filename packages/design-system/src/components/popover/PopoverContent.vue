@@ -59,6 +59,7 @@ usePopoverViewportDismiss(
       :class="
         cn(
           'z-overlay w-72 origin-(--reka-popover-content-transform-origin) rounded-md border bg-background p-4 text-foreground shadow-md outline-none',
+          'overflow-auto [:where(&)]:max-h-(--reka-popover-content-available-height) [:where(&)]:max-w-(--reka-popover-content-available-width)',
           'data-[state=closed]:animate-out data-[state=open]:animate-in',
           'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
           'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',

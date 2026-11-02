@@ -5,24 +5,36 @@ import {
   pointInBounds,
   polylineIntersectsBounds
 } from '@/renderer/core/layout/utils/layoutMath'
-import type { Bounds, Point } from '@/renderer/core/layout/types'
+import type {
+  Bounds,
+  Point2D as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { LinkId } from '@/types/linkId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { LinkSegment, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
-import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
+import {
+  inputLinkId,
+  nodeLinkIds,
+  outputLinkIds
+} from '@/lib/litegraph/src/node/slotLinks'
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { deleteLinks, hideLinks, showLinks } from './linkVisibility'
 import type { LinkMutationHost } from './linkVisibility'
 
 interface LinkSelectionHost extends LinkMutationHost {
   graph: LGraph | null
+}
+
+interface NodeLinkToggleHost extends LinkSelectionHost {
+  links_render_mode: number
 }
 
 interface MarqueeHost {
@@ -245,6 +257,42 @@ export function showSelectedLinks(host: LinkSelectionHost): boolean {
     hidden.map((link) => link.id)
   )
   clearLinkSelection()
+  return true
+}
+
+function linksOfNodes(graph: LGraph, nodes: readonly LGraphNode[]): LLink[] {
+  const linkIds = new Set(nodes.flatMap((node) => nodeLinkIds(graph, node)))
+  return [...linkIds].flatMap((linkId) => {
+    const link = graph.getLink(linkId)
+    return link ? [link] : []
+  })
+}
+
+export function toggleNodeLinks(
+  host: NodeLinkToggleHost,
+  nodes: readonly LGraphNode[]
+): boolean {
+  const { graph } = host
+  if (!graph || host.links_render_mode === LinkRenderType.HIDDEN_LINK)
+    return false
+  const [visible, hidden] = partition(linksOfNodes(graph, nodes), (link) =>
+    isLinkVisible(graph, link)
+  )
+  const scope = graphScopeOf(graph)
+  if (visible.length) {
+    hideLinks(
+      host,
+      scope,
+      visible.map((link) => link.id)
+    )
+    return true
+  }
+  if (!hidden.length) return false
+  showLinks(
+    host,
+    scope,
+    hidden.map((link) => link.id)
+  )
   return true
 }
 

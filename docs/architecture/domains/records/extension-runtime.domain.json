@@ -8,10 +8,6 @@
       "role": "integration"
     },
     {
-      "path": "src/composables/useReconnectingNotification.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/composables/useReconnectingNotification.ts",
       "role": "application"
     },
@@ -28,80 +24,8 @@
       "role": "integration"
     },
     {
-      "path": "src/scripts/api.cancel.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.eventListeners.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.featureFlags.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.fetchApi.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.folderPaths.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.getEmbeddings.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.getExtensions.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.getSettings.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.getShareableAssets.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.logs.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.responses.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.sessionOverride.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.socketReset.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/api.storeUserData.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/scripts/api.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/apiTimeouts.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/scripts/app.getNodeDefs.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/scripts/app.graphReadiness.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/scripts/app.test.ts",
-      "role": "integration"
     },
     {
       "path": "src/scripts/app.ts",
@@ -112,24 +36,8 @@
       "role": "application"
     },
     {
-      "path": "src/scripts/appRegistry.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/scripts/appRegistry.ts",
       "role": "application"
-    },
-    {
-      "path": "src/scripts/ui.setStatus.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/scripts/ui.storageResilience.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/scripts/ui.test.ts",
-      "role": "presentation"
     },
     {
       "path": "src/scripts/ui.ts",
@@ -144,27 +52,23 @@
       "role": "integration"
     },
     {
-      "path": "src/services/extensionLoader.test.ts",
+      "path": "src/platform/extensions/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/customNodes/customNodeScripts.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/services/extensionLoader.ts",
+      "path": "src/platform/extensions/services/extensionLoader.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/services/extensionService.test.ts",
+      "path": "src/platform/extensions/services/extensionService.ts",
       "role": "application"
     },
     {
-      "path": "src/services/extensionService.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/extensionStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/extensionStore.ts",
+      "path": "src/platform/extensions/stores/extensionStore.ts",
       "role": "application"
     },
     {
@@ -174,24 +78,42 @@
     {
       "path": "src/types/extensionTypes.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/ComfyApi.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "packages/api-client/src/apiTimeouts.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["webcam-capture"],
-  "allowedConsumers": ["agent"],
+  "allowedDependencies": [
+    "error-reporting",
+    "extension-manager",
+    "keybindings",
+    "remote-config",
+    "telemetry",
+    "webcam-capture"
+  ],
+  "allowedConsumers": ["agent", "extension-manager"],
   "characterizationScenarios": [
     {
       "name": "Extension loader fetches, filters, imports, and reports failing extensions",
-      "checks": ["src/services/extensionLoader.test.ts"]
+      "checks": [
+        "src/platform/extensions/services/extensionLoader.test.ts",
+        "src/platform/customNodes/customNodeScripts.test.ts"
+      ]
     },
     {
       "name": "Extension store registers extensions and honors disabled settings and always-on core extensions",
-      "checks": ["src/stores/extensionStore.test.ts"]
+      "checks": ["src/platform/extensions/stores/extensionStore.test.ts"]
     },
     {
       "name": "Extension service registers extension contributions and invokes lifecycle hooks",
       "checks": [
-        "src/services/extensionService.test.ts",
+        "src/platform/extensions/services/extensionService.test.ts",
         "browser_tests/tests/extensionAPI.spec.ts"
       ]
     },
@@ -211,7 +133,7 @@
         "src/scripts/api.responses.test.ts",
         "src/scripts/api.featureFlags.test.ts",
         "src/scripts/api.sessionOverride.test.ts",
-        "src/scripts/api.eventListeners.test.ts"
+        "packages/api-client/src/ComfyApi.eventListeners.test.ts"
       ]
     },
     {
@@ -241,7 +163,7 @@
     "docs/adr/EXTENSIONS-PUBLIC-API-0005-bundle-vue-dependencies-in-extensions.md"
   ],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior without granting public entry points."
   ],
   "deepImports": "inventory"
 }

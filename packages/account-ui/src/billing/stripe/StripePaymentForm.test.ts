@@ -421,7 +421,7 @@ describe('StripePaymentForm', () => {
     })
   })
 
-  it('collects a one-time payment the card is never saved for when paying once', async () => {
+  it('collects a one-time card payment the card is never saved for when paying once', async () => {
     renderForm(2500, 'pmc_topup', { payOnce: true })
 
     await waitFor(() =>
@@ -432,11 +432,20 @@ describe('StripePaymentForm', () => {
         mode: 'payment',
         amount: 2500,
         currency: 'usd',
-        paymentMethodConfiguration: 'pmc_topup'
+        paymentMethodTypes: ['card']
       })
     )
     expect(stripeMocks.stripe.elements).not.toHaveBeenCalledWith(
       expect.objectContaining({ setupFutureUsage: expect.anything() })
+    )
+    expect(stripeMocks.stripe.elements).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentMethodConfiguration: expect.anything()
+      })
+    )
+    expect(stripeMocks.create).toHaveBeenCalledWith(
+      'payment',
+      expect.objectContaining({ wallets: { link: 'never' } })
     )
   })
 

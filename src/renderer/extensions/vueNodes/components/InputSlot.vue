@@ -79,7 +79,7 @@ import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useN
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 

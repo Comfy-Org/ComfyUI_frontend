@@ -4,15 +4,7 @@
   "description": "Host coordinators and mixed account views compose authentication, billing, and workspace membership. This record contains only previously cataloged modules moved into platform/account by ADR-BILLING-0049; new account helpers remain unclassified.",
   "modules": [
     {
-      "path": "src/platform/account/auth/WorkspaceAuthGate.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/account/auth/WorkspaceAuthGate.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/account/components/CurrentUserPopoverWorkspace.test.ts",
       "role": "presentation"
     },
     {
@@ -20,15 +12,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/account/components/SubscriptionPanelContentWorkspace.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/account/components/SubscriptionPanelContentWorkspace.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/account/components/WorkspaceSwitcherPopover.test.ts",
       "role": "presentation"
     },
     {
@@ -36,15 +20,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/account/components/dialogs/InviteMemberDialogContent.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/account/components/dialogs/InviteMemberDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/account/components/dialogs/TeamWorkspacesDialogContent.test.ts",
       "role": "presentation"
     },
     {
@@ -52,15 +28,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/account/components/dialogs/settings/MembersPanelContent.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/account/components/dialogs/settings/MembersPanelContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/account/components/dialogs/settings/PlanCreditsPanelContent.test.ts",
       "role": "presentation"
     },
     {
@@ -68,15 +36,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/account/components/dialogs/settings/WorkspaceMembersPanelContent.test.ts",
       "role": "presentation"
     },
     {
@@ -84,15 +44,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/account/components/dialogs/settings/WorkspaceMenuButton.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/account/components/dialogs/settings/WorkspaceMenuButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.test.ts",
       "role": "presentation"
     },
     {
@@ -104,15 +56,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/account/composables/useCreateWorkspaceUrlLoader.test.ts",
-      "role": "integration"
-    },
-    {
       "path": "src/platform/account/composables/useCreateWorkspaceUrlLoader.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/account/composables/useInviteUrlLoader.test.ts",
       "role": "integration"
     },
     {
@@ -120,19 +64,11 @@
       "role": "integration"
     },
     {
-      "path": "src/platform/account/composables/useMembersPanel.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/account/composables/useMembersPanel.ts",
       "role": "presentation"
     },
     {
       "path": "src/platform/account/composables/useWorkspaceDialogs.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/account/composables/useWorkspaceMenuItems.test.ts",
       "role": "presentation"
     },
     {
