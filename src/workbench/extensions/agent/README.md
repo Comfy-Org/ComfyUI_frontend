@@ -178,7 +178,9 @@ DEV_SERVER_COMFYUI_URL=https://<host>/ pnpm dev
 Incoming `doc_update` frames are decoded and applied incrementally with
 `Y.applyUpdate`; the follower never requests or fans out a full document for
 each update. Human edits are minted into the shared op vocabulary and sent as
-`doc_ops` frames on the same socket (`crdt/docOpMinter.ts`).
+`doc_ops` frames on the same socket (`crdt/docOpMinter.ts`). The doc-frame wire
+contract and its generated types are described in
+[`packages/ingest-types`](../../../../packages/ingest-types/README.md).
 
 While the follower holds the bound document, a turn sends no draft: the
 document is the source of truth and an unversioned draft would overwrite it.
@@ -194,3 +196,54 @@ An `ask_user` question stays on screen, read-only, after it resolves, until
 the thread is loaded again. The server's transcript keeps only a pending ask
 (`pending_ask`), so a reload, or opening another chat and coming back, drops a
 card whose ask has resolved.
+
+## Cross-repository release order
+
+### Glossary
+
+- **Dark deploy:** compatible code deployed while user exposure is disabled.
+- **Integration receipt:** exact revisions, package version, flags, and browser-visible proof.
+- **Consumer pin:** the exact shared-package version recorded in the manifest and lockfile.
+
+### Release order
+
+Agent protocol and applier changes must move in this order:
+
+```mermaid
+flowchart TD
+  package["comfy-multi-player<br/>Merge and publish an immutable release"]
+  cloud["Cloud — first runtime consumer<br/>Pin, test, dark deploy, and prove runtime"]
+  frontend["Frontend — second runtime consumer<br/>Pin, test, and deploy with exposure off"]
+  acceptance["Enable flags<br/>Prove an authenticated browser canvas edit and reconnect"]
+  stable["Stable promotion<br/>Reuse the exact tested combination"]
+
+  package --> cloud --> frontend --> acceptance --> stable
+```
+
+Cloud is the first runtime consumer, and frontend is the second. Update `package.json` and
+`pnpm-lock.yaml` only after the accepted `@comfyorg/comfy-multi-player` version is installable and
+the compatible cloud consumer has deployed. Run package-pin/parity checks, unit and browser tests,
+and prove both product-flag states before normal frontend review and merge.
+
+### Deploy and receipt
+
+Deploy the frontend with user exposure off. The integration receipt names exact frontend/cloud
+revisions, the shared package version, and flag values. `agent-in-app-experience` is the
+product/cohort flag; `AGENT_CRDT_MODE` plus `workflows.crdt_enabled` selects the V1 storage path.
+They are not interchangeable.
+
+### Acceptance gate
+
+Acceptance requires an authenticated browser flow that causes a visible canvas edit and survives
+reconnect. Package CI, frame tests, healthy services, or a served frontend alone do not satisfy the
+gate.
+
+### Stable promotion
+
+Stable promotion reuses the exact integrated combination, makes the backend compatible first,
+verifies the served frontend revision, and expands product access last.
+
+### Exceptions
+
+Backward-compatible frontend-only changes that do not emit, require, or expose a backend contract
+may merge independently if the PR explains why. Documentation-only changes may proceed in parallel.
