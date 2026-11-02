@@ -19,9 +19,10 @@
             cn(
               WidgetInputBaseClass,
               'flex w-full min-w-0 items-center overflow-hidden',
-              unifiedRows && 'not-disabled:bg-transparent',
+              unifiedRows
+                ? 'not-disabled:bg-transparent'
+                : !disabled && 'hover:bg-muted',
               useWidgetHeight(),
-              !disabled && 'hover:bg-muted',
               disabled && 'opacity-50',
               isInvalid && 'ring-1 ring-destructive'
             )
@@ -38,12 +39,12 @@
               :disabled
               tabindex="0"
               data-testid="widget-select-default-trigger"
-              class="flex min-w-0 flex-1 cursor-pointer items-center overflow-hidden border-none bg-transparent p-0 outline-none disabled:cursor-default"
+              class="flex h-full min-w-0 flex-1 cursor-pointer items-center overflow-hidden border-none bg-transparent p-0 outline-none not-disabled:hover:bg-muted disabled:cursor-default"
             >
               <span
                 :class="
                   cn(
-                    'min-w-[4ch] flex-1 truncate pr-1 pl-2',
+                    'min-w-[4ch] flex-1 truncate px-2',
                     unifiedRows ? 'text-right' : 'text-left'
                   )
                 "
@@ -63,7 +64,7 @@
               :disabled="disabled || !normalizedOptions.length"
               :class="
                 cn(
-                  'flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none hover:bg-muted disabled:cursor-default disabled:opacity-30',
+                  'flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none not-disabled:hover:bg-muted disabled:cursor-default disabled:opacity-30',
                   button.className
                 )
               "
