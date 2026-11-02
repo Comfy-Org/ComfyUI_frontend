@@ -75,7 +75,6 @@ export interface TabLinkPart {
   name?: string
 }
 
-/** A node pack the agent turned off, on, or removed during this turn. */
 export interface ExtensionChangePart {
   type: 'extensionChange'
   action: 'enabled' | 'disabled' | 'removed'
