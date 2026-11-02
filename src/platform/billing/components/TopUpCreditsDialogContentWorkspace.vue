@@ -366,9 +366,11 @@
 </template>
 
 <script setup lang="ts">
-import { servedTopUpBound,
+import {
+  servedTopUpBound,
   getTopupAmountPreset,
-  PURCHASE_REFUSAL_SERVER_CODES } from '@comfyorg/account-core/billing'
+  PURCHASE_REFUSAL_SERVER_CODES
+} from '@comfyorg/account-core/billing'
 import Card from '@comfyorg/design-system/card/Card'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
