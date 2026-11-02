@@ -5845,6 +5845,7 @@
         "limit": "Limite mensal: {spent} de {limit} usados",
         "limitTooltip": "Conta apenas cobranças de recarga automática. Redefine em {date}.",
         "limitTooltipNoDate": "Conta apenas cobranças de recarga automática.",
+        "member": "Os créditos podem ser recarregados automaticamente quando estiverem acabando. Fale com um proprietário do espaço de trabalho para gerenciar isso.",
         "off": "Recarrega créditos quando seu saldo está baixo",
         "onHold": "Nenhuma forma de pagamento padrão. Defina uma para retomar a recarga automática.",
         "paused": "Limite mensal atingido. Retoma em {date}.",

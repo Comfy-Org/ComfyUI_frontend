@@ -5845,6 +5845,7 @@
         "limit": "Límite mensual: se han usado {spent} de {limit}",
         "limitTooltip": "Solo cuenta los cobros de recarga automática. Se restablece el {date}.",
         "limitTooltipNoDate": "Solo cuenta los cobros de recarga automática.",
+        "member": "Los créditos se pueden recargar automáticamente cuando se agotan. Contacta con un propietario del espacio de trabajo para gestionarlo.",
         "off": "Recarga créditos cuando tu saldo es bajo",
         "onHold": "No hay un método de pago predeterminado. Configura uno para reanudar la recarga automática.",
         "paused": "Se alcanzó el límite mensual. Se reanuda el {date}.",
