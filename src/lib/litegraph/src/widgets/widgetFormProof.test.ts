@@ -132,6 +132,19 @@ describe('proveWidgetForm', () => {
       })
     })
 
+    it('when every widget is excluded but values were still written', () => {
+      const values = [1]
+
+      const proof = proveWidgetForm(
+        [{ name: 'preview', serialize: false }],
+        { widgets_values: values },
+        values,
+        serializing
+      )
+
+      expect(proof.refusal).toBe('length_mismatch')
+    })
+
     it('when the widget list was spliced after the values were written', () => {
       const values = [1, 2]
 

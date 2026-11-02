@@ -184,7 +184,7 @@ So the rule is not "derive the order from `node.widgets`". It is:
 Deriving is a guess dressed as a declaration; proving is not. `proveWidgetForm`
 (`src/lib/litegraph/src/widgets/widgetFormProof.ts`) is that predicate, and it returns an order
 **only** alongside `provable: true` — never a partial order beside a refusal. The result type is a
-discriminated union, so reading `order` without checking `provable` does not compile, and an empty
+discriminated union, so using `order` as a `string[]` without checking `provable` does not compile, and an empty
 serializing order is refused (`widgets_not_serialized`) because the document rejects an empty form.
 
 ### Why deriving does not work, measured

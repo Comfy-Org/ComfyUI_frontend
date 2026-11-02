@@ -105,9 +105,9 @@ export function proveWidgetForm(
   if ('refusal' in proven) return refuse(proven.refusal)
 
   const serializing = serializingWidgets(widgets ?? [])
-  if (serializing.length === 0) return refuse('widgets_not_serialized')
   if (serializing.length !== proven.values.length)
     return refuse('length_mismatch')
+  if (serializing.length === 0) return refuse('widgets_not_serialized')
 
   const addressed = addressableOrder(serializing)
   if ('refusal' in addressed) return refuse(addressed.refusal)
