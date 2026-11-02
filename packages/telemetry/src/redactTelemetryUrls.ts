@@ -23,8 +23,9 @@ const SPACED_QUERY_URL_PATTERN = new RegExp(
   'gi'
 )
 
+const QUERY_VALUE_RUN = `(?:[^\\s"'<>]|'(?![\\s,;)\\]]|$))*`
 const URL_TOKEN_PATTERN = new RegExp(
-  `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})[^\\s"<>]*` +
+  `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})${QUERY_VALUE_RUN}` +
     `|${RELATIVE_URL_START}\\?[^\\s"<>]*=[^\\s"<>]*` +
     `|${RELATIVE_URL_START_WITH_SEPARATOR}#[^\\s"<>]+` +
     `|${RELATIVE_URL_START}#[A-Z0-9_~%-]+=[^\\s"<>]*` +

@@ -185,6 +185,28 @@ describe('redactTelemetryUrls', () => {
   })
 
   describe.for([
+    {
+      kind: 'a single-quoted URL',
+      input: "GET 'https://h/x?token=SECRET'",
+      expected: "GET 'https://h/x'"
+    },
+    {
+      kind: 'a single-quoted URL followed by more text',
+      input: "Load failed: 'https://h/a?token=S', retrying",
+      expected: "Load failed: 'https://h/a', retrying"
+    },
+    {
+      kind: 'single-quoted URLs in a stringified array',
+      input: "['https://h/a?t=1','https://user:pw@h/b?t=2']",
+      expected: "['https://h/a','https://h/b']"
+    }
+  ])('$kind', ({ input, expected }) => {
+    it('redacts URL metadata without swallowing the closing quote', () => {
+      expect(redactTelemetryUrls(input)).toBe(expected)
+    })
+  })
+
+  describe.for([
     { kind: 'a fraction with a query suffix', text: 'ratio 1/2?token=secret' },
     {
       kind: 'a fraction with a spaced query suffix',
