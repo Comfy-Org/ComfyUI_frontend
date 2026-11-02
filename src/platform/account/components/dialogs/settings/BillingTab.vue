@@ -77,12 +77,10 @@
         @retry="retryBalance"
         @add-credits="addCredits('credits_panel')"
       />
-      <template v-if="capabilities.autoTopUpEnabled.value">
-        <template v-if="capabilities.canManageAutoTopUp.value">
-          <BillingAutoTopUpCard v-if="capabilities.canTopUp.value" />
-        </template>
-        <BillingAutoTopUpMemberCard />
-      </template>
+      <BillingAutoTopUpCard v-if="autoTopUpSection.kind === 'card'" />
+      <BillingAutoTopUpMemberCard
+        v-else-if="autoTopUpSection.kind === 'memberBlock'"
+      />
     </section>
 
     <section class="flex flex-col gap-3" data-testid="billing-handoff">
@@ -180,6 +178,7 @@ import BillingCreditsCard from '@/platform/billing/components/billingTab/Billing
 import BillingPlanRow from '@/platform/billing/components/billingTab/BillingPlanRow.vue'
 import {
   addCreditsEmphasis,
+  deriveAutoTopUpSection,
   deriveBillingTabLoad,
   planRowAction
 } from '@comfyorg/account-core/billing'
@@ -242,6 +241,14 @@ const action = computed(() =>
 )
 
 const { state: autoTopUp } = useBillingAutoTopUpCard()
+const autoTopUpSection = computed(() =>
+  deriveAutoTopUpSection({
+    autoTopUpEnabled: capabilities.autoTopUpEnabled.value,
+    canManageAutoTopUp: capabilities.canManageAutoTopUp.value,
+    canTopUp: capabilities.canTopUp.value,
+    manageAutoTopUpDenial: capabilities.manageAutoTopUpDenial.value
+  })
+)
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
     availableCents:
