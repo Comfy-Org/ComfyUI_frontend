@@ -367,12 +367,22 @@ jobs:
               # Return to main (keep the branch, we need it for PR)
               git checkout main || git checkout -f main
             else
-              # Get conflict info
               CONFLICTS=$(git diff --name-only --diff-filter=U | tr '\n' ',')
+              CHANGES_ALREADY_ON_TARGET=false
+              if [ -z "${CONFLICTS}" ] &&
+                git rev-parse -q --verify CHERRY_PICK_HEAD >/dev/null &&
+                git diff --cached --quiet HEAD; then
+                CHANGES_ALREADY_ON_TARGET=true
+              fi
               git cherry-pick --abort || true
 
-              echo "::error::Cherry-pick failed due to conflicts"
-              FAILED="${FAILED}${TARGET_BRANCH}:conflicts:${CONFLICTS} "
+              if [ "$CHANGES_ALREADY_ON_TARGET" = true ]; then
+                echo "::notice::${TARGET_BRANCH} already has the changes from ${MERGE_COMMIT}, skipping backport"
+                FAILED="${FAILED}${TARGET_BRANCH}:already-exists "
+              else
+                echo "::error::Cherry-pick failed due to conflicts"
+                FAILED="${FAILED}${TARGET_BRANCH}:conflicts:${CONFLICTS} "
+              fi
 
               # Clean up the failed branch
               git checkout main || git checkout -f main
