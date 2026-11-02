@@ -92,7 +92,7 @@
   --muted-foreground: var(--color-smoke-800);
   --accent: var(--color-charcoal-800);
   --destructive: var(--color-coral-700);
-  --border: oklch(1 0 0 / 10%);
+  --border: var(--color-charcoal-700);
   --ring: var(--muted-foreground);
   --popover: var(--background);
   --input: var(--accent);

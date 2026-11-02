@@ -75,7 +75,7 @@
       "muted-foreground": "#8a8a8a",
       "accent": "#272729",
       "destructive": "#b33a3a",
-      "border": "oklch(1 0 0 / 10%)",
+      "border": "#3f3f44",
       "node-foreground": "#a0a0a0",
       "node-header": "#09090a",
       "node-border": "#3f3f44",
