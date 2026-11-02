@@ -3002,6 +3002,8 @@
     "messageSupport": "Message Support",
     "lastUpdated": "Last updated",
     "topUp": {
+      "deniedTopupsPaused": "Credit top-ups are paused for this workspace right now.",
+      "deniedCreatorOnly": "Only the person who created this workspace can finish setting up its billing.",
       "insufficientTitle": "Insufficient Credits",
       "insufficientMessage": "You don't have enough credits to run this workflow.",
       "quickPurchase": "Quick Purchase",

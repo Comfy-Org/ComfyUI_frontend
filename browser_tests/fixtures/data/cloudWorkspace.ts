@@ -15,8 +15,8 @@ import { createPlan } from '@e2e/fixtures/data/billingPlans'
 
 export const CLOUD_REMOTE_CONFIG: RemoteConfig = {}
 
-export const LEGACY_PERSONAL_BILLING_STATUS = {
-  billing_rail: 'legacy_stripe',
+export const PERSONAL_BILLING_STATUS = {
+  billing_rail: 'stripe',
   billing_status: 'inactive',
   has_funds: true,
   is_active: false,

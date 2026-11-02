@@ -764,8 +764,6 @@
       {
         "name": "billing/presentation",
         "patterns": [
-          "src/platform/billing/components/TopUpCreditsDialogContentLegacy.vue",
-          "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts",
           "src/platform/billing/components/TopbarSubscribeButton.vue",
           "src/platform/billing/components/TopbarSubscribeButton.test.ts",
           "src/platform/billing/components/credit-slider/**",

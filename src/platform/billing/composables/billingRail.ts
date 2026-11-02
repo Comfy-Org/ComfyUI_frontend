@@ -7,21 +7,6 @@ function assertNever(_rail: never): false {
   return false
 }
 
-/** Whether a personal workspace on this rail uses legacy account operations. */
-export function usesLegacyAccountOperations(rail: BillingRailValue): boolean {
-  switch (rail) {
-    case 'legacy_stripe':
-      return true
-    case 'stripe':
-    case 'metronome':
-    case null:
-    case undefined:
-      return false
-    default:
-      return assertNever(rail)
-  }
-}
-
 /** Whether the in-app cancellation flow supports this rail. */
 export function supportsInAppCancellation(rail: BillingRailValue): boolean {
   switch (rail) {

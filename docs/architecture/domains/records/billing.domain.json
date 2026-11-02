@@ -1,12 +1,8 @@
 {
   "id": "billing",
   "capability": "Billing",
-  "description": "Billing for personal and team workspaces: the billing context that routes between legacy and workspace rails, billing dialogs, the billing SDK store and its operation projections, billing operation tracking, subscription checkout, plan change, resubscribe, downgrade, top-ups and pending top-ups, billing capabilities and capability revisions, billing banners, invoices, plan credits, pricing tables, hosted billing hand-off, and checkout journey telemetry. Cloud subscription plans, tier constants, and cancellation live under platform/billing/subscription; identity belongs to authentication and membership to workspace. The billing core of @comfyorg/account-core, the payment views of @comfyorg/account-ui, @comfyorg/billing-core, @comfyorg/billing-contract, and credit formatting from @comfyorg/shared-frontend-utils belong here.",
+  "description": "Billing for personal and team workspaces: the billing context, billing dialogs, the billing SDK store and its operation projections, billing operation tracking, subscription checkout, plan change, resubscribe, downgrade, top-ups and pending top-ups, billing capabilities and capability revisions, billing banners, invoices, plan credits, pricing tables, hosted billing hand-off, and checkout journey telemetry. Cloud subscription plans, tier constants, and cancellation live under platform/billing/subscription; identity belongs to authentication and membership to workspace. The billing core of @comfyorg/account-core, the payment views of @comfyorg/account-ui, @comfyorg/billing-core, @comfyorg/billing-contract, and credit formatting from @comfyorg/shared-frontend-utils belong here.",
   "modules": [
-    {
-      "path": "src/platform/billing/components/TopUpCreditsDialogContentLegacy.vue",
-      "role": "presentation"
-    },
     {
       "path": "src/platform/billing/components/TopbarSubscribeButton.vue",
       "role": "presentation"
@@ -457,11 +453,10 @@
       ]
     },
     {
-      "name": "Credits panel, usage logs, and legacy top-up dialog show balances and start top-ups",
+      "name": "Credits panel and usage logs show balances and start top-ups",
       "checks": [
         "src/platform/billing/components/settings/CreditsPanel.test.ts",
         "src/platform/billing/components/settings/UsageLogsTable.test.ts",
-        "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts",
         "src/platform/billing/components/credit-slider/CreditSlider.test.ts"
       ]
     },

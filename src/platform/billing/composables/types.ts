@@ -27,7 +27,7 @@ import type {
 } from '@comfyorg/billing-core'
 
 /** `unknown` until the active workspace has loaded; no billing call may be made yet. */
-export type BillingType = 'legacy' | 'workspace' | 'unknown'
+export type BillingType = 'workspace' | 'unknown'
 
 export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -204,7 +204,7 @@ export interface BillingState {
 }
 
 /** The rail a cancel actually ran on, fixed when the call was dispatched. */
-export type CancelRail = Exclude<BillingType, 'unknown'>
+export type CancelRail = 'workspace' | 'legacy'
 
 export interface BillingContext
   extends BillingState, Omit<BillingActions, 'cancelSubscription'> {
