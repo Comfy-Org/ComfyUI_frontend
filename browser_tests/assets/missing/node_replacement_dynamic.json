@@ -1,5 +1,5 @@
 {
-  "last_node_id": 5,
+  "last_node_id": 6,
   "last_link_id": 4,
   "nodes": [
     {
@@ -12,10 +12,21 @@
       "mode": 0,
       "inputs": [],
       "outputs": [
-        { "name": "IMAGE", "type": "IMAGE", "links": [1, 2], "slot_index": 0 },
-        { "name": "MASK", "type": "MASK", "links": null }
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [1],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
       ],
-      "properties": { "Node name for S&R": "LoadImage" },
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
       "widgets_values": ["example.png", "image"]
     },
     {
@@ -27,13 +38,28 @@
       "order": 1,
       "mode": 0,
       "inputs": [
-        { "name": "image1", "type": "IMAGE", "link": 1 },
-        { "name": "image2", "type": "IMAGE", "link": 2 }
+        {
+          "name": "image1",
+          "type": "IMAGE",
+          "link": 1
+        },
+        {
+          "name": "image2",
+          "type": "IMAGE",
+          "link": 2
+        }
       ],
       "outputs": [
-        { "name": "IMAGE", "type": "IMAGE", "links": [3], "slot_index": 0 }
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [3],
+          "slot_index": 0
+        }
       ],
-      "properties": { "Node name for S&R": "E2E_OldImageBatch" },
+      "properties": {
+        "Node name for S&R": "E2E_OldImageBatch"
+      },
       "widgets_values": []
     },
     {
@@ -44,11 +70,24 @@
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [{ "name": "image", "type": "IMAGE", "link": 3 }],
-      "outputs": [
-        { "name": "IMAGE", "type": "IMAGE", "links": [4], "slot_index": 0 }
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 3
+        }
       ],
-      "properties": { "Node name for S&R": "E2E_OldImageScaleBy" },
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [4],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "E2E_OldImageScaleBy"
+      },
       "widgets_values": ["lanczos", 1.5]
     },
     {
@@ -59,7 +98,13 @@
       "flags": {},
       "order": 3,
       "mode": 0,
-      "inputs": [{ "name": "images", "type": "IMAGE", "link": 4 }],
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4
+        }
+      ],
       "outputs": [],
       "properties": {},
       "widgets_values": ["ComfyUI"]
@@ -74,20 +119,58 @@
       "mode": 0,
       "inputs": [],
       "outputs": [
-        { "name": "CONTROL_NET", "type": "CONTROL_NET", "links": null }
+        {
+          "name": "CONTROL_NET",
+          "type": "CONTROL_NET",
+          "links": null
+        }
       ],
-      "properties": { "Node name for S&R": "E2E_OldAdapterLoader" },
+      "properties": {
+        "Node name for S&R": "E2E_OldAdapterLoader"
+      },
       "widgets_values": ["t2iadapter_model.safetensors"]
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "pos": [50, 500],
+      "size": [315, 314],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [2],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["example.png", "image"]
     }
   ],
   "links": [
     [1, 1, 0, 2, 0, "IMAGE"],
-    [2, 1, 0, 2, 1, "IMAGE"],
+    [2, 6, 0, 2, 1, "IMAGE"],
     [3, 2, 0, 3, 0, "IMAGE"],
     [4, 3, 0, 4, 0, "IMAGE"]
   ],
   "groups": [],
   "config": {},
-  "extra": { "ds": { "scale": 1, "offset": [0, 0] } },
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [0, 0]
+    }
+  },
   "version": 0.4
 }
