@@ -129,6 +129,12 @@ function mountFollower() {
     })
   )
   onTestFinished(unmount)
+  agentSocket.receive('doc_subscribed', {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    ok: true,
+    seq: 0
+  })
 
   async function submitBatch(
     operations: GraphOperation[]
