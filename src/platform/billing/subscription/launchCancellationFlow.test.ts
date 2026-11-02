@@ -134,23 +134,14 @@ describe('launchCancellationFlow', () => {
     expect(shown[0].flow).toEqual(retentionFlow())
   })
 
-  it.for([
-    { name: 'billing type is unresolved', billingType: 'unknown' as const },
-    { name: 'the workspace id is not loaded', activeWorkspaceId: null }
-  ])(
-    'does not prepare a retention session when $name',
-    async ({ billingType, activeWorkspaceId }) => {
-      if (billingType) mocks.billingType.value = billingType
-      if (activeWorkspaceId !== undefined)
-        mocks.activeWorkspaceId = activeWorkspaceId
-      const { shown, showFlow } = captureFlow()
+  it('does not prepare a retention session for a launch captured before the workspace loaded', async () => {
+    const { shown, showFlow } = captureFlow()
 
-      await launchCancellationFlow({ showFlow })
+    await launchCancellationFlow({ launchWorkspaceId: null, showFlow })
 
-      expect(billingApi.prepareRetentionFlow).not.toHaveBeenCalled()
-      expect(shown[0].flow).toBeNull()
-    }
-  )
+    expect(billingApi.prepareRetentionFlow).not.toHaveBeenCalled()
+    expect(shown[0].flow).toBeNull()
+  })
 
   it('keeps cancellation available while workspace state initializes', async () => {
     mocks.billingType.value = 'unknown'
