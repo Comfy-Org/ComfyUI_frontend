@@ -100,6 +100,25 @@ function createPngWithChunk(
   return result.buffer
 }
 
+function encode(text: string): Uint8Array {
+  return new TextEncoder().encode(text)
+}
+
+function rawChunk(
+  chunkType: string,
+  data: Uint8Array,
+  declaredLength = data.length
+): Uint8Array {
+  const header = new Uint8Array(8)
+  new DataView(header.buffer).setUint32(0, declaredLength)
+  header.set(encode(chunkType), 4)
+  return concatBytes(header, data, [0, 0, 0, 0])
+}
+
+function concatBytes(...parts: ArrayLike<number>[]): Uint8Array<ArrayBuffer> {
+  return Uint8Array.from(parts.flatMap((part) => Array.from(part)))
+}
+
 describe('getFromPngBuffer', () => {
   it('returns empty object for invalid PNG', async () => {
     const invalidData = new ArrayBuffer(8)
@@ -211,6 +230,35 @@ describe('getFromPngBuffer', () => {
       'Failed to decompress iTXt chunk "workflow":',
       expect.any(Error)
     )
+  })
+
+  it.for(['tEXt', 'comf', 'iTXt'])(
+    'skips a %s chunk whose keyword is not terminated inside the chunk and reads the next chunk',
+    async (chunkType) => {
+      const workflow = '{"nodes":[]}'
+      const buffer = concatBytes(
+        PNG_SIGNATURE,
+        rawChunk(chunkType, encode('abc')),
+        rawChunk('tEXt', encode(`workflow\0${workflow}`))
+      ).buffer
+
+      const result = await getFromPngBuffer(buffer)
+
+      expect(result).toEqual({ workflow })
+    }
+  )
+
+  it('stops at a text chunk whose declared length runs past the end of the file', async () => {
+    const workflow = '{"nodes":[]}'
+    const buffer = concatBytes(
+      PNG_SIGNATURE,
+      rawChunk('tEXt', encode(`workflow\0${workflow}`)),
+      rawChunk('tEXt', encode('abc\0def'), 0x7fffffff)
+    ).buffer
+
+    const result = await getFromPngBuffer(buffer)
+
+    expect(result).toEqual({ workflow })
   })
 })
 
