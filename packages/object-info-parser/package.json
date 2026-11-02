@@ -20,6 +20,7 @@
       "default": "./src/index.ts"
     },
     "./*": {
+      "@comfyorg/object-info-parser": "./src/*.ts",
       "types": "./dist/*.d.ts",
       "default": "./src/*.ts"
     }
