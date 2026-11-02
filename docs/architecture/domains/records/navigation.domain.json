@@ -21,8 +21,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Preserved query parameters survive redirects and are merged back by namespace",

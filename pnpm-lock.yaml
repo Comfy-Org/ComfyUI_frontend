@@ -1629,6 +1629,9 @@ importers:
 
   tools/architecture:
     dependencies:
+      fallow:
+        specifier: 'catalog:'
+        version: 3.37.0
       oxfmt:
         specifier: 'catalog:'
         version: 0.75.0
