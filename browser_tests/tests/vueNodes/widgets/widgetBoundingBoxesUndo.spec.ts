@@ -15,13 +15,8 @@ test.describe(
     test('Canvas undo of a height change resizes the drawing area', async ({
       comfyPage
     }) => {
-      test.fail(
-        true,
-        'The editor keeps the old size after canvas undo (QA Desk 1.58 e3592)'
-      )
-      const boxes = new WidgetBoundingBoxesFixture(
-        comfyPage.vueNodes.getNodeLocator('1')
-      )
+      const node = comfyPage.vueNodes.getNodeLocator('1')
+      const boxes = new WidgetBoundingBoxesFixture(node)
       await expect(boxes.canvas).toBeVisible()
       await expect.poll(() => boxes.aspectRatio()).toBeCloseTo(1, 1)
 
@@ -30,7 +25,12 @@ test.describe(
       await expect.poll(() => boxes.aspectRatio()).toBeCloseTo(2, 1)
       await boxes.drawBox(0.5, 0.8)
 
-      await comfyPage.canvasOps.mouseClickAt({ x: 900, y: 400 })
+      const nodeBox = await node.boundingBox()
+      if (!nodeBox) throw new Error('Bounding boxes node is not visible')
+      await comfyPage.page.mouse.click(
+        nodeBox.x + nodeBox.width + 40,
+        nodeBox.y + 40
+      )
       await comfyPage.keyboard.undo()
 
       await expect(boxes.height).toHaveValue('1024')

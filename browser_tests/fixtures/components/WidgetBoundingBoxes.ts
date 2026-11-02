@@ -3,13 +3,11 @@ import type { Locator } from '@playwright/test'
 export class WidgetBoundingBoxesFixture {
   public readonly root: Locator
   public readonly canvas: Locator
-  public readonly drawingArea: Locator
   public readonly height: Locator
 
   constructor(node: Locator) {
     this.root = node.getByTestId('bounding-boxes')
     this.canvas = this.root.locator('canvas')
-    this.drawingArea = this.canvas.locator('..')
     this.height = node
       .getByLabel('height', { exact: true })
       .getByRole('spinbutton')
@@ -33,8 +31,8 @@ export class WidgetBoundingBoxesFixture {
   }
 
   async aspectRatio(): Promise<number> {
-    const box = await this.drawingArea.boundingBox()
-    if (!box) throw new Error('Bounding boxes drawing area is not visible')
+    const box = await this.canvas.boundingBox()
+    if (!box) throw new Error('Bounding boxes canvas is not visible')
     return box.width / box.height
   }
 }
