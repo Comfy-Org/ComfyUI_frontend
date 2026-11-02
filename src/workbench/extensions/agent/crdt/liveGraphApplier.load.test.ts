@@ -1,4 +1,8 @@
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type {
+  WidgetCatalog,
+  WorkflowJSON,
+  WorkflowNode
+} from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -46,6 +50,10 @@ class LifecycleSource extends LGraphNode {
     this.addOutput('MODEL', 'MODEL')
   }
 
+  override onConfigure() {
+    lifecycle.push(`configure configuring=${useApp().configuringGraph}`)
+  }
+
   override onConnectionsChange() {
     lifecycle.push(`connect configuring=${useApp().configuringGraph}`)
   }
@@ -73,12 +81,18 @@ const CATALOG: WidgetCatalog = {
 }
 const CONTEXT = { actor: 'agent:test', opIds: ['op-1'] }
 
-function sampler(id: number, widgets_values: unknown[]) {
+function sampler(
+  id: number,
+  widgets_values: (string | boolean)[]
+): ISerialisedNode & WorkflowNode {
   return {
     id,
     type: 'KSampler',
     pos: [id * 300, 0],
     size: [200, 100],
+    flags: {},
+    order: 0,
+    mode: 0,
     inputs: [{ name: 'model', type: 'MODEL', link: null }],
     widgets_values
   }
@@ -128,7 +142,7 @@ describe('LiveGraphApplier node creation through loadSerialisedNode', () => {
     const info = sampler(7, ['sample_heun', true, 'karras'])
     const graph = applyWorkflow({ nodes: [info], links: [] })
     const loaded = withGraphConfiguring(() =>
-      loadSerialisedNode(new LGraph(), structuredClone(info) as ISerialisedNode)
+      loadSerialisedNode(new LGraph(), structuredClone(info))
     )
 
     expect(liveNode(graph, 7).serialize()).toMatchObject(loaded.serialize())
@@ -163,10 +177,11 @@ describe('LiveGraphApplier node creation through loadSerialisedNode', () => {
     links: [[1, 3, 0, 7, 0, 'MODEL']]
   }
 
-  it('connects created nodes while configuring, between the graph-configured callbacks', () => {
+  it('configures and connects created nodes while configuring, around the graph-configured callbacks', () => {
     applyWorkflow(sourceLinkedToSampler)
 
     expect(lifecycle).toEqual([
+      'configure configuring=true',
       'onGraphConfigured',
       'connect configuring=true',
       'onAfterGraphConfigured links=1'
