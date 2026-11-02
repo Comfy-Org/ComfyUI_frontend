@@ -9,8 +9,6 @@
     }
   ],
   "publicEntryPoints": ["packages/account-core/src/workspaceLink.ts"],
-  "allowedDependencies": [],
-  "allowedConsumers": ["account", "workspace", "billing", "navigation"],
   "characterizationScenarios": [
     {
       "name": "The published workspace URL contract keeps its shared identifier charset and absent, invalid and repeated query handling",
@@ -21,7 +19,7 @@
       "checks": ["src/platform/navigation/savedWorkflowLink.test.ts"]
     },
     {
-      "name": "Only approved consumers can import the exact published leaf without access to workspace internals",
+      "name": "Consumers import the exact published leaf while role direction and enforced-domain deep imports stay guarded",
       "checks": ["tools/architecture/src/boundaries.test.ts"]
     }
   ],

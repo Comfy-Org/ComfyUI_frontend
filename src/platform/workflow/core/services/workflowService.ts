@@ -861,6 +861,22 @@ export const useWorkflowService = () => {
     }
   }
 
+  /**
+   * Loads an open tab without showing it, and sets its app/graph mode the way
+   * opening it would.
+   */
+  const loadWorkflowInBackground = (
+    workflow: ComfyWorkflow
+  ): Promise<ComfyWorkflow> =>
+    queueWorkflowLoad(async () => {
+      const loaded: ComfyWorkflow = await workflow.load()
+      if (loaded.initialMode === undefined)
+        loaded.initialMode =
+          linearModeToAppMode(loaded.initialState?.extra?.linearMode) ??
+          linearModeToAppMode(loaded.activeState?.extra?.linearMode)
+      return loaded
+    }, workflow.path)
+
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
@@ -1289,6 +1305,7 @@ export const useWorkflowService = () => {
     loadBlankWorkflow,
     reloadCurrentWorkflow,
     openWorkflow,
+    loadWorkflowInBackground,
     closeWorkflow,
     closeWorkflows,
     renameWorkflow,

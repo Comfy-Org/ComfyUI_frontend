@@ -151,7 +151,7 @@
   },
   "src/composables/auth/useAuthActions.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 1
     }
   },
   "src/composables/canvas/useFocusNode.test.ts": {
@@ -506,11 +506,6 @@
       "count": 1
     }
   },
-  "src/platform/billing/components/TopUpCreditsDialogContentLegacy.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/platform/billing/components/UnifiedPricingTable.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -576,16 +571,6 @@
       "count": 1
     }
   },
-  "src/platform/billing/subscription/components/CreditsTile.vue": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/subscription/components/PricingTable.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/platform/billing/subscription/composables/usePricingTableUrlLoader.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
@@ -609,11 +594,6 @@
   "src/platform/billing/subscription/launchCancellationFlow.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/platform/billing/subscription/utils/subscriptionCheckoutUtil.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
     }
   },
   "src/platform/cloud/oauth/oauthApi.ts": {

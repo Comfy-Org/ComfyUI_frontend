@@ -16,7 +16,7 @@ test.describe(
   { tag: ['@screenshot', '@ui'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.page.route('**/customers/events**', (route) =>
+      await comfyPage.page.route('**/api/billing/events**', (route) =>
         route.fulfill({ json: AGENT_USAGE_CUSTOMER_EVENTS })
       )
       await new UsageLogsTable(comfyPage.settingDialog).open()

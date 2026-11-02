@@ -955,6 +955,7 @@ describe('useAgentSession (v1 composition root)', () => {
             rejectSettledRead = reject
           })
       )
+      .mockRejectedValue(readFailure)
     const conversation = useAgentConversationStore()
     conversation.setThreadId('th-1')
     const { source, emit } = fakeEvents()
@@ -981,14 +982,20 @@ describe('useAgentSession (v1 composition root)', () => {
     })
     await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(3))
     assert.exists(rejectSettledRead)
-    rejectSettledRead(readFailure)
+    vi.useFakeTimers()
+    try {
+      rejectSettledRead(readFailure)
+      await vi.advanceTimersByTimeAsync(40_000)
+    } finally {
+      vi.useRealTimers()
+    }
 
-    await vi.waitFor(() =>
-      expect(reportError).toHaveBeenCalledWith(readFailure, {
-        surface: 'agent',
-        errorType: 'failure_recovering_agent_turn'
-      })
-    )
+    expect(getMessages).toHaveBeenCalledTimes(8)
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(readFailure, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
     expect(session.entries.value.at(-1)).toMatchObject({
       role: 'assistant',
       parts: [
@@ -1007,6 +1014,141 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.entries.value.at(-1)).toMatchObject({
       parts: [{ type: 'thinking', text: 'live after reload' }]
     })
+  })
+
+  it('does not retry a settled snapshot read the server refused', async () => {
+    const refused = new AgentApiError('unauthorized', 401, undefined)
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockRejectedValue(refused)
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    vi.useFakeTimers()
+    try {
+      emit(thinking('msg-1', 'live after reload'))
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(40_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(getMessages).toHaveBeenCalledTimes(3)
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(refused, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  })
+
+  it('reports a settled snapshot read that is still failing when its deadline passes', async () => {
+    const slowFailure = new AgentApiError('gateway timeout', 504, undefined)
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockImplementation(
+        () =>
+          new Promise<AgentMessages>((_resolve, reject) => {
+            setTimeout(() => reject(slowFailure), 25_000)
+          })
+      )
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    vi.useFakeTimers()
+    try {
+      emit(thinking('msg-1', 'live after reload'))
+      emit(done('msg-1'))
+      await vi.advanceTimersByTimeAsync(90_000)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(slowFailure, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  })
+
+  it('reads a settled snapshot turn again after a transient read failure', async () => {
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce(hangingGetMessages)
+      .mockRejectedValueOnce(
+        new AgentApiError('history unavailable', 503, undefined)
+      )
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', 'Added it.', 'msg-1'),
+          content: {
+            text: 'Added it.',
+            thinking: [{ text: 'before the reload' }]
+          }
+        }
+      ])
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+
+    emit(thinking('msg-1', 'live after reload'))
+    emit(done('msg-1'))
+
+    await vi.waitFor(
+      () =>
+        expect(session.entries.value.at(-1)).toMatchObject({
+          role: 'assistant',
+          parts: [{ type: 'thinking', text: 'before the reload' }, {}]
+        }),
+      { timeout: 5000 }
+    )
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('reads a settled snapshot turn again while its row still reads as streaming', async () => {
@@ -6874,10 +7016,26 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.sendMessage('add a text input node')
     draft = undefined
-    const sent = await session.sendMessage('and a load image node')
+    const sent = await session.sendMessage(
+      'and a load image node',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-refused'
+    )
 
     expect(sent).toBe(false)
     expect(postMessage).toHaveBeenCalledTimes(1)
+    expect(telemetry.trackAgentSendGated).toHaveBeenCalledWith({
+      gate: 'composer',
+      outcome: 'dropped',
+      reason: 'target_unavailable',
+      client_message_id: 'cm-refused',
+      held_ms: null,
+      thread_id: expect.any(String),
+      client_session_id: expect.any(String)
+    })
   })
 
   it('(h10c) once the re-flagged mint is adopted, the next turn names it instead of minting again', async () => {
@@ -8445,7 +8603,14 @@ describe('useAgentSession (v1 composition root)', () => {
     session.start()
 
     const first = session.sendMessage('first')
-    const second = await session.sendMessage('second')
+    const second = await session.sendMessage(
+      'second',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-second'
+    )
     expect(second).toBe(false)
     expect(postMessage).toHaveBeenCalledTimes(1)
 
@@ -8458,6 +8623,15 @@ describe('useAgentSession (v1 composition root)', () => {
         )
     )
     expect(busyNotice).toBeDefined()
+    expect(telemetry.trackAgentSendGated).toHaveBeenCalledWith({
+      gate: 'composer',
+      outcome: 'dropped',
+      reason: 'send_busy',
+      client_message_id: 'cm-second',
+      held_ms: null,
+      thread_id: null,
+      client_session_id: expect.any(String)
+    })
 
     resolvePost?.({ thread_id: 'th-1', message_id: 'msg-1' })
     await first

@@ -16,8 +16,6 @@
     "src/platform/workflow/core/utils/userFileIdentity.ts",
     "src/platform/workflow/core/services/userFileContext.ts"
   ],
-  "allowedDependencies": [],
-  "allowedConsumers": ["workflow-management", "workflow-persistence"],
   "characterizationScenarios": [
     {
       "name": "Identity includes the received canonical UUID, owner and workspace; expected refusals retain their DOMException contract",
