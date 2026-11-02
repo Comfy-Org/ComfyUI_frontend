@@ -13,9 +13,5 @@ export const CODEX_GRADIENT_STOPS = [
   { offset: 1, color: '#3941FF' }
 ]
 
-/** Lucide's astroid, ComfyUI's agent, drawn in a 24-unit square. */
-export const ASTROID_PATH =
-  'M12.983 21.186a1 1 0 0 1-1.966 0a10 10 0 0 0-8.203-8.203a1 1 0 0 1 0-1.966a10 10 0 0 0 8.203-8.203a1 1 0 0 1 1.966 0a10 10 0 0 0 8.203 8.203a1 1 0 0 1 0 1.966a10 10 0 0 0-8.203 8.203'
-
-/** The marks AgentMark draws: three coding agents and ComfyUI's own agent. */
-export type AgentMarkName = 'claude' | 'codex' | 'opencode' | 'localAgent'
+/** The marks AgentMark draws: three coding agents. */
+export type AgentMarkName = 'claude' | 'codex' | 'opencode'

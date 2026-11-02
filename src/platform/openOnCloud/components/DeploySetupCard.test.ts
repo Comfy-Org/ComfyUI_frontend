@@ -7,7 +7,6 @@ import { createI18n } from 'vue-i18n'
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
-import { api } from '@/scripts/api'
 
 import DeploySetupCard from './DeploySetupCard.vue'
 
@@ -37,10 +36,7 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function renderCard({ localAgentReady = true } = {}) {
-  api.serverFeatureFlags.value = localAgentReady
-    ? { agent: { state: 'ready' } }
-    : {}
+function renderCard() {
   const onDone = vi.fn()
   const onDismiss = vi.fn()
   render(DeploySetupCard, {
@@ -89,39 +85,24 @@ describe('DeploySetupCard', () => {
     expect(onDone).toHaveBeenCalledOnce()
   })
 
-  it.for([
-    {
-      localAgent: 'ready',
-      localAgentReady: true,
-      marks: 'agent-marks-localAgent',
-      rows: [
-        'Use local agent',
-        'Open in Claude desktop',
-        'Open in ChatGPT desktop',
-        'Copy prompt'
-      ]
-    },
-    {
-      localAgent: 'not ready',
-      localAgentReady: false,
-      marks: 'agent-marks-desktopAgents',
-      rows: ['Open in Claude desktop', 'Open in ChatGPT desktop', 'Copy prompt']
-    }
-  ])(
-    'offers the local agent in its marks and its menu only while it is $localAgent',
-    async ({ localAgentReady, marks, rows }) => {
-      const { user } = renderCard({ localAgentReady })
-      const button = screen.getByTestId('deploy-setup-agent')
+  it('offers the desktop apps in its marks, and three rows in its menu', async () => {
+    const { user } = renderCard()
+    const button = screen.getByTestId('deploy-setup-agent')
 
-      expect(within(button).getByTestId(marks)).toBeInTheDocument()
-      await user.click(button)
-      expect(
-        (await screen.findAllByRole('menuitem')).map((row) =>
-          row.textContent.trim()
-        )
-      ).toEqual(rows)
-    }
-  )
+    expect(
+      within(button).getByTestId('agent-marks-desktopAgents')
+    ).toBeInTheDocument()
+    await user.click(button)
+    expect(
+      (await screen.findAllByRole('menuitem')).map((row) =>
+        row.textContent.trim()
+      )
+    ).toEqual([
+      'Open in Claude desktop',
+      'Open in ChatGPT desktop',
+      'Copy prompt'
+    ])
+  })
 
   it.for([
     { row: 'Open in Claude desktop', app: 'claude' },

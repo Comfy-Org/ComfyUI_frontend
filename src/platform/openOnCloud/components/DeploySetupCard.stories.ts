@@ -5,7 +5,6 @@ import {
   DEPLOY_VIDEO_POSTER_SRC,
   DEPLOY_VIDEO_SOURCES
 } from '@/platform/workflow/deploy/constants'
-import { api } from '@/scripts/api'
 
 import DeploySetupCard from './DeploySetupCard.vue'
 
@@ -26,43 +25,23 @@ const meta: Meta<typeof DeploySetupCard> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-function reportLocalAgent(state: 'ready' | 'off') {
-  api.serverFeatureFlags.value = {
-    ...api.serverFeatureFlags.value,
-    agent: state === 'ready' ? { state } : undefined
+export const AgentMenu: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByTestId('deploy-setup-agent'))
+    const menu = within(canvasElement.ownerDocument.body)
+    await expect(
+      (await menu.findAllByRole('menuitem')).map((row) =>
+        row.textContent.trim()
+      )
+    ).toEqual([
+      'Open in Claude desktop',
+      'Open in ChatGPT desktop',
+      'Copy prompt'
+    ])
   }
 }
-
-function withLocalAgent(state: 'ready' | 'off', rows: string[]): Story {
-  return {
-    beforeEach: () => reportLocalAgent(state),
-    play: async ({ canvas, canvasElement, userEvent }) => {
-      await userEvent.click(canvas.getByTestId('deploy-setup-agent'))
-      const menu = within(canvasElement.ownerDocument.body)
-      await expect(
-        (await menu.findAllByRole('menuitem')).map((row) =>
-          row.textContent.trim()
-        )
-      ).toEqual(rows)
-    }
-  }
-}
-
-export const LocalAgentReady = withLocalAgent('ready', [
-  'Use local agent',
-  'Open in Claude desktop',
-  'Open in ChatGPT desktop',
-  'Copy prompt'
-])
-
-export const NoLocalAgent = withLocalAgent('off', [
-  'Open in Claude desktop',
-  'Open in ChatGPT desktop',
-  'Copy prompt'
-])
 
 export const PromptCopied: Story = {
-  beforeEach: () => reportLocalAgent('ready'),
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByTestId('deploy-setup-agent'))
     await userEvent.click(

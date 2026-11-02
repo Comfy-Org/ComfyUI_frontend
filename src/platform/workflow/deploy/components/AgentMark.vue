@@ -42,7 +42,7 @@
         :d="CODEX_MARK_PATH"
       />
     </template>
-    <template v-else-if="agent === 'opencode'">
+    <template v-else>
       <circle cx="10" cy="10" r="10" fill="#f1ecec" />
       <g transform="translate(3.6 2) scale(0.05) translate(-128 -96)">
         <path fill="#cfcecd" d="M320 224V352H192V224H320Z" />
@@ -54,18 +54,6 @@
         />
       </g>
     </template>
-    <template v-else>
-      <circle cx="10" cy="10" r="10" class="fill-background" />
-      <path
-        transform="translate(10 10) scale(0.55) translate(-12 -12)"
-        fill="none"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        class="stroke-foreground"
-        :d="ASTROID_PATH"
-      />
-    </template>
   </svg>
 </template>
 
@@ -73,7 +61,6 @@
 import { useId } from 'vue'
 
 import {
-  ASTROID_PATH,
   CLAUDE_MARK_PATH,
   CODEX_GRADIENT_STOPS,
   CODEX_MARK_PATH

@@ -46,7 +46,7 @@ import { computed, useId } from 'vue'
 import AgentMark from '@/platform/workflow/deploy/components/AgentMark.vue'
 import type { AgentMarkName } from '@/platform/workflow/deploy/components/agentMarkPaths'
 
-type AgentMarkStack = 'codingAgents' | 'localAgent' | 'desktopAgents'
+type AgentMarkStack = 'codingAgents' | 'desktopAgents'
 
 interface PlacedMark {
   agent: AgentMarkName
@@ -71,14 +71,6 @@ const STACKS: Record<AgentMarkStack, MarkStack> = {
       { agent: 'opencode', x: 25, y: 0, tilt: 10 }
     ],
     front: { agent: 'claude', x: 12.5, y: -3.75, tilt: 0 }
-  },
-  localAgent: {
-    width: 45,
-    behind: [
-      { agent: 'claude', x: 0, y: 0, tilt: -10 },
-      { agent: 'codex', x: 25, y: 0, tilt: 10 }
-    ],
-    front: { agent: 'localAgent', x: 12.5, y: -3.75, tilt: 0 }
   },
   desktopAgents: {
     width: 38,
