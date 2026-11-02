@@ -37,7 +37,7 @@ const mockTeamCreditStops = ref<TeamCreditStops | null>(null)
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
+const mockCanOpenPricingSurface = ref(true)
 
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
@@ -416,7 +416,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('does not open when the workspace becomes sales-managed during the catalog fetch', async () => {
-    setRouteQuery({ pricing: 'team', stop: 'team_700' })
+    setRouteQuery({ pricing: 'team', stop: 'team_700', cycle: 'yearly' })
     mockTeamCreditStops.value = null
     vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
       async () => {
@@ -427,6 +427,7 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
+    expect(useBillingContext().fetchPlans).toHaveBeenCalledOnce()
     expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 

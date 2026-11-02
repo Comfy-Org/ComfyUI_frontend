@@ -150,7 +150,6 @@ export function usePricingTableUrlLoader() {
       const canManageSubscription: unknown =
         permissions.value.canManageSubscription
       if (canManageSubscription !== true) return
-      // A workspace switch during the fetch can make this one sales-managed.
       const canOpenPricing: unknown = canOpenPricingSurface.value
       if (canOpenPricing !== true) return
       const availableTeamCreditStops: unknown = teamCreditStops.value
