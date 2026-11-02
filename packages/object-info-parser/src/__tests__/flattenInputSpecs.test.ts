@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { createInputSpecInterpreter } from '#/inputSpecInterpreter'
+import { transformNodeDefV1ToV2 } from '#/migration'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '#/schemas/nodeDefSchema'
+
+const { flattenInputSpecs } = createInputSpecInterpreter(() => {})
 
 describe('flattenInputSpecs', () => {
   it('includes a dynamic combo input alongside its nested per-option inputs', () => {
@@ -57,8 +59,8 @@ describe('flattenInputSpecs', () => {
       output_node: false
     }
 
-    const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-    const result = flattenInputSpecs(nodeDefImpl.inputs)
+    const nodeDefV2 = transformNodeDefV1ToV2(nodeDef)
+    const result = flattenInputSpecs(nodeDefV2.inputs)
     const byName = Object.fromEntries(result.map((spec) => [spec.name, spec]))
 
     expect(Object.keys(byName)).toEqual([
@@ -77,7 +79,7 @@ describe('flattenInputSpecs', () => {
   })
 
   it('returns inputs unchanged when there is no dynamic combo', () => {
-    const nodeDefImpl = new ComfyNodeDefImpl({
+    const nodeDefV2 = transformNodeDefV1ToV2({
       name: 'PlainNode',
       display_name: 'Plain Node',
       category: 'Test',
@@ -93,7 +95,7 @@ describe('flattenInputSpecs', () => {
       output_node: false
     })
 
-    const result = flattenInputSpecs(nodeDefImpl.inputs)
+    const result = flattenInputSpecs(nodeDefV2.inputs)
 
     expect(result.map((spec) => spec.name)).toEqual(['seed'])
   })
@@ -145,8 +147,8 @@ describe('flattenInputSpecs', () => {
       output_node: false
     }
 
-    const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-    const result = flattenInputSpecs(nodeDefImpl.inputs)
+    const nodeDefV2 = transformNodeDefV1ToV2(nodeDef)
+    const result = flattenInputSpecs(nodeDefV2.inputs)
     const thresholdSpecs = result.filter((spec) => spec.name === 'threshold')
 
     expect(thresholdSpecs).toHaveLength(1)
@@ -173,10 +175,10 @@ describe('flattenInputSpecs', () => {
       output_node: false
     }
 
-    const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
+    const nodeDefV2 = transformNodeDefV1ToV2(nodeDef)
 
-    expect(() => flattenInputSpecs(nodeDefImpl.inputs)).not.toThrow()
-    const result = flattenInputSpecs(nodeDefImpl.inputs)
+    expect(() => flattenInputSpecs(nodeDefV2.inputs)).not.toThrow()
+    const result = flattenInputSpecs(nodeDefV2.inputs)
     expect(result.map((spec) => spec.name)).toEqual(['model'])
   })
 
@@ -199,8 +201,8 @@ describe('flattenInputSpecs', () => {
       output_node: false
     }
 
-    const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-    const result = flattenInputSpecs(nodeDefImpl.inputs)
+    const nodeDefV2 = transformNodeDefV1ToV2(nodeDef)
+    const result = flattenInputSpecs(nodeDefV2.inputs)
 
     expect(result.map((spec) => spec.name)).toEqual(['model'])
   })
@@ -232,8 +234,8 @@ describe('flattenInputSpecs', () => {
       output_node: false
     }
 
-    const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-    const result = flattenInputSpecs(nodeDefImpl.inputs)
+    const nodeDefV2 = transformNodeDefV1ToV2(nodeDef)
+    const result = flattenInputSpecs(nodeDefV2.inputs)
 
     expect(result.map((spec) => spec.name)).toEqual(['model', 'image'])
   })
