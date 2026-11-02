@@ -69,8 +69,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Dragging and dropping links connects compatible slots and rejects invalid targets",

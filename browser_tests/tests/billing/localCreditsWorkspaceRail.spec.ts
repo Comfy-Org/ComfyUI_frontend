@@ -8,9 +8,7 @@ import { workspaceRailAuthFixture as test } from '@e2e/fixtures/workspaceRailAut
  * Regression coverage for 1.51 QA finding #11: on a local (non-Cloud)
  * distribution, a workspace without an active subscription had no way to add
  * credits — the subscribe CTA is hidden on Local and both Add credits entry
- * points were gated on an active subscription. Only reproduces on the
- * workspace billing rail; localCreditsNoSubscribeUi.spec.ts covers the
- * legacy rail.
+ * points were gated on an active subscription.
  */
 test.describe('Local credits surfaces on the workspace billing rail', () => {
   test('lets an unsubscribed workspace owner reach the top-up dialog', async ({

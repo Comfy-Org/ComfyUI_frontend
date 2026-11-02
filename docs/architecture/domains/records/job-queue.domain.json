@@ -109,8 +109,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["keybindings"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Jobs client fetches queue, history pages, details, and assets with schema validation",
