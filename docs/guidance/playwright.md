@@ -162,15 +162,17 @@ Vue node state is a CSS class: `await expect(node).toHaveClass(/before:bg-bypass
 
 ## Test tags
 
-`playwright.config.ts` routes a test to a project by its tags, so a test runs
-only where its tags place it:
+`playwright.config.ts` selects projects by tag. The default `chromium` project
+skips tests tagged `@mobile`, `@perf`, `@audit`, `@cloud`, or `@desktop`, so
+those run only in their own project; `@2x` and `@0.5x` add a project and the
+test still runs in `chromium`:
 
 | Tag           | Effect                                                 |
 | ------------- | ------------------------------------------------------ |
 | `@mobile`     | Runs in the mobile-chrome (Pixel 5) project            |
 | `@mobile-ios` | Runs in the mobile-safari (iPhone 15 / WebKit) project |
-| `@2x`         | Runs in the 2x-scale project                           |
-| `@0.5x`       | Runs in the 0.5x-scale project                         |
+| `@2x`         | Also runs in the 2x-scale project                      |
+| `@0.5x`       | Also runs in the 0.5x-scale project                    |
 | `@perf`       | Runs in the perf project                               |
 | `@audit`      | Runs in the audit project                              |
 | `@cloud`      | Runs in the cloud project                              |
@@ -322,19 +324,19 @@ boundary; a timing assumption that only one spec needs stays in that spec.
 
 ### Common flake patterns
 
-| Pattern                             | Bad                                                | Fix                                                              |
-| ----------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
-| Snapshot then assert                | `expect(await evaluate()).toBe(x)`                 | `await expect.poll(() => evaluate()).toBe(x)`                    |
-| Immediate layout read               | `expect((await loc.boundingBox())!.width).toBe(w)` | `await expect.poll(() => loc.boundingBox().then(b => b?.width))` |
-| Immediate graph state after drop    | `expect(await getLinkCount()).toBe(1)`             | `await expect.poll(() => getLinkCount()).toBe(1)`                |
-| Immediate count                     | `expect(await loc.count()).toBe(3)`                | `await expect(loc).toHaveCount(3)`                               |
-| Fake readiness helper               | Helper clicks but asserts nothing                  | Remove it; poll the actual value                                 |
-| `nextFrame()` after menu click      | `clickMenuItem(x); nextFrame()`                    | `clickMenuItem(x); contextMenu.waitForHidden()`                  |
-| Check-then-act in a helper          | `if (await loc.count()) await loc.waitFor(…)`      | `await loc.waitFor({ state: 'hidden' })`                         |
-| Count method on a helper            | Helper returns `await loc.count()`                 | Expose the `Locator` so callers use `toHaveCount`                |
-| Screenshot without readiness        | `loadWorkflow(); nextFrame(); screenshot`          | Assert the expected node state first                             |
-| Non-deterministic node order        | `getNodeRefsByType('X')[0]` with several matches   | `getNodeRefById(id)` or guard `toHaveLength(1)`                  |
-| Dismiss guard with a built-in delay | Click, then assert hidden once                     | Retry click and `toBeHidden` together inside `toPass()`          |
+| Pattern                             | Bad                                                | Fix                                                                      |
+| ----------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
+| Snapshot then assert                | `expect(await evaluate()).toBe(x)`                 | `await expect.poll(() => evaluate()).toBe(x)`                            |
+| Immediate layout read               | `expect((await loc.boundingBox())!.width).toBe(w)` | `await expect.poll(() => loc.boundingBox().then(b => b?.width)).toBe(w)` |
+| Immediate graph state after drop    | `expect(await getLinkCount()).toBe(1)`             | `await expect.poll(() => getLinkCount()).toBe(1)`                        |
+| Immediate count                     | `expect(await loc.count()).toBe(3)`                | `await expect(loc).toHaveCount(3)`                                       |
+| Fake readiness helper               | Helper clicks but asserts nothing                  | Remove it; poll the actual value                                         |
+| `nextFrame()` after menu click      | `clickMenuItem(x); nextFrame()`                    | `clickMenuItem(x); contextMenu.waitForHidden()`                          |
+| Check-then-act in a helper          | `if (await loc.count()) await loc.waitFor(…)`      | `await loc.waitFor({ state: 'hidden' })`                                 |
+| Count method on a helper            | Helper returns `await loc.count()`                 | Expose the `Locator` so callers use `toHaveCount`                        |
+| Screenshot without readiness        | `loadWorkflow(); nextFrame(); screenshot`          | Assert the expected node state first                                     |
+| Non-deterministic node order        | `getNodeRefsByType('X')[0]` with several matches   | `getNodeRefById(id)` or guard `toHaveLength(1)`                          |
+| Dismiss guard with a built-in delay | Click, then assert hidden once                     | Retry click and `toBeHidden` together inside `toPass()`                  |
 
 ## Gotchas
 
