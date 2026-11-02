@@ -196,7 +196,7 @@ import { installComfyApi } from '@/platform/nodeApi/comfyApi'
 import { provideGraphLoadingState } from '@/platform/nodeApi/defsRegistry'
 import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
 import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {

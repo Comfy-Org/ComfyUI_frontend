@@ -101,7 +101,6 @@ import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { resetComfyApi } from '@/platform/nodeApi/comfyApi'
 import {
   onWorkflowLoaded,
   resetAppReadyForTest
