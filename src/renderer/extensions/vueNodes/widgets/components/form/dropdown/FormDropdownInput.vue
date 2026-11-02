@@ -9,6 +9,7 @@ import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/com
 import type { FormDropdownInputProps } from './types'
 
 const {
+  inputId,
   isOpen,
   placeholder = 'Select...',
   items,
@@ -75,6 +76,7 @@ defineExpose({ focus, showPicker })
     "
   >
     <button
+      :id="inputId"
       ref="buttonRef"
       :class="
         cn(

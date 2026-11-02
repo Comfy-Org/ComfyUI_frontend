@@ -1,24 +1,28 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed, inject, useTemplateRef } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { widget, rootClass, valueText } = defineProps<{
+const { widget, rootClass, valueText, inputId, labelClass } = defineProps<{
   widget: Pick<
     SimplifiedWidget<string | number | undefined>,
     'name' | 'label' | 'displayLabel' | 'borderStyle'
   >
   rootClass?: string
   valueText?: string
+  inputId?: string
+  labelClass?: string
   noBorder?: boolean
   fillWidth?: boolean
 }>()
 
 const hideLayoutField = useHideLayoutField()
 const unifiedRows = inject(UnifiedWidgetRowsKey, false)
+const labelElement = useTemplateRef<HTMLLabelElement>('labelElement')
+defineExpose({ labelElement })
 const label = computed(
   () => widget.displayLabel ?? (widget.label || widget.name)
 )
@@ -39,15 +43,21 @@ const borderStyle = computed(() =>
       )
     "
   >
-    <div
+    <label
       v-if="!hideLayoutField"
+      ref="labelElement"
+      :for="inputId"
       :title="label"
       :class="
         cn(
-          'content-center-safe truncate',
-          unifiedRows && 'max-w-fit min-w-0 flex-1 text-node-foreground'
+          'content-center-safe truncate select-none',
+          unifiedRows && 'max-w-fit min-w-0 flex-1 text-node-foreground',
+          labelClass
         )
       "
+      @pointerdown.stop
+      @pointermove.stop
+      @pointerup.stop
     >
       <span
         data-testid="widget-layout-field-label"
@@ -57,7 +67,7 @@ const borderStyle = computed(() =>
           {{ label }}
         </template>
       </span>
-    </div>
+    </label>
     <slot name="between" />
     <div
       :class="

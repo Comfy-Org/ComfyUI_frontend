@@ -8,9 +8,13 @@ const {
   class: className,
   alpha = true,
   disabled = false,
-  accessibleLabel
+  accessibleLabel,
+  triggerId
 } = defineProps<
-  Pick<ColorPickerProps, 'class' | 'alpha' | 'disabled' | 'accessibleLabel'>
+  Pick<
+    ColorPickerProps,
+    'class' | 'alpha' | 'disabled' | 'accessibleLabel' | 'triggerId'
+  >
 >()
 
 const color = defineModel<string>({ default: '#000000' })
@@ -24,6 +28,7 @@ const { t } = useI18n()
     :alpha
     :disabled
     :accessible-label="accessibleLabel"
+    :trigger-id="triggerId"
     :hex-label="t('color.hex')"
     :rgba-label="t('color.rgba')"
     :hue-label="t('color.hue')"

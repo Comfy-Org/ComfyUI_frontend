@@ -37,13 +37,14 @@
         :class="
           cn(
             'absolute inset-0 truncate border-0 bg-transparent p-1 text-xs focus:outline-0',
-            edgeButtons && 'text-right'
+            edgeButtons && 'pr-2 text-right'
           )
         "
         inputmode="decimal"
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
+        @focus="textEdit = true"
         @blur="handleBlur"
         @keyup.enter="handleBlur"
         @keydown.up.prevent="updateValueBy(step)"
@@ -80,8 +81,14 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside, usePointerSwipe, whenever } from '@vueuse/core'
+import {
+  onClickOutside,
+  useEventListener,
+  usePointerSwipe,
+  whenever
+} from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -96,7 +103,8 @@ const {
   hideButtons = false,
   edgeButtons = false,
   displayValue,
-  parseValue
+  parseValue,
+  labelElement
 } = defineProps<{
   min?: number
   max?: number
@@ -107,6 +115,7 @@ const {
   displayValue?: string
   parseValue?: (raw: string) => number | undefined
   inputAttrs?: Record<string, unknown>
+  labelElement?: HTMLLabelElement | null
 }>()
 
 const { t } = useI18n()
@@ -144,25 +153,43 @@ function handleBlur(e: Event) {
   textEdit.value = false
 }
 
-let dragDelta = 0
 function handlePointerUp() {
-  if (isSwiping.value) return
+  if (disabled || isSwiping.value) return
 
   textEdit.value = true
   inputField.value?.focus()
   inputField.value?.select()
 }
 
-const { distanceX, isSwiping } = usePointerSwipe(swipeElement, {
-  onSwipeEnd: () => (dragDelta = 0)
-})
+function useScrubTarget(
+  target: MaybeRefOrGetter<HTMLElement | null | undefined>
+) {
+  let dragDelta = 0
+  let dragged = false
+  const swipe = usePointerSwipe(target, {
+    onSwipeStart: () => {
+      dragDelta = 0
+      dragged = false
+    },
+    onSwipeEnd: () => (dragDelta = 0)
+  })
 
-whenever(distanceX, () => {
-  if (disabled) return
-  const delta = ((distanceX.value - dragDelta) / 10) | 0
-  dragDelta += delta * 10
-  modelValue.value = clamp(modelValue.value - delta * step)
-})
+  whenever(swipe.distanceX, () => {
+    if (disabled) return
+    const delta = ((swipe.distanceX.value - dragDelta) / 10) | 0
+    dragDelta += delta * 10
+    dragged ||= delta !== 0
+    modelValue.value = clamp(modelValue.value - delta * step)
+  })
+
+  useEventListener(target, 'click', (event) => {
+    if (dragged) event.preventDefault()
+  })
+  return swipe
+}
+
+const { isSwiping } = useScrubTarget(swipeElement)
+useScrubTarget(() => labelElement)
 
 function updateValueBy(delta: number) {
   modelValue.value = Math.min(max, Math.max(min, modelValue.value + delta))

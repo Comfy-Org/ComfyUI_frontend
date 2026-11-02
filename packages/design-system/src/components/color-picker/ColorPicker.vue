@@ -17,7 +17,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import ColorPickerPanel from './ColorPickerPanel.vue'
 
-const { alpha = true, accessibleLabel } = defineProps<ColorPickerProps>()
+const {
+  alpha = true,
+  accessibleLabel,
+  triggerId
+} = defineProps<ColorPickerProps>()
 
 const modelValue = defineModel<string>({ default: '#000000' })
 
@@ -74,6 +78,7 @@ const isOpen = ref(false)
     <PopoverTrigger as-child>
       <slot name="trigger">
         <button
+          :id="triggerId"
           type="button"
           :disabled="$props.disabled"
           :aria-label="accessibleLabel"

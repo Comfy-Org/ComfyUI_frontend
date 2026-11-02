@@ -188,7 +188,12 @@ const meta: Meta<StoryArgs> = {
               name: 'seed',
               type: 'INT',
               value: args.seed,
-              options: { min: 0, max: Number.MAX_SAFE_INTEGER, step: 10 },
+              options: {
+                min: 0,
+                max: Number.MAX_SAFE_INTEGER,
+                step: 10,
+                precision: 0
+              },
               controlWidget: {
                 value: args.seedMode,
                 update(value) {
@@ -201,7 +206,7 @@ const meta: Meta<StoryArgs> = {
               name: 'steps',
               type: 'INT',
               value: args.steps,
-              options: { min: 1, max: 100, step: 10 }
+              options: { min: 1, max: 100, step: 10, precision: 0 }
             },
             {
               arg: 'cfg',

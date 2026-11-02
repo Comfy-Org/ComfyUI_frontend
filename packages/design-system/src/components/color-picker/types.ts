@@ -6,6 +6,7 @@ export interface HSVA {
 }
 
 export interface ColorPickerProps {
+  triggerId?: string
   class?: string
   disabled?: boolean
   alpha?: boolean

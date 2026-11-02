@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget="widget" fill-width>
+  <WidgetLayoutField :widget="widget" :input-id="inputId" fill-width>
     <template #between><slot name="between" /></template>
     <div
       :class="
@@ -32,6 +32,7 @@
         class="h-auto w-16 shrink-0 bg-transparent hover:bg-transparent"
       >
         <NumberFieldInput
+          :id="inputId"
           :aria-label="widget.name"
           :class="cn('text-xs', unifiedRows && 'text-right')"
         />
@@ -41,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed, inject, useId } from 'vue'
 
 import Slider from '@comfyorg/design-system/slider/Slider'
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
@@ -64,6 +65,7 @@ const { widget } = defineProps<{
 }>()
 
 const modelValue = defineModel<number>({ default: 0 })
+const inputId = useId()
 const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 
 const updateLocalValue = (newValue: number[] | undefined): void => {

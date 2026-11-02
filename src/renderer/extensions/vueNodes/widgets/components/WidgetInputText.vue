@@ -1,5 +1,9 @@
 <template>
-  <WidgetLayoutField :widget="layoutWidget" :value-text="modelValue">
+  <WidgetLayoutField
+    :widget="layoutWidget"
+    :input-id="inputId"
+    :value-text="modelValue"
+  >
     <div class="relative">
       <Loader
         v-if="loading"
@@ -7,15 +11,16 @@
         class="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-foreground"
       />
       <Input
-        v-model="modelValue"
         v-bind="filteredProps"
+        :id="inputId"
+        v-model="modelValue"
         :class="
           cn(
             WidgetInputBaseClass,
             'h-auto min-w-[4ch] truncate',
             !isReadOnly && 'hover:bg-muted',
             size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
-            unifiedRows && 'pr-7 pl-2 text-right not-disabled:bg-transparent',
+            unifiedRows && 'pr-8 pl-2 text-right not-disabled:bg-transparent',
             loading && 'pl-9'
           )
         "
@@ -29,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed, inject, useId } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
 import Input from '@comfyorg/design-system/input/Input'
@@ -57,6 +62,7 @@ const {
 }>()
 
 const modelValue = defineModel<string>({ default: '' })
+const inputId = useId()
 const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 
 const filteredProps = computed(() =>

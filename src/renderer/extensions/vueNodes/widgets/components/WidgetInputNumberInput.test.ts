@@ -51,6 +51,47 @@ function getNumberInput(container: Element) {
 }
 
 describe('WidgetInputNumberInput Value Binding', () => {
+  it('focuses the numeric input when its label is clicked', async () => {
+    const user = userEvent.setup()
+    renderComponent(createNumberInputWidget(37, 'int'), 37)
+
+    await user.click(screen.getByText('test_input_number'))
+
+    expect(screen.getByRole('spinbutton')).toHaveFocus()
+  })
+
+  it.for([
+    { disabled: false, expected: 49 },
+    { disabled: true, expected: 37 }
+  ])(
+    'scrubs the label with disabled=$disabled',
+    async ({ disabled, expected }) => {
+      const user = userEvent.setup()
+      const widget = createNumberInputWidget(37, 'int', {
+        step2: 2,
+        disabled
+      })
+      const { rerender } = renderComponent(widget, 37)
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      const label = screen.getByText('test_input_number')
+
+      await user.pointer([
+        {
+          keys: '[MouseLeft>]',
+          target: label,
+          coords: { clientX: 20, clientY: 10 }
+        },
+        { target: label, coords: { clientX: 80, clientY: 10 } },
+        { keys: '[/MouseLeft]', target: label }
+      ])
+
+      expect(screen.getByRole('spinbutton')).toHaveValue(String(expected))
+    }
+  )
+
   it('displays initial value in input field', () => {
     const widget = createNumberInputWidget(42, 'int')
     renderComponent(widget, 42)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, ref, toRef, toValue } from 'vue'
+import { computed, provide, ref, toRef, toValue, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@comfyorg/viewport3d/load3d/constants'
@@ -31,6 +31,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const inputId = useId()
 
 provide(
   AssetKindKey,
@@ -160,12 +161,13 @@ async function updateFiles(files: File[]) {
 </script>
 
 <template>
-  <WidgetLayoutField :widget>
+  <WidgetLayoutField :widget :input-id="inputId">
     <FormDropdown
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
+      :input-id="inputId"
       :selected="selectedSet"
       :items="dropdownItems"
       :display-items="displayItems"

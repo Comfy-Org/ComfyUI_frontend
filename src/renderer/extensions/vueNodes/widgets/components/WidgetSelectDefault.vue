@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget :value-text="selectedSummary">
+  <WidgetLayoutField :widget :input-id="inputId" :value-text="selectedSummary">
     <template #between><slot name="between" /></template>
     <ComboboxRoot
       :open="isOpen"
@@ -30,6 +30,7 @@
         >
           <ComboboxTrigger as-child>
             <button
+              :id="inputId"
               type="button"
               role="combobox"
               aria-haspopup="listbox"
@@ -198,7 +199,7 @@ import {
   ComboboxTrigger,
   ComboboxVirtualizer
 } from 'reka-ui'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, useId } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -228,6 +229,7 @@ type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
 
 const { widget, filenameSummary = false } = defineProps<Props>()
 const unifiedRows = inject(UnifiedWidgetRowsKey, false)
+const inputId = useId()
 const widgetLabel = computed(() => widget.label || widget.name)
 
 const MAX_VISIBLE_OPTIONS = 7

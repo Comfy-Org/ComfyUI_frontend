@@ -31,6 +31,7 @@ import {
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
+  inputId?: string
   items: FormDropdownItem[]
   /** Items used for display in the input field. Falls back to items if not provided. */
   displayItems?: FormDropdownItem[]
@@ -69,6 +70,7 @@ interface Props {
 const { t } = useI18n()
 
 const {
+  inputId,
   placeholder,
   multiple = false,
   uploadable = false,
@@ -317,6 +319,7 @@ function showPicker() {
   <div ref="triggerAnchorRef">
     <FormDropdownInput
       ref="triggerRef"
+      :input-id
       :files
       :is-open
       :placeholder="placeholderText"

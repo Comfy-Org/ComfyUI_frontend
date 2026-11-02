@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed, inject, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
@@ -21,6 +21,8 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const { locale } = useI18n()
 const unifiedRows = inject(UnifiedWidgetRowsKey, false)
+const inputId = useId()
+const layoutField = useTemplateRef('layoutField')
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
@@ -148,6 +150,7 @@ const sliderWidth = computed(() => {
 })
 
 const inputAriaAttrs = computed(() => ({
+  id: inputId,
   'aria-label': props.widget.label || props.widget.name,
   'aria-valuenow': modelValue.value,
   'aria-valuemin': filteredProps.value.min,
@@ -159,7 +162,10 @@ const inputAriaAttrs = computed(() => ({
 
 <template>
   <WidgetLayoutField
+    ref="layoutField"
     :widget
+    :input-id="inputId"
+    label-class="cursor-ew-resize touch-pan-y"
     :root-class="props.rootClass"
     :value-text="formattedValue"
   >
@@ -177,6 +183,7 @@ const inputAriaAttrs = computed(() => ({
           :edge-buttons="unifiedRows"
           :parse-value="parseWidgetValue"
           :input-attrs="inputAriaAttrs"
+          :label-element="layoutField?.labelElement"
           :class="
             cn(
               WidgetInputBaseClass,
