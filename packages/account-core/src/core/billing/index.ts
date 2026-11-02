@@ -369,10 +369,13 @@ export {
 export type {
   AutoTopUpCardFacts,
   AutoTopUpCardState,
+  AutoTopUpOffView,
+  AutoTopUpOffViewFacts,
   AutoTopUpSection,
   AutoTopUpSectionFacts
 } from './billingTab/autoTopUpCard'
 export {
+  autoTopUpOffView,
   deriveAutoTopUpCard,
   deriveAutoTopUpSection
 } from './billingTab/autoTopUpCard'
