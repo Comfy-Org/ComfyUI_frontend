@@ -13,7 +13,7 @@ import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
-import type { AuthUserInfo } from '@/types/authTypes'
+import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 import { useApp } from '@/scripts/appInstance'
 import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
 
@@ -34,24 +34,53 @@ const graphLoadLifecycleHooks = new Set<string>([
   'onGraphLoadError'
 ] satisfies (keyof ComfyExtension)[])
 
-const graphLoadEntrypoints = new Set<PropertyKey>([
+const graphLoadEntrypoints = [
   'loadGraphData',
-  'loadApiJson',
-  'handleFile'
-] satisfies (keyof ComfyApp)[])
+  'loadApiJson'
+] satisfies (keyof ComfyApp)[]
 
-function rejectNestedGraphLoad() {
-  return Promise.reject(
-    new Error('A graph-load lifecycle hook cannot start a nested graph load')
+const graphLoadHookOrigin = Symbol('graphLoadHookOrigin')
+
+/** True when this `handleFile` call came through a graph-load hook's app. */
+export function isGraphLoadHookOrigin(options: unknown): boolean {
+  return (
+    typeof options === 'object' &&
+    options !== null &&
+    (options as Record<symbol, unknown>)[graphLoadHookOrigin] === true
   )
 }
 
-function createGraphLoadHookApp(app: ComfyApp) {
+function withGraphLoadHookOrigin(options: unknown): object {
+  return typeof options === 'object' && options !== null
+    ? { ...options, [graphLoadHookOrigin]: true }
+    : { [graphLoadHookOrigin]: true }
+}
+
+function createGraphLoadHookDispatch(app: ComfyApp) {
   let dispatching = true
+  const overrides = new Map<PropertyKey, unknown>()
+  for (const name of graphLoadEntrypoints) {
+    const original = app[name]
+    overrides.set(name, (...args: unknown[]) =>
+      dispatching ? Promise.resolve(false) : Reflect.apply(original, app, args)
+    )
+  }
+  {
+    const original = app.handleFile
+    overrides.set('handleFile', (...args: unknown[]) => {
+      if (!dispatching) return Reflect.apply(original, app, args)
+      const [file, openSource, options] = args
+      return Reflect.apply(original, app, [
+        file,
+        openSource,
+        withGraphLoadHookOrigin(options)
+      ])
+    })
+  }
   const hookApp = new Proxy(app, {
     get(target, property) {
-      if (dispatching && graphLoadEntrypoints.has(property))
-        return rejectNestedGraphLoad
+      const override = overrides.get(property)
+      if (override !== undefined) return override
       const value: unknown = Reflect.get(target, property, target)
       return typeof value === 'function' ? value.bind(target) : value
     }
@@ -135,18 +164,23 @@ export const useExtensionService = () => {
   const registerExtensionNow = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
 
+    const contributes = extensionStore.contributes(extension.name)
     const addKeybinding = wrapWithErrorHandling(
       keybindingStore.addDefaultKeybinding
     )
     const addSetting = wrapWithErrorHandling(settingStore.addSetting)
 
-    extension.keybindings?.forEach((keybinding) => {
-      addKeybinding(new KeybindingImpl(keybinding))
-    })
-    useCommandStore().loadExtensionCommands(extension)
-    useMenuItemStore().loadExtensionMenuCommands(extension)
+    if (contributes) {
+      extension.keybindings?.forEach((keybinding) => {
+        addKeybinding(new KeybindingImpl(keybinding))
+      })
+      useCommandStore().loadExtensionCommands(extension)
+      useMenuItemStore().loadExtensionMenuCommands(extension)
+    }
     extension.settings?.forEach(addSetting)
-    useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
+    if (contributes) {
+      useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
+    }
     if (extension.getCustomWidgets) {
       void (async () => {
         if (extension.getCustomWidgets) {
@@ -154,6 +188,10 @@ export const useExtensionService = () => {
           useWidgetStore().registerCustomWidgets(widgets)
         }
       })()
+    }
+
+    if (!contributes) {
+      return once(() => extensionStore.unregisterExtension(extension.name))
     }
 
     const authHookHandles: WatchHandle[] = []
@@ -286,10 +324,10 @@ export const useExtensionService = () => {
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
-    const graphLoadHook = graphLoadLifecycleHooks.has(method)
-      ? createGraphLoadHookApp(useApp())
+    const graphLoadDispatch = graphLoadLifecycleHooks.has(method)
+      ? createGraphLoadHookDispatch(useApp())
       : undefined
-    const app = graphLoadHook?.hookApp ?? useApp()
+    const app = graphLoadDispatch?.hookApp ?? useApp()
     const logError = (ext: ComfyExtension, error: unknown) =>
       console.error(
         `Error calling extension '${ext.name}' method '${method}'`,
@@ -340,7 +378,7 @@ export const useExtensionService = () => {
     try {
       return await Promise.all(pending)
     } finally {
-      graphLoadHook?.endDispatch()
+      graphLoadDispatch?.endDispatch()
     }
   }
 

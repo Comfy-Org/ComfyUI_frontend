@@ -249,4 +249,14 @@ describe('getFromPngFile', () => {
       await expect(getFromPngFile(file)).rejects.toThrow('FileReader aborted')
     })
   })
+
+  it('rejects rather than never settling when a chunk header is truncated', async () => {
+    const signature = new Uint8Array(PNG_SIGNATURE)
+    const truncated = new Uint8Array(signature.length + 1)
+    truncated.set(signature)
+
+    await expect(
+      getFromPngFile(new File([truncated], 'truncated.png'))
+    ).rejects.toThrow(RangeError)
+  })
 })

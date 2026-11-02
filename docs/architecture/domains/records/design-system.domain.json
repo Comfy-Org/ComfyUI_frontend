@@ -1,7 +1,7 @@
 {
   "id": "design-system",
   "capability": "Shared UI component library",
-  "description": "App-side remainder of the design system: the Reka-based primitives, media, charts, color picker, tags, modal layout, navigation, and generic common/ widgets now live in packages/design-system and are imported from @comfyorg/design-system. This domain keeps the app-owned pieces that still depend on app stores, i18n, or services: the toast queue store, the loader kit, the App-prefixed wrappers, lazy image, and the value editors for curves, ranges, and palette swatches with their pure interpolation math. Feature-owned files in the same directories stay with their features: settings form fields, system stats, node library tree explorers and bookmark customization, workflow actions, node-search filter chips, credit display, the team-plan credit slider, asset download progress toasts, subgraph breadcrumbs, the execution error overlay, workflow template dialogs, and the node widget adapters WidgetCurve, WidgetRange, and WidgetColors.",
+  "description": "The @comfyorg/design-system package (the Reka-based primitives, media, charts, color picker, tags, modal layout, navigation, and generic common/ widgets) with its color math from @comfyorg/shared-frontend-utils, and the app-owned pieces that still depend on app stores, i18n, or services: the toast queue store, the loader kit, the App-prefixed wrappers, lazy image, and the value editors for curves, ranges, and palette swatches with their pure interpolation math. Feature-owned files in the same directories stay with their features: settings form fields, system stats, node library tree explorers and bookmark customization, workflow actions, node-search filter chips, credit display, the team-plan credit slider, asset download progress toasts, subgraph breadcrumbs, the execution error overlay, workflow template dialogs, and the node widget adapters WidgetCurve, WidgetRange, and WidgetColors.",
   "modules": [
     {
       "path": "src/components/common/**",
@@ -98,6 +98,14 @@
     {
       "path": "src/utils/zodTypedSchema.ts",
       "role": "infrastructure"
+    },
+    {
+      "path": "packages/design-system/src/**",
+      "role": "presentation"
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/colorUtil.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

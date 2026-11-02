@@ -32,6 +32,26 @@ const workflow = parse(
 const warnStep = workflow.jobs?.['warn-missing-needs-backport']?.steps?.[0]
 const warnScript = warnStep?.run ?? ''
 
+const workflowTokens: Partial<Record<string, string>> = {
+  '${{ github.token }}': 'job-token',
+  '${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}': 'shared-pr-token'
+}
+
+function resolvedWarnEnv() {
+  return Object.fromEntries(
+    Object.entries(warnStep?.env ?? {})
+      .filter(([, value]) => value.startsWith('${{ '))
+      .filter(([name]) => name !== 'GH_REPO' && name !== 'PR_NUMBER')
+      .map(([name, value]) => {
+        const token = workflowTokens[value]
+        if (token === undefined) {
+          throw new Error(`Unmodelled token for ${name}: ${value}`)
+        }
+        return [name, token] as const
+      })
+  )
+}
+
 const fakeGh = `#!/usr/bin/env bash
 set -euo pipefail
 shift
@@ -45,10 +65,16 @@ while [ $# -gt 0 ]; do
     *) endpoint="$1"; shift ;;
   esac
 done
+[ -z "\${FAKE_CALLS:-}" ] || echo "$method $endpoint" >> "$FAKE_CALLS"
+if [ "$GH_TOKEN" = shared-pr-token ] && [ -n "\${FAKE_SHARED_TOKEN_EXHAUSTED:-}" ]; then
+  echo 'API rate limit exceeded (HTTP 403)' >&2
+  exit 1
+fi
 case "$method $endpoint" in
   POST\\ *)
+    [ "$GH_TOKEN" = shared-pr-token ] || { echo 'Resource not accessible by integration (HTTP 403)' >&2; exit 1; }
     [ -z "\${FAKE_LOCKED:-}" ] || { echo 'Issue is locked' >&2; exit 1; }
-    jq -nc --arg body "$body" '{user: {login: "github-actions[bot]"}, body: $body}' >> "$FAKE_COMMENTS" ;;
+    jq -nc --arg body "$body" '{user: {login: "comfy-pr-bot"}, body: $body}' >> "$FAKE_COMMENTS" ;;
   *"/labels") jq -r "$filter" "$FAKE_LABELS" ;;
   *"/comments") cat "$FAKE_COMMENTS" | jq -rs "$filter" ;;
   *"/pulls?"*)
@@ -70,17 +96,21 @@ interface PrSetup {
   }>
   comments?: Array<{ author: string; body: string }>
   locked?: boolean
+  sharedTokenExhausted?: boolean
 }
 
 function createPr({
   labels,
   backports = [],
   comments: existingComments = [],
-  locked = false
+  locked = false,
+  sharedTokenExhausted = false
 }: PrSetup) {
   const directory = mkdtempSync(join(tmpdir(), 'backport-missing-trigger-'))
   onTestFinished(() => rmSync(directory, { recursive: true, force: true }))
   const comments = join(directory, 'comments')
+  const calls = join(directory, 'calls')
+  writeFileSync(calls, '')
   writeFileSync(join(directory, 'gh'), fakeGh)
   chmodSync(join(directory, 'gh'), 0o755)
   writeFileSync(
@@ -118,15 +148,19 @@ function createPr({
         encoding: 'utf8',
         env: {
           ...process.env,
+          ...resolvedWarnEnv(),
           FAKE_BACKPORTS: join(directory, 'backports'),
+          FAKE_CALLS: calls,
           FAKE_COMMENTS: comments,
           FAKE_LABELS: join(directory, 'labels.json'),
           FAKE_LOCKED: locked ? '1' : '',
+          FAKE_SHARED_TOKEN_EXHAUSTED: sharedTokenExhausted ? '1' : '',
           GH_REPO: 'Comfy-Org/ComfyUI_frontend',
           PATH: `${directory}:${process.env.PATH}`,
           PR_NUMBER: '21241'
         }
       }),
+    apiCalls: () => readFileSync(calls, 'utf8').split('\n').filter(Boolean),
     postedComments: botComments,
     setLabels: (next: string[]) =>
       writeFileSync(
@@ -245,6 +279,17 @@ describe('backport warning for release labels without needs-backport', () => {
     expect(pr.postedComments()).toHaveLength(0)
   })
 
+  it('reads only the labels when no label names a release, so unlabeled merges spend one API call', () => {
+    const pr = createPr({ labels: ['bug', 'risk:medium', 'core/1.57-rc'] })
+
+    const result = pr.runWarning()
+
+    expect(result.status).toBe(0)
+    expect(pr.apiCalls()).toEqual([
+      'GET repos/Comfy-Org/ComfyUI_frontend/issues/21241/labels'
+    ])
+  })
+
   it('still warns when someone other than the workflow posted the marker', () => {
     const pr = createPr({
       labels: ['core/1.57'],
@@ -271,7 +316,48 @@ describe('backport warning for release labels without needs-backport', () => {
     expect(result.stdout).toContain('core/1.57')
   })
 
+  it('recognises a marker the workflow posted before it changed tokens', () => {
+    const pr = createPr({
+      labels: ['core/1.57'],
+      comments: [
+        {
+          author: 'github-actions[bot]',
+          body: '<!-- pr-backport:missing-needs-backport core/1.57 -->'
+        }
+      ]
+    })
+
+    const result = pr.runWarning()
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).not.toContain('::warning::')
+    expect(pr.postedComments()).toHaveLength(0)
+  })
+
+  it('does not fail a merge with no release label when the shared token is out of quota', () => {
+    const pr = createPr({ labels: ['bug'], sharedTokenExhausted: true })
+
+    const result = pr.runWarning()
+
+    expect(result.status).toBe(0)
+    expect(result.stderr).not.toContain('rate limit')
+  })
+
+  it('reports an exhausted shared token as a warning without failing the merge', () => {
+    const pr = createPr({ labels: ['core/1.57'], sharedTokenExhausted: true })
+
+    const result = pr.runWarning()
+
+    expect(result.status).toBe(0)
+    expect(pr.postedComments()).toHaveLength(0)
+    expect(result.stdout).toContain('::warning::')
+    expect(result.stdout).toContain('core/1.57')
+  })
+
   it('posts with the same token the backport job uses, since the auto-provided one is refused', () => {
-    expect(warnStep?.env?.GH_TOKEN).toBe(workflow.jobs?.backport?.env?.GH_TOKEN)
+    const postToken = '${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}'
+
+    expect(warnStep?.env?.POST_TOKEN).toBe(postToken)
+    expect(workflow.jobs?.backport?.env?.GH_TOKEN).toBe(postToken)
   })
 })

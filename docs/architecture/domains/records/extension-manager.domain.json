@@ -58,6 +58,10 @@
     {
       "path": "src/platform/customNodes/manager/utils/**",
       "role": "domain"
+    },
+    {
+      "path": "packages/api-client/src/generatedManagerTypes.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

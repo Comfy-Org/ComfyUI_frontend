@@ -288,6 +288,23 @@ describe('useWorkspaceBilling', () => {
       }
     )
 
+    it.for([
+      { case: 'a recorded end', endedAt: '2026-05-20T00:00:00Z' },
+      { case: 'an unrecorded end', endedAt: null }
+    ])('passes the served ended_at through for $case', async ({ endedAt }) => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        subscription_status: 'ended',
+        subscription_state: 'ended',
+        ended_at: endedAt
+      })
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.subscription.value?.endedAt).toBe(endedAt)
+    })
+
     it('maps status response into subscription info', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,

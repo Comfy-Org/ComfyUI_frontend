@@ -5473,6 +5473,11 @@
   "templates": {
     "logoProviderSeparator": " ＆ "
   },
+  "textEditor": {
+    "characterCount": "{count} 文字",
+    "expand": "拡大",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "このComfyUIインストールにはコアノードが不足しているため、ワークフローを読み込めませんでした。バックエンドが正しく起動しているか確認してください。",
     "a1111EmbeddingsUnavailable": "Embeddingをサーバーから読み込めませんでした。ワークフローはインポートされましたが、Embedding名はプレーンテキストのままです。",

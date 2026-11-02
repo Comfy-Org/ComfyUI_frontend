@@ -35,7 +35,7 @@ import type {
   WorkspaceId,
   WorkspaceInviteId
 } from '@/platform/workspace/workspaceTypes'
-import type { UserId } from '@/types/authTypes'
+import type { UserId } from '@comfyorg/api-client/authTypes'
 import {
   ingestApiClient as workspaceApiClient,
   requestAuth,
