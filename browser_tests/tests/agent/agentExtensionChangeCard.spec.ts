@@ -13,7 +13,6 @@ test.describe(
       'shows which pack the agent turned off and that a restart applies it',
       { tag: ['@screenshot'] },
       async ({ agentConversation }) => {
-        test.setTimeout(90_000)
         await agentConversation.runTurns()
 
         const card = agentConversation.panel.getByTestId(
