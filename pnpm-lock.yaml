@@ -61,7 +61,7 @@ catalogs:
       specifier: 2.0.1
       version: 2.0.1
     '@playwright/test':
-      specifier: 1.63.0
+      specifier: ^1.63.0
       version: 1.63.0
     '@sentry/vite-plugin':
       specifier: ^11.10.0
