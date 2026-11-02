@@ -18,6 +18,7 @@ const deployment: WorkspaceDeployment = {
   release_id: 'release-2',
   build_name: 'Studio Build',
   release_version: 2,
+  can_start: false,
   status: 'ready',
   created_at: '2026-10-01T00:00:00Z'
 }
@@ -125,7 +126,7 @@ describe('deployment labels', () => {
     { status: 'provisioning', fields: {}, meta: 'Starting' },
     { status: 'failed', fields: {}, meta: 'Not ready' }
   ] satisfies {
-    status: string
+    status: WorkspaceDeployment['status']
     fields: Partial<WorkspaceDeployment>
     meta: string | null
   }[])(
