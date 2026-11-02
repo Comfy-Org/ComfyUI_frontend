@@ -573,7 +573,7 @@
   },
   "src/platform/billing/subscription/composables/usePricingTableUrlLoader.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
+      "count": 1
     }
   },
   "src/platform/billing/subscription/composables/useSubscriptionActions.test.ts": {
