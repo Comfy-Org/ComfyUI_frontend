@@ -223,14 +223,15 @@ The governing decisions remain
 
 ### Unknown-node fallback records
 
-- **Authority:** when a node type cannot be instantiated, the live node's
-  `last_serialization` retains the complete opaque serialized record.
+- **Authority:** when a node type cannot be instantiated, the node's
+  `NodeState.lastSerialization`, exposed as `last_serialization`, retains the
+  complete opaque serialized record.
 - **Reads and persistence:** `LGraphNode.serialize` returns this record instead
   of serializing current store-backed shell, slot, widget, and render state.
 - **Writes:** workflow load, subgraph unpack, and API loading assign or patch
-  the class field directly.
-- **Risk:** one class-owned shadow record can override every migrated component
-  at save time and lacks store ownership, scoped cleanup, or a command boundary.
+  the accessor directly.
+- **Risk:** one opaque shadow record can override every migrated component at
+  save time and lacks ID remapping or a command boundary.
 - **Desired endpoint:** a scoped opaque serialized-node component with explicit
   ID remapping, replacement transfer, mutation, and teardown; keep the class
   field only as a facade.
@@ -238,10 +239,11 @@ The governing decisions remain
 ### Execution order
 
 - **Authority:** `computeExecutionOrder` derives scheduling order from topology
-  and writes `LGraphNode.order`; configure also restores serialized `order`, and
-  serialization emits it again.
+  and writes `LGraphNode.order`, which `executionOrderStore` holds for
+  graph-bound nodes and a class-side fallback holds for unbound nodes; configure
+  also restores serialized `order`, and serialization emits it again.
 - **Risk:** nominally derived scheduling data can behave as independently
-  durable class state and bypass topology-derived recomputation.
+  durable state and bypass topology-derived recomputation.
 - **Desired endpoint:** classify order as a derived projection. Either discard
   loaded values and recompute, or retain them only as explicit wire
   compatibility without a public mutation channel.
@@ -323,7 +325,7 @@ The governing decisions remain
 7. Serialized allocation counters remain mutable class-owned workflow state.
 8. Unknown-node `last_serialization` can shadow the complete store-backed node
    record during persistence.
-9. Execution order is topology-derived but also class-owned and persisted.
+9. Execution order is topology-derived but also persisted.
 10. Output and preview maps are mirrored between `nodeOutputStore` and legacy
     app/node fields.
 11. Node z-order and legacy `_nodes` ordering can independently affect visible
