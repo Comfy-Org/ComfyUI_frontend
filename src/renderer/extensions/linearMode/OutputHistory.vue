@@ -42,9 +42,7 @@ const emit = defineEmits<{
   updateSelection: [selection: OutputSelection]
 }>()
 
-const queueCount = computed(
-  () => queueStore.runningTasks.length + queueStore.pendingTasks.length
-)
+const queueCount = computed(() => queueStore.activeJobsCount)
 
 const itemClass = cn(
   'shrink-0 cursor-pointer rounded-lg border-2 border-transparent p-1 outline-none',

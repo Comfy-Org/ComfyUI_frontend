@@ -77,7 +77,11 @@ function createCompletedJobView(id: string): JobListViewItem {
 
 function renderComponent(
   runningTasks: TaskItemImpl[],
-  pendingTasks: TaskItemImpl[]
+  pendingTasks: TaskItemImpl[],
+  {
+    runningJobsCount = runningTasks.length,
+    pendingJobsCount = pendingTasks.length
+  } = {}
 ) {
   const pinia = getActivePinia()!
   const queueStore = useQueueStore(pinia)
@@ -85,6 +89,8 @@ function renderComponent(
   const sidebarTabStore = useSidebarTabStore(pinia)
   queueStore.runningTasks = runningTasks
   queueStore.pendingTasks = pendingTasks
+  queueStore.runningJobsCount = runningJobsCount
+  queueStore.pendingJobsCount = pendingJobsCount
 
   const user = userEvent.setup()
 
@@ -122,6 +128,18 @@ describe('QueueProgressOverlay', () => {
 
     expect(screen.getByTestId('expanded-title')).toHaveTextContent(
       '2 running, 1 queued'
+    )
+  })
+
+  it('shows the server totals when more jobs are queued than the page lists', () => {
+    renderComponent(
+      [createTask('running-1', 'in_progress')],
+      [createTask('pending-1', 'pending')],
+      { pendingJobsCount: 349 }
+    )
+
+    expect(screen.getByTestId('expanded-title')).toHaveTextContent(
+      '1 running, 349 queued'
     )
   })
 

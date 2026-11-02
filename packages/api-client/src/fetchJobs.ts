@@ -50,7 +50,8 @@ export interface FetchHistoryPageResult {
 export interface FetchQueueResult {
   Running: JobListItem[]
   Pending: JobListItem[]
-  total: number
+  runningTotal: number
+  pendingTotal: number
 }
 
 /**
@@ -141,32 +142,35 @@ export async function fetchHistoryPage(
   }
 }
 
+const QUEUE_PAGE_SIZE = 200
+
 /**
- * Fetches the first page of in_progress and pending jobs, plus the server's
- * total count of them. Pending jobs get highest priority, then running jobs.
+ * Fetches the first page of in_progress jobs and of pending jobs, each with its
+ * server total. Pending jobs get highest priority, then running jobs.
  */
 export async function fetchQueue(
   fetchApi: (url: string) => Promise<Response>,
   options?: FetchJobsOptions
 ): Promise<FetchQueueResult> {
-  const { jobs, total } = await fetchJobsRaw(
-    fetchApi,
-    ['in_progress', 'pending'],
-    200,
-    0,
-    options
-  )
+  const [running, pending] = await Promise.all([
+    fetchJobsRaw(fetchApi, ['in_progress'], QUEUE_PAGE_SIZE, 0, options),
+    fetchJobsRaw(fetchApi, ['pending'], QUEUE_PAGE_SIZE, 0, options)
+  ])
 
-  const running = jobs.filter((j) => j.status === 'in_progress')
-  const pending = jobs.filter((j) => j.status === 'pending')
+  const runningIds = new Set(running.jobs.map((job) => job.id))
+  const pendingJobs = pending.jobs.filter((job) => !runningIds.has(job.id))
 
   return {
-    Running: assignPriority(running, QUEUE_PRIORITY_BASE + running.length),
-    Pending: assignPriority(
-      pending,
-      QUEUE_PRIORITY_BASE + running.length + pending.length
+    Running: assignPriority(
+      running.jobs,
+      QUEUE_PRIORITY_BASE + running.jobs.length
     ),
-    total
+    Pending: assignPriority(
+      pendingJobs,
+      QUEUE_PRIORITY_BASE + running.jobs.length + pendingJobs.length
+    ),
+    runningTotal: running.total,
+    pendingTotal: pending.total
   }
 }
 

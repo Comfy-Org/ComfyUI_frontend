@@ -19,7 +19,8 @@ type JobsListResponse = z.infer<typeof zJobsListResponse>
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
-const QUEUE_ROUTE = /\/api\/jobs\?[^/]*status=in_progress,pending/
+const RUNNING_ROUTE = /\/api\/jobs\?[^/]*status=in_progress(?:&|$)/
+const PENDING_ROUTE = /\/api\/jobs\?[^/]*status=pending(?:&|$)/
 const HISTORY_ROUTE = /\/api\/jobs\?[^/]*status=completed/
 const INTERRUPT_ROUTE = /\/api\/interrupt$/
 
@@ -56,9 +57,10 @@ async function startRunOwnedByAnotherClient(
   exec: ExecutionHelper
 ): Promise<void> {
   await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
+  await mockJobsRoute(comfyPage, PENDING_ROUTE, emptyJobsBody)
   const queueFetches = await mockJobsRoute(
     comfyPage,
-    QUEUE_ROUTE,
+    RUNNING_ROUTE,
     JSON.stringify(
       jobsResponse([
         { id: AGENT_JOB_ID, status: 'in_progress', create_time: Date.now() }
@@ -119,9 +121,10 @@ test.describe(
       const cancel = comfyPage.actionbar.cancelButton
 
       await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
+      await mockJobsRoute(comfyPage, PENDING_ROUTE, emptyJobsBody)
       await mockJobsRoute(
         comfyPage,
-        QUEUE_ROUTE,
+        RUNNING_ROUTE,
         JSON.stringify(
           jobsResponse([
             {
@@ -155,9 +158,10 @@ test.describe(
       const cancel = comfyPage.actionbar.cancelButton
 
       await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
+      await mockJobsRoute(comfyPage, PENDING_ROUTE, emptyJobsBody)
       const queueFetches = await mockJobsRoute(
         comfyPage,
-        QUEUE_ROUTE,
+        RUNNING_ROUTE,
         emptyJobsBody
       )
       exec.status(0)

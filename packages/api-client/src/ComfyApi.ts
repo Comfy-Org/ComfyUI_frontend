@@ -1495,7 +1495,7 @@ export class ComfyApi extends EventTarget {
     } catch (error) {
       if (options?.throwOnError) throw error
       console.error('Failed to fetch queue:', error)
-      return { Running: [], Pending: [], total: 0 }
+      return { Running: [], Pending: [], runningTotal: 0, pendingTotal: 0 }
     }
   }
 

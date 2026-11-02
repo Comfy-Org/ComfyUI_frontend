@@ -24,7 +24,8 @@ describe('useReconnectQueueRefresh', () => {
     vi.mocked(api.getQueue).mockResolvedValue({
       Running: [],
       Pending: [],
-      total: 0
+      runningTotal: 0,
+      pendingTotal: 0
     })
     vi.mocked(api.getHistory).mockResolvedValue([])
     vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
@@ -39,7 +40,8 @@ describe('useReconnectQueueRefresh', () => {
     vi.mocked(api.getQueue).mockResolvedValue({
       Running: [makeJob('run-1', 'in_progress')],
       Pending: [makeJob('pend-1', 'pending'), makeJob('pend-2', 'pending')],
-      total: 3
+      runningTotal: 1,
+      pendingTotal: 2
     })
     const executionStore = useExecutionStore()
     const clearSpy = vi
@@ -72,7 +74,8 @@ describe('useReconnectQueueRefresh', () => {
       .mockResolvedValueOnce({
         Running: [makeJob('run-1', 'in_progress')],
         Pending: [],
-        total: 1
+        runningTotal: 1,
+        pendingTotal: 0
       })
       .mockRejectedValueOnce(new Error('network down'))
     const executionStore = useExecutionStore()
@@ -380,7 +383,8 @@ describe('useReconnectQueueRefresh', () => {
       vi.mocked(api.getQueue).mockResolvedValue({
         Running: [makeJob('job-1', 'in_progress')],
         Pending: [],
-        total: 1
+        runningTotal: 1,
+        pendingTotal: 0
       })
 
       await useReconnectQueueRefresh()()
@@ -609,9 +613,15 @@ describe('useReconnectQueueRefresh', () => {
         .mockResolvedValueOnce({
           Running: [makeJob('job-1', 'in_progress')],
           Pending: [],
-          total: 1
+          runningTotal: 1,
+          pendingTotal: 0
         })
-        .mockResolvedValue({ Running: [], Pending: [], total: 0 })
+        .mockResolvedValue({
+          Running: [],
+          Pending: [],
+          runningTotal: 0,
+          pendingTotal: 0
+        })
       vi.mocked(api.getJobDetail).mockResolvedValue(finishedJob)
       const refresh = useReconnectQueueRefresh()
 
@@ -649,7 +659,8 @@ describe('useReconnectQueueRefresh', () => {
       vi.mocked(api.getQueue).mockResolvedValue({
         Running: [makeJob('job-1', 'in_progress')],
         Pending: [],
-        total: 1
+        runningTotal: 1,
+        pendingTotal: 0
       })
       vi.mocked(api.getJobDetail).mockResolvedValue({
         ...finishedJob,
@@ -683,7 +694,8 @@ describe('useReconnectQueueRefresh', () => {
       vi.mocked(api.getQueue).mockResolvedValueOnce({
         Running: [makeJob('job-1', 'in_progress')],
         Pending: [],
-        total: 1
+        runningTotal: 1,
+        pendingTotal: 0
       })
       await queueStore.update()
       followRun('job-1')
@@ -696,11 +708,17 @@ describe('useReconnectQueueRefresh', () => {
                 resolve({
                   Running: [makeJob('job-1', 'in_progress')],
                   Pending: [],
-                  total: 1
+                  runningTotal: 1,
+                  pendingTotal: 0
                 })
             })
         )
-        .mockResolvedValue({ Running: [], Pending: [], total: 0 })
+        .mockResolvedValue({
+          Running: [],
+          Pending: [],
+          runningTotal: 0,
+          pendingTotal: 0
+        })
       vi.mocked(api.getJobDetail).mockResolvedValue(finishedJob)
       const staleFetch = queueStore.update()
 

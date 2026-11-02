@@ -312,7 +312,11 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const hasPendingTasks = computed<boolean>(() => pendingTasks.value.length > 0)
-  const activeJobsCount = shallowRef(0)
+  const runningJobsCount = shallowRef(0)
+  const pendingJobsCount = shallowRef(0)
+  const activeJobsCount = computed(
+    () => runningJobsCount.value + pendingJobsCount.value
+  )
 
   let currentUpdate: Promise<void> = Promise.resolve()
 
@@ -347,7 +351,8 @@ export const useQueueStore = defineStore('queue', () => {
         const queue = queueResult.value
         runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
         pendingTasks.value = queue.Pending.map((job) => new TaskItemImpl(job))
-        activeJobsCount.value = queue.total
+        runningJobsCount.value = queue.runningTotal
+        pendingJobsCount.value = queue.pendingTotal
 
         const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
         const executionStore = useExecutionStore()
@@ -443,6 +448,8 @@ export const useQueueStore = defineStore('queue', () => {
     flatTasks,
     lastJobHistoryPriority,
     hasPendingTasks,
+    runningJobsCount,
+    pendingJobsCount,
     activeJobsCount,
 
     update,

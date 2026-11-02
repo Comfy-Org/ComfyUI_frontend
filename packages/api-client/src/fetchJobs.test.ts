@@ -220,82 +220,100 @@ describe('fetchJobs', () => {
   })
 
   describe('fetchQueue', () => {
-    it('fetches running and pending jobs', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve(
-            createMockResponse([
-              createMockJob('running1', 'in_progress'),
-              createMockJob('pending1', 'pending'),
-              createMockJob('pending2', 'pending')
-            ])
-          )
-      })
+    function mockQueueFetch(
+      running: JobsListResponse,
+      pending: JobsListResponse
+    ) {
+      return vi.fn().mockImplementation((url: string) =>
+        Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              url.startsWith('/jobs?status=in_progress&') ? running : pending
+            )
+        })
+      )
+    }
+
+    it('fetches running jobs separately so pending jobs cannot crowd them off the page', async () => {
+      const mockFetch = mockQueueFetch(
+        createMockResponse([createMockJob('running1', 'in_progress')]),
+        createMockResponse([
+          createMockJob('pending1', 'pending'),
+          createMockJob('pending2', 'pending')
+        ])
+      )
 
       const result = await fetchQueue(mockFetch)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=in_progress,pending&limit=200&offset=0'
+        '/jobs?status=in_progress&limit=200&offset=0'
       )
-      expect(result.Running).toHaveLength(1)
-      expect(result.Pending).toHaveLength(2)
-      expect(result.Running[0].id).toBe('running1')
-      expect(result.Pending[0].id).toBe('pending1')
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/jobs?status=pending&limit=200&offset=0'
+      )
+      expect(result.Running.map((job) => job.id)).toEqual(['running1'])
+      expect(result.Pending.map((job) => job.id)).toEqual([
+        'pending1',
+        'pending2'
+      ])
     })
 
-    it('reports the server total when more jobs are active than one page holds', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve(
-            createMockResponse(
-              [
-                createMockJob('running1', 'in_progress'),
-                createMockJob('pending1', 'pending')
-              ],
-              350,
-              { has_more: true }
-            )
-          )
-      })
+    it('reports the server total of each status when more jobs are active than one page holds', async () => {
+      const mockFetch = mockQueueFetch(
+        createMockResponse([createMockJob('running1', 'in_progress')]),
+        createMockResponse([createMockJob('pending1', 'pending')], 349, {
+          has_more: true
+        })
+      )
 
       const result = await fetchQueue(mockFetch)
 
-      expect(result.Running).toHaveLength(1)
-      expect(result.Pending).toHaveLength(1)
-      expect(result.total).toBe(350)
+      expect(result.runningTotal).toBe(1)
+      expect(result.pendingTotal).toBe(349)
     })
 
-    it('assigns queue priorities above history', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve(
-            createMockResponse([
-              createMockJob('running1', 'in_progress'),
-              createMockJob('pending1', 'pending')
-            ])
-          )
-      })
+    it('lists a job that started running between the two requests only as running', async () => {
+      const mockFetch = mockQueueFetch(
+        createMockResponse([createMockJob('job1', 'in_progress')]),
+        createMockResponse([
+          createMockJob('job1', 'pending'),
+          createMockJob('pending1', 'pending')
+        ])
+      )
 
       const result = await fetchQueue(mockFetch)
 
-      // Queue priorities should be above 1_000_000 (QUEUE_PRIORITY_BASE)
+      expect(result.Running.map((job) => job.id)).toEqual(['job1'])
+      expect(result.Pending.map((job) => job.id)).toEqual(['pending1'])
+    })
+
+    it('assigns queue priorities above history, pending above running', async () => {
+      const mockFetch = mockQueueFetch(
+        createMockResponse([createMockJob('running1', 'in_progress')]),
+        createMockResponse([createMockJob('pending1', 'pending')])
+      )
+
+      const result = await fetchQueue(mockFetch)
+
       expect(result.Running[0].priority).toBeGreaterThan(1_000_000)
       expect(result.Pending[0].priority).toBeGreaterThan(1_000_000)
-      // Pending should have higher priority than running
       expect(result.Pending[0].priority).toBeGreaterThan(
         result.Running[0].priority
       )
     })
 
-    it('returns empty arrays on error', async () => {
+    it('returns an empty queue on error', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
       const result = await fetchQueue(mockFetch)
 
-      expect(result).toEqual({ Running: [], Pending: [], total: 0 })
+      expect(result).toEqual({
+        Running: [],
+        Pending: [],
+        runningTotal: 0,
+        pendingTotal: 0
+      })
     })
 
     it('propagates errors when requested', async () => {

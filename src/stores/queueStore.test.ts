@@ -71,7 +71,8 @@ function queueResult(
   return {
     Running: running,
     Pending: pending,
-    total: running.length + pending.length
+    runningTotal: running.length,
+    pendingTotal: pending.length
   }
 }
 
@@ -406,16 +407,19 @@ describe('useQueueStore', () => {
       expect(store.pendingTasks[1].jobId).toBe('pend-1')
     })
 
-    it('counts active jobs from the server total, including those beyond the fetched page', async () => {
+    it('counts running and pending jobs from the server totals, including those beyond the fetched page', async () => {
       vi.mocked(api.getQueue).mockResolvedValue({
         Running: [createRunningJob(1, 'run-1')],
         Pending: [createPendingJob(2, 'pend-1')],
-        total: 350
+        runningTotal: 1,
+        pendingTotal: 349
       })
       vi.mocked(api.getHistory).mockResolvedValue([])
 
       await store.update()
 
+      expect(store.runningJobsCount).toBe(1)
+      expect(store.pendingJobsCount).toBe(349)
       expect(store.activeJobsCount).toBe(350)
     })
 
