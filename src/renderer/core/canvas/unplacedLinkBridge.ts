@@ -14,7 +14,7 @@
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { offerUnplacedLink } from '@/platform/nodeApi/defsRegistry'
 import type { UnplacedLinkEvent } from '@/platform/nodeApi/defsRegistry'
 

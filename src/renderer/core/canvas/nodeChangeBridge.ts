@@ -20,7 +20,7 @@
 import { watch } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import { provideNodeChangeSource } from '@/platform/nodeApi/nodeChanges'
 import type { TrackedProperty } from '@/platform/nodeApi/nodeChanges'
 

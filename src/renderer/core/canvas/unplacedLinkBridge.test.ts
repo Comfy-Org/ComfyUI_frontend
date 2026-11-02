@@ -7,8 +7,8 @@ import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoN
 import { ToInputRenderLink } from '@/lib/litegraph/src/canvas/ToInputRenderLink'
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { toNodeId } from '@/types/nodeId'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
