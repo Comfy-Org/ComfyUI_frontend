@@ -76,10 +76,11 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
         class_type: 'BatchImagesNode',
         inputs: { 'images.image0': ['1', 0], 'images.image1': ['6', 0] }
       })
-      expect(
-        await getInputNames(comfyPage, '2', 'images.'),
-        'Autogrow should offer an empty slot after the moved links'
-      ).toEqual(['images.image0', 'images.image1', 'images.image2'])
+      await expect
+        .poll(() => getInputNames(comfyPage, '2', 'images.'), {
+          message: 'Autogrow should offer an empty slot after the moved links'
+        })
+        .toEqual(['images.image0', 'images.image1', 'images.image2'])
       expect(prompt['3']).toMatchObject({
         class_type: 'ResizeImageMaskNode',
         inputs: {
