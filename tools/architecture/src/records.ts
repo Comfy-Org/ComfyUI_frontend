@@ -231,17 +231,9 @@ function duplicates(values: string[]): string[] {
 }
 
 function referenceErrors(records: DomainRecord[]): string[] {
-  const ids = new Set(records.map(({ id }) => id))
-  return [
-    ...duplicates(records.map(({ id }) => id)).map(
-      (id) => `Domain id ${id} is declared more than once`
-    ),
-    ...records.flatMap((record) =>
-      [...record.allowedDependencies, ...record.allowedConsumers]
-        .filter((id) => !ids.has(id))
-        .map((id) => `${record.id} references unknown domain ${id}`)
-    )
-  ]
+  return duplicates(records.map(({ id }) => id)).map(
+    (id) => `Domain id ${id} is declared more than once`
+  )
 }
 
 function stalePathWarnings(

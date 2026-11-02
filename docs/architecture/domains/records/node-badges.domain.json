@@ -21,8 +21,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Badge bootstrap installs once and redraws on settings and pricing changes",

@@ -17,8 +17,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Dynamic prompt parsing expands alternatives and strips comments",

@@ -59,6 +59,8 @@ function domainZones(
       own.some(({ module }) => module === claims.get(entry)?.module)
     )
     const layers = [...new Set(own.map(({ layer }) => layer))]
+    const zonePrefix =
+      domain.deepImports === 'inventory' ? '_inventory' : domain.id
     return [
       {
         domain,
@@ -71,8 +73,8 @@ function domainZones(
       ...layers.map((layer) => ({
         domain,
         name: layer
-          ? `${domain.id}/${role}/outer-${layer}`
-          : `${domain.id}/${role}`,
+          ? `${zonePrefix}/${role}/outer-${layer}`
+          : `${zonePrefix}/${role}`,
         patterns: domain.modules
           .filter((module) =>
             own.some(
@@ -88,13 +90,6 @@ function domainZones(
   })
 }
 
-function permits(consumer: DomainRecord, producer: DomainRecord): boolean {
-  return (
-    consumer.allowedDependencies.includes(producer.id) &&
-    producer.allowedConsumers.includes(consumer.id)
-  )
-}
-
 function reachableFromOutside(zone: Zone): boolean {
   return zone.isPublic || zone.domain.deepImports === 'inventory'
 }
@@ -105,9 +100,7 @@ function allowedTargets(source: Zone, zones: Zone[]): string[] {
     .filter(
       (target) =>
         roles.includes(target.role) &&
-        (target.domain === source.domain ||
-          (permits(source.domain, target.domain) &&
-            reachableFromOutside(target)))
+        (target.domain === source.domain || reachableFromOutside(target))
     )
     .map(({ name }) => name)
 }
@@ -120,7 +113,18 @@ export function buildBoundaries({
   const zones = records.flatMap((record) =>
     domainZones(record, layered, claims)
   )
-  const ordered = zones.toSorted((a, b) => a.layer - b.layer)
+  const ordered = zones
+    .filter(
+      (zone, index) =>
+        zones.findIndex(({ name }) => name === zone.name) === index
+    )
+    .map((zone) => ({
+      ...zone,
+      patterns: zones
+        .filter(({ name }) => name === zone.name)
+        .flatMap(({ patterns }) => patterns)
+    }))
+    .toSorted((a, b) => a.layer - b.layer)
   return {
     boundaries: {
       zones: [

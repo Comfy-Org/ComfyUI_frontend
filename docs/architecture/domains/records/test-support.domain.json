@@ -25,8 +25,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["selection-toolbox"],
   "characterizationScenarios": [
     {
       "name": "Shared test infrastructure preserves its existing behavior",

@@ -8,10 +8,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/topbar/CloudBadge.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/extensions/core/cloudBadges.ts",
       "role": "integration"
     },
@@ -137,8 +133,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["telemetry"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Cloud onboarding routes gate users through sign-in, survey, and post-auth redirects",

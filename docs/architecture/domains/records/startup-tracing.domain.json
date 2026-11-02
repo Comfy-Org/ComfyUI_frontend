@@ -13,8 +13,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Bootstrap phases record marks, RUM timings, and one completion event per page load",

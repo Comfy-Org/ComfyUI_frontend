@@ -197,7 +197,14 @@ export const useExtensionStore = defineStore('extension', () => {
   async function setExtensionPathEnabled(
     path: string,
     enabled: boolean
-  ): Promise<'saved' | 'unchanged' | 'refused' | 'unconfirmed' | undefined> {
+  ): Promise<
+    | 'saved'
+    | 'unchanged'
+    | 'refused'
+    | 'indeterminate'
+    | 'unconfirmed'
+    | undefined
+  > {
     if (isSavingExtensionPaths.value) return
 
     const previousDisabledPaths = getCurrentDisabledExtensionPaths()
@@ -211,7 +218,7 @@ export const useExtensionStore = defineStore('extension', () => {
         'Comfy.Extension.DisabledPacks',
         nextDisabledPaths
       )
-      if (result.status === 'refused') {
+      if (result.status === 'refused' || result.status === 'indeterminate') {
         const reason = result.statusText || 'Request failed'
         reportError(
           new Error(
@@ -234,17 +241,28 @@ export const useExtensionStore = defineStore('extension', () => {
     }
   }
 
-  /**
-   * Core extensions are extensions that are defined in the core package.
-   * See /extensions/core/index.ts for the list.
-   */
-  const coreExtensionNames = ref<string[]>([])
+  const coreExtensions = ref(new Set<ComfyExtension>())
+  const coreExtensionsCaptured = ref(false)
+  function markCoreExtensions(extensions: readonly ComfyExtension[]) {
+    for (const extension of extensions) coreExtensions.value.add(extension)
+  }
+
   function captureCoreExtensions() {
-    coreExtensionNames.value = extensions.value.map((ext) => ext.name)
+    markCoreExtensions(extensions.value)
+    coreExtensionsCaptured.value = true
   }
 
   function isCoreExtension(name: string) {
-    return coreExtensionNames.value.includes(name)
+    return (
+      isExtensionInstalled(name) &&
+      coreExtensions.value.has(extensionByName.value[name])
+    )
+  }
+
+  /** Whether a registered extension's commands, keybindings and UI contributions apply. */
+  function contributes(name: string) {
+    if (!coreExtensionsCaptured.value || isCoreExtension(name)) return true
+    return isExtensionEnabled(name)
   }
 
   const hasThirdPartyExtensions = computed(() => {
@@ -280,7 +298,9 @@ export const useExtensionStore = defineStore('extension', () => {
     isExtensionPathEnabledAtBoot,
     getCurrentDisabledExtensionPaths,
     setExtensionPathEnabled,
+    markCoreExtensions,
     captureCoreExtensions,
+    contributes,
     isCoreExtension,
     hasThirdPartyExtensions
   }

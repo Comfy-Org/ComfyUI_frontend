@@ -9,6 +9,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import type { ModelThumbnailResult } from '@/extensions/core/load3d/components/modelThumbnail'
 import { generateModelThumbnail } from '@/extensions/core/load3d/components/modelThumbnail'
@@ -353,9 +354,6 @@ watch(
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
-)
-const MediaLightbox = defineAsyncComponent(
-  () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
 )
 
 function refreshModelThumbnail(asset: ReplyAsset): void {
