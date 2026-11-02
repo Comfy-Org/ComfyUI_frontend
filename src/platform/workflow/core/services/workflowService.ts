@@ -27,8 +27,9 @@ import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useApp } from '@/scripts/appInstance'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { nodeTypesMayStillArrive } from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'
@@ -45,6 +46,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { showMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   appendJsonExt,
@@ -421,7 +423,7 @@ export const useWorkflowService = () => {
    * Load the default workflow
    */
   const loadDefaultWorkflow = () =>
-    queueWorkflowLoad(() => useApp().loadGraphData(defaultGraph))
+    queueWorkflowLoad(() => useApp().loadGraphData(getDefaultWorkflow()))
 
   /**
    * Load a blank workflow
@@ -689,6 +691,22 @@ export const useWorkflowService = () => {
       }
     }
   }
+
+  /**
+   * Loads an open tab without showing it, and sets its app/graph mode the way
+   * opening it would.
+   */
+  const loadWorkflowInBackground = (
+    workflow: ComfyWorkflow
+  ): Promise<ComfyWorkflow> =>
+    queueWorkflowLoad(async () => {
+      const loaded: ComfyWorkflow = await workflow.load()
+      if (loaded.initialMode === undefined)
+        loaded.initialMode =
+          linearModeToAppMode(loaded.initialState?.extra?.linearMode) ??
+          linearModeToAppMode(loaded.activeState?.extra?.linearMode)
+      return loaded
+    }, workflow.path)
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     const oldPath = workflow.path
@@ -1047,9 +1065,8 @@ export const useWorkflowService = () => {
   }
 
   /**
-   * Show and clear any pending warnings (missing nodes/models) stored on the
-   * active workflow. Called after a workflow becomes visible so dialogs don't
-   * overlap with subsequent loads.
+   * Shows the missing node, model and media warnings stored on a workflow (the
+   * active one by default) and keeps them for later tab switches.
    */
   function showPendingWarnings(
     workflow?: ComfyWorkflow | null,
@@ -1068,7 +1085,7 @@ export const useWorkflowService = () => {
       missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&
       !options?.silent
     ) {
-      useExecutionErrorStore().showErrorOverlay()
+      showMissingNodesNotice(missingNodeTypes ?? [])
     }
     if (missingModelCandidates?.length) {
       useMissingModelStore().setMissingModels(missingModelCandidates)
@@ -1077,7 +1094,6 @@ export const useWorkflowService = () => {
       useMissingMediaStore().setMissingMedia(missingMediaCandidates)
     }
 
-    // Keep cache for future tab switches
     if (
       missingNodeTypes?.length ||
       missingModelCandidates?.length ||
@@ -1101,6 +1117,7 @@ export const useWorkflowService = () => {
     loadBlankWorkflow,
     reloadCurrentWorkflow,
     openWorkflow,
+    loadWorkflowInBackground,
     closeWorkflow,
     closeWorkflows,
     renameWorkflow,

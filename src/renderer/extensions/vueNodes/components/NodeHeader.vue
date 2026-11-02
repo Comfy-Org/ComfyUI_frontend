@@ -57,6 +57,14 @@
         class="icon-[comfy--pin]"
         data-testid="node-pin-indicator"
       />
+      <i
+        v-if="showMissingWarning"
+        role="img"
+        :aria-label="
+          st('rightSidePanel.missingResourcesWarning', 'Missing resources')
+        "
+        class="icon-[lucide--triangle-alert]"
+      />
     </div>
   </div>
 </template>
@@ -84,12 +92,14 @@ interface NodeHeaderProps {
   nodeData?: NodeState
   collapsed?: boolean
   recentPressDragged?: () => boolean
+  showMissingWarning?: boolean
 }
 
 const {
   nodeData,
   collapsed,
-  recentPressDragged = () => false
+  recentPressDragged = () => false,
+  showMissingWarning
 } = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{

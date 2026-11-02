@@ -119,6 +119,9 @@
           :node-data
           :collapsed="isCollapsed"
           :recent-press-dragged="recentPressDragged"
+          :show-missing-warning="
+            errorSeverity === 'missing' && !showErrorsTabEnabled
+          "
           @collapse="handleCollapse"
           @update:title="handleHeaderTitleUpdate"
         />

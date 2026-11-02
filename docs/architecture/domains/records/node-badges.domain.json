@@ -14,6 +14,10 @@
     {
       "path": "src/composables/node/useNodePricing.ts",
       "role": "application"
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/nodePricing.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

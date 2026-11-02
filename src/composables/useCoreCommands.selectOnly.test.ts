@@ -8,6 +8,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 const GRAPH_MUTATION_COMMANDS = [
   'Comfy.Canvas.DeleteSelectedItems',

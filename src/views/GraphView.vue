@@ -76,7 +76,7 @@ import { startTemplateInputDownloadGraphSync } from '@/platform/workflow/templat
 import { refreshDownloadedTemplateInputBindings } from '@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig } from '@/constants/serverConfig'
-import type { ServerConfigValue } from '@/platform/settings/types'
+import type { ServerConfigValue } from '@comfyorg/settings-core/types'
 import { setActiveLocale } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
@@ -95,8 +95,10 @@ import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/ge
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useDeploymentPickAtBoot } from '@/platform/workspace/composables/useDeploymentPickAtBoot'
+import { setMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
+import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
+import type { StatusWsMessageStatus } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
@@ -131,7 +133,14 @@ useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
 useDesktopCloudNotification()
-if (isCloud) useDeploymentCompatibility()
+if (isCloud) {
+  const { markFor } = useDeploymentCompatibility()
+  onBeforeUnmount(
+    setMissingNodesNotice(
+      (nodeTypes) => void noticeMissingNodes(nodeTypes, markFor)
+    )
+  )
+}
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()

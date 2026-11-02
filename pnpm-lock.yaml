@@ -10,8 +10,8 @@ catalogs:
       specifier: ^5.2.0
       version: 5.2.0
     '@comfyorg/comfy-multi-player':
-      specifier: 0.3.12
-      version: 0.3.12
+      specifier: 0.3.13
+      version: 0.3.13
     '@comfyorg/comfyui-desktop-bridge-types':
       specifier: 0.5.0
       version: 0.5.0
@@ -431,6 +431,9 @@ importers:
       '@comfyorg/account-ui':
         specifier: workspace:*
         version: link:packages/account-ui
+      '@comfyorg/api-client':
+        specifier: workspace:*
+        version: link:packages/api-client
       '@comfyorg/billing-contract':
         specifier: workspace:*
         version: link:packages/billing-contract
@@ -439,7 +442,7 @@ importers:
         version: link:packages/billing-core
       '@comfyorg/comfy-multi-player':
         specifier: 'catalog:'
-        version: 0.3.12
+        version: 0.3.13
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
         version: 0.5.0
@@ -467,6 +470,9 @@ importers:
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
+      '@comfyorg/settings-core':
+        specifier: workspace:*
+        version: link:packages/settings-core
       '@comfyorg/shared-frontend-utils':
         specifier: workspace:*
         version: link:packages/shared-frontend-utils
@@ -1087,6 +1093,49 @@ importers:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)
 
+  packages/api-client:
+    dependencies:
+      '@comfyorg/account-core':
+        specifier: workspace:*
+        version: link:../account-core
+      '@comfyorg/graph-model':
+        specifier: workspace:*
+        version: link:../graph-model
+      '@comfyorg/ingest-types':
+        specifier: workspace:*
+        version: link:../ingest-types
+      '@comfyorg/object-info-parser':
+        specifier: workspace:*
+        version: link:../object-info-parser
+      '@comfyorg/settings-core':
+        specifier: workspace:*
+        version: link:../settings-core
+      '@comfyorg/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+      '@sentry/vue':
+        specifier: 'catalog:'
+        version: 10.65.0(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))
+      axios:
+        specifier: 'catalog:'
+        version: 1.18.1(debug@4.4.3)
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.49.0
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.42(typescript@6.0.3)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.2(@types/node@25.9.5)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+
   packages/billing-contract:
     devDependencies:
       '@comfyorg/account-core':
@@ -1390,6 +1439,46 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+
+  packages/settings-core:
+    dependencies:
+      '@comfyorg/graph-model':
+        specifier: workspace:*
+        version: link:../graph-model
+      '@comfyorg/keybindings':
+        specifier: workspace:*
+        version: link:../keybindings
+      '@comfyorg/object-info-parser':
+        specifier: workspace:*
+        version: link:../object-info-parser
+      '@comfyorg/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 14.4.0(vue@3.5.42(typescript@6.0.3))
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.49.0
+      semver:
+        specifier: ^7.7.2
+        version: 7.8.5
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.42(typescript@6.0.3)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@types/semver':
+        specifier: 'catalog:'
+        version: 7.8.0
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.2(@types/node@25.9.5)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
 
   packages/shared-frontend-utils:
     dependencies:
@@ -1907,8 +1996,8 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
-  '@comfyorg/comfy-multi-player@0.3.12':
-    resolution: {integrity: sha512-sXG+bNZphYl0uBE2iEm7X4wi6BlX79sxYHCA4wOZKiVJK005PMmfFUYAR2HKSIgcRrS2OhuXHCXrjk6sKbf/7w==}
+  '@comfyorg/comfy-multi-player@0.3.13':
+    resolution: {integrity: sha512-/3mE4nICRIRwSApIWrkCBKesrL5YS0HCG0ZMgL/iaqtjaAoOHk6xKZ/LATEfX5vvNz78SHfUDENbmP3j8pmm1g==}
 
   '@comfyorg/comfyui-desktop-bridge-types@0.5.0':
     resolution: {integrity: sha512-IlLhbbNaDwTw1JjE+7Z2OlejrE4zcfzORJdaF3mtkzSjCFdK+j8Nuf9XYX78S3vz+uqmxXtn35gDR4amHv7shw==}
@@ -9162,7 +9251,7 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/comfy-multi-player@0.3.12':
+  '@comfyorg/comfy-multi-player@0.3.13':
     dependencies:
       yjs: 13.6.32
 

@@ -5,7 +5,7 @@ import { basename, join } from 'node:path'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
-import { themeSchema } from '@/schemas/colorPaletteSchema'
+import { themeSchema } from '@comfyorg/settings-core/colorPaletteSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'

@@ -83,6 +83,7 @@
     "copyMarkdown": "Copiar como markdown",
     "copyUnavailable": "Solo se puede copiar la conversación actual en esta versión",
     "creditTransitionNotice": "Has usado tus créditos gratuitos del agente. Las actividades posteriores del agente usarán los créditos de tu espacio de trabajo, que pueden incluir créditos de pago.",
+    "creditsUsed": "El agente usó {credits} crédito | El agente usó {credits} créditos",
     "currentTab": "Pestaña actual",
     "delete": "Eliminar",
     "deleteApproval": {
@@ -4864,7 +4865,6 @@
     "cancelDialog": {
       "endOfBillingPeriod": "el final de tu período de facturación",
       "failed": "Error al cancelar la suscripción",
-      "finishOnStripe": "Tu suscripción aún no está cancelada. Termina de cancelarla en la página de Stripe que se acaba de abrir. Hasta que lo hagas, tu plan se renovará como de costumbre.",
       "workspaceChanged": "Tu espacio de trabajo activo ha cambiado. Vuelve al anterior e inténtalo de nuevo."
     },
     "cancelFlow": {
@@ -5471,6 +5471,11 @@
   },
   "templates": {
     "logoProviderSeparator": " y "
+  },
+  "textEditor": {
+    "characterCount": "{count} carácter | {count} caracteres",
+    "expand": "Ampliar",
+    "title": "{widget} · {node}"
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "No se pudo cargar el flujo de trabajo porque a esta instalación de ComfyUI le faltan nodos principales. Verifica que el backend se haya iniciado correctamente.",

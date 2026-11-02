@@ -19,7 +19,8 @@ import {
   resetReportedWorkflowStateAnomaliesForTests
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { defaultGraph } from '@/scripts/defaultGraph'
+import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -51,6 +52,10 @@ vi.mock(import('firebase/auth'), { spy: true })
 beforeEach(() => {
   stubFirebaseAuthHarness()
 })
+
+function isDefaultWorkflow(data: unknown): boolean {
+  return JSON.stringify(data) === JSON.stringify(getDefaultWorkflow())
+}
 
 function createModeTestWorkflow(
   options: {
@@ -2246,7 +2251,7 @@ describe('useWorkflowService', () => {
         path: 'Unsaved Workflow.json'
       })
       vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
-        if (data === defaultGraph)
+        if (isDefaultWorkflow(data))
           useWorkflowStore().activeWorkflow = fallback as LoadedComfyWorkflow
         return true
       })
@@ -3333,6 +3338,32 @@ describe('useWorkflowService', () => {
         expect(appMode.mode.value).toBe('builder:inputs')
       })
     })
+  })
+
+  describe('loadWorkflowInBackground', () => {
+    it.for([
+      { linearMode: true, mode: 'app' },
+      { linearMode: false, mode: 'graph' }
+    ])(
+      'loads an unopened tab with linearMode $linearMode as $mode without showing it',
+      async ({ linearMode, mode }) => {
+        const workflowStore = useWorkflowStore()
+        const service = useWorkflowService()
+        const tab = workflowStore.createTemporary('Background.json', {
+          ...blankGraph,
+          id: '2d4f6a8b-1c3e-4a5b-9c7d-8e9f0a1b2c3d',
+          extra: { linearMode }
+        })
+        expect(tab.isLoaded).toBe(false)
+
+        await service.loadWorkflowInBackground(tab)
+
+        expect(tab.isLoaded).toBe(true)
+        expect(tab.initialMode).toBe(mode)
+        expect(app.loadGraphData).not.toHaveBeenCalled()
+        expect(workflowStore.activeWorkflow).not.toBe(tab)
+      }
+    )
   })
 
   describe('renameWorkflow', () => {

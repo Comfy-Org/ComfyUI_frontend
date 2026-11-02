@@ -83,6 +83,7 @@
     "copyMarkdown": "Als Markdown kopieren",
     "copyUnavailable": "In dieser Version kann nur die aktuelle Unterhaltung kopiert werden",
     "creditTransitionNotice": "Sie haben Ihre kostenlosen Agent-Credits verbraucht. Weitere Agent-Aktivitäten verwenden die Credits Ihres Workspaces, die kostenpflichtige Credits enthalten können.",
+    "creditsUsed": "Der Agent hat {credits} Credit verwendet | Der Agent hat {credits} Credits verwendet",
     "currentTab": "Aktueller Tab",
     "delete": "Löschen",
     "deleteApproval": {
@@ -4864,7 +4865,6 @@
     "cancelDialog": {
       "endOfBillingPeriod": "das Ende Ihres Abrechnungszeitraums",
       "failed": "Abonnement konnte nicht gekündigt werden",
-      "finishOnStripe": "Ihr Abonnement ist noch nicht gekündigt. Schließen Sie die Kündigung auf der gerade geöffneten Stripe-Seite ab. Bis dahin wird Ihr Plan wie gewohnt verlängert.",
       "workspaceChanged": "Ihr aktiver Workspace hat sich geändert. Wechseln Sie zurück und versuchen Sie es erneut."
     },
     "cancelFlow": {
@@ -5471,6 +5471,11 @@
   },
   "templates": {
     "logoProviderSeparator": " & "
+  },
+  "textEditor": {
+    "characterCount": "{count} Zeichen | {count} Zeichen",
+    "expand": "Vergrößern",
+    "title": "{widget} · {node}"
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Der Workflow konnte nicht geladen werden, da in dieser ComfyUI-Installation Core-Nodes fehlen. Überprüfen Sie, ob das Backend korrekt gestartet wurde.",

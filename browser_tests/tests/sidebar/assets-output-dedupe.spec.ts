@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import type { Asset } from '@comfyorg/ingest-types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
-import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail } from '@comfyorg/api-client/jobTypes'
 
 /**
  * Expanded folder view must drop output records that resolve to the same

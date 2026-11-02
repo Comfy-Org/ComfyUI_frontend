@@ -34,8 +34,8 @@ const uniqueList = <T extends z.ZodString>(item: T, minimum = 0) =>
 const sourcePath = z
   .string()
   .regex(
-    /^src\/[^*?[\]{}]+?(\/\*\*)?$/,
-    'must be a src/ file or a src/ directory ending in /**'
+    /^(?:(?:src|packages\/[^/*?[\]{}]+\/src)\/[^*?[\]{}]+?(?:\/\*\*)?|packages\/[^/*?[\]{}]+\/src\/\*\*)$/,
+    'must be a file or a directory ending in /** under src/ or packages/<name>/src/'
   )
 
 export const domainRecordSchema = z

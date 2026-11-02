@@ -83,6 +83,7 @@
     "copyMarkdown": "Markdownとしてコピー",
     "copyUnavailable": "このバージョンでは、現在の会話のみコピーできます",
     "creditTransitionNotice": "無料のエージェントクレジットを使い切りました。以降のエージェント操作ではワークスペースのクレジットが使用され、有料クレジットが含まれる場合があります。",
+    "creditsUsed": "エージェントは {credits} クレジットを使用しました | エージェントは {credits} クレジットを使用しました",
     "currentTab": "現在のタブ",
     "delete": "削除",
     "deleteApproval": {
@@ -4864,7 +4865,6 @@
     "cancelDialog": {
       "endOfBillingPeriod": "請求期間の終了時",
       "failed": "サブスクリプションのキャンセルに失敗しました",
-      "finishOnStripe": "サブスクリプションはまだキャンセルされていません。先ほど開いた Stripe ページでキャンセルを完了してください。完了するまで、プランは通常どおり更新されます。",
       "workspaceChanged": "アクティブなワークスペースが変更されました。元に戻して再度お試しください。"
     },
     "cancelFlow": {
@@ -5471,6 +5471,11 @@
   },
   "templates": {
     "logoProviderSeparator": " ＆ "
+  },
+  "textEditor": {
+    "characterCount": "{count} 文字",
+    "expand": "拡大",
+    "title": "{widget} · {node}"
   },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "このComfyUIインストールにはコアノードが不足しているため、ワークフローを読み込めませんでした。バックエンドが正しく起動しているか確認してください。",

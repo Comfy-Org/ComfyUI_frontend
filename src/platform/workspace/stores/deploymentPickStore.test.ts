@@ -106,6 +106,23 @@ describe('useDeploymentPickStore', () => {
     })
   })
 
+  it('reports a lookup the server refuses for the session as a denied warning', async () => {
+    const error = new WorkspaceApiError('invalid session cookie', 401)
+    mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+    const store = useDeploymentPickStore()
+
+    const boot = store.loadOnce()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await boot
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing',
+      level: 'warning',
+      tags: { status: 401, outcome: 'denied' }
+    })
+  })
+
   it('reports failed lookups once per page, however often they fail', async () => {
     const error = new WorkspaceApiError('Service unavailable', 503)
     mockWorkspaceApi.listDeployments.mockRejectedValue(error)
