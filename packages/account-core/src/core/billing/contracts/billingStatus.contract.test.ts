@@ -10,7 +10,9 @@ function statusBody(overrides: Partial<StatusBody> = {}): StatusBody {
     has_funds: true,
     is_active: true,
     max_seats: 5,
+    next_charge: null,
     occupied_seats: 1,
+    ended_at: null,
     scheduled_change: null,
     team_credit_stop: null,
     ...overrides

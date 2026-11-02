@@ -106,6 +106,7 @@ describe(assetService.shouldUseWidgetAssetPicker, () => {
     useDeploymentPickStore().bootDeployment = {
       deployment_id: 'dep-release',
       release_id: 'release-1',
+      can_start: false,
       status: 'ready',
       created_at: '2026-10-01T00:00:00Z'
     }
