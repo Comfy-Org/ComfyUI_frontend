@@ -104,7 +104,6 @@ import TableRow from '@comfyorg/design-system/table/TableRow'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { toFiniteNumber } from '@/services/customerEventParams'
@@ -238,13 +237,7 @@ const refresh = async () => {
 }
 
 const workspaceStore = useWorkspaceIdentity()
-const { isLoggedIn } = useCurrentUser()
-const workspaceInitSettled = computed(
-  () =>
-    !isLoggedIn.value ||
-    workspaceStore.initState === 'ready' ||
-    workspaceStore.initState === 'error'
-)
+const workspaceInitSettled = computed(() => workspaceStore.initSettled)
 
 // The active workspace is watched alongside the billing mode: a switch between
 // two workspaces on the same mode leaves this table mounted, and without this

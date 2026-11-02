@@ -1,6 +1,6 @@
 import { getActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, nextTick, reactive, ref } from 'vue'
 
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -11,13 +11,13 @@ import {
   useCustomerEventsService
 } from '@/services/customerEventsService'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { BillingEventsResponse } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import type { BillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import type { WorkspaceIdentityAccess } from '@/platform/workspace/ports/workspaceIdentity'
 
 import UsageLogsTable from './UsageLogsTable.vue'
 
@@ -25,7 +25,7 @@ vi.mock(import('@/services/customerEventsService'))
 
 vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/platform/workspace/ports/workspaceIdentity'))
 
 const CONFIRMED_AT_MS = Date.parse('2024-06-15T12:30:00Z')
 
@@ -86,6 +86,11 @@ function makeEventsResponse(
 }
 
 describe('UsageLogsTable', () => {
+  let workspaceIdentity: WorkspaceIdentityAccess & {
+    initSettled: boolean
+    activeWorkspaceId: string | null
+  }
+
   const mockEventsResponse = makeEventsResponse([
     {
       event_id: 'event-1',
@@ -109,8 +114,16 @@ describe('UsageLogsTable', () => {
   ])
 
   beforeEach(() => {
-    useCurrentUser().isLoggedIn = computed(() => true)
-    Object.assign(useTeamWorkspaceStore(), { initState: 'loading' })
+    workspaceIdentity = reactive({
+      workspaces: [],
+      activeWorkspace: null as WorkspaceIdentityAccess['activeWorkspace'],
+      activeWorkspaceId: null as string | null,
+      initSettled: false,
+      isInPersonalWorkspace: false,
+      workspaceTransitionGeneration: 0,
+      identityGeneration: 0
+    })
+    vi.mocked(useWorkspaceIdentity).mockReturnValue(workspaceIdentity)
     setWorkspaceBilling(true)
     vi.mocked(billingApi.getBillingEvents).mockResolvedValue(mockEventsResponse)
     mockBillingReadRail.readEvents.mockResolvedValue({
@@ -174,7 +187,8 @@ describe('UsageLogsTable', () => {
       )
       await flushMicrotasks()
 
-      await table.value?.refresh()
+      assert.exists(table.value)
+      await table.value.refresh()
 
       expect(billingApi.getBillingEvents).not.toHaveBeenCalled()
       expect(screen.getByRole('progressbar')).toBeInTheDocument()
@@ -183,37 +197,21 @@ describe('UsageLogsTable', () => {
       ).not.toBeInTheDocument()
     })
 
-    it.for(['ready', 'error'] as const)(
-      'shows the load error once workspace init is %s with no workspace',
-      async (initState) => {
-        setWorkspaceBilling(false)
-
-        renderComponent()
-        await flushMicrotasks()
-        expect(screen.getByRole('progressbar')).toBeInTheDocument()
-
-        Object.assign(useTeamWorkspaceStore(), { initState })
-
-        await waitFor(() => {
-          expect(
-            screen.getByText('Failed to load activity. Please try again.')
-          ).toBeInTheDocument()
-        })
-        expect(billingApi.getBillingEvents).not.toHaveBeenCalled()
-      }
-    )
-
-    it('shows the load error when signed out with no workspace', async () => {
+    it('shows the load error once workspace init has settled with no workspace', async () => {
       setWorkspaceBilling(false)
-      useCurrentUser().isLoggedIn = computed(() => false)
 
       renderComponent()
+      await flushMicrotasks()
+      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+
+      workspaceIdentity.initSettled = true
 
       await waitFor(() => {
         expect(
           screen.getByText('Failed to load activity. Please try again.')
         ).toBeInTheDocument()
       })
+      expect(billingApi.getBillingEvents).not.toHaveBeenCalled()
     })
 
     it('shows a loading spinner while the initial load is in flight', () => {
@@ -714,7 +712,7 @@ describe('UsageLogsTable', () => {
     // of the workspace being left stayed on screen.
     it('reloads and drops the rows when the active workspace changes', async () => {
       onTheRail()
-      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+      workspaceIdentity.activeWorkspaceId = 'ws-1'
 
       await renderLoaded()
       expect(screen.getByText('RailAPI')).toBeInTheDocument()
@@ -723,7 +721,7 @@ describe('UsageLogsTable', () => {
         status: 'ok',
         value: { events: [], page: 1, limit: 7, total: 0, totalPages: 0 }
       })
-      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-2' })
+      workspaceIdentity.activeWorkspaceId = 'ws-2'
 
       await waitFor(() => {
         expect(screen.queryByText('RailAPI')).not.toBeInTheDocument()

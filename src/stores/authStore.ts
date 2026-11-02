@@ -437,10 +437,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Response data from a user-scoped endpoint belongs to the identity that
-   * asked for it. A 200 bypasses the recovery guards in
-   * fetchWithCustomerRecovery, which only fence the missing-customer retry, so
-   * a credential swap while the request was in flight would hand the previous
-   * account's data to the current session.
+   * asked for it; a credential swap mid-request must not hand the previous
+   * account's result to the current session.
    */
   const assertIdentityUnchanged = (requestOwner: string | null): void => {
     if (currentUserIdentity() !== requestOwner) {

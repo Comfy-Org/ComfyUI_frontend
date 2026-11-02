@@ -5,7 +5,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type {
@@ -22,7 +22,8 @@ import type {
   TeamCreditStopSummary
 } from '@comfyorg/billing-core'
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import type { WorkspaceIdentityAccess } from '@/platform/workspace/ports/workspaceIdentity'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 
 type Balance = Pick<
@@ -74,6 +75,8 @@ vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/billing/composables/readWorkspaceBillingEvents'))
 
 vi.mock(import('@/platform/billing/composables/useBillingRouting'))
+
+vi.mock(import('@/platform/workspace/ports/workspaceIdentity'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -162,7 +165,19 @@ function createDeferred() {
 }
 
 describe('CreditsTile', () => {
+  const workspaceIdentity = reactive({
+    workspaces: [],
+    activeWorkspace: null as WorkspaceIdentityAccess['activeWorkspace'],
+    activeWorkspaceId: null as string | null,
+    initSettled: true,
+    isInPersonalWorkspace: false,
+    workspaceTransitionGeneration: 0,
+    identityGeneration: 0
+  })
+
   beforeEach(() => {
+    workspaceIdentity.activeWorkspaceId = null
+    vi.mocked(useWorkspaceIdentity).mockReturnValue(workspaceIdentity)
     const errorHandling = useErrorHandling()
     errorHandling.wrapWithErrorHandlingAsync =
       (action, errorHandler) =>
@@ -933,7 +948,7 @@ describe('CreditsTile', () => {
 
   it('drops a reply that lands after the active workspace changed', async () => {
     activeProSubscription()
-    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+    workspaceIdentity.activeWorkspaceId = 'ws-1'
     localStorage.setItem('pending_topup_timestamp', Date.now().toString())
     let resolveReply!: (
       value: Awaited<ReturnType<typeof readWorkspaceBillingEvents>>
@@ -946,7 +961,7 @@ describe('CreditsTile', () => {
 
     renderTile()
     await waitFor(() => expect(readWorkspaceBillingEvents).toHaveBeenCalled())
-    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-2' })
+    workspaceIdentity.activeWorkspaceId = 'ws-2'
     resolveReply(
       eventsPage([
         {
