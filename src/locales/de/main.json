@@ -6195,7 +6195,7 @@
     "createWorkspace": "Arbeitsbereich erstellen",
     "failedToSwitch": "Arbeitsbereich konnte nicht gewechselt werden",
     "managedByOrganization": "Ihre Organisation verwaltet Ihre Workspaces, daher können Sie keinen erstellen.",
-    "maxWorkspacesReached": "Sie können nur 10 Arbeitsbereiche besitzen. Löschen Sie einen, um einen neuen zu erstellen.",
+    "maxWorkspacesReached": "Sie können nur {max} Arbeitsbereiche besitzen. Löschen Sie einen, um einen neuen zu erstellen.",
     "personal": "Persönlich",
     "roleMember": "Mitglied",
     "roleOwner": "Inhaber",

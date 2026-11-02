@@ -32,7 +32,6 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import type { WorkspaceCreationDenials } from '@comfyorg/ingest-types'
 import {
   NoWorkspaceAccessError,
   WorkspaceApiError
@@ -187,7 +186,7 @@ type ListedWorkspaces = Omit<ListWorkspacesResponse, 'can_create_workspace'> &
   }
 
 type CreationDeniedReason = NonNullable<
-  WorkspaceCreationDenials['can_create_workspace']
+  NonNullable<ListWorkspacesResponse['denied_reasons']>['can_create_workspace']
 >
 
 function reportSsoLanding(

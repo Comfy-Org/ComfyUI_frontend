@@ -6195,7 +6195,7 @@
     "createWorkspace": "Créer un nouvel espace de travail",
     "failedToSwitch": "Échec du changement d’espace de travail",
     "managedByOrganization": "Votre organisation gère vos espaces de travail, vous ne pouvez donc pas en créer.",
-    "maxWorkspacesReached": "Vous ne pouvez posséder que 10 espaces de travail. Supprimez-en un pour en créer un nouveau.",
+    "maxWorkspacesReached": "Vous ne pouvez posséder que {max} espaces de travail. Supprimez-en un pour en créer un nouveau.",
     "personal": "Personnel",
     "roleMember": "Membre",
     "roleOwner": "Propriétaire",
