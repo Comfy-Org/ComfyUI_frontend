@@ -81,6 +81,7 @@
         <template v-if="capabilities.canManageAutoTopUp.value">
           <BillingAutoTopUpCard v-if="capabilities.canTopUp.value" />
         </template>
+        <BillingAutoTopUpMemberCard />
       </template>
     </section>
 
@@ -174,6 +175,7 @@ import BillingTopupCheckoutBanner from '@/platform/billing/components/billingTab
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
+import BillingAutoTopUpMemberCard from '@/platform/billing/components/billingTab/BillingAutoTopUpMemberCard.vue'
 import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/billing/components/billingTab/BillingPlanRow.vue'
 import {
