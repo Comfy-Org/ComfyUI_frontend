@@ -84,12 +84,20 @@ export async function fetchOnWebSession(
     })
   }
 
-  const response = await send(scope)
-  const code = await refusalCode(response)
-  if (code === 'WORKSPACE_ACCESS_DENIED' && scope.workspaceId !== undefined) {
-    ports.workspaceDenied(scope.workspaceId)
+  const sendAndReport = async (current: WebSessionRequestScope) => {
+    const response = await send(current)
+    const code = await refusalCode(response)
+    if (
+      code === 'WORKSPACE_ACCESS_DENIED' &&
+      current.workspaceId !== undefined
+    ) {
+      ports.workspaceDenied(current.workspaceId)
+    }
+    if (code === 'SSO_REQUIRED') ports.ssoRequired(current)
+    return { response, code }
   }
-  if (code === 'SSO_REQUIRED') ports.ssoRequired(scope)
+
+  const { response, code } = await sendAndReport(scope)
   const lapsed = response.status === 401 && ports.retriesLapsedSession === true
   if (
     (code !== 'CSRF_STALE' && !lapsed) ||
@@ -98,7 +106,7 @@ export async function fetchOnWebSession(
     return response
   }
   const fresh = await ports.refresh(scope)
-  return fresh ? send(fresh) : response
+  return fresh ? (await sendAndReport(fresh)).response : response
 }
 
 /** What a signed-in tab's requests need from the web session. */

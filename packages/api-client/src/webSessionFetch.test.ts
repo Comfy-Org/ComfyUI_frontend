@@ -65,6 +65,7 @@ describe('web-session request credentials', () => {
 describe('a request the server refuses because the session lapsed', () => {
   const scopeFor = (csrfToken: string): WebSessionRequestScope => ({
     epoch: 1,
+    workspaceId: 'team-workspace',
     session: {
       user: { id: 'user', email: 'user@example.com', emailVerified: true },
       csrfToken,
@@ -75,7 +76,8 @@ describe('a request the server refuses because the session lapsed', () => {
 
   function sendLapsed(
     retriesLapsedSession: boolean,
-    init: RequestInit = { method: 'POST', body: '{}' }
+    init: RequestInit = { method: 'POST', body: '{}' },
+    retried: Response = new Response('restored')
   ) {
     vi.mocked(fetch)
       .mockResolvedValueOnce(
@@ -84,7 +86,7 @@ describe('a request the server refuses because the session lapsed', () => {
           { status: 401 }
         )
       )
-      .mockResolvedValueOnce(new Response('restored'))
+      .mockResolvedValueOnce(retried)
     const refresh = vi.fn(async () => scopeFor('fresh-csrf'))
     const ports = {
       authorize: createRequestAuthorizer({
@@ -101,7 +103,7 @@ describe('a request the server refuses because the session lapsed', () => {
       scopeFor('stale-csrf'),
       ports
     )
-    return { response, refresh }
+    return { response, refresh, ports }
   }
 
   it('returns the refusal without re-reading the session when recovery is off', async () => {
@@ -132,4 +134,22 @@ describe('a request the server refuses because the session lapsed', () => {
     expect((await response).status).toBe(401)
     expect(refresh).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { code: 'workspace_access_denied', reported: 'workspaceDenied' },
+    { code: 'sso_required', reported: 'ssoRequired' }
+  ] as const)(
+    'reports a $code refusal of the retry without retrying again',
+    async ({ code, reported }) => {
+      const { response, refresh, ports } = sendLapsed(
+        true,
+        undefined,
+        Response.json({ code, message: 'refused' }, { status: 403 })
+      )
+
+      expect((await response).status).toBe(403)
+      expect(ports[reported]).toHaveBeenCalledOnce()
+      expect(refresh).toHaveBeenCalledOnce()
+    }
+  )
 })

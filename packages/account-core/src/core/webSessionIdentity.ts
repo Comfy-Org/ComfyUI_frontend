@@ -532,7 +532,7 @@ function createAccountIdentity(
   let cancelBeat: (() => void) | undefined
   let releaseLeadership: (() => void) | undefined
   let stopWatching: (() => void)[] = []
-  let restoring = { epoch, settled: Promise.resolve() }
+  let restoring = { epoch, settled: Promise.resolve(), inFlight: false }
 
   function dispatch(event: WebSessionIdentityEvent): void {
     const next = transitionWebSessionIdentity(state, event)
@@ -675,9 +675,16 @@ function createAccountIdentity(
           readWebSession(options.session)
         )
         return
-      case 'restore':
-        restoring = { epoch, settled: restore(epoch, effect.expectedUserId) }
+      case 'restore': {
+        if (restoring.inFlight && restoring.epoch === epoch) return
+        const settled = restore(epoch, effect.expectedUserId).finally(() => {
+          if (restoring.settled === settled) {
+            restoring = { ...restoring, inFlight: false }
+          }
+        })
+        restoring = { epoch, settled, inFlight: true }
         return
+      }
       case 'schedule_retry':
         cancelRetry = schedule(
           () => {

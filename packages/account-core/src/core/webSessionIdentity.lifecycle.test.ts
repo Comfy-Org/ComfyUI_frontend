@@ -704,6 +704,28 @@ describe('refresh', () => {
     expect(summarize(refreshed)).toBe(settled)
   })
 
+  it('shares one restore between refreshes that find the session lapsed', async () => {
+    const endpoint = liveEndpoint()
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    const proof = deferred<string>()
+    tab.login.getProof.mockReturnValue(proof.promise)
+    endpoint.state = { kind: 'dead', code: 'no_session' }
+
+    const refreshes = Promise.all([
+      tab.identity.refresh(),
+      tab.identity.refresh()
+    ])
+    await settle()
+    proof.resolve('remembered-proof')
+    await refreshes
+
+    expect(tab.login.getProof).toHaveBeenCalledOnce()
+    expect(methods(endpoint).filter((method) => method === 'POST')).toEqual([
+      'POST'
+    ])
+  })
+
   it('does not wait on a restore left over from the previous account', async () => {
     const endpoint = liveEndpoint()
     const tab = openTab({ endpoint })
