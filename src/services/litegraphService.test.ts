@@ -5,7 +5,7 @@ vi.mock(import('@/scripts/app'))
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -13,6 +13,24 @@ import { useWidgetStore } from '@/stores/widgetStore'
 
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
+
+function createNodeDefV1(
+  overrides: Partial<ComfyNodeDefV1> = {}
+): ComfyNodeDefV1 {
+  return {
+    name: 'TestNode',
+    display_name: 'Test Node',
+    category: 'test',
+    python_module: 'test',
+    description: 'Test node',
+    output: ['IMAGE'],
+    output_is_list: [false],
+    output_name: ['IMAGE'],
+    output_node: false,
+    input: { required: {} },
+    ...overrides
+  }
+}
 
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
@@ -220,5 +238,128 @@ describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
     expect(widget?.options.advanced).toBe(true)
     expect(widget?.options.hidden).toBe(true)
     expect(widget?.hidden).toBe(true)
+  })
+})
+
+describe('addInputs ordering with forceInput', () => {
+  it('preserves declaration order when forceInput is in the middle', async () => {
+    const nodeDef = createNodeDefV1({
+      name: 'ForceInputMiddle',
+      input: {
+        required: {
+          seed: ['INT', { default: 0 }],
+          image: ['IMAGE', {}],
+          steps: ['INT', { default: 20 }]
+        }
+      },
+      input_order: { required: ['seed', 'image', 'steps'] }
+    })
+
+    await useLitegraphService().registerNodeDef('ForceInputMiddle', nodeDef)
+    const node = LiteGraph.createNode('ForceInputMiddle')!
+
+    expect(node.inputs.map((input) => input.name)).toEqual([
+      'seed',
+      'image',
+      'steps'
+    ])
+  })
+
+  it('preserves order with forceInput INT between widget inputs', async () => {
+    const nodeDef = createNodeDefV1({
+      name: 'ForceInputBetween',
+      input: {
+        required: {
+          cfg: ['FLOAT', { default: 7 }],
+          forced_seed: ['INT', { default: 0, forceInput: true }],
+          steps: ['INT', { default: 20 }]
+        }
+      },
+      input_order: { required: ['cfg', 'forced_seed', 'steps'] }
+    })
+
+    await useLitegraphService().registerNodeDef('ForceInputBetween', nodeDef)
+    const node = LiteGraph.createNode('ForceInputBetween')!
+
+    expect(node.inputs.map((input) => input.name)).toEqual([
+      'cfg',
+      'forced_seed',
+      'steps'
+    ])
+  })
+
+  it('preserves order with multiple interspersed forceInput inputs', async () => {
+    const nodeDef = createNodeDefV1({
+      name: 'MultiForceInput',
+      input: {
+        required: {
+          width: ['INT', { default: 512 }],
+          model: ['MODEL', {}],
+          height: ['INT', { default: 512 }],
+          clip: ['CLIP', {}],
+          steps: ['INT', { default: 20 }]
+        }
+      },
+      input_order: {
+        required: ['width', 'model', 'height', 'clip', 'steps']
+      }
+    })
+
+    await useLitegraphService().registerNodeDef('MultiForceInput', nodeDef)
+    const node = LiteGraph.createNode('MultiForceInput')!
+
+    expect(node.inputs.map((input) => input.name)).toEqual([
+      'width',
+      'model',
+      'height',
+      'clip',
+      'steps'
+    ])
+  })
+
+  it('keeps all-widget input order unchanged', async () => {
+    const nodeDef = createNodeDefV1({
+      name: 'AllWidgets',
+      input: {
+        required: {
+          seed: ['INT', { default: 0 }],
+          cfg: ['FLOAT', { default: 7 }],
+          steps: ['INT', { default: 20 }]
+        }
+      },
+      input_order: { required: ['seed', 'cfg', 'steps'] }
+    })
+
+    await useLitegraphService().registerNodeDef('AllWidgets', nodeDef)
+    const node = LiteGraph.createNode('AllWidgets')!
+
+    expect(node.inputs.map((input) => input.name)).toEqual([
+      'seed',
+      'cfg',
+      'steps'
+    ])
+  })
+
+  it('keeps all-socket input order unchanged', async () => {
+    const nodeDef = createNodeDefV1({
+      name: 'AllSockets',
+      input: {
+        required: {
+          model: ['MODEL', {}],
+          clip: ['CLIP', {}],
+          vae: ['VAE', {}]
+        }
+      },
+      input_order: { required: ['model', 'clip', 'vae'] }
+    })
+
+    await useLitegraphService().registerNodeDef('AllSockets', nodeDef)
+    const node = LiteGraph.createNode('AllSockets')!
+
+    expect(node.inputs.map((input) => input.name)).toEqual([
+      'model',
+      'clip',
+      'vae'
+    ])
   })
 })

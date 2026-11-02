@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import Input from '@/components/ui/input/Input.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import Input from '@comfyorg/design-system/input/Input'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputText from './WidgetInputText.vue'
@@ -182,7 +182,7 @@ describe('WidgetInputText Value Binding', () => {
   describe('Locked Field Hover Styling', () => {
     // Tests assert on the Tailwind class name directly because that's the
     // mechanism being guarded — a rename would need a baseline update anyway.
-    const HOVER_CLASS = 'hover:bg-component-node-widget-background-hovered'
+    const HOVER_CLASS = 'hover:bg-muted'
 
     it('omits the generic hover background class when the field is locked (read-only)', () => {
       const widget = createInputTextWidget('locked value', {

@@ -1,15 +1,15 @@
 <template>
   <div
-    class="mx-auto flex h-full min-h-0 max-w-[400px] flex-col items-stretch justify-between overflow-y-auto text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
+    class="mx-auto flex h-full min-h-0 max-w-[400px] flex-col justify-between overflow-y-auto text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
   >
     <div class="flex flex-col items-center gap-4 pt-8">
-      <i class="pi pi-check-circle text-5xl text-success-background" />
-      <h2
-        class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+      <i class="icon-[lucide--circle-check] size-12 text-success" />
+      <CheckoutTitle
+        class="m-0 text-center text-xl font-semibold text-foreground lg:text-2xl"
       >
         {{ copy.allSet }}
-      </h2>
-      <p class="m-0 text-center text-sm text-muted-foreground">
+      </CheckoutTitle>
+      <p class="m-0 text-center text-muted-foreground">
         {{ copy.planUpdated }}
         {{ copy.receiptEmailed }}
       </p>
@@ -19,24 +19,22 @@
         <div
           :class="
             cn(
-              'mt-4 flex w-full flex-col gap-1 rounded-xl border border-border-default bg-base-background p-4',
-              darkSurface && 'border-none bg-secondary-background'
+              'mt-4 flex w-full flex-col gap-1 rounded-xl border bg-background p-4',
+              darkSurface && 'border-none bg-secondary'
             )
           "
         >
-          <span class="text-sm text-base-foreground">{{ plan.name }}</span>
-          <div class="flex items-baseline gap-1">
-            <span
-              class="text-2xl font-semibold text-base-foreground tabular-nums"
-            >
+          <span class="text-foreground">{{ plan.name }}</span>
+          <div class="flex items-baseline gap-1 text-foreground">
+            <span class="text-2xl font-semibold tabular-nums">
               ${{ displayPrice }}
             </span>
-            <span class="text-sm text-base-foreground">
+            <span>
               {{ isYearly ? copy.usdPerYear : copy.usdPerMonth }}
             </span>
           </div>
-          <div class="flex items-center gap-1 text-sm text-muted-foreground">
-            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
+          <div class="flex items-center gap-1 text-muted-foreground">
+            <i class="icon-[lucide--coins] bg-credit" />
             <span class="tabular-nums">
               {{ displayCredits }} {{ isYearly ? copy.perYear : copy.perMonth }}
             </span>
@@ -45,9 +43,9 @@
 
         <p
           v-if="promoApplied"
-          class="m-0 text-center text-sm text-muted-foreground tabular-nums"
+          class="m-0 text-center text-muted-foreground tabular-nums"
         >
-          <span class="font-medium text-base-foreground">
+          <span class="font-medium text-foreground">
             {{ copy.promoApplied(promoApplied.code) }}
           </span>
           {{
@@ -90,6 +88,7 @@ import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CheckoutButton from './CheckoutButton.vue'
+import CheckoutTitle from './CheckoutTitle.vue'
 import type { CheckoutSuccessCopy } from './checkoutCopy'
 import type { CheckoutBillingCycle, CheckoutPlan } from './checkoutQuote'
 import { formatNumber, isYearlyCheckout } from './checkoutQuote'
@@ -134,12 +133,15 @@ const isYearly = computed(() =>
 
 const displayPrice = computed(() => {
   if (previewData?.new_plan) {
-    return (previewData.new_plan.price_cents / 100).toFixed(0)
+    const amountUsd = previewData.new_plan.price_cents / 100
+    const keepCents =
+      !plan.pricedByQuote && isYearly.value && !Number.isInteger(amountUsd)
+    return keepCents ? amountUsd.toFixed(2) : amountUsd.toFixed(0)
   }
   if (plan.pricedByQuote) return '0'
   return String(
     isYearly.value
-      ? plan.monthlyPriceUsd.yearly * 12
+      ? (plan.yearlyChargeUsd ?? plan.monthlyPriceUsd.yearly * 12)
       : plan.monthlyPriceUsd.monthly
   )
 })

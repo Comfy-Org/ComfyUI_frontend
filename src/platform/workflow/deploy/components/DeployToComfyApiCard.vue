@@ -10,14 +10,14 @@
       rel="noopener noreferrer"
     >
       {{ $t('deployToComfyApi.readDocs') }}
-      <span class="icon-[lucide--square-arrow-out-up-right] size-4" />
+      <i aria-hidden="true" class="icon-[lucide--square-arrow-out-up-right]" />
     </Button>
   </DefineDocsLink>
 
   <div class="@container w-[min(640px,calc(100vw-2rem))]">
     <div
       data-testid="deploy-to-comfy-api-card"
-      class="relative max-h-[85dvh] overflow-y-auto rounded-2xl border border-component-node-border bg-base-background shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25),0_3px_3px_-1.5px_rgba(10,13,18,0.2)]"
+      class="relative max-h-[85dvh] overflow-y-auto rounded-2xl border bg-background shadow-2xl"
     >
       <Button
         variant="muted-textonly"
@@ -37,17 +37,17 @@
           muted
           loop
           plays-inline
-          playback-control
+          :playback-labels="{ play: $t('g.play'), pause: $t('g.pause') }"
           data-testid="deploy-to-comfy-api-video"
           class="aspect-video w-full rounded-lg object-cover"
         >
           <template #fallback>
             <div
               data-testid="deploy-to-comfy-api-video-placeholder"
-              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary-background"
+              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary"
             >
               <span
-                class="grid size-16 place-items-center rounded-full border border-base-foreground/30 bg-base-foreground/10 text-base-foreground"
+                class="grid size-16 place-items-center rounded-full border border-foreground/30 bg-foreground/10"
                 aria-hidden="true"
               >
                 <i class="icon-[lucide--play] size-6" />
@@ -59,12 +59,9 @@
 
       <section class="flex flex-col gap-9 p-6 @xl:gap-6 @xl:p-9">
         <div class="flex flex-col gap-4">
-          <h2
-            :id="titleId"
-            class="my-0 text-xl font-semibold text-base-foreground @xl:text-2xl"
-          >
+          <DialogTitle class="my-0 text-xl @xl:text-2xl">
             {{ $t('deployToComfyApi.title') }}
-          </h2>
+          </DialogTitle>
           <p class="my-0 text-sm/5 text-muted-foreground">
             {{ $t('deployToComfyApi.body') }}
           </p>
@@ -90,15 +87,20 @@
             @click="copyHandoff"
           >
             <template v-if="copied">
-              <i class="icon-[lucide--check] size-4" aria-hidden="true" />
+              <i class="icon-[lucide--check]" aria-hidden="true" />
               {{ $t('deployToComfyApi.copied') }}
             </template>
             <template v-else>
-              <i class="icon-[lucide--copy] size-4" aria-hidden="true" />
+              <i class="icon-[lucide--copy]" aria-hidden="true" />
               {{ $t('deployToComfyApi.deployWithAgent') }}
             </template>
           </Button>
+          <DeployInstallationButton
+            v-if="deploysInstallation"
+            @opened="emit('done')"
+          />
           <Button
+            v-else
             variant="inverted"
             size="lg"
             class="w-full @xl:w-auto"
@@ -123,16 +125,22 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import Video from '@/components/common/Video.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Video from '@comfyorg/design-system/media/Video'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import DeployInstallationButton from '@/platform/workflow/deploy/components/DeployInstallationButton.vue'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 
-const { videoSources = [], posterSrc = '' } = defineProps<{
-  titleId?: string
+const {
+  videoSources = [],
+  posterSrc = '',
+  deploysInstallation = false
+} = defineProps<{
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
+  deploysInstallation?: boolean
 }>()
 
 const emit = defineEmits<{

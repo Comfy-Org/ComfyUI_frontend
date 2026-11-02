@@ -4,6 +4,10 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
+import {
+  graphItems,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 // LGraphCanvas.node_colors.red.groupcolor — the group-specific tint that
 // LGraphGroup#setColorOption applies. Regression: the right-click Color menu
@@ -31,7 +35,6 @@ test.describe(
     test('applies the same shade as the toolbar circle-swatch picker', async ({
       comfyPage
     }) => {
-      // Set color via the toolbar circle-swatch picker (SelectionToolbox).
       const toolbarGroupPos = await getGroupTitlePosition(
         comfyPage,
         'Toolbar Swatch Group'
@@ -39,9 +42,10 @@ test.describe(
       await comfyPage.page.mouse.click(toolbarGroupPos.x, toolbarGroupPos.y)
       await comfyPage.nextFrame()
 
-      const colorPickerButton = comfyPage.page.getByTestId(
-        TestIds.selectionToolbox.colorPickerButton
-      )
+      const colorPickerButton = comfyPage.selectionToolbox.getByRole('button', {
+        name: 'Color',
+        exact: true
+      })
       await expect(colorPickerButton).toBeVisible()
       await colorPickerButton.click()
 
@@ -53,14 +57,6 @@ test.describe(
         .click()
       await comfyPage.nextFrame()
 
-      // Deselect the first group so its SelectionToolbox closes before we
-      // interact with the second group — otherwise the still-visible toolbox
-      // can sit over the second group's title and swallow the right-click.
-      // Click a graph point clear of both groups rather than
-      // canvasOps.clickEmptySpace(): that helper's position is calibrated for
-      // the default graph's legacy-menu layout, and with Vue Nodes enabled
-      // the canvas spans the full viewport, so the click lands on the
-      // workflow tab bar instead of the canvas.
       const emptyCanvasPos = await comfyPage.page.evaluate(() =>
         window.app!.canvasPosToClientPos([1000, 500])
       )
@@ -70,8 +66,6 @@ test.describe(
         comfyPage.page.getByTestId(TestIds.selectionToolbox.root)
       ).toBeHidden()
 
-      // Set the same color via the right-click group Color menu — the path
-      // this PR fixes.
       const menuGroupPos = await getGroupTitlePosition(
         comfyPage,
         'Right-Click Menu Group'
@@ -105,7 +99,6 @@ test.describe(
         'right-click Color menu should apply the same shade as the toolbar swatch'
       ).toBe(groupColors.toolbarSwatch)
 
-      // Selecting a swatch closes the menu, so reopen it for the screenshot.
       await comfyPage.page.mouse.click(menuGroupPos.x, menuGroupPos.y, {
         button: 'right'
       })
@@ -113,7 +106,11 @@ test.describe(
       await comfyPage.contextMenu.openColorSubmenu()
       await expect(comfyPage.selectionToolbox).toBeVisible()
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      const region = await screenshotRegion(comfyPage.page, [
+        graphItems(comfyPage.page, 'groups'),
+        ...(await comfyPage.contextMenu.ariaMenu.all())
+      ])
+      await region.expectScreenshot(
         'group-color-right-click-matches-toolbar-swatch.png',
         { maxDiffPixels: 25 }
       )

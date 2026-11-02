@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
+import type { BillingTelemetryEvent } from './billingTelemetryEvent'
 import {
   BILLING_PAYLOAD_FIELD_HANDLING,
   getBillingTelemetryEventPayload,
   getBillingWebTelemetryEventPayload,
   getCloudAppBillingTelemetryEventPayload
-} from './payload.js'
-import type { BillingPayloadFieldHandling } from './payload.js'
-import { toBillingTelemetryEvent } from './operationLifecycleEvent.js'
+} from './payload'
+import type { BillingPayloadFieldHandling } from './payload'
+import { toBillingTelemetryEvent } from './operationLifecycleEvent'
 
 const SURFACES = [
   {

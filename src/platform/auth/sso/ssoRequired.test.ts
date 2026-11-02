@@ -9,11 +9,11 @@ import {
   presentSsoRequired
 } from '@/platform/auth/sso/ssoRequired'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const SSO_REFUSAL = {
   code: 'sso_required',

@@ -98,6 +98,8 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
         member({ email: CLOUD_SELF_EMAIL, role: 'member' })
       ],
       billingCapabilities: createBillingCapabilities(teamWorkspace.id, {
+        can_manage_subscription: false,
+        can_open_plans: false,
         can_top_up: false,
         can_subscribe_self_serve: false
       })

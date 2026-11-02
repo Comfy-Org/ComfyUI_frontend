@@ -19,10 +19,6 @@ test.describe(
       await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test.describe('workflow persistence', () => {
       test.beforeEach(async ({ comfyPage }) => {
         await comfyPage.workflow.setupWorkflowsDirectory({})
@@ -232,7 +228,6 @@ test.describe(
           )
           await comfyPage.nextFrame()
 
-          await comfyPage.canvasOps.resetView()
           await comfyPage.canvasOps.setScale(scale)
           const kSampler = await comfyPage.nodeOps.getNodeRefById('3')
           await kSampler.centerOnNode()

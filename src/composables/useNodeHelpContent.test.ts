@@ -54,11 +54,7 @@ function createMockNode(
   } as ComfyNodeDefImpl
 }
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fileURL: vi.fn((url) => url)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock<unknown>(import('@/types/nodeSource'), () => ({
   NodeSourceType: {

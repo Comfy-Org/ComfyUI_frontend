@@ -7,11 +7,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
     :node-def="nodeDef"
     :position="position"
   />
-  <div
-    v-else
-    class="_sb_node_preview bg-component-node-background"
-    data-testid="node-preview"
-  >
+  <div v-else class="_sb_node_preview bg-node" data-testid="node-preview">
     <div class="_sb_table">
       <div
         class="node_header text-ellipsis"
@@ -34,7 +30,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         class="_sb_row slot_row"
       >
         <div class="_sb_col">
-          <div v-if="slotInput" :class="['_sb_dot', slotInput.type]" />
+          <div v-if="slotInput" :class="cn('_sb_dot', slotInput.type)" />
         </div>
         <div class="_sb_col">
           {{ slotInput ? slotInput.name : '' }}
@@ -49,7 +45,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
           {{ slotOutput ? slotOutput.name : '' }}
         </div>
         <div class="_sb_col">
-          <div v-if="slotOutput" :class="['_sb_dot', slotOutput.type]" />
+          <div v-if="slotOutput" :class="cn('_sb_dot', slotOutput.type)" />
         </div>
       </div>
 
@@ -92,10 +88,11 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { truncate, zip } from 'es-toolkit/compat'
 import { computed } from 'vue'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -216,12 +213,12 @@ const truncateDefaultValue = (
 }
 
 ._sb_node_preview {
-  color: var(--descrip-text);
-  border: 1px solid var(--descrip-text);
+  color: var(--muted-foreground);
+  border: 1px solid var(--muted-foreground);
   min-width: 300px;
   width: min-content;
   height: fit-content;
-  z-index: 9999;
+  z-index: var(--z-index-overlay);
   border-radius: 12px;
   overflow: hidden;
   font-size: 12px;
@@ -231,7 +228,7 @@ const truncateDefaultValue = (
 ._sb_node_preview ._sb_description {
   margin: 10px;
   padding: 6px;
-  background: var(--border-color);
+  background: var(--border);
   border-radius: 5px;
   font-style: italic;
   font-weight: 500;
@@ -276,8 +273,8 @@ const truncateDefaultValue = (
 }
 
 ._long_field {
-  background: var(--bg-color);
-  border: 2px solid var(--border-color);
+  background: var(--background);
+  border: 2px solid var(--border);
   margin: 5px 5px 0;
   border-radius: 10px;
   line-height: 1.7;
@@ -285,13 +282,13 @@ const truncateDefaultValue = (
 }
 
 ._sb_arrow {
-  color: var(--fg-color);
+  color: var(--foreground);
 }
 
 ._sb_preview_badge {
   text-align: center;
-  background: var(--comfy-input-bg);
+  background: var(--input);
   font-weight: 700;
-  color: var(--error-text);
+  color: var(--destructive);
 }
 </style>

@@ -1,6 +1,9 @@
+vi.mock(import('firebase/auth'))
+vi.mock(import('@/services/dialogService'))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
 import { api } from '@/scripts/api'
 
 import {
@@ -17,6 +20,8 @@ vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock(import('@/scripts/api'))
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
+  attachUnifiedRemintInterceptor: vi.fn(),
+  provideUnifiedRemint: vi.fn(),
   fetchWithUnifiedRemint,
   shouldRemintCloudRequest: () => Promise.resolve(false)
 }))
@@ -41,7 +46,7 @@ describe('Global Settings transport', () => {
   })
 
   it.for([true, false])(
-    'reads with captured workspace credentials (Cloud=%s)',
+    'reads with the credential it is handed (Cloud=%s)',
     async (cloud) => {
       distribution.isCloud = cloud
       respondWith(stored)
@@ -131,5 +136,30 @@ describe('Global Settings transport', () => {
     await expect(
       setGlobalSetting({ key, value: true }, authHeader)
     ).rejects.toMatchObject({ status: 500 })
+  })
+
+  describe('on the web session', () => {
+    const unavailable = () => new Response(null, { status: 503 })
+
+    it('reads again after a 503 with exactly two sends', async () => {
+      vi.useFakeTimers()
+      const answers = [unavailable(), Response.json(stored)]
+      const send = vi.fn<WebSessionSend>(async () => answers.shift()!)
+
+      const pending = getGlobalSetting(key, send)
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(pending).resolves.toEqual(stored)
+      expect(send).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not send a write twice after a 503', async () => {
+      const send = vi.fn<WebSessionSend>(async () => unavailable())
+
+      await expect(
+        setGlobalSetting({ key, value: true }, send)
+      ).rejects.toMatchObject({ status: 503 })
+      expect(send).toHaveBeenCalledOnce()
+    })
   })
 })

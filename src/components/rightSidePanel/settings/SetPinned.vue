@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
-import FieldSwitch from './FieldSwitch.vue'
+import FieldSwitch from '@comfyorg/design-system/field/FieldSwitch'
 
 type PickedNode = Pick<LGraphNode, 'pinned' | 'pin'>
 

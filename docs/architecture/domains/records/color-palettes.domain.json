@@ -4,11 +4,11 @@
   "description": "Canvas and UI color palettes: palette schema validation, built-in and custom palette storage, import, export, delete, and activation that applies palette colors to LiteGraph and CSS variables. The palette swatch UI primitives belong to the design system.",
   "modules": [
     {
-      "path": "src/services/colorPaletteService.ts",
-      "role": "application"
+      "path": "src/constants/coreColorPalettes.ts",
+      "role": "domain"
     },
     {
-      "path": "src/services/colorPaletteService.test.ts",
+      "path": "src/services/colorPaletteService.ts",
       "role": "application"
     },
     {
@@ -16,11 +16,7 @@
       "role": "application"
     },
     {
-      "path": "src/constants/coreColorPalettes.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/colorPaletteSchema.ts",
+      "path": "packages/settings-core/src/colorPaletteSchema.ts",
       "role": "domain"
     }
   ],

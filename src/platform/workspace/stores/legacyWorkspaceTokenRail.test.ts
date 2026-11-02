@@ -42,6 +42,7 @@ describe('createLegacyWorkspaceTokenRail', () => {
       Response.json({
         token: 'workspace-token-abc',
         expires_at: new Date(Date.now() + expiresInMs).toISOString(),
+        user_id: 'uid-1',
         workspace: { id: workspace.id, name: workspace.name, type: 'team' },
         role: 'owner',
         permissions: ['owner:*']

@@ -102,7 +102,7 @@ const VIDEO_CONTAINER_CHECKS: Partial<Record<string, VideoContainerCheck>> = {
 } satisfies Record<VideoExtension, VideoContainerCheck>
 
 export function isValidAgentAttachment(file: File): boolean | Promise<boolean> {
-  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
+  const extension = extensionOf(file.name).slice(1)
   const check = Object.hasOwn(VIDEO_CONTAINER_CHECKS, extension)
     ? VIDEO_CONTAINER_CHECKS[extension]
     : undefined

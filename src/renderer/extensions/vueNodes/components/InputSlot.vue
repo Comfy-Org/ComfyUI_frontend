@@ -1,5 +1,7 @@
 <template>
-  <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
+  <div v-if="renderError" class="node-error p-1 text-xs text-destructive">
+    ⚠️
+  </div>
   <Tooltip v-else :disabled="!tooltipText">
     <TooltipTrigger as-child>
       <div
@@ -27,7 +29,7 @@
             cn(
               'w-3 -translate-x-1/2',
               hasError &&
-                'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-error before:ring-offset-0'
+                'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-destructive before:ring-offset-0'
             )
           "
           :slot-data
@@ -42,10 +44,7 @@
             v-if="!props.dotOnly && !hasNoLabel"
             class="min-w-0"
             :label-class="
-              cn(
-                'block truncate text-node-component-slot-text',
-                hasError && 'font-medium text-error'
-              )
+              cn('block truncate', hasError && 'font-medium text-destructive')
             "
             :is-editing
             :model-value="
@@ -67,10 +66,10 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import EditableText from '@/components/common/EditableText.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import EditableText from '@comfyorg/design-system/common/EditableText'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -80,7 +79,7 @@ import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useN
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 

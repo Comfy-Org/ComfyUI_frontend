@@ -14,7 +14,6 @@ export const TARGET_ID = String(TARGET_NODE_ID)
 export const WORKFLOW_ID = '4c1e9f2a-6b3d-4a7e-8f01-2c3d4e5f6a7b'
 export const THREAD_ID = 'a2b3c4d5-6e7f-4a8b-9c0d-1e2f3a4b5c6d'
 export const MESSAGE_ID = 'f1e2d3c4-b5a6-4978-8c6d-5e4f3a2b1c0d'
-export const SOCKET_SID = '3f1c9d7a-2b4e-4a6f-8c9d-0e1f2a3b4c5d'
 
 // Link ids, one per wire in the saved graph below -- internal to this
 // module; consumers read them back off `EXPECTED_TARGETS`.

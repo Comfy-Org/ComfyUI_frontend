@@ -6,11 +6,11 @@ const { row } = defineProps<{ row: SummaryLedger['discounts'][number] }>()
 
 <template>
   <li class="flex flex-col gap-1">
-    <div class="flex items-baseline justify-between gap-4">
-      <span class="text-sm font-semibold text-base-foreground">
+    <div class="flex items-baseline justify-between gap-4 text-sm">
+      <span class="font-semibold text-foreground">
         {{ row.label }}
       </span>
-      <span class="shrink-0 text-sm text-muted-foreground tabular-nums">
+      <span class="shrink-0 text-muted-foreground tabular-nums">
         {{ row.amount }}
       </span>
     </div>

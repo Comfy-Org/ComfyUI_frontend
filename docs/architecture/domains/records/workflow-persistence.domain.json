@@ -4,31 +4,11 @@
   "description": "Browser-local workflow draft persistence: the V2 draft cache and LRU index, workspace- and tab-scoped storage keys, localStorage/sessionStorage IO, the draft store, autosave, and the boot-time restore that reopens tabs and the active workflow. Workflow files, the workflow store, and workflowService remain in workflow management and core; shared-URL and template-URL loading are consumed from their own capabilities.",
   "modules": [
     {
-      "path": "src/platform/workflow/persistence/base/draftTypes.ts",
-      "role": "domain"
+      "path": "src/platform/workflow/persistence/**",
+      "role": "application"
     },
     {
-      "path": "src/platform/workflow/persistence/base/draftCacheV2.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/persistence/base/draftCacheV2.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/persistence/base/draftCacheV2.collision.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/persistence/base/draftCacheV2.property.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/persistence/base/hashUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/persistence/base/hashUtil.test.ts",
+      "path": "src/platform/workflow/persistence/base/**",
       "role": "domain"
     },
     {
@@ -36,48 +16,20 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workflow/persistence/base/storageIO.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/platform/workflow/persistence/base/storageKeys.ts",
       "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/workflow/persistence/base/storageKeys.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/workflow/persistence/composables/useWorkflowTabState.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/workflow/persistence/composables/useWorkflowTabState.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/workflow/persistence/composables/useWorkflowAutoSave.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/persistence/composables/useWorkflowAutoSave.test.ts",
-      "role": "application"
     },
     {
       "path": "src/platform/workflow/persistence/composables/useWorkflowPersistenceV2.ts",
       "role": "integration"
     },
     {
-      "path": "src/platform/workflow/persistence/composables/useWorkflowPersistenceV2.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/workflow/persistence/stores/**",
-      "role": "application"
+      "path": "src/platform/workflow/persistence/composables/useWorkflowTabState.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["keybindings"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

@@ -12,10 +12,6 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useImageCrop.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/extensions/core/imageCrop.ts",
       "role": "integration"
     },

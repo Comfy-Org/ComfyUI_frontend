@@ -1,9 +1,18 @@
+import type {
+  LGraph,
+  SubgraphId,
+  ResolvedConnection,
+  GraphOrSubgraph,
+  Subgraph,
+  SubgraphInput,
+  SubgraphNode
+} from '@comfyorg/graph-model/entityRegistry'
 import { isEqual } from 'es-toolkit'
-import type { LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
+
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+
 import {
   captureInputLayout,
   inputLinkId,
@@ -11,31 +20,25 @@ import {
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import { toRerouteId } from '@/types/rerouteId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
-import { LiteGraph, createUuidv4 } from '@/lib/litegraph/src/litegraph'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { INodeOutputSlot } from '@comfyorg/graph-model/slots'
+import { createUuidv4 } from '@/utils/uuid'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type {
   ISerialisedNode,
   SerialisableLLink,
   SubgraphIO
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
-import type { GraphOrSubgraph, Subgraph } from './Subgraph'
-import type { SubgraphInput } from './SubgraphInput'
 import { SubgraphInputNode } from './SubgraphInputNode'
-import type { SubgraphNode } from './SubgraphNode'
-import type { SubgraphOutput } from './SubgraphOutput'
+
 import { SubgraphOutputNode } from './SubgraphOutputNode'
 
 interface FilteredItems {
@@ -222,24 +225,7 @@ export function getBoundaryLinks(
 }
 
 export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
-  const clonedNodes: ISerialisedNode[] = []
-
-  // Selectively clone - keep IDs & links
-  for (const node of nodes) {
-    const newNode = LiteGraph.createNode(node.type)
-    const data = structuredClone(node.serialize())
-    if (!newNode) {
-      console.warn('Failed to create node', node.type)
-      clonedNodes.push(data)
-      continue
-    }
-
-    // Must be cloned; litegraph "serialize" is mostly shallow clone
-    newNode.configure(data)
-    clonedNodes.push(newNode.serialize())
-  }
-
-  return clonedNodes
+  return Array.from(nodes, (node) => structuredClone(node.serialize()))
 }
 
 export function findUnresolvableSubgraphLink(
@@ -652,45 +638,4 @@ export function reorderSubgraphInputs(
   }
 }
 
-/**
- * Type guard to check if a slot is a SubgraphInput.
- * @param slot The slot to check
- * @returns true if the slot is a SubgraphInput
- */
-export function isSubgraphInput(slot: unknown): slot is SubgraphInput {
-  return (
-    slot != null &&
-    typeof slot === 'object' &&
-    'parent' in slot &&
-    slot.parent instanceof SubgraphInputNode
-  )
-}
-
-/**
- * Type guard to check if a slot is a SubgraphOutput.
- * @param slot The slot to check
- * @returns true if the slot is a SubgraphOutput
- */
-export function isSubgraphOutput(slot: unknown): slot is SubgraphOutput {
-  return (
-    slot != null &&
-    typeof slot === 'object' &&
-    'parent' in slot &&
-    slot.parent instanceof SubgraphOutputNode
-  )
-}
-
-/**
- * Type guard to check if a slot is a regular node slot (INodeInputSlot or INodeOutputSlot).
- * @param slot The slot to check
- * @returns true if the slot is a regular node slot
- */
-export function isNodeSlot(
-  slot: unknown
-): slot is INodeInputSlot | INodeOutputSlot {
-  return (
-    slot != null &&
-    typeof slot === 'object' &&
-    ('link' in slot || 'links' in slot)
-  )
-}
+export { isSubgraphInput, isSubgraphOutput } from './subgraphTypeGuards'

@@ -1,10 +1,12 @@
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 type WorkflowSelection = {
@@ -40,15 +42,21 @@ function moveSavedWorkflow(
 
 export const workflowSelectionTest = base.extend<{
   nodeDefinitions: Record<string, ComfyNodeDef> | undefined
+  workflowSelectionFeatures: Partial<RemoteConfig> | undefined
   workflowSelection: WorkflowSelection
 }>({
   nodeDefinitions: [undefined, { option: true }],
-  workflowSelection: async ({ page, nodeDefinitions }, use) => {
+  workflowSelectionFeatures: [undefined, { option: true }],
+  workflowSelection: async (
+    { page, nodeDefinitions, workflowSelectionFeatures },
+    use
+  ) => {
     if (nodeDefinitions)
       await page.route('**/api/object_info', (route) =>
         route.fulfill(jsonRoute(nodeDefinitions))
       )
     await bootAgentApp(page, true, {
+      features: workflowSelectionFeatures,
       objectInfo: nodeDefinitions ? 'server' : undefined
     })
     const workflows: CloudWorkflowEntry[] = []
@@ -88,12 +96,7 @@ export const workflowSelectionTest = base.extend<{
     await page.route('**/api/agent/threads**', (route) => {
       if (route.request().method() === 'POST')
         postedMessages.push(route.request().postData() ?? '')
-      return route.fulfill(
-        jsonRoute({
-          threads: [],
-          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-        })
-      )
+      return route.fulfill(jsonRoute(emptyAgentThreadList()))
     })
     await page.route('**/api/userdata?*', (route) => {
       const dir = new URL(route.request().url()).searchParams.get('dir')

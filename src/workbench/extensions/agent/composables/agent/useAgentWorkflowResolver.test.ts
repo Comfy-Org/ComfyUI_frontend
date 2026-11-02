@@ -3,17 +3,15 @@ import type { WorkflowResponse } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
-import { AgentApiError } from '../../services/agent/agentRestClient'
-import type { CloudWorkflowListing } from '../../services/agent/agentRestClient'
-import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { AgentApiError } from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import type { CloudWorkflowListing } from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 function workflow(
   path: string,

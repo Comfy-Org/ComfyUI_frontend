@@ -1,13 +1,13 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index />
-      <DialogContent v-reka-z-index size="md" :aria-labelledby="titleId">
+      <DialogOverlay />
+      <DialogContent size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">
             {{ pack ? $t('skillPacks.editPack') : $t('skillPacks.addPack') }}
           </DialogTitle>
-          <DialogClose />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <form
           class="flex flex-col gap-4 px-4 py-2"
@@ -30,7 +30,7 @@
               v-if="errors.name"
               :id="`${nameId}-help`"
               role="alert"
-              class="text-destructive-background"
+              class="text-destructive"
             >
               {{ errors.name }}
             </small>
@@ -55,7 +55,7 @@
               v-if="errors.description"
               :id="`${descriptionId}-help`"
               role="alert"
-              class="text-destructive-background"
+              class="text-destructive"
             >
               {{ errors.description }}
             </small>
@@ -85,7 +85,7 @@
               v-if="errors.body"
               :id="`${bodyId}-help`"
               role="alert"
-              class="text-destructive-background"
+              class="text-destructive"
             >
               {{ errors.body }}
             </small>
@@ -101,13 +101,13 @@
             v-if="budgetError"
             data-testid="skill-pack-budget-error"
             role="alert"
-            class="flex flex-col gap-1 rounded-lg border border-destructive-background p-3"
+            class="flex flex-col gap-1 rounded-lg border border-destructive p-3 text-sm text-muted-foreground"
           >
-            <span class="text-sm font-medium text-destructive-background">
+            <span class="font-medium text-destructive">
               {{ $t('skillPacks.atLimitTitle') }}
             </span>
-            <span class="text-sm text-muted-foreground">{{ budgetError }}</span>
-            <span class="text-sm text-muted-foreground">
+            <span>{{ budgetError }}</span>
+            <span>
               {{ $t('skillPacks.atLimitHint') }}
             </span>
           </div>
@@ -116,7 +116,7 @@
             v-else-if="fieldError"
             data-testid="skill-pack-field-error"
             role="alert"
-            class="text-sm text-destructive-background"
+            class="text-sm text-destructive"
           >
             {{ fieldError }}
           </span>
@@ -139,21 +139,20 @@
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
-import Button from '@/components/ui/button/Button.vue'
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import Input from '@comfyorg/design-system/input/Input'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 
-import { useSkillPackForm } from '../composables/useSkillPackForm'
-import type { SkillPack } from '../types'
-import { MAX_NAME_LENGTH } from '../types'
+import { useSkillPackForm } from '@/platform/skills/composables/useSkillPackForm'
+import type { SkillPack } from '@/platform/skills/types'
+import { MAX_NAME_LENGTH } from '@/platform/skills/types'
 
 const { pack } = defineProps<{
   pack?: SkillPack

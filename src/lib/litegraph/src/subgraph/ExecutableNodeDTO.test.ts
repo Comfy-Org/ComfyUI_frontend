@@ -6,7 +6,7 @@ import {
   LGraphEventMode,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   createNestedSubgraphs,

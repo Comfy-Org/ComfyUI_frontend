@@ -12,6 +12,7 @@ const ASK_THREAD_ID = 'd8c7b6a5-9e1f-4a2b-8c3d-4e5f6a7b8c9d'
 const ASK_MESSAGE_ID = '1e2d3c4b-5a69-4788-9a7b-6c5d4e3f2a1b'
 export const RUN_ASK_ID = askIdFor('call-run')
 export const ASK_USER_QUESTION = 'Which styles should I try?'
+export const DELETE_APPROVAL_PROMPT = 'Delete the 2 nodes you added?'
 
 export const askTurnIds = {
   thread_id: ASK_THREAD_ID,
@@ -70,6 +71,13 @@ export function askCancelled(askId: string): AgentAskResolvedFrame {
   return {
     type: 'agent_ask_resolved',
     data: { ...askTurnIds, ask_id: askId, status: 'cancelled', selected: null }
+  }
+}
+
+export function askExpired(askId = RUN_ASK_ID): AgentAskResolvedFrame {
+  return {
+    type: 'agent_ask_resolved',
+    data: { ...askTurnIds, ask_id: askId, status: 'expired', selected: null }
   }
 }
 
@@ -147,6 +155,48 @@ export function pausedAskFrame(askId: string): AgentAskFrame {
       min_selections: 1,
       max_selections: 1,
       allow_other: false
+    }
+  }
+}
+
+export function unknownKindAskFrame(askId: string): AgentAskFrame {
+  return {
+    type: 'agent_ask',
+    data: {
+      ...askTurnIds,
+      ask_id: askId,
+      kind: 'a_kind_from_a_newer_server',
+      prompt: 'Pick a branch to keep.',
+      options: [{ id: 'keep', label: 'Keep' }],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+  } as unknown as AgentAskFrame
+}
+
+export function deleteApprovalFrame(askId: string): AgentAskFrame {
+  return {
+    type: 'agent_ask',
+    data: {
+      ...askTurnIds,
+      ask_id: askId,
+      kind: 'delete_approval',
+      prompt: DELETE_APPROVAL_PROMPT,
+      options: [
+        { id: 'delete', label: 'Delete' },
+        { id: 'keep', label: 'Keep' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false,
+      context: {
+        action: 'delete_nodes',
+        nodes: [
+          { id: '12', type: 'KSampler', title: 'Hero sampler' },
+          { id: '13', type: 'VAEDecode' }
+        ]
+      }
     }
   }
 }

@@ -1,4 +1,4 @@
-import type { SessionErrorCode } from '../../sessionContracts.js'
+import type { SessionErrorCode } from '#/core/sessionContracts'
 
 export type WebSessionMode = 'session-client' | 'web-session'
 

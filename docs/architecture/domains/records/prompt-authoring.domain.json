@@ -3,11 +3,16 @@
   "capability": "Prompt authoring",
   "description": "Dynamic prompt expansion at serialization and keyboard editing of prompt attention weights. The shared formatUtil module remains outside this capability because it also implements unrelated formatting.",
   "modules": [
-    { "path": "src/extensions/core/dynamicPrompts.ts", "role": "integration" },
-    { "path": "src/extensions/core/dynamicPrompts.test.ts", "role": "domain" },
-    { "path": "src/extensions/core/editAttention.ts", "role": "integration" },
     {
-      "path": "src/extensions/core/editAttention.test.ts",
+      "path": "src/extensions/core/dynamicPrompts.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/dynamicPrompts.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/editAttention.ts",
       "role": "integration"
     }
   ],

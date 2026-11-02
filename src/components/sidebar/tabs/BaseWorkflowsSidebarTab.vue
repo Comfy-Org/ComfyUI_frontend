@@ -25,7 +25,7 @@
           data-testid="workflows-refresh-icon"
           :class="
             cn(
-              'icon-[lucide--refresh-cw] size-4',
+              'icon-[lucide--refresh-cw]',
               workflowStore.isSyncLoading && 'animate-spin'
             )
           "
@@ -41,6 +41,10 @@
         <SearchInput
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="
+            $t('g.searchPlaceholder', { subject: searchSubject })
+          "
           :placeholder="$t('g.searchPlaceholder', { subject: searchSubject })"
           @search="handleSearch"
         />
@@ -131,7 +135,7 @@
           </TreeExplorer>
           <slot v-else name="empty-state">
             <NoResultsPlaceholder
-              icon="pi pi-folder"
+              icon="icon-[lucide--folder]"
               :title="$t('g.empty')"
               :message="$t('g.noWorkflowsFound')"
             />
@@ -156,16 +160,16 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
-import TextDivider from '@/components/common/TextDivider.vue'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
+import TextDivider from '@comfyorg/design-system/common/TextDivider'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -238,8 +242,9 @@ const dummyExpandedKeys = ref<Record<string, boolean>>({})
 
 const handleCloseWorkflow = async (workflow?: ComfyWorkflow) => {
   if (workflow) {
-    await workflowService.closeWorkflow(workflow, {
-      warnIfUnsaved: !workspaceStore.shiftDown
+    await workflowService.closeWorkflows([workflow], {
+      warnIfUnsaved: !workspaceStore.shiftDown,
+      initiator: 'user'
     })
   }
 }
@@ -297,14 +302,14 @@ function renamedWorkflowPath(
 function workflowContextMenuItems(workflow: ComfyWorkflow): MenuItem[] {
   const duplicate: MenuItem = {
     label: t('g.duplicate'),
-    icon: 'pi pi-file-export',
+    icon: 'icon-[lucide--file-output]',
     command: () => workflowService.duplicateWorkflow(workflow)
   }
   if (isAppMode.value) return [duplicate]
 
   const insert: MenuItem = {
     label: t('g.insert'),
-    icon: 'pi pi-file-export',
+    icon: 'icon-[lucide--file-output]',
     command: () => workflowService.insertWorkflow(workflow)
   }
   return [insert, duplicate]
@@ -342,7 +347,7 @@ const renderTreeNode = (
     e: MouseEvent
   ) {
     if (this.leaf && workflow) {
-      await workflowService.openWorkflow(workflow)
+      await workflowService.openWorkflow(workflow, { initiator: 'user' })
     } else {
       toggleNodeOnEvent(e, this)
     }

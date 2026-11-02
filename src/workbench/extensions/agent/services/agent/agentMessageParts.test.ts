@@ -2,6 +2,7 @@ import { assert, describe, expect, it } from 'vitest'
 
 import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
+  isCreditsStopPart,
   retireAskParts,
   toAskOrNoticePart,
   toAskPart,
@@ -157,6 +158,201 @@ describe('toAskPart ask_user', () => {
   })
 })
 
+describe('toAskPart delete_approval', () => {
+  const deleteApproval = (ask: Partial<AskInput> = {}): AskInput =>
+    askUser({
+      kind: 'delete_approval',
+      prompt: 'Delete 2 nodes?',
+      options: [
+        { id: 'delete', label: 'Delete' },
+        { id: 'keep', label: 'Keep' }
+      ],
+      context: {
+        action: 'delete_nodes',
+        nodes: [
+          { id: '12', type: 'KSampler', title: 'Hero sampler' },
+          { id: '13', type: 'VAEDecode', title: '  ' },
+          { id: '12', type: 'KSampler', title: 'A repeat' }
+        ]
+      },
+      ...ask
+    })
+
+  it('lists each node once, title before type', () => {
+    expect(toAskPart(deleteApproval())).toEqual({
+      type: 'deleteApproval',
+      askId: 'turn-1:call-1',
+      prompt: 'Delete 2 nodes?',
+      nodes: [
+        { id: '12', name: 'Hero sampler' },
+        { id: '13', name: 'VAEDecode' }
+      ],
+      hiddenNodeCount: 0
+    })
+  })
+
+  it('counts the nodes the host left out of the list as not listed', () => {
+    expect(
+      toAskPart(
+        deleteApproval({
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: '12', type: 'KSampler' }],
+            hidden_node_count: 20
+          }
+        })
+      )
+    ).toMatchObject({ hiddenNodeCount: 20 })
+  })
+
+  it.for([
+    { name: 'no context', context: undefined },
+    { name: 'no nodes', context: { action: 'delete_nodes' } },
+    {
+      name: 'nodes not an array',
+      context: { action: 'delete_nodes', nodes: 'oops' }
+    },
+    { name: 'an empty list', context: { action: 'delete_nodes', nodes: [] } },
+    {
+      name: 'a blank id',
+      context: { action: 'delete_nodes', nodes: [{ id: '12' }, { id: '  ' }] }
+    },
+    {
+      name: 'an unreadable entry next to a readable one',
+      context: {
+        action: 'delete_nodes',
+        nodes: [{ id: '12' }, { type: 'NoId' }]
+      }
+    }
+  ])('falls back to the notice with $name in context', ({ context }) => {
+    expect(toAskOrNoticePart(deleteApproval({ context }))).toEqual({
+      type: 'askUnavailable',
+      askId: 'turn-1:call-1'
+    })
+  })
+
+  it('clips a long node name but never its id', () => {
+    const prefix = 'n'.repeat(200)
+    const part = toAskPart(
+      deleteApproval({
+        context: {
+          action: 'delete_nodes',
+          nodes: [
+            {
+              id: `${prefix}-a`,
+              title: 'x'.repeat(210)
+            },
+            { id: `${prefix}-b` }
+          ]
+        }
+      })
+    )
+    assert(part?.type === 'deleteApproval')
+    expect(part.nodes.map(({ id }) => id)).toEqual([
+      `${prefix}-a`,
+      `${prefix}-b`
+    ])
+    expect(part.nodes[0].name).toBe(`${'x'.repeat(199)}\u2026`)
+  })
+
+  it.for([
+    {
+      name: 'other option ids',
+      ask: {
+        options: [
+          { id: 'yes', label: 'Yes' },
+          { id: 'no', label: 'No' }
+        ]
+      }
+    },
+    {
+      name: 'a third option',
+      ask: {
+        options: [
+          { id: 'delete', label: 'Delete' },
+          { id: 'keep', label: 'Keep' },
+          { id: 'delete_all', label: 'Delete all' }
+        ]
+      }
+    },
+    {
+      name: 'only one of the two',
+      ask: { options: [{ id: 'delete', label: 'Delete' }] }
+    },
+    { name: 'free text', ask: { allow_other: true } },
+    { name: 'a multi-choice', ask: { max_selections: 2 } }
+  ])('renders nothing for $name', ({ ask }) => {
+    expect(toAskPart(deleteApproval(ask))).toBeUndefined()
+  })
+
+  it('stays on screen read-only with its resolution once retired', () => {
+    const card = toAskPart(deleteApproval())
+    assert(card)
+    expect(
+      retireAskParts([card], card.askId, {
+        status: 'answered',
+        selected: ['keep']
+      })
+    ).toEqual([
+      { ...card, resolution: { status: 'answered', selected: ['keep'] } }
+    ])
+  })
+})
+
+describe('toAskPart paused', () => {
+  const pausedAsk = (ask: Partial<AskInput> = {}): AskInput =>
+    askUser({
+      kind: 'paused',
+      prompt: 'Paused until credits are added.',
+      options: [{ id: 'resume', label: 'Resume' }],
+      context: {
+        message: 'Paused until credits are added.',
+        reason: 'no_funds',
+        recheck_after_seconds: 60
+      },
+      ...ask
+    })
+
+  it('carries the server reason, copy and recheck window through', () => {
+    expect(toAskPart(pausedAsk())).toEqual({
+      type: 'paused',
+      askId: 'turn-1:call-1',
+      prompt: 'Paused until credits are added.',
+      message: 'Paused until credits are added.',
+      reason: 'no_funds',
+      recheckAfterSeconds: 60
+    })
+  })
+
+  it('accepts a Resume option when selecting it is optional on the wire', () => {
+    expect(toAskPart(pausedAsk({ min_selections: 0 }))).toMatchObject({
+      type: 'paused',
+      askId: 'turn-1:call-1'
+    })
+  })
+
+  it.for<{ name: string; ask: Partial<AskInput> }>([
+    {
+      name: 'a selection minimum Resume cannot meet',
+      ask: { min_selections: 2 }
+    },
+    { name: 'a selection maximum above one', ask: { max_selections: 2 } },
+    { name: 'free text beside Resume', ask: { allow_other: true } },
+    {
+      name: 'an option set that is not just Resume',
+      ask: {
+        options: [
+          { id: 'resume', label: 'Resume' },
+          { id: 'stop', label: 'Stop' }
+        ]
+      }
+    },
+    { name: 'no pause context at all', ask: { context: undefined } }
+  ])('renders nothing for $name', ({ ask }) => {
+    expect(toAskPart(pausedAsk(ask))).toBeUndefined()
+  })
+})
+
 describe('toAskOrNoticePart', () => {
   it('stands a notice in for an ask it cannot render', () => {
     expect(toAskOrNoticePart(askUser({ kind: 'paused' }))).toEqual({
@@ -218,6 +414,29 @@ describe('retireAskParts', () => {
       parts[1],
       question
     ])
+  })
+
+  const pause: MessagePart = {
+    type: 'paused',
+    askId: 'pause',
+    prompt: 'Paused until credits are added.',
+    message: 'Paused until credits are added.',
+    reason: 'no_funds',
+    recheckAfterSeconds: 60
+  }
+
+  it.for<AskUserResolution>([
+    { status: 'answered', selected: ['resume'] },
+    { status: 'closed' },
+    { status: 'retired' }
+  ])('drops a pause the server settled as $status', (resolution) => {
+    expect(retireAskParts([pause], 'pause', resolution)).toEqual([])
+  })
+
+  it('keeps a pause whose answer was never confirmed', () => {
+    expect(retireAskParts([pause], 'pause', { status: 'unconfirmed' })).toEqual(
+      [pause]
+    )
   })
 
   it('keeps an ask_user card read-only with its resolution', () => {
@@ -357,5 +576,46 @@ describe('toAskResolution', () => {
     }
   ])('reads $name', ({ data, expected }) => {
     expect(toAskResolution(data)).toEqual(expected)
+  })
+})
+
+describe('isCreditsStopPart', () => {
+  it.for<{ name: string; part: MessagePart; expected: boolean }>([
+    {
+      name: 'a refused-send paywall',
+      part: { type: 'paywall' },
+      expected: true
+    },
+    {
+      name: 'an admission pause for no funds',
+      part: {
+        type: 'paused',
+        askId: 'pause',
+        prompt: 'p',
+        message: 'm',
+        reason: 'no_funds',
+        recheckAfterSeconds: 60
+      },
+      expected: true
+    },
+    {
+      name: 'an administrator pause',
+      part: {
+        type: 'paused',
+        askId: 'pause',
+        prompt: 'p',
+        message: 'm',
+        reason: 'workspace_paused',
+        recheckAfterSeconds: 60
+      },
+      expected: false
+    },
+    {
+      name: 'a run approval',
+      part: { type: 'runApproval', askId: 'run' },
+      expected: false
+    }
+  ])('reports $expected for $name', ({ part, expected }) => {
+    expect(isCreditsStopPart(part)).toBe(expected)
   })
 })

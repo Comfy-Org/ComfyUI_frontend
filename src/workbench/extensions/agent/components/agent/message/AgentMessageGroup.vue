@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import type { ActivityPart } from '../../../services/agent/agentMessageParts'
+import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
+import type { ActivityPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
-} from '../../../services/agent/agentPaywallPresentation'
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import ActivityTrace from './ActivityTrace.vue'
 import AgentNoticeCard from './AgentNoticeCard.vue'
+import AgentPausedCard from './AgentPausedCard.vue'
 import AgentPaywallCard from './AgentPaywallCard.vue'
 import AskUserCard from './AskUserCard.vue'
+import DeleteApprovalCard from './DeleteApprovalCard.vue'
 import MarkdownStream from './MarkdownStream.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
@@ -27,7 +30,7 @@ const emit = defineEmits<{
   answer: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, workflowId: string | null]
-  paywallAction: [action: AgentPaywallAction]
+  paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
 }>()
 </script>
 
@@ -72,11 +75,29 @@ const emit = defineEmits<{
     :answering="answeringAskIds.has(group.part.askId)"
     @answer="(askId, answer) => emit('answer', askId, answer)"
   />
+  <DeleteApprovalCard
+    v-else-if="group.kind === 'deleteApproval'"
+    :part="group.part"
+    :answering="answeringAskIds.has(group.part.askId)"
+    @answer="
+      (askId, selection) => emit('answer', askId, { selected: [selection] })
+    "
+  />
+  <AgentPausedCard
+    v-else-if="group.kind === 'paused'"
+    :part="group.part"
+    :presentation="paywallPresentation"
+    :answering="answeringAskIds.has(group.part.askId)"
+    @answer="
+      (askId, selection) => emit('answer', askId, { selected: [selection] })
+    "
+    @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
+  />
   <AgentPaywallCard
     v-else-if="group.kind === 'paywall'"
     :presentation="paywallPresentation"
     :message="group.part.message"
-    @paywall-action="emit('paywallAction', $event)"
+    @paywall-action="emit('paywallAction', $event, 'refused_send')"
   />
   <AgentNoticeCard v-else :part="group.part" />
 </template>

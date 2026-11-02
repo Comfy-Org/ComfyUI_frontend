@@ -4,91 +4,19 @@
   "description": "Workflow app authoring: choose inputs and outputs, edit their presentation, enter builder mode, and save the resulting app. App execution remains in linear-mode.",
   "modules": [
     {
-      "path": "src/components/builder/AppBuilder.test.ts",
+      "path": "src/components/builder/**",
       "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/AppBuilder.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/AppModeWidgetList.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/BuilderDialog.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/BuilderFooterToolbar.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/BuilderFooterToolbar.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/BuilderMenu.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/BuilderMenu.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/BuilderOpensAsPopover.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/BuilderSaveDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/BuilderToolbar.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/builderViewOptions.test.ts",
-      "role": "application"
     },
     {
       "path": "src/components/builder/builderViewOptions.ts",
       "role": "application"
     },
     {
-      "path": "src/components/builder/ConnectOutputPopover.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/EmptyWorkflowDialogContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/IoItem.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/StepBadge.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/StepLabel.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/builder/types.ts",
       "role": "domain"
     },
     {
-      "path": "src/components/builder/useAppModeWidgetResizing.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/builder/useAppModeWidgetResizing.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/builder/useBuilderSave.test.ts",
       "role": "application"
     },
     {
@@ -100,23 +28,7 @@
       "role": "application"
     },
     {
-      "path": "src/components/builder/useEmptyWorkflowDialog.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/useEmptyWorkflowDialog.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/useEnterBuilder.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/builder/useEnterBuilder.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/builder/useLoaderDropIndicator.test.ts",
       "role": "application"
     },
     {
@@ -124,24 +36,8 @@
       "role": "application"
     },
     {
-      "path": "src/components/builder/useResolvedSelectedInputs.test.ts",
-      "role": "application"
-    },
-    {
       "path": "src/components/builder/useResolvedSelectedInputs.ts",
       "role": "application"
-    },
-    {
-      "path": "src/components/builder/ViewTypeRadioGroup.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/VueNodeSwitchPopup.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/builder/WidgetDescription.vue",
-      "role": "presentation"
     }
   ],
   "publicEntryPoints": [],

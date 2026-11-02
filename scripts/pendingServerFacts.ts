@@ -15,7 +15,8 @@ type ExpiredTickets = {
   unknown: string[]
 }
 
-const CALL_PATTERN = /pendingServerFact\s*\(([^,)]*)/g
+const CALL_PATTERN =
+  /(?<!function\s+)pendingServerFact\s*(?:<(?:[^<>]|<[^<>]*>)*>)?\s*\(([^,)]*)/g
 const TICKET_LITERAL = /^(['"`])(BE-\d+)\1$/
 
 const CLOSED_STATE_TYPES = new Set(['completed', 'canceled'])

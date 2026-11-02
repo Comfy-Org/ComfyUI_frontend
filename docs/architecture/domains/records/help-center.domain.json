@@ -4,23 +4,7 @@
   "description": "Help-center menu, popup state and orchestration, documentation and community links, release-note entry points, and feedback navigation.",
   "modules": [
     {
-      "path": "src/components/helpcenter/HelpCenterMenuContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/helpcenter/HelpCenterMenuContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/helpcenter/HelpCenterPopups.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/helpcenter/HelpCenterPopups.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/SidebarHelpCenterIcon.test.ts",
+      "path": "src/components/helpcenter/**",
       "role": "presentation"
     },
     {
@@ -28,16 +12,16 @@
       "role": "presentation"
     },
     {
-      "path": "src/stores/helpCenterStore.ts",
-      "role": "application"
+      "path": "src/composables/useHelpCenter.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/composables/useHelpCenter.ts",
+      "path": "src/stores/helpCenterStore.ts",
       "role": "application"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["extension-manager", "keybindings"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

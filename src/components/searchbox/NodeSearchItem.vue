@@ -1,6 +1,6 @@
 <template>
   <div
-    class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden px-2 py-0"
+    class="option-container flex w-full items-center justify-between overflow-hidden px-2 py-0"
   >
     <div class="option-display-name flex flex-col font-semibold">
       <div>
@@ -11,7 +11,7 @@
           <HighlightedText
             :text="nodeDef.display_name"
             :query="currentQuery"
-            highlight-class="-my-0.5 mx-0.5 rounded-sm bg-primary-background px-0.5 font-bold text-base-foreground"
+            highlight-class="-my-0.5 mx-0.5 rounded-sm bg-primary px-0.5 font-bold text-foreground"
           />
         </span>
         <span>&nbsp;</span>
@@ -20,14 +20,14 @@
             <HighlightedText
               :text="nodeDef.name"
               :query="currentQuery"
-              highlight-class="-my-0.5 mx-0.5 rounded-sm bg-primary-background px-0.5 font-bold text-base-foreground"
+              highlight-class="-my-0.5 mx-0.5 rounded-sm bg-primary px-0.5 font-bold text-foreground"
             />
           </span>
         </Badge>
       </div>
       <div
         v-if="showCategory"
-        class="option-category truncate text-sm font-light text-muted-foreground"
+        class="option-category truncate font-light text-muted-foreground"
       >
         {{ nodeDef.category.replaceAll('/', ' > ') }}
       </div>
@@ -59,8 +59,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import HighlightedText from '@/components/searchbox/HighlightedText.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
+import HighlightedText from '@comfyorg/design-system/common/HighlightedText'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'

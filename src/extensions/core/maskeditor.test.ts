@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import type { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import type { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import type {
   IContextMenuValue,
   LGraphCanvas
@@ -17,16 +17,18 @@ vi.mock(import('@/scripts/app'))
 
 const openMaskEditorMock = vi.fn()
 
-vi.mock(import('@/composables/maskeditor/useMaskEditor'), () => ({
-  useMaskEditor: () =>
-    fromPartial<ReturnType<typeof useMaskEditor>>({
-      openMaskEditor: openMaskEditorMock
-    })
-}))
+vi.mock(
+  import('@/renderer/extensions/maskEditor/composables/useMaskEditor'),
+  () => ({
+    useMaskEditor: () =>
+      fromPartial<ReturnType<typeof useMaskEditor>>({
+        openMaskEditor: openMaskEditorMock
+      })
+  })
+)
 
-import '@/extensions/core/maskeditor'
-
-const ext = vi.mocked(app.registerExtension).mock.calls[0][0]
+const { maskEditorExtension: ext } =
+  await import('@/extensions/core/maskeditor')
 const canvas = fromPartial<LGraphCanvas>({})
 const nodeData = fromPartial<ComfyNodeDef>({ name: 'LoadImage' })
 

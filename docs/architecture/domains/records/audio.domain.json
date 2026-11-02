@@ -4,34 +4,7 @@
   "description": "Audio upload, recording, playback, and waveform presentation for audio nodes, plus the shared waveform player. Template, agent, queue, and asset components that embed the player remain with their owning domains.",
   "modules": [
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/audio/**",
-      "role": "application"
-    },
-    { "path": "src/composables/useWaveAudioPlayer.ts", "role": "application" },
-    {
-      "path": "src/composables/useWaveAudioPlayer.test.ts",
-      "role": "application"
-    },
-    { "path": "src/services/audioService.ts", "role": "infrastructure" },
-    { "path": "src/services/audioService.test.ts", "role": "infrastructure" },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/utils/audioUtils.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/audio/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/components/AudioPreview.vue",
+      "path": "src/components/common/WaveAudioPlayer.stories.ts",
       "role": "presentation"
     },
     {
@@ -39,15 +12,33 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/common/WaveAudioPlayer.test.ts",
+      "path": "src/composables/useWaveAudioPlayer.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/uploadAudio.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue",
       "role": "presentation"
     },
     {
-      "path": "src/components/common/WaveAudioPlayer.stories.ts",
+      "path": "src/renderer/extensions/vueNodes/widgets/components/audio/**",
       "role": "presentation"
     },
-    { "path": "src/extensions/core/uploadAudio.ts", "role": "integration" },
-    { "path": "src/extensions/core/uploadAudio.test.ts", "role": "integration" }
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/audio/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/utils/audioUtils.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/audioService.ts",
+      "role": "infrastructure"
+    }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],

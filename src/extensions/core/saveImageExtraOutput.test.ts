@@ -19,9 +19,9 @@ async function loadExtension(graph: LGraph): Promise<ComfyExtension> {
   vi.resetModules()
   const { app } = await import('@/scripts/app')
   vi.mocked(app).graph = graph
-  const registerExtension = vi.mocked(app.registerExtension)
-  await import('./saveImageExtraOutput')
-  return registerExtension.mock.calls[0][0]
+  const { saveImageExtraOutputExtension } =
+    await import('./saveImageExtraOutput')
+  return saveImageExtraOutputExtension
 }
 
 async function createNodeWithFilenamePrefix(

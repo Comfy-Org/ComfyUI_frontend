@@ -4,19 +4,7 @@
   "description": "Backend system statistics, About panel version information, device presentation, and copying diagnostic information.",
   "modules": [
     {
-      "path": "src/components/common/DeviceInfo.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/common/DeviceInfo.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/common/systemStatsColumns.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/components/common/SystemStatsPanel.test.ts",
       "role": "presentation"
     },
     {
@@ -24,15 +12,15 @@
       "role": "presentation"
     },
     {
+      "path": "src/components/common/systemStatsColumns.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/components/dialog/content/setting/AboutPanel.vue",
       "role": "presentation"
     },
     {
-      "path": "src/stores/systemStatsStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/systemStatsStore.test.ts",
+      "path": "src/composables/useCopySystemInfo.ts",
       "role": "application"
     },
     {
@@ -40,17 +28,13 @@
       "role": "application"
     },
     {
-      "path": "src/composables/useCopySystemInfo.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useCopySystemInfo.test.ts",
+      "path": "src/stores/systemStatsStore.ts",
       "role": "application"
     }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["extension-manager"],
   "characterizationScenarios": [
     {
       "name": "System stats panel renders system and device information",

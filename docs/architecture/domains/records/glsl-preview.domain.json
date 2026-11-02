@@ -3,41 +3,20 @@
   "capability": "GLSL preview",
   "description": "Shader preview scheduling, uniform extraction, multipass rendering, and shared WebGL resource management. Graph and widget stores remain external host dependencies.",
   "modules": [
-    { "path": "src/renderer/glsl/glslUtils.ts", "role": "domain" },
-    { "path": "src/renderer/glsl/glslUtils.test.ts", "role": "domain" },
-    { "path": "src/renderer/glsl/glslPreviewUtils.ts", "role": "application" },
-    { "path": "src/renderer/glsl/useGLSLPreview.ts", "role": "application" },
     {
-      "path": "src/renderer/glsl/useGLSLPreview.test.ts",
+      "path": "src/renderer/glsl/**",
       "role": "application"
     },
     {
-      "path": "src/renderer/glsl/glslPreviewStoreContract.test.ts",
-      "role": "application"
-    },
-    { "path": "src/renderer/glsl/useGLSLUniforms.ts", "role": "application" },
-    {
-      "path": "src/renderer/glsl/useGLSLUniforms.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/glsl/useGLSLUniforms.promotedRead.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/glsl/useGLSLRenderer.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/glsl/useGLSLRenderer.test.ts",
-      "role": "infrastructure"
+      "path": "src/renderer/glsl/glslUtils.ts",
+      "role": "domain"
     },
     {
       "path": "src/renderer/glsl/sharedGLContext.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/renderer/glsl/sharedGLContext.test.ts",
+      "path": "src/renderer/glsl/useGLSLRenderer.ts",
       "role": "infrastructure"
     }
   ],

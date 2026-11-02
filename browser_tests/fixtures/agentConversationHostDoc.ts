@@ -1,4 +1,5 @@
 import {
+  OPAQUE_WIDGETS_KEY,
   SCHEMA_VERSION,
   applyOps,
   hasAppliedOp,
@@ -15,9 +16,10 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
 import * as Y from 'yjs'
 
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -83,7 +85,8 @@ export class HostDoc {
   constructor(
     private readonly workflowId: string,
     seed: WorkflowJSON,
-    private readonly catalog: WidgetCatalog
+    private readonly catalog: WidgetCatalog,
+    private readonly lineageSeq = 1
   ) {
     this.doc = mint(seed, catalog)
   }
@@ -104,6 +107,10 @@ export class HostDoc {
   // merely different one.
   corruptSchemaVersion(): void {
     this.doc.getMap('meta').delete('schema_version')
+  }
+
+  advanceSchemaVersionBeyondReader(): void {
+    this.doc.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
   }
 
   // Test-only: restores meta.schema_version and returns the frame carrying
@@ -129,8 +136,9 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         ok: true,
-        seq: this.seq
-      }
+        seq: this.seq,
+        ...(this.lineageSeq !== 0 && { lineage_seq: this.lineageSeq })
+      } satisfies DocSubscribedData
     }
   }
 
@@ -262,6 +270,27 @@ export class HostDoc {
     )
   }
 
+  replaceOpaqueWidgetValues(
+    nodeId: number,
+    values: readonly unknown[]
+  ): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const node = nodesMap(this.doc).get(String(nodeId))
+    if (!(node instanceof Y.Map)) {
+      throw new Error(`Host node ${String(nodeId)} does not exist`)
+    }
+    if (!Array.isArray(node.get(OPAQUE_WIDGETS_KEY))) {
+      throw new Error(`Host node ${String(nodeId)} has no opaque widget values`)
+    }
+    node.set(OPAQUE_WIDGETS_KEY, [...values])
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
   // A batch the client minted itself (envelope included), answered the way
   // the relay answers a human write: one `doc_ops_result`, then the delta as
   // a `doc_update` when anything landed. The applier stays the only judge.
@@ -312,6 +341,7 @@ export class HostDoc {
         workflow_id: this.workflowId,
         ok: rejected === undefined,
         seq: this.seq,
+        lineage_seq: this.lineageSeq,
         applied,
         skipped,
         ...(rejected && {
@@ -346,10 +376,11 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         seq: this.seq,
+        lineage_seq: this.lineageSeq,
         update_b64: toBase64(update),
         actor,
         op_ids: opIds
-      }
+      } satisfies DocUpdateData
     }
   }
 }

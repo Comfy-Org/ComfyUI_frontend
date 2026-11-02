@@ -4,19 +4,11 @@
   "description": "Bootstrap phase tracer and performance marks that record named startup phases to the Performance API, Sentry breadcrumbs, Datadog RUM timings, and the bootstrap-complete telemetry event. Lab performance benchmarks live outside src.",
   "modules": [
     {
-      "path": "src/platform/telemetry/perf/bootstrapTracer.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/perf/bootstrapTracer.test.ts",
+      "path": "src/platform/telemetry/perf/**",
       "role": "application"
     },
     {
       "path": "src/platform/telemetry/perf/perfMark.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/telemetry/perf/perfMark.test.ts",
       "role": "infrastructure"
     }
   ],

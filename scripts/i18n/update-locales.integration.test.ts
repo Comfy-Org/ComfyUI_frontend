@@ -19,7 +19,16 @@ import type { LocaleObject } from './locale-tree'
 import type { TranslateBatch, TranslationItem } from './translate'
 import { updateLocales } from './update-locales'
 
-const config = translationTargets.website
+const config: TranslationPipelineConfig = {
+  ...translationTargets.app,
+  output: 'catalogs',
+  strictProtectedTokens: true,
+  existingCopy: { kind: 'preserve', excludedKeyPrefixes: ['tos'] },
+  outputLocales: [
+    { code: 'zh-CN', name: 'Simplified Chinese' },
+    { code: 'ja', name: 'Japanese' }
+  ]
+}
 const manifestFile = '.source-manifest.json'
 
 function json(value: unknown): string {
@@ -165,6 +174,49 @@ describe('updateLocales generation', () => {
     expect(repo.readManifest()).toEqual({
       version: 1,
       files: { 'main.json': repo.blobId(english) }
+    })
+  })
+
+  it('keeps hand-written Russian plural forms for a key added since the recorded English', async () => {
+    const appConfig = translationTargets.app
+    const repo = createCatalogRepo({
+      ...appConfig,
+      outputLocales: appConfig.outputLocales.filter(({ code }) =>
+        ['ru', 'zh'].includes(code)
+      )
+    })
+    const russian = '{n} кредит | {n} кредита | {n} кредитов | {n} кредита'
+    repo.recordEnglish({ 'main.json': {} })
+    repo.writeCatalog('en/main.json', { used: '{n} credit | {n} credits' })
+    repo.writeCatalog('ru/main.json', { used: russian })
+    repo.writeCatalog('zh/main.json', { used: '{n} 积分' })
+    const translator = createTranslator()
+
+    await repo.run(false, translator.translate)
+
+    expect(translator.sourcesByLocale()).toEqual({
+      zh: ['{n} credit | {n} credits']
+    })
+    expect(repo.readCatalog('ru/main.json')).toEqual({ used: russian })
+  })
+
+  it('regenerates hand-written Russian plural forms whose placeholders do not match English', async () => {
+    const appConfig = translationTargets.app
+    const repo = createCatalogRepo({
+      ...appConfig,
+      outputLocales: appConfig.outputLocales.filter(({ code }) => code === 'ru')
+    })
+    repo.recordEnglish({ 'main.json': {} })
+    repo.writeCatalog('en/main.json', { used: '{n} credit | {n} credits' })
+    repo.writeCatalog('ru/main.json', {
+      used: '{count} кредит | {count} кредита | {count} кредитов | {count} кредита'
+    })
+    const translator = createTranslator()
+
+    await repo.run(false, translator.translate)
+
+    expect(translator.sourcesByLocale()).toEqual({
+      ru: ['{n} credit | {n} credits']
     })
   })
 
@@ -553,7 +605,7 @@ describe('protected-token baselines', () => {
     expect(repo.readTree()).toEqual(before)
   })
 
-  it('checks retained website copy with strict markup and current-locale link rules', async () => {
+  it('checks retained copy with strict markup and current-locale link rules', async () => {
     const repo = createCatalogRepo()
     const source = {
       cta: 'See <a href="/pricing">pricing</a>',

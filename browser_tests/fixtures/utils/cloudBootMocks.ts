@@ -5,8 +5,13 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import {
+  mockDeploymentRolloutRefusal,
+  mockWorkspace,
+  workspace
+} from '@e2e/fixtures/utils/workspaceMocks'
 
 interface CloudBootOptions {
   /** Remote-config payload for `/api/features` (enables the flags under test). */
@@ -26,7 +31,12 @@ export async function mockCloudBootRoutes(
   page: Page,
   { features, settings = {}, objectInfo }: CloudBootOptions
 ) {
+  await mockDeploymentRolloutRefusal(page)
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
+  if (features['agent-in-app-experience'] === true)
+    await new FeatureFlagHelper(page).seedServerFlags({
+      agent: { state: 'ready' }
+    })
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )

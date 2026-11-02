@@ -1,3 +1,4 @@
+import type { LLink, Reroute } from '@comfyorg/graph-model/entityRegistry'
 /**
  * Litegraph Link Adapter
  *
@@ -6,27 +7,29 @@
  * rendering data that can be consumed by the PathRenderer.
  * Maintains backward compatibility with existing litegraph integration.
  */
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { CanvasColour, Point } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+
+import type { CanvasColour } from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Point2D as PointObj,
+  Bounds
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import {
   LinkDirection,
   LinkMarkerShape,
   LinkRenderType
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
 import type {
   ArrowShape,
   Direction,
   LinkRenderData,
   RenderContext as PathRenderContext,
-  Point as PointObj,
   RenderMode
 } from '@/renderer/core/canvas/pathRenderer'
 import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Bounds } from '@/renderer/core/layout/types'
 
 export interface LinkRenderContext {
   // Canvas settings
@@ -118,7 +121,7 @@ export class LitegraphLinkAdapter {
         disabled: context.disabledPattern
       },
       animation: {
-        time: LiteGraph.getTime() * 0.001
+        time: litegraph().getTime() * 0.001
       },
       scale: context.scale,
       highlightedIds: new Set(Array.from(context.highlightedLinks).map(String))

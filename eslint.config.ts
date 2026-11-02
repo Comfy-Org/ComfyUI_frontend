@@ -2,7 +2,6 @@
 
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
-import { configs as astroConfigs } from 'eslint-plugin-astro'
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { getDefaultSelectors } from 'eslint-plugin-better-tailwindcss/api/defaults'
 import {
@@ -31,6 +30,7 @@ import {
   tailwindScriptIgnores,
   templateFiles
 } from './scripts/eslintScope.ts'
+import templateClasses from './tools/eslint-plugins/templateClasses.ts'
 
 const extraFileExtensions = ['.vue']
 
@@ -107,17 +107,42 @@ const noTooltipDirective = {
     'Use the Button tooltip prop or the design-system Tooltip compound instead of v-tooltip.'
 }
 
+const agentPlatformChannelRestrictions = [
+  {
+    selector:
+      "MemberExpression:matches([object.name='navigator'], [object.object.name='window'][object.property.name='navigator']):matches([computed=false][property.name='clipboard'], [computed=true][property.value='clipboard'])",
+    message: 'Use the shared clipboard composables.'
+  },
+  {
+    selector:
+      "CallExpression:matches([callee.name='getServerFeature'], [callee.property.name='getServerFeature'])",
+    message: 'Read server flags through useFeatureFlags.'
+  },
+  {
+    selector:
+      ":matches(AssignmentExpression > MemberExpression.left, UpdateExpression > MemberExpression.argument):matches([object.property.name='ds'], [object.object.property.name='ds'])",
+    message: 'Use the canvas viewport methods.'
+  },
+  {
+    // Syntax cannot tell a Date from a number, and the platform owns both:
+    // src/utils/dateTimeUtil.ts, src/utils/numberUtil.ts, and vue-i18n d()/n().
+    selector:
+      'CallExpression[callee.property.name=/^toLocale(Date|Time)?String$/]',
+    message:
+      'Format dates and numbers with the platform formatting utilities or vue-i18n.'
+  },
+  {
+    selector:
+      "ImportDeclaration[source.value='@/i18n'] > ImportSpecifier[imported.name='t']",
+    message: 'Use useI18n in composition scope or a platform service.'
+  }
+]
+
 const oxlintConfigs = oxlint.buildFromOxlintConfigFile(
   path.resolve(import.meta.dirname, '.oxlintrc.json')
 )
 const sharedIgnores = oxlintConfigs.filter((config) => !config.rules)
-// Astro components are parsed by ESLint only, so they keep every rule.
-const rulesCoveredByOxlint = oxlintConfigs
-  .filter((config) => config.rules)
-  .map((config) => ({
-    ...config,
-    ignores: [...(config.ignores ?? []), '**/*.astro', '**/*.astro/**']
-  }))
+const rulesCoveredByOxlint = oxlintConfigs.filter((config) => config.rules)
 
 const commonGlobals = {
   ...globals.browser,
@@ -175,19 +200,6 @@ const billingWebI18nSettings = {
   }
 } as const
 
-const websiteI18nSettings = {
-  'vue-i18n': {
-    localeDir: [
-      {
-        pattern: './apps/website/src/locales/en/main.json',
-        localeKey: 'path'
-      }
-    ],
-    cwd: import.meta.dirname,
-    messageSyntaxVersion: '^9.0.0'
-  }
-} as const
-
 const commonParserOptions = {
   parser: tseslintParser,
   ecmaVersion: 2020,
@@ -195,7 +207,12 @@ const commonParserOptions = {
   extraFileExtensions
 } as const
 
-// Tailwind CSS v4 linting (class ordering, duplicates, conflicts, etc.)
+const layerClassRestriction = {
+  pattern: '^(?:.*:)?!?-?z-(?:[0-9]{3,}|\\[.*\\]|\\(.*\\))!?$',
+  message:
+    'Use a named layer for cross-component ordering; keep local stacking inside an isolated owner.'
+}
+
 const tailwindConfigs = defineConfig([
   betterTailwindcss.configs.recommended,
   {
@@ -233,13 +250,27 @@ const tailwindConfigs = defineConfig([
     }
   },
   {
+    name: 'design-system/owned-layers',
+    files: ['src/**/*.{ts,vue}'],
+    rules: {
+      'better-tailwindcss/no-restricted-classes': [
+        'error',
+        { restrict: [layerClassRestriction] }
+      ]
+    }
+  },
+  {
     name: 'design-system/core-ui-theme-tokens',
-    files: ['src/components/ui/**/*.{ts,vue}'],
+    files: [
+      'src/components/ui/**/*.{ts,vue}',
+      'packages/design-system/src/components/**/*.{ts,vue}'
+    ],
     rules: {
       'better-tailwindcss/no-restricted-classes': [
         'error',
         {
           restrict: [
+            layerClassRestriction,
             {
               pattern: specializedThemeClassPattern,
               message:
@@ -260,19 +291,29 @@ const tailwindConfigs = defineConfig([
         )
       }
     }
-  },
-  {
-    files: ['apps/website/**/*.{astro,ts,mts,vue}'],
-    settings: {
-      'better-tailwindcss': {
-        entryPoint: 'apps/website/src/styles/global.css'
-      }
-    }
   }
 ])
 
 export default defineConfig([
   ...sharedIgnores,
+  {
+    name: 'comfy/agent-shared-deadlines',
+    files: [
+      'src/workbench/extensions/agent/composables/agent/useAttachment.ts',
+      'src/workbench/extensions/agent/services/agent/agentEventSource.ts'
+    ],
+    rules: {
+      'no-restricted-globals': ['error', 'setTimeout', 'clearTimeout'],
+      'no-restricted-properties': [
+        'error',
+        { property: 'setTimeout', message: 'Use VueUse or es-toolkit timers.' },
+        {
+          property: 'clearTimeout',
+          message: 'Use VueUse or es-toolkit timers.'
+        }
+      ]
+    }
+  },
   {
     files: tailwindScriptFiles,
     ignores: [...tailwindScriptIgnores, ...templateFiles],
@@ -314,30 +355,34 @@ export default defineConfig([
       },
       // Difference in typecheck on CI vs Local
       pluginVue.configs['flat/recommended'],
-      astroConfigs['flat/recommended'],
-      {
-        files: ['apps/website/**/*.astro'],
-        settings,
-        languageOptions: {
-          parserOptions: {
-            parser: tseslintParser
-          }
-        }
-      },
-      {
-        files: ['apps/website/**/*.astro/*.{js,ts}'],
-        rules: {
-          'no-empty': ['error', { allowEmptyCatch: true }]
-        }
-      },
       ...tailwindConfigs,
+      {
+        files: ['**/*.vue'],
+        plugins: { 'template-classes': templateClasses },
+        rules: {
+          'template-classes/icon-element': 'error'
+        }
+      },
+      {
+        files: [
+          'src/**/*.vue',
+          'apps/billing-web/**/*.vue',
+          'packages/account-ui/**/*.vue'
+        ],
+        plugins: { 'template-classes': templateClasses },
+        rules: {
+          'template-classes/no-default-utilities': 'error',
+          'template-classes/no-redundant-component-classes': 'error',
+          'template-classes/no-inherited-utilities': 'error'
+        }
+      },
       // Disables ESLint rules that conflict with formatters
       eslintConfigPrettier,
       importX.flatConfigs.recommended,
       importX.flatConfigs.typescript,
       {
         // oxlint runs this rule elsewhere; it cannot see template usages in SFCs
-        files: ['**/*.vue', '**/*.astro'],
+        files: ['**/*.vue'],
         plugins: { 'unused-imports': unusedImports },
         rules: { 'unused-imports/no-unused-imports': 'error' }
       },
@@ -435,35 +480,6 @@ export default defineConfig([
       },
 
       {
-        files: ['apps/website/**/*.vue'],
-        rules: {
-          '@intlify/vue-i18n/no-raw-text': 'off',
-          'vue/no-v-html': 'error'
-        }
-      },
-      // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
-      // TypeScript resolver cannot see but are valid at build time.
-      {
-        files: ['apps/website/**/*.{astro,ts,mts,vue}'],
-        rules: {
-          'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
-        }
-      },
-      // reka-ui wrappers forward props via v-bind, which the rule cannot trace.
-      {
-        files: [
-          'apps/website/src/components/ui/accordion/*.vue',
-          'apps/website/src/components/ui/dialog/*.vue',
-          'apps/website/src/components/ui/navigation-menu/*.vue',
-          'apps/website/src/components/ui/sheet/*.vue',
-          'apps/website/src/components/ui/slider/*.vue',
-          'apps/website/src/components/ui/toggle-group/*.vue'
-        ],
-        rules: {
-          'vue/no-unused-properties': 'off'
-        }
-      },
-      {
         name: 'comfy/enforce-sanitized-html-boundary',
         files: ['src/**/*.vue'],
         rules: {
@@ -483,7 +499,6 @@ export default defineConfig([
         ignores: [
           'src/App.vue',
           'src/components/graph/SelectionToolbox.vue',
-          'src/components/ui/tooltip/*.vue',
           'src/renderer/core/layout/transform/TransformPane.vue'
         ],
         rules: {
@@ -500,21 +515,52 @@ export default defineConfig([
       }
     ]
   },
-  // Every tree checked against its own catalog. These entries add only the
-  // catalog and the rule, so the extensions must be ones the blocks above
-  // already parse: tailwindScriptFiles for .ts, templateFiles for .vue and
-  // .astro. Adding .mts here would lint it with espree and fail on syntax.
   ...(
     [
       ['src', settings],
-      ['apps/billing-web', billingWebI18nSettings],
-      ['apps/website', websiteI18nSettings]
+      ['apps/billing-web', billingWebI18nSettings]
     ] as const
   ).map(([root, treeSettings]) => ({
-    files: [`${root}/**/*.{ts,vue,astro}`],
+    files: [`${root}/**/*.{ts,vue}`],
     ignores: tailwindScriptIgnores,
     settings: treeSettings,
     plugins: { '@intlify/vue-i18n': i18nPlugin },
     rules: { '@intlify/vue-i18n/no-missing-keys': 'error' as const }
-  }))
+  })),
+  {
+    name: 'comfy/agent-platform-channels',
+    files: ['src/workbench/extensions/agent/**/*.{ts,vue}'],
+    ignores: [
+      '**/*.test.ts',
+      '**/*.stories.ts',
+      '**/CrdtDevPanel.vue',
+      '**/restoreOpMinter.ts',
+      '**/crdtLog.ts'
+    ],
+    rules: {
+      'no-console': 'error',
+      'no-restricted-syntax': ['error', ...agentPlatformChannelRestrictions]
+    }
+  },
+  {
+    // After the channels block: flat config replaces a rule's options per
+    // file, so this entry repeats the channel restrictions and adds its own.
+    name: 'comfy/agent-shared-filenames',
+    files: [
+      'src/workbench/extensions/agent/utils/attachableFiles.ts',
+      'src/workbench/extensions/agent/utils/resolveReplyAssetDownload.ts'
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...agentPlatformChannelRestrictions,
+        {
+          selector:
+            "CallExpression[callee.property.name=/^(split|lastIndexOf)$/]:matches([arguments.0.value='.'], [arguments.0.value='/'], [arguments.0.value='\\\\'])",
+          message:
+            'Use the platform filename utilities (getFilenameDetails, getPathDetails).'
+        }
+      ]
+    }
+  }
 ])

@@ -1,7 +1,7 @@
 import type {
   PaymentIntentSource,
   SubscriptionCheckoutTier
-} from './vocabulary.js'
+} from './vocabulary'
 
 /**
  * A cloud entry point that leads to billing. A client journey observation: it

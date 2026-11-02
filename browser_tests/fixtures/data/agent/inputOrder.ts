@@ -1,3 +1,4 @@
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -72,9 +73,7 @@ export const catalog: WidgetCatalog = {
   }
 }
 
-interface SourceValues {
-  width: number
-  height: number
+interface SourceValues extends Size2D {
   length: number
   prompt: string
 }

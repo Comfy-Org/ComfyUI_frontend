@@ -7,7 +7,7 @@
           <DialogTitle :id="titleId">
             {{ $t('g.customizeFolder') }}
           </DialogTitle>
-          <DialogClose />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <div class="flex flex-col gap-4 px-4 py-2">
           <div class="flex flex-col gap-2">
@@ -35,7 +35,7 @@
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
-          <hr class="border-t border-border-subtle" />
+          <hr class="border-t border-border/50" />
           <div class="flex flex-col gap-2">
             <label for="customization-color" class="text-sm font-medium">
               {{ $t('g.color') }}
@@ -67,16 +67,17 @@ import { ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ColorCustomizationSelector from '@/components/common/ColorCustomizationSelector.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogFooter from '@/components/ui/dialog/DialogFooter.vue'
-import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Button from '@comfyorg/design-system/button/Button'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogFooter from '@comfyorg/design-system/dialog/DialogFooter'
+import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { cn } from '@comfyorg/tailwind-utils'
 

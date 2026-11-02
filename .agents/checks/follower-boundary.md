@@ -10,6 +10,26 @@ Check changes under `src/workbench/extensions/agent/**` (and anything importing
 [ADR-CRDT-FOLLOWER-0025](../../docs/adr/CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md) and the CRDT
 layout split in [ADR-CRDT-LAYOUT-0003](../../docs/adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md).
 
+**Mechanical subset now machine-checked (FE-1968):** the production TypeScript files under
+the CRDT and Agent transport seams are checked for outbound `update_b64` construction,
+branch-pinned catalog citations, and hardcoded endpoints. The endpoint rule is deliberately
+broad inside these seams: any absolute (`ws(s)://`, `http(s)://`, or protocol-relative) string
+literal counts, not only Agent socket addresses, so a pinned reference URL belongs in a comment
+(where the catalog rule still checks it) rather than a string constant. Run
+`pnpm follower-invariants:check` (`scripts/check-follower-invariants.ts`, tested by
+`scripts/check-follower-invariants.test.ts`). CI runs it through the required repository
+checks. Treat a failure there as the same `issue:` severity as a manual finding of the
+same kind. This review pass still owns files outside those TypeScript seams and the
+semantic/data-flow judgment calls the script cannot make (e.g. "is this really the
+shared doc", "does this new path count as a second writer/applier").
+
+**What is _not_ machine-checked, stated so a green check is not over-read.** The
+single-applier rule, `op_id` retry identity, distribution-branch ownership, and installed
+op-layer purity remain reviewer-owned. Deterministic designs for those checks are separate
+policy decisions; this subset does not approximate them with name-based or syntax-limited
+rules. The same holds for the Priority 1 and Priority 2 flags: the script covers outbound
+`update_b64` construction specifically, not "does this write the shared doc".
+
 These are load-bearing: a low-context change that violates one can silently foreclose the
 future P2P / offline / multi-writer / multi-agent story, reintroduce a second model of the
 graph that then needs reconciling, or ship a follower that renders in one distribution and
@@ -115,26 +135,37 @@ Flag:
 - **Branch-pinned catalog/vocabulary citation** — referencing the widget catalog by moving
   branch instead of a pinned SHA.
 
-## Priority 4: distribution seam — one boundary, unified auth
+## Priority 4: distribution seam — one socket, one credential branch
 
-Per FOLLOWER the follower APPLY path is distribution-agnostic; surface differences
-(endpoint, ingest-vs-direct route, auth) live behind one small distribution-resolved
-boundary keyed on `DISTRIBUTION`.
+Per the FOLLOWER amendment (2026-10-12) the follower APPLY path is
+distribution-agnostic. Cloud ingest and the local agent serve the same contract:
+agent events and document frames share `/api/agent/events`, whose path comes from
+`api.apiURL`. The only distribution branch is the credential choice in `agentAuth.ts`.
 
 Flag:
 
 - **`DISTRIBUTION` / `isCloud` / `isDesktop` checks scattered through follower core** —
-  distribution conditionals inside the CRDT apply seam, `DocFrameClient`, or rendering.
-  They belong only in the agent connection/configuration boundary.
-- **Auth reduced to `isCloud`** — resolving credentials by distribution instead of
-  delegating to the unified chain `authStore.getAuthHeader()`. Local and Desktop are
-  authenticated product surfaces, not "anonymous / model-key-only".
+  distribution conditionals inside the CRDT apply seam, `DocFrameClient`, the agent
+  socket transport, or rendering. They belong only in the credential branch in
+  `agentAuth.ts`.
+- **A credential path other than the one `isCloud` branch** — in the cloud, agent REST
+  requests authenticate through `fetchApi` alone and the socket takes
+  `api.socketAuthParams()` (no socket when no one is signed in); adding the user's own
+  header there moves a request out of its workspace. Off-cloud, REST requests carry
+  the `getWorkspaceAuthToken()` bearer (an API-key session sends its key) and the socket
+  carries the same credential as `?token=`. A signed-in session without a workspace token
+  fails closed (`getWorkspaceAuthTokenOrThrow()`), as `queuePrompt` does; flag any fallback
+  to `getUserAuthHeader()`. Flag
+  credential resolution outside `agentAuth.ts`, or any branch that leaves Local or
+  Desktop unauthenticated: they are authenticated product surfaces, not
+  "anonymous / model-key-only".
 - **Dev/Vite behavior treated as Local product behavior** — Vite proxy or dev credentials
-  placed in the Local or Desktop path. Dev-only wiring stays in Vite/dev config.
-- **A hardcoded agent base URL** — an agent HTTP/WS endpoint string literal instead of a
-  centralized distribution-resolved resolver (the `AGENT_BASE_URL`-style seam). Today the
-  follower rides the centralized `api.socket`; a new direct-to-agent connection must
-  resolve its endpoint through the seam, not a literal.
+  placed in the Local or Desktop path. Dev-only wiring stays in Vite/dev config; the
+  browser learns only the build-time flag `VITE_DEV_AGENT_PROXY_CREDENTIAL`, never the
+  token.
+- **A hardcoded agent base URL or a second agent socket** — an agent HTTP/WS endpoint
+  string literal instead of `api.apiURL`, or a transport other than
+  `/api/agent/events` (such as agent traffic on `/ws` or a separate local-agent socket).
 
 ## Enforcement expectation
 
@@ -143,3 +174,14 @@ from `src/base/assert.ts` (DEV throws, prod reports to Sentry), with a message t
 the broken invariant and links this ADR, e.g. `assert(!isFollower, 'followers never write
 the shared doc — see FOLLOWER')`. Flag a follower-boundary change that adds no such guard
 where one is warranted.
+
+`pnpm follower-document-mutations:check` (also run by the unit suite) recursively parses
+every non-test TypeScript module in `src/workbench/extensions/agent/crdt/` except the
+`mergeScenarios.ts` merge laboratory, and fails closed when the `followerDoc.ts` seam is
+missing or a source is malformed. It flags the shared-document mutations it can trace
+syntactically within one file, so it does not replace the review checks above: a document
+passed to a helper parameter not annotated with a `Y.` shared type, returned from a getter,
+stored in an array or object, reassigned after its declaration, or written through
+`Reflect.apply` is not traced. The sole permitted raw Yjs integration is
+`FollowerDoc.applyRemoteUpdate`, which applies a host-delivered update to its local follower
+document.

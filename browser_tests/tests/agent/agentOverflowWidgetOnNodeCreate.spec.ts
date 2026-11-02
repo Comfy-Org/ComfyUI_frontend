@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { AgentThreadListResponse } from '@comfyorg/ingest-types'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { AgentRunModePreference } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -14,6 +13,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -31,7 +31,6 @@ const NODE_ID = 503
 const WORKFLOW_ID = '4b2d8f6a-1c3e-4a5b-9d7f-2e8c0a1b3d5f'
 const THREAD_ID = 'c7d8e9fa-0b1c-4d2e-8f3a-4b5c6d7e8f90'
 const MESSAGE_ID = 'f0e1d2c3-b4a5-4968-8778-9a0b1c2d3e4f'
-const SOCKET_SID = '2a3b4c5d-6e7f-4809-9a1b-2c3d4e5f6071'
 
 function intSlider(value: number): InputSpec {
   return [
@@ -122,19 +121,11 @@ test.describe(
       )
 
       const host = new HostDoc(WORKFLOW_ID, seed, catalog)
-      const hostSocket = new AgentFollowerHostSocket(
-        page,
-        WORKFLOW_ID,
-        host,
-        SOCKET_SID
-      )
+      const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
       await hostSocket.install()
 
-      const threadList: AgentThreadListResponse = {
-        pagination: { has_more: false, limit: 100, offset: 0, total: 0 },
-        threads: []
-      }
-      await page.route('**/api/agent/threads', (route) =>
+      const threadList = emptyAgentThreadList()
+      await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(threadList))
       )
       const runModePreference: AgentRunModePreference = {
@@ -178,9 +169,7 @@ test.describe(
       })
 
       await test.step('send a turn so the session binds the workflow', async () => {
-        const composer = panel.getByRole('textbox', {
-          name: /^Describe ideas/
-        })
+        const composer = agentPanel.composer
         await composer.fill('hello')
         await panel.getByRole('button', { name: enMessages.agent.send }).click()
         await expect(panel.getByText('hello').first()).toBeVisible()
@@ -191,24 +180,18 @@ test.describe(
         await hostSocket.waitForSubscribe()
       })
 
-      // The follower creates the node from the document it just received.
       const node = vueNodes.getNodeLocator(String(NODE_ID))
       await expect(node).toBeVisible()
       await expect(node.getByText('faithful', { exact: true })).toBeVisible()
 
-      // `_extra_2` is the aliased tail: it must reach `mode.b`.
       await expect(
         node.getByRole('spinbutton', { name: 'mode.b' })
       ).toHaveValue('71')
 
-      // `mode.a` is catalogued, so its named value is applied after `configure`.
       await expect(
         node.getByRole('spinbutton', { name: 'mode.a' })
       ).toHaveValue('91')
 
-      // A later frame can carry a child before the selector that rebuilds
-      // the group. The selector must run first so neither saved child value
-      // is overwritten by the newly selected option's defaults.
       hostSocket.send(
         host.replaceDocumentWidgets(NODE_ID, [
           ['mode.a', 92],

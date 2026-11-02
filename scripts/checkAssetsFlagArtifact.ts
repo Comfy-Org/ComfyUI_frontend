@@ -34,26 +34,9 @@ const TEXT_ASSET_EXTENSIONS = new Set([
 /** Sourcemaps carry the gate's own source, which would count as a second gate. */
 const EXECUTABLE_ASSET_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.html'])
 
-/**
- * The widget asset-picker gate must compile to a static constant per
- * distribution: `false`/`!1` off-cloud, meaning the feature is statically
- * stripped, and `true`/`!0` on cloud.
- *
- * The two legs are deliberately asymmetric. `nonCloud` carries the real
- * invariant: a body that folds to a constant `false` proves the picker is
- * unreachable in a non-cloud artifact, which is what lets the bundler drop
- * everything behind it. `cloud` is much weaker — it only proves some static
- * truthy constant survived — but that is honest, because the gate is now
- * nothing more than a build-time constant. Its job is to catch the gate
- * regressing into a runtime read, not to constrain runtime behaviour.
- *
- * Both are anchored against the whole compiled body: a substring search would
- * accept a `return true` sitting beside an extra statement. The alternations
- * are the two spellings minification emits for each literal.
- */
 const GATE_BODIES = {
   nonCloud: /^return\s*(?:false|!1)\s*;?$/,
-  cloud: /^return\s*(?:true|!0)\s*;?$/
+  cloud: /^return\s*!useDeploymentPickStore\(\)\.bootDeployment\s*;?$/
 } as const
 
 function artifactFiles(directory: string): string[] {
