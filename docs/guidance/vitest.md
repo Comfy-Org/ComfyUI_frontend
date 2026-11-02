@@ -210,10 +210,11 @@ A component that needs Pinia injection receives the same instance:
 
 ## Core Extensions
 
-Core extension modules export their `ComfyExtension` object and register
-nothing on import. Call the hook under test on that object and assert on the
-node, widget, or store state it changes. Do not mock `registerExtension` to
-capture it:
+Core extension modules register nothing on import. Most export their
+`ComfyExtension` object; call the hook under test on that object and assert on
+the node, widget, or store state it changes. Do not mock `registerExtension` to
+capture it. `agentPanel.ts` and `electronAdapter.ts` export a function that
+registers the extension when called instead:
 
 ```ts
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
@@ -255,11 +256,12 @@ expect(useToast().success).toHaveBeenCalledWith(
 ## Fake Timers
 
 The `frontend` project's `vitest.timer.setup.ts` calls `vi.useFakeTimers()`
-before every test and `vi.useRealTimers()` after it. Do not repeat either in
-hooks; `comfy/no-redundant-vitest-cleanup` reports `vi.useRealTimers()` and
+before every test and `vi.useRealTimers()` after it. Do not call
+`vi.useFakeTimers()` in `beforeEach` or clean up timers in `afterEach`;
+`comfy/no-redundant-vitest-cleanup` reports `vi.useRealTimers()` and
 `vi.clearAllTimers()` in `afterEach`. Advance time with
-`await vi.advanceTimersByTimeAsync(ms)`. A test that needs real timers calls
-`vi.useRealTimers()` in its own body. The `isolated-stores` and `tooling`
+`await vi.advanceTimersByTimeAsync(ms)`. A suite or test that needs real timers
+calls `vi.useRealTimers()` in its `beforeEach` or its own body. The `isolated-stores` and `tooling`
 projects run on real timers.
 
 ## No Real Network
