@@ -70,15 +70,27 @@
             {{ planCreditNote }}
           </p>
         </div>
-        <Button
-          v-if="state.kind === 'noPlan' && canTopUp"
-          :variant="addCreditsVariant"
-          size="md"
-          class="shrink-0"
-          @click="emit('addCredits')"
+        <div
+          v-if="state.kind === 'noPlan' && addCredits.kind !== 'hidden'"
+          class="flex max-w-56 shrink-0 flex-col items-end gap-1"
         >
-          {{ $t('workspacePanel.billingTab.credits.addCredits') }}
-        </Button>
+          <Button
+            :variant="addCreditsVariant"
+            size="md"
+            :disabled="addCredits.kind === 'disabled'"
+            :aria-describedby="refusalReason ? refusalReasonId : undefined"
+            @click="emit('addCredits')"
+          >
+            {{ $t('workspacePanel.billingTab.credits.addCredits') }}
+          </Button>
+          <p
+            v-if="refusalReason"
+            :id="refusalReasonId"
+            class="m-0 text-right text-xs text-muted-foreground"
+          >
+            {{ refusalReason }}
+          </p>
+        </div>
       </div>
 
       <div v-if="state.kind === 'plan'" class="flex border-t border-card">
@@ -108,15 +120,27 @@
               {{ $t('workspacePanel.billingTab.credits.inUse') }}
             </span>
           </div>
-          <Button
-            v-if="canTopUp"
-            :variant="addCreditsVariant"
-            size="md"
-            class="shrink-0"
-            @click="emit('addCredits')"
+          <div
+            v-if="addCredits.kind !== 'hidden'"
+            class="flex max-w-56 shrink-0 flex-col items-end gap-1"
           >
-            {{ $t('workspacePanel.billingTab.credits.addCredits') }}
-          </Button>
+            <Button
+              :variant="addCreditsVariant"
+              size="md"
+              :disabled="addCredits.kind === 'disabled'"
+              :aria-describedby="refusalReason ? refusalReasonId : undefined"
+              @click="emit('addCredits')"
+            >
+              {{ $t('workspacePanel.billingTab.credits.addCredits') }}
+            </Button>
+            <p
+              v-if="refusalReason"
+              :id="refusalReasonId"
+              class="m-0 text-right text-xs text-muted-foreground"
+            >
+              {{ refusalReason }}
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -125,7 +149,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -136,15 +160,16 @@ import {
 import Button from '@comfyorg/design-system/button/Button'
 import BillingCreditsPlanCell from '@/platform/billing/components/billingTab/BillingCreditsPlanCell.vue'
 import type { CreditsCardState } from '@/platform/billing/components/billingTab/creditsCard'
+import type { AddCreditsAvailability } from '@/platform/billing/addCreditsAvailability'
 
 const {
   state,
-  canTopUp,
+  addCredits,
   planCreditNote,
   addCreditsVariant = 'secondary'
 } = defineProps<{
   state: CreditsCardState
-  canTopUp: boolean
+  addCredits: AddCreditsAvailability
   planCreditNote: string | null
   addCreditsVariant?: 'secondary' | 'inverted'
 }>()
@@ -154,7 +179,12 @@ const emit = defineEmits<{
   addCredits: []
 }>()
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
+
+const refusalReasonId = useId()
+const refusalReason = computed(() =>
+  addCredits.kind === 'disabled' ? t(addCredits.reasonKey) : null
+)
 
 const WHOLE = { maximumFractionDigits: 0 }
 
