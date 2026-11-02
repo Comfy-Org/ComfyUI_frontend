@@ -16,9 +16,7 @@ later architecture, not requirements for this data-centralization phase.
 The governing decisions remain
 [ADR-CRDT-LAYOUT-0003](../../adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md) and
 [ADR-ECS-0008](../../adr/ECS-0008-entity-component-system.md). See
-[ECS Decision Traceability](ecs-decision-traceability.md) for principle-level
-status and [ECS Target Architecture](../ecs-target-architecture.md) for the
-target.
+[ECS Target Architecture](../ecs-target-architecture.md) for the target.
 
 ## Node shell
 
@@ -333,7 +331,5 @@ target.
 12. Durable entity geometry is Yjs-backed; link/slot/hit-test geometry is a
     separate transient cache, not durable authority.
 
-Related design documents are [Node Data Store](../node-data-store.md),
-[Link Topology Store](../link-topology-store.md),
-[Reroute Chain Store](../reroute-chain-store.md), and
-[Output Slot Connectivity](../output-slot-connectivity.md).
+Related design documents are [Link Topology Store](../link-topology-store.md)
+and [Reroute Chain Store](../reroute-chain-store.md).
