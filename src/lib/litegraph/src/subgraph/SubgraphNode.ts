@@ -514,8 +514,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ): void {
     const quarantineValuesByInputName = this._readQuarantineHostValuesByName()
 
-    let valueIndex = 0
-    for (const input of this.inputs) {
+    for (const [
+      valueIndex,
+      { input }
+    ] of this._serializedInputWidgets().entries()) {
       if (!input.widgetId) continue
       const value = quarantineValuesByInputName.has(input.name)
         ? quarantineValuesByInputName.get(input.name)
@@ -523,8 +525,32 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (value !== undefined) {
         useWidgetValueStore().restoreValue(input.widgetId, value)
       }
-      valueIndex += 1
     }
+  }
+
+  /**
+   * Inputs whose widget value the host serializes, in input order: promoted
+   * widgets, and widgets the host owns for a promoted dynamic input.
+   */
+  private _serializedInputWidgets(): {
+    input: INodeInputSlot
+    value: unknown
+  }[] {
+    return this.inputs.flatMap((input) => {
+      if (input.widgetId)
+        return [
+          {
+            input,
+            value: useWidgetValueStore().getWidget(input.widgetId)?.value
+          }
+        ]
+      const owned = this._extraWidgets.find(
+        (widget) => widget.name === input.widget?.name
+      )
+      return owned && owned.serialize !== false
+        ? [{ input, value: owned.value }]
+        : []
+    })
   }
 
   private _readQuarantineHostValuesByName(): Map<string, TWidgetValue> {
@@ -984,6 +1010,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (index !== -1) {
       this._extraWidgets.splice(index, 1)
       this._widgetSlotsDirty = true
+      if (widget.widgetId) useWidgetValueStore().deleteWidget(widget.widgetId)
       return
     }
 
@@ -1069,11 +1096,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     serialized.properties = serializedProperties
 
-    const widgetValues = this.inputs.flatMap((input) => {
-      if (!input.widgetId) return []
-      const value = useWidgetValueStore().getWidget(input.widgetId)?.value
-      return [isWidgetValue(value) ? value : undefined]
-    })
+    const widgetValues = this._serializedInputWidgets().map(({ value }) =>
+      isWidgetValue(value) ? value : undefined
+    )
 
     if (widgetValues.some((value) => value !== undefined)) {
       serialized.widgets_values = widgetValues
