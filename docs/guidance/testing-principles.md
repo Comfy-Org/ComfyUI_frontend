@@ -8,7 +8,7 @@ globs:
 
 These rules hold at every level: unit, store, component, integration, and E2E.
 Mechanics live elsewhere. `docs/guidance/vitest.md` and
-`docs/testing/component-testing.md` cover Vitest; `browser_tests/README.md`
+`docs/testing/component-testing.md` cover Vitest; `docs/guidance/playwright.md`
 covers Playwright. When a mechanic and
 a principle disagree, the principle wins and the mechanic gets fixed.
 
