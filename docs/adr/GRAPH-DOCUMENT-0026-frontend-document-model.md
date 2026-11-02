@@ -435,117 +435,19 @@ that reads it at `Deactivate`. No watcher, no flag, no timer.
 
 ## Phased transition
 
-The phases build the general document system while migrating its first
-type, `workflow`. The presumption of this plan: **Phase 1 alone (uid +
-lifecycle events) is very good and helps immediately.** Every later phase
-is optional-in-timing and none requires reworking what earlier phases
-build.
+The phases build the general document system while migrating its first type,
+`workflow`. The detailed phase plan moved to [Linear](https://linear.app/comfyorg/issue/FRONT-3789/adr-hygiene-sweep-and-adrcheck-extensions#comment-70dfeda0); in
+brief:
 
-### Phase 0 — now, unblocking
-
-Land the in-flight UX fixes (PR #14941, #15360, #15361/#15412). If the
-registry lands, mark it `@internal` with a testable removal condition:
-_deleted when the lifecycle bus exists and the compositor cache is its first
-registered sidecar._
-
-### Phase 1 — uid + lifecycle bus (the slice worth doing now)
-
-- Add the session uid (a few lines on `ComfyWorkflow`: minted in `load()`,
-  nulled in `unload()`; moves to the document class in Phase 4).
-- Introduce the document lifecycle emitter with the D3 vocabulary, the D5
-  registration contract, and the shared key helper
-  (`${uid}` / `${uid}:${graphId}`).
-- Split `beforeLoadNewGraph`/`afterLoadNewGraph` into their two
-  responsibilities: graph-load work and document-transition work. They fire
-  on every `loadGraphData` call —
-  including undo/redo (`ChangeTracker.undo` calls `loadGraphData`,
-  `changeTracker.ts:477`) and same-document reloads — so they cannot simply
-  be renamed into `Deactivate`/`Activate`: a bus wired to them would emit
-  false transitions on every undo step, and sidecars entitled by D3 to
-  assume "Deactivate = document leaving" would corrupt state. The bus is
-  gated on document identity change; the graph-load half of the hooks stays
-  with `loadGraphData` as a system concern. This disentangling is the main
-  engineering risk of Phase 1 — it is a split, not a rename — and it is
-  pinned by the existing `changeTrackerLoadGuard.spec.ts` browser test plus
-  new bus-gating tests (a switch fires each phase exactly once; an undo
-  fires none).
-- Emit `Close` from every death path: both branches of `closeWorkflow`
-  (including temporary-workflow deletion, which never calls `unload()`
-  today) and the `syncWorkflows` background-unload (as a forced close; a
-  fresh `Open` follows on next activation). Forced-close ordering is:
-  dispatch `Close`, release core document data and clear the ephemeral uid,
-  then dispatch `PostClose` with the closing uid carried on the event so
-  sidecars can clean up their last bucket before evicting it. No death path
-  may complete with a live uid.
-- Stamp websocket ingress with the resolved uid via the existing
-  `jobIdToWorkflow` maps (D2).
-- Migrate `widgetValueStore` / `previewExposureStore` onto the key helper
-  **without changing when they rebuild**. Their state is graph-derived:
-  today it is purged via `LGraph.clear()` on every `configure()` — which
-  runs on undo/redo and revert as well as on tab switches — and naive
-  uid-keyed survival would shadow reverted widget values after an undo
-  (`registerWidget` returns a surviving entry unchanged when types match).
-  Re-keying changes _who owns_ a bucket and moves eviction to `Close`;
-  rebuild stays coupled to graph-state application, which becomes an
-  explicit system trigger instead of a `clear()` side effect. Survival
-  across tab switches then arrives automatically in Phase 5, when
-  `configure()` stops running on switches — no further change to these
-  stores needed.
-
-### Phase 2 — migrate the hand-rolled implementations
-
-Move the preview stash (PR #15360) and error scoping (PR #15361) onto uid
-keys and lifecycle eviction, deleting their improvised close paths. Register
-the compositor cache as the first sidecar (replacing its registry seat).
-Switch the node-progress read path from the global `nodeProgressStates` to
-the job-keyed record resolved through D2, fixing cross-tab progress
-misattribution — the bug no snapshot scheme can reach. Implement the D1
-orphan sweep (prune uid-keyed buckets whose uid has no live document)
-alongside the first migrated consumers, so the degrade-to-leak argument is
-backed by a mechanism rather than a promise.
-
-### Phase 3 — `nodeOutputStore`
-
-Key outputs/previews internally by `${uid}:${locator}` while keeping
-`app.nodeOutputs` as a compat facade over the active document's bucket
-(bare-id key format unchanged for packs). Rehome the `executed` listener
-that currently writes into inactive `ChangeTracker`s. Split data from
-resources: the document holds output locators/URLs; the blob-URL-owning
-stash is a sidecar releasing at `PostClose`.
-
-### Phase 4 — the document container (soon)
-
-Introduce `ComfyWorkflowDocument` as the composition root: the uid, the file
-handle (`ComfyWorkflow`), and the uid-keyed buckets absorbed as fields.
-`ChangeTracker` is divided per D4's data/system separation: its _records_
-(undo/redo queues, baselines) fold into the document; its _engine_ becomes
-a single undo system operating on the current document; its snapshot
-choreography shrinks. Legacy globals become read-through facades over the
-active document (the deprecated delegating members on `ComfyApp` in
-`src/scripts/app.ts` are the template; `window.graph` becomes a defined
-property). Pinia stores flip to the facade pattern of D4. Extension hooks gain
-an appended context argument identifying the document (non-breaking; the v2
-node API takes the document handle natively).
-
-### Phase 5 — the document store (later, own TDD)
-
-Each open document owns a live `LGraph`; switching becomes
-`canvas.setGraph(doc.graph)` — the same pointer-swap mechanism subgraph
-navigation uses today, which the custom-node ecosystem already survives on
-every subgraph enter/exit. `LGraph.clear()` stops firing on tab switch, so
-graph ids stop being recycled and every graph-keyed store becomes correct by
-construction. Snapshot/restore retires to what it is good at: persistence
-(drafts, crash recovery) and a hydration/LRU memory policy (N most recent
-documents live; older tabs dehydrated to JSON). The hydration policy and
-`PostClose` resource disposal are designed as first-class per-type
-contracts, not workflow conveniences: should heavier document types arrive
-(a layered image document dwarfs a graph in memory), "live vs. dehydrated"
-plus "what must be released on close" is what keeps a multi-document app
-from becoming a browser-tab memory crisis. Prerequisite before landing:
-extend the registry census matrix to drive the `setup`/`init`/
-`beforeConfigureGraph`/`afterConfigureGraph` hooks, because reference
-capture in those hooks is the one failure mode a facade cannot fix and the
-matrix currently cannot see.
+- **Phase 0:** land the in-flight UX fixes and mark the registry `@internal`.
+- **Phase 1:** the session uid and the lifecycle bus, gated on document
+  identity change rather than on every `loadGraphData` call.
+- **Phase 2:** move the hand-rolled preview stash and error scoping onto uid
+  keys, read node progress through D2, and add the D1 orphan sweep.
+- **Phase 3:** key `nodeOutputStore` by uid behind the unchanged
+  `app.nodeOutputs` facade.
+- **Phase 4:** the `ComfyWorkflowDocument` container.
+- **Phase 5:** one live `LGraph` per open document (own TDD).
 
 ### Non-goals
 

@@ -6,6 +6,8 @@ Date: 2026-08-21
 
 Accepted (2026-09-24)
 
+## Amendments
+
 Revised 2026-09-24 by
 [FE-2504](https://linear.app/comfyorg/issue/FE-2504/agentcrdt-remove-store-first-remote-apply-and-every-reconciliation).
 The original 2026-08-21 text decided the follower writes remote state into the

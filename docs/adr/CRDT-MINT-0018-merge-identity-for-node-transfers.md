@@ -6,12 +6,12 @@ Date: 2026-08-25
 
 Proposed
 
+## Context
+
 ADR-CRDT-LAYOUT-0003's merge-boundary reconciliation amendment (2026-08-23) already
 carries the direction. This ADR separates the current local-import behavior
 from the future CRDT behavior so their different materialization paths and
 responsibilities are explicit. Formal sign-off remains pending.
-
-## Context
 
 ### The id space is the problem, not the CRDT
 

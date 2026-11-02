@@ -10,7 +10,7 @@ Appendices:
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 

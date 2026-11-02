@@ -6,9 +6,6 @@ Date: 2026-08-27
 
 Accepted
 
-This ADR records the asset-record/content model, the output deletion decision
-made on 2026-08-27, and the remaining frontend gaps.
-
 ## Context
 
 The OSS core Assets model in the `asset-record-content-split` stack

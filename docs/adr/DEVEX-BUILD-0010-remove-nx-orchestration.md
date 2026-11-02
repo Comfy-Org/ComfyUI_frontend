@@ -6,8 +6,6 @@ Date: 2026-05-19
 
 Accepted
 
-<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-IDENTIFIER](IDENTIFIER-title.md)] -->
-
 ## Context
 
 [ADR-DEVEX-MONOREPO-0002](DEVEX-MONOREPO-0002-adopt-a-pnpm-workspace-monorepo.md) adopted [Nx](https://nx.dev/) as a tooling option for managing the

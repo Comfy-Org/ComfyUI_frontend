@@ -4,7 +4,14 @@ Date: 2026-09-11
 
 ## Status
 
-Proposed
+Accepted
+
+## Amendments
+
+The row-count allocation rule is superseded by
+[ADR-DYNAMIC-GROUP-0047](DYNAMIC-GROUP-0047-row-count-enforcement-boundary.md):
+allocation is bounded by a fixed row and resource cap, not by `max` or the
+number of saved widget values.
 
 ## Context
 

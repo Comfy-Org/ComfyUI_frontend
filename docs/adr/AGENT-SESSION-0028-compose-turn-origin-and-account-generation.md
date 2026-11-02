@@ -6,11 +6,6 @@ Date: 2026-09-05
 
 Proposed
 
-> Authored by an agent from the merge analysis of PR #16768, #16840, #16949, and
-> #17324. This ADR was first drafted on 2026-09-05 inside a conflict-resolution
-> merge that never reached `main`; it is re-expressed here so the decision has a
-> home on `main` independent of which carrier PR lands first.
-
 ## Context
 
 An agent send crosses two asynchronous boundaries: workflow preparation and the
@@ -56,12 +51,7 @@ attribution. Neither substitutes for the other.
 
 The original decision names one identity dimension for the in-flight guard
 (account). The persisted thread-id storage that survives a reload has a second
-dimension that the two open carriers model differently:
-
-| Carrier   | Storage owner key                                                         | Dimensions            |
-| --------- | ------------------------------------------------------------------------- | --------------------- |
-| PR #16768 | `Comfy.Agent.ThreadOwnerId` compared against the account id               | account               |
-| PR #17324 | `${encodeURIComponent(userId)}/${encodeURIComponent(workspaceId)}` suffix | account and workspace |
+dimension: the workspace.
 
 A user who switches team workspace without switching account keeps the same
 account id, so an account-only owner match resumes the previous workspace's
@@ -93,9 +83,6 @@ Decision:
    `agent_session_memory_storage_failure` and the earlier
    `agent_thread_id_clear_failed` / `agent_thread_id_persist_failed` pair from
    the closed PR #16393 are not adopted.
-5. Whichever carrier lands second rebases onto the other and applies the rules
-   above. If PR #16768 lands first, the workspace dimension is a tracked gap
-   until PR #17324 or an equivalent follow-up lands.
 
 ## Consequences
 
@@ -164,17 +151,3 @@ the components.
   tabs because the active tab changed during an await.
 - **Storage scope**: The suffix appended to the persisted thread-id key so
   entries written under one identity are invisible under another.
-- **Carrier**: An open PR that carries part of the agent-session identity model
-  to `main`.
-- **Identity generation**: PR #16768's counter, incremented by
-  `agentIdentityStateTracker` whenever the account changes; `isCurrentIdentity()`
-  compares a captured value against it.
-
-## References
-
-- PR #16768, `useAgentSession.ts`, `agentSessionMemory.ts`,
-  `agentIdentityStateTracker.ts`
-- PR #16840, `useAgentSession.ts`
-- PR #16949, related agent-session carrier
-- PR #17324, `useAgentSession.ts` composite storage scope (supersedes the
-  closed PR #16393)

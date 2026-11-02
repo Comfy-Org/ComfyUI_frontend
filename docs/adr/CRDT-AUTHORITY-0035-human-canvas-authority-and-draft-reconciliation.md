@@ -6,10 +6,19 @@ Date: 2026-09-19
 
 Proposed
 
+## Amendments
+
 Revised 2026-09-29 by
 [FE-3032](https://linear.app/comfyorg/issue/FE-3032/agentcrdt-pr-and-stale-adr-cleanup-after-store-first-removal)
 after the graph-intent write path replaced the deleted mint-port wiring. The
 authority and delivery decisions are unchanged.
+
+Decision 3's retry-exhaustion path is amended by
+[ADR-CRDT-REPLAY-0039](CRDT-REPLAY-0039-retain-exhausted-operations-for-same-page-replay.md):
+when transport retries run out, the batch is held (`awaitingTransport`) and
+resent with its original `op_id`s after the next subscribe instead of being
+dropped as `undeliverable`. Unbind, retarget and `doc_reset` behave as
+described below.
 
 ## Context
 

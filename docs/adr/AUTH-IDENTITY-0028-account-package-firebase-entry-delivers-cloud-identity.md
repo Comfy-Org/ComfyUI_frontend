@@ -4,7 +4,9 @@ Date: 2026-09-09
 
 ## Status
 
-Proposed
+Accepted
+
+## Amendments
 
 Amended 2026-09-16: rules 1 and 4 follow the session client taking identity at
 construction (FE-2196).
