@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Reiniciar"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Abrir el visor 3D (beta) para el nodo seleccionado"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "Experimental: Explorar recursos de modelos"
   },
@@ -105,7 +108,7 @@
     "label": "Colapsar/Expandir nodos seleccionados"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Links": {
-    "label": "Ocultar/mostrar conexiones de los nodos seleccionados"
+    "label": "Ocultar/mostrar conexiones en los nodos seleccionados"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Silenciar/desilenciar nodos seleccionados"
