@@ -107,9 +107,11 @@ export interface ImageLoadFailureMetadata {
   /**
    * Which surface failed. `node_image_preview` / `node_video_preview` are the
    * Vue node renderer; `canvas_node_image` / `canvas_node_video` are the
-   * litegraph canvas previews that every user gets by default, since
-   * `Comfy.VueNodes.Enabled` is off unless App Builder turns it on. Splitting on this is what keeps a rate
-   * measured on one renderer from being read as the rate for everyone.
+   * litegraph canvas previews. `Comfy.VueNodes.Enabled` defaults off, but on
+   * for Cloud and Desktop users whose `Comfy.InstalledVersion` is 1.41.0 or
+   * later, and App Builder turns it on.
+   * Splitting on this is what keeps a rate measured on one renderer from being
+   * read as the rate for everyone.
    * Under Vue nodes, an upload widget still loads its preview through the
    * canvas loader, so one broken upload can report under both a `canvas_*`
    * and a `node_*` source. Count per source rather than summing them.
