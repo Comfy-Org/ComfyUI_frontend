@@ -40,8 +40,8 @@ hash). A bad fixture is re-recorded, never edited.
 
 ## Replaying
 
-Replay needs only a ComfyUI backend on 8188. Start the cloud-distribution
-frontend:
+Replay needs a ComfyUI backend on 8188 with ComfyUI_devtools installed (see
+[Setup](../../../README.md#setup)). Start the cloud-distribution frontend:
 
 ```bash
 DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
@@ -91,7 +91,8 @@ without a home directory.
    `AGENT_MODEL`, the case id, the seed fixture, and one `--prompt` per turn
    (`--cancel-turn` and `--cancel-after-ms` for a cancelled turn).
 
-3. Replay the new case as above with `-g agent-rec-<slug>`.
+3. Add the case's turns to `agentConversationExpectations.ts`, then replay it
+   as above with `-g agent-rec-<slug>`.
 
 ### The recorder command
 

@@ -11,8 +11,11 @@ Turn raw Playwright codegen output (from `pnpm comfy-test record` or
 1. Run the mechanical pass first:
 
    ```bash
-   pnpm comfy-test transform <file> [--name <n>] [--tags <a,b>] [--workflow <w>]
+   pnpm comfy-test transform <name>.raw.spec.ts [--name <n>] [--tags <a,b>] [--workflow <w>]
    ```
+
+   The output goes to `<name>.spec.ts`; for any other input name, pass
+   `--output <path>`.
 
    The rules live in `tools/test-recorder/src/transform/rules.ts`: the
    `comfyPageFixture` import, the `comfyPage` fixture, removing `page.goto`,

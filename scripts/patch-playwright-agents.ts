@@ -103,9 +103,9 @@ ${sharedContext}
        await page.click(...);
 `,
         `   test.describe('Adding New Todos', () => {
-     test('Add Valid Todo', async { page } => {
+     test('Add Valid Todo', async ({ comfyPage }) => {
        await test.step('Click in the "What needs to be done?" input field', async () => {
-         await page.click(...);
+         await comfyPage.page.getByPlaceholder('What needs to be done?').click();
        });
 `
       ]
@@ -114,8 +114,7 @@ ${sharedContext}
 - Wrap every test in \`test.describe('Name', { tag: [...] }, () => { ... })\`
   with the tags the plan selected, and give it a descriptive title.
 - Never use \`page.goto()\`, \`waitForTimeout()\`, or imports from
-  \`@playwright/test\`. Run \`pnpm comfy-test transform <file>\` on the written
-  spec to apply the mechanical conventions.`
+  \`@playwright/test\`.`
   },
 
   'playwright-test-healer.md': {
