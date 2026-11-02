@@ -17,7 +17,7 @@ type WidgetFormRefusal =
 export interface WidgetFormOptions {
   serializeWidgets?: boolean
   /** True when the payload was replayed from a previous save rather than built here. */
-  replayed?: boolean
+  replayed: boolean
   /** True when the node uses core's base serialization implementations. */
   coreIsLastWriter: boolean
 }
@@ -37,17 +37,16 @@ function serializingWidgets(
 }
 
 function preconditionRefusal(
-  serialised: { has_errors?: boolean },
   options: WidgetFormOptions
 ): WidgetFormRefusal | null {
   if (!options.coreIsLastWriter) return 'class_may_rewrite_payload'
-  if (options.replayed || serialised.has_errors) return 'replayed_serialization'
+  if (options.replayed) return 'replayed_serialization'
   return null
 }
 
 function provenValues(
   widgets: readonly WidgetForFormProof[] | undefined,
-  serialised: { widgets_values?: unknown; has_errors?: boolean },
+  serialised: { widgets_values?: unknown },
   producedValues: unknown,
   options: WidgetFormOptions
 ): { values: unknown[] } | { refusal: WidgetFormRefusal } {
@@ -87,18 +86,17 @@ function addressableOrder(
 
 /**
  * Checks positional-array provenance: identity, cardinality and names. The caller must establish
- * that the name/value correspondence did not change after core produced the values.
+ * that the name/value correspondence did not change after core produced the values, and must
+ * pass as `producedValues` the array core built before the extension hook ran; passing the final
+ * array makes the identity check vacuous.
  */
 export function proveWidgetForm(
   widgets: readonly WidgetForFormProof[] | undefined,
-  serialised: {
-    widgets_values?: unknown
-    has_errors?: boolean
-  },
+  serialised: { widgets_values?: unknown },
   producedValues: unknown,
   options: WidgetFormOptions
 ): WidgetFormProof {
-  const precondition = preconditionRefusal(serialised, options)
+  const precondition = preconditionRefusal(options)
   if (precondition !== null) return refuse(precondition)
 
   const proven = provenValues(widgets, serialised, producedValues, options)
@@ -125,6 +123,6 @@ export function needsFormButHasNone(serialised: {
     values !== null &&
     typeof values === 'object' &&
     !Array.isArray(values) &&
-    serialised.widgets_values_form === undefined
+    serialised.widgets_values_form == null
   )
 }

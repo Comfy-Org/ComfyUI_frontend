@@ -29,6 +29,7 @@ function proveRealSerialization(node: LGraphNode) {
       serialised.widgets_values,
       {
         serializeWidgets: node.serialize_widgets,
+        replayed: node.last_serialization !== undefined,
         coreIsLastWriter: coreIsLastWriter(node)
       }
     )
