@@ -40,7 +40,7 @@
   "adrs": [],
   "compatibilityPromises": [
     "Existing menus and missing-node panels may continue importing manager internals during inventory.",
-    "Application-to-dialog and utility-to-store coupling remains visible as coupling debt; classification does not grant dependency exceptions."
+    "Application-to-dialog and utility-to-store coupling remains untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

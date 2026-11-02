@@ -438,7 +438,7 @@
     "registerAgentPanelExtension in src/extensions/core/agentPanel.ts remains the host seam that registers the dock, wires the workflow-tab activity tracker and restore-op minter notifications, and keeps consent ahead of any restored open intent.",
     "GraphCanvas and LinearView mount the dock through useAgentDockMount, and topbar, splitter, viewport, and GraphView callers read agentPanelStore, useAgentConsent, and getPageVisibilityMetadata directly until a public entry point exists.",
     "The CRDT follower keeps the doc_update, doc_subscribe, and doc_ops wire contract with the cloud doc host, and agent graph edits reach the live graph through LiteGraph graph operations.",
-    "Presentation components that call scripts/app, scripts/api, LiteGraph, or workflowService, domain types that import composables, and application stores that call the global settings API or session fetch remain visible as coupling debt; classification does not grant dependency exceptions."
+    "Presentation components that call scripts/app, scripts/api, LiteGraph, or workflowService, domain types that import composables, and application stores that call the global settings API or session fetch remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

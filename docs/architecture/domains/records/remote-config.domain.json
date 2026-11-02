@@ -48,7 +48,7 @@
   "compatibilityPromises": [
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "remoteConfig refs and cached localStorage flags keep their names because feature-flag, billing, auth, and agent code read them.",
-    "RemoteConfig typing against telemetry event names remains visible as cross-domain coupling; classification does not grant dependency exceptions."
+    "RemoteConfig typing against telemetry event names remains untracked cross-domain coupling; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

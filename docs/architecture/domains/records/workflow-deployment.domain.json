@@ -28,7 +28,7 @@
   "compatibilityPromises": [
     "The deploy-as-api action id stays stable for the workflow actions menu.",
     "Unclassified callers may import deployment internals during inventory; imports from classified domains remain subject to cross-domain rules.",
-    "The dialog launcher that loads presentation remains visible as coupling debt; classification does not grant dependency exceptions."
+    "The dialog launcher that loads presentation remains untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

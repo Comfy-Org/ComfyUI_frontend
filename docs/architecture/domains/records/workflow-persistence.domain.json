@@ -44,7 +44,7 @@
   "compatibilityPromises": [
     "Existing localStorage and sessionStorage key formats remain readable so saved drafts and tab pointers survive upgrades.",
     "Unclassified callers may import persistence internals during inventory; imports from classified domains remain subject to cross-domain rules.",
-    "The workflow-management cycle (workflowStore importing the draft store while persistence composables import workflowStore) and the restore composable's direct use of sharing and template URL loaders remain visible as coupling debt; classification does not grant dependency exceptions."
+    "The workflow-management cycle (workflowStore importing the draft store while persistence composables import workflowStore) and the restore composable's direct use of sharing and template URL loaders remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

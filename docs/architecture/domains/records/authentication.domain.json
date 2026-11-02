@@ -296,7 +296,7 @@
     "Unclassified callers, the cloud record, workspace, billing, and app bootstrap code may continue importing authentication internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "authStore, useCurrentUser, apiKeyAuthStore, and userStore remain the app-wide identity seams; authStore stays a projection over the account-package identity and pushes nothing into the session client.",
     "workspaceAuthStore keeps constructing the session client with the package Firebase identity, and the legacy workspace-token rail remains until the unified_cloud_auth flag retires it.",
-    "Balance, customer, and credit-purchase calls still living in authStore, usePartnerNodesRunGate living under platform/billing/composables, and stores or composables that open dialogs or call scripts/api remain visible as responsibility and coupling debt; classification does not grant dependency exceptions."
+    "Balance, customer, and credit-purchase calls still living in authStore, usePartnerNodesRunGate living under platform/billing/composables, and stores or composables that open dialogs or call scripts/api remain untracked responsibility and coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

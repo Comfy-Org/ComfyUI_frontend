@@ -139,7 +139,7 @@
   "compatibilityPromises": [
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "useWorkflowStore and useWorkflowService keep their names and exports because extensions, the app, persistence, sharing, templates, queue, and execution code import them.",
-    "The workflowStore and draft-store cycle with workflow persistence, workflowService reaching into the app, litegraph, dialog, toast, missing-resource, execution-error, and node-output stores, restoreDynamicGroupInputs mutating LGraphNode widgets, and workflowExtractionUtil reading asset schemas and jobOutputCache remain visible as coupling debt; classification does not grant dependency exceptions."
+    "The workflowStore and draft-store cycle with workflow persistence, workflowService reaching into the app, litegraph, dialog, toast, missing-resource, execution-error, and node-output stores, restoreDynamicGroupInputs mutating LGraphNode widgets, and workflowExtractionUtil reading asset schemas and jobOutputCache remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

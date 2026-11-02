@@ -136,8 +136,8 @@
   ],
   "compatibilityPromises": [
     "Unclassified callers may import asset internals during inventory; imports from classified domains remain subject to cross-domain rules.",
-    "Asset stores and media actions keep depending on the shared queueStore, taskService, modelToNodeStore, workflow stores, litegraph, and dialog services they do not own; this cross-domain coupling stays visible and is not granted by classification.",
-    "Application composables that open presentation dialogs (useModelUpload, useNodeOutputsExport) and graph-mutating deletion utilities remain visible as coupling debt; classification does not grant dependency exceptions."
+    "Asset stores and media actions keep depending on the shared queueStore, taskService, modelToNodeStore, workflow stores, litegraph, and dialog services they do not own; this cross-domain coupling stays untracked and is not granted by classification.",
+    "Application composables that open presentation dialogs (useModelUpload, useNodeOutputsExport) and graph-mutating deletion utilities remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

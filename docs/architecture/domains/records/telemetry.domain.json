@@ -94,7 +94,7 @@
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "useTelemetry() returning null until a registry is installed remains the contract every caller and cloud provider relies on.",
     "Cloud providers consume readiness and metadata adapters; feature callers submit search inputs and event context without granting telemetry access to their stores.",
-    "Metadata builders that read workflow, setting, node-definition, panel, workspace-billing, and auth stores, and the localStorage keys duplicated from their writers, remain visible as coupling debt; classification does not grant dependency exceptions."
+    "Metadata builders that read workflow, setting, node-definition, panel, workspace-billing, and auth stores, and the localStorage keys duplicated from their writers, remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

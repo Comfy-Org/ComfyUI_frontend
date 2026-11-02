@@ -111,7 +111,7 @@
   "compatibilityPromises": [
     "main.ts, router.ts, bootstrapStore, shared auth, billing, workspace, and telemetry code may continue importing cloud internals during inventory.",
     "Cloud bootstrap extensions and onboarding routes remain the integration seams between the cloud distribution and the host app.",
-    "Dialog launchers that lazy-load presentation and views that call OAuth, onboarding, or checkout adapters directly remain visible as coupling debt; classification does not grant dependency exceptions."
+    "Dialog launchers that lazy-load presentation and views that call OAuth, onboarding, or checkout adapters directly remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

@@ -40,7 +40,7 @@
   "compatibilityPromises": [
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "Survey state and feature-usage localStorage keys keep their persisted names.",
-    "openTypeformDialog importing its dialog component and surveyRegistry typing against useSurveyEligibility remain visible as coupling debt; classification does not grant dependency exceptions."
+    "openTypeformDialog importing its dialog component and surveyRegistry typing against useSurveyEligibility remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

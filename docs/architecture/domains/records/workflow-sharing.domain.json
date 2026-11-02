@@ -46,7 +46,7 @@
   "compatibilityPromises": [
     "Share URLs using the existing share query parameter keep opening the shared workflow.",
     "Unclassified callers may import sharing internals during inventory; imports from classified domains remain subject to cross-domain rules.",
-    "Dialog launchers that load presentation and components that call share services directly remain visible as coupling debt; classification does not grant dependency exceptions."
+    "Dialog launchers that load presentation and components that call share services directly remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }
