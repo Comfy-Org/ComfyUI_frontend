@@ -22,6 +22,7 @@ function createBillingContextMock(): BillingContext {
     isFreeTier: computed(() => false),
     billingStatus: computed(() => null),
     subscriptionStatus: computed(() => null),
+    subscriptionState: computed(() => null),
     tier: computed(() => null),
     renewalDate: computed(() => null),
     renewalInvoice: computed(() => null),

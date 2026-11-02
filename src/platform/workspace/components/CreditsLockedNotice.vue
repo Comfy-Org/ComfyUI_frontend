@@ -5,7 +5,7 @@
     class="m-0 text-sm text-muted-foreground"
   >
     {{
-      subscriptionStatus === 'ended'
+      subscriptionState === 'ended'
         ? $t('credits.topUp.planRequiredResubscribe')
         : $t('credits.topUp.planRequiredSubscribe')
     }}
@@ -15,5 +15,5 @@
 <script setup lang="ts">
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 
-const { subscriptionStatus } = useBillingContext()
+const { subscriptionState } = useBillingContext()
 </script>
