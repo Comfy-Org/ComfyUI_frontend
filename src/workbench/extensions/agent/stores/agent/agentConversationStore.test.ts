@@ -2271,6 +2271,37 @@ describe('useAgentConversationStore', () => {
       expect(reconciledParts(store)).toEqual(storedParts())
     })
 
+    it('keeps a re-registered held turn for its own read when an earlier read lands late', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const { store, settled } = restoredAndSettled()
+      const earlierRead = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+
+      store.reconcileSettledTurn(earlierRead, undefined)
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      expect(settled).toEqual([SNAPSHOT_ROW_ID, SNAPSHOT_ROW_ID])
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(reconciledParts(store)?.map((part) => part.type)).toEqual([
+        'thinking',
+        'tool',
+        'thinking',
+        'text'
+      ])
+    })
+
     it('announces a held turn only once when the canvas reports twice', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
       const store = useAgentConversationStore()
