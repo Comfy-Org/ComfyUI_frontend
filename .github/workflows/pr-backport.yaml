@@ -550,11 +550,11 @@ jobs:
           notify() {
             local body="$1"
             local context="$2"
+            local title="${3:-Backport of #${PR_NUMBER} to ${target} failed}"
             if gh pr comment "${PR_NUMBER}" --body "${body}"; then
               return
             fi
             echo "::warning::Could not comment on PR #${PR_NUMBER} (${context}); opening a tracking issue instead."
-            local title="Backport of #${PR_NUMBER} to ${target} failed"
             gh issue create --title "${title}" --body "${body}" --label backport \
               || gh issue create --title "${title}" --body "${body}" \
               || echo "::warning::Also failed to open a tracking issue for #${PR_NUMBER} (${context})."
@@ -584,7 +584,7 @@ jobs:
           }
 
           for target in ${ALREADY_APPLIED_TARGETS}; do
-            notify "@${PR_AUTHOR} \`${target}\` already has the changes from \`${MERGE_COMMIT}\`, so no backport PR was opened." "changes already on ${target}"
+            notify "@${PR_AUTHOR} \`${target}\` already has the changes from \`${MERGE_COMMIT}\`, so no backport PR was opened." "changes already on ${target}" "Backport of #${PR_NUMBER} to ${target} not needed"
           done
 
           for failure in ${FAILED_TARGETS}; do

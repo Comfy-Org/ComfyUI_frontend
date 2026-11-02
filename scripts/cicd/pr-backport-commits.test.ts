@@ -81,7 +81,7 @@ function runBackport(mergeCommit: string) {
   writeFileSync(output, '')
   const result = spawnSync(
     'bash',
-    ['--noprofile', '--norc', '-c', backportScript()],
+    ['--noprofile', '--norc', '-e', '-c', backportScript()],
     {
       cwd: work,
       env: {
@@ -93,6 +93,7 @@ function runBackport(mergeCommit: string) {
       encoding: 'utf8'
     }
   )
+  expect(result.status).toBe(0)
   return { ...result, outputs: readFileSync(output, 'utf8') }
 }
 
@@ -119,6 +120,22 @@ describe('pr-backport cherry-pick step', () => {
     const { outputs } = runBackport(mergeCommit)
 
     expect(outputs).toContain(`failed=${TARGET}:conflicts:file.txt, `)
+  })
+
+  it('reports a cherry-pick that fails before it starts as a failure, not as already applied', () => {
+    git('checkout', '--quiet', '-b', 'feature')
+    commitFile('two\n', 'feature change')
+    git('checkout', '--quiet', 'main')
+    writeFileSync(join(work, 'main.txt'), 'main\n')
+    git('add', 'main.txt')
+    git('commit', '--quiet', '-m', 'main change')
+    git('merge', '--quiet', '--no-ff', 'feature', '-m', 'merge')
+    const mergeCommit = git('rev-parse', 'HEAD')
+
+    const { outputs } = runBackport(mergeCommit)
+
+    expect(outputs).toContain(`failed=${TARGET}:conflicts: `)
+    expect(outputs).toContain('already-applied=\n')
   })
 
   it('pushes a clean cherry-pick', () => {

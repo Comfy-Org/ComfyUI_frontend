@@ -206,6 +206,23 @@ const postedReports = (sandbox: string) =>
     .filter((body) => body.includes('Backport to `'))
 
 describe('backport conflict comment', () => {
+  it('titles the tracking issue as not needed when a locked PR already has the changes on its target', () => {
+    const sandbox = createSandbox()
+
+    reportConflict(sandbox, {
+      failed: '',
+      alreadyApplied: 'core/1.56 ',
+      prLocked: true
+    })
+
+    expect(
+      readFileSync(join(sandbox, 'issues.jsonl'), 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => (JSON.parse(line) as { title: string }).title)
+    ).toEqual(['Backport of #21078 to core/1.56 not needed'])
+  })
+
   it('reads the target lists from the backport step outputs', () => {
     expect(commentEnv).toMatchObject({
       FAILED_TARGETS: '${{ steps.backport.outputs.failed }}',
