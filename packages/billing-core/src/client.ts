@@ -40,7 +40,6 @@ import type {
   TeamCreditStopSummary
 } from '@comfyorg/ingest-types'
 import {
-  zBillingCapabilityDenials,
   zRetentionAcceptance,
   zRetentionFlowResponse
 } from '@comfyorg/ingest-types/zod'
@@ -108,10 +107,32 @@ export type BillingCapabilitiesRead = Omit<
 export type BillingTopUpDenial = NonNullable<
   BillingCapabilityDenials['can_top_up']
 >
+const BILLING_TOP_UP_DENIALS = [
+  'not_a_member',
+  'not_workspace_owner',
+  'creator_only_provisioning',
+  'payment_past_due',
+  'tier_not_self_serve',
+  'subscription_status_unrecognized',
+  'topup_purchases_paused',
+  'free_plan',
+  'no_subscription',
+  'subscription_ended'
+] as const satisfies readonly BillingTopUpDenial[]
+
+// Fails to compile if the served enum gains a reason missing from the list.
+const _allTopUpDenialsListed: Exclude<
+  BillingTopUpDenial,
+  (typeof BILLING_TOP_UP_DENIALS)[number]
+> extends never
+  ? true
+  : never = true
+void _allTopUpDenialsListed
+
 export function parseBillingTopUpDenial(
   reason: string | undefined
 ): BillingTopUpDenial | undefined {
-  return zBillingCapabilityDenials.shape.can_top_up.safeParse(reason).data
+  return BILLING_TOP_UP_DENIALS.find((denial) => denial === reason)
 }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
