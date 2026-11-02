@@ -626,7 +626,12 @@ describe('PostHogTelemetryProvider', () => {
         save_error_shown: true
       })
       provider.trackAgentOnboardingShown()
-      provider.trackAgentOnboardingStep({ step: 4, action: 'finish' })
+      provider.trackAgentOnboardingStep({
+        step: 3,
+        card: 'history',
+        total: 3,
+        action: 'finish'
+      })
 
       expect(hoisted.mockCapture.mock.calls).toEqual([
         [TelemetryEvents.AGENT_CONSENT_SHOWN, { trigger: 'first_load' }],
@@ -635,7 +640,10 @@ describe('PostHogTelemetryProvider', () => {
           { decision: 'dismissed', save_error_shown: true }
         ],
         [TelemetryEvents.AGENT_ONBOARDING_SHOWN, {}],
-        [TelemetryEvents.AGENT_ONBOARDING_STEP, { step: 4, action: 'finish' }]
+        [
+          TelemetryEvents.AGENT_ONBOARDING_STEP,
+          { step: 3, card: 'history', total: 3, action: 'finish' }
+        ]
       ])
     })
 
@@ -883,6 +891,7 @@ describe('PostHogTelemetryProvider', () => {
         outcome: 'timed_out',
         phase_count: 1,
         untraced_ms: 2700,
+        hidden_ms: 0,
         phases: { 'auth-gate/user-store': 2500 },
         pending: ['bootstrap/object-info']
       } satisfies BootstrapCompleteMetadata
@@ -1160,6 +1169,28 @@ describe('PostHogTelemetryProvider', () => {
             step: 2
           }),
         properties: { reason: 'target_missing', step: 2 }
+      },
+      {
+        event: TelemetryEvents.AGENT_SEND_GATED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentSendGated({
+            gate: 'consent',
+            outcome: 'dropped',
+            reason: 'dismissed',
+            client_message_id: 'client-message-1',
+            held_ms: 1200,
+            thread_id: null,
+            client_session_id: 'client-session-1'
+          }),
+        properties: {
+          gate: 'consent',
+          outcome: 'dropped',
+          reason: 'dismissed',
+          client_message_id: 'client-message-1',
+          held_ms: 1200,
+          thread_id: null,
+          client_session_id: 'client-session-1'
+        }
       }
     ])(
       'captures $event with its properties',

@@ -1,10 +1,11 @@
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
+import { resolveWidgetInputSource } from '@/composables/widgetInputSource'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { savedImageUrls } from '@/renderer/extensions/vueNodes/widgets/utils/savedImageUrls'
-import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const BEFORE_INPUT = 'image_a'
 const AFTER_INPUT = 'image_b'
@@ -15,7 +16,8 @@ const AFTER_OUTPUT = 'b_images'
 const NO_IMAGES: readonly string[] = []
 
 export function useImageCompareImages(
-  node: ComputedRef<LGraphNode | null | undefined>
+  node: ComputedRef<LGraphNode | null | undefined>,
+  renderedNodeId: NodeId
 ): {
   beforeImages: ComputedRef<readonly string[]>
   afterImages: ComputedRef<readonly string[]>
@@ -29,7 +31,7 @@ export function useImageCompareImages(
     const slot = target.inputs.findIndex((input) => input.name === inputName)
     if (slot < 0) return NO_IMAGES
 
-    const source = resolveInputSourceNode(target, slot)
+    const source = resolveWidgetInputSource(target, slot, renderedNodeId)
     if (!source) return NO_IMAGES
 
     return nodeOutputStore.getNodeImageUrls(source) ?? NO_IMAGES

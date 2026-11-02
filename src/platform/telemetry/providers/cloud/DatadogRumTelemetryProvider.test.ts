@@ -71,6 +71,7 @@ describe('DatadogRumTelemetryProvider', () => {
         total_ms: 123,
         phase_count: 0,
         untraced_ms: 123,
+        hidden_ms: 0,
         phases: {}
       })
 
@@ -92,6 +93,7 @@ describe('DatadogRumTelemetryProvider', () => {
       total_ms: 123,
       phase_count: 0,
       untraced_ms: 123,
+      hidden_ms: 0,
       phases: {}
     })
 
@@ -109,6 +111,7 @@ describe('DatadogRumTelemetryProvider', () => {
         total_ms: 123,
         phase_count: 0,
         untraced_ms: 123,
+        hidden_ms: 0,
         phases: {}
       })
 
@@ -211,6 +214,25 @@ describe('DatadogRumTelemetryProvider', () => {
       schema_version: 1,
       billing_surface: 'cloud_app'
     })
+  })
+
+  it('records gated agent sends as RUM actions so drop-offs can be monitored', () => {
+    const metadata = {
+      gate: 'coach',
+      outcome: 'dropped',
+      reason: 'panel_closed',
+      client_message_id: 'client-message-1',
+      held_ms: 800,
+      thread_id: 'thread-1',
+      client_session_id: 'client-session-1'
+    } as const
+
+    new DatadogRumTelemetryProvider().trackAgentSendGated(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_SEND_GATED,
+      metadata
+    )
   })
 
   it('records status retries as RUM actions', () => {

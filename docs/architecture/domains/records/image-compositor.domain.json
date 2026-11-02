@@ -54,6 +54,10 @@
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
       "role": "integration"
+    },
+    {
+      "path": "packages/layer-editor/src/**",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

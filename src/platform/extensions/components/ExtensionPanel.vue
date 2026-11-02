@@ -236,7 +236,7 @@ async function handleExtensionPathEnabled(path: string, enabled: boolean) {
       description: t('g.extensionPathSaveRefused'),
       duration: 5000
     })
-  } else if (result === 'unconfirmed') {
+  } else if (result === 'unconfirmed' || result === 'indeterminate') {
     toast.warning(t('g.warning'), {
       description: t('g.extensionPathSaveUnconfirmed'),
       duration: 5000
@@ -281,9 +281,6 @@ async function disableAgentExtensions() {
 }
 
 const applyChanges = () => {
-  const url = new URL(window.location.href)
-  url.searchParams.delete('safe')
-  window.history.replaceState(window.history.state, '', url)
   window.location.reload()
 }
 

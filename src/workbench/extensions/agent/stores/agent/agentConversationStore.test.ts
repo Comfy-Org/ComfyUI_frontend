@@ -11,6 +11,7 @@ import type {
   TurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
+  toTurnId,
   zAgentMessages,
   zAgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -156,6 +157,8 @@ const activeTab = (
     type: 'agent_active_tab',
     data: { workflow_id: workflowId, message_id: id, thread_id: threadId }
   })
+
+type ConversationStore = ReturnType<typeof useAgentConversationStore>
 
 const tabLinkIds = (store: ReturnType<typeof useAgentConversationStore>) =>
   store.messages.flatMap((m) =>
@@ -2128,6 +2131,375 @@ describe('useAgentConversationStore', () => {
     }
   )
 
+  describe('reconciling a snapshot-restored turn settled on the socket', () => {
+    const SNAPSHOT_ROW_ID = toTurnId('assistant-row-7')
+    const SNAPSHOT_TURN_ID = toTurnId('turn-7')
+    const liveSnapshot = (): AgentMessages =>
+      zAgentMessages.parse([
+        historyRow(1, 'user', SNAPSHOT_TURN_ID, 'add a loader', 'user-row-1'),
+        {
+          id: SNAPSHOT_ROW_ID,
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: SNAPSHOT_TURN_ID
+        }
+      ])
+    const storedTool = (): AssistantMessage['parts'][number] => ({
+      type: 'tool',
+      callId: 'call-add_node',
+      name: 'add_node',
+      state: 'done',
+      ok: true
+    })
+    const storedParts = (): AssistantMessage['parts'] => [
+      { type: 'thinking', text: 'before the reload', state: 'done' },
+      storedTool(),
+      { type: 'thinking', text: 'after the reload', state: 'done' },
+      { type: 'text', text: 'Added it.', state: 'done' }
+    ]
+    const reconciledParts = (
+      store: ConversationStore
+    ): AssistantMessage['parts'] | undefined =>
+      store.messages.find((message) => message.id === SNAPSHOT_TURN_ID)?.parts
+    const restoredAndSettled = () => {
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      return { store, settled }
+    }
+
+    it('announces the turn and folds the stored row in', () => {
+      const { store, settled } = restoredAndSettled()
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      const message = store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)
+      expect(message?.streaming).toBe(false)
+      expect(message?.parts).toEqual(storedParts())
+    })
+
+    it('reconciles once, so a second read cannot re-apply the row', () => {
+      const { store } = restoredAndSettled()
+      const turn = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
+      store.reconcileSettledTurn(turn, storedParts())
+
+      store.reconcileSettledTurn(turn, [
+        { type: 'text', text: 'a later read', state: 'done' }
+      ])
+
+      expect(
+        store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)?.parts
+      ).toEqual(storedParts())
+    })
+
+    it.for([
+      {
+        reason: 'is longer than the stored copy',
+        live: 'after the reload continues'
+      },
+      { reason: 'is a suffix of the stored copy', live: ' reload' },
+      {
+        reason: 'is missing from the stored row',
+        live: 'a round the row dropped'
+      },
+      { reason: 'repeats an earlier stored round', live: 'before the reload' }
+    ])(
+      'renders the stored thinking when the live round $reason',
+      ({ live }) => {
+        const store = useAgentConversationStore()
+        store.setThreadId('th')
+        store.hydrate(liveSnapshot())
+        store.ingest(thinking(SNAPSHOT_ROW_ID, live))
+        store.ingest(done(SNAPSHOT_ROW_ID))
+
+        store.reconcileSettledTurn(
+          { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+          storedParts()
+        )
+
+        expect(reconciledParts(store)).toEqual(storedParts())
+      }
+    )
+
+    it('renders the stored thinking when the row keys the live call differently', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload, partial'))
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'save', 'success'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      const persisted: AssistantMessage['parts'] = [
+        { type: 'thinking', text: 'before the reload', state: 'done' },
+        storedTool(),
+        { type: 'thinking', text: 'after the reload', state: 'done' },
+        {
+          type: 'tool',
+          callId: 'row-fallback-id',
+          name: 'save',
+          state: 'done',
+          ok: true
+        },
+        { type: 'text', text: 'Saved it.', state: 'done' }
+      ]
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        persisted
+      )
+
+      expect(reconciledParts(store)).toEqual(persisted)
+    })
+
+    it('keeps live thinking when the stored row holds no thinking at all', () => {
+      const { store } = restoredAndSettled()
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        [storedTool(), { type: 'text', text: 'Added it.', state: 'done' }]
+      )
+
+      expect(reconciledParts(store)).toEqual([
+        storedTool(),
+        { type: 'thinking', text: 'after the reload', state: 'done' },
+        { type: 'text', text: 'Added it.', state: 'done' }
+      ])
+    })
+
+    it('places a post-reload tab link after the stored pre-reload tool', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(activeTab('wf-1', SNAPSHOT_ROW_ID))
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(reconciledParts(store)?.map((part) => part.type)).toEqual([
+        'thinking',
+        'tool',
+        'thinking',
+        'tabLink',
+        'text'
+      ])
+    })
+
+    it('keeps a live canvas confirmation for a call the stored row keys by row id', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        [
+          {
+            type: 'tool',
+            callId: 'row-fallback-id',
+            name: 'add_node',
+            state: 'done',
+            ok: true,
+            canvasConfirmed: false
+          },
+          { type: 'text', text: 'Added it.', state: 'done' }
+        ]
+      )
+
+      expect(
+        reconciledParts(store)?.find((part) => part.type === 'tool')
+      ).toMatchObject({ callId: 'row-fallback-id', canvasConfirmed: true })
+    })
+
+    it('lets stored thinking win when the recovery read settles the turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'a round the row dropped'))
+
+      store.settleTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(reconciledParts(store)).toEqual(storedParts())
+    })
+
+    it('waits for a held tool call to clear before announcing the turn', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      expect(settled).toEqual([])
+
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts().map((part) =>
+          part.type === 'tool' ? { ...part, canvasConfirmed: false } : part
+        )
+      )
+
+      expect(
+        store.messages
+          .find((message) => message.id === SNAPSHOT_TURN_ID)
+          ?.parts.find((part) => part.type === 'tool')
+      ).toMatchObject({
+        callId: 'call-add_node',
+        ok: true,
+        canvasConfirmed: true
+      })
+    })
+
+    it.for([
+      { through: 'reset', leave: (store: ConversationStore) => store.reset() },
+      {
+        through: 'hydrate',
+        leave: (store: ConversationStore) => store.hydrate([])
+      }
+    ])(
+      'does not announce a held turn when the thread is left through $through',
+      ({ leave }) => {
+        const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+        const store = useAgentConversationStore()
+        const settled: TurnId[] = []
+        store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+        store.setCanvasSyncGate(() => 'awaiting')
+        store.setThreadId('th')
+        store.hydrate(liveSnapshot())
+        store.ingest(
+          toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+            workflow_id: workflowId,
+            op_ids: ['op-add']
+          })
+        )
+        store.ingest(done(SNAPSHOT_ROW_ID))
+
+        leave(store)
+
+        expect(settled).toEqual([])
+      }
+    )
+
+    it('keeps the reconciled row when a late ask retirement follows a stale held tool call', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(runApproval(SNAPSHOT_ROW_ID, 'turn-7:call-1'))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      expect(settled).toEqual([])
+
+      vi.advanceTimersByTime(30_000)
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      store.retireAsk('turn-7:call-1', { status: 'retired' })
+
+      expect(reconciledParts(store)).toEqual(storedParts())
+    })
+
+    it('announces a held turn only once when the canvas reports twice', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+    })
+
+    it('leaves a turn this client started alone', () => {
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'local reply'))
+      store.ingest(done('t1'))
+      expect(settled).toEqual([])
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        { type: 'text', text: 'persisted reply', state: 'done' }
+      ])
+
+      expect(messageTexts(store, T1)).toEqual(['local reply'])
+    })
+
+    it('drops the registration when the thread is left', () => {
+      const { store } = restoredAndSettled()
+      store.reset()
+      store.setThreadId('th')
+      store.startTurn(SNAPSHOT_TURN_ID)
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(
+        store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)?.parts
+      ).toEqual([])
+    })
+  })
+
   it('keeps a local tab link between persisted text and tool parts', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
@@ -2154,6 +2526,52 @@ describe('useAgentConversationStore', () => {
       'tabLink',
       'tool',
       'text'
+    ])
+  })
+
+  it('keeps each live tool start time when recovery reorders persisted parts', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    vi.setSystemTime(1_234)
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+    vi.setSystemTime(5_678)
+    store.ingest(toolCall('t1', 'run_workflow', 'running'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, [
+      {
+        type: 'tool',
+        callId: 'call-run_workflow',
+        name: 'run_workflow',
+        state: 'done',
+        ok: true
+      },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      }
+    ])
+
+    expect(store.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-run_workflow',
+        name: 'run_workflow',
+        state: 'done',
+        ok: true,
+        startedAtMs: 5_678
+      },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true,
+        startedAtMs: 1_234
+      }
     ])
   })
 

@@ -9,7 +9,7 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import type {
   ExecutedWsMessage,
   JobId
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'

@@ -24,6 +24,7 @@ import type {
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentSendGatedMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -465,6 +466,10 @@ export class HostTelemetrySink implements TelemetryProvider {
     metadata: AgentOnboardingNotShownMetadata
   ): void {
     this.capture(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
+  }
+
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_SEND_GATED, metadata)
   }
 
   trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {

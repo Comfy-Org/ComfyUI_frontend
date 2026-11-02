@@ -192,7 +192,11 @@ describe('useNodeDragAndDrop', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('onDragDrop handles same-origin uri drops', async () => {
+  it('onDragDrop handles same-origin uri drops without URL.parse', async () => {
+    vi.stubGlobal(
+      'URL',
+      Object.assign(class extends URL {}, { parse: undefined })
+    )
     const onDrop = vi.fn().mockResolvedValue([])
     vi.mocked(fetch).mockResolvedValue(
       fromAny<Response, unknown>({

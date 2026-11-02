@@ -1,6 +1,6 @@
 import { mergeTests } from '@playwright/test'
 
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { NodeError } from '@comfyorg/api-client/types'
 import {
   comfyExpect as expect,
   comfyPageFixture

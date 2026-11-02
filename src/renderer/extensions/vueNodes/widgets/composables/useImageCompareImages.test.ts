@@ -45,7 +45,10 @@ describe('useImageCompareImages', () => {
       images: [{ filename: 'source.png', type: 'input' }]
     }
 
-    const { beforeImages } = useImageCompareImages(computed(() => compare))
+    const { beforeImages } = useImageCompareImages(
+      computed(() => compare),
+      compare.id
+    )
     expect(beforeImages.value).toEqual([])
 
     producerA.connect(0, compare, 0)
@@ -67,7 +70,8 @@ describe('useImageCompareImages', () => {
     }
 
     const { beforeImages, afterImages } = useImageCompareImages(
-      computed(() => compare)
+      computed(() => compare),
+      compare.id
     )
 
     expect(beforeImages.value).toEqual(['/api/view?filename=a.png&type=input'])
@@ -84,7 +88,10 @@ describe('useImageCompareImages', () => {
       ]
     }
 
-    const { beforeImages } = useImageCompareImages(computed(() => compare))
+    const { beforeImages } = useImageCompareImages(
+      computed(() => compare),
+      compare.id
+    )
 
     expect(beforeImages.value).toEqual([
       '/api/view?filename=a1.png&type=input',
@@ -101,7 +108,8 @@ describe('useImageCompareImages', () => {
     }
 
     const { beforeImages, afterImages } = useImageCompareImages(
-      computed(() => compare)
+      computed(() => compare),
+      compare.id
     )
 
     expect(beforeImages.value).toEqual([
@@ -122,7 +130,10 @@ describe('useImageCompareImages', () => {
       a_images: [{ filename: 'stale.png', type: 'temp' }]
     }
 
-    const { beforeImages } = useImageCompareImages(computed(() => compare))
+    const { beforeImages } = useImageCompareImages(
+      computed(() => compare),
+      compare.id
+    )
 
     expect(beforeImages.value).toEqual([
       '/api/view?filename=live.png&type=input'
@@ -134,7 +145,10 @@ describe('useImageCompareImages', () => {
     useNodeOutputStore().nodeOutputs[String(compare.id)] = {
       a_images: [{ filename: 'compare_a.png', type: 'temp' }]
     }
-    const { beforeImages } = useImageCompareImages(computed(() => compare))
+    const { beforeImages } = useImageCompareImages(
+      computed(() => compare),
+      compare.id
+    )
     const snapshot = useNodeOutputStore().snapshotOutputs()
 
     useNodeOutputStore().resetAllOutputsAndPreviews()
@@ -168,7 +182,10 @@ describe('useImageCompareImages', () => {
       images: [{ filename: 'inner.png', type: 'input' }]
     }
 
-    const { beforeImages } = useImageCompareImages(computed(() => compare))
+    const { beforeImages } = useImageCompareImages(
+      computed(() => compare),
+      compare.id
+    )
 
     expect(beforeImages.value).toEqual([
       '/api/view?filename=inner.png&type=input'
@@ -179,7 +196,8 @@ describe('useImageCompareImages', () => {
     const { compare } = buildGraph()
 
     const { beforeImages, afterImages } = useImageCompareImages(
-      computed(() => compare)
+      computed(() => compare),
+      compare.id
     )
 
     expect(beforeImages.value).toEqual([])

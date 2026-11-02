@@ -1,4 +1,4 @@
-import type { Settings } from '@/platform/settings/types'
+import type { Settings } from '@comfyorg/settings-core/types'
 import type { ComfySettingsDialog } from '@/scripts/ui/settings'
 
 import type { ComfyComponent } from '.'

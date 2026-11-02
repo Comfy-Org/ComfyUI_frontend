@@ -125,7 +125,7 @@ export function buildBoundaries({
     boundaries: {
       zones: [
         ...ordered.map(({ name, patterns }) => ({ name, patterns })),
-        { name: UNCLASSIFIED, patterns: ['src/**'] }
+        { name: UNCLASSIFIED, patterns: ['src/**', 'packages/*/src/**'] }
       ],
       rules: [
         ...ordered.map((zone) => ({

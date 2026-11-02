@@ -14,6 +14,10 @@
     {
       "path": "src/utils/errorUtil.ts",
       "role": "domain"
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/errorUtil.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

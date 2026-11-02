@@ -95,6 +95,35 @@ test.describe(
       expect(tabChats.transcriptReads).toEqual(tabActivationTranscriptReads)
     })
 
+    test('the workflow name in the message box retargets the open chat', async ({
+      tabChats
+    }) => {
+      await tabChats.openChatFromHistory('Landscape chat')
+      await tabChats.openChatFromHistory('Portrait chat')
+      const composer = tabChats.panel.root.getByTestId('agent-composer')
+      await expect(tabChats.panel.workflowPicker).toContainText(PORTRAIT_NAME)
+      await expect(
+        composer.getByRole('button', { name: enMessages.agent.switchWorkflow })
+      ).toBeVisible()
+
+      await tabChats.panel.workflowPicker.click()
+      await tabChats.panel.root
+        .page()
+        .getByRole('menuitemradio', { name: LANDSCAPE_NAME })
+        .click()
+      await tabChats.waitForFollowToSettle()
+
+      await expect(tabChats.panel.workflowPicker).toContainText(LANDSCAPE_NAME)
+      await expect(
+        tabChats.topbar
+          .getWorkflowTab(LANDSCAPE_NAME)
+          .and(tabChats.topbar.getActiveTab())
+      ).toBeVisible()
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        PORTRAIT_REQUEST
+      ])
+    })
+
     test('keeps a chat hidden when its workflow cannot be restored', async ({
       tabChats
     }) => {

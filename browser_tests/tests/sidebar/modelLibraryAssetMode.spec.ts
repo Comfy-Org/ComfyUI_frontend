@@ -23,7 +23,7 @@ import { withModels } from '@e2e/fixtures/helpers/AssetHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { dispatchApiCustomEvent } from '@e2e/fixtures/utils/dispatchApiEvent'
 import { ASSETS_SEED_FAST_COMPLETE_EVENT } from '@/platform/assets/constants/assetEvents'
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
+import type { ModelFolderInfo } from '@comfyorg/api-client/types'
 
 const test = mergeTests(comfyPageFixture, assetApiFixture)
 

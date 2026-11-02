@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { TaskResponse } from '@/platform/tasks/services/taskSchema'
+import type { TaskResponse } from '@comfyorg/api-client/taskSchema'
 import type {
   CancelTaskOutcome,
   TaskResult
@@ -9,7 +9,7 @@ import {
   TaskNotFoundError,
   taskService
 } from '@/platform/tasks/services/taskService'
-import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { AssetDownloadWsMessage } from '@comfyorg/api-client/executionTypes'
 import {
   isDownloadCancelled,
   useAssetDownloadStore

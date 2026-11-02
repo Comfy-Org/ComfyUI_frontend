@@ -7,11 +7,15 @@ import { useReconnectingNotification } from '@/composables/useReconnectingNotifi
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { showMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { mockDeploymentListing } from '@/platform/workspace/__fixtures__/deploymentListing'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
 import { api as apiMock } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
@@ -76,6 +80,9 @@ const templateInputMock = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/workspace/noticeMissingNodes'), () => ({
+  noticeMissingNodes: vi.fn()
+}))
 vi.mock(import('firebase/auth'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -398,5 +405,36 @@ describe('GraphView - deployment pick at startup', () => {
 
     expect(useDeploymentPickStore().loadOnce).not.toHaveBeenCalled()
     expect(screen.queryByText(pickGone)).toBeNull()
+  })
+})
+
+describe('GraphView - missing nodes notice', () => {
+  const nodeTypes: MissingNodeType[] = [
+    { type: 'BiRefNet', cnrId: 'comfyui-birefnet', isReplaceable: false }
+  ]
+
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it('hands the missing nodes of a workflow just opened to the deployment offer on Cloud', () => {
+    distribution.isCloud = true
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    showMissingNodesNotice(nodeTypes)
+
+    expect(noticeMissingNodes).toHaveBeenCalledWith(
+      nodeTypes,
+      expect.any(Function)
+    )
+  })
+
+  it('shows only the error overlay on a local build', () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    showMissingNodesNotice(nodeTypes)
+
+    expect(noticeMissingNodes).not.toHaveBeenCalled()
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
   })
 })

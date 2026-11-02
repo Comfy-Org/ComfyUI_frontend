@@ -464,6 +464,20 @@ describe('useSubscriptionDialog', () => {
       )
     })
 
+    it('reports the refusal type on modal_opened', async () => {
+      await useSubscriptionDialog().showPricingTable({
+        reason: 'subscription_required',
+        refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
+      })
+
+      expect(useTelemetry()?.trackSubscription).toHaveBeenCalledWith(
+        'modal_opened',
+        expect.objectContaining({
+          refusal_type: 'CLOUD_SUBSCRIPTION_REQUIRED'
+        })
+      )
+    })
+
     it('withholds modal_opened and paywall_shown when the dialog never opens', async () => {
       mockShowLayoutDialog.mockImplementation(() => {
         throw new Error('pricing chunk unavailable')
@@ -584,6 +598,14 @@ describe('useSubscriptionDialog', () => {
           reason: 'out_of_credits',
           paymentIntentSource: 'agent_paywall'
         })
+      })
+
+      it('carries locked credits to the unified table', async () => {
+        useUnifiedWorkspaceRouting()
+
+        await useSubscriptionDialog().showPricingTable({ creditsLocked: true })
+
+        expect(contentProps()).toMatchObject({ creditsLocked: true })
       })
 
       it('carries it to the legacy team table', async () => {

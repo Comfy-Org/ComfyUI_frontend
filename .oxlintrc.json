@@ -185,12 +185,14 @@
         "src/**/*.vue",
         "apps/*/src/**/*.ts",
         "apps/*/src/**/*.tsx",
-        "apps/*/src/**/*.vue"
+        "apps/*/src/**/*.vue",
+        "packages/api-client/src/**/*.ts",
+        "packages/settings-core/src/**/*.ts"
       ],
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+        "packages/api-client/src/jobTypes.ts"
       ],
       "rules": {
         "comfy/no-unsafe-error-assertion": "error"
@@ -282,10 +284,46 @@
       }
     },
     {
-      "files": ["src/**/*.{ts,tsx,vue}"],
+      "files": [
+        "apps/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
+        "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
+        "packages/**/*.{js,mjs,cjs,ts,mts,cts,vue}"
+      ],
+      "excludeFiles": [
+        "**/*.{test,spec}.{ts,tsx}",
+        "packages/api-client/src/abortSignal.ts"
+      ],
+      "rules": {
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "AbortSignal",
+            "property": "any",
+            "message": "Crashes on Chrome < 116. Use combineAbortSignals from @comfyorg/api-client/abortSignal."
+          },
+          {
+            "object": "URL",
+            "property": "parse",
+            "message": "Crashes on Chrome < 126. Use parseUrl from @/utils/urlSafety, or try/catch around new URL() in packages."
+          },
+          {
+            "object": "URL",
+            "property": "canParse",
+            "message": "Crashes on Chrome < 120. Use parseUrl from @/utils/urlSafety, or try/catch around new URL() in packages."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/**/*.{ts,tsx,vue}",
+        "packages/api-client/src/**/*.ts",
+        "packages/settings-core/src/**/*.ts"
+      ],
       "excludeFiles": [
         "src/**/*.d.ts",
         "src/**/*.{test,spec,stories}.{ts,tsx,vue}",
+        "packages/*/src/**/*.test.ts",
         "src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**",
         "src/**/{generated,vendor}/**"
       ],
@@ -316,12 +354,19 @@
       }
     },
     {
-      "files": ["src/platform/remote/**/*.ts", "src/platform/remote/**/*.vue"],
+      "files": [
+        "src/platform/remote/**/*.ts",
+        "src/platform/remote/**/*.vue",
+        "packages/api-client/src/**/*.ts"
+      ],
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "src/platform/remote/comfyui/execution/types.ts",
-        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+        "packages/api-client/src/executionTypes.ts",
+        "packages/api-client/src/jobTypes.ts",
+        "packages/api-client/src/resultItemTypeSchema.ts",
+        "packages/api-client/src/taskSchema.ts",
+        "packages/api-client/src/templateSchema.ts"
       ],
       "rules": {
         "comfy/no-new-zod-for-remote-api-types": "error"
@@ -359,7 +404,6 @@
       "files": ["src/schemas/**/*.ts"],
       "excludeFiles": [
         "src/schemas/**/*.test.ts",
-        "src/schemas/colorPaletteSchema.ts",
         "src/schemas/signInSchema.ts"
       ],
       "rules": {

@@ -110,6 +110,33 @@ Use `node.removeWidget(widget)` to remove a widget. Splicing `node.widgets`
 directly skips slot cleanup, and the removed widget's value stays in the
 store until the node itself is removed from the graph.
 
+## Agent edits call `setValue` without a pointer event
+
+When the in-app Agent changes a widget on a `BaseWidget` subclass, the
+frontend calls `widget.setValue(value, { node, canvas })`, the same method a
+user edit goes through. Before, it assigned `widget.value` directly and then
+called `callback` and `onWidgetChanged` itself. Plain-object widgets,
+DynamicGroup row-count controllers and promoted subgraph-host widgets still get
+that direct write.
+
+If you override `setValue`, accept options shaped `{ node, e?, canvas? }`: `e`
+is never set for these calls, and `canvas` can be missing too. Don't read `options.e`
+or `options.canvas` without checking them first. A wrapper that calls the
+original `setValue` with only the value still works: the options default to
+`{ node: widget.node }`.
+
+`callback` and `onWidgetChanged` now receive the value the widget accepted, not
+the value the Agent sent. A number widget clamps to `min`/`max` and converts a
+numeric string to a number. In `callback`, `e` is `undefined`, and so is
+`pos` when there is no canvas.
+
+`setValue` returns without a change when the value, after a number widget
+clamps and converts it, is already identical (`===`) to the current value, so
+`'5'` on a number widget at `5` changes nothing. It also returns when a number
+widget receives a value for which `Number(value)` is `NaN`. Neither `callback`
+nor `onWidgetChanged` fires, and the graph version doesn't change. A numeric
+string such as `'7'` is converted and applied.
+
 ## Don't call `useWidgetValueStore()` from extension code
 
 Do not call `useWidgetValueStore()` from extensions. Use `node.widgets`,

@@ -52,7 +52,8 @@ describe('useBoundingBoxesSources', () => {
   it('tracks whether the background input is connected', () => {
     const { target, image } = buildGraph()
     const { backgroundConnected } = useBoundingBoxesSources(
-      computed(() => target)
+      computed(() => target),
+      target.id
     )
     expect(backgroundConnected.value).toBe(false)
 
@@ -70,7 +71,10 @@ describe('useBoundingBoxesSources', () => {
         images: [{ filename: 'bg.png', type: 'input' }]
       }
 
-      const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+      const { backgroundUrl } = useBoundingBoxesSources(
+        computed(() => target),
+        target.id
+      )
       expect(backgroundUrl.value).toBeUndefined()
 
       image.connect(0, target, 0)
@@ -84,7 +88,10 @@ describe('useBoundingBoxesSources', () => {
       useNodeOutputStore().nodeOutputs[String(image.id)] = {
         images: [{ filename: 'bg.png', type: 'input' }]
       }
-      const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+      const { backgroundUrl } = useBoundingBoxesSources(
+        computed(() => target),
+        target.id
+      )
       expect(backgroundUrl.value).toBeDefined()
 
       target.disconnectInput(0)
@@ -95,7 +102,10 @@ describe('useBoundingBoxesSources', () => {
     it('follows the producer when it is re-run', () => {
       const { target, image } = buildGraph()
       image.connect(0, target, 0)
-      const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+      const { backgroundUrl } = useBoundingBoxesSources(
+        computed(() => target),
+        target.id
+      )
 
       useNodeOutputStore().nodeOutputs[String(image.id)] = {
         images: [{ filename: 'second.png', type: 'temp' }]
@@ -147,7 +157,10 @@ describe('useBoundingBoxesSources', () => {
           background_images: [{ filename: 'bg_saved.png', type: 'temp' }]
         }
 
-      const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+      const { backgroundUrl } = useBoundingBoxesSources(
+        computed(() => target),
+        target.id
+      )
 
       expect(backgroundUrl.value).toBe(expected)
     })
@@ -158,7 +171,10 @@ describe('useBoundingBoxesSources', () => {
       other.addOutput('IMAGE', 'IMAGE')
       graph.add(other)
       image.connect(0, target, 0)
-      const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+      const { backgroundUrl } = useBoundingBoxesSources(
+        computed(() => target),
+        target.id
+      )
       useNodeOutputStore().nodeOutputs[String(target.id)] = {
         background_images: [{ filename: 'from_image.png', type: 'temp' }]
       }
@@ -180,7 +196,10 @@ describe('useBoundingBoxesSources', () => {
       useNodeOutputStore().nodeOutputs[String(image.id)] = {
         images: [{ filename: 'bg.png', type: 'input' }]
       }
-      const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+      const { backgroundUrl } = useBoundingBoxesSources(
+        computed(() => target),
+        target.id
+      )
       const before = backgroundUrl.value
 
       const consumer = new LGraphNode('Consumer')
@@ -212,7 +231,10 @@ describe('useBoundingBoxesSources', () => {
         images: [{ filename: 'inner.png', type: 'input' }]
       }
 
-      const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+      const { backgroundUrl } = useBoundingBoxesSources(
+        computed(() => target),
+        target.id
+      )
 
       expect(backgroundUrl.value).toBe(
         '/api/view?filename=inner.png&type=input'
@@ -236,7 +258,10 @@ describe('useBoundingBoxesSources', () => {
       useNodeOutputStore().nodeOutputs[`${subgraph.id}:${inner.id}`] = {
         images: [{ filename: 'inner.png', type: 'input' }]
       }
-      const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+      const { backgroundUrl } = useBoundingBoxesSources(
+        computed(() => target),
+        target.id
+      )
       expect(backgroundUrl.value).toBeUndefined()
 
       subgraph.outputNode.slots[0].connect(inner.outputs[0], inner)
@@ -252,7 +277,10 @@ describe('useBoundingBoxesSources', () => {
       useNodeOutputStore().nodeOutputs[String(image.id)] = {
         images: [{ filename: 'bg.png', type: 'input' }]
       }
-      const { backgroundUrl } = useBoundingBoxesSources(computed(() => target))
+      const { backgroundUrl } = useBoundingBoxesSources(
+        computed(() => target),
+        target.id
+      )
       const snapshot = useNodeOutputStore().snapshotOutputs()
 
       useNodeOutputStore().resetAllOutputsAndPreviews()
@@ -282,7 +310,8 @@ describe('useBoundingBoxesSources', () => {
         }
 
         const { incomingBoxes } = useBoundingBoxesSources(
-          computed(() => target)
+          computed(() => target),
+          target.id
         )
 
         expect(incomingBoxes.value).toEqual(expected)
@@ -299,7 +328,10 @@ describe('useBoundingBoxesSources', () => {
         input_bboxes: output
       }
 
-      const { incomingBoxes } = useBoundingBoxesSources(computed(() => target))
+      const { incomingBoxes } = useBoundingBoxesSources(
+        computed(() => target),
+        target.id
+      )
 
       expect(incomingBoxes.value).toBeUndefined()
     })
@@ -307,7 +339,10 @@ describe('useBoundingBoxesSources', () => {
     it('updates when a later run echoes new boxes', () => {
       const { target, boxes } = buildGraph()
       boxes.connect(0, target, 1)
-      const { incomingBoxes } = useBoundingBoxesSources(computed(() => target))
+      const { incomingBoxes } = useBoundingBoxesSources(
+        computed(() => target),
+        target.id
+      )
       expect(incomingBoxes.value).toBeUndefined()
 
       useNodeOutputStore().nodeOutputs[String(target.id)] = {

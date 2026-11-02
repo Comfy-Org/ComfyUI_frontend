@@ -37,7 +37,7 @@ export function useAgentDockMount(): AgentDockMount {
     (count) => {
       if (!count || count <= agentPanelStore.billingRefreshedAcceptances) return
       agentPanelStore.billingRefreshedAcceptances = count
-      void fetchStatus().catch((error: unknown) => {
+      void fetchStatus({ fresh: true }).catch((error: unknown) => {
         reportError(error, {
           surface: 'agent',
           errorType: 'error_refreshing_agent_billing_status'

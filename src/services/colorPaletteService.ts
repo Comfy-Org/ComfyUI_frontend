@@ -5,8 +5,14 @@ import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { comfyBaseSchema, paletteSchema } from '@/schemas/colorPaletteSchema'
-import type { Colors, Palette } from '@/schemas/colorPaletteSchema'
+import {
+  comfyBaseSchema,
+  paletteSchema
+} from '@comfyorg/settings-core/colorPaletteSchema'
+import type {
+  Colors,
+  Palette
+} from '@comfyorg/settings-core/colorPaletteSchema'
 import { useApp } from '@/scripts/appInstance'
 import { applyPaletteTheme, isCorePaletteId } from '@/utils/colorPaletteTheme'
 import { uploadFile } from '@/scripts/utils'

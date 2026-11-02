@@ -17,10 +17,7 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
-import type {
-  JobDetail,
-  RawJobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
 

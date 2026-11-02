@@ -2,8 +2,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { marked } from 'marked'
 import { describe, expect, it, onTestFinished } from 'vitest'
 
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
+import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { api } from '@/scripts/api'
 import { isAudioResult, isImageResult, isVideoResult } from '@/utils/resultItem'
 
