@@ -262,10 +262,6 @@ test.describe(
               titleContainer
             )
 
-            const cfgWidget = comfyPage.vueNodes
-              .getWidgetByName(longTitle, 'cfg')
-              .first()
-            await expect(cfgWidget).toBeVisible()
             const cfgRow = comfyPage.vueNodes.getWidgetRowByLabel(
               longTitle,
               longWidgetLabel
@@ -336,7 +332,7 @@ test.describe(
                 }
               })
             }
-            return cfgWidget
+            return cfgRow
           })
 
         await test.step('Edit the Vue numeric widget', async () => {

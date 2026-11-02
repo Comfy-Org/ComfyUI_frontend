@@ -388,9 +388,9 @@ export class SubgraphHelper {
   }
 
   async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
-    const widget = nodeLocator.locator(
-      `[data-widget-name=${JSON.stringify(widgetName)}]`
-    )
+    const widget = nodeLocator.getByTestId(TestIds.widgets.widget).filter({
+      has: this.page.getByLabel(widgetName, { exact: true })
+    })
     await this.comfyPage.contextMenu
       .openFor(widget)
       .then((m) => m.clickMenuItemExact(`Promote Widget: ${widgetName}`))

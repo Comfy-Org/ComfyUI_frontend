@@ -13,8 +13,6 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
     const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     const seedSlot = ksampler.getSlot('seed')
 
-    // While linked, only the standalone socket row carries the accessible
-    // name: the input control is suppressed entirely.
     await expect(seedWidget).toHaveCount(1)
     await expect(seedWidget.getByTestId('slot-dot')).toBeVisible()
     await expect(seedWidget.locator('input')).toHaveCount(0)
@@ -22,9 +20,6 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
       .poll(() => comfyPage.vueNodes.isSlotConnected(seedSlot))
       .toBe(true)
 
-    // Delete the node that is linked to the slot (freeing up the widget)
-    // Click on the header to select the node (clicking center may land on
-    // the widget area where pointerdown.stop prevents node selection)
     await comfyPage.vueNodes
       .getNodeByTitle('Int')
       .locator('.lg-node-header')
@@ -32,7 +27,9 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
     await comfyPage.vueNodes.deleteSelected()
 
     await expect(seedWidget).toBeVisible()
-    const controls = comfyPage.vueNodes.getInputNumberControls(seedWidget)
+    const controls = comfyPage.vueNodes.getInputNumberControls(
+      comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'seed')
+    )
     await expect(controls.input).toBeEnabled()
     const initialValue = Number(await controls.input.inputValue())
     await controls.incrementButton.click()
@@ -46,7 +43,7 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
     await comfyPage.menu.topbar.newWorkflowButton.click()
     await comfyPage.nextFrame()
     await comfyPage.searchBoxV2.addNode('Int')
-    const widget = comfyPage.vueNodes.getWidgetByName('Int', 'value')
+    const widget = comfyPage.vueNodes.getWidgetRowByLabel('Int', 'value')
     await expect(widget).toBeVisible()
 
     const { valueControl } = comfyPage.vueNodes.getInputNumberControls(widget)
