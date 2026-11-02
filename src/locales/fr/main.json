@@ -5845,6 +5845,7 @@
         "limit": "Limite mensuelle : {spent} sur {limit} utilisés",
         "limitTooltip": "Ne compte que les paiements de rechargement automatique. Réinitialisation le {date}.",
         "limitTooltipNoDate": "Ne compte que les paiements de rechargement automatique.",
+        "member": "Les crédits peuvent être rechargés automatiquement lorsqu'ils sont bas. Contactez un propriétaire de l'espace de travail pour gérer ce paramètre.",
         "off": "Recharge les crédits lorsque votre solde est faible",
         "onHold": "Aucun moyen de paiement par défaut. Définissez-en un pour reprendre le rechargement automatique.",
         "paused": "Limite mensuelle atteinte. Reprend le {date}.",
