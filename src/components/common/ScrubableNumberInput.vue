@@ -36,7 +36,7 @@
         :disabled
         :class="
           cn(
-            'absolute inset-0 truncate border-0 bg-transparent p-1 text-xs focus:outline-0',
+            'peer absolute inset-0 truncate border-0 bg-transparent p-1 text-xs focus:outline-0',
             edgeButtons && 'pr-2 text-right'
           )
         "
@@ -44,7 +44,6 @@
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
-        @focus="textEdit = true"
         @blur="handleBlur"
         @keyup.enter="handleBlur"
         @keydown.up.prevent="updateValueBy(step)"
@@ -56,7 +55,7 @@
         ref="swipeElement"
         :class="
           cn(
-            'absolute inset-0 z-10 cursor-ew-resize touch-pan-y',
+            'absolute inset-0 z-10 cursor-ew-resize touch-pan-y peer-focus:hidden',
             textEdit && 'pointer-events-none hidden'
           )
         "
