@@ -321,8 +321,8 @@ expect(JSON.parse(String(fetchRequests(TOKEN_URL)[0].body))).toEqual({
 ## Running Tests
 
 Run the files you changed. The path argument filters by substring of the test
-file path, and `-t` filters by test name, a regex that matches `it()` and
-`test()` titles but not `describe()` titles:
+file path, and `-t` filters by test name, a regex matched against the full
+name including enclosing `describe()` titles:
 
 ```bash
 pnpm test:unit path/to/file
