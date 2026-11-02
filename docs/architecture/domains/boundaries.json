@@ -19,6 +19,15 @@
         "patterns": ["packages/api-client/src/executionTypes.ts"]
       },
       {
+        "name": "image-compare/public",
+        "patterns": [
+          "src/extensions/core/imageCompare.ts",
+          "src/lib/litegraph/src/widgets/ImageCompareWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts"
+        ]
+      },
+      {
         "name": "ingest-api/public",
         "patterns": [
           "src/platform/remote/ingest/ingestApiError.ts",
@@ -1990,6 +1999,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2008,6 +2018,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2021,10 +2032,30 @@
         ]
       },
       {
+        "from": "image-compare/public",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "node-definition/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "_inventory",
+          "image-compare",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "ingest-api/public",
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2043,6 +2074,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2060,6 +2092,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2077,6 +2110,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2094,6 +2128,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2112,6 +2147,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2130,6 +2166,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2148,6 +2185,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2165,6 +2203,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2183,6 +2222,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2201,6 +2241,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2219,6 +2260,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2237,6 +2279,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2255,6 +2298,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2273,6 +2317,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2291,6 +2336,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2309,6 +2355,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2326,6 +2373,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
@@ -2343,6 +2391,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
           "ingest-api/public",
           "keybindings/public",
           "node-definition/public",
