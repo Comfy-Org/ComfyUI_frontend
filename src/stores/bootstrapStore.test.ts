@@ -186,7 +186,7 @@ describe('bootstrapStore', () => {
     })
 
     it('traces the identity boot and the sign-in wait between Firebase init and the user store', async () => {
-      const earlierRows = new Set(bootstrapTracer.summary())
+      const settle = vi.spyOn(bootstrapTracer, 'settle')
       const store = useBootstrapStore()
       const bootstrapPromise = store.startStoreBootstrap()
 
@@ -195,11 +195,9 @@ describe('bootstrapStore', () => {
       useAuthStore().currentUser = fromPartial({ uid: 'user-123' })
       await bootstrapPromise
 
-      const authGatePhases = bootstrapTracer
-        .summary()
-        .filter((row) => !earlierRows.has(row))
-        .map((row) => row.name)
-        .filter((name) => name.startsWith('auth-gate/'))
+      const authGatePhases = settle.mock.calls
+        .map(([phase]) => phase)
+        .filter((phase) => phase.startsWith('auth-gate/'))
       expect(authGatePhases).toEqual([
         'auth-gate/initialized',
         'auth-gate/identity',

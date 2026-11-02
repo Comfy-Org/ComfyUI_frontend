@@ -13,8 +13,6 @@
  *   startup/router                 | ~0 s      (route table; cloud routes import)
  *   startup/sentry-init            | ~0–0.1 s
  *   auth-gate/initialized          | variable  (Firebase session restore + timeout/retry)
- *   auth-gate/identity             | cloud     (web session boot)
- *   auth-gate/sign-in              | variable  (waits for a signed-in user; includes login-form dwell)
  *   auth-gate/user-store           | ~0–2.5 s  (GET /api/user/*)
  *   auth-gate/needs-login          | ~0 s      (computed resolution)
  *   bootstrap/settings             | ~0.2 s    (parallel, non-blocking)
