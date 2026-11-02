@@ -1,15 +1,9 @@
-import type { Locator } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
-
-const REROUTE_ID = '13'
-
-const centerY = (locator: Locator) =>
-  locator.boundingBox().then((box) => box && box.y + box.height / 2)
+import { measureNodeSlotOffsets } from '@e2e/fixtures/utils/slotBoundsUtil'
 
 test.describe('Vue Reroute Node Size', { tag: '@vue-nodes' }, () => {
   test.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
@@ -33,17 +27,11 @@ test.describe('Vue Reroute Node Size', { tag: '@vue-nodes' }, () => {
   test('reroute input and output connect at the same height', async ({
     comfyPage
   }) => {
-    const input = comfyPage.vueNodes.getInputSlotConnectionDot(REROUTE_ID, 0)
-    const output = comfyPage.vueNodes.getOutputSlotConnectionDot(REROUTE_ID, 0)
-    await expect(input).toBeVisible()
-
     await expect
       .poll(async () => {
-        const [inputY, outputY] = await Promise.all([
-          centerY(input),
-          centerY(output)
-        ])
-        return inputY === null || outputY === null ? null : outputY - inputY
+        const data = await measureNodeSlotOffsets(comfyPage.page, '13')
+        const offsets = data?.slots.map((slot) => slot.offsetY) ?? []
+        return offsets.length === 2 ? offsets[1] - offsets[0] : null
       })
       .toBe(0)
   })
