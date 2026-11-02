@@ -51,7 +51,7 @@ application behavior.
   Following file is generated:
 
   ```ts file=add-valid-todo.spec.ts
-  test.describe('Adding New Todos', () => {
+  test.describe('Adding New Todos', { tag: ['@ui'] }, () => {
     test('Add Valid Todo', async ({ comfyPage }) => {
       await test.step('Click in the "What needs to be done?" input field', async () => {
         await comfyPage.page.getByPlaceholder('What needs to be done?').click();
