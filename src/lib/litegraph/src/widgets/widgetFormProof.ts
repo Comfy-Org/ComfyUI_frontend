@@ -14,9 +14,7 @@ type WidgetFormRefusal =
   | 'duplicate_widget_name'
   | 'unnameable_widget'
 
-/** Options for {@link proveWidgetForm}. See ADR-ECS-WIDGETS-0023. */
 export interface WidgetFormOptions {
-  /** The node's `serialize_widgets` flag. */
   serializeWidgets?: boolean
   /** True when the payload was replayed from a previous save rather than built here. */
   replayed?: boolean
@@ -24,12 +22,9 @@ export interface WidgetFormOptions {
   coreIsLastWriter: boolean
 }
 
-/** The verdict from {@link proveWidgetForm}. `order` is present only when `provable`. */
-export interface WidgetFormProof {
-  provable: boolean
-  refusal: WidgetFormRefusal | null
-  order: string[] | null
-}
+export type WidgetFormProof =
+  | { provable: true; refusal: null; order: string[] }
+  | { provable: false; refusal: WidgetFormRefusal; order: null }
 
 function refuse(refusal: WidgetFormRefusal): WidgetFormProof {
   return { provable: false, refusal, order: null }
@@ -90,7 +85,10 @@ function addressableOrder(
   return { order }
 }
 
-/** Proves whether core's final positional values match the live widget order. */
+/**
+ * Checks positional-array provenance: identity, cardinality and names. The caller must establish
+ * that the name/value correspondence did not change after core produced the values.
+ */
 export function proveWidgetForm(
   widgets: readonly WidgetForFormProof[] | undefined,
   serialised: {
@@ -107,6 +105,7 @@ export function proveWidgetForm(
   if ('refusal' in proven) return refuse(proven.refusal)
 
   const serializing = serializingWidgets(widgets ?? [])
+  if (serializing.length === 0) return refuse('widgets_not_serialized')
   if (serializing.length !== proven.values.length)
     return refuse('length_mismatch')
 
