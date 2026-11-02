@@ -4,28 +4,19 @@
   "description": "HDR and EXR image inspection: gamut conversion, image statistics and histograms, image loading and rendering, channel and exposure controls, and viewer dialog integration. Shared WebGL viewport and model-viewer dialog configuration remain external dependencies.",
   "modules": [
     {
-      "path": "src/components/hdr/**",
-      "role": "presentation"
+      "path": "src/components/hdr/**"
     },
     {
-      "path": "src/composables/useHdrViewer.ts",
-      "role": "application"
+      "path": "src/composables/useHdrViewer.ts"
     },
     {
-      "path": "src/renderer/hdr/**",
-      "role": "domain"
+      "path": "src/renderer/hdr/**"
     },
     {
-      "path": "src/renderer/hdr/hdrViewerShader.ts",
-      "role": "infrastructure"
+      "path": "src/services/hdrViewerService.ts"
     },
     {
-      "path": "src/services/hdrViewerService.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/utils/hdrFormatUtil.ts",
-      "role": "infrastructure"
+      "path": "src/utils/hdrFormatUtil.ts"
     }
   ],
   "publicEntryPoints": [],

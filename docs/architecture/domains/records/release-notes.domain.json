@@ -4,16 +4,13 @@
   "description": "Release-note feed client, the release store that compares the feed against the running ComfyUI version, and the release notification toast and What's New popup.",
   "modules": [
     {
-      "path": "src/platform/updates/**",
-      "role": "presentation"
+      "path": "src/platform/updates/**"
     },
     {
-      "path": "src/platform/updates/common/releaseService.ts",
-      "role": "infrastructure"
+      "path": "src/platform/updates/common/releaseService.ts"
     },
     {
-      "path": "src/platform/updates/common/releaseStore.ts",
-      "role": "application"
+      "path": "src/platform/updates/common/releaseStore.ts"
     }
   ],
   "publicEntryPoints": [],

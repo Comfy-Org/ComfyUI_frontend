@@ -4,28 +4,22 @@
   "description": "Shared technical module, not a business domain. The node definition contract read from /object_info: the @comfyorg/object-info-parser V1 schemas, node source classifier, and pack grouping helpers with their re-export, the V2 schema and V1-to-V2 migration, input spec tree diagnostics and flattening, searchable slot type collection, node source classification, upload input augmentation, input ordering for widget values, node help base URLs, and the essentials node list. The node definition store, node library and search UI, and widget constructors that consume these contracts belong to their own records.",
   "modules": [
     {
-      "path": "src/constants/essentialsNodes.ts",
-      "role": "domain"
+      "path": "src/constants/essentialsNodes.ts"
     },
     {
-      "path": "src/schemas/**",
-      "role": "domain"
+      "path": "src/schemas/**"
     },
     {
-      "path": "src/types/nodeDefAugmentation.ts",
-      "role": "domain"
+      "path": "src/types/nodeDefAugmentation.ts"
     },
     {
-      "path": "src/types/nodeSource.ts",
-      "role": "domain"
+      "path": "src/types/nodeSource.ts"
     },
     {
-      "path": "src/workbench/utils/**",
-      "role": "domain"
+      "path": "src/workbench/utils/**"
     },
     {
-      "path": "packages/object-info-parser/src/**",
-      "role": "domain"
+      "path": "packages/object-info-parser/src/**"
     }
   ],
   "publicEntryPoints": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"],
@@ -49,7 +43,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior. nodeDefSchemaV2 is the only public entry point; cross-module imports that break role direction remain inherited debt."
+    "Inventory preserves existing exports and runtime behavior. nodeDefSchemaV2 is the only public entry point."
   ],
   "deepImports": "inventory"
 }

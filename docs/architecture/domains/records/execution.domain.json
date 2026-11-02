@@ -4,72 +4,55 @@
   "description": "Client-side state of running prompts: websocket-driven execution progress, active and cached nodes, per-node progress, node execution errors and their lifting to subgraph boundaries alongside missing-resource state, node outputs and preview images keyed by node locator across workflow switches, and the latest live preview per job. The job list and history, the wire schemas, and the node execution order store backing litegraph are separate.",
   "modules": [
     {
-      "path": "src/composables/graph/useErrorClearingHooks.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useErrorClearingHooks.ts"
     },
     {
-      "path": "src/composables/graph/useNodeErrorFlagSync.ts",
-      "role": "application"
+      "path": "src/composables/graph/useNodeErrorFlagSync.ts"
     },
     {
-      "path": "src/composables/useBrowserTabTitle.ts",
-      "role": "presentation"
+      "path": "src/composables/useBrowserTabTitle.ts"
     },
     {
-      "path": "src/composables/useProgressFavicon.ts",
-      "role": "presentation"
+      "path": "src/composables/useProgressFavicon.ts"
     },
     {
-      "path": "src/composables/useViewErrorsInGraph.ts",
-      "role": "application"
+      "path": "src/composables/useViewErrorsInGraph.ts"
     },
     {
-      "path": "src/composables/useWorkflowStatusDismissal.ts",
-      "role": "application"
+      "path": "src/composables/useWorkflowStatusDismissal.ts"
     },
     {
-      "path": "src/stores/executionErrorStore.ts",
-      "role": "application"
+      "path": "src/stores/executionErrorStore.ts"
     },
     {
-      "path": "src/stores/executionStore.ts",
-      "role": "application"
+      "path": "src/stores/executionStore.ts"
     },
     {
-      "path": "src/stores/jobPreviewStore.ts",
-      "role": "application"
+      "path": "src/stores/jobPreviewStore.ts"
     },
     {
-      "path": "src/stores/nodeOutputStore.ts",
-      "role": "application"
+      "path": "src/stores/nodeOutputStore.ts"
     },
     {
-      "path": "src/utils/__tests__/executionErrorTestUtils.ts",
-      "role": "integration"
+      "path": "src/utils/__tests__/executionErrorTestUtils.ts"
     },
     {
-      "path": "src/utils/__tests__/nodeErrorHelpers.ts",
-      "role": "integration"
+      "path": "src/utils/__tests__/nodeErrorHelpers.ts"
     },
     {
-      "path": "src/utils/errorSeverityClassification.ts",
-      "role": "domain"
+      "path": "src/utils/errorSeverityClassification.ts"
     },
     {
-      "path": "src/utils/executionErrorUtil.ts",
-      "role": "domain"
+      "path": "src/utils/executionErrorUtil.ts"
     },
     {
-      "path": "src/utils/missingResourceAbsorption.ts",
-      "role": "domain"
+      "path": "src/utils/missingResourceAbsorption.ts"
     },
     {
-      "path": "src/utils/nodeOutputUtil.ts",
-      "role": "domain"
+      "path": "src/utils/nodeOutputUtil.ts"
     },
     {
-      "path": "src/utils/objectUrlUtil.ts",
-      "role": "infrastructure"
+      "path": "src/utils/objectUrlUtil.ts"
     }
   ],
   "publicEntryPoints": [],

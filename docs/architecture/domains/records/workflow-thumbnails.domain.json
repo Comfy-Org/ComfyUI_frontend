@@ -4,12 +4,7 @@
   "description": "Offscreen rendering of a graph overview image and per-workflow thumbnail capture and caching for workflow tab hover previews. Reuses the minimap canvas renderer and spatial bounds calculation; the workflow store, workflow service, and tab components remain with their owning domains.",
   "modules": [
     {
-      "path": "src/renderer/core/thumbnail/**",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/core/thumbnail/graphThumbnailRenderer.ts",
-      "role": "infrastructure"
+      "path": "src/renderer/core/thumbnail/**"
     }
   ],
   "publicEntryPoints": [],

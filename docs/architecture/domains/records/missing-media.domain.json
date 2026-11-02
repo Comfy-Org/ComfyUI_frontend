@@ -4,20 +4,7 @@
   "description": "Scans loaded workflows (including promoted subgraph widgets) for image, video, and audio inputs whose files are not available, verifies candidates against assets, stores per-workflow results, and renders the missing-media error card.",
   "modules": [
     {
-      "path": "src/platform/workflowErrors/missingMedia/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflowErrors/missingMedia/components/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workflowErrors/missingMedia/missingMediaGrouping.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflowErrors/missingMedia/types.ts",
-      "role": "domain"
+      "path": "src/platform/workflowErrors/missingMedia/**"
     }
   ],
   "publicEntryPoints": [],

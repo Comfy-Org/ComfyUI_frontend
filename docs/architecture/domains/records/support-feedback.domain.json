@@ -4,12 +4,7 @@
   "description": "Support URL and feedback Typeform configuration per distribution, and the feedback dialog opened from help menus, topbar, and agent surfaces. It reuses the surveys Typeform dialog.",
   "modules": [
     {
-      "path": "src/platform/support/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/support/config.ts",
-      "role": "domain"
+      "path": "src/platform/support/**"
     }
   ],
   "publicEntryPoints": [],

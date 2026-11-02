@@ -4,8 +4,7 @@
   "description": "Stable catalog ids and resolvers that turn prompt, validation, execution, runtime, and missing-resource errors into localized user-facing messages, plus routing of account preconditions (sign-in, subscription, credits).",
   "modules": [
     {
-      "path": "src/platform/workflowErrors/errorCatalog/**",
-      "role": "domain"
+      "path": "src/platform/workflowErrors/errorCatalog/**"
     }
   ],
   "publicEntryPoints": [],

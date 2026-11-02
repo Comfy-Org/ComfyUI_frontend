@@ -4,88 +4,40 @@
   "description": "The @comfyorg/telemetry dispatcher, registry, and event types, and their application adapters: desktop host routing, enablement and identity sync, provider readiness, event tracking, and metadata enrichment. Cloud vendor providers belong to the cloud record; error reporting and startup tracing are separate records.",
   "modules": [
     {
-      "path": "src/composables/useRunButtonTelemetry.ts",
-      "role": "application"
+      "path": "src/composables/useRunButtonTelemetry.ts"
     },
     {
-      "path": "src/platform/telemetry/TelemetryRegistry.test.ts",
-      "role": "application"
+      "path": "src/platform/telemetry/TelemetryRegistry.test.ts"
     },
     {
-      "path": "src/platform/telemetry/hostTelemetryEnabled.ts",
-      "role": "application"
+      "path": "src/platform/telemetry/hostTelemetryEnabled.ts"
     },
     {
-      "path": "src/platform/telemetry/hostUserIdSync.ts",
-      "role": "integration"
+      "path": "src/platform/telemetry/hostUserIdSync.ts"
     },
     {
-      "path": "src/platform/telemetry/initHostTelemetry.ts",
-      "role": "integration"
+      "path": "src/platform/telemetry/initHostTelemetry.ts"
     },
     {
-      "path": "src/platform/telemetry/nodeAdded/**",
-      "role": "integration"
+      "path": "src/platform/telemetry/nodeAdded/**"
     },
     {
-      "path": "src/platform/telemetry/nodeAdded/nodeAddSource.ts",
-      "role": "application"
+      "path": "src/platform/telemetry/providers/host/**"
     },
     {
-      "path": "src/platform/telemetry/providers/host/**",
-      "role": "infrastructure"
+      "path": "src/platform/telemetry/searchQuery/**"
     },
     {
-      "path": "src/platform/telemetry/searchQuery/**",
-      "role": "application"
+      "path": "src/platform/telemetry/storeReadiness.ts"
     },
     {
-      "path": "src/platform/telemetry/storeReadiness.ts",
-      "role": "application"
+      "path": "src/platform/telemetry/useTelemetry.test.ts"
     },
     {
-      "path": "src/platform/telemetry/useTelemetry.test.ts",
-      "role": "application"
+      "path": "src/platform/telemetry/utils/**"
     },
     {
-      "path": "src/platform/telemetry/utils/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/telemetry/utils/__tests__/checkoutAttribution.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/telemetry/utils/billingPortalTelemetry.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/utils/checkoutAttribution.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/telemetry/utils/getActionbarDockState.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/telemetry/utils/getAgentPanelOpen.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/telemetry/utils/getExecutionContext.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/telemetry/utils/getShellLayoutSnapshot.ts",
-      "role": "application"
-    },
-    {
-      "path": "packages/telemetry/src/**",
-      "role": "application"
-    },
-    {
-      "path": "packages/telemetry/src/types.ts",
-      "role": "domain"
+      "path": "packages/telemetry/src/**"
     }
   ],
   "publicEntryPoints": [],

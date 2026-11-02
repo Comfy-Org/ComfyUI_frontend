@@ -4,24 +4,7 @@
   "description": "Detects node types missing from the registry, records them per workflow, fetches server-provided node replacements, and swaps missing nodes for their replacements while preserving links and widget values. Detection and replacement are one record because the scan classifies missing nodes by replaceability and replacement clears the missing-node state it resolves.",
   "modules": [
     {
-      "path": "src/platform/workflowErrors/nodeReplacement/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflowErrors/nodeReplacement/cnrIdUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflowErrors/nodeReplacement/components/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workflowErrors/nodeReplacement/nodeReplacementService.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/workflowErrors/nodeReplacement/types.ts",
-      "role": "domain"
+      "path": "src/platform/workflowErrors/nodeReplacement/**"
     }
   ],
   "publicEntryPoints": [],
