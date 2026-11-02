@@ -415,6 +415,21 @@ describe('usePricingTableUrlLoader', () => {
     )
   })
 
+  it('does not open when the workspace becomes sales-managed during the catalog fetch', async () => {
+    setRouteQuery({ pricing: 'team', stop: 'team_700' })
+    mockTeamCreditStops.value = null
+    vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
+      async () => {
+        mockCanOpenPricingSurface.value = false
+      }
+    )
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+  })
+
   it('falls back to the Team table when the catalog fetch fails', async () => {
     setRouteQuery({
       pricing: 'team',
