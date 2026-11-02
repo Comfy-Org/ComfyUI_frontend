@@ -1243,6 +1243,7 @@ export type {
   MoveUserdataFileErrors,
   MoveUserdataFileResponse,
   MoveUserdataFileResponses,
+  NextCharge,
   NodeInfo,
   OAuthAuthorizationServerMetadata,
   OAuthAuthorizeRedirectResponse,
