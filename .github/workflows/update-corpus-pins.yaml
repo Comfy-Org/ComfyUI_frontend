@@ -31,7 +31,8 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
-      issues: write
+    outputs:
+      sheriff: ${{ steps.sheriff.outputs.login }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -107,13 +108,27 @@ jobs:
             breakdown.
           add-paths: scripts/registry-census/corpus.pins.json
 
+  # A separate job so the issue-writing token never sits next to the
+  # fetch step that contacts every registry pack's remote.
+  report-failure:
+    needs: update-pins
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
       - name: Report a failed scheduled bump
-        if: failure() && github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHERIFF: ${{ needs.update-pins.outputs.sheriff }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          gh issue create \
-            --title 'Monthly corpus pin bump failed' \
-            --assignee "$(jq -r .sheriff .github/release-sheriff.json)" \
-            --body "The scheduled bump failed, so the ecosystem matrix pins stay stale until it runs: $RUN_URL"
+          set -euo pipefail
+          title='Monthly corpus pin bump failed'
+          body="The scheduled bump failed, so the ecosystem matrix pins stay stale until it runs: $RUN_URL"
+          if [ -n "$SHERIFF" ] && gh issue create --title "$title" --body "$body" --assignee "$SHERIFF"; then
+            exit 0
+          fi
+          gh issue create --title "$title" --body "$body"
