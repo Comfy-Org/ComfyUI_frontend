@@ -14,15 +14,10 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import type {
-  BillingRail,
-  BillingStatusResponse,
-  Plan
-} from '@comfyorg/billing-core'
+import type { BillingStatusResponse, Plan } from '@comfyorg/billing-core'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
@@ -72,7 +67,6 @@ const {
 })
 
 let mockIsPersonal: Ref<boolean>
-let mockBillingRail: Ref<BillingRail | null | undefined>
 
 vi.mock(import('@/platform/distribution/types'), () => {
   return {
@@ -137,9 +131,6 @@ describe('useAgentDockMount with the real billing context', () => {
     const workspaceStore = useTeamWorkspaceStore()
     const refs = storeToRefs(workspaceStore)
     mockIsPersonal = refs.isInPersonalWorkspace
-    mockBillingRail = storeToRefs(
-      useWorkspaceBillingStateStore()
-    ).activeWorkspaceBillingRail
     Object.assign(workspaceStore, {
       activeWorkspace: computed(() =>
         fromPartial<NonNullable<typeof workspaceStore.activeWorkspace>>({
@@ -154,12 +145,6 @@ describe('useAgentDockMount with the real billing context', () => {
     remoteConfigState.value = 'unloaded'
     authenticatedRemoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
-    mockBillingRail.value = undefined
-    vi.mocked(
-      useWorkspaceBillingStateStore().setWorkspaceBillingRail
-    ).mockImplementation((_workspaceId: string, billingRail: BillingRail) => {
-      mockBillingRail.value = billingRail
-    })
     mockPlans.value = []
     const subscription = useSubscription()
     subscription.subscriptionStatus.value = {
@@ -182,7 +167,6 @@ describe('useAgentDockMount with the real billing context', () => {
 
   it('re-arms the exhaustion impression after workspace-scoped Agent funds recover while the dock is closed', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
-    mockBillingRail.value = 'stripe'
     mockBillingStatus.value = {
       ...DEFAULT_BILLING_STATUS,
       has_funds: false,

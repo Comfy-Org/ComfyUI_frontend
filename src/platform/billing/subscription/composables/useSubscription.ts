@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import {
   createSharedComposable,
@@ -815,7 +814,7 @@ function useSubscriptionInternal() {
       )
     )
       return null
-    publishSubscriptionStatus(statusData, workspaceId)
+    publishSubscriptionStatus(statusData)
 
     return statusData
   }
@@ -837,19 +836,10 @@ function useSubscriptionInternal() {
     )
   }
 
-  function publishSubscriptionStatus(
-    statusData: BillingStatusResponse,
-    workspaceId: string | null
-  ): void {
+  function publishSubscriptionStatus(statusData: BillingStatusResponse): void {
     // Only a current, publishable read proves billing is reachable.
     lastPendingCheckoutStatus = statusData
     subscriptionStatus.value = statusData
-    if (workspaceId && statusData.billing_rail) {
-      useWorkspaceBillingStateStore().setWorkspaceBillingRail(
-        workspaceId,
-        statusData.billing_rail
-      )
-    }
     syncPendingSubscriptionSuccess(statusData)
   }
 
