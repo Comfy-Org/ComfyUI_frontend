@@ -291,7 +291,6 @@ describe('AgentPanel', () => {
   })
 
   it('locks immediately but only shows the conversation veil for a slow opening', async () => {
-    // Asserts the exact 120 ms boundary, so real time must not move the clock.
     vi.useFakeTimers({ shouldAdvanceTime: false })
     const { rerender } = render(AgentPanel, {
       props: {
