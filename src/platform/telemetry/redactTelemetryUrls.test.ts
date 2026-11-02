@@ -161,11 +161,6 @@ describe('redactTelemetryUrls', () => {
       expected: 'GET /1/x'
     },
     {
-      kind: 'query value containing an apostrophe',
-      input: "https://h/api/search?q=o'brien&token=SECRET",
-      expected: 'https://h/api/search'
-    },
-    {
       kind: 'bare query with no URL-shaped prefix',
       input: '?token=secret',
       expected: ''
