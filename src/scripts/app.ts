@@ -1561,9 +1561,11 @@ export class ComfyApp implements IComfyApp {
         })
       )
 
-      await useExtensionService().invokeExtensionsAsync(
-        'afterConfigureGraph',
-        missingNodeTypes
+      await withGraphIntentSource('load', () =>
+        useExtensionService().invokeExtensionsAsync(
+          'afterConfigureGraph',
+          missingNodeTypes
+        )
       )
       if (!isCurrentGraphLoad()) {
         await cancelLoad()
@@ -2302,9 +2304,11 @@ export class ComfyApp implements IComfyApp {
               )
             }
           }
-          await useExtensionService().invokeExtensionsAsync(
-            'afterConfigureGraph',
-            []
+          await withGraphIntentSource('load', () =>
+            useExtensionService().invokeExtensionsAsync(
+              'afterConfigureGraph',
+              []
+            )
           )
           await useWorkflowService().afterLoadNewGraph(
             fileName,
@@ -2660,9 +2664,11 @@ export class ComfyApp implements IComfyApp {
         app.rootGraph.arrange()
       })
 
-      await useExtensionService().invokeExtensionsAsync(
-        'afterConfigureGraph',
-        missingNodeTypes
+      await withGraphIntentSource('load', () =>
+        useExtensionService().invokeExtensionsAsync(
+          'afterConfigureGraph',
+          missingNodeTypes
+        )
       )
       await useWorkflowService().afterLoadNewGraph(
         fileName,

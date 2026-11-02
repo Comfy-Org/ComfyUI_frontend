@@ -1,5 +1,5 @@
 import type { MockInstance } from 'vitest'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -476,6 +476,63 @@ describe('workflowDraftStoreV2', () => {
       expect(newDraft!.name).toBe('new')
       expect(newDraft!.data).toBe('{"data":"test"}')
     })
+
+    it('keeps the draft when moved onto its own path', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/same.json', '{"data":"test"}', {
+        name: 'same',
+        isTemporary: true
+      })
+
+      store.moveDraft('workflows/same.json', 'workflows/same.json', 'same')
+
+      const draft = store.getDraft('workflows/same.json')
+      expect(draft).not.toBeNull()
+      expect(draft!.data).toBe('{"data":"test"}')
+      expect(draft!.name).toBe('same')
+    })
+
+    it.for([
+      {
+        scenario: 'succeeds',
+        failIndex: false,
+        saved: true,
+        name: 'refreshed'
+      },
+      { scenario: 'fails', failIndex: true, saved: false, name: 'original' }
+    ])(
+      'keeps saved identity and lineage atomic when same-path metadata $scenario',
+      ({ failIndex, saved, name }) => {
+        const store = useWorkflowDraftStoreV2()
+        const path = 'workflows/linked.json'
+        store.setAuthSubject('user-1')
+        store.saveDraft(path, '{"nodes":[]}', {
+          name: 'original',
+          isTemporary: false,
+          savedFileIdentity: {
+            ownerId: 'user-1',
+            workspaceId: WORKSPACE,
+            id: 'c327cae8-2acf-4bfa-bb88-97948a3c008b'
+          }
+        })
+        store.setLineage(path, { workflowId: 'wf-1', lineageSeq: 12 })
+        const before = store.getDraft(path)
+        assert(before)
+        withQuotaMock(
+          (key) =>
+            failIndex && key === StorageKeys.draftIndex('user-1:personal')
+        )
+
+        expect(store.moveDraft(path, path, 'refreshed')).toBe(saved)
+
+        expect(store.getDraft(path)).toEqual({ ...before, name })
+        store.reset()
+        expect(store.getDraft(path)).toEqual({ ...before, name })
+        store.setAuthSubject('user-2')
+        expect(store.getDraft(path)).toBeNull()
+      }
+    )
 
     it('preserves payload updatedAt when moving a draft', () => {
       const store = useWorkflowDraftStoreV2()

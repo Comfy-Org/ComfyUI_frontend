@@ -5473,6 +5473,11 @@
   "templates": {
     "logoProviderSeparator": " & "
   },
+  "textEditor": {
+    "characterCount": "תו {count} | {count} תווים",
+    "expand": "הגדלה",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "לא ניתן לטעון את תהליך העבודה כי התקנת ComfyUI זו חסרה צמתים חיוניים. בדוק שהשרת האחורי הופעל כראוי.",
     "a1111EmbeddingsUnavailable": "לא ניתן היה לטעון Embeddings מהשרת. תהליך העבודה יובא, אך שמות ה-embeddings נותרו כטקסט פשוט.",

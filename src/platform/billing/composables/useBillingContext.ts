@@ -225,6 +225,9 @@ function useBillingContextInternal(): BillingContext {
   const renewalInvoice = computed(() =>
     toValue(activeContext.value.renewalInvoice)
   )
+  const periodCreditGrant = computed(() =>
+    toValue(activeContext.value.periodCreditGrant)
+  )
 
   function getMaxSeats(tierKey: TierKey): number {
     if (type.value !== 'workspace') return 1
@@ -493,6 +496,7 @@ function useBillingContextInternal(): BillingContext {
     tier,
     renewalDate,
     renewalInvoice,
+    periodCreditGrant,
     getMaxSeats,
 
     initialize,

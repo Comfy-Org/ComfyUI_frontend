@@ -431,7 +431,7 @@ const { isInsufficientCredits = false, source } = defineProps<{
   source?: PaymentIntentSource
 }>()
 
-const { locale, n, t } = useI18n()
+const { d, locale, n, t } = useI18n()
 const { payment: processingPayment } = useProcessingTopupPayment()
 const processingNoticeTitle = computed(() => {
   const cents = processingPayment.value?.paymentAmountCents
@@ -531,7 +531,12 @@ const verifyingBody = computed(() => {
   if (topupIsParkedWithoutLink.value) {
     return t('credits.topUp.awaitingBankApprovalBody')
   }
-  return t('credits.topUp.verifyBody')
+  const deadline = new Date(topupOperation.value?.authenticationDeadline ?? '')
+  if (Number.isNaN(deadline.getTime())) return t('credits.topUp.verifyBody')
+  return t('credits.topUp.verifyByBody', {
+    date: d(deadline, { month: 'long', day: 'numeric' }),
+    time: d(deadline, { hour: 'numeric', minute: '2-digit' })
+  })
 })
 
 // Constants

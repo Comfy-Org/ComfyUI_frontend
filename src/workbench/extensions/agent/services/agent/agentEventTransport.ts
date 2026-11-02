@@ -298,7 +298,8 @@ export function createAgentEventTransport(
         type: 'tool',
         callId: data.tool_call_id,
         name: data.tool_name,
-        state: 'streaming'
+        state: 'streaming',
+        ...(data.status === 'running' && { startedAtMs: Date.now() })
       }
       tools.set(data.tool_call_id, part)
       message.parts.push(part)

@@ -345,15 +345,17 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     }
   }
 
-  /**
-   * Moves a draft from one path to another (rename).
-   */
   function moveDraft(oldPath: string, newPath: string, name: string): boolean {
-    if (oldPath === newPath) return true
     const workspaceId = currentWorkspaceId()
     const index = loadIndex()
     const result = moveEntry(index, oldPath, newPath, name)
     if (!result) return getEntryByPath(index, oldPath) === null
+    const isRenameOntoSelf = result.oldKey === result.newKey
+    if (isRenameOntoSelf) {
+      const persisted = persistIndex(result.index)
+      if (!persisted) persistIndex(index)
+      return persisted
+    }
     const oldPayload = readPayload(workspaceId, result.oldKey)
     if (!oldPayload) return false
     if (!writePayload(workspaceId, result.newKey, oldPayload)) return false
