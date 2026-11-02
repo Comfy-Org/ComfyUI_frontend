@@ -251,10 +251,6 @@ function stalePathWarnings(
   )
 }
 
-/**
- * A path is redundant when the nearest path enclosing it has the same domain:
- * removing it hands its files to that path unchanged.
- */
 function redundantPathWarnings(
   records: { filename: string; record: DomainRecord }[],
   sourceFiles: string[],

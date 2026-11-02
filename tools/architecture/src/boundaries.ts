@@ -25,12 +25,6 @@ interface LayeredModule extends Claim {
   layer: number
 }
 
-/**
- * Fallow puts a file in the first zone whose patterns match it. A path that
- * contains another domain's path therefore goes in a later layer, so the more
- * specific path claims the files it names. Records without nested paths keep
- * one layer.
- */
 function moduleLayers(records: DomainRecord[]): LayeredModule[] {
   const layered: LayeredModule[] = []
   for (const outer of modulesBySpecificity(records)) {
