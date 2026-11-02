@@ -712,11 +712,6 @@
       "count": 2
     }
   },
-  "src/platform/billing/subscription/composables/usePricingTableUrlLoader.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
   "src/platform/billing/subscription/composables/useSubscription.ts": {
     "comfy/no-new-error-throw": {
       "count": 2
