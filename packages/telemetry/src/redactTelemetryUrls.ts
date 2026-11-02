@@ -280,9 +280,14 @@ function redactPlainObject(
   context.memo.set(value, output)
   context.ancestors.add(value)
   const usedKeys = new Set<string>()
+  const nextSuffixes = new Map<string, number>()
   try {
     for (const [key, nested] of entries) {
-      const redactedKey = uniqueRedactedKey(redactTelemetryUrls(key), usedKeys)
+      const redactedKey = uniqueRedactedKey(
+        redactTelemetryUrls(key),
+        usedKeys,
+        nextSuffixes
+      )
       Object.defineProperty(output, redactedKey, {
         configurable: true,
         enumerable: true,
@@ -296,11 +301,18 @@ function redactPlainObject(
   }
 }
 
-function uniqueRedactedKey(key: string, usedKeys: Set<string>): string {
+function uniqueRedactedKey(
+  key: string,
+  usedKeys: Set<string>,
+  nextSuffixes: Map<string, number>
+): string {
   let candidate = key
-  for (let suffix = 2; usedKeys.has(candidate); suffix++) {
+  let suffix = nextSuffixes.get(key) ?? 2
+  while (usedKeys.has(candidate)) {
     candidate = `${key}~${suffix}`
+    suffix++
   }
+  nextSuffixes.set(key, suffix)
   usedKeys.add(candidate)
   return candidate
 }
