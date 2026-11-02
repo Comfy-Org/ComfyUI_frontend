@@ -55,6 +55,7 @@ function listingOn(
         build_id: 'b-1',
         build_name: 'Studio Build',
         release_version: 2,
+        can_start: false,
         status: 'ready',
         created_at: '2026-10-01T00:00:00Z'
       }

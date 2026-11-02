@@ -104,7 +104,9 @@ const ACTIVE_STANDARD = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
-  scheduled_change: null
+  scheduled_change: null,
+  ended_at: null,
+  next_charge: null
 } satisfies BillingStatusResponse
 
 const SAVED_CARD = {
