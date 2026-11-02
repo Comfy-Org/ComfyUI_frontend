@@ -230,6 +230,12 @@ export const useExtensionStore = defineStore('extension', () => {
     )
   )
 
+  const hasPendingExtensionChanges = computed(
+    () =>
+      changedExtensions.value.length > 0 ||
+      changedExtensionPaths.value.length > 0
+  )
+
   async function setExtensionPathEnabled(
     path: string,
     enabled: boolean
@@ -301,9 +307,15 @@ export const useExtensionStore = defineStore('extension', () => {
     return isExtensionEnabled(name)
   }
 
-  const hasThirdPartyExtensions = computed(() => {
-    return extensions.value.some((ext) => !isCoreExtension(ext.name))
-  })
+  const thirdPartyExtensions = computed(() =>
+    extensions.value.filter((ext) => !isCoreExtension(ext.name))
+  )
+  const hasThirdPartyExtensions = computed(
+    () => thirdPartyExtensions.value.length > 0
+  )
+  const hasEditableAgentExtensions = computed(() =>
+    agentExtensions.value.some((ext) => !isExtensionReadOnly(ext.name))
+  )
 
   return {
     extensions,
@@ -337,11 +349,14 @@ export const useExtensionStore = defineStore('extension', () => {
     getCurrentDisabledExtensionPaths,
     enabledByPath,
     changedExtensionPaths,
+    hasPendingExtensionChanges,
     setExtensionPathEnabled,
     markCoreExtensions,
     captureCoreExtensions,
     contributes,
     isCoreExtension,
-    hasThirdPartyExtensions
+    thirdPartyExtensions,
+    hasThirdPartyExtensions,
+    hasEditableAgentExtensions
   }
 })

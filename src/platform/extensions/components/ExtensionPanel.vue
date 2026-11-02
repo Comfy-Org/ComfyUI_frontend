@@ -8,7 +8,11 @@
       "
       :placeholder="$t('g.searchPlaceholder', { subject: $t('g.extensions') })"
     />
-    <Message v-if="hasChanges" severity="info" class="max-h-96 overflow-y-auto">
+    <Message
+      v-if="hasPendingExtensionChanges"
+      severity="info"
+      class="max-h-96 overflow-y-auto"
+    >
       <ul>
         <li v-for="ext in changedExtensions" :key="ext.name">
           <span>
@@ -111,14 +115,16 @@ const {
   enabledByPath,
   extensionPaths,
   extensions,
+  hasEditableAgentExtensions,
+  hasPendingExtensionChanges,
   hasThirdPartyExtensions,
-  isSavingExtensionPaths
+  isSavingExtensionPaths,
+  thirdPartyExtensions
 } = storeToRefs(extensionStore)
 const {
   isCoreExtension,
   isExtensionEnabled,
   isExtensionPathEnabledAtBoot,
-  isExtensionReadOnly,
   setExtensionPathEnabled,
   setExtensionsEnabled
 } = extensionStore
@@ -129,7 +135,7 @@ const filteredExtensions = computed(() => {
     case 'core':
       return extensions.value.filter((ext) => isCoreExtension(ext.name))
     case 'custom':
-      return extensions.value.filter((ext) => !isCoreExtension(ext.name))
+      return thirdPartyExtensions.value
     case 'agentCreated':
       return agentExtensions.value
     default:
@@ -174,12 +180,6 @@ function toggleAllVisible(selected: CheckboxCheckedState) {
       : []
   )
 }
-
-const hasChanges = computed(() => {
-  return (
-    changedExtensions.value.length > 0 || changedExtensionPaths.value.length > 0
-  )
-})
 
 async function handleExtensionPathEnabled(path: string, enabled: boolean) {
   const result = await setExtensionPathEnabled(path, enabled)
@@ -236,19 +236,14 @@ const actions = computed<MenuItem[]>(() => [
     label: t('g.disableThirdParty'),
     icon: 'icon-[lucide--x]',
     command: () =>
-      setExtensionsEnabled(
-        namesOf(extensions.value).filter((name) => !isCoreExtension(name)),
-        false
-      ),
+      setExtensionsEnabled(namesOf(thirdPartyExtensions.value), false),
     disabled: !hasThirdPartyExtensions.value
   },
   {
     label: t('g.disableAgentCreated'),
     icon: 'icon-[lucide--x]',
     command: () => setExtensionsEnabled(namesOf(agentExtensions.value), false),
-    disabled: !agentExtensions.value.some(
-      (extension) => !isExtensionReadOnly(extension.name)
-    )
+    disabled: !hasEditableAgentExtensions.value
   }
 ])
 </script>
