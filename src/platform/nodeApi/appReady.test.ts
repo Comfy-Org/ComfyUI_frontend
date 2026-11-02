@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // The catch that keeps one pack's failure off the others also reports it, and
 // an unmocked reporter would reach the real telemetry sinks from a unit test.
 const reportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({ reportError }))
 
 import {
   currentDocumentId,

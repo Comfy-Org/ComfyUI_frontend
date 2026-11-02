@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { api } from '@/scripts/api'
 import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'

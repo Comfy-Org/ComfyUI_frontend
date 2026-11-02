@@ -88,7 +88,7 @@ import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import { getImageFileUrl } from '@/utils/hdrFormatUtil'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import {
   isAnimatedOutput,
   isVideoNode,

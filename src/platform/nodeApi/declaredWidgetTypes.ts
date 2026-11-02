@@ -1,4 +1,4 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { ComfyWidgetConstructor } from '@/types/comfy'
 

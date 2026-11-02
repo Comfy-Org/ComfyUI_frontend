@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 
 import { ComfyAmbiguousSlotError } from './errors'
 import { resolveSlotRef, slotIdOf } from './slotRef'

@@ -15,7 +15,7 @@
 import { watch } from 'vue'
 
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import type {
@@ -27,7 +27,7 @@ import {
   isInstantMode,
   useQueueSettingsStore
 } from '@/stores/queueSettingsStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { getExecutionIdsForSelectedNodes } from '@/utils/graphTraversalUtil'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 

@@ -10,10 +10,10 @@
  * into two subsystems, and a pack that registered one without the other — which
  * happens — produced a binding pointing at nothing, or an unreachable command.
  */
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import { ComfyApiError } from './errors'
 

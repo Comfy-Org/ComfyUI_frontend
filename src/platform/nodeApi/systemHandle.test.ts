@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
-import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 
 import { createSystemApi } from './systemHandle'
 

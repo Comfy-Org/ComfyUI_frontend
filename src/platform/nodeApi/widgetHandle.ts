@@ -8,15 +8,12 @@
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import { commitWidgetValue } from '@/lib/litegraph/src/widgets/commitWidgetValue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { createHandleFactory } from './closedProxy'
 import type { HandleCommon } from './closedProxy'

@@ -11,19 +11,16 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import { inputLink, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
-import {
-  LinkDirection,
-  RenderShape
-} from '@/lib/litegraph/src/types/globalEnums'
+import { LinkDirection, RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import { CONFIG, GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { CONFIG, GET_CONFIG } from '@comfyorg/graph-model/widgets'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 
 import { ComfyApiError } from './errors'

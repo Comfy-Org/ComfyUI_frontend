@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
-import { GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
+import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { useLinkStore } from '@/stores/linkStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { ComfyApiError } from './errors'
 import type { Resolver } from './resolution'
