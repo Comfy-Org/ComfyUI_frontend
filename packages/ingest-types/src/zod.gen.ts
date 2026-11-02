@@ -3799,6 +3799,7 @@ export const zAutoTopUpSetup = z.object({
  * Effective billing UI guidance for one authenticated user and workspace.
  */
 export const zBillingCapabilitiesResponse = z.object({
+  auto_top_up_enabled: z.boolean().optional(),
   auto_top_up_setup: zAutoTopUpSetup.optional(),
   capabilities: zBillingCapabilities,
   denied_reason_params: zBillingCapabilityDenialParams.optional(),
