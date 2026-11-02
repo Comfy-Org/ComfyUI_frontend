@@ -9,12 +9,6 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 
 /**
  * Composable for handling subscription credit calculations and formatting.
- *
- * Uses useBillingContext which automatically selects the correct billing source:
- * - If team workspaces feature is disabled: uses legacy (/customers)
- * - If team workspaces feature is enabled:
- *   - Personal workspace: uses legacy (/customers)
- *   - Team workspace: uses workspace (/billing)
  */
 /**
  * Formats a cent value to display credits.

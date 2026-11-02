@@ -4,6 +4,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { withHdrImageType } from '@/utils/eventUtils'
+import { parseUrl } from '@/utils/urlSafety'
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -70,7 +71,7 @@ export const useNodeDragAndDrop = <T>(
 
     const baseUri = dataTransfer.getData('text/uri-list')
     if (!baseUri) return false
-    const uri = URL.parse(baseUri, location.href)
+    const uri = parseUrl(baseUri, location.href)
     if (!uri || uri.origin !== location.origin) return false
 
     try {

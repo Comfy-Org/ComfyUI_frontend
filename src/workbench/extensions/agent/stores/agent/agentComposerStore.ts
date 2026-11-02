@@ -76,6 +76,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       item.kind === 'node' ? [item.node] : []
     )
   )
+  const selectionModeNodeKeys = ref<Set<string>>(new Set())
   const hasDraft = computed(
     () =>
       draft.value.trim() !== '' ||
@@ -357,6 +358,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   function setNodeScope(scope: string | null): void {
     if (scope === nodeScope.value) return
     nodeScope.value = scope
+    selectionModeNodeKeys.value = new Set()
     if (nodes.value.length === 0) return
     resetPromptHistory()
     const references = prompt.value.references.filter(
@@ -420,6 +422,13 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       ...result,
       text: resetTextWhenReferencesCleared(result.text, result.references)
     })
+  }
+
+  function setSelectionModeNodeKeys(keys: ReadonlySet<string>): void {
+    const stagedKeys = new Set(nodes.value.map(selectedNodeKey))
+    selectionModeNodeKeys.value = new Set(
+      [...keys].filter((key) => stagedKeys.has(key))
+    )
   }
 
   function setSkillScope(scope: string | null): void {
@@ -594,6 +603,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     workflowReferences,
     prompt,
     nodes,
+    selectionModeNodeKeys,
     hasDraft,
     nodeScope,
     promptEpoch,
@@ -618,6 +628,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     setNodeScope,
     setSkillScope,
     setNodes,
+    setSelectionModeNodeKeys,
     addAttachment,
     referenceAttachment,
     updateAttachment,
