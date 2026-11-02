@@ -1,4 +1,5 @@
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import { createEventHook } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -91,6 +92,13 @@ function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
 export interface LiveTurn {
   threadId: string
   messageId: TurnId
+}
+
+interface UnreconciledSnapshotTurn {
+  turn: LiveTurn
+  messageId: string
+  transport: AgentEventTransport
+  announced: boolean
 }
 
 interface AnchoredLocalPart {
@@ -203,9 +211,88 @@ function interleaveLocalParts(
   return mergedParts
 }
 
+function toolCallIdsOf(parts: AssistantMessage['parts']): string[] {
+  return parts.flatMap((part) => (part.type === 'tool' ? [part.callId] : []))
+}
+
+function liveToolOffset(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts']
+): number {
+  const live = toolCallIdsOf(liveParts)
+  const persisted = toolCallIdsOf(persistedParts)
+  if (live.length === 0) return persisted.length
+  for (const [index, callId] of live.entries()) {
+    const at = persisted.indexOf(callId)
+    if (at >= index) return at - index
+  }
+  return Math.max(0, persisted.length - live.length)
+}
+
+function storedCallIdOf(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts'],
+  offset: number
+): (callId: string) => string {
+  const liveCallIds = toolCallIdsOf(liveParts)
+  const persistedCallIds = toolCallIdsOf(persistedParts)
+  const persisted = new Set(persistedCallIds)
+  const live = new Set(liveCallIds)
+  return (callId) => {
+    if (persisted.has(callId)) return callId
+    const position = liveCallIds.indexOf(callId) + offset
+    const atPosition =
+      position < persistedCallIds.length
+        ? persistedCallIds.at(position)
+        : undefined
+    return atPosition !== undefined && !live.has(atPosition)
+      ? atPosition
+      : callId
+  }
+}
+
+function preserveCanvasConfirmation(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts'],
+  storedCallId: (callId: string) => string
+): AssistantMessage['parts'] {
+  const confirmedCallIds = new Set(
+    liveParts.flatMap((part) =>
+      part.type === 'tool' && part.canvasConfirmed === true
+        ? [storedCallId(part.callId)]
+        : []
+    )
+  )
+  return persistedParts.map((part) =>
+    part.type === 'tool' &&
+    part.ok === true &&
+    confirmedCallIds.has(part.callId)
+      ? { ...part, canvasConfirmed: true }
+      : part
+  )
+}
+
+function finishSnapshotTurn(
+  message: AssistantMessage,
+  persistedParts: AssistantMessage['parts']
+): void {
+  const liveParts = message.parts
+  const offset = liveToolOffset(liveParts, persistedParts)
+  finishWithPersistedParts(
+    message,
+    preserveCanvasConfirmation(
+      liveParts,
+      persistedParts,
+      storedCallIdOf(liveParts, persistedParts, offset)
+    ),
+    offset
+  )
+}
+
 function finishWithPersistedParts(
   message: AssistantMessage,
-  persistedParts: AssistantMessage['parts'] | undefined
+  persistedParts: AssistantMessage['parts'] | undefined,
+  localToolOffset = 0
 ): void {
   if (persistedParts === undefined) {
     message.parts = message.parts.filter((part) => !isOpenAskPart(part))
@@ -227,9 +314,12 @@ function finishWithPersistedParts(
   )
   message.parts = interleaveLocalParts(
     persistedParts,
-    anchorLocalParts(message.parts).filter(
-      ({ part }) => !persistedHasThinking || part.type !== 'thinking'
-    )
+    anchorLocalParts(message.parts)
+      .filter(({ part }) => !persistedHasThinking || part.type !== 'thinking')
+      .map((anchor) => ({
+        ...anchor,
+        toolCount: anchor.toolCount + localToolOffset
+      }))
   )
 }
 
@@ -276,6 +366,11 @@ export const useAgentConversationStore = defineStore(
     // has nothing left pending.
     const settledActiveTransports = new Set<AgentEventTransport>()
     const backgroundTurns = new Map<string, BackgroundTurn>()
+    const unreconciledSnapshotTurns = new Map<
+      TurnId,
+      UnreconciledSnapshotTurn
+    >()
+    const snapshotTurnSettled = createEventHook<LiveTurn>()
     let hydratedMessageIds = new Set<string>()
     let hydratedTurnIds = new Map<string, TurnId>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
@@ -325,6 +420,16 @@ export const useAgentConversationStore = defineStore(
       // the settled message is still sitting in `messages` at its own slot.
       const index = messages.value.findIndex((m) => m.id === message.id)
       if (index >= 0) messages.value[index] = message
+    }
+
+    function publishSnapshotMessage(
+      turnId: TurnId,
+      message: AssistantMessage
+    ): void {
+      replaceActive(message)
+      const unreconciled = unreconciledSnapshotTurns.get(turnId)
+      if (unreconciled !== undefined)
+        announceReconcilableSnapshotTurn(unreconciled)
     }
 
     function rememberAttachmentNames(attachments: UserAttachment[]): void {
@@ -612,9 +717,59 @@ export const useAgentConversationStore = defineStore(
     function settleActiveTurn(activeTransport: AgentEventTransport): void {
       rememberDepartedActiveTurn('settled-turn')
       activeTransport.settle()
+      const restoredFromSnapshot = recordUnreconciledSnapshotTurn()
       if (activeTransport.hasPendingCanvasSync())
         settledActiveTransports.add(activeTransport)
       clearActive()
+      if (restoredFromSnapshot)
+        announceReconcilableSnapshotTurn(restoredFromSnapshot)
+    }
+
+    function recordUnreconciledSnapshotTurn():
+      | UnreconciledSnapshotTurn
+      | undefined {
+      const slot = activeSlot.value
+      if (slot?.origin !== 'snapshot' || slot.threadId === null)
+        return undefined
+      const unreconciled: UnreconciledSnapshotTurn = {
+        turn: { threadId: slot.threadId, messageId: slot.turnId },
+        messageId: slot.message.id,
+        transport: slot.transport,
+        announced: false
+      }
+      unreconciledSnapshotTurns.set(slot.turnId, unreconciled)
+      return unreconciled
+    }
+
+    function announceReconcilableSnapshotTurn(
+      unreconciled: UnreconciledSnapshotTurn
+    ): void {
+      if (
+        unreconciled.announced ||
+        unreconciled.transport.hasPendingCanvasSync()
+      )
+        return
+      settledActiveTransports.delete(unreconciled.transport)
+      unreconciled.announced = true
+      void snapshotTurnSettled.trigger(unreconciled.turn)
+    }
+
+    function reconcileSettledTurn(
+      turn: LiveTurn,
+      persistedParts: AssistantMessage['parts'] | undefined
+    ): void {
+      const unreconciled = unreconciledSnapshotTurns.get(turn.messageId)
+      if (unreconciled === undefined || !unreconciled.announced) return
+      unreconciledSnapshotTurns.delete(turn.messageId)
+      if (persistedParts === undefined || threadId.value !== turn.threadId)
+        return
+      const index = messages.value.findIndex(
+        (message) => message.id === unreconciled.messageId
+      )
+      if (index < 0) return
+      const reconciled = { ...messages.value[index] }
+      finishSnapshotTurn(reconciled, persistedParts)
+      messages.value[index] = reconciled
     }
 
     function ingestActiveTabEvent(
@@ -1048,6 +1203,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function reset(): void {
+      unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
       messages.value = []
       userTexts.value = new Map()
@@ -1091,6 +1247,7 @@ export const useAgentConversationStore = defineStore(
 
     function hydrate(history: AgentMessages): void {
       if (activeSlot.value) rememberDepartedActiveTurn('no-live-turn')
+      unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
       clearActive()
       const transcript = normalizeAgentTranscript(history)
@@ -1147,7 +1304,7 @@ export const useAgentConversationStore = defineStore(
           message: pending.message,
           transport: createAgentEventTransport(
             pending.message,
-            replaceActive,
+            (message) => publishSnapshotMessage(pending.messageId, message),
             (workflowId) => canvasSyncGate(workflowId),
             () => canvasSyncOutcomeCount(),
             reportUndeliverableAskData
@@ -1255,6 +1412,7 @@ export const useAgentConversationStore = defineStore(
       entries,
       activeTurnId,
       activeMessageId,
+      onSnapshotTurnSettled: snapshotTurnSettled.on,
       threadId,
       isStreaming,
       status,
@@ -1288,6 +1446,7 @@ export const useAgentConversationStore = defineStore(
       turnUsesSkill,
       historySkillNames,
       settleTurn,
+      reconcileSettledTurn,
       reset,
       hydrate
     }

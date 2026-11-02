@@ -63,6 +63,7 @@ import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflo
 import type { ComposerAttachment } from '../../types/composerAttachment'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
+import { TURN_RECOVERY_DELAYS_MS } from '../../services/agent/turnRecoverySchedule'
 
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void
@@ -185,12 +186,6 @@ const HYDRATION_MAILBOX_MS = 5 * 60_000
 const MAX_HYDRATION_EVENTS = 256
 const MAX_HYDRATION_MAILBOXES = 32
 
-/**
- * After a reconnect the server may still be finishing the turn, and its
- * terminal event may or may not reach the new socket. Poll the persisted row
- * with backoff; once the schedule is exhausted the socket alone is trusted.
- */
-const TURN_RECOVERY_DELAYS_MS = [0, 1000, 2000, 4000, 8000, 16000]
 /** Upper bound on one recovery job, including any history fetch still in flight. */
 const TURN_RECOVERY_DEADLINE_MS = 60_000
 
@@ -198,7 +193,7 @@ type TurnOutcome =
   | { kind: 'terminal'; parts: AssistantMessage['parts'] | undefined }
   | { kind: 'thread-missing' }
   | { kind: 'streaming' }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; cause: unknown }
 
 function isTerminalTurnStatus(
   status: AgentMessages[number]['status']
@@ -259,10 +254,7 @@ function recoveryKey(turn: LiveTurn): string {
 function turnOutcomeFromError(error: unknown): TurnOutcome {
   if (error instanceof AgentApiError && error.status === 404)
     return { kind: 'thread-missing' }
-  return {
-    kind: 'error',
-    message: error instanceof Error ? error.message : String(error)
-  }
+  return { kind: 'error', cause: error }
 }
 
 const NON_RETRYABLE_REQUEST_STATUSES = new Set([
@@ -582,6 +574,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
+  let unsubscribeSnapshotSettled: (() => void) | null = null
   let ownedGeneration = 0
   let connection: SocketConnection = 'initial'
   const recoveringTurns = new Map<string, AbortController>()
@@ -649,6 +642,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
+    unsubscribeSnapshotSettled = conversationStore.onSnapshotTurnSettled(
+      (turn) => void reconcileSettledSnapshotTurn(turn)
+    ).off
     if (!restore) return
     if (initialThreadId === null) {
       onThreadActivated?.(null)
@@ -932,8 +928,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = null
     unsubscribe?.()
     unsubscribeStatus?.()
+    unsubscribeSnapshotSettled?.()
     unsubscribe = null
     unsubscribeStatus = null
+    unsubscribeSnapshotSettled = null
     for (const recovery of recoveringTurns.values()) recovery.abort()
     recoveringTurns.clear()
     const stoppedGeneration = ownedGeneration
@@ -1952,6 +1950,97 @@ export function useAgentSession(deps: AgentSessionDeps) {
     } finally {
       clearTimeout(deadline)
       if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
+    }
+  }
+
+  function isRetryableSettledRead(outcome: TurnOutcome): boolean {
+    if (outcome.kind === 'streaming') return true
+    return (
+      outcome.kind === 'error' &&
+      isRetryableRequestFailure(outcome.cause, false)
+    )
+  }
+
+  async function fetchSettledTurnOutcome(
+    turn: LiveTurn,
+    generation: number,
+    signal: AbortSignal,
+    deadlineReason: Error
+  ): Promise<TurnOutcome> {
+    let outcome: TurnOutcome | undefined
+    try {
+      outcome = await fetchTurnOutcome(turn, signal)
+      for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
+        if (
+          !isRetryableSettledRead(outcome) ||
+          generation !== sessionGeneration
+        )
+          return outcome
+        await delay(ms, { signal })
+        outcome = await fetchTurnOutcome(turn, signal)
+      }
+      return outcome
+    } catch (error) {
+      if (signal.reason === deadlineReason && outcome?.kind === 'error')
+        return outcome
+      throw error
+    }
+  }
+
+  function reportSettledReadFailure(cause: unknown): void {
+    reportError(cause, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  }
+
+  function applySettledRead(turn: LiveTurn, outcome: TurnOutcome): void {
+    if (outcome.kind === 'error') reportSettledReadFailure(outcome.cause)
+    else if (outcome.kind === 'terminal')
+      conversationStore.reconcileSettledTurn(turn, outcome.parts)
+  }
+
+  function releaseSettledRead(
+    key: string,
+    recovery: AbortController,
+    turn: LiveTurn,
+    generation: number
+  ): void {
+    if (recoveringTurns.get(key) !== recovery) return
+    recoveringTurns.delete(key)
+    if (generation === sessionGeneration)
+      conversationStore.reconcileSettledTurn(turn, undefined)
+    if (isTurnLive(turn, ownedGeneration)) void reconcileTurn(turn)
+  }
+
+  async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
+    const generation = ownedGeneration
+    const key = recoveryKey(turn)
+    recoveringTurns.get(key)?.abort()
+    const recovery = new AbortController()
+    recoveringTurns.set(key, recovery)
+    const deadlineReason = new Error('settled read deadline')
+    const deadline = setTimeout(
+      () => recovery.abort(deadlineReason),
+      TURN_RECOVERY_DEADLINE_MS
+    )
+    try {
+      const outcome = await fetchSettledTurnOutcome(
+        turn,
+        generation,
+        recovery.signal,
+        deadlineReason
+      )
+      if (
+        generation === sessionGeneration &&
+        recoveringTurns.get(key) === recovery
+      )
+        applySettledRead(turn, outcome)
+    } catch (error) {
+      if (!recovery.signal.aborted) reportSettledReadFailure(error)
+    } finally {
+      clearTimeout(deadline)
+      releaseSettledRead(key, recovery, turn, generation)
     }
   }
 
