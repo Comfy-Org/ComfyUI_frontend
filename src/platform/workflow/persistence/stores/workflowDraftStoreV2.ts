@@ -319,6 +319,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const result = moveEntry(index, oldPath, newPath, name)
 
     if (result) {
+      const isRenameOntoSelf = result.oldKey === result.newKey
+      if (isRenameOntoSelf) {
+        persistIndex(result.index)
+        return
+      }
       const oldPayload = readPayload(workspaceId, result.oldKey)
       if (oldPayload) {
         const written = writePayload(workspaceId, result.newKey, oldPayload)
