@@ -32,8 +32,7 @@ export function useWorkspaceIdentity(): WorkspaceIdentityAccess {
       const { initState } = workspace
       if (initState === 'ready' || initState === 'error') return true
       if (initState !== 'uninitialized') return false
-      const user = useCurrentUserAccess()
-      return !user.userEmail.value && !user.isApiKeyLogin.value
+      return !useCurrentUserAccess().isLoggedIn.value
     },
     get isInPersonalWorkspace() {
       return workspace.isInPersonalWorkspace
