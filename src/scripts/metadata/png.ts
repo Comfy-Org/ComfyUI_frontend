@@ -27,6 +27,8 @@ export async function getFromPngBuffer(
     const type = String.fromCharCode(...pngData.slice(offset + 4, offset + 8))
     const chunkEnd = offset + 8 + length
 
+    if (type === 'IEND') break
+
     if (chunkEnd > pngData.length) {
       console.error(`PNG chunk "${type}" runs past the end of the file`)
       break
