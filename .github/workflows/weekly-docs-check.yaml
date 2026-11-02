@@ -51,8 +51,8 @@ jobs:
                - Instructions that contradict the implementation or the root AGENTS.md
             3. Fix each verified inaccuracy with the smallest edit that makes it true.
             4. Delete content that restates what the code already says or that goes stale quickly:
-               file inventories, directory trees, counts, line numbers, and lists of components,
-               exports, or scripts.
+               file inventories, directory trees, counts, line numbers, and lists of components
+               or exports.
             5. Do not document undocumented features, add sections, or create files. Do not modify
                source code.
             6. Leave anything you cannot verify unchanged and list it in the PR body.
