@@ -216,10 +216,10 @@ node, widget, or store state it changes. Do not mock `registerExtension` to
 capture it:
 
 ```ts
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { app } from '@/scripts/app'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import { customWidgetsExtension } from './customWidgets'
 

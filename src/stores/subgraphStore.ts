@@ -18,7 +18,7 @@ import type { NodeError } from '@comfyorg/api-client/types'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import { api } from '@/scripts/api'
