@@ -46,7 +46,7 @@
     </div>
     <ExtensionPathTable
       :paths="extensionPaths"
-      :enabled-by-path="enabledByPath"
+      :enabled-by-path
       :disabled="isSavingExtensionPaths"
       @set-enabled="handleExtensionPathEnabled"
     />
