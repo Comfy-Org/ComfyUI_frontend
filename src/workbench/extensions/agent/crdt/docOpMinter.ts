@@ -60,6 +60,8 @@ export interface DocOpMinterDeps {
   isDocBound(): boolean
   /** Records a local edit that cannot yet enter the semantic document. */
   onUnboundLocalIntent?(): void
+  /** Records a local edit to the visible workflow while another one, or none, is bound. */
+  onUnboundVisibleIntent?(): void
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
   /** The live root graph, or null when no workflow is open. */
@@ -857,17 +859,23 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       heldPromotedWrites.delete(heldWriteKey(event))
   }
 
+  function intentRootGraphId(
+    event: GraphIntentEvent,
+    graph: LGraph | null
+  ): string | null {
+    if ('graph' in event) return event.graph.rootGraph.id
+    return graph !== null && reachableIntentGraph(graph, event.graphId) !== null
+      ? graph.id
+      : null
+  }
+
   function noteUnboundLocalIntent(event: GraphIntentEvent): void {
     const graph = deps.getGraph()
-    const boundRootGraphId = deps.boundRootGraphId()
-    const eventRootGraphId =
-      'graph' in event
-        ? event.graph.rootGraph.id
-        : graph !== null && reachableIntentGraph(graph, event.graphId) !== null
-          ? graph.id
-          : null
-    if (boundRootGraphId !== null && eventRootGraphId === boundRootGraphId)
+    const eventRootGraphId = intentRootGraphId(event, graph)
+    if (eventRootGraphId === null) return
+    if (eventRootGraphId === deps.boundRootGraphId())
       deps.onUnboundLocalIntent?.()
+    else if (eventRootGraphId === graph?.id) deps.onUnboundVisibleIntent?.()
   }
 
   function onIntent(event: GraphIntentEvent): void {

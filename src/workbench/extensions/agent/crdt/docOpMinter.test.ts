@@ -224,6 +224,7 @@ describe('attachDocOpMinter', () => {
   let refusals: Array<[string, string]>
   let seededPromotedDocs: Set<ReturnType<typeof mint>>
   let unboundLocalIntents: number
+  let unboundVisibleIntents: number
 
   beforeEach(() => {
     graph = new LGraph()
@@ -239,10 +240,12 @@ describe('attachDocOpMinter', () => {
     refusals = []
     seededPromotedDocs = new Set()
     unboundLocalIntents = 0
+    unboundVisibleIntents = 0
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
       onUnboundLocalIntent: () => unboundLocalIntents++,
+      onUnboundVisibleIntent: () => unboundVisibleIntents++,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => (graphAvailable ? graph : null),
       boundRootGraphId: () => (unbound ? null : rootGraphId),
@@ -467,6 +470,20 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
 
     expect(unboundLocalIntents).toBe(1)
+    expect(minted).toEqual([])
+  })
+
+  it('marks an unbound edit to the visible workflow while another one is bound', async () => {
+    const { source } = seedGraph(graph)
+    bound = false
+    rootGraphId = toRootGraphId('other-root-graph')
+    source.widgets![0].value = 5
+    unbound = true
+    source.widgets![0].value = 6
+    await afterFlush()
+
+    expect(unboundLocalIntents).toBe(0)
+    expect(unboundVisibleIntents).toBe(2)
     expect(minted).toEqual([])
   })
 

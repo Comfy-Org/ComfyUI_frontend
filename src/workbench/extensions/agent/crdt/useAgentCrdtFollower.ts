@@ -372,7 +372,8 @@ export function useAgentCrdtFollower(
       }),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       follower.value?.enqueueHumanOperations(operations),
-    noteUnboundLocalIntent: () => follower.value?.noteUnboundLocalIntent(),
+    noteUnboundLocalIntent: (target?: string) =>
+      follower.value?.noteUnboundLocalIntent(target),
     docInputNames: (nodeId: NodeId) =>
       follower.value?.docInputNames(nodeId) ?? null,
     docPromotedWidgets: (nodeId: NodeId) =>
@@ -1217,8 +1218,7 @@ function startAgentCrdtFollower(
       projection.noteLocalWrites(operations)
       coalescer.enqueue(operations)
     },
-    noteUnboundLocalIntent: () => {
-      const target = workflowId.value
+    noteUnboundLocalIntent: (target = workflowId.value) => {
       if (target === null) return
       workflowsWithUnsyncedOps.add(target)
       recordUnsynced()
