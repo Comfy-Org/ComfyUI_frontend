@@ -1,4 +1,8 @@
-import type { AgentAskConflict, AgentAskOption } from '@comfyorg/ingest-types'
+import type {
+  AgentAskConflict,
+  AgentAskOption,
+  AgentExtensionChangedData
+} from '@comfyorg/ingest-types'
 import {
   zAgentDeleteApprovalContext,
   zAgentPausedContext,
@@ -77,7 +81,7 @@ export interface TabLinkPart {
 
 export interface ExtensionChangePart {
   type: 'extensionChange'
-  action: 'enabled' | 'disabled' | 'removed'
+  action: AgentExtensionChangedData['action']
   pack: string
   agentCreated: boolean
   restartRequired: boolean

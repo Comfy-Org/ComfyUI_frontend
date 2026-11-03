@@ -6,6 +6,7 @@ import {
   zAgentAttachmentRejected,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
+  zAgentExtensionChangedData as zGeneratedAgentExtensionChangedData,
   zAgentIdentity as zGeneratedAgentIdentity,
   zAgentMessage as zGeneratedAgentMessage,
   zAgentPendingAskBase,
@@ -377,18 +378,11 @@ const zAgentAskResolvedEvent = z.object({
 
 const zAgentExtensionChangedEvent = z.object({
   type: z.literal('agent_extension_changed'),
-  data: z
-    .object({
-      thread_id: z.string(),
-      message_id: z.string(),
-      action: z.enum(['enabled', 'disabled', 'removed']),
-      pack: z
-        .string()
-        .min(1)
+  data: zGeneratedAgentExtensionChangedData
+    .extend({
+      pack: zGeneratedAgentExtensionChangedData.shape.pack
         .max(256)
-        .refine((pack) => !/[\p{Cc}\p{Cf}]/u.test(pack)),
-      agent_created: z.boolean(),
-      restart_required: z.boolean()
+        .refine((pack) => !/[\p{Cc}\p{Cf}]/u.test(pack))
     })
     .passthrough()
 })
