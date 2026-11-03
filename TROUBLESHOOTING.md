@@ -241,7 +241,7 @@ diff-aware policy.
 
 ---
 
-#### Q: oxlint reports "There are suppressions that do not occur anymore"
+#### Q: oxlint or ESLint reports suppressions that do not occur anymore
 
 **Symptoms:**
 
@@ -254,6 +254,12 @@ diff-aware policy.
 
 ```bash
 pnpm oxlint --prune-suppressions
+```
+
+`eslint-suppressions.json` does the same for ESLint template rules such as `template-classes/prefer-design-system-button`:
+
+```bash
+pnpm exec eslint --prune-suppressions
 ```
 
 Never run `--suppress-all` to silence new violations in your own code.
