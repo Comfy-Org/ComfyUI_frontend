@@ -418,7 +418,7 @@ describe('Vue slot geometry', () => {
     expect(getSlotPosition(node, 0, false)).toEqual([580, 385])
   })
 
-  it('accounts for headerless and reroute node structure', () => {
+  it('places headerless and reroute slots relative to the node body', () => {
     const headerless = makeNode({
       inputs: [makeInput()],
       titleMode: TitleMode.NO_TITLE,
@@ -433,7 +433,7 @@ describe('Vue slot geometry', () => {
       size: [240, 160]
     })
 
-    expect(getSlotPosition(headerless, 0, true)).toEqual([300, 384])
-    expect(getSlotPosition(reroute, 0, false)).toEqual([540, 380])
+    expect(getSlotPosition(headerless, 0, true)).toEqual([300, 414])
+    expect(getSlotPosition(reroute, 0, false)).toEqual([540, 414])
   })
 })

@@ -19,4 +19,10 @@ test.describe('Vue Reroute Node Size', { tag: '@vue-nodes' }, () => {
       await region.expectScreenshot('vue-reroute-node-compact.png')
     }
   )
+
+  test('reroute input and output connect at the same height', async ({
+    comfyPage
+  }) => {
+    await comfyPage.vueNodes.expectSlotsAtSameHeight('13', 0, 0)
+  })
 })

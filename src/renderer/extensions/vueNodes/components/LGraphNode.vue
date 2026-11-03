@@ -7,6 +7,7 @@
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
+    :data-no-title="!displayHeader || undefined"
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
@@ -29,7 +30,7 @@
     :style="{
       ...nodeSizeStyle,
       '--min-node-width': `${MIN_NODE_WIDTH}px`,
-      transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+      transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - titleHeight}px)`,
       zIndex: zIndex,
       opacity: nodeOpacity
     }"
@@ -80,7 +81,8 @@
       data-testid="node-inner-wrapper"
       :class="
         cn(
-          'flex flex-1 flex-col bg-node-header',
+          'flex flex-1 flex-col',
+          displayHeader && 'bg-node-header',
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
@@ -95,7 +97,9 @@
       :style="{
         '--node': applyLightThemeColor(nodeData.bgcolor),
         '--component-node-background': 'var(--node)',
-        backgroundColor: applyLightThemeColor(nodeData?.color)
+        backgroundColor: displayHeader
+          ? applyLightThemeColor(nodeData?.color)
+          : undefined
       }"
     >
       <div
@@ -137,11 +141,7 @@
         :style="{ width: `${Math.min(progress * 100, 100)}%` }"
       />
 
-      <template v-if="!isCollapsed && isRerouteNode">
-        <NodeSlots :node-data />
-      </template>
-
-      <template v-else-if="!isCollapsed">
+      <template v-if="!isCollapsed">
         <div class="relative">
           <div
             v-if="executing && progress !== undefined"
@@ -158,7 +158,11 @@
 
         <div
           :class="
-            cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)
+            cn(
+              'flex flex-1 flex-col bg-node pt-1',
+              !isRerouteNode && 'pb-3',
+              displayHeader ? bodyRoundingClass : shapeClass
+            )
           "
           :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
           :data-testid="`node-body-${nodeData.id}`"
@@ -279,7 +283,6 @@ import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -374,6 +377,9 @@ const showErrorsTabEnabled = computed(() =>
 )
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
+const titleHeight = computed(() =>
+  displayHeader.value ? LiteGraph.NODE_TITLE_HEIGHT : 0
+)
 
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
@@ -424,7 +430,7 @@ const nodeSizeStyle = computed(() =>
     ? {}
     : {
         '--node-width': `${size.value.width}px`,
-        '--node-height': `${size.value.height + LiteGraph.NODE_TITLE_HEIGHT + imagePreviewGrowth.value}px`
+        '--node-height': `${size.value.height + titleHeight.value + imagePreviewGrowth.value}px`
       }
 )
 
@@ -456,7 +462,8 @@ const { startResize } = useNodeResize((result) => {
     {
       width: Math.max(result.size.width, MIN_NODE_WIDTH),
       height:
-        removeNodeTitleHeight(result.size.height) - imagePreviewGrowth.value
+        Math.max(0, result.size.height - titleHeight.value) -
+        imagePreviewGrowth.value
     },
     {
       position: result.position,

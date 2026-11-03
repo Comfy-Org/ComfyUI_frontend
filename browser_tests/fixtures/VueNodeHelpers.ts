@@ -74,6 +74,39 @@ export class VueNodeHelpers {
     )
   }
 
+  async expectSlotsAtSameHeight(
+    nodeId: string,
+    inputIndex: number,
+    outputIndex: number
+  ): Promise<void> {
+    const input = this.getInputSlotConnectionDot(nodeId, inputIndex)
+    const output = this.getOutputSlotConnectionDot(nodeId, outputIndex)
+    await expect(input, `node ${nodeId} input ${inputIndex} dot`).toBeVisible()
+    await expect(
+      output,
+      `node ${nodeId} output ${outputIndex} dot`
+    ).toBeVisible()
+
+    const centerY = async (dot: Locator) => {
+      const box = await dot.boundingBox()
+      return box && box.y + box.height / 2
+    }
+    await expect
+      .poll(
+        async () => {
+          const [inputY, outputY] = await Promise.all([
+            centerY(input),
+            centerY(output)
+          ])
+          return inputY === null || outputY === null ? null : outputY - inputY
+        },
+        {
+          message: `node ${nodeId}: output ${outputIndex} dot minus input ${inputIndex} dot height`
+        }
+      )
+      .toBeCloseTo(0, 0)
+  }
+
   async waitForSlotLayout(nodeId: string): Promise<void> {
     await expect
       .poll(() =>
