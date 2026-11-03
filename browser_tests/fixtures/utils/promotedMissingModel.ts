@@ -305,9 +305,10 @@ async function selectModelFromFormDropdown(
   nextModelName: string
 ) {
   const trigger = root
-    .getByRole('button', { name: currentModelName, exact: true })
+    .getByRole('button', { name: PROMOTED_MODEL_WIDGET_NAME, exact: true })
     .first()
   await expect(trigger).toBeVisible()
+  await expect(trigger).toContainText(currentModelName)
   await WidgetSelectDropdownFixture.fromTrigger(trigger).selectOption(
     nextModelName
   )

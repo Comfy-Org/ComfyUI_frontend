@@ -25,9 +25,10 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
 
       const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
       const trigger = node.getByRole('button', {
-        name: 'example.png',
+        name: 'image',
         exact: true
       })
+      await expect(trigger).toContainText('example.png')
       await WidgetSelectDropdownFixture.fromTrigger(trigger).open()
 
       const menu = comfyPage.page.getByTestId(TestIds.widgets.formDropdownMenu)
@@ -58,10 +59,11 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
       const imageLoadError = node.getByTestId(TestIds.errors.imageLoadError)
       const selectedImageButton = node.getByRole('button', {
-        name: 'example.png',
+        name: 'image',
         exact: true
       })
       await expect(selectedImageButton).toBeVisible()
+      await expect(selectedImageButton).toContainText('example.png')
       await expect(imageLoadError).toBeHidden()
 
       await WidgetSelectDropdownFixture.fromTrigger(
@@ -70,6 +72,7 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
 
       await expect(selectedImageButton).toBeFocused()
       await expect(selectedImageButton).toBeVisible()
+      await expect(selectedImageButton).toContainText('example.png')
       await expect.poll(() => imageWidget.getValue()).toBe('example.png')
       await expect(imageLoadError).toBeHidden()
     })
@@ -112,9 +115,12 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
     await uploadResponse
 
     await expect.poll(() => imageWidget.getValue()).toBe(filename)
-    await expect(
-      node.getByRole('button', { name: filename, exact: true })
-    ).toBeVisible()
+    const imageTrigger = node.getByRole('button', {
+      name: 'image',
+      exact: true
+    })
+    await expect(imageTrigger).toBeVisible()
+    await expect(imageTrigger).toContainText(filename)
     await expect(node.getByTestId(TestIds.errors.imageLoadError)).toBeHidden()
   })
 
