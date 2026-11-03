@@ -2523,7 +2523,7 @@
     "angle": "Angle"
   },
   "boundingBoxes": {
-    "boxCount": "{count} of {max} boxes",
+    "boxCount": "{current} of {max} box | {current} of {max} boxes",
     "clearAll": "Clear all",
     "clickRegionToEdit": "Click a region to edit it.",
     "typeObj": "obj",

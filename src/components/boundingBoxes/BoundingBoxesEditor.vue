@@ -38,14 +38,15 @@
             v-if="maxBoxes !== undefined"
             class="shrink-0 px-1 font-mono text-sm text-muted-foreground @max-[20rem]:px-0"
             data-testid="bounding-boxes-count"
-            :aria-label="
-              $t('boundingBoxes.boxCount', {
-                count: regions.length,
-                max: maxBoxes
-              })
-            "
           >
-            {{ regions.length }}/{{ maxBoxes }}
+            <span aria-hidden="true">{{ regions.length }}/{{ maxBoxes }}</span>
+            <span class="sr-only">{{
+              $t(
+                'boundingBoxes.boxCount',
+                { current: regions.length, max: maxBoxes },
+                maxBoxes
+              )
+            }}</span>
           </span>
           <WidgetHistoryButtons
             class="ml-auto"

@@ -829,7 +829,7 @@ describe('useBoundingBoxes hover cursor', () => {
 })
 
 describe('useBoundingBoxes max boxes', () => {
-  const drawInEmptyArea = async (c: Captured) => {
+  async function drawInEmptyArea(c: Captured) {
     c.onPointerDown(pe(70, 70))
     c.onCanvasPointerMove(pe(95, 95))
     c.onDocPointerUp(pe(95, 95))
@@ -877,8 +877,9 @@ describe('useBoundingBoxes max boxes', () => {
     }
   )
 
-  const numbered = (count: number) =>
-    Array.from({ length: count }, (_, i) => box({ x: 16 * (i + 1) }))
+  function numbered(count: number) {
+    return Array.from({ length: count }, (_, i) => box({ x: 16 * (i + 1) }))
+  }
 
   it('keeps the first boxes of an over-limit value it loads', () => {
     const c = setup(numbered(3), { name: 'bboxes' }, 2)
