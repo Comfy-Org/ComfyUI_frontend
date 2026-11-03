@@ -275,3 +275,51 @@ export {
   BALANCE_WATCH_RETRY_GAPS_MS,
   createBalanceWatch
 } from './balanceWatch'
+export type {
+  PlanKind,
+  PlanRowAction,
+  PlanRowFacts,
+  PlanRowState
+} from './billingTab/planRow'
+export {
+  CONTACT_SALES_URL,
+  deriveBillingTabLoad,
+  derivePlanRow,
+  formatPlanDate,
+  planRowAction
+} from './billingTab/planRow'
+export type {
+  PlanCommandOutcome,
+  PlanConfirmEvent,
+  PlanConfirmState,
+  PlanLifecycleIntent
+} from './billingTab/planLifecycle'
+export {
+  PLAN_CONFIRM_CLOSED,
+  reducePlanConfirm,
+  resumeIntent,
+  stayIntent
+} from './billingTab/planLifecycle'
+export type {
+  AddCreditsEmphasisFacts,
+  CreditsCardBalance,
+  CreditsCardFacts,
+  CreditsCardState,
+  PlanCreditsState
+} from './billingTab/creditsCard'
+export { addCreditsEmphasis, deriveCreditsCard } from './billingTab/creditsCard'
+export type { PlanCheckoutBanner } from './billingTab/planCheckoutBanner'
+export { planCheckoutBannerFor } from './billingTab/planCheckoutBanner'
+export type {
+  TopupCheckoutBanner,
+  TopupCheckoutSnapshot
+} from './billingTab/topupCheckoutBanner'
+export {
+  selectTopupCheckoutBanner,
+  topupCheckoutBannerKey
+} from './billingTab/topupCheckoutBanner'
+export type {
+  AutoTopUpCardFacts,
+  AutoTopUpCardState
+} from './billingTab/autoTopUpCard'
+export { deriveAutoTopUpCard } from './billingTab/autoTopUpCard'

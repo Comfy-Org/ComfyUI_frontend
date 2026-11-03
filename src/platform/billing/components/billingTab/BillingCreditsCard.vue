@@ -135,7 +135,7 @@ import {
 } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
 import BillingCreditsPlanCell from '@/platform/billing/components/billingTab/BillingCreditsPlanCell.vue'
-import type { CreditsCardState } from '@/platform/billing/components/billingTab/creditsCard'
+import type { CreditsCardState } from '@comfyorg/account-core/billing'
 
 const {
   state,
