@@ -449,6 +449,36 @@ describe('StripePaymentForm', () => {
     )
   })
 
+  it('collects a renewal method when the balance covers the whole first charge', async () => {
+    renderForm(0)
+
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+    expect(stripeMocks.stripe.elements).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'subscription',
+        amount: 0,
+        setupFutureUsage: 'off_session'
+      })
+    )
+    expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+    expect(
+      screen.getByRole<HTMLButtonElement>('button', {
+        name: 'Pay and subscribe'
+      }).disabled
+    ).toBe(false)
+  })
+
+  it('shows unavailable state when Stripe refuses the quoted amount', async () => {
+    stripeMocks.stripe.elements.mockImplementationOnce(() => {
+      throw new Error('IntegrationError: invalid amount')
+    })
+
+    renderForm(0, 'pmc_topup', { payOnce: true })
+
+    expect(await screen.findByText('Stripe is unavailable')).toBeTruthy()
+    expect(stripeMocks.mount).not.toHaveBeenCalled()
+  })
+
   it('collects deferred subscription details and emits a confirmation token', async () => {
     const user = userEvent.setup()
     const { emitted } = renderForm()

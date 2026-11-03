@@ -261,8 +261,6 @@ onMounted(async () => {
     failElementInit()
     return
   }
-  if (amountCents <= 0) return
-
   try {
     stripe = await loadStripe(publishableKey)
   } catch {
@@ -273,12 +271,18 @@ onMounted(async () => {
     failElementInit()
     return
   }
-  stripeElements.value = stripe.elements({
-    ...intentOptions(),
-    amount: amountCents,
-    currency: currency.toLowerCase(),
-    appearance: resolveAppearance(paymentElementTarget.value)
-  })
+  // The quoted amount goes to Stripe as served; Stripe owns which amounts a mode accepts.
+  try {
+    stripeElements.value = stripe.elements({
+      ...intentOptions(),
+      amount: amountCents,
+      currency: currency.toLowerCase(),
+      appearance: resolveAppearance(paymentElementTarget.value)
+    })
+  } catch {
+    failElementInit()
+    return
+  }
   mountPaymentElement(stripeElements.value, paymentElementTarget.value)
   if (addressElementTarget.value) {
     mountAddressElement(stripeElements.value, addressElementTarget.value)
@@ -286,7 +290,7 @@ onMounted(async () => {
 })
 
 watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
-  if (!stripeElements.value || amount <= 0) return
+  if (!stripeElements.value) return
 
   stripeElements.value
     .update({ amount, currency: nextCurrency.toLowerCase() })
