@@ -35,7 +35,8 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { zComfyNode } from '@comfyorg/graph-model/workflowSchema'
-import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
+import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
@@ -744,8 +745,8 @@ function positionalWidgetValues(
 ): WidgetValue[] | undefined {
   if (widgets === undefined) return undefined
   if (Array.isArray(widgets)) {
-    return widgets.map(
-      (value): WidgetValue => (isWidgetValue(value) ? value : undefined)
+    return widgets.map((value): WidgetValue =>
+      isWidgetValue(value) ? value : undefined
     )
   }
   return serializableWidgets(node).map((widget, index) => {
@@ -1401,7 +1402,37 @@ export class LiveGraphApplier {
       }
       pending = unresolved
     }
+    if (!Array.isArray(documentWidgets))
+      this.checkNestedRowCounts(node, widgets, documentWidgets)
     this.unappliedRegrownRows.delete(node)
+  }
+
+  private checkNestedRowCounts(
+    node: LGraphNode,
+    widgets: Record<string, unknown>,
+    documentWidgets: Record<string, unknown>
+  ): void {
+    const applied = Object.entries(widgets)
+      .filter(([name, value]) =>
+        Object.is(documentWidget(node, name)?.value, value)
+      )
+      .map(([name]) => name)
+    for (const controller of nestedGroupControllers(
+      node,
+      Object.keys(widgets),
+      applied
+    )) {
+      const count = documentWidgets[controller.name]
+      if (count === undefined || reachesDynamicGroupRowCount(controller, count))
+        continue
+      reportRemoteDynamicGroupRowMismatch(
+        node,
+        count,
+        Number(controller.value),
+        { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+        'remote_remount'
+      )
+    }
   }
 
   private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {
@@ -1605,7 +1636,7 @@ export class LiveGraphApplier {
       return
     }
     const applied = applyRemoteDynamicGroupRowCount(node, () =>
-      this.setWidgetValue(node, widget, value)
+      this.assignWidgetValue(node, widget, value)
     )
     if (applied && reachesDynamicGroupRowCount(widget, value)) return
     this.reportDynamicGroupRowMismatch(node, widget, value)
@@ -1624,6 +1655,28 @@ export class LiveGraphApplier {
   }
 
   private setWidgetValue(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue
+  ) {
+    if (widget.type === 'button' || Object.is(widget.value, value)) return
+    if (!(widget instanceof BaseWidget)) {
+      this.assignWidgetValue(node, widget, value)
+      return
+    }
+    const rollback = captureWidgetValue(node, widget)
+    try {
+      widget.setValue(value, {
+        node,
+        canvas: this.deps.getCanvas?.() ?? undefined
+      })
+    } catch (error) {
+      rollback()
+      throw error
+    }
+  }
+
+  private assignWidgetValue(
     node: LGraphNode,
     widget: IBaseWidget,
     value: WidgetValue
@@ -1806,6 +1859,23 @@ function widgetEntryRank(node: LGraphNode, name: string): number {
   return index === null ? MOUNTED_LAST : live.length + index
 }
 
+function nestedGroupControllers(
+  node: LGraphNode,
+  written: readonly string[],
+  applied: readonly string[]
+): IBaseWidget[] {
+  const under = (name: string, parent: string) => name.startsWith(`${parent}.`)
+  return (node.widgets ?? []).filter(
+    (widget) =>
+      isDynamicGroupController(widget) &&
+      !written.includes(widget.name) &&
+      applied.some((name) => under(widget.name, name)) &&
+      !written.some(
+        (name) => !applied.includes(name) && under(widget.name, name)
+      )
+  )
+}
+
 function isWidgetEntry(
   entry: [string, unknown]
 ): entry is [string, WidgetValue] {
@@ -1918,28 +1988,36 @@ function hostWidgetEntries(
   return Object.entries(widgets ?? {})
 }
 
-/** Writes a widget value and its mirrored node property; returns the undo. */
+function captureWidgetValue(
+  node: LGraphNode,
+  widget: IBaseWidget,
+  mirrorProperty = true
+): () => void {
+  const previous = widget.value
+  const property = widget.options.property
+  if (!mirrorProperty || !property || node.properties[property] === undefined)
+    return () => {
+      widget.value = previous
+    }
+  const previousProperty = node.properties[property]
+  return () => {
+    widget.value = previous
+    node.setProperty(property, previousProperty)
+  }
+}
+
 function writeWidgetValue(
   node: LGraphNode,
   widget: IBaseWidget,
   value: WidgetValue,
   mirrorProperty = true
 ): () => void {
-  const previous = widget.value
+  const rollback = captureWidgetValue(node, widget, mirrorProperty)
   const property = widget.options.property
-  if (!mirrorProperty || !property || node.properties[property] === undefined) {
-    widget.value = value
-    return () => {
-      widget.value = previous
-    }
-  }
-  const previousProperty = node.properties[property]
   widget.value = value
-  node.setProperty(property, value)
-  return () => {
-    widget.value = previous
-    node.setProperty(property, previousProperty)
-  }
+  if (mirrorProperty && property && node.properties[property] !== undefined)
+    node.setProperty(property, value)
+  return rollback
 }
 
 function applyFlags(
