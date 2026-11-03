@@ -180,7 +180,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'Failed',
       lines: [FAILED],
       action: 'Update payment',
-      expectedIcon: 'icon-[lucide--external-link]'
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
       status: 'failed',
@@ -190,15 +190,15 @@ describe('BillingAutoTopUpCard', () => {
         'Turned off after 3 declined charges. Update your payment method, then turn it back on.'
       ],
       action: 'Update payment',
-      expectedIcon: 'icon-[lucide--external-link]'
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
       status: 'off',
       settings: notConfigured,
       label: 'Off',
-      lines: ['Refills credits when your balance runs low'],
+      lines: ['Refills credits when your balance runs low.'],
       action: 'Turn on',
-      expectedIcon: 'icon-[lucide--external-link]'
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
       status: 'on_hold',
@@ -208,7 +208,7 @@ describe('BillingAutoTopUpCard', () => {
         'No default payment method. Set one to resume auto top-up.'
       ],
       action: 'Update payment',
-      expectedIcon: 'icon-[lucide--external-link]'
+      expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
       status: 'paused_by_budget',
@@ -686,9 +686,9 @@ describe('BillingAutoTopUpCard', () => {
         name: 'keeps the off card when not frozen',
         setup: null,
         methods: Promise.resolve({ status: 'ok', value: [] }),
-        line: 'Refills credits when your balance runs low',
+        line: 'Refills credits when your balance runs low.',
         action: 'Turn on',
-        icon: 'icon-[lucide--external-link]',
+        icon: 'icon-[lucide--arrow-up-right]',
         reads: 0,
         reports: 0
       }
