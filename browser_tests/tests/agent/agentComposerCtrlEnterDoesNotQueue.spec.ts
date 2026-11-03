@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -8,9 +9,29 @@ const test = mergeTests(agentTest, webSocketFixture)
 
 const PROMPT = 'Make the image warmer'
 
-interface RunRequestLog {
-  runRequestLog: string[]
+interface ShortcutProbe {
+  entersAtPage: string[]
+  runRequests: number
 }
+
+interface ProbeWindow {
+  shortcutProbe: ShortcutProbe
+}
+
+const entersAtPage = (page: Page) =>
+  page.evaluate(
+    () => (window as unknown as ProbeWindow).shortcutProbe.entersAtPage
+  )
+
+const runRequests = (page: Page) =>
+  page.evaluate(
+    () => (window as unknown as ProbeWindow).shortcutProbe.runRequests
+  )
+
+const clearEntersAtPage = (page: Page) =>
+  page.evaluate(() => {
+    ;(window as unknown as ProbeWindow).shortcutProbe.entersAtPage = []
+  })
 
 test.describe(
   'Ctrl+Enter in the Agent composer',
@@ -18,12 +39,8 @@ test.describe(
   () => {
     test.use({ connectWebSocketToServer: false })
 
-    test('sends the message without queueing the workflow, while canvas Ctrl+Enter still queues', async ({
-      agentPanel,
-      comfyPage,
-      postedMessages,
-      page
-    }) => {
+    test.beforeEach(async ({ comfyPage }) => {
+      const { page } = comfyPage
       await page.route('**/api/prompt', (route) =>
         route.request().method() === 'POST'
           ? route.fulfill(
@@ -32,29 +49,40 @@ test.describe(
           : route.fallback()
       )
       await page.evaluate(() => {
-        const log: string[] = []
-        ;(window as unknown as RunRequestLog).runRequestLog = log
-        window.addEventListener(
-          'keydown',
-          (event) => {
-            if (event.key !== 'Enter') return
-            const onCanvas =
-              event.target instanceof Element &&
-              event.target.id === 'graph-canvas'
-            log.push(onCanvas ? 'Enter on canvas' : 'Enter elsewhere')
-          },
-          { capture: true }
-        )
-        window.app!.api.addEventListener('promptQueueing', () =>
-          log.push('run requested')
-        )
+        const probe: ShortcutProbe = { entersAtPage: [], runRequests: 0 }
+        ;(window as unknown as ProbeWindow).shortcutProbe = probe
+        window.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter') return
+          const chord = [
+            event.ctrlKey && 'Control',
+            event.shiftKey && 'Shift',
+            'Enter'
+          ]
+            .filter(Boolean)
+            .join('+')
+          const onCanvas =
+            event.target instanceof Element &&
+            event.target.id === 'graph-canvas'
+          probe.entersAtPage.push(
+            `${chord} ${onCanvas ? 'on canvas' : 'elsewhere'}`
+          )
+        })
+        window.app!.api.addEventListener('promptQueueing', () => {
+          probe.runRequests += 1
+        })
       })
-      const runRequestLog = () =>
-        page.evaluate(() => (window as unknown as RunRequestLog).runRequestLog)
+    })
 
+    test('sends the message without reaching page shortcuts, while canvas Ctrl+Enter still queues', async ({
+      agentPanel,
+      comfyPage,
+      postedMessages,
+      page
+    }) => {
       async function pressCtrlEnterOnCanvas() {
         await comfyPage.canvas.focus()
         await expect(comfyPage.canvas).toBeFocused()
+        await clearEntersAtPage(page)
         await page.keyboard.press('Control+Enter')
       }
 
@@ -63,32 +91,25 @@ test.describe(
 
       await test.step('Ctrl+Enter on the canvas requests a run', async () => {
         await pressCtrlEnterOnCanvas()
-        await expect
-          .poll(runRequestLog)
-          .toEqual(['Enter on canvas', 'run requested'])
+        expect(await entersAtPage(page)).toEqual(['Control+Enter on canvas'])
+        await expect.poll(() => runRequests(page)).toBe(1)
       })
 
-      await test.step('Ctrl+Enter in the composer sends the prompt', async () => {
+      await test.step('Ctrl+Enter in the composer sends the prompt and stays in the composer', async () => {
         await agentPanel.composer.fill(PROMPT)
-        await agentPanel.composer.focus()
-        await page.keyboard.press('Control+Enter')
+        await clearEntersAtPage(page)
+        await agentPanel.composer.press('Control+Enter')
+        expect(await entersAtPage(page)).toEqual([])
         await expect.poll(() => postedMessages.length).toBe(1)
         expect(sentTurn(postedMessages).content).toContain(PROMPT)
+        expect(await runRequests(page)).toBe(1)
       })
 
-      await test.step('only the canvas presses requested runs', async () => {
+      await test.step('Ctrl+Enter on the canvas requests exactly one more run', async () => {
+        const before = await runRequests(page)
         await pressCtrlEnterOnCanvas()
-        await expect
-          .poll(runRequestLog, {
-            message: 'Ctrl+Enter in the Agent composer also queued the workflow'
-          })
-          .toEqual([
-            'Enter on canvas',
-            'run requested',
-            'Enter elsewhere',
-            'Enter on canvas',
-            'run requested'
-          ])
+        expect(await entersAtPage(page)).toEqual(['Control+Enter on canvas'])
+        await expect.poll(() => runRequests(page)).toBe(before + 1)
       })
     })
   }
