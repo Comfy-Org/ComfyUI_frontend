@@ -86,6 +86,30 @@ describe('WidgetSelectDefault', () => {
   const optionLabels = () =>
     screen.queryAllByRole('option').map((option) => option.textContent.trim())
 
+  it('opens from the gap in a unified row without changing its value', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(WidgetSelectDefault, {
+      props: {
+        widget: createWidget(['euler', 'heun']),
+        modelValue: 'euler'
+      },
+      attrs: { 'data-testid': 'combo-row' },
+      global: {
+        plugins: [i18n],
+        provide: { [UnifiedWidgetRowsKey]: true }
+      }
+    })
+
+    await user.click(screen.getByTestId('combo-row'))
+
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
+    expect(await screen.findByRole('listbox')).toBeVisible()
+    expect(emitted()['update:modelValue']).toBeUndefined()
+  })
+
   it.for([
     {
       raw: 'studio/models/portrait.safetensors',

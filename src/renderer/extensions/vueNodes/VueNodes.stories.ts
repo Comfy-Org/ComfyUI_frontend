@@ -1,13 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { useArgs } from 'storybook/preview-api'
 import { fn } from 'storybook/test'
-import { computed, onScopeDispose, provide } from 'vue'
+import { computed, onScopeDispose, provide, ref } from 'vue'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
+import WidgetColorPicker from '@/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.vue'
+import WidgetInputNumberGradientSlider from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberGradientSlider.vue'
+import WidgetInputNumberSlider from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberSlider.vue'
+import WidgetToggleSwitch from '@/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import {
   ModelNodeProvider,
@@ -326,4 +330,65 @@ export const NarrowLongLabels: Story = {
     model: modelOptions[1],
     prompt: ''
   }
+}
+
+export const OtherControlTypes: Story = {
+  render: (args) => ({
+    components: {
+      WidgetColorPicker,
+      WidgetInputNumberGradientSlider,
+      WidgetInputNumberSlider,
+      WidgetToggleSwitch
+    },
+    setup() {
+      provide(UnifiedWidgetRowsKey, true)
+      const slider = ref(37)
+      const gradient = ref(63)
+      const color = ref('#E06CBD')
+      const enabled = ref(true)
+      const labelled = ref(false)
+      const widgets = computed(() => ({
+        slider: {
+          name: 'slider',
+          type: 'slider',
+          value: 37,
+          options: { min: 0, max: 100, step2: 1, disabled: args.disabled }
+        },
+        gradient: {
+          name: 'gradient',
+          type: 'gradientslider',
+          value: 63,
+          options: { min: 0, max: 100, step2: 1, disabled: args.disabled }
+        },
+        color: {
+          name: 'color',
+          type: 'STRING',
+          value: '#E06CBD',
+          options: { disabled: args.disabled }
+        },
+        enabled: {
+          name: 'enabled',
+          type: 'BOOLEAN',
+          value: true,
+          options: { disabled: args.disabled }
+        },
+        labelled: {
+          name: 'labelled_boolean',
+          type: 'BOOLEAN',
+          value: false,
+          options: { on: 'On', off: 'Off', disabled: args.disabled }
+        }
+      }))
+      return { args, widgets, slider, gradient, color, enabled, labelled }
+    },
+    template: `
+      <div class="lg-node flex flex-col gap-3 rounded-2xl bg-node p-3 text-xs text-node-foreground" :style="{ width: args.width + 'px' }">
+        <WidgetInputNumberSlider v-model="slider" :widget="widgets.slider" />
+        <WidgetInputNumberGradientSlider v-model="gradient" :widget="widgets.gradient" />
+        <WidgetColorPicker v-model="color" :widget="widgets.color" />
+        <WidgetToggleSwitch v-model="enabled" :widget="widgets.enabled" />
+        <WidgetToggleSwitch v-model="labelled" :widget="widgets.labelled" />
+      </div>
+    `
+  })
 }

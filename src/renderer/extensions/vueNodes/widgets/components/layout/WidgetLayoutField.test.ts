@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, ref } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
@@ -43,6 +44,42 @@ function renderField(
 }
 
 describe('WidgetLayoutField', () => {
+  it.for([
+    { target: 'row', unifiedRows: true, disabled: false, expected: '1' },
+    { target: 'row', unifiedRows: false, disabled: false, expected: '0' },
+    { target: 'row', unifiedRows: true, disabled: true, expected: '0' },
+    { target: 'primary', unifiedRows: true, disabled: false, expected: '1' },
+    { target: 'secondary', unifiedRows: true, disabled: false, expected: '0' }
+  ] as const)(
+    'activates $target with unifiedRows=$unifiedRows and disabled=$disabled',
+    async ({ target, unifiedRows, disabled, expected }) => {
+      const user = userEvent.setup()
+      const Harness = defineComponent({
+        components: { WidgetLayoutField },
+        setup: () => ({ count: ref(0), disabled, widget: { name: 'field' } }),
+        template: `
+          <WidgetLayoutField data-testid="row" :widget="widget" input-id="primary">
+            <button id="primary" :disabled="disabled" @click="count++">Primary</button>
+            <button>Secondary</button>
+            <output data-testid="count">{{ count }}</output>
+          </WidgetLayoutField>
+        `
+      })
+      render(Harness, {
+        global: { provide: { [UnifiedWidgetRowsKey]: unifiedRows } }
+      })
+      const targets = {
+        row: screen.getByTestId('row'),
+        primary: screen.getByRole('button', { name: 'field' }),
+        secondary: screen.getByRole('button', { name: 'Secondary' })
+      }
+
+      await user.click(targets[target])
+
+      expect(screen.getByTestId('count')).toHaveTextContent(expected)
+    }
+  )
+
   describe('Label rendering', () => {
     it('renders widget.name when label is absent', () => {
       renderField({ name: 'seed' })
