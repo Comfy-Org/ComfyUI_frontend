@@ -1,7 +1,11 @@
 import { partition, uniq } from 'es-toolkit'
 
+import { isModelUrlAllowlisted } from '@/platform/workflowErrors/missingModel/modelUrlAllowlist'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
-import { BUILD_RECIPE_SECTION } from '@/platform/workspace/customDeploymentBrief'
+import {
+  BUILD_RECIPE_SECTION,
+  CUT_AND_REPORT_SECTION
+} from '@/platform/workspace/customDeploymentBrief'
 
 /** Node types a deployment lacks, under their pack, or null if none is known. */
 export interface MissingBuildPack {
@@ -18,22 +22,41 @@ export interface MissingBuildModel {
   url?: string
 }
 
+const UNLISTED_MODELS = [
+  'The editor cannot see the models those custom nodes load, so they are not',
+  "listed: find them in the workflow or the packs' docs, or ask the user."
+]
+
+function inline(text: string): string {
+  return text.replace(/[\p{Cc}\p{Zl}\p{Zp}`]/gu, ' ')
+}
+
 function packLine({ packId, nodeTypes }: MissingBuildPack): string {
   const nodes = uniq(nodeTypes)
-    .map((type) => `\`${type}\``)
+    .map((type) => `\`${inline(type)}\``)
     .join(', ')
-  return packId ? `- Pack \`${packId}\`: ${nodes}` : `- Pack unknown: ${nodes}`
+  return packId
+    ? `- Pack \`${inline(packId)}\`: ${nodes}`
+    : `- Pack unknown: ${nodes}`
 }
 
 function failingPackLine(pack: MissingBuildPack): string {
   const cause = pack.loadFailure?.cause
-  return cause ? `${packLine(pack)} (fails with: ${cause})` : packLine(pack)
+  return cause
+    ? `${packLine(pack)} (fails with: ${inline(cause)})`
+    : packLine(pack)
+}
+
+function downloadLink(url: string | undefined): string | undefined {
+  if (!url || !isModelUrlAllowlisted(url) || !URL.canParse(url)) return
+  return new URL(url).href
 }
 
 function modelLine({ name, directory, url }: MissingBuildModel): string {
-  const folder = directory ? ` in \`models/${directory}\`` : ''
-  const source = url ? `, from ${url}` : ''
-  return `- \`${name}\`${folder}${source}`
+  const folder = directory ? ` in \`models/${inline(directory)}\`` : ''
+  const link = downloadLink(url)
+  const source = link ? `, from ${link}` : ''
+  return `- \`${inline(name)}\`${folder}${source}`
 }
 
 function listSection(title: string, lines: readonly string[]): string[] {
@@ -53,6 +76,21 @@ function failingPackSection(packs: readonly MissingBuildPack[]): string[] {
   ]
 }
 
+function missingSections(
+  packs: readonly MissingBuildPack[],
+  models: readonly MissingBuildModel[]
+): string[] {
+  const [failingPacks, absentPacks] = partition(
+    packs,
+    (pack) => pack.loadFailure !== undefined
+  )
+  return [
+    ...listSection('Custom nodes', absentPacks.map(packLine)),
+    ...failingPackSection(failingPacks),
+    ...listSection('Models', models.map(modelLine))
+  ]
+}
+
 function buildReference(deployment: WorkspaceDeployment): string {
   if (!deployment.build_id) return 'its Build'
   const name = deployment.build_name ?? deployment.build_id
@@ -66,10 +104,6 @@ export function deploymentBuildBrief(
   models: readonly MissingBuildModel[]
 ): string {
   const deploymentName = deployment.deployment_name ?? deployment.deployment_id
-  const [failingPacks, absentPacks] = partition(
-    packs,
-    (pack) => pack.loadFailure !== undefined
-  )
   return [
     '# Add custom nodes and models to a Comfy Cloud deployment',
     '',
@@ -78,20 +112,47 @@ export function deploymentBuildBrief(
     `${buildReference(deployment)} on the Comfy developer platform. That release`,
     'lacks these custom nodes and models the workflow uses:',
     '',
-    ...listSection('Custom nodes', absentPacks.map(packLine)),
-    ...failingPackSection(failingPacks),
-    ...listSection('Models', models.map(modelLine)),
+    ...missingSections(packs, models),
     BUILD_RECIPE_SECTION,
     '',
     '## Where the user decides',
     '',
     'Find the pack for any node under an unknown pack, and a download link for',
-    'any model without one. Show the user what you will change in the Build,',
-    'and wait for a yes. Then cut a new release of it, as the recipe says.',
+    'any model without one.',
+    ...UNLISTED_MODELS,
+    'Show the user what you will change in the Build, and wait for a yes. Then',
+    'cut a new release of it, as the recipe says.',
     '',
     '## When you are done',
     '',
     'Report the release id, and whether it is deployable. Ask the user before',
     `you deploy it to **${deploymentName}**.`
+  ].join('\n')
+}
+
+/** Agent brief for a custom deployment that runs a workflow Cloud can't. */
+export function workflowDeploymentBrief(
+  packs: readonly MissingBuildPack[],
+  models: readonly MissingBuildModel[]
+): string {
+  return [
+    '# Create a custom deployment that runs a workflow',
+    '',
+    'The user opened a ComfyUI workflow on Comfy Cloud that uses custom nodes',
+    'and models Comfy Cloud does not have. Help the user create a **custom',
+    'deployment** on the Comfy developer platform that runs it. Once it is',
+    'deployed, it appears under **Run on** in the ComfyUI editor for everyone in',
+    "the user's workspace.",
+    '',
+    ...missingSections(packs, models),
+    BUILD_RECIPE_SECTION,
+    '',
+    '## Where the user decides',
+    '',
+    'Find the pack for any node under an unknown pack, and a download link for',
+    'any model without one.',
+    ...UNLISTED_MODELS,
+    'Ask the user which GPU the deployment should run on.',
+    CUT_AND_REPORT_SECTION
   ].join('\n')
 }
