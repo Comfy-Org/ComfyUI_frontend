@@ -125,7 +125,7 @@ const { section } = defineProps<{
 
 const { t } = useI18n()
 const { longDate } = useLongDate()
-const { renewalDate, subscription } = useBillingContext()
+const { nextCreditRefillAt, subscription } = useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useBillingUI()
 const {
   canTopUp,
@@ -167,7 +167,7 @@ const canManage = computed(() => permissions.value.canManageSubscription)
 const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
 )
-const cycleResetDate = computed(() => longDate(renewalDate.value))
+const refillDate = computed(() => longDate(nextCreditRefillAt.value))
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
 const planName = computed(() => formatTierName(subscription.value?.tier, false))
 
@@ -186,6 +186,8 @@ const audienceCopy = {
     outOfCreditsBody: `${bs}.outOfCredits.body`,
     outOfCreditsBodyNoDate: `${bs}.outOfCredits.bodyNoDate`,
     outOfCreditsRefusedBody: `${bs}.outOfCredits.refusedBody`,
+    outOfCreditsPausedBody: `${bs}.outOfCredits.pausedBody`,
+    outOfCreditsPausedBodyNoDate: `${bs}.outOfCredits.pausedBodyNoDate`,
     endingTitle: `${bs}.ending.title`,
     endingBody: `${bs}.ending.body`
   },
@@ -193,6 +195,8 @@ const audienceCopy = {
     outOfCreditsBody: `${bs}.outOfCredits.personalBody`,
     outOfCreditsBodyNoDate: `${bs}.outOfCredits.personalBodyNoDate`,
     outOfCreditsRefusedBody: `${bs}.outOfCredits.refusedPersonalBody`,
+    outOfCreditsPausedBody: `${bs}.outOfCredits.pausedPersonalBody`,
+    outOfCreditsPausedBodyNoDate: `${bs}.outOfCredits.pausedPersonalBodyNoDate`,
     endingTitle: `${bs}.ending.personalTitle`,
     endingBody: `${bs}.ending.personalBody`
   }
@@ -279,7 +283,7 @@ const planEndedView = (): BannerView => {
 }
 
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
-  cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
+  refillDate.value ? t(key, { date: refillDate.value }) : t(noDateKey)
 
 const pausedView = (): BannerView => {
   const paused = pausedBannerCopy(canManageBilling.value)
@@ -317,7 +321,10 @@ function refusedOutOfCreditsBody(): string {
     )
   }
   if (denial === 'topup_purchases_paused') {
-    return t('credits.addCreditsRefusal.topupPurchasesPaused')
+    return outOfCreditsBody(
+      copy.value.outOfCreditsPausedBody,
+      copy.value.outOfCreditsPausedBodyNoDate
+    )
   }
   return t(copy.value.outOfCreditsRefusedBody)
 }

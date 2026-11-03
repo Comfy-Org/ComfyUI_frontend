@@ -373,7 +373,8 @@ export default defineConfig([
         rules: {
           'template-classes/no-default-utilities': 'error',
           'template-classes/no-redundant-component-classes': 'error',
-          'template-classes/no-inherited-utilities': 'error'
+          'template-classes/no-inherited-utilities': 'error',
+          'template-classes/prefer-design-system-button': 'error'
         }
       },
       // Disables ESLint rules that conflict with formatters

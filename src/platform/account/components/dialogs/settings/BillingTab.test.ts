@@ -10,6 +10,11 @@ import type {
   HostedTopupCheckout,
   SubscriptionState
 } from '@comfyorg/ingest-types'
+import { selectBillingBanners } from '@comfyorg/account-ui/billing'
+import type {
+  BillingBannerKind,
+  BillingBannerView
+} from '@comfyorg/account-ui/billing'
 
 import { i18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json'
@@ -32,6 +37,7 @@ import { activateBillingScope } from '@/platform/billing/__tests__/activateBilli
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
 
@@ -101,6 +107,7 @@ interface Scenario {
   billingStatus?: 'paid' | 'paused'
   hasParkedBillingOperation?: boolean
   renewalDate?: string | null
+  nextCreditRefillAt?: string | null
 }
 
 function correlationIdOf(link: HTMLElement) {
@@ -153,6 +160,7 @@ function arrange(scenario: Scenario = {}) {
       renewalDate: computed(() => scenario.renewalDate ?? null),
       currentTeamCreditStop: computed(() => null),
       periodCreditGrant: computed(() => null),
+      nextCreditRefillAt: computed(() => scenario.nextCreditRefillAt ?? null),
       initialize,
       fetchStatus,
       resubscribe
@@ -415,6 +423,29 @@ describe('BillingTab', () => {
     arrange({ capabilitiesResolved: false })
 
     expect(screen.getByRole('alert')).toBeInTheDocument()
+  })
+
+  it('shows the error instead of loading forever when the workspace failed to load', async () => {
+    const workspaceStore = useTeamWorkspaceStore()
+    const reloadWorkspace = vi
+      .spyOn(workspaceStore, 'initialize')
+      .mockResolvedValue(undefined)
+    const { initialize, refresh } = arrange({ capabilitiesReady: false })
+    workspaceStore.initState = 'error'
+    await nextTick()
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "We couldn't load your plan."
+    )
+    expect(
+      screen.queryByTestId('billing-plan-skeleton')
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(reloadWorkspace).toHaveBeenCalled()
+    expect(initialize).toHaveBeenCalled()
+    expect(refresh).toHaveBeenCalled()
   })
 
   it('reads Activating while subscription_state is activating', () => {
@@ -1183,18 +1214,45 @@ describe('BillingTab', () => {
   })
 
   it.for([
-    { planKind: 'self_serve', date: 'Refills November 15, 2026' },
-    { planKind: 'sales_managed', date: null },
-    { planKind: 'none', date: null },
-    { planKind: null, date: null }
+    {
+      planKind: 'self_serve',
+      billingStatus: 'paid',
+      nextCreditRefillAt: '2026-12-01T00:00:00Z',
+      date: 'Refills December 1, 2026'
+    },
+    {
+      planKind: 'sales_managed',
+      billingStatus: 'paid',
+      nextCreditRefillAt: '2026-12-01T00:00:00Z',
+      date: 'Refills December 1, 2026'
+    },
+    {
+      planKind: 'self_serve',
+      billingStatus: 'paid',
+      nextCreditRefillAt: null,
+      date: null
+    },
+    {
+      planKind: 'sales_managed',
+      billingStatus: 'paid',
+      nextCreditRefillAt: null,
+      date: null
+    },
+    {
+      planKind: 'sales_managed',
+      billingStatus: 'paused',
+      nextCreditRefillAt: '2026-12-01T00:00:00Z',
+      date: 'Refills when the payment goes through'
+    }
   ] as const)(
-    'shows a $planKind paused-plan refill date only when self-serve',
-    ({ planKind, date }) => {
+    'shows the refill line for a $billingStatus $planKind plan (served: $nextCreditRefillAt), never the renewal date',
+    ({ planKind, billingStatus, nextCreditRefillAt, date }) => {
       arrange({
         planKind,
-        billingStatus: 'paused',
+        billingStatus,
         subscription: { ...activeSubscription, tier: 'ENTERPRISE' },
         renewalDate: '2026-11-15T00:00:00Z',
+        nextCreditRefillAt,
         balance: {
           amountMicros: 1000,
           currency: 'usd',
@@ -1530,6 +1588,30 @@ describe('BillingTab', () => {
       expect(
         within(banner).queryByRole('button', { name: 'Add credits' })
       ).not.toBeInTheDocument()
+    })
+
+    it('disables the top-up row Add credits while the server pauses purchases', async () => {
+      arrange({
+        planKind: 'self_serve',
+        canTopUp: false,
+        topUpDenial: 'topup_purchases_paused',
+        balance: {
+          amountMicros: 0,
+          currency: 'usd',
+          effectiveBalanceMicros: 0,
+          effectiveBalanceAuthoritative: true,
+          prepaidBalanceMicros: 0,
+          cloudCreditBalanceMicros: 0
+        }
+      })
+
+      const card = await screen.findByTestId('billing-credits-card')
+      expect(
+        within(card).getByRole('button', { name: 'Add credits' })
+      ).toBeDisabled()
+      expect(card).toHaveTextContent(
+        "Buying credits isn't available right now. Try again later, or message support."
+      )
     })
 
     it('reveals the processing payment once the failed top-up is dismissed', async () => {
@@ -1991,4 +2073,133 @@ describe('BillingTab', () => {
       expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
     })
   })
+})
+
+describe('BillingTab banner stack parity with selectBillingBanners', () => {
+  const BANNER_KINDS: Record<string, BillingBannerKind> = {
+    'billing-paused-banner': 'paused',
+    'billing-plan-checkout-banner': 'planCheckout',
+    'billing-topup-checkout-banner': 'topupCheckout',
+    'billing-parked-banner': 'parked',
+    'billing-auto-top-up-banner': 'autoTopUp',
+    'billing-local-credit-banner': 'credit'
+  }
+
+  const text = { title: '', body: '' }
+  const VIEWS: Record<BillingBannerKind, BillingBannerView> = {
+    paused: { kind: 'paused', ...text, muted: false, action: null },
+    planCheckout: {
+      kind: 'planCheckout',
+      ...text,
+      muted: true,
+      action: null,
+      href: null,
+      dismissKey: null
+    },
+    topupCheckout: {
+      kind: 'topupCheckout',
+      ...text,
+      action: null,
+      dismissKey: 'cs_processing:processing'
+    },
+    parked: {
+      kind: 'parked',
+      ...text,
+      action: 'contactSupport',
+      href: 'https://comfy.org/contact/'
+    },
+    planStatus: { kind: 'planStatus', ...text },
+    autoTopUp: {
+      kind: 'autoTopUp',
+      ...text,
+      action: 'updatePayment',
+      href: 'https://platform.test/profile/billing'
+    },
+    credit: {
+      kind: 'credit',
+      ...text,
+      action: null,
+      dismissKey: 'outOfCredits'
+    }
+  }
+
+  function shownStack() {
+    return screen
+      .queryAllByTestId(
+        new RegExp(`^(${Object.keys(BANNER_KINDS).join('|')})$`)
+      )
+      .map((banner) => BANNER_KINDS[banner.dataset.testid ?? ''])
+  }
+
+  function serveProcessingTopup() {
+    vi.mocked(billingApi.listTopupCheckouts).mockResolvedValue({
+      checkouts: [
+        {
+          session_id: 'cs_processing',
+          amount_cents: 2500,
+          created_at: '2026-10-20T00:00:00Z'
+        }
+      ],
+      next_cursor: null
+    })
+    vi.mocked(billingApi.getTopupCheckout).mockResolvedValue({
+      session_id: 'cs_processing',
+      amount_cents: 2500,
+      payment_amount_cents: 2500,
+      state: 'payment_processing'
+    })
+  }
+
+  it.for<{
+    case: string
+    scenario: Scenario
+    topupProcessing?: boolean
+    candidates: BillingBannerKind[]
+  }>([
+    {
+      case: 'out of credits alone',
+      scenario: {},
+      candidates: ['credit']
+    },
+    {
+      case: 'paused while out of credits',
+      scenario: { isPaused: true },
+      candidates: ['paused', 'credit']
+    },
+    {
+      case: 'parked while out of credits',
+      scenario: { hasParkedBillingOperation: true },
+      candidates: ['parked', 'credit']
+    },
+    {
+      case: 'a processing top-up while out of credits',
+      scenario: {},
+      topupProcessing: true,
+      candidates: ['topupCheckout', 'credit']
+    },
+    {
+      case: 'paused and parked while out of credits',
+      scenario: { isPaused: true, hasParkedBillingOperation: true },
+      candidates: ['paused', 'parked', 'credit']
+    }
+  ])(
+    'stacks $case like the tab',
+    async ({ scenario, topupProcessing, candidates }) => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      if (topupProcessing) serveProcessingTopup()
+      arrange({
+        ...scenario,
+        subscription: { ...activeSubscription, hasFunds: false }
+      })
+      if (topupProcessing) {
+        await screen.findByTestId('billing-topup-checkout-banner')
+      }
+
+      expect(shownStack()).toEqual(
+        selectBillingBanners(candidates.map((kind) => VIEWS[kind])).map(
+          ({ kind }) => kind
+        )
+      )
+    }
+  )
 })

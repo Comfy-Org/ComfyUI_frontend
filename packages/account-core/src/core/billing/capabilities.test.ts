@@ -9,7 +9,6 @@ import {
   createCapabilitiesReader,
   readCapabilityRevision
 } from './capabilities'
-import { decodeCapabilityDenials } from './capabilityDenials'
 import { createSessionBillingTransport } from './transport'
 import {
   authenticated,
@@ -544,9 +543,13 @@ describe('createCapabilitiesReader', () => {
       )
     })
 
-    it.for(['something_new', 'reason_from_a_newer_server'])(
-      'keeps the capability set usable for unrecognized reason %s',
-      async (reason) => {
+    it.for([
+      { reason: 'something_new', decoded: 'unspecified' },
+      { reason: 'reason_from_a_newer_server', decoded: 'unspecified' },
+      { reason: 'topup_purchases_paused', decoded: 'topup_purchases_paused' }
+    ])(
+      'keeps the capability set usable and decodes can_top_up reason $reason as $decoded',
+      async ({ reason, decoded }) => {
         const { scopeSource } = fakeSession()
         const { transport } = fakeTransport([
           httpOk(
@@ -561,12 +564,10 @@ describe('createCapabilitiesReader', () => {
           scopeSource
         }).read()
 
-        // The point of the lenient decode: a reason this client predates must
-        // not cost the caller the capability set that gates its UI.
         expect(result.status).toBe('ok')
         if (result.status !== 'ok') return
         expect(result.value.capabilities.can_top_up).toBe(true)
-        expect(result.value.denials.can_top_up).toBe('unspecified')
+        expect(result.value.denials.can_top_up).toBe(decoded)
       }
     )
 
@@ -759,13 +760,5 @@ describe('readCapabilityRevision', () => {
     ['a value beyond the safe integer range', '9007199254740993']
   ] as const)('reports nothing for %s', ([, value]) => {
     expect(readCapabilityRevision(() => value)).toBeUndefined()
-  })
-})
-
-describe('decodeCapabilityDenials', () => {
-  it('keeps topup_purchases_paused as a known reason', () => {
-    expect(
-      decodeCapabilityDenials({ can_top_up: 'topup_purchases_paused' })
-    ).toEqual({ can_top_up: 'topup_purchases_paused' })
   })
 })

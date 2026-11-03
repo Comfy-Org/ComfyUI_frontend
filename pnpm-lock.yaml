@@ -1064,6 +1064,9 @@ importers:
       '@comfyorg/test-utils':
         specifier: workspace:*
         version: link:../test-utils
+      '@storybook/vue3-vite':
+        specifier: 'catalog:'
+        version: 10.6.5(storybook@10.6.5(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.1))(typescript@6.0.3)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
       '@stripe/stripe-js':
         specifier: 'catalog:'
         version: 9.12.1
@@ -1076,6 +1079,9 @@ importers:
       '@testing-library/vue':
         specifier: 'catalog:'
         version: 8.1.0(@vue/compiler-dom@3.5.44)(@vue/compiler-sfc@3.5.44)(@vue/server-renderer@3.5.44)(vue@3.5.44(typescript@6.0.3))
+      '@total-typescript/shoehorn':
+        specifier: 'catalog:'
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
@@ -1094,6 +1100,9 @@ importers:
       reka-ui:
         specifier: 'catalog:'
         version: 2.11.0(vue@3.5.44(typescript@6.0.3))
+      storybook:
+        specifier: 'catalog:'
+        version: 10.6.5(@types/react@19.3.0)(prettier@3.9.5)(react@19.3.1)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
