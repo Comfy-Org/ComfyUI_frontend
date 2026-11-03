@@ -30,12 +30,8 @@ function serializeRule(rule: CSSRule): string {
     return rule.styleSheet ? serializeRules(rule.styleSheet.cssRules) : ''
   if (rule instanceof CSSStyleRule)
     return `${rule.selectorText}{${rule.style.cssText}${serializeRules(rule.cssRules)}}`
-  if (rule instanceof CSSLayerBlockRule)
-    return `@layer ${rule.name}{${serializeRules(rule.cssRules)}}`
-  if (rule instanceof CSSSupportsRule)
-    return `@supports ${rule.conditionText}{${serializeRules(rule.cssRules)}}`
-  if (rule instanceof CSSContainerRule)
-    return `@container ${rule.conditionText}{${serializeRules(rule.cssRules)}}`
+  if (rule instanceof CSSGroupingRule)
+    return `${rule.cssText.slice(0, rule.cssText.indexOf('{'))}{${serializeRules(rule.cssRules)}}`
   return rule.cssText
 }
 
@@ -176,6 +172,40 @@ async function loadImage(src: string): Promise<HTMLImageElement | undefined> {
   }
 }
 
+function paddedBounds(elements: readonly PositionedElement[], padding: number) {
+  if (elements.length === 0) return undefined
+  const left = Math.min(...elements.map(({ x }) => x)) - padding
+  const top = Math.min(...elements.map(({ y }) => y)) - padding
+  const right =
+    Math.max(...elements.map(({ x, element }) => x + element.offsetWidth)) +
+    padding
+  const bottom =
+    Math.max(...elements.map(({ y, element }) => y + element.offsetHeight)) +
+    padding
+  const width = right - left
+  const height = bottom - top
+  if (!(width > 0 && height > 0)) return undefined
+  return { left, top, width, height }
+}
+
+function toSvgMarkup(
+  content: Element,
+  width: number,
+  height: number,
+  pixelRatio: number
+): string {
+  const svg = document.createElementNS(SVG_NS, 'svg')
+  svg.setAttribute('width', String(width * pixelRatio))
+  svg.setAttribute('height', String(height * pixelRatio))
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`)
+  const foreignObject = document.createElementNS(SVG_NS, 'foreignObject')
+  foreignObject.setAttribute('width', '100%')
+  foreignObject.setAttribute('height', '100%')
+  foreignObject.append(content)
+  svg.append(foreignObject)
+  return new XMLSerializer().serializeToString(svg)
+}
+
 export function createElementRasterizer() {
   const styles = collectStyles()
 
@@ -183,18 +213,9 @@ export function createElementRasterizer() {
     elements: readonly PositionedElement[],
     { padding, pixelRatio, prepareClone }: RasterizeOptions
   ) {
-    if (elements.length === 0) return undefined
-    const left = Math.min(...elements.map(({ x }) => x)) - padding
-    const top = Math.min(...elements.map(({ y }) => y)) - padding
-    const right =
-      Math.max(...elements.map(({ x, element }) => x + element.offsetWidth)) +
-      padding
-    const bottom =
-      Math.max(...elements.map(({ y, element }) => y + element.offsetHeight)) +
-      padding
-    const width = right - left
-    const height = bottom - top
-    if (!(width > 0 && height > 0)) return undefined
+    const bounds = paddedBounds(elements, padding)
+    if (!bounds) return undefined
+    const { left, top, width, height } = bounds
 
     const shells = ancestorShells(elements[0].element)
     for (const { element, x, y } of elements) {
@@ -219,17 +240,7 @@ export function createElementRasterizer() {
     style.textContent = await styles
     container.append(style, shells.outermost)
 
-    const svg = document.createElementNS(SVG_NS, 'svg')
-    svg.setAttribute('width', String(width * pixelRatio))
-    svg.setAttribute('height', String(height * pixelRatio))
-    svg.setAttribute('viewBox', `0 0 ${width} ${height}`)
-    const foreignObject = document.createElementNS(SVG_NS, 'foreignObject')
-    foreignObject.setAttribute('width', '100%')
-    foreignObject.setAttribute('height', '100%')
-    foreignObject.append(container)
-    svg.append(foreignObject)
-
-    const markup = new XMLSerializer().serializeToString(svg)
+    const markup = toSvgMarkup(container, width, height, pixelRatio)
     const image = await loadImage(
       `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`
     )
