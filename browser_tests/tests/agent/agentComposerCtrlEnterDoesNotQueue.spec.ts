@@ -1,29 +1,15 @@
-import type { Request } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest, sentTurn } from '@e2e/tests/agent/agentPanelMocks'
 
-// Source: Frontend 1.60 QA, part B row REG06 (Comfy-Org/ideation-sharing,
-// branch synap5e/docs/fe160-qa-checklist,
-// fe160-qa-checklist/results/part-b/README.md): "Ctrl+Enter pressed IN the
-// Agent composer sends the message AND queues a canvas run", on 1.59.0.dev2
-// and 1.60.0.dev1.
-//
-// Ctrl+Enter is the global Comfy.QueuePrompt binding and deliberately fires
-// from text inputs, so the composer has to keep an Enter it consumed to
-// itself. Canvas Ctrl+Enter must still queue.
-
 const test = mergeTests(agentTest, webSocketFixture)
 
 const PROMPT = 'Make the image warmer'
 
-function isQueuePrompt(request: Request): boolean {
-  return (
-    request.method() === 'POST' &&
-    new URL(request.url()).pathname.endsWith('/api/prompt')
-  )
+interface RunRequestLog {
+  runRequestLog: string[]
 }
 
 test.describe(
@@ -32,23 +18,55 @@ test.describe(
   () => {
     test.use({ connectWebSocketToServer: false })
 
-    test('sends the message without queueing the workflow', async ({
+    test('sends the message without queueing the workflow, while canvas Ctrl+Enter still queues', async ({
       agentPanel,
       comfyPage,
       postedMessages,
       page
     }) => {
-      const queued: Request[] = []
-      await page.route('**/api/prompt', (route) => {
-        if (!isQueuePrompt(route.request())) return route.fallback()
-        queued.push(route.request())
-        return route.fulfill(
-          jsonRoute({ prompt_id: 'ctrl-enter-run', number: 1, node_errors: {} })
+      await page.route('**/api/prompt', (route) =>
+        route.request().method() === 'POST'
+          ? route.fulfill(
+              jsonRoute({ prompt_id: 'run', number: 1, node_errors: {} })
+            )
+          : route.fallback()
+      )
+      await page.evaluate(() => {
+        const log: string[] = []
+        ;(window as unknown as RunRequestLog).runRequestLog = log
+        window.addEventListener(
+          'keydown',
+          (event) => {
+            if (event.key !== 'Enter') return
+            const onCanvas =
+              event.target instanceof Element &&
+              event.target.id === 'graph-canvas'
+            log.push(onCanvas ? 'Enter on canvas' : 'Enter elsewhere')
+          },
+          { capture: true }
+        )
+        window.app!.api.addEventListener('promptQueueing', () =>
+          log.push('run requested')
         )
       })
+      const runRequestLog = () =>
+        page.evaluate(() => (window as unknown as RunRequestLog).runRequestLog)
+
+      async function pressCtrlEnterOnCanvas() {
+        await comfyPage.canvas.focus()
+        await expect(comfyPage.canvas).toBeFocused()
+        await page.keyboard.press('Control+Enter')
+      }
 
       await agentPanel.open()
       await agentPanel.selectWorkflow()
+
+      await test.step('Ctrl+Enter on the canvas requests a run', async () => {
+        await pressCtrlEnterOnCanvas()
+        await expect
+          .poll(runRequestLog)
+          .toEqual(['Enter on canvas', 'run requested'])
+      })
 
       await test.step('Ctrl+Enter in the composer sends the prompt', async () => {
         await agentPanel.composer.fill(PROMPT)
@@ -58,19 +76,20 @@ test.describe(
         expect(sentTurn(postedMessages).content).toContain(PROMPT)
       })
 
-      await test.step('Ctrl+Enter on the canvas still queues a run', async () => {
-        await comfyPage.canvas.click({ position: { x: 100, y: 100 } })
-        await expect(agentPanel.composer).not.toBeFocused()
-        await page.keyboard.press('Control+Enter')
-        await expect.poll(() => queued.length).toBeGreaterThan(0)
+      await test.step('only the canvas presses requested runs', async () => {
+        await pressCtrlEnterOnCanvas()
+        await expect
+          .poll(runRequestLog, {
+            message: 'Ctrl+Enter in the Agent composer also queued the workflow'
+          })
+          .toEqual([
+            'Enter on canvas',
+            'run requested',
+            'Enter elsewhere',
+            'Enter on canvas',
+            'run requested'
+          ])
       })
-
-      // The composer keydown came first, so a run it queued would already be
-      // recorded by the time the canvas run is.
-      expect(
-        queued,
-        'Ctrl+Enter in the Agent composer also queued the workflow'
-      ).toHaveLength(1)
     })
   }
 )

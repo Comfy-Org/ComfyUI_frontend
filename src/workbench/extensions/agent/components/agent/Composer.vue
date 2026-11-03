@@ -335,9 +335,6 @@ function onComposerKeydown(event: KeyboardEvent): void {
   requestKeyboardDescription(event)
   if (event.key === 'Enter') {
     if (!handleMentionKeydown(event)) onEnter(event)
-    // Modified Enter chords (Ctrl+Enter queues the workflow) are global
-    // keybindings that deliberately fire from text inputs; an Enter the
-    // composer consumed must not also reach them.
     if (event.defaultPrevented) event.stopPropagation()
     return
   }
