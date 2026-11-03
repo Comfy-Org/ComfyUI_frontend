@@ -203,19 +203,33 @@ describe('WidgetSelectDefault', () => {
     expect(screen.getByRole('combobox')).toHaveTextContent('Studio / approved')
   })
 
-  it('distinguishes duplicate filenames by full path and emits the selected raw path', async () => {
-    const first = 'studio/models/portrait.safetensors'
-    const second = 'archive/models/portrait.safetensors'
-    const { user, onUpdate } = renderComponent(
-      createWidget([first, second]),
-      first,
-      undefined,
-      true
-    )
-    await openDropdown(user)
-    await user.click(screen.getByRole('option', { name: second }))
-    expect(onUpdate).toHaveBeenCalledWith(second)
-  })
+  it.for([
+    {
+      first: 'studio/models/portrait.safetensors',
+      second: 'archive/models/portrait.safetensors',
+      unifiedRows: false
+    },
+    {
+      first: '/studio/models/portrait.safetensors',
+      second: 'studio/models/portrait.safetensors',
+      unifiedRows: true
+    }
+  ])(
+    'distinguishes $first from $second and emits the raw path',
+    async ({ first, second, unifiedRows }) => {
+      const { user, onUpdate } = renderComponent(
+        createWidget([first, second]),
+        first,
+        undefined,
+        true,
+        unifiedRows
+      )
+      await openDropdown(user)
+      expect(screen.getByRole('option', { name: first })).toBeVisible()
+      await user.click(screen.getByRole('option', { name: second }))
+      expect(onUpdate).toHaveBeenCalledWith(second)
+    }
+  )
 
   it.for([
     { path: 'studio/models/portrait.safetensors' },
