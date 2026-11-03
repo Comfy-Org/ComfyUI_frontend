@@ -1417,7 +1417,11 @@ export class LiveGraphApplier {
         Object.is(documentWidget(node, name)?.value, value)
       )
       .map(([name]) => name)
-    for (const controller of nestedGroupControllers(node, applied)) {
+    for (const controller of nestedGroupControllers(
+      node,
+      Object.keys(widgets),
+      applied
+    )) {
       const count = documentWidgets[controller.name]
       if (count === undefined || reachesDynamicGroupRowCount(controller, count))
         continue
@@ -1425,10 +1429,8 @@ export class LiveGraphApplier {
         node,
         count,
         Number(controller.value),
-        {
-          ...AGENT_APPLY_TAGS,
-          outcome: 'degraded'
-        }
+        { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+        'remote_remount'
       )
     }
   }
@@ -1859,13 +1861,18 @@ function widgetEntryRank(node: LGraphNode, name: string): number {
 
 function nestedGroupControllers(
   node: LGraphNode,
-  written: readonly string[]
+  written: readonly string[],
+  applied: readonly string[]
 ): IBaseWidget[] {
+  const under = (name: string, parent: string) => name.startsWith(`${parent}.`)
   return (node.widgets ?? []).filter(
     (widget) =>
       isDynamicGroupController(widget) &&
       !written.includes(widget.name) &&
-      written.some((name) => widget.name.startsWith(`${name}.`))
+      applied.some((name) => under(widget.name, name)) &&
+      !written.some(
+        (name) => !applied.includes(name) && under(widget.name, name)
+      )
   )
 }
 

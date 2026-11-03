@@ -491,14 +491,19 @@ describe('remote DynamicGroup counts outside a row-count write', () => {
     return { apply, write, widget }
   }
 
-  function mismatch(type: string, requested: number, actual: number) {
+  function mismatch(
+    type: string,
+    requested: number,
+    actual: number,
+    operation = 'remote_apply'
+  ) {
     return [
       expect.objectContaining({
         message: 'Remote DynamicGroup row count did not apply'
       }),
       expect.objectContaining({
         errorType: 'agent_graph_dynamic_group_rows_mismatch',
-        tags: expect.objectContaining({ node_type: type }),
+        tags: expect.objectContaining({ node_type: type, operation }),
         context: { requested, actual }
       })
     ]
@@ -556,7 +561,7 @@ describe('remote DynamicGroup counts outside a row-count write', () => {
     expect(widget('mode.rows')?.value).toBe(0)
     expect(write({ mode: 'on' })).toBe(0)
     expect(vi.mocked(reportError).mock.calls).toEqual([
-      mismatch('RefusedComboGroup', 2, 0)
+      mismatch('RefusedComboGroup', 2, 0, 'remote_remount')
     ])
   })
 
@@ -603,7 +608,7 @@ describe('remote DynamicGroup counts outside a row-count write', () => {
     expect(write({ mode: 'on' })).toBe(0)
     expect(widget('mode.rows')?.value).toBe(2)
     expect(vi.mocked(reportError).mock.calls).toEqual([
-      mismatch('GrownComboGroup', 3, 2)
+      mismatch('GrownComboGroup', 3, 2, 'remote_remount')
     ])
   })
 })
