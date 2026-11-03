@@ -18,8 +18,8 @@ import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import {
   getComboSpecComboOptions,
   isComboInputSpec
-} from '@/schemas/nodeDefSchema'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'

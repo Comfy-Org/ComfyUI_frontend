@@ -127,19 +127,20 @@ describe('the entry link a tab arrives with', () => {
     ])
   })
 
-  it('reports a link whose way back cannot be resolved as rejected, not received', async () => {
+  it('reports a test-family platform pricing link as bounced to the platform it named', async () => {
     const sent = trackedEvents()
     const { router, leave } = arrivalRouter()
 
     await router.push('/v1/pricing?product=platform&return_to=platform_account')
 
-    expect(leave).not.toHaveBeenCalled()
+    expect(leave).toHaveBeenCalledOnce()
     expect(sent()).toStrictEqual([
       {
         operation: 'web_entry',
-        stage: 'rejected',
+        stage: 'bounced',
         outcome: 'pending',
-        error_code: 'UNKNOWN_RETURN_TARGET'
+        reason: 'pricing_link',
+        to: 'platform_account'
       }
     ])
   })

@@ -1,56 +1,46 @@
 {
   "id": "comfy-registry",
   "capability": "Comfy Registry client",
-  "description": "Access to the Comfy Registry of custom-node packs: the registry REST client, the cached registry store, and the node-pack search gateway that falls back between the Algolia and registry search providers. The extension manager and missing-node flows consume this record.",
+  "description": "Access to the Comfy Registry of custom-node packs: the generated @comfyorg/registry-types API types, the registry REST client, the cached registry store, and the node-pack search gateway that falls back between the Algolia and registry search providers. The extension manager and missing-node flows consume this record.",
   "modules": [
     {
-      "path": "src/composables/useCachedRequest.ts",
-      "role": "infrastructure"
+      "path": "src/composables/useCachedRequest.ts"
     },
     {
-      "path": "src/constants/searchConstants.ts",
-      "role": "domain"
+      "path": "src/constants/searchConstants.ts"
     },
     {
-      "path": "src/services/comfyRegistryService.ts",
-      "role": "infrastructure"
+      "path": "src/services/comfyRegistryService.ts"
     },
     {
-      "path": "src/services/gateway/**",
-      "role": "application"
+      "path": "src/services/gateway/**"
     },
     {
-      "path": "src/services/providers/algoliaSearchProvider.ts",
-      "role": "infrastructure"
+      "path": "src/services/providers/algoliaSearchProvider.ts"
     },
     {
-      "path": "src/services/providers/registrySearchProvider.ts",
-      "role": "infrastructure"
+      "path": "src/services/providers/registrySearchProvider.ts"
     },
     {
-      "path": "src/stores/comfyRegistryStore.ts",
-      "role": "application"
+      "path": "src/stores/comfyRegistryStore.ts"
     },
     {
-      "path": "src/types/algoliasearch-lite.d.ts",
-      "role": "domain"
+      "path": "src/types/algoliasearch-lite.d.ts"
     },
     {
-      "path": "src/types/algoliaTypes.ts",
-      "role": "domain"
+      "path": "src/types/algoliaTypes.ts"
     },
     {
-      "path": "src/types/comfyRegistryTypes.ts",
-      "role": "domain"
+      "path": "src/types/comfyRegistryTypes.ts"
     },
     {
-      "path": "src/types/searchServiceTypes.ts",
-      "role": "domain"
+      "path": "src/types/searchServiceTypes.ts"
+    },
+    {
+      "path": "packages/registry-types/src/**"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["extension-manager"],
   "characterizationScenarios": [
     {
       "name": "Registry client and store fetch, cache, and abort pack and node requests",

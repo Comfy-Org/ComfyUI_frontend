@@ -51,7 +51,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import type { PlanCheckoutBanner } from '@/platform/billing/components/billingTab/planCheckoutBanner'
+import type { PlanCheckoutBanner } from '@comfyorg/account-core/billing'
 
 const { banner } = defineProps<{
   banner: PlanCheckoutBanner | null

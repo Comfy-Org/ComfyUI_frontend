@@ -97,6 +97,7 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { isMemberTopUpDenial } from '@comfyorg/account-core/billing'
 import { pausedBannerCopy } from '@/platform/billing/composables/usePausedBanner'
 import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/billing/composables/useResubscribe'
@@ -118,10 +119,15 @@ const { section } = defineProps<{
 
 const { t } = useI18n()
 const { longDate } = useLongDate()
-const { renewalDate, subscription } = useBillingContext()
+const { nextCreditRefillAt, subscription } = useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useBillingUI()
-const { canTopUp, topUpDenial, canManageBilling, runDeniedPaymentPastDue } =
-  useBillingCapabilities()
+const {
+  canTopUp,
+  topUpDenial,
+  hasResolvedCapabilities,
+  canManageBilling,
+  runDeniedPaymentPastDue
+} = useBillingCapabilities()
 const {
   kind: overallKind,
   lifecycleKind,
@@ -150,7 +156,7 @@ const canManage = computed(() => permissions.value.canManageSubscription)
 const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
 )
-const cycleResetDate = computed(() => longDate(renewalDate.value))
+const refillDate = computed(() => longDate(nextCreditRefillAt.value))
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
 const planName = computed(() => formatTierName(subscription.value?.tier, false))
 
@@ -168,12 +174,18 @@ const audienceCopy = {
   team: {
     outOfCreditsBody: `${bs}.outOfCredits.body`,
     outOfCreditsBodyNoDate: `${bs}.outOfCredits.bodyNoDate`,
+    outOfCreditsRefusedBody: `${bs}.outOfCredits.refusedBody`,
+    outOfCreditsPausedBody: `${bs}.outOfCredits.pausedBody`,
+    outOfCreditsPausedBodyNoDate: `${bs}.outOfCredits.pausedBodyNoDate`,
     endingTitle: `${bs}.ending.title`,
     endingBody: `${bs}.ending.body`
   },
   personal: {
     outOfCreditsBody: `${bs}.outOfCredits.personalBody`,
     outOfCreditsBodyNoDate: `${bs}.outOfCredits.personalBodyNoDate`,
+    outOfCreditsRefusedBody: `${bs}.outOfCredits.refusedPersonalBody`,
+    outOfCreditsPausedBody: `${bs}.outOfCredits.pausedPersonalBody`,
+    outOfCreditsPausedBodyNoDate: `${bs}.outOfCredits.pausedPersonalBodyNoDate`,
     endingTitle: `${bs}.ending.personalTitle`,
     endingBody: `${bs}.ending.personalBody`
   }
@@ -258,7 +270,7 @@ const planEndedView = (): BannerView => {
 }
 
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
-  cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
+  refillDate.value ? t(key, { date: refillDate.value }) : t(noDateKey)
 
 const pausedView = (): BannerView => {
   const paused = pausedBannerCopy(canManageBilling.value)
@@ -287,30 +299,44 @@ const pastDueView = (): BannerView => ({
   dismissible: true
 })
 
+function refusedOutOfCreditsBody(): string {
+  const denial = topUpDenial.value
+  if (isMemberTopUpDenial(denial)) {
+    return outOfCreditsBody(
+      `${bs}.outOfCredits.memberBody`,
+      `${bs}.outOfCredits.memberBodyNoDate`
+    )
+  }
+  if (denial === 'topup_purchases_paused') {
+    return outOfCreditsBody(
+      copy.value.outOfCreditsPausedBody,
+      copy.value.outOfCreditsPausedBodyNoDate
+    )
+  }
+  return t(copy.value.outOfCreditsRefusedBody)
+}
+
 const outOfCreditsView = (): BannerView | null => {
   if (runDeniedPaymentPastDue.value) return pastDueView()
   if (isTopUpDeniedPastDue(topUpDenial.value)) return pastDueView()
-  if (!canManage.value) {
+  if (canTopUp.value) {
     return {
       muted: false,
       title: t(`${bs}.outOfCredits.title`),
       body: outOfCreditsBody(
-        `${bs}.outOfCredits.memberBody`,
-        `${bs}.outOfCredits.memberBodyNoDate`
+        copy.value.outOfCreditsBody,
+        copy.value.outOfCreditsBodyNoDate
       ),
-      action: null,
+      action: 'addCredits',
       dismissible: true
     }
   }
-  if (!canTopUp.value) return null
+  if (!hasResolvedCapabilities.value) return null
   return {
     muted: false,
     title: t(`${bs}.outOfCredits.title`),
-    body: outOfCreditsBody(
-      copy.value.outOfCreditsBody,
-      copy.value.outOfCreditsBodyNoDate
-    ),
-    action: 'addCredits',
+    body: refusedOutOfCreditsBody(),
+    action: null,
     dismissible: true
   }
 }

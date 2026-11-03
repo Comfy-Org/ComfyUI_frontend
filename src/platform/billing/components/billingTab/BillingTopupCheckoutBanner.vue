@@ -38,7 +38,7 @@ import { useI18n } from 'vue-i18n'
 
 import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
-import type { TopupCheckoutBanner } from '@/platform/billing/components/billingTab/topupCheckoutBanner'
+import type { TopupCheckoutBanner } from '@comfyorg/account-core/billing'
 
 const { banner, canTopUp, addCreditsVariant } = defineProps<{
   banner: TopupCheckoutBanner | null

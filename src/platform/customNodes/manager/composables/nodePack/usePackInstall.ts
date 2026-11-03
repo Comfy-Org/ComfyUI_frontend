@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { components } from '@/types/comfyRegistryTypes'
-import type { components as ManagerComponents } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import type { components as ManagerComponents } from '@comfyorg/api-client/generatedManagerTypes'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { useNodeConflictDialog } from '@/platform/customNodes/manager/composables/dialogs/useNodeConflictDialog'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'

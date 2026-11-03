@@ -248,7 +248,14 @@
 
 <script setup lang="ts">
 import { useElementSize, useTimeoutFn } from '@vueuse/core'
-import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -366,6 +373,11 @@ watch(
   { immediate: true }
 )
 
+let isUnmounted = false
+onBeforeUnmount(() => {
+  isUnmounted = true
+})
+
 function handleImageLoad(event: Event) {
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
@@ -376,7 +388,7 @@ function handleImageLoad(event: Event) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
 
-  if (nodeId) {
+  if (nodeId && !isUnmounted) {
     nodeOutputStore.syncLegacyNodeImgs(nodeId, img, currentIndex.value)
   }
 }

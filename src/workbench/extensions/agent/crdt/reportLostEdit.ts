@@ -22,6 +22,7 @@ export function reportLostEdit(
     graphId?: string
     nodeId?: string | number
     classType?: string
+    widget?: string
     message?: string
     failedIndex?: number
   },

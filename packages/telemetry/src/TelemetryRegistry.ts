@@ -14,6 +14,7 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentCreditTransitionNoticeMetadata,
+  AgentCreditUsageExposureMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
@@ -25,6 +26,7 @@ import type {
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentSendGatedMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -496,6 +498,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAgentFreeUseExposure?.(metadata))
   }
 
+  trackAgentCreditUsageExposure(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentCreditUsageExposure?.(metadata)
+    )
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
   }
@@ -569,6 +579,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) =>
       provider.trackAgentOnboardingNotShown?.(metadata)
     )
+  }
+
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentSendGated?.(metadata))
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {

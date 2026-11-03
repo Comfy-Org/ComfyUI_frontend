@@ -15,6 +15,7 @@ import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
   AgentCreditTransitionNoticeMetadata,
+  AgentCreditUsageExposureMetadata,
   AgentEntryButtonClickedMetadata,
   AgentFreeUseExposureMetadata,
   AgentFreeUseNoticeMetadata,
@@ -23,6 +24,7 @@ import type {
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentSendGatedMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -399,6 +401,12 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
   }
 
+  trackAgentCreditUsageExposure(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE, metadata)
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.capture(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
   }
@@ -458,6 +466,10 @@ export class HostTelemetrySink implements TelemetryProvider {
     metadata: AgentOnboardingNotShownMetadata
   ): void {
     this.capture(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
+  }
+
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_SEND_GATED, metadata)
   }
 
   trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
