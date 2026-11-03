@@ -486,7 +486,6 @@ import { formatSubscriptionDate } from '@/platform/billing/components/subscripti
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
-import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -520,7 +519,6 @@ const emit = defineEmits<{
 
 const { t, n, locale } = useI18n()
 const capabilities = useBillingCapabilities()
-const { permissions } = useBillingUI()
 
 // Every CTA here resolves to a billing write the server authorizes on its own,
 // so each catalog asks whether any write that reaches it is permitted instead of
@@ -532,7 +530,6 @@ const { permissions } = useBillingUI()
 // The team catalog is not reachable by downgrading to personal, so its gate
 // stops at the three writes that do reach it.
 const lifecycleActionPermitted = computed(() => {
-  if (!isCloud) return permissions.value.canManageSubscription
   if (!capabilities.snapshotAuthoritative.value) return true
   return (
     capabilities.canSubscribeSelfServe.value ||
@@ -544,7 +541,6 @@ const lifecycleActionPermitted = computed(() => {
 // Read on its own by the plan-scope toggle, which offers or withholds the whole
 // personal catalog rather than one CTA, so it keeps its own capability.
 const canDowngradeToPersonal = computed(() => {
-  if (!isCloud) return permissions.value.canDowngradeToPersonal
   if (!capabilities.snapshotAuthoritative.value) return true
   return capabilities.canDowngradeToPersonal.value
 })

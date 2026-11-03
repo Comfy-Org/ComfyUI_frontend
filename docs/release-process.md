@@ -64,6 +64,13 @@ Release labels alone do not start the backport. A merged PR with a
 the backport did not run. Each label is warned about once, and labels whose
 target already has an open or merged backport PR are left out.
 
+To re-check a finished PR, run `pr-backport.yaml` by hand with its PR number.
+The PR does not need `needs-backport` for this. Without `force_rerun`, targets
+with an open or merged backport PR the workflow can find are reported and
+skipped. Every other release label is cherry-picked: a backport that was on
+hold starts, and one whose backport PR was closed without merging is opened
+again. Remove the release label first if that target should stay skipped.
+
 ## Release Sheriff Assignment
 
 The sheriff is a **fixed role**, declared in `.github/release-sheriff.json`:

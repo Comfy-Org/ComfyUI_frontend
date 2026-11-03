@@ -29,8 +29,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Gamut conversion and image statistics preserve numeric image interpretation",

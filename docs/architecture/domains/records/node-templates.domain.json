@@ -9,8 +9,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Saving, inserting, deleting, importing, and exporting preserve node template persistence",

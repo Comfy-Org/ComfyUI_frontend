@@ -19,7 +19,7 @@ import type {
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type * as WidgetValuesForm from '@/workbench/extensions/agent/crdt/widgetValuesForm'
 

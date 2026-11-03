@@ -77,8 +77,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Model loading, adapters, and export preserve supported formats and scene state",

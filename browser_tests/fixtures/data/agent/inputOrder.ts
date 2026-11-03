@@ -1,7 +1,7 @@
 import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 export const workflowId = 'ac09c341-fc48-4860-9dc4-294950cb8705'
 export const threadId = 'c7f41995-964b-4ba9-9bfb-fdc972ad12bc'

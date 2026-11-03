@@ -45,34 +45,9 @@
     }
   ],
   "publicEntryPoints": [
+    "src/platform/keybindings/canvasActionShortcuts.ts",
     "src/platform/keybindings/composables/useShortcutsTab.ts",
     "src/platform/keybindings/commandStore.ts"
-  ],
-  "allowedDependencies": ["design-system", "error-handling"],
-  "allowedConsumers": [
-    "agent",
-    "app-host",
-    "authentication",
-    "billing",
-    "bottom-panel",
-    "canvas-renderer",
-    "dialog-host",
-    "extension-manager",
-    "extension-runtime",
-    "first-run-tour",
-    "help-center",
-    "job-queue",
-    "linear-mode",
-    "minimap",
-    "node-library",
-    "release-notes",
-    "selection-toolbox",
-    "settings",
-    "subgraphs",
-    "workbench-shell",
-    "workflow-errors",
-    "workflow-management",
-    "workflow-persistence"
   ],
   "characterizationScenarios": [
     {
@@ -117,6 +92,10 @@
         "src/platform/keybindings/commandStore.test.ts",
         "browser_tests/tests/commands.spec.ts"
       ]
+    },
+    {
+      "name": "Canvas action shortcuts stay bound, so a reply naming one resolves to a real key",
+      "checks": ["src/platform/keybindings/canvasActionShortcuts.test.ts"]
     }
   ],
   "adrs": [],

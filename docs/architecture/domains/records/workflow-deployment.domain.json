@@ -17,8 +17,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "API inputs and agent handoff content are derived deterministically from the workflow",

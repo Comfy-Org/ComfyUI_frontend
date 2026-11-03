@@ -9,8 +9,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Blueprints publish, list in the node library, edit, delete, and copy safely",
