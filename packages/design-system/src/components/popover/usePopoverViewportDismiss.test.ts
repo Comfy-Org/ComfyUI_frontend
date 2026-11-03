@@ -188,4 +188,25 @@ describe(usePopoverViewportDismiss, () => {
 
     expect(popover.open.value).toBe(false)
   })
+
+  it('stays open when a scroll lands in the same frame as the keyboard hiding', async () => {
+    const popover = await mountOpenPopover('touch', 'nothing', KEYBOARD_SHOWN)
+    stop = popover.stop
+
+    resize(PORTRAIT)
+    document.dispatchEvent(new Event('scroll'))
+
+    expect(popover.open.value).toBe(true)
+  })
+
+  it('closes on a scroll in a later frame after the keyboard hid', async () => {
+    const popover = await mountOpenPopover('touch', 'nothing', KEYBOARD_SHOWN)
+    stop = popover.stop
+
+    resize(PORTRAIT)
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    document.dispatchEvent(new Event('scroll'))
+
+    expect(popover.open.value).toBe(false)
+  })
 })

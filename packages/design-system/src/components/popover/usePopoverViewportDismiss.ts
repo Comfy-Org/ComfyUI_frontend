@@ -44,6 +44,7 @@ export function usePopoverViewportDismiss(
   anchor: MaybeRefOrGetter<Element | null | undefined>
 ) {
   let viewportSize: ViewportSize | undefined
+  let isSettlingKeyboardResize = false
   watch(
     open,
     (isOpen) => {
@@ -62,12 +63,17 @@ export function usePopoverViewportDismiss(
         return
       }
       viewportSize = next
+      isSettlingKeyboardResize = true
+      requestAnimationFrame(() => {
+        isSettlingKeyboardResize = false
+      })
     }
   )
   useEventListener(
     () => (open.value ? window : undefined),
     'scroll',
     (event) => {
+      if (isSettlingKeyboardResize) return
       if (
         event.target === document ||
         event.target instanceof Window ||
