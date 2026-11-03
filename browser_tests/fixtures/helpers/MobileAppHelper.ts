@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 export class MobileAppHelper {
   private readonly page: Page
@@ -44,5 +45,16 @@ export class MobileAppHelper {
   }
   async tap(locator: Locator, { count = 1 }: { count?: number } = {}) {
     for (let i = 0; i < count; i++) await locator.tap()
+  }
+
+  /** Resize the viewport and wait until the page has rendered at the new size. */
+  async resizeViewport(size: { width: number; height: number }) {
+    await this.page.setViewportSize(size)
+    await expect
+      .poll(() =>
+        this.page.evaluate(() => [window.innerWidth, window.innerHeight])
+      )
+      .toEqual([size.width, size.height])
+    await nextFrame(this.page)
   }
 }
