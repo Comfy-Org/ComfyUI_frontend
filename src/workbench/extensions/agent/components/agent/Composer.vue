@@ -328,17 +328,14 @@ function stopRunOnEscape(event: KeyboardEvent): void {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Enter') event.stopPropagation()
   if (openingChat) {
     event.preventDefault()
     return
   }
   requestKeyboardDescription(event)
-  if (event.key === 'Enter') {
-    if (!handleMentionKeydown(event)) onEnter(event)
-    if (event.defaultPrevented) event.stopPropagation()
-    return
-  }
   if (handleMentionKeydown(event)) return
+  if (event.key === 'Enter') onEnter(event)
   stopRunOnEscape(event)
 }
 
