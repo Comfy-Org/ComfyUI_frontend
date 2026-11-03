@@ -141,7 +141,7 @@ interface BillingRequestBase {
 export type BillingRequest = BillingRequestBase &
   (
     | { readonly method: 'GET'; readonly body?: never }
-    | { readonly method: 'POST'; readonly body?: unknown }
+    | { readonly method: 'POST' | 'PUT'; readonly body?: unknown }
   )
 
 export interface BillingHttpResponse {
