@@ -10,6 +10,10 @@ test.describe('Workflow tab order', { tag: ['@ui'] }, () => {
     await comfyPage.workflow.setupWorkflowsDirectory({})
   })
 
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.workflow.setupWorkflowsDirectory({})
+  })
+
   test('restores the latest tab order and active tab across two reloads', async ({
     comfyPage
   }) => {
