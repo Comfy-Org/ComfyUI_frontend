@@ -20,16 +20,13 @@ export function addCreditsPendingTopup(
   processing: ProcessingTopupPayment | null
 ): AddCreditsPendingTopup | undefined {
   if (
-    operation?.authenticationState === 'requires_action' &&
-    operation.actionUrl
-  ) {
-    return { kind: 'needs_verification', verifyUrl: operation.actionUrl }
-  }
-  if (
     operation?.authenticationState === 'failed_retryable' ||
     operation?.status === 'reconciliation_needed'
   ) {
     return { kind: 'not_verified' }
+  }
+  if (operation?.actionUrl) {
+    return { kind: 'needs_verification', verifyUrl: operation.actionUrl }
   }
   if (!processing) return undefined
   return processing.paymentAmountCents === null

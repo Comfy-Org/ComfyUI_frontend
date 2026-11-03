@@ -27,6 +27,26 @@ describe('addCreditsPendingTopup', () => {
       expected: { kind: 'needs_verification', verifyUrl: VERIFY_URL }
     },
     {
+      name: 'a legacy-rail operation with a verification link and no authentication state',
+      operation: {
+        status: 'pending',
+        actionUrl: VERIFY_URL,
+        authenticationState: null
+      },
+      processing: { paymentAmountCents: 2500 },
+      expected: { kind: 'needs_verification', verifyUrl: VERIFY_URL }
+    },
+    {
+      name: 'a failed bank check that still carries its link',
+      operation: {
+        status: 'pending',
+        actionUrl: VERIFY_URL,
+        authenticationState: 'failed_retryable'
+      },
+      processing: null,
+      expected: { kind: 'not_verified' }
+    },
+    {
       name: 'a bank check that failed',
       operation: {
         status: 'pending',
