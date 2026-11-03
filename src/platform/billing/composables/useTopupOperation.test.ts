@@ -99,40 +99,36 @@ describe('useTopupOperation', () => {
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
   })
 
-  it.for([
-    { rail: 'legacy', flagOn: false },
-    { rail: 'SDK', flagOn: true }
-  ])(
-    'quotes on the $rail rail and reads a failure as no quote',
-    async ({ flagOn }) => {
-      flagState.billingSdkTopupEnabled = flagOn
-      const signal = new AbortController().signal
-      if (flagOn) {
-        vi.mocked(harness.sdk.topup.quoteTopup)
-          .mockResolvedValueOnce({
-            status: 'ok',
-            value: {
-              amountCents: 5000,
-              credits: 10550,
-              expiresAt: '2027-11-02'
-            }
-          })
-          .mockResolvedValueOnce({ status: 'error', code: 'REQUEST_FAILED' })
-      } else {
-        vi.spyOn(billingApi, 'quoteTopup')
-          .mockResolvedValueOnce({
-            amount_cents: 5000,
-            credits: 10550,
-            expires_at: '2027-11-02'
-          })
-          .mockRejectedValueOnce(new WorkspaceApiError('down', 503))
-      }
-      const view = useTopupOperation()
+  it('quotes on the legacy rail and reads a failure as no quote', async () => {
+    flagState.billingSdkTopupEnabled = false
+    const signal = new AbortController().signal
+    vi.spyOn(billingApi, 'quoteTopup')
+      .mockResolvedValueOnce({
+        amount_cents: 5000,
+        credits: 10550,
+        expires_at: '2027-11-02'
+      })
+      .mockRejectedValueOnce(new WorkspaceApiError('down', 503))
+    const view = useTopupOperation()
 
-      await expect(view.quoteTopup(5000, signal)).resolves.toBe(10550)
-      await expect(view.quoteTopup(5000, signal)).resolves.toBeNull()
-    }
-  )
+    await expect(view.quoteTopup(5000, signal)).resolves.toBe(10550)
+    await expect(view.quoteTopup(5000, signal)).resolves.toBeNull()
+  })
+
+  it('quotes on the SDK rail and reads a failure as no quote', async () => {
+    flagState.billingSdkTopupEnabled = true
+    const signal = new AbortController().signal
+    vi.mocked(harness.sdk.topup.quoteTopup)
+      .mockResolvedValueOnce({
+        status: 'ok',
+        value: { amountCents: 5000, credits: 10550, expiresAt: '2027-11-02' }
+      })
+      .mockResolvedValueOnce({ status: 'error', code: 'REQUEST_FAILED' })
+    const view = useTopupOperation()
+
+    await expect(view.quoteTopup(5000, signal)).resolves.toBe(10550)
+    await expect(view.quoteTopup(5000, signal)).resolves.toBeNull()
+  })
 
   describe('createHostedCheckout', () => {
     type Refusal = { status: number; code: string }

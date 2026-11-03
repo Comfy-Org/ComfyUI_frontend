@@ -1,6 +1,7 @@
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
 import type {
+  CreateTopupQuoteRequest,
   ListSavedPaymentMethodsResponse,
   TopupQuoteResponse
 } from '@comfyorg/ingest-types'
@@ -48,9 +49,9 @@ export const workspaceRailAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
       route.fulfill({ json: [] satisfies ListSavedPaymentMethodsResponse })
     )
     await page.route('**/api/billing/topup/quote', (route) => {
-      const { amount_cents } = route.request().postDataJSON() as {
-        amount_cents: number
-      }
+      const { amount_cents } = route
+        .request()
+        .postDataJSON() as CreateTopupQuoteRequest
       return route.fulfill({
         json: {
           amount_cents,

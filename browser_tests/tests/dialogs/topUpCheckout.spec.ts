@@ -4,6 +4,7 @@ import type {
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
   CreateTopupCheckoutResponse,
+  CreateTopupQuoteRequest,
   ErrorResponse,
   TopupQuoteResponse
 } from '@comfyorg/ingest-types'
@@ -229,9 +230,9 @@ test.describe('Add credits checkout hand-off', { tag: '@ui' }, () => {
       )
       const routes = await mockCheckout(page, servesCheckoutUrl)
       await page.route('**/api/billing/topup/quote', (route) => {
-        const { amount_cents } = route.request().postDataJSON() as {
-          amount_cents: number
-        }
+        const { amount_cents } = route
+          .request()
+          .postDataJSON() as CreateTopupQuoteRequest
         return route.fulfill({
           json: {
             amount_cents,
