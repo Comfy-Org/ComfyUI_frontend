@@ -136,12 +136,9 @@ const ports: AddCreditsPorts = {
   reserveTab: reserveBillingTab,
   watchPayment(landed) {
     paymentWatched = true
-    let watching = true
     usePendingTopup().startPendingTopup()
-    watchForTopupBalanceUpdate({
-      onBalanceIncreased: async () => {
-        if (watching) landed()
-      },
+    return watchForTopupBalanceUpdate({
+      onBalanceIncreased: async () => landed(),
       source: {
         current: () => balance.value?.amountMicros ?? null,
         fetch: async () => {
@@ -155,9 +152,6 @@ const ports: AddCreditsPorts = {
         }
       }
     })
-    return () => {
-      watching = false
-    }
   }
 }
 
