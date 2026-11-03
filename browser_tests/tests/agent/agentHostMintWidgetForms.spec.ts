@@ -87,7 +87,7 @@ const seed: WorkflowJSON = {
         { name: 'INDEX', type: 'INT', links: [] }
       ],
       properties: {},
-      widgets_values: ['second', 1, 'first', 'second', 'third', ''],
+      widgets_values: ['first', 0, 'first', 'second', 'third', ''],
       widgets_values_form: {
         order: ['choice', 'index', 'option1', 'option2', 'option3', 'option4']
       }
@@ -105,9 +105,14 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
   () => {
     test('renders PreviewAny without persisted output and restores every CustomCombo option', async ({
-      page,
-      toast
+      page
     }) => {
+      const missingWidgetReports: string[] = []
+      page.on('console', (message) => {
+        if (/\bagent_graph_widget_missing(?!\w)/.test(message.text()))
+          missingWidgetReports.push(message.text())
+      })
+
       const rig = await AgentNonValueWidgetRig.boot(page, {
         catalog,
         messageId: MESSAGE_ID,
@@ -133,6 +138,17 @@ test.describe(
       await expect(combo.getByLabel('option2', { exact: true })).toHaveValue(
         'second'
       )
+      await expect(combo.getByLabel('option3', { exact: true })).toHaveValue(
+        'third'
+      )
+      await expect(combo.getByLabel('option4', { exact: true })).toHaveValue('')
+      await expect
+        .poll(() => rig.widgetValue(COMBO_NODE_ID, 'choice'))
+        .toBe('first')
+      expect(
+        rig.host.projection().nodes.find((node) => node.id === COMBO_NODE_ID)
+          ?.widgets_values
+      ).toEqual(['first', 0, 'first', 'second', 'third', ''])
       rig.hostSocket.send(
         rig.host.apply([
           {
@@ -149,9 +165,7 @@ test.describe(
       await expect
         .poll(() => rig.widgetValue(PREVIEW_NODE_ID, 'preview_text'))
         .toBe('')
-      await expect(
-        toast.toastErrors.filter({ hasText: 'has no widget' })
-      ).toHaveCount(0)
+      expect(missingWidgetReports).toHaveLength(0)
     })
   }
 )
