@@ -238,7 +238,20 @@ export function createAgentEventTransport(
     return pendingCanvasSync.size > 0
   }
 
+  function settleUnresolvedToolParts(): void {
+    for (const part of message.parts) {
+      if (
+        part.type !== 'tool' ||
+        part.state !== 'streaming' ||
+        part.ok !== undefined
+      )
+        continue
+      part.state = 'done'
+    }
+  }
+
   function dispose(): void {
+    settled = true
     flushPendingCanvasSync()
   }
 
@@ -587,6 +600,7 @@ export function createAgentEventTransport(
     dropDrafts()
     closeOpenText()
     closeOpenThinking()
+    settleUnresolvedToolParts()
     message.thinking = false
     message.thinkingText = undefined
     message.streaming = false

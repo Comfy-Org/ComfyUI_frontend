@@ -339,13 +339,7 @@ function finishWithPersistedParts(
     message.parts = message.parts.filter((part) => !isOpenAskPart(part))
     for (const part of message.parts) {
       if (!('state' in part) || part.state !== 'streaming') continue
-      if (part.type === 'tool') {
-        // A successful tool can still be waiting for canvas catch-up. Keep
-        // that transport-owned state live; only clamp calls that never
-        // received an outcome.
-        if (part.ok !== undefined) continue
-        part.ok = false
-      }
+      if (part.type === 'tool' && part.ok !== undefined) continue
       part.state = 'done'
     }
     return
@@ -969,7 +963,7 @@ export const useAgentConversationStore = defineStore(
       persistedParts: AssistantMessage['parts'] | undefined
     ): void {
       const unreconciled = unreconciledSnapshotTurns.get(turn.messageId)
-      if (unreconciled === undefined) return
+      if (unreconciled === undefined || !unreconciled.announced) return
       unreconciledSnapshotTurns.delete(turn.messageId)
       if (persistedParts === undefined || threadId.value !== turn.threadId)
         return

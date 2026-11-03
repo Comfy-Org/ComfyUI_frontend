@@ -357,6 +357,20 @@ describe('useAgentConversationStore', () => {
     })
   })
 
+  it('settles an unresolved tool call before the next turn starts', () => {
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'run', 'running'))
+    store.ingest(done('t1'))
+
+    store.startTurn(T2)
+
+    const tool = store.messages[0].parts.find((part) => part.type === 'tool')
+    expect(tool).toMatchObject({ state: 'done' })
+    expect(tool?.ok).toBeUndefined()
+    expect(store.activeTurnId).toBe(T2)
+  })
+
   // PM-1575 regression: a tool call held back pending canvas catch-up must
   // still receive notifyCanvasCaughtUp() after its turn settles.
   // agent_message_done drops the active-turn transport out of the `transport`
@@ -841,6 +855,24 @@ describe('useAgentConversationStore', () => {
     ])
 
     vi.advanceTimersByTime(30_000)
+
+    expect(partTexts(store)).toEqual(['authoritative reply'])
+  })
+
+  it('does not let a retired unresolved tool overwrite hydrated content', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(toolCall('t1', 'run', 'running'))
+    store.stashActiveTurn()
+    store.ingest(done('t1'))
+
+    store.hydrate([
+      historyRow(1, 'user', 't1', 'go'),
+      historyRow(2, 'assistant', 't1', 'authoritative reply', 't1')
+    ])
+    store.resumeBackgroundTurn()
 
     expect(partTexts(store)).toEqual(['authoritative reply'])
   })
@@ -2444,6 +2476,37 @@ describe('useAgentConversationStore', () => {
       expect(reconciledParts(store)).toEqual(storedParts())
     })
 
+    it('keeps a re-registered held turn for its own read when an earlier read lands late', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const { store, settled } = restoredAndSettled()
+      const earlierRead = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+
+      store.reconcileSettledTurn(earlierRead, undefined)
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      expect(settled).toEqual([SNAPSHOT_ROW_ID, SNAPSHOT_ROW_ID])
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(reconciledParts(store)?.map((part) => part.type)).toEqual([
+        'thinking',
+        'tool',
+        'thinking',
+        'text'
+      ])
+    })
+
     it('announces a held turn only once when the canvas reports twice', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
       const store = useAgentConversationStore()
@@ -2586,8 +2649,9 @@ describe('useAgentConversationStore', () => {
 
     expect(store.messages[0].parts).toMatchObject([
       { type: 'text', text: 'partial', state: 'done' },
-      { type: 'tool', name: 'add_node', state: 'done', ok: false }
+      { type: 'tool', name: 'add_node', state: 'done' }
     ])
+    expect(store.messages[0].parts[1]).not.toHaveProperty('ok')
   })
 
   it('drops a provisional draft before preserving an empty successful row', () => {

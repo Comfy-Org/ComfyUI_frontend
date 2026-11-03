@@ -262,7 +262,7 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
     await expect(
       content.getByRole('button', { name: 'Add credits' })
-    ).toHaveCount(0)
+    ).toBeDisabled()
     await expect(
       content.getByText(
         "You can't run workflows or add new members. Contact sales to restore access."

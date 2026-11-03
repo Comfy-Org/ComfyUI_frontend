@@ -331,9 +331,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({
       text: draft.value,
       references: [
-        ...references.map(
-          (item): ComposerReference => ({ ...item, kind: 'workflow' })
-        ),
+        ...references.map((item): ComposerReference => ({
+          ...item,
+          kind: 'workflow'
+        })),
         ...prompt.value.references.filter((item) => item.kind !== 'workflow')
       ].sort((a, b) => a.textOffset - b.textOffset)
     })
@@ -595,6 +596,16 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     }
   }
 
+  function clearDraft(): void {
+    resetPromptHistory()
+    promptOrigin.value = 'typed'
+    starterPrompt.value = null
+    attachmentIds.value = []
+    updateDraft({ text: '', references: [] })
+    insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
+    releaseUnusedAssets()
+  }
+
   return {
     draftState,
     draft,
@@ -636,6 +647,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     startSubmission,
     settleSubmission,
     takeFailedSubmission,
-    invalidateSubmission
+    invalidateSubmission,
+    clearDraft
   }
 })

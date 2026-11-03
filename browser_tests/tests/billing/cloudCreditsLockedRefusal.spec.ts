@@ -7,7 +7,7 @@ import {
 } from '@e2e/fixtures/cloudAppFixture'
 import {
   DEFAULT_TEAM_MEMBERS,
-  LEGACY_PERSONAL_BILLING_STATUS
+  PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -18,7 +18,7 @@ import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 const FREE_ACCOUNT_WITH_CREDITS = {
-  ...LEGACY_PERSONAL_BILLING_STATUS,
+  ...PERSONAL_BILLING_STATUS,
   is_active: true,
   subscription_status: undefined
 }
@@ -56,9 +56,6 @@ test.describe('Run refused for locked credits', { tag: '@cloud' }, () => {
     )
     await page.route('**/api/features', (route) =>
       route.fulfill(jsonRoute({ subscription_required: true }))
-    )
-    await page.route('**/customers/balance', (route) =>
-      route.fulfill(jsonRoute({ amount_micros: 0, currency: 'usd' }))
     )
   })
 
