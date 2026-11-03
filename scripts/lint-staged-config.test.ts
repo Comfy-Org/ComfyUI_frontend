@@ -95,29 +95,6 @@ describe('lint-staged config', () => {
     expect(commands.some((command) => command.includes('eslint '))).toBe(false)
   })
 
-  it.for([
-    [
-      'src/stores/appStore.ts',
-      ['pnpm lint:server-facts --staged', 'pnpm lint:null-types --staged']
-    ],
-    ['src/styles.css', []]
-  ] as const)(
-    'runs changed-line gates only when code is staged: %s',
-    async ([fileName, expected]) => {
-      const lintStaged = await freshConfig()
-
-      const commands = [lintStaged([fileName])].flat()
-      const gates = commands.filter(
-        (command) =>
-          command === 'pnpm lint:server-facts --staged' ||
-          command === 'pnpm lint:null-types --staged'
-      )
-
-      expect(gates).toEqual(expect.arrayContaining<string>([...expected]))
-      expect(gates).toHaveLength(expected.length)
-    }
-  )
-
   it('keeps per-file commands scoped to their own chunk', async () => {
     const lintStaged = await freshConfig()
 

@@ -43,12 +43,6 @@ export default function lintStaged(stagedFiles: string[]) {
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
     ...lintCommands(codeFiles, styleFiles),
-    ...(codeFiles.length > 0
-      ? [
-          ...repoWide('pnpm lint:server-facts --staged'),
-          ...repoWide('pnpm lint:null-types --staged')
-        ]
-      : []),
     ...typecheckCommands(typecheckFiles)
   ]
 }

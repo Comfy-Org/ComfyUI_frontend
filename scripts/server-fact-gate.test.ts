@@ -379,6 +379,48 @@ describe('changed-line lint gates on a real diff', () => {
     expect(result.status).toBe(status)
   })
 
+  it('rejects a nullable declaration changed by pre-commit formatting', () => {
+    const file = 'src/legacy.ts'
+    const before = [
+      'export interface Legacy {',
+      'value: string | null',
+      '}',
+      ''
+    ]
+    const { dir, git, write } = createRepo({ [file]: before })
+    write(file, [
+      'export interface Legacy {',
+      'value: string | null',
+      'other: string',
+      '}',
+      ''
+    ])
+    write('package.json', [
+      JSON.stringify({
+        scripts: {
+          'lint:server-facts': `tsx ${path.join(repoRoot, 'scripts/server-fact-gate.ts')}`,
+          'lint:null-types': `tsx ${path.join(repoRoot, 'scripts/null-type-gate.ts')}`
+        },
+        'lint-staged': { '*.ts': 'oxfmt --write' }
+      })
+    ])
+    git('add', file)
+
+    const result = spawnSync(
+      'bash',
+      [path.join(repoRoot, '.husky/pre-commit')],
+      {
+        cwd: dir,
+        encoding: 'utf8'
+      }
+    )
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain(
+      'Use undefined instead of null in new type signatures.'
+    )
+  })
+
   it.for([
     {
       name: 'passes a finding the merged branch brings in',
