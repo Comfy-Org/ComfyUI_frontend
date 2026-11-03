@@ -14,7 +14,6 @@ import {
 } from './importPaths.ts'
 import { noNewErrorThrow } from './noNewErrorThrow.ts'
 import { noReexports } from './noReexports.ts'
-import { noNullType } from './nullTypes.ts'
 import { noThrowInExpectPoll } from './playwrightPoll.ts'
 import { noPositionalBooleanParams } from './positionalBoolean.ts'
 import {
@@ -64,7 +63,6 @@ export default {
     'no-new-error-throw': noNewErrorThrow,
     'no-new-zod-for-remote-api-types': noNewZodForRemoteApiTypes,
     'no-new-zod-server-response-schema': noNewZodServerResponseSchema,
-    'no-null-type': noNullType,
     'no-persistent-litegraph-registration': noPersistentLiteGraphRegistration,
     'no-playwright-imports-in-fixture-data': noPlaywrightImportsInFixtureData,
     'no-positional-boolean-params': noPositionalBooleanParams,

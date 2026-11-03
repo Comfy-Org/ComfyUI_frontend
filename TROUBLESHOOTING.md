@@ -220,10 +220,11 @@ Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-p
 
 #### Q: lint rejects a new nullable type signature
 
-`comfy/no-null-type` rejects explicit `null` types. Prefer `undefined` for
-new contracts. When an existing API requires null, derive its type with
-indexed access, `Parameters`, or `ReturnType` instead of declaring the
-nullable signature again. Null checks and null values remain allowed.
+`typescript/no-restricted-types` rejects explicit `null` types in TypeScript
+and Vue script bodies. Prefer `undefined` for new contracts. When an
+existing API requires null, derive its type with indexed access,
+`Parameters`, or `ReturnType` instead of declaring the nullable signature
+again. Null checks and null values remain allowed.
 
 Existing violations use the normal oxlint suppression budgets. A file's
 violation count cannot increase. When migrating a legacy contract to

@@ -49,6 +49,23 @@ const selectionWriteProbes = [
 
 const probes = [
   {
+    file: path.join(probeDirs.source, 'nullable.ts'),
+    source: `export type Nullable = string | null
+export type Missing = null
+export type Optional = string | undefined
+export const empty = null
+export type Derived = typeof empty
+export const isEmpty = (value: unknown) => value === null
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'nullable.vue'),
+    source: `<script setup lang="ts">
+defineProps<{ value: string | null }>()
+</script>
+`
+  },
+  {
     file: path.join(probeDirs.source, 'assertion.tsx'),
     source:
       'const asserted = value as Error & { code: string }\nvoid asserted\n'
@@ -351,6 +368,22 @@ describe('restricted syntax rules', () => {
   function findingsFor(rule: string) {
     return findings.filter(({ code }) => code === `comfy(${rule})`)
   }
+
+  it('rejects explicit null types at error severity while allowing null values and derived types', () => {
+    const nullTypeFindings = findings.filter(
+      ({ code }) => code === 'typescript(no-restricted-types)'
+    )
+    expect(locations(nullTypeFindings)).toEqual([
+      ['nullable.ts', 1],
+      ['nullable.ts', 2],
+      ['nullable.vue', 2]
+    ])
+    expect(nullTypeFindings.map(({ severity }) => severity)).toEqual([
+      'error',
+      'error',
+      'error'
+    ])
+  })
 
   it('preserves Error assertion scope across source and remote files', () => {
     const assertionFindings = findingsFor('no-unsafe-error-assertion')
