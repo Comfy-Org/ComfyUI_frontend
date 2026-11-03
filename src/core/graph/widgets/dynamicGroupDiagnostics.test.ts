@@ -555,6 +555,7 @@ describe('remote DynamicGroup counts outside a row-count write', () => {
 
     expect(write({ mode: 'on' })).toBe(1)
     expect(widget('mode.rows')?.value).toBe(0)
+    expect(write({ mode: 'on' })).toBe(1)
     expect(vi.mocked(reportError).mock.calls).toEqual([
       mismatch('RefusedComboGroup', 2, 0)
     ])

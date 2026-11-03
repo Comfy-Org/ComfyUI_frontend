@@ -1389,16 +1389,14 @@ export class LiveGraphApplier {
       return
     }
     const { documentWidgets = widgets, reportMissing = true } = options
-    const controllers = new Set(node.widgets?.filter(isDynamicGroupController))
     let unresolved = this.applyPendingWidgets(
       node,
       ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry),
       documentWidgets
     )
     if (!Array.isArray(documentWidgets))
-      unresolved = this.applyMountedGroups(
+      unresolved = this.applyNestedGroups(
         node,
-        controllers,
         { widgets, documentWidgets },
         unresolved
       )
@@ -1423,35 +1421,46 @@ export class LiveGraphApplier {
     return []
   }
 
-  private applyMountedGroups(
+  private applyNestedGroups(
     node: LGraphNode,
-    before: ReadonlySet<IBaseWidget>,
     frame: {
       widgets: Record<string, unknown>
       documentWidgets: Record<string, unknown>
     },
     unresolved: [string, WidgetValue][]
   ): [string, WidgetValue][] {
-    const groups = (node.widgets ?? [])
-      .filter(
-        (widget) => isDynamicGroupController(widget) && !before.has(widget)
-      )
-      .map((widget) => widget.name)
     const retry = new Set(unresolved.map(([name]) => name))
+    const replay = new Set<string>()
+    for (const controller of nestedGroupControllers(
+      node,
+      Object.keys(frame.widgets)
+    )) {
+      const from = Number(controller.value)
+      const count: [string, unknown] = [
+        controller.name,
+        frame.documentWidgets[controller.name]
+      ]
+      if (isWidgetEntry(count))
+        this.applyWidgetRound(node, [count], frame.documentWidgets)
+      for (const name of grownRowFields(
+        controller,
+        from,
+        frame.documentWidgets
+      ))
+        if (retry.has(name) || !Object.hasOwn(frame.widgets, name))
+          replay.add(name)
+    }
     const entries = Object.fromEntries(
-      Object.entries(frame.documentWidgets).filter(
-        ([name]) =>
-          (retry.has(name) || !Object.hasOwn(frame.widgets, name)) &&
-          groups.some((group) => name === group || name.startsWith(`${group}.`))
-      )
+      [...replay].map((name) => [name, frame.documentWidgets[name]])
+    )
+    const left = this.applyPendingWidgets(
+      node,
+      ordinaryWidgetEntries(node, entries).filter(isWidgetEntry),
+      frame.documentWidgets
     )
     return [
-      ...unresolved.filter(([name]) => !Object.hasOwn(entries, name)),
-      ...this.applyPendingWidgets(
-        node,
-        ordinaryWidgetEntries(node, entries).filter(isWidgetEntry),
-        frame.documentWidgets
-      )
+      ...unresolved.filter(([name]) => !replay.has(name)),
+      ...left.filter(([name]) => retry.has(name))
     ]
   }
 
@@ -1877,6 +1886,31 @@ function widgetEntryRank(node: LGraphNode, name: string): number {
   if (liveIndex !== -1) return liveIndex
   const index = overflowWidgetIndex(name)
   return index === null ? MOUNTED_LAST : live.length + index
+}
+
+function nestedGroupControllers(
+  node: LGraphNode,
+  written: readonly string[]
+): IBaseWidget[] {
+  return (node.widgets ?? []).filter(
+    (widget) =>
+      isDynamicGroupController(widget) &&
+      !written.includes(widget.name) &&
+      written.some((name) => widget.name.startsWith(`${name}.`))
+  )
+}
+
+function grownRowFields(
+  controller: IBaseWidget,
+  from: number,
+  documentWidgets: Record<string, unknown>
+): string[] {
+  const prefix = `${controller.name}.`
+  return Object.keys(documentWidgets).filter((name) => {
+    if (!name.startsWith(prefix)) return false
+    const row = Number(name.slice(prefix.length).split('.')[0])
+    return row >= from && row < Number(controller.value)
+  })
 }
 
 function isWidgetEntry(
