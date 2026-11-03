@@ -1,4 +1,4 @@
-import type { PlanRowState } from '@/platform/billing/components/billingTab/planRow'
+import type { PlanRowState } from './planRow'
 
 export type PlanLifecycleIntent =
   | {
