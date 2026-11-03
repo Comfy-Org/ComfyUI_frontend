@@ -867,6 +867,7 @@
           "src/composables/useReconnectingNotification.test.ts",
           "src/extensions/core/index.ts",
           "src/extensions/core/index.cloud.test.ts",
+          "src/extensions/core/index.cloudAgentFailure.test.ts",
           "src/extensions/core/index.test.ts",
           "src/scripts/__mocks__/**",
           "src/scripts/api.ts",
