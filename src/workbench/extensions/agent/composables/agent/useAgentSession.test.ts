@@ -6029,6 +6029,51 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(sent).toBe(false)
     expect(postMessage).toHaveBeenCalledTimes(1)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: "This tab's canvas isn't ready yet, so your message wasn't sent. Try again in a moment."
+        }
+      ]
+    })
+  })
+
+  it('(h10b2) a workflow changed during preparation is refused with the target notice', async () => {
+    let context: WorkflowTurnContext = {
+      id: 'wf-a',
+      tabPath: 'workflows/a.json'
+    }
+    const postMessage = vi.fn<AgentRestClient['postMessage']>()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => context,
+        adopted: vi.fn(),
+        prepare: async () => {
+          context = { id: 'wf-b', tabPath: 'workflows/a.json' }
+        }
+      }
+    })
+    session.start()
+
+    const sent = await session.sendMessage('continue on this workflow')
+
+    expect(sent).toBe(false)
+    expect(postMessage).not.toHaveBeenCalled()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This workflow target is no longer available.'
+        }
+      ]
+    })
   })
 
   it('(h10c) once the re-flagged mint is adopted, the next turn names it instead of minting again', async () => {
