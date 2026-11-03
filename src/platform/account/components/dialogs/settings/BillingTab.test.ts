@@ -1046,6 +1046,56 @@ describe('BillingTab', () => {
         ).toHaveLength(2)
       })
 
+      const ended: Scenario = {
+        subscription: {
+          ...activeSubscription,
+          isActive: false,
+          endDate: '2026-09-01T00:00:00Z'
+        },
+        subscriptionStatus: 'ended'
+      }
+
+      it('shows Plan ended with Choose a plan as the white button on both the banner and the plan row', async () => {
+        arrangeOnCloud(ended)
+
+        const bannerLink = within(screen.getByRole('status')).getByRole(
+          'link',
+          { name: 'Choose a plan' }
+        )
+        const links = screen.getAllByRole('link', { name: 'Choose a plan' })
+        expect(links).toHaveLength(2)
+        for (const link of links) {
+          expect(link).toHaveAttribute('data-variant', 'inverted')
+          expect(link).toHaveAttribute(
+            'href',
+            expect.stringMatching(
+              /^https:\/\/platform\.test\/profile\/billing\/plans\?workspace=ws_1&correlation_id=.+$/
+            )
+          )
+        }
+        bannerLink.addEventListener('click', (event) => event.preventDefault())
+
+        await userEvent.click(bannerLink)
+
+        expect(
+          vi.mocked(useTelemetry)()?.trackBillingEvent
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            operation: 'platform_handoff',
+            target: 'plans'
+          })
+        )
+      })
+
+      it('shows Plan ended without Choose a plan when the server withholds can_open_plans', () => {
+        arrangeOnCloud({ ...ended, canOpenPlans: false })
+
+        expect(screen.getByRole('status')).toBeInTheDocument()
+        expect(
+          screen.queryByRole('link', { name: 'Choose a plan' })
+        ).not.toBeInTheDocument()
+      })
+
       it('shows no lifecycle banner on an active plan', () => {
         arrangeOnCloud({})
 
