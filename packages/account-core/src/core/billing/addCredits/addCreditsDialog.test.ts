@@ -211,6 +211,15 @@ describe('viewAddCreditsAmount', () => {
       }
     },
     {
+      name: 'a denial served with a non-blocking refusal',
+      state: STATES.amount,
+      facts: { canTopUp: false, canTopUpRefusal: FAILED },
+      expected: {
+        notice: { kind: 'refusal', refusal: FAILED },
+        canContinue: false
+      }
+    },
+    {
       name: 'an earlier payment still processing',
       state: STATES.amount,
       facts: { pendingTopup: { kind: 'processing', amountCents: 2500 } },

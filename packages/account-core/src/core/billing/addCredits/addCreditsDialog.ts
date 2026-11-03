@@ -239,6 +239,9 @@ export function viewAddCreditsAmount(
     locked,
     opening,
     canContinue:
-      !locked && check.status === 'valid' && !addCreditsRefusalBlocks(refusal)
+      facts.canTopUp &&
+      !locked &&
+      check.status === 'valid' &&
+      !addCreditsRefusalBlocks(refusal)
   }
 }
