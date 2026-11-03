@@ -869,19 +869,19 @@ await page.route('**/api/object_info', (route) =>
 The three generated-type packages are auto-generated from OpenAPI specs — prefer
 them for any mock targeting their endpoints:
 
-| Endpoint category                                 | Type source                                                                        |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types` (`packages/ingest-types`)                                 |
-| Registry (releases, nodes, publishers)            | `@comfyorg/registry-types` (`packages/registry-types`)                             |
-| Manager (queue tasks, packages)                   | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`)             |
-| Local webserver responses that differ from ingest | `src/platform/remote/comfyui/types.ts`                                             |
-| WebSocket messages and custom-node outputs        | `src/platform/remote/comfyui/execution/types.ts`                                   |
-| Frontend settings                                 | `src/platform/settings/types.ts`                                                   |
-| Node definitions                                  | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts`           |
-| Templates                                         | `src/platform/workflow/templates/types/template.ts`                                |
-| Jobs API                                          | `src/platform/remote/comfyui/jobs/jobTypes.ts` (`zJobDetail`, `zJobsListResponse`) |
-| Workflow validation                               | `src/platform/workflow/validation/schemas/workflowSchema.ts`                       |
-| Asset metadata                                    | `src/types/metadataTypes.ts`                                                       |
+| Endpoint category                                 | Type source                                                                            |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types` (`packages/ingest-types`)                                     |
+| Registry (releases, nodes, publishers)            | `@comfyorg/registry-types` (`packages/registry-types`)                                 |
+| Manager (queue tasks, packages)                   | `@comfyorg/api-client/generatedManagerTypes`                                           |
+| Local webserver responses that differ from ingest | `@comfyorg/api-client/types`                                                           |
+| WebSocket messages and custom-node outputs        | `@comfyorg/api-client/executionTypes`                                                  |
+| Frontend settings                                 | `@comfyorg/settings-core/types`                                                        |
+| Node definitions                                  | `@comfyorg/object-info-parser`, `@comfyorg/object-info-parser/schemas/nodeDefSchemaV2` |
+| Templates                                         | `@comfyorg/api-client/templateTypes`                                                   |
+| Jobs API                                          | `@comfyorg/api-client/jobTypes` (`zJobDetail`, `zJobsListResponse`)                    |
+| Workflow validation                               | `src/platform/workflow/validation/schemas/workflowSchema.ts`                           |
+| Asset metadata                                    | `src/types/metadataTypes.ts`                                                           |
 
 ```typescript
 // ✅ Import the type and annotate mock data
@@ -948,7 +948,7 @@ Before merging a flaky-test fix, confirm all of these:
   `toHaveText`, `toHaveCount`, `toHaveClass`).
 - **Single async value** → `expect.poll(() => asyncFn()).toBe(expected)`.
 - **Multiple assertions that must settle together** → `expect(async () => {
-... }).toPass()`.
+  ... }).toPass()`.
 - Never make immediate assertions right after async UI mutations, settings
   writes, clipboard writes, or graph updates.
 - Never use `waitForTimeout()` to hide a race — it is always wrong.

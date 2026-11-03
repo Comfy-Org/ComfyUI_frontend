@@ -1,11 +1,11 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useExtensionService } from '@/services/extensionService'
 import { processDynamicPrompt } from '@/utils/formatUtil'
+import type { ComfyExtension } from '@/types/comfy'
 
 // Allows for simple dynamic prompt replacement
 // Inputs in the format {a|b} will have a random value of a or b chosen when the prompt is queued.
 
-useExtensionService().registerExtension({
+export const dynamicPromptsExtension: ComfyExtension = {
   name: 'Comfy.DynamicPrompts',
   nodeCreated(node: LGraphNode) {
     if (node.widgets) {
@@ -19,4 +19,4 @@ useExtensionService().registerExtension({
       }
     }
   }
-})
+}

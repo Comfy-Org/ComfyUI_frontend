@@ -58,7 +58,9 @@ describe('chunkWireOps', () => {
     const ops = mintWireOps([addNode(1), addNode(2), addNode(3)], MINT)
     const sized = ops.map((op, index) => ({
       op,
-      bytes: [2 * 1024 * 1024, 2 * 1024 * 1024, 4 * 1024 * 1024 + 1][index]
+      bytes: [2 * 1024 * 1024, 2 * 1024 * 1024 - 8192, 4 * 1024 * 1024 + 1][
+        index
+      ]
     }))
 
     expect(chunkWireOps(sized)).toEqual([sized.slice(0, 2), sized.slice(2)])

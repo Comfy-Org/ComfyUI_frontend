@@ -2,13 +2,16 @@
 import {
   CollapsibleContent,
   CollapsibleRoot,
-  CollapsibleTrigger
+  CollapsibleTrigger,
+  PopoverArrow,
+  PopoverRoot,
+  PopoverTrigger
 } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
 import { graphCreditsBadges } from '@/systems/badgeSystem'
@@ -24,23 +27,31 @@ const creditsBadges = computed(() => {
 })
 </script>
 <template>
-  <Popover v-if="mobile && creditsBadges.length" side="top">
-    <template #button>
+  <PopoverRoot v-if="mobile && creditsBadges.length">
+    <PopoverTrigger as-child>
       <Button class="mr-2 size-10">
         <i class="icon-[lucide--coins] bg-credit" />
       </Button>
-    </template>
-    <section
-      class="max-h-(--reka-popover-content-available-height) scroll-shadows-background overflow-y-auto"
+    </PopoverTrigger>
+    <PopoverContent
+      side="top"
+      :side-offset="5"
+      dismiss-on-viewport-change
+      class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
     >
-      <PartnerNodeItem
-        v-for="{ nodeId, title, price } in creditsBadges"
-        :key="nodeId"
-        :title
-        :price
-      />
-    </section>
-  </Popover>
+      <section
+        class="max-h-(--reka-popover-content-available-height) scroll-shadows-background overflow-y-auto"
+      >
+        <PartnerNodeItem
+          v-for="{ nodeId, title, price } in creditsBadges"
+          :key="nodeId"
+          :title
+          :price
+        />
+      </section>
+      <PopoverArrow class="fill-background stroke-border/50" />
+    </PopoverContent>
+  </PopoverRoot>
   <div v-else-if="creditsBadges.length === 1">
     <PartnerNodeItem
       v-for="{ nodeId, title, price } in creditsBadges"
@@ -58,7 +69,7 @@ const creditsBadges = computed(() => {
     <div class="mb-1 w-full border-b border-border/50" />
     <CollapsibleTrigger as-child>
       <Button variant="textonly" class="w-full text-sm">
-        <i class="icon-[lucide--coins] size-4 bg-credit" />
+        <i class="icon-[lucide--coins] bg-credit" />
         {{ t('linearMode.hasCreditCost') }}
         <i v-if="open" class="ml-auto icon-[lucide--chevron-up]" />
         <i v-else class="ml-auto icon-[lucide--chevron-down]" />

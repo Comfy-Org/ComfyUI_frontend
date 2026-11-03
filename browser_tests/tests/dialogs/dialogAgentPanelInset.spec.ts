@@ -11,7 +11,11 @@ test.describe('Dialog layout with a docked Agent panel', () => {
       x: 72,
       outcome: 'centres on the viewport when it cannot fit beside the panel'
     },
-    { viewportWidth: 1920, x: 50, outcome: 'centres beside the panel' }
+    {
+      viewportWidth: 1920,
+      x: 260,
+      outcome: 'centres on the viewport even when it fits beside the panel'
+    }
   ]) {
     test.describe(`at a ${viewportWidth}px viewport`, () => {
       test.use({ viewport: { width: viewportWidth, height: 800 } })

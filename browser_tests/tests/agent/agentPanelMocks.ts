@@ -13,9 +13,8 @@ import type {
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowActions'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
@@ -28,6 +27,7 @@ import type {
 import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -38,8 +38,6 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
-const AGENT_AUTO_SHOWN_KEY =
-  'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
 export const AGENT_COACH_SEEN_KEY =
   'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
 /** The cloud workflow id a turn ack binds the posting tab to. */
@@ -57,20 +55,29 @@ export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
 
-const PERMANENTLY_REFUSED_SUBSCRIBE = {
-  type: 'doc_subscribed',
-  data: {
-    v: DOC_PROTOCOL_VERSION,
-    workflow_id: WORKFLOW_ID,
-    ok: false,
-    code: 'schema_version_mismatch'
-  }
-} satisfies DocSubscribedFrame & {
-  data: { ok: false; code: PermanentDocSubscribeRefusalCode }
+export function pushHostFrames(
+  ws: WebSocketRoute,
+  frames: readonly HostFrame[]
+): void {
+  for (const frame of frames) ws.send(JSON.stringify(frame))
 }
 
-export function refuseDocSubscribePermanently(ws: WebSocketRoute): void {
-  ws.send(JSON.stringify(PERMANENTLY_REFUSED_SUBSCRIBE))
+export function refuseDocSubscribePermanently(
+  ws: WebSocketRoute,
+  code: PermanentDocSubscribeRefusalCode = 'schema_version_mismatch',
+  message?: string
+): void {
+  const frame = {
+    type: 'doc_subscribed',
+    data: {
+      v: DOC_PROTOCOL_VERSION,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      code,
+      message
+    }
+  } satisfies DocSubscribedFrame
+  ws.send(JSON.stringify(frame))
 }
 
 const FUNDED_BILLING_STATUS = {
@@ -83,9 +90,11 @@ const FUNDED_BILLING_STATUS = {
   scoped_effective_has_funds: { agent: true },
   scoped_has_funds: { agent: true },
   scheduled_change: null,
+  next_charge: null,
   subscription_duration: 'MONTHLY',
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
+  ended_at: null,
   team_credit_stop: null
 } satisfies BillingStatusResponse
 
@@ -115,6 +124,9 @@ function createDeferredGate(): DeferredGate {
 class AgentBillingFixture {
   private status: BillingStatusResponse = FUNDED_BILLING_STATUS
   private available = true
+  private initialStatusResponse = createDeferredGate()
+  private initialStatusResponseCompleted = false
+  private statusRequests = 0
   private heldRefresh:
     | {
         entered: DeferredGate
@@ -156,6 +168,20 @@ class AgentBillingFixture {
     this.available = true
   }
 
+  get statusRequestCount(): number {
+    return this.statusRequests
+  }
+
+  waitForInitialStatusResponse(): Promise<void> {
+    return this.initialStatusResponse.promise
+  }
+
+  private completeInitialStatusResponse(): void {
+    if (this.initialStatusResponseCompleted) return
+    this.initialStatusResponseCompleted = true
+    this.initialStatusResponse.release()
+  }
+
   holdNextFundedRefresh(): HeldBillingRefresh {
     const heldRefresh: NonNullable<AgentBillingFixture['heldRefresh']> = {
       entered: createDeferredGate(),
@@ -178,8 +204,10 @@ class AgentBillingFixture {
   }
 
   async fulfillStatus(route: Route): Promise<void> {
+    this.statusRequests++
     if (!this.available) {
       await route.fulfill({ status: 503 })
+      this.completeInitialStatusResponse()
       return
     }
     const response = this.status
@@ -193,6 +221,7 @@ class AgentBillingFixture {
       await heldRefresh.request.promise
     }
     await route.fulfill(jsonRoute(response))
+    this.completeInitialStatusResponse()
     completedHeldRefresh?.completed.release()
   }
 }
@@ -323,13 +352,12 @@ async function mockAgentBoot(
   page: Page,
   {
     agentConsentAccepted,
+    agentConsentLoadStatus,
     agentConsentReads,
     agentConsentSave,
     agentConsentWebSession,
     agentConsentWrites,
-    agentAutoShownReadProbe,
     agentFlagEnabled,
-    starterPromptSet,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
     agentRetryAfter,
@@ -351,22 +379,7 @@ async function mockAgentBoot(
   const csrfToken = 'csrf-e2e'
 
   await page.addInitScript(
-    ({
-      initiallyOpen,
-      onboardingCompleted,
-      debugEnabled,
-      autoShownReadProbe,
-      autoShownKey
-    }) => {
-      if (autoShownReadProbe) {
-        const originalGetItem = Storage.prototype.getItem
-        window.__autoShownReads = 0
-        Storage.prototype.getItem = function (candidate: string) {
-          if (candidate === autoShownKey)
-            window.__autoShownReads = (window.__autoShownReads ?? 0) + 1
-          return originalGetItem.call(this, candidate)
-        }
-      }
+    ({ initiallyOpen, onboardingCompleted, debugEnabled }) => {
       if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
         localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
       }
@@ -384,9 +397,7 @@ async function mockAgentBoot(
     {
       initiallyOpen: agentPanelInitiallyOpen,
       onboardingCompleted: agentOnboardingCompleted,
-      debugEnabled: crdtDebugEnabled,
-      autoShownReadProbe: agentAutoShownReadProbe,
-      autoShownKey: AGENT_AUTO_SHOWN_KEY
+      debugEnabled: crdtDebugEnabled
     }
   )
 
@@ -417,16 +428,12 @@ async function mockAgentBoot(
   const storedSettings: Record<string, unknown> = {
     'Comfy.TutorialCompleted': true,
     'Comfy.RightSidePanel.ShowErrorsTab': false,
-    ...DEPLOY_ACTION_SEEN_SETTINGS,
     ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
     ...initialSettings
   }
   await mockCloudBootRoutes(page, {
     features: {
       ...agentFeatures(agentFlagEnabled),
-      ...(starterPromptSet !== undefined && {
-        'agent-starter-prompt-set': starterPromptSet
-      }),
       ...(agentConsentWebSession && { unified_web_session: true }),
       ...initialFeatureFlags
     },
@@ -561,6 +568,8 @@ async function mockAgentBoot(
         return route.fulfill({ status: 401 })
       }
       agentConsentReads.push(consentAccepted)
+      if (agentConsentLoadStatus >= 400)
+        return route.fulfill({ status: agentConsentLoadStatus })
       return route.fulfill(
         consentAccepted
           ? jsonRoute(storedConsent)
@@ -659,14 +668,13 @@ async function mockAgentBoot(
 type AgentFixtures = {
   acceptedTurns: AgentTurnAccepted[]
   agentBilling: AgentBillingFixture
-  agentAutoShownReadProbe: boolean
   agentConsentAccepted: boolean
+  agentConsentLoadStatus: number
   agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWebSession: boolean
   agentConsentWrites: boolean[]
   agentFlagEnabled: boolean
-  starterPromptSet: RemoteConfig['agent-starter-prompt-set']
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
@@ -684,8 +692,8 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentBilling: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use(new AgentBillingFixture())
   },
-  agentAutoShownReadProbe: [false, { option: true }],
   agentConsentAccepted: [true, { option: true }],
+  agentConsentLoadStatus: [200, { option: true }],
   agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
@@ -697,7 +705,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use([])
   },
   agentFlagEnabled: [true, { option: true }],
-  starterPromptSet: [undefined, { option: true }],
   agentPanel: async ({ comfyPage }, use) => {
     await use(new AgentPanel(comfyPage.page))
   },
@@ -708,14 +715,13 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   objectInfo: [undefined, { option: true }],
   page: async (
     {
-      agentAutoShownReadProbe,
       agentConsentAccepted,
+      agentConsentLoadStatus,
       agentConsentReads,
       agentConsentSave,
       agentConsentWebSession,
       agentConsentWrites,
       agentFlagEnabled,
-      starterPromptSet,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       agentRetryAfter,
@@ -732,14 +738,13 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     testInfo
   ) => {
     await mockAgentBoot(page, {
-      agentAutoShownReadProbe,
       agentConsentAccepted,
+      agentConsentLoadStatus,
       agentConsentReads,
       agentConsentSave,
       agentConsentWebSession,
       agentConsentWrites,
       agentFlagEnabled,
-      starterPromptSet,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       agentRetryAfter,

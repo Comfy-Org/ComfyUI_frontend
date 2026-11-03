@@ -1,4 +1,8 @@
-import type { Bounds, Point, Size } from '@/renderer/core/layout/types'
+import type {
+  Bounds,
+  Point2D as Point,
+  Size2D as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 export function toPoint(x: number, y: number): Point {
   return { x, y }

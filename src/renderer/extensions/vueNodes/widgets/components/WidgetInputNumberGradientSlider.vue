@@ -40,11 +40,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import GradientSlider from '@/components/gradientslider/GradientSlider.vue'
-import NumberField from '@/components/ui/number-field/NumberField.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
-import type { ColorStop } from '@/lib/litegraph/src/interfaces'
-import type { IWidgetGradientSliderOptions } from '@/lib/litegraph/src/types/widgets'
+import GradientSlider from '@comfyorg/design-system/slider/GradientSlider'
+import NumberField from '@comfyorg/design-system/number-field/NumberField'
+import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
+import type { ColorStop } from '@comfyorg/graph-model/interfaces'
+import type { IWidgetGradientSliderOptions } from '@comfyorg/graph-model/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'

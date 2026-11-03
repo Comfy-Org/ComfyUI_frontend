@@ -3,7 +3,7 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 export const useNodePreviewState = (

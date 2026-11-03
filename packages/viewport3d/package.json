@@ -12,6 +12,7 @@
   },
   "exports": {
     "./*": {
+      "@comfyorg/viewport3d": "./src/*.ts",
       "types": "./dist/*.d.ts",
       "default": "./src/*.ts"
     }
@@ -24,13 +25,13 @@
   "dependencies": {
     "@comfyorg/fbx-exporter-three": "^1.0.1",
     "@comfyorg/quad-wireframe-three": "^0.1.0",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
     "@sparkjsdev/spark": "catalog:",
     "es-toolkit": "catalog:",
     "three": "catalog:",
     "wwobjloader2": "catalog:"
   },
   "devDependencies": {
-    "@comfyorg/shared-frontend-utils": "workspace:*",
     "@total-typescript/shoehorn": "catalog:",
     "@types/three": "catalog:",
     "@vitest/coverage-v8": "catalog:",

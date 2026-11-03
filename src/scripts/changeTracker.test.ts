@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -25,15 +25,19 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
+import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -358,6 +362,65 @@ describe('ChangeTracker', () => {
       })
     })
 
+    describe('text editor session', () => {
+      let events: EventTarget
+
+      beforeEach(() => {
+        events = new EventTarget()
+        const documentEvents = new EventTarget()
+        vi.spyOn(window, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            events.addEventListener(type, listener, options)
+        )
+        vi.spyOn(document, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            documentEvents.addEventListener(type, listener, options)
+        )
+        vi.spyOn(LiteGraph.LGraphCanvas.prototype, 'processMouseUp')
+        vi.spyOn(LiteGraph.LGraphCanvas.prototype, 'prompt')
+        vi.spyOn(LiteGraph.ContextMenu.prototype, 'close')
+        ChangeTracker.init()
+      })
+
+      it('captures canvas changes on mouseup without the text editor', () => {
+        const tracker = createTracker(createState(1))
+        const changed = createState(2)
+        mockCanvasState(changed)
+
+        events.dispatchEvent(new MouseEvent('mouseup'))
+
+        expect(tracker.activeState).toEqual(changed)
+      })
+
+      it('does not checkpoint mouseup while the text editor is open', () => {
+        const initial = createState(1)
+        const tracker = createTracker(initial)
+        mockCanvasState(createState(2))
+        useDialogStore().showDialog({
+          key: TEXT_EDITOR_DIALOG_KEY,
+          component: {}
+        })
+
+        events.dispatchEvent(new MouseEvent('mouseup'))
+
+        expect(tracker.activeState).toEqual(initial)
+      })
+
+      it('still records a queue-time change while the text editor is open', () => {
+        const tracker = createTracker(createState(1))
+        const changed = createState(2)
+        mockCanvasState(changed)
+        useDialogStore().showDialog({
+          key: TEXT_EDITOR_DIALOG_KEY,
+          component: {}
+        })
+
+        api.dispatchCustomEvent('promptQueued', { number: 1, batchCount: 1 })
+
+        expect(tracker.activeState).toEqual(changed)
+      })
+    })
+
     it.for([
       { editor: 'INPUT', createElement: () => document.createElement('input') },
       {
@@ -428,6 +491,73 @@ describe('ChangeTracker', () => {
 
       expect(dispatchedEventNames()).toContain('autoQueueGraphChanged')
       expect(tracker.activeState.nodes).toHaveLength(2)
+    })
+  })
+
+  describe('markModified', () => {
+    it('marks the workflow modified without reading the canvas or moving the undo point', () => {
+      const initial = createState(1)
+      const tracker = createTracker(initial)
+      const workflow = useWorkflowStore().activeWorkflow
+      assert.exists(workflow)
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+
+      tracker.markModified()
+
+      expect(workflow.isModified).toBe(true)
+      expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+        'graphChanged',
+        initial
+      )
+      expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+      expect(tracker.activeState).toEqual(initial)
+      expect(tracker.undoQueue).toEqual([])
+    })
+
+    it('lets the next capture clear the flag when the edit came back to the saved state', () => {
+      const initial = createState(1)
+      const tracker = createTracker(initial)
+      const workflow = useWorkflowStore().activeWorkflow
+      assert.exists(workflow)
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      mockCanvasState(structuredClone(initial))
+      tracker.markModified()
+
+      tracker.captureCanvasState()
+      tracker.updateModified()
+
+      expect(workflow.isModified).toBe(false)
+      expect(tracker.undoQueue).toEqual([])
+    })
+
+    it.for([
+      {
+        name: 'its workflow is not the active one',
+        block: () => {
+          useWorkflowStore().activeWorkflow = null
+        }
+      },
+      {
+        name: 'a graph is loading',
+        block: () => {
+          ChangeTracker.isLoadingGraph = true
+        }
+      }
+    ])('leaves the workflow alone when $name', ({ block }) => {
+      const tracker = createTracker(createState(1))
+      const workflow = useWorkflowStore().activeWorkflow
+      assert.exists(workflow)
+      workflow.isModified = false
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      block()
+
+      tracker.markModified()
+
+      expect(workflow.isModified).toBe(false)
+      expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+        'graphChanged',
+        expect.anything()
+      )
     })
   })
 
@@ -1921,6 +2051,95 @@ describe('ChangeTracker', () => {
 
       expect(tracker.activeState).toEqual(changed)
       expectAutoQueueGraphChangedNotDispatched()
+    })
+  })
+
+  describe('graphEqual', () => {
+    beforeEach(() => {
+      resetReportedWorkflowStateAnomaliesForTests()
+    })
+
+    it.for([
+      ['first', null, createState(), { hasFirst: false, hasSecond: true }],
+      ['second', createState(), undefined, { hasFirst: true, hasSecond: false }]
+    ] as const)(
+      'reports and returns false when the %s state is missing',
+      ([, a, b, context]) => {
+        expect(ChangeTracker.graphEqual(a, b)).toBe(false)
+
+        expect(mockAssert).toHaveBeenCalledWith(
+          false,
+          'ChangeTracker.graphEqual() called with a missing state',
+          { method: 'ChangeTracker.graphEqual', ...context }
+        )
+      }
+    )
+
+    it('does not report when both states are present', () => {
+      const state = createState(1)
+
+      expect(ChangeTracker.graphEqual(state, structuredClone(state))).toBe(true)
+      expect(ChangeTracker.graphEqual(state, createState(2))).toBe(false)
+
+      expect(mockAssert).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('updateModified', () => {
+    beforeEach(() => {
+      resetReportedWorkflowStateAnomaliesForTests()
+    })
+
+    function storeWorkflowFor(tracker: ChangeTracker) {
+      const workflow = fromPartial<ComfyWorkflow>({
+        path: tracker.workflow.path,
+        isLoaded: false,
+        isPersisted: true,
+        isTemporary: false,
+        changeTracker: null,
+        initialState: null,
+        activeState: null,
+        originalContent: null,
+        isModified: false
+      })
+      vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(workflow)
+      return workflow
+    }
+
+    it('marks the workflow modified when its state differs from the initial state', () => {
+      const tracker = createTracker(createState(1))
+      const workflow = storeWorkflowFor(tracker)
+      tracker.activeState = createState(2)
+
+      tracker.updateModified()
+
+      expect(workflow.isModified).toBe(true)
+      expect(mockAssert).not.toHaveBeenCalled()
+    })
+
+    it('leaves isModified alone and reports when the tracker has no initial state', () => {
+      const tracker = createTracker(createState(1))
+      const workflow = storeWorkflowFor(tracker)
+      tracker.initialState = fromAny<ComfyWorkflowJSON, null>(null)
+
+      expect(() => tracker.updateModified()).not.toThrow()
+
+      expect(workflow.isModified).toBe(false)
+      expect(mockAssert).toHaveBeenCalledWith(
+        false,
+        'ChangeTracker has no initial state',
+        {
+          method: 'ChangeTracker.updateModified',
+          isLoaded: false,
+          hasChangeTracker: false,
+          hasInitialState: false,
+          hasActiveState: false,
+          isPersisted: true,
+          isTemporary: false,
+          originalContentKind: 'unavailable',
+          isActive: true
+        }
+      )
     })
   })
 

@@ -7,27 +7,36 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import {
-  firstAgentThreadPage,
-  secondAgentThreadPage
-} from '@e2e/fixtures/data/agent/agentThreadList'
+import { thirtyAgentThreadPages } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+
+const expectedChatNames = [
+  ...thirtyAgentThreadPages.first.threads,
+  ...thirtyAgentThreadPages.second.threads
+].map((thread) => thread.title)
 
 test.describe(
   'Agent chat history pagination',
-  { tag: ['@cloud', '@ui'] },
+  {
+    tag: ['@cloud', '@ui'],
+    annotation: {
+      type: 'source',
+      description:
+        'https://comfy-organization.slack.com/archives/C0BGH348Z0C/p1792617168740849'
+    }
+  },
   () => {
-    test('lists chats from every page of the thread list', async ({
+    test('makes the 21st of 30 chats reachable', async ({
       page,
       agentFlagEnabled
     }) => {
-      await page.route('**/api/agent/threads?*', (route) => {
+      await page.route(/\/api\/agent\/threads(?:\?.*)?$/, (route) => {
         const after = new URL(route.request().url()).searchParams.get('after')
         return route.fulfill(
           jsonRoute(
-            after === firstAgentThreadPage.pagination.next_cursor
-              ? secondAgentThreadPage
-              : firstAgentThreadPage
+            after === thirtyAgentThreadPages.first.pagination.next_cursor
+              ? thirtyAgentThreadPages.second
+              : thirtyAgentThreadPages.first
           )
         )
       })
@@ -39,17 +48,19 @@ test.describe(
         .click()
 
       await expect(
-        panel.getByRole('button', {
-          name: firstAgentThreadPage.threads[0].title,
-          exact: true
-        })
-      ).toBeVisible()
-      await expect(
-        panel.getByRole('button', {
-          name: secondAgentThreadPage.threads[0].title,
-          exact: true
-        })
-      ).toBeVisible()
+        panel.getByRole('button', { name: /^Chat \d+$/ })
+      ).toHaveCount(30)
+      await expect
+        .poll(() =>
+          panel.getByRole('button', { name: /^Chat \d+$/ }).allTextContents()
+        )
+        .toEqual(expect.arrayContaining(expectedChatNames))
+      const twentyFirstChat = panel.getByRole('button', {
+        name: 'Chat 21',
+        exact: true
+      })
+      await twentyFirstChat.scrollIntoViewIfNeeded()
+      await expect(twentyFirstChat).toBeVisible()
     })
   }
 )

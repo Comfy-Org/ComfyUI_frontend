@@ -27,7 +27,7 @@
         {{ refillLabel }}
       </span>
       <div class="flex items-center gap-1">
-        <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
+        <i class="icon-[lucide--coins] bg-credit" />
         <span class="font-bold text-foreground tabular-nums">
           {{ refillCredits }}
         </span>
@@ -132,7 +132,7 @@ const billedLabel = computed(() => {
   if (!isYearly.value) return copy.billedMonthly
   const usd = quotedPrice.value
     ? quotedPrice.value.price_cents / 100
-    : plan.monthlyPriceUsd.yearly * 12
+    : (plan.yearlyChargeUsd ?? plan.monthlyPriceUsd.yearly * 12)
   return copy.billedYearly(`$${formatNumber(usd, locale)}`)
 })
 

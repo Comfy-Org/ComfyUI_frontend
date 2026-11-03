@@ -5,6 +5,10 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import type { GraphOperation } from './graphOperations'
 
+export const WIRE_MAX_OPS_PER_BATCH = 256
+export const WIRE_MAX_BATCH_BYTES = 4 * 1024 * 1024
+const STAMP_LIFT_HEADROOM = WIRE_MAX_OPS_PER_BATCH * 2 * 16
+
 export function mintWireOps(
   operations: GraphOperation[],
   { actor, baseVersion }: { actor: Actor; baseVersion: number }
@@ -39,7 +43,8 @@ export function chunkWireOps<T extends { op: Op; bytes: number }>(
     }
     const overOps = current.length + 1 > 256
     const overBytes =
-      current.length > 0 && currentBytes + sized.bytes > 4 * 1024 * 1024
+      current.length > 0 &&
+      currentBytes + sized.bytes > WIRE_MAX_BATCH_BYTES - STAMP_LIFT_HEADROOM
     if (overOps || overBytes) flush()
     current.push(sized)
     currentBytes += sized.bytes

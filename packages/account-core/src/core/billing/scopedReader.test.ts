@@ -90,6 +90,7 @@ const STATUS = {
   occupied_seats: 4,
   pending_billing_op_id: 'op-1',
   pending_billing_op_type: 'subscription',
+  ended_at: null,
   scheduled_change: null,
   team_credit_stop: null
 }

@@ -3,10 +3,10 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import type * as Y from 'yjs'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { recordDevEvent } from './devPanelLog'
-import { DocChangeCollector } from './docChangeCollector'
+import { DocChangeCollector, groupIds } from './docChangeCollector'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
@@ -75,7 +75,11 @@ function changesAgainstDoc(doc: Y.Doc, changes: FrameChanges): FrameChanges {
     if (!docNodes.has(id)) nodes.set(id, 'delete')
     else nodes.set(id, change === 'delete' ? 'update' : change)
   }
-  return { ...changes, nodes }
+  const docGroups = groupIds(doc.getMap('meta').get('groups'))
+  const removedGroups = new Set(
+    [...(changes.removedGroups ?? [])].filter((id) => !docGroups.has(id))
+  )
+  return { ...changes, nodes, removedGroups }
 }
 
 function pendingNodeDelta(target: BoundTarget, changes: FrameChanges) {

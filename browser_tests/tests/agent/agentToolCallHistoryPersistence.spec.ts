@@ -28,7 +28,7 @@ const TRACE = [
   THINKING_ROUND_1,
   'Search nodes',
   THINKING_ROUND_2,
-  'Add node',
+  enMessages.agent.toolNotConfirmedOnCanvas.replace('{tool}', 'Add node'),
   THINKING_FINAL
 ]
 
@@ -148,7 +148,7 @@ test(
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
     const summary = reopenedPanel.getByRole('button', {
-      name: enMessages.agent.worked,
+      name: enMessages.agent.workedNotConfirmedOnCanvas,
       exact: true
     })
     await expect(summary).toBeVisible({ timeout: 10_000 })

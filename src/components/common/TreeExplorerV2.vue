@@ -1,5 +1,5 @@
 <template>
-  <ContextMenuRoot :modal="false" @update:open="menuOpen = $event">
+  <ContextMenuRoot :modal="false">
     <ContextMenuTrigger as-child :disabled="!showContextMenu">
       <TreeRoot
         v-model:expanded="expandedKeys"
@@ -40,20 +40,16 @@
         </TreeVirtualizer>
       </TreeRoot>
     </ContextMenuTrigger>
-    <ContextMenuPortal :key="Number(menuOpen)">
-      <ContextMenuContent :class="menuContentClass">
-        <MenuItems :items="menuItems" />
-      </ContextMenuContent>
-    </ContextMenuPortal>
+    <ContextMenuContent>
+      <MenuItems :items="menuItems" />
+    </ContextMenuContent>
   </ContextMenuRoot>
 </template>
 
 <script setup lang="ts">
 import {
-  ContextMenuPortal,
   ContextMenuRoot,
   ContextMenuTrigger,
-  ContextMenuContent,
   TreeRoot,
   TreeVirtualizer
 } from 'reka-ui'
@@ -61,9 +57,9 @@ import type { FlattenedItem } from 'reka-ui'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MenuItems from '@/components/ui/menu/MenuItems.vue'
-import { menuContentClass } from '@/components/ui/menu/menuStyles'
-import type { MenuItem } from '@/components/ui/menu/types'
+import MenuItems from '@comfyorg/design-system/menu/MenuItems'
+import ContextMenuContent from '@comfyorg/design-system/menu/ContextMenuContent'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -76,8 +72,6 @@ const { showContextMenu = false } = defineProps<{
   root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
   showContextMenu?: boolean
 }>()
-
-const menuOpen = ref(false)
 
 const expandedKeys = defineModel<string[]>('expandedKeys', {
   default: () => []

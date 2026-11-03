@@ -5,6 +5,19 @@ on:
     branches-ignore: [wip/*, draft/*, temp/*]
     paths:
       - 'packages/design-system/**'
+      - 'packages/tailwind-utils/**'
+      - 'pnpm-workspace.yaml'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig.json'
+      - 'tsconfig.declarations.json'
+      - 'package.json'
+      - 'patches/**'
+      - 'scripts/vue-tsc-native.ts'
+      - 'scripts/cicd/check-design-system-*'
+      - '.github/actions/setup-frontend/**'
+      - '.github/workflows/ci-design-system-pack.yaml'
+      - '.storybook/main.ts'
+      - '.storybook/style.css'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,17 +38,38 @@ jobs:
       - name: Typecheck
         run: pnpm -C packages/design-system typecheck
 
+      - name: Build components
+        run: pnpm -C packages/design-system build
+
+      - name: Verify compiled imports are declared dependencies
+        run: pnpm exec tsx scripts/cicd/check-design-system-imports.ts
+
       - name: Verify packed tarball only contains public design system files
         shell: bash
         run: |
           set -euo pipefail
-          PACKED=$(pnpm -C packages/design-system pack --dry-run --json)
+          PACKED=$(pnpm --config.ignore-scripts=true -C packages/design-system pack --dry-run --json)
           jq -e --slurpfile manifest packages/design-system/package.json '
             [.files[].path] as $packed
-            | [$manifest[0].exports[] | objects | .types | ltrimstr("./")]
-              - $packed
+            | ($manifest[0].exports | keys | map(select(startswith("./lib/")))) as $built
+            | ($manifest[0].publishConfig.exports | keys | map(select(startswith("./lib/")))) as $published
+            | if $built != $published
+              then error("lib exports differ from publishConfig.exports: " + ((($built - $published) + ($published - $built)) | join(", ")))
+              else . end
+            | [$manifest[0].publishConfig.exports[]
+                | if type == "object" then .[] else . end
+                | ltrimstr("./")]
+            | unique
+            | map(
+                select(
+                  split("*") as [$prefix, $suffix]
+                  | if $suffix == null then ($packed | index([$prefix])) == null
+                    else any($packed[]; startswith($prefix) and endswith($suffix)) | not
+                    end
+                )
+              )
             | if length == 0 then true
-              else error("Missing declarations in tarball: " + join(", "))
+              else error("Missing export targets in tarball: " + join(", "))
               end
           ' <<< "$PACKED" > /dev/null
           UNEXPECTED=$(
@@ -53,6 +87,7 @@ jobs:
                     and . != "dist-types/button.variants.d.ts"
                     and . != "dist-types/select.variants.d.ts"
                     and . != "dist-types/tag.variants.d.ts"
+                    and (startswith("dist/") | not)
                     and (startswith("src/css/") | not)
                     and (startswith("src/icons/") | not)
                   )
@@ -64,3 +99,6 @@ jobs:
             exit 1
           fi
           echo 'Packed tarball contains only expected files.'
+
+      - name: Check an isolated packed consumer
+        run: scripts/cicd/check-design-system-consumer.sh

@@ -466,6 +466,21 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('restores persisted thinking whose tool_call_id is an explicit null', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      thinking: [{ text: 'Final round.', tool_call_id: null }]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'thinking', text: 'Final round.', state: 'done' },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
   it('keeps persisted thinking in order when an earlier entry names a call the transcript lacks', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
@@ -819,6 +834,41 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('keeps an older available approval when the newest streaming row has none', () => {
+    const first = row(1, 'assistant', 'turn-a', '', 'row-1')
+    first.status = 'streaming'
+    first.pending_ask = {
+      message_id: 'row-1',
+      ask_id: 'ask-available',
+      kind: 'run_approval',
+      prompt: 'Run it?',
+      options: [],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+    const second = row(2, 'assistant', 'turn-a', '', 'row-2')
+    second.status = 'streaming'
+    second.pending_ask = {
+      ...first.pending_ask,
+      message_id: 'row-2',
+      ask_id: 'ask-retired'
+    }
+    const latest = row(3, 'assistant', 'turn-a', '', 'row-3')
+    latest.status = 'streaming'
+
+    const transcript = normalizeAgentTranscript(
+      [first, second, latest],
+      (askId) => askId === 'ask-retired',
+      (askId) => askId === 'ask-retired'
+    )
+
+    expect(transcript.pending?.message.streaming).toBe(true)
+    expect(transcript.messages[0].parts).toContainEqual(
+      expect.objectContaining({ askId: 'ask-available' })
+    )
+  })
+
   // Only a transport can resolve an ask, and a demoted row is not getting one.
   // Kept, the card renders enabled and answering it posts against a turn that
   // is no longer active -- a button that silently does nothing.
@@ -1020,7 +1070,8 @@ describe('normalizeAgentTranscript', () => {
         callId: 'call-2',
         name: 'add_node',
         state: 'done',
-        ok: true
+        ok: true,
+        canvasConfirmed: false
       },
       { type: 'text', text: 'Done', state: 'done' }
     ])

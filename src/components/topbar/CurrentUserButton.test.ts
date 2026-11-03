@@ -5,9 +5,9 @@ import type { Component } from 'vue'
 import { computed, defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { BalanceInfo } from '@/composables/billing/types'
-import CurrentUserPopoverWorkspace from '@/platform/workspace/components/CurrentUserPopoverWorkspace.vue'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import type { BalanceInfo } from '@/platform/billing/composables/types'
+import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -24,16 +24,16 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
-vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+  import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
-vi.mock(import('@/composables/billing/useBillingDialogs'))
-vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
+vi.mock(import('@/platform/account/composables/useWorkspaceDialogs'))
+vi.mock(import('@comfyorg/telemetry'))
 
 // Mock the WorkspaceProfilePic component
 vi.mock<unknown>(

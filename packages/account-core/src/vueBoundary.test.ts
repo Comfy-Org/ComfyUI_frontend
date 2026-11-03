@@ -9,7 +9,7 @@ const COMMENT_OR_STRING =
   /'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g
 const VUE_IMPORT =
   /(?:from|import|require)\s*(?:\?\.)?\s*\(?\s*['"](?:vue|@vueuse\/[^'"]+)['"]/
-const VUE_DEPENDENCY = /^(vue|vue-tsc|@vueuse\/|@vitejs\/plugin-vue)/
+const VUE_DEPENDENCY = /^(vue|@vueuse\/|@vitejs\/plugin-vue)/
 
 const withoutComments = (source: string) =>
   source.replace(COMMENT_OR_STRING, (token) =>

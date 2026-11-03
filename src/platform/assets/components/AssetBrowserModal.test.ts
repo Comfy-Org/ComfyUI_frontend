@@ -20,7 +20,7 @@ vi.mock<unknown>(import('@/platform/assets/composables/useModelTypes'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/components/widget/layout/BaseModalLayout.vue'),
+  import('@comfyorg/design-system/layout/BaseModalLayout'),
   () => ({
     default: {
       name: 'BaseModalLayout',
@@ -47,12 +47,14 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/components/widget/panel/LeftSidePanel.vue'), () => ({
-  default: {
-    name: 'LeftSidePanel',
-    props: ['modelValue', 'navItems'],
-    emits: ['update:modelValue'],
-    template: `
+vi.mock<unknown>(
+  import('@comfyorg/design-system/navigation/LeftSidePanel'),
+  () => ({
+    default: {
+      name: 'LeftSidePanel',
+      props: ['modelValue', 'navItems'],
+      emits: ['update:modelValue'],
+      template: `
       <div data-testid="left-side-panel">
         <div v-if="$slots['header-title']" data-testid="header-title">
           <slot name="header-title" />
@@ -80,8 +82,9 @@ vi.mock<unknown>(import('@/components/widget/panel/LeftSidePanel.vue'), () => ({
         </template>
       </div>
     `
-  }
-}))
+    }
+  })
+)
 
 vi.mock<unknown>(
   import('@/platform/assets/components/AssetFilterBar.vue'),

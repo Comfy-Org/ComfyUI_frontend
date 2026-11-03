@@ -9,18 +9,18 @@ import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSche
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 
-// A recording keeps every production field except the two ids the replay
-// mints per run (agentConversationFixture stampTurn).
 export const mintedIds: { thread_id: true; message_id: true } = {
   thread_id: true,
   message_id: true
 }
+const mintedToolIds = { ...mintedIds, op_ids: true } as const
 // Every member gets the same transform, so the slot order only names them.
 const [
   thinking,
   toolCall,
   messageDelta,
   messageDraft,
+  thinkingDraft,
   messageDone,
   activeTab,
   ask,
@@ -29,9 +29,10 @@ const [
 
 export const zRecordedWsEvent = z.discriminatedUnion('type', [
   thinking.extend({ data: thinking.shape.data.omit(mintedIds) }),
-  toolCall.extend({ data: toolCall.shape.data.omit(mintedIds) }),
+  toolCall.extend({ data: toolCall.shape.data.omit(mintedToolIds) }),
   messageDelta.extend({ data: messageDelta.shape.data.omit(mintedIds) }),
   messageDraft.extend({ data: messageDraft.shape.data.omit(mintedIds) }),
+  thinkingDraft.extend({ data: thinkingDraft.shape.data.omit(mintedIds) }),
   messageDone.extend({ data: messageDone.shape.data.omit(mintedIds) }),
   activeTab.extend({ data: activeTab.shape.data.omit(mintedIds) }),
   ask.extend({ data: ask.shape.data.omit(mintedIds) }),

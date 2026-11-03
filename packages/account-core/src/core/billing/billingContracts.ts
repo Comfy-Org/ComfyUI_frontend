@@ -98,6 +98,21 @@ export function matchesServerCode(
   return failure.serverCode === code
 }
 
+/** Server codes for a purchase the server refuses for now; its `serverMessage` is the copy to show. */
+export const PURCHASE_REFUSAL_SERVER_CODES: readonly string[] = [
+  'TOPUP_RATE_LIMITED',
+  'TOPUP_PURCHASES_PAUSED'
+]
+
+/** Whether the server refused this purchase for now, with a sentence written for the customer. */
+export function isPurchaseRefusal(
+  failure: Pick<BillingFailure, 'serverCode'>
+): boolean {
+  return PURCHASE_REFUSAL_SERVER_CODES.some((code) =>
+    matchesServerCode(failure, code)
+  )
+}
+
 /**
  * The one widening back to `string`, for a host storing the code beside the
  * codes it already keeps. Rendering it is still a contract violation.

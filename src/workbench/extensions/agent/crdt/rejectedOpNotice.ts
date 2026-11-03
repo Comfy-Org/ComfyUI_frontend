@@ -82,6 +82,22 @@ function rejectedTarget(op: Op | undefined): string | undefined {
   }
 }
 
+function rejectedOpContext(op: Op | undefined): {
+  nodeId?: string | number
+  classType?: string
+} {
+  switch (op?.op) {
+    case 'set_widget':
+    case 'set_node_field':
+    case 'delete_node':
+      return { nodeId: op.node_id }
+    case 'add_node':
+      return { nodeId: op.node_id, classType: op.class_type }
+    default:
+      return {}
+  }
+}
+
 function withReason(
   notice: string,
   target: string | undefined,
@@ -146,10 +162,13 @@ export function createRejectedOpNotifier() {
     throttled(description)
   }
 
-  function notifyRejected(ops: readonly Op[], result: OpsResultView): void {
-    const { failed } = result
-    const widgetWrite = isRejectedWidgetWrite(ops, failed)
-    const code = failed?.code ?? result.code ?? 'unspecified'
+  function reportRejectedEdit(
+    ops: readonly Op[],
+    result: OpsResultView,
+    failed: DocOpFailure | undefined,
+    code: string,
+    widgetWrite: boolean
+  ): void {
     const accepted = new Set([...result.applied, ...result.skipped])
     reportLostEdit(
       'host_rejected',
@@ -161,9 +180,17 @@ export function createRejectedOpNotifier() {
         failedIndex: failed?.index,
         errorType: widgetWrite
           ? 'error_applying_agent_widget_edit'
-          : 'error_applying_agent_graph_edit'
+          : 'error_applying_agent_graph_edit',
+        ...rejectedOpContext(failed && rejectedOp(ops, failed))
       }
     )
+  }
+
+  function notifyRejected(ops: readonly Op[], result: OpsResultView): void {
+    const { failed } = result
+    const widgetWrite = isRejectedWidgetWrite(ops, failed)
+    const code = failed?.code ?? result.code ?? 'unspecified'
+    reportRejectedEdit(ops, result, failed, code, widgetWrite)
     const partial = result.applied.length > 0 && failed !== undefined
     const kind = noticeKey(widgetWrite, partial)
     const notice = i18n.global.t(kind)

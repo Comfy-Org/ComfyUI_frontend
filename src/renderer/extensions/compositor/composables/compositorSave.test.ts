@@ -4,8 +4,8 @@ import { defaultMode } from '@comfyorg/layer-editor/mode'
 import type { RasterData } from '@comfyorg/layer-editor/node'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import {

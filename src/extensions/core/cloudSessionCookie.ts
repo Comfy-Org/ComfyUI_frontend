@@ -1,8 +1,8 @@
 import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
-import { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
-const disposeSessionCookieExtension = useExtensionService().registerExtension({
+export const cloudSessionCookieExtension: ComfyExtension = {
   name: 'Comfy.Cloud.SessionCookie',
 
   onAuthUserResolved: async () => {
@@ -20,6 +20,4 @@ const disposeSessionCookieExtension = useExtensionService().registerExtension({
     const { deleteSession } = useSessionCookie()
     await deleteSession()
   }
-})
-
-import.meta.hot?.dispose(disposeSessionCookieExtension)
+}
