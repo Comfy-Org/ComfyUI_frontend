@@ -26,6 +26,7 @@ import {
   readSsoHint
 } from '@/platform/auth/session/ssoReentryStorage'
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
+import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -215,11 +216,11 @@ function installCloudAuthGuards(router: Router): void {
     let hadAccount = false
     let rerouteEnabled = false
     watch(
-      [account, () => flags.signedOutRerouteEnabled],
-      ([state, enabled]) => {
+      [account, () => flags.signedOutRerouteEnabled, remoteConfigState],
+      ([state, enabled, configState]) => {
         if (state === 'signed_in') {
           hadAccount = true
-          rerouteEnabled = enabled
+          if (enabled || configState !== 'unloaded') rerouteEnabled = enabled
         }
         if (state !== 'signed_out' || !hadAccount) return
         hadAccount = false

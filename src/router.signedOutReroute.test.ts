@@ -6,7 +6,11 @@ import type { WebSession } from '@comfyorg/account-core/webSession'
 
 import { cloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { invalidateRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
+import {
+  remoteConfig,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
 import { createAppRouter } from '@/router'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -56,6 +60,7 @@ describe('a requiresAuth route whose account leaves the tab', () => {
   afterEach(() => {
     localStorage.removeItem(REROUTE_FLAG)
     remoteConfig.value = {}
+    remoteConfigState.value = 'unloaded'
   })
 
   it('stays on the page with the reroute flag off', async () => {
@@ -90,19 +95,40 @@ describe('a requiresAuth route whose account leaves the tab', () => {
     )
   })
 
-  it('waits out a recovering web session and only leaves once it signs out', async () => {
-    localStorage.setItem(REROUTE_FLAG, 'true')
+  it.for(['reading', 'retry_wait', 'restoring'] as const)(
+    'waits out a %s web session and only leaves once it signs out',
+    async (phase) => {
+      localStorage.setItem(REROUTE_FLAG, 'true')
+      const webSession = useCloudWebSessionStore()
+      webSession.state = { phase: 'signed_in', session: sessionFor('user-a') }
+      const router = await openSurveySignedIn()
+      useAuthStore().currentUser = null
+      await flushPromises()
+
+      webSession.state = { phase, failures: 1 }
+      await flushPromises()
+      expect(router.currentRoute.value.name).toBe('cloud-survey')
+
+      webSession.state = { phase: 'signed_in', session: sessionFor('user-a') }
+      await flushPromises()
+      expect(router.currentRoute.value.name).toBe('cloud-survey')
+
+      webSession.state = { phase: 'signed_out', outcome: 'signed_out' }
+      await vi.waitFor(() =>
+        expect(router.currentRoute.value.name).toBe('cloud-login')
+      )
+    }
+  )
+
+  it('lands on sign-in when Firebase signs out before the web session does', async () => {
+    remoteConfig.value = { signed_out_reroute_enabled: true }
+    remoteConfigState.value = 'authenticated'
     const webSession = useCloudWebSessionStore()
     webSession.state = { phase: 'signed_in', session: sessionFor('user-a') }
     const router = await openSurveySignedIn()
+
+    invalidateRemoteConfig()
     useAuthStore().currentUser = null
-    await flushPromises()
-
-    webSession.state = { phase: 'restoring', failures: 1 }
-    await flushPromises()
-    expect(router.currentRoute.value.name).toBe('cloud-survey')
-
-    webSession.state = { phase: 'signed_in', session: sessionFor('user-a') }
     await flushPromises()
     expect(router.currentRoute.value.name).toBe('cloud-survey')
 
