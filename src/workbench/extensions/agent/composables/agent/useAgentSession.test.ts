@@ -6965,6 +6965,57 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('(h10b2) a workflow changed during preparation is refused with the target notice', async () => {
+    let context: WorkflowTurnContext = {
+      id: 'wf-a',
+      tabPath: 'workflows/a.json'
+    }
+    const postMessage = vi.fn<AgentRestClient['postMessage']>()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => context,
+        adopted: vi.fn(),
+        prepare: async () => {
+          context = { id: 'wf-b', tabPath: 'workflows/a.json' }
+        }
+      }
+    })
+    session.start()
+
+    const sent = await session.sendMessage(
+      'continue on this workflow',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-target-changed'
+    )
+
+    expect(sent).toBe(false)
+    expect(postMessage).not.toHaveBeenCalled()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This workflow target is no longer available.'
+        }
+      ]
+    })
+    expect(telemetry.trackAgentSendGated).toHaveBeenCalledExactlyOnceWith({
+      gate: 'composer',
+      outcome: 'dropped',
+      reason: 'target_unavailable',
+      client_message_id: 'cm-target-changed',
+      held_ms: null,
+      thread_id: null,
+      client_session_id: expect.any(String)
+    })
+  })
+
   it('(h10c) once the re-flagged mint is adopted, the next turn names it instead of minting again', async () => {
     const { session, postMessage } = unboundTabSession({
       acks: ['wf-other-tab', 'wf-minted', 'wf-minted'],
