@@ -15,7 +15,6 @@ import {
   USER_NOTE_POSITION
 } from '@e2e/fixtures/data/agent/backgroundTabEdits'
 import { AgentWorkflowChatsMock } from '@e2e/fixtures/helpers/agentWorkflowChats'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 test.describe(
   'Agent edits to a background workflow tab',
@@ -123,17 +122,24 @@ test.describe(
           return id
         })
 
-      await test.step('B stays unbound and keeps the edit', async () => {
+      await test.step('B keeps the edit once its chat loads', async () => {
         transcript.release()
         await expect(panel.userMessageBubbles).toHaveText([BACKGROUND.request])
-        await nextFrame(page)
-        await nextFrame(page)
-        expect(agentConversation.subscribeCount(BACKGROUND.id)).toBe(
-          subscribesBefore
-        )
         await expect(
           agentConversation.vueNodes.getNodeLocator(noteId)
         ).toBeVisible()
+      })
+
+      await test.step('the next subscribe, to A, finds B never re-subscribed', async () => {
+        const aId = agentConversation.conversation.workflow.id
+        const aSubscribes = agentConversation.subscribeCount(aId)
+        await topbar.getWorkflowTab(FOREGROUND_NAME).click()
+        await expect
+          .poll(() => agentConversation.subscribeCount(aId))
+          .toBeGreaterThan(aSubscribes)
+        expect(agentConversation.subscribeCount(BACKGROUND.id)).toBe(
+          subscribesBefore
+        )
       })
     })
   }
