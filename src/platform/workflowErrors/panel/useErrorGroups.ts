@@ -121,6 +121,14 @@ function resolveNodeInfo(nodeId: NodeExecutionId) {
   }
 }
 
+function nodeIdsOf(nodeTypes: readonly MissingNodeType[]): string[] {
+  return nodeTypes.flatMap((nodeType) =>
+    typeof nodeType === 'string' || nodeType.nodeId == null
+      ? []
+      : [String(nodeType.nodeId)]
+  )
+}
+
 function groupSwapNodes(
   nodeTypes: readonly MissingNodeType[]
 ): SwapNodeGroup[] {
@@ -990,14 +998,10 @@ export function useErrorGroups(
       ...(missingModelStore.visibleMissingModelCandidates ?? []),
       ...(missingMediaStore.visibleMissingMediaCandidates ?? [])
     ].map((candidate) => candidate.nodeId)
-    const missingNodeTypeIds = (
-      missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
-    ).map((nodeType) =>
-      typeof nodeType === 'string' ? undefined : nodeType.nodeId
-    )
-    return [...candidateIds, ...missingNodeTypeIds]
-      .filter((nodeId) => nodeId != null)
-      .map(String)
+    return [
+      ...candidateIds.filter((nodeId) => nodeId != null).map(String),
+      ...nodeIdsOf(missingNodesStore.visibleMissingNodesError?.nodeTypes ?? [])
+    ]
   })
 
   /**
@@ -1006,16 +1010,11 @@ export function useErrorGroups(
    */
   const selectionMatchedAssetNodeIds = computed<Set<string>>(() => {
     if (!hasSelection.value) return new Set()
-    const deprecatedNodeIds = deprecatedNodesStore.nodeTypes.flatMap(
-      (nodeType) =>
-        typeof nodeType === 'string' || nodeType.nodeId == null
-          ? []
-          : [String(nodeType.nodeId)]
-    )
     const matched = new Set(
-      [...assetNodeIdsWithError.value, ...deprecatedNodeIds].filter(
-        isAssetCandidateInSelection
-      )
+      [
+        ...assetNodeIdsWithError.value,
+        ...nodeIdsOf(deprecatedNodesStore.nodeTypes)
+      ].filter(isAssetCandidateInSelection)
     )
     for (const candidate of missingModelCandidatesForSelection.value) {
       if (candidate.nodeId != null) matched.add(String(candidate.nodeId))

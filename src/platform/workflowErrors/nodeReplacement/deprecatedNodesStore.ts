@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
+  dedupeMissingNodeTypes,
   removePendingMissingNodeTypesByExecutionIdPrefix,
   removePendingMissingNodeTypesByNodeId,
   removePendingMissingNodeTypesByType
@@ -46,12 +47,8 @@ export const useDeprecatedNodesStore = defineStore('deprecatedNodes', () => {
 
   function addNode(node: LGraphNode, executionId: string): void {
     const entry = entryFor(node, executionId)
-    if (!entry) return
-    const listed = nodeTypes.value.some(
-      (nodeType) =>
-        typeof nodeType !== 'string' && nodeType.nodeId === executionId
-    )
-    if (!listed) nodeTypes.value = [...nodeTypes.value, entry]
+    if (entry)
+      nodeTypes.value = dedupeMissingNodeTypes([...nodeTypes.value, entry])
   }
 
   function removeByType(types: string[]): void {
