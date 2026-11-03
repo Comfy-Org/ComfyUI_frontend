@@ -6366,7 +6366,7 @@
     "createWorkspace": "Crea un workspace",
     "failedToSwitch": "Cambio workspace non riuscito",
     "managedByOrganization": "La tua organizzazione gestisce i tuoi workspace, quindi non puoi crearne uno.",
-    "maxWorkspacesReached": "Puoi possedere solo 10 workspace. Elimina uno per crearne uno nuovo.",
+    "maxWorkspacesReached": "Puoi possedere solo {max} workspace. Elimina uno per crearne uno nuovo.",
     "personal": "Personale",
     "roleMember": "Membro",
     "roleOwner": "Proprietario",
