@@ -102,7 +102,7 @@ expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_view_team_usage: boolean
 }>()
 expectTypeOf<ServerDenialReason>().toEqualTypeOf<
-  Exclude<CapabilityDenialReason, 'unspecified'> | 'topup_purchases_paused'
+  Exclude<CapabilityDenialReason, 'unspecified'>
 >()
 expectTypeOf<CapabilityScope>().toEqualTypeOf<{
   user_id: string
