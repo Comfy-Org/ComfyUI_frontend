@@ -1,24 +1,29 @@
-function isHidden(style: CSSStyleDeclaration, isElement: boolean): boolean {
+function isElementHidden(style: CSSStyleDeclaration): boolean {
   return (
     style.display === 'none' ||
-    (isElement && style.display === 'contents') ||
+    style.display === 'contents' ||
     style.visibility === 'hidden' ||
     style.visibility === 'collapse' ||
     style.contentVisibility === 'hidden'
   )
 }
 
+function ancestorHidesDescendants(style: CSSStyleDeclaration): boolean {
+  return style.display === 'none' || style.contentVisibility === 'hidden'
+}
+
 function isRendered(element: Element): boolean {
   if (element.closest('[hidden], [aria-hidden="true"]') !== null) return false
 
   if (typeof element.checkVisibility !== 'function') {
+    if (isElementHidden(getComputedStyle(element))) return false
+
     for (
-      let current: Element | null = element;
+      let current = element.parentElement;
       current;
       current = current.parentElement
     ) {
-      const style = getComputedStyle(current)
-      if (isHidden(style, current === element)) return false
+      if (ancestorHidesDescendants(getComputedStyle(current))) return false
     }
 
     return true

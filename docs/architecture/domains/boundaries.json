@@ -1146,6 +1146,7 @@
           "packages/api-client/src/jobTypes.ts",
           "src/platform/keybindings/**",
           "src/utils/modalUtil.ts",
+          "src/utils/modalUtil.test.ts",
           "packages/keybindings/src/**",
           "src/extensions/core/load3d/components/lightInfo/**",
           "src/extensions/core/load3d/composables/useLightInfo.ts",
