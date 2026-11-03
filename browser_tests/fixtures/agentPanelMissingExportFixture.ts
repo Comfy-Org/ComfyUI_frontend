@@ -1,3 +1,6 @@
+import { mergeTests } from '@playwright/test'
+
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
 const AGENT_PANEL_MODULE =
@@ -7,7 +10,7 @@ interface InjectedAgentPanelModule {
   requests: number
 }
 
-export const agentPanelMissingExportTest = agentTest.extend<{
+const injectedAgentPanelModuleTest = base.extend<{
   injectedAgentPanelModule: InjectedAgentPanelModule
 }>({
   injectedAgentPanelModule: [
@@ -25,3 +28,8 @@ export const agentPanelMissingExportTest = agentTest.extend<{
     { auto: true }
   ]
 })
+
+export const agentPanelMissingExportTest = mergeTests(
+  agentTest,
+  injectedAgentPanelModuleTest
+)
