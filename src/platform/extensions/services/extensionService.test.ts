@@ -580,7 +580,6 @@ describe('sidebar tab attribution during setup', () => {
     type: 'vue' as const,
     component: {}
   })
-  // The setup(app) argument, or the module-level `app` most extensions import
   const viaSetupArgument: TabRegistrar = (setupApp, id) =>
     setupApp.extensionManager.registerSidebarTab(tab(id))
   const viaImportedApp: TabRegistrar = (_setupApp, id) =>

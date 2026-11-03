@@ -264,8 +264,6 @@ test.describe(
       })
     })
 
-    // FE 1.60 QA EXT02: packs usually register tabs through the imported `app`,
-    // not the setup(app) argument.
     test.describe('tab registered through the imported app', () => {
       const PACK_SCRIPT = '/extensions/agent-cushions-sidebar/main.js'
 
