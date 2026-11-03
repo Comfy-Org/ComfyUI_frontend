@@ -77,6 +77,22 @@ export function usePopoverViewportDismiss(
     { immediate: true }
   )
 
+  function movesAnchor(target: EventTarget | null): boolean {
+    return (
+      target === document ||
+      target instanceof Window ||
+      (target instanceof Element && target.contains(toValue(anchor) ?? null))
+    )
+  }
+
+  function isClampAfterGrowth(scroller: Element): boolean {
+    return (
+      mayClampScroll &&
+      !clampedScrollers.has(scroller) &&
+      wasClampedFrom(ancestorScrollTops.get(scroller), scroller)
+    )
+  }
+
   useEventListener(
     () => (open.value ? window : undefined),
     'resize',
@@ -98,17 +114,8 @@ export function usePopoverViewportDismiss(
     'scroll',
     (event) => {
       const target = event.target
-      const movesAnchor =
-        target === document ||
-        target instanceof Window ||
-        (target instanceof Element && target.contains(toValue(anchor) ?? null))
-      if (!movesAnchor) return
-      const isClampAfterGrowth =
-        mayClampScroll &&
-        target instanceof Element &&
-        !clampedScrollers.has(target) &&
-        wasClampedFrom(ancestorScrollTops.get(target), target)
-      if (!isClampAfterGrowth) {
+      if (!movesAnchor(target)) return
+      if (!(target instanceof Element) || !isClampAfterGrowth(target)) {
         open.value = false
         return
       }
