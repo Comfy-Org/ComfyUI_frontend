@@ -27,8 +27,9 @@
 
       <!-- Technical Details (Collapsible) -->
       <div v-if="errorMessage" class="mb-4 text-left text-muted-foreground">
-        <button
-          class="flex w-full items-center justify-between rounded-sm border-0 bg-secondary px-4 py-2 text-sm transition-colors hover:bg-accent"
+        <Button
+          size="lg"
+          class="w-full justify-between"
           @click="showTechnicalDetails = !showTechnicalDetails"
         >
           <span>{{ $t('cloudOnboarding.authTimeout.technicalDetails') }}</span>
@@ -39,7 +40,7 @@
                 : 'icon-[lucide--chevron-down]'
             "
           ></i>
-        </button>
+        </Button>
         <div
           v-if="showTechnicalDetails"
           class="mt-2 rounded-sm border border-muted p-4 font-mono text-xs break-all"
