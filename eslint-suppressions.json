@@ -1,9 +1,4 @@
 {
-  "apps/billing-web/src/components/CheckoutFrame.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 1
-    }
-  },
   "apps/billing-web/src/components/CheckoutToast.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 1
@@ -24,49 +19,14 @@
       "count": 1
     }
   },
-  "apps/billing-web/src/components/fullPage/CancelPaymentControl.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 1
-    }
-  },
-  "apps/billing-web/src/components/fullPage/CheckoutEnding.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 2
-    }
-  },
-  "apps/billing-web/src/components/fullPage/CheckoutSummaryColumn.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 1
-    }
-  },
-  "apps/billing-web/src/components/fullPage/PaymentFormError.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 1
-    }
-  },
   "apps/billing-web/src/components/fullPage/PaymentMethodTabs.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 1
     }
   },
-  "apps/billing-web/src/components/fullPage/summary/PromoCodeEntry.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 2
-    }
-  },
-  "apps/billing-web/src/components/fullPage/summary/PromoCodeField.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 2
-    }
-  },
   "apps/billing-web/src/views/InvoicesView.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 1
-    }
-  },
-  "src/components/builder/BuilderMenu.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 2
     }
   },
   "src/components/builder/BuilderToolbar.vue": {
@@ -84,14 +44,9 @@
       "count": 2
     }
   },
-  "src/components/videoConcat/VideoConcatPlaybackBar.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 2
-    }
-  },
   "src/components/videoEdit/VideoEditPanel.vue": {
     "template-classes/prefer-design-system-button": {
-      "count": 4
+      "count": 1
     }
   },
   "src/components/videoEdit/VideoFilmstripTrim.vue": {
@@ -104,32 +59,12 @@
       "count": 2
     }
   },
-  "src/platform/account/components/dialogs/TeamWorkspacesDialogContent.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 1
-    }
-  },
-  "src/platform/cloud/onboarding/CloudAuthTimeoutView.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 1
-    }
-  },
   "src/platform/keybindings/components/KeybindingPresetToolbar.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 1
     }
   },
   "src/platform/workflow/templates/components/thumbnails/LogoOverlay.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/layerEditor/components/LayerEditorToolbar.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/linearMode/DropZoneMediaActions.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 2
     }
@@ -171,7 +106,7 @@
   },
   "src/workbench/extensions/agent/crdt/CrdtDevPanel.vue": {
     "template-classes/prefer-design-system-button": {
-      "count": 10
+      "count": 3
     }
   }
 }
