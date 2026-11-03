@@ -1389,6 +1389,7 @@ export class LiveGraphApplier {
       return
     }
     const { documentWidgets = widgets, reportMissing = true } = options
+    const controllers = new Set(node.widgets?.filter(isDynamicGroupController))
     let pending = ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry)
     while (pending.length > 0) {
       const { resolved, unresolved } = this.applyWidgetRound(
@@ -1402,7 +1403,34 @@ export class LiveGraphApplier {
       }
       pending = unresolved
     }
+    this.applyMountedRowCounts(node, controllers, widgets, documentWidgets)
     this.unappliedRegrownRows.delete(node)
+  }
+
+  /**
+   * A DynamicCombo switch mounts its nested DynamicGroup and restores the
+   * group's rows outside the remote row-count path, so a refused restore
+   * would leave the document count unmet without a report. Re-apply the
+   * document count for each controller the frame mounted but did not write.
+   */
+  private applyMountedRowCounts(
+    node: LGraphNode,
+    before: ReadonlySet<IBaseWidget>,
+    widgets: Record<string, unknown>,
+    documentWidgets: DocNode['widgets']
+  ): void {
+    if (documentWidgets === undefined || Array.isArray(documentWidgets)) return
+    for (const widget of node.widgets ?? []) {
+      if (before.has(widget) || !isDynamicGroupController(widget)) continue
+      if (Object.hasOwn(widgets, widget.name)) continue
+      const entry: [string, unknown] = [
+        widget.name,
+        documentWidgets[widget.name]
+      ]
+      if (!isWidgetEntry(entry) || this.holdsLocalWrite(node, ...entry))
+        continue
+      this.applyDynamicGroupRowCount(node, widget, entry[1])
+    }
   }
 
   private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {
