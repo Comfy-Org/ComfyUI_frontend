@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
 import { changedRanges, findingsInFiles } from './server-fact-gate-core'
-import { lintFiles } from './server-fact-oxlint'
+import { lintFiles, lintSnapshot } from './server-fact-oxlint'
 
 function git(args: string[]): string {
   return execFileSync('git', args, {
@@ -59,18 +59,19 @@ export function runChangedLineLint({
         ranges.filter((range) => includeDeletions || range.kind === 'added')
       ])
   )
-  const lint = lintFiles([...rangesByFile.keys()], {
-    cwd: process.cwd(),
-    config
-  })
+  const staged = process.argv.includes('--staged')
+  const textOf = (file: string) =>
+    staged ? git(['show', `:${file}`]) : readFileSync(file, 'utf8')
+  const files = [...rangesByFile.keys()]
+  const lint = staged
+    ? lintSnapshot(new Map(files.map((file) => [file, textOf(file)])), config)
+    : lintFiles(files, { cwd: process.cwd(), config })
   if (!lint.ok) {
     console.error(`${name}: ${lint.detail}`)
     process.exit(2)
   }
 
-  const findings = findingsInFiles(rangesByFile, lint.diagnostics, (file) =>
-    readFileSync(file, 'utf8')
-  )
+  const findings = findingsInFiles(rangesByFile, lint.diagnostics, textOf)
 
   for (const { filename, line, message } of findings) {
     console.error(`${filename}:${line} ${message}`)

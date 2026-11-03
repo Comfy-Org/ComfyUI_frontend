@@ -107,14 +107,14 @@ describe('lint-staged config', () => {
       const lintStaged = await freshConfig()
 
       const commands = [lintStaged([fileName])].flat()
+      const gates = commands.filter(
+        (command) =>
+          command === 'pnpm lint:server-facts --staged' ||
+          command === 'pnpm lint:null-types --staged'
+      )
 
-      expect(
-        commands.filter(
-          (command) =>
-            command === 'pnpm lint:server-facts --staged' ||
-            command === 'pnpm lint:null-types --staged'
-        )
-      ).toEqual(expected)
+      expect(gates).toEqual(expect.arrayContaining<string>([...expected]))
+      expect(gates).toHaveLength(expected.length)
     }
   )
 

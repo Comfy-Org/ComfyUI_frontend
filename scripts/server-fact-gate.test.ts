@@ -347,6 +347,40 @@ describe('changed-line lint gates on a real diff', () => {
 
   it.for([
     {
+      name: 'rejects a staged null type despite an unstaged removal',
+      staged: 'type Value = string | null',
+      unstaged: 'type Value = string',
+      status: 1
+    },
+    {
+      name: 'allows a staged undefined type despite an unstaged null type',
+      staged: 'type Value = string | undefined',
+      unstaged: 'type Value = string | null',
+      status: 0
+    }
+  ])('$name', ({ staged, unstaged, status }) => {
+    const file = 'src/nullable.ts'
+    const { dir, git, write } = createRepo({ [file]: [''] })
+    write(file, [staged, ''])
+    git('add', file)
+    write(file, [unstaged, ''])
+
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        path.join(repoRoot, 'scripts/null-type-gate.ts'),
+        '--staged'
+      ],
+      { cwd: dir, encoding: 'utf8' }
+    )
+
+    expect(result.status).toBe(status)
+  })
+
+  it.for([
+    {
       name: 'passes a finding the merged branch brings in',
       incoming: recombinationLines,
       ours: clean,
