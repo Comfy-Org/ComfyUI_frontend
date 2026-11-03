@@ -1412,19 +1412,24 @@ export class LiveGraphApplier {
     widgets: Record<string, unknown>,
     documentWidgets: Record<string, unknown>
   ): void {
-    const written = Object.entries(widgets)
-      .filter(isWidgetEntry)
-      .filter(([name, value]) => !this.holdsLocalWrite(node, name, value))
+    const applied = Object.entries(widgets)
+      .filter(([name, value]) =>
+        Object.is(documentWidget(node, name)?.value, value)
+      )
       .map(([name]) => name)
-    for (const controller of nestedGroupControllers(node, written)) {
-      const count: [string, unknown] = [
-        controller.name,
-        documentWidgets[controller.name]
-      ]
-      if (!isWidgetEntry(count) || this.holdsLocalWrite(node, ...count))
+    for (const controller of nestedGroupControllers(node, applied)) {
+      const count = documentWidgets[controller.name]
+      if (count === undefined || reachesDynamicGroupRowCount(controller, count))
         continue
-      if (!reachesDynamicGroupRowCount(controller, count[1]))
-        this.reportDynamicGroupRowMismatch(node, controller, count[1])
+      reportRemoteDynamicGroupRowMismatch(
+        node,
+        count,
+        Number(controller.value),
+        {
+          ...AGENT_APPLY_TAGS,
+          outcome: 'degraded'
+        }
+      )
     }
   }
 

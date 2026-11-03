@@ -542,7 +542,7 @@ describe('remote DynamicGroup counts outside a row-count write', () => {
     ])
   })
 
-  it('reports a refused row restore from a remote DynamicCombo switch', () => {
+  it('reports a refused row restore from a remote DynamicCombo switch without failing the frame', () => {
     const { apply, write, widget } = followed(
       'RefusedComboGroup',
       ['on', 2, 'a', 'b'],
@@ -552,9 +552,9 @@ describe('remote DynamicGroup counts outside a row-count write', () => {
     expect(write({ mode: 'off' })).toBe(0)
     refuseInputChanges()
 
-    expect(write({ mode: 'on' })).toBe(1)
+    expect(write({ mode: 'on' })).toBe(0)
     expect(widget('mode.rows')?.value).toBe(0)
-    expect(write({ mode: 'on' })).toBe(1)
+    expect(write({ mode: 'on' })).toBe(0)
     expect(vi.mocked(reportError).mock.calls).toEqual([
       mismatch('RefusedComboGroup', 2, 0)
     ])
@@ -600,7 +600,7 @@ describe('remote DynamicGroup counts outside a row-count write', () => {
     write({ 'mode.rows': 3, 'mode.rows.2.text': 'c' })
     vi.mocked(reportError).mockClear()
 
-    expect(write({ mode: 'on' })).toBe(1)
+    expect(write({ mode: 'on' })).toBe(0)
     expect(widget('mode.rows')?.value).toBe(2)
     expect(vi.mocked(reportError).mock.calls).toEqual([
       mismatch('GrownComboGroup', 3, 2)
