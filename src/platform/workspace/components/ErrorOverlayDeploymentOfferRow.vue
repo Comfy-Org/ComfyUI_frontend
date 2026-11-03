@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="first && !deploymentDialogOpen"
+    v-if="first && !deploymentDialogAppeared"
     class="flex w-full items-center gap-2 pr-8"
     data-testid="error-overlay-deployment-offer"
   >
@@ -28,7 +28,7 @@
     </Button>
   </div>
   <div
-    v-else-if="customDeploymentOffered && !deploymentDialogOpen"
+    v-else-if="customDeploymentOffered && !deploymentDialogAppeared"
     class="flex w-full items-center gap-2 pr-8"
     data-testid="error-overlay-custom-deployment-offer"
   >
@@ -48,7 +48,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { whenever } from '@vueuse/core'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -65,7 +66,14 @@ const { offer, choose, isSwitching, openSwitcher } =
 const customDeploymentOffered = useCustomDeploymentOffered(
   () => offer.value?.kind === 'none'
 )
-const deploymentDialogOpen = computed(isWorkflowNeedsDeploymentDialogOpen)
+const deploymentDialogAppeared = ref(false)
+whenever(
+  isWorkflowNeedsDeploymentDialogOpen,
+  () => {
+    deploymentDialogAppeared.value = true
+  },
+  { immediate: true }
+)
 
 const choices = computed(() =>
   offer.value?.kind === 'choices' ? offer.value.choices : []

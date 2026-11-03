@@ -200,7 +200,8 @@ const offerRows = [
       vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
         answer([agencyA], [plain])
       )
-    }
+    },
+    offerSettled: compatibilityAnswered
   },
   {
     row: 'Set up',
@@ -208,7 +209,8 @@ const offerRows = [
     arrange: () => {
       onComfyCloud([])
       useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)
-    }
+    },
+    offerSettled: () => nextTick()
   }
 ]
 
@@ -506,30 +508,33 @@ describe('ErrorOverlay deployment offer', () => {
   })
 
   it.for(offerRows)(
-    'hides the $row row, and keeps the rest of the notice, while the deployment dialog is open',
+    'hides the $row row, and keeps the rest of the notice, once the deployment dialog appears, even after it closes',
     async ({ testId, arrange }) => {
       arrange()
       renderNotice()
       await screen.findByTestId(testId)
-
       await openWorkflowNeedsDeploymentDialog()
-
       await waitFor(() => expect(screen.queryByTestId(testId)).toBeNull())
+
+      useDialogStore().closeDialog({ key: 'global-workflow-needs-deployment' })
+      await nextTick()
+
+      expect(screen.queryByTestId(testId)).toBeNull()
       expectNoticeAsToday()
     }
   )
 
   it.for(offerRows)(
-    'shows the $row row again once the deployment dialog closes',
-    async ({ testId, arrange }) => {
+    'hides the $row row when the notice opens behind the deployment dialog',
+    async ({ testId, arrange, offerSettled }) => {
       arrange()
-      renderNotice()
-      await screen.findByTestId(testId)
       await openWorkflowNeedsDeploymentDialog()
 
-      useDialogStore().closeDialog({ key: 'global-workflow-needs-deployment' })
+      renderNotice()
+      await offerSettled()
 
-      expect(await screen.findByTestId(testId)).toBeInTheDocument()
+      expect(screen.queryByTestId(testId)).toBeNull()
+      expectNoticeAsToday()
     }
   )
 
