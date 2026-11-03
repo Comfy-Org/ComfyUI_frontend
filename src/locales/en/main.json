@@ -6270,6 +6270,7 @@
     "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",
     "removeWorkflowReference": "Remove {name} reference",
     "targetNavigationUnavailable": "This workflow target is no longer available.",
+    "canvasNotReadyForSend": "This tab's canvas isn't ready yet, so your message wasn't sent. Try again in a moment.",
     "workflowSyncFailedTitle": "This workflow can't sync",
     "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
     "workflowSyncFailedDetailCatalogMismatch": "A node in this workflow has changed since the agent last saw it. Your canvas has been left unchanged. Your next message sends your canvas so the agent can rebuild its copy of the workflow.",
