@@ -43,7 +43,7 @@ describe('useColorPaletteService theme variables', () => {
         '--node-header': '#09090a',
         '--node-foreground': '#a0a0a0',
         '--secondary': '#272729',
-        '--border': '#3f3f44'
+        '--border': 'oklch(1 0 0 / 10%)'
       }
     },
     {
@@ -54,7 +54,7 @@ describe('useColorPaletteService theme variables', () => {
         '--node-header': '#fafafa',
         '--node-foreground': '#3f3f44',
         '--secondary': '#e4e4e6',
-        '--border': '#d4d4d7'
+        '--border': 'oklch(0 0 0 / 10%)'
       }
     },
     {

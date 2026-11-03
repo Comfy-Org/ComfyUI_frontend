@@ -22,7 +22,7 @@ hover, selected or disabled shades of a handful of colors.
 ## Decision
 
 A palette is the only thing that changes the theme. Its `colors.theme` accepts
-19 values. Ten are the core a theme author should set:
+20 values. Ten are the core a theme author should set:
 
 | Group    | Tokens                                               |
 | -------- | ---------------------------------------------------- |
@@ -31,19 +31,20 @@ A palette is the only thing that changes the theme. Its `colors.theme` accepts
 | Roles    | `primary`, `destructive`                             |
 | Lines    | `border`                                             |
 
-The other nine fall back when a palette leaves them out:
+The other ten fall back when a palette leaves them out:
 
-| Token             | Fallback           |
-| ----------------- | ------------------ |
-| `popover`         | `background`       |
-| `input`           | `accent`           |
-| `ring`            | `muted-foreground` |
-| `node`            | `card`             |
-| `node-foreground` | `muted-foreground` |
-| `node-header`     | `secondary`        |
-| `node-border`     | `border`           |
-| `warning`         | the base theme     |
-| `shadow-color`    | the base theme     |
+| Token                | Fallback           |
+| -------------------- | ------------------ |
+| `popover`            | `background`       |
+| `input`              | `accent`           |
+| `ring`               | `muted-foreground` |
+| `node`               | `card`             |
+| `node-foreground`    | `muted-foreground` |
+| `node-header`        | `secondary`        |
+| `node-border`        | `border`           |
+| `primary-foreground` | the base theme     |
+| `warning`            | the base theme     |
+| `shadow-color`       | the base theme     |
 
 The base theme is `dark.json` or `light.json`, picked by the palette's
 `light_theme` flag. `warning-foreground`, `success`, `credit` and `bypass` are

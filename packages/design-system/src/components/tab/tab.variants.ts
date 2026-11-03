@@ -6,7 +6,7 @@ export const tabStateVariants = cva({
     active: {
       true: 'bg-accent text-foreground',
       false:
-        'bg-transparent text-muted-foreground hover:bg-accent focus:bg-accent'
+        'bg-transparent text-muted-foreground hover:bg-accent/50 focus:bg-accent/50'
     }
   },
   defaultVariants: {

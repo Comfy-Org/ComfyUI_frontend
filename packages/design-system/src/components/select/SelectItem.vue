@@ -28,10 +28,10 @@ const {
       cn(
         'relative flex w-full cursor-pointer items-center justify-between select-none',
         'gap-3 rounded-sm px-2 py-3 text-sm outline-none',
-        'hover:bg-accent',
-        'focus:bg-accent',
-        'data-[state=checked]:bg-muted',
-        'data-[state=checked]:hover:bg-muted',
+        'hover:bg-accent/50',
+        'focus:bg-accent/50',
+        'data-[state=checked]:bg-accent',
+        'data-[state=checked]:hover:bg-accent',
         'data-disabled:pointer-events-none data-disabled:opacity-50',
         className
       )

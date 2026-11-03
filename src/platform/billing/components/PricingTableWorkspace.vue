@@ -17,7 +17,7 @@
             <span>{{ option.label }}</span>
             <div
               v-if="option.value === 'yearly'"
-              class="flex items-center rounded-full bg-primary px-1 py-0.5 text-2xs font-bold text-white"
+              class="flex items-center rounded-full bg-primary px-1 py-0.5 text-2xs font-bold text-primary-foreground"
             >
               -20%
             </div>

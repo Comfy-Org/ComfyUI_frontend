@@ -92,6 +92,7 @@ export const themeSchema = z
     card: z.string(),
     popover: z.string(),
     primary: z.string(),
+    ['primary-foreground']: z.string(),
     secondary: z.string(),
     muted: z.string(),
     ['muted-foreground']: z.string(),

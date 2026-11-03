@@ -6,7 +6,7 @@
         :class="
           cn(
             'flex cursor-pointer items-center-safe gap-2 rounded-md p-3 text-sm text-foreground transition-colors select-none',
-            active ? 'bg-muted' : 'hover:bg-accent'
+            active ? 'bg-accent' : 'hover:bg-accent/50'
           )
         "
         role="button"
