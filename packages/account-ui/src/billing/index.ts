@@ -51,6 +51,5 @@ export {
 } from './addCredits/useAddCreditsDialog'
 export type { AddCreditsUi } from './addCredits/addCreditsPresentation'
 export { default as AddCreditsDialog } from './addCredits/AddCreditsDialog.vue'
-export type { PlanRowCopy, PlanRowText } from './tab/planRowCopy'
-export { planRowText } from './tab/planRowCopy'
+export type { PlanRowCopy } from './tab/planRowCopy'
 export { default as BillingPlanRow } from './tab/BillingPlanRow.vue'
