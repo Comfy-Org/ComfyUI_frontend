@@ -29,7 +29,7 @@
   },
 
   // Runtime entry points fallow cannot infer.
-  "entry": ["index.html", "src/main.ts"],
+  "entry": ["examples/node-api/**/web/*.js", "index.html", "src/main.ts"],
 
   // Keep tooling and test roots reachable without treating their imports as
   // production runtime dependencies.
@@ -40,7 +40,7 @@
       "entryPoints": [
         "**/.storybook/{main.ts,preview.ts,style.css}",
         "packages/ingest-types/openapi-ts.config.ts",
-        "scripts/**/*.{js,ts}"
+        "scripts/**/*.{js,mjs,ts}"
       ],
       "entryPointRole": "support"
     },
@@ -91,7 +91,8 @@
     // Static stylesheet referenced from index.html, resolved by the bundler.
     "./materialdesignicons.min.css",
     // Generated sibling JS for the desktop-bridge type stubs.
-    "./comfyDesktopBridge.js"
+    "./comfyDesktopBridge.js",
+    "/comfy/api/v2.js"
   ],
 
   "ignoreExports": [
