@@ -142,3 +142,25 @@ describe('RunNoticeBanner', () => {
     expect(screen.queryByText(/The agent can now edit/)).toBeNull()
   })
 })
+
+it('hides only the introductory notice while greeting is visible', async () => {
+  const view = render(RunNoticeBanner, {
+    props: { workflowName: 'portrait', hideIntro: true },
+    global: { plugins: [i18n] }
+  })
+  expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  await view.rerender({
+    workflowName: 'portrait',
+    hideIntro: true,
+    context: 'mismatch'
+  })
+  expect(screen.getByRole('note')).toHaveTextContent(
+    i18n.global.t('agent.viewingDifferentWorkflow')
+  )
+  await view.rerender({
+    workflowName: 'portrait',
+    hideIntro: false,
+    context: undefined
+  })
+  expect(screen.getByRole('note')).toHaveTextContent('portrait')
+})

@@ -72,6 +72,7 @@ const telemetry = vi.mocked(telemetryProvider)
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
+    getUsageStatus: vi.fn(async () => ({ has_used_agent: false })),
     postMessage: vi.fn(async (): Promise<AgentTurnAccepted> => ({
       thread_id: 'th-1',
       message_id: 'msg-1',

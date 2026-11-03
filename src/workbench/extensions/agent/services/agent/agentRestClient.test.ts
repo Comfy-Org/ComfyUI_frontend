@@ -1715,3 +1715,17 @@ describe('user auth on agent requests', () => {
     )
   })
 })
+
+describe('usage status', () => {
+  it('reads the authenticated scoped endpoint and rejects malformed success bodies', async () => {
+    respond(jsonResponse(200, { has_used_agent: false }))
+    expect(await makeClient().getUsageStatus()).toEqual({
+      has_used_agent: false
+    })
+    expect(lastCall().route).toBe('/agent/usage-status')
+    respond(jsonResponse(200, {}))
+    await expect(makeClient().getUsageStatus()).rejects.toThrow()
+    respond(jsonResponse(500, { error: 'unavailable' }))
+    await expect(makeClient().getUsageStatus()).rejects.toThrow()
+  })
+})

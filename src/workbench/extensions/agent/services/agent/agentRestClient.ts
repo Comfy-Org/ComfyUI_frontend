@@ -1,11 +1,13 @@
 import type {
   AgentAnswerRequest,
+  AgentUsageStatusResponse,
   AgentPostMessageRequest,
   PaginationInfo,
   UploadImageResponse,
   WorkflowResponse
 } from '@comfyorg/ingest-types'
 import {
+  zAgentUsageStatusResponse,
   zUploadImageResponse,
   zWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
@@ -87,6 +89,7 @@ type AgentApiOperation =
   | 'answer_thread_ask'
   | 'cancel_thread_message'
   | 'get_agent_identity'
+  | 'get_usage_status'
   | 'get_cloud_workflow'
   | 'get_run_mode'
   | 'get_thread_messages'
@@ -782,6 +785,20 @@ export function createAgentRestClient() {
     )
   }
 
+  async function getUsageStatus(
+    options: { signal?: AbortSignal } = {}
+  ): Promise<AgentUsageStatusResponse> {
+    return request(
+      'get_usage_status',
+      '/agent/usage-status',
+      {
+        method: 'GET',
+        signal: options.signal
+      },
+      zAgentUsageStatusResponse
+    )
+  }
+
   async function getMessages(
     threadId: string,
     options: { signal?: AbortSignal } = {}
@@ -930,6 +947,7 @@ export function createAgentRestClient() {
 
   return {
     postMessage,
+    getUsageStatus,
     getMessages,
     listThreads,
     getIdentity,

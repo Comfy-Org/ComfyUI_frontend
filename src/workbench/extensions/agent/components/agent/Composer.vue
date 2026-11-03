@@ -328,6 +328,7 @@ function stopRunOnEscape(event: KeyboardEvent): void {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
+  prefillFadeMs.value = null
   if (openingChat) {
     event.preventDefault()
     return
@@ -484,6 +485,24 @@ onUnmounted(() => {
   unregisterEscapeOverride?.()
 })
 
+const prefillFadeMs = ref<number | null>(null)
+const prefillFade = computed(() =>
+  prefillFadeMs.value === null
+    ? {}
+    : {
+        class: 'agent-talk-fade',
+        style: { '--talk-delay': `${prefillFadeMs.value}ms` }
+      }
+)
+
+async function focusPrefill(delayMs: number): Promise<void> {
+  const prefilled = composer.prompt.value
+  prefillFadeMs.value = delayMs
+  await nextTick()
+  if (composer.prompt.value !== prefilled) return
+  editorRef.value?.focusAtEnd()
+}
+
 function insert(
   text: string,
   starterPrompt?: AgentStarterPromptAttribution
@@ -504,6 +523,7 @@ function removeAttachment(id: string): void {
 
 defineExpose({
   insert,
+  focusPrefill,
   replaceDraft,
   addAttachment: composer.addAttachment,
   updateAttachment: composer.updateAttachment,
@@ -625,6 +645,7 @@ defineExpose({
           >
             <InlinePromptEditor
               ref="editorRef"
+              v-bind="prefillFade"
               :model-value="composer.prompt.value"
               :label="placeholderLabel"
               :expanded="mentionVisible"

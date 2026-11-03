@@ -178,6 +178,20 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     draftState.value = next
   }
 
+  function prefillGreeting(text: string): (() => void) | undefined {
+    if (draft.value !== '' || hasDraft.value || submission.value) return
+    setText(text)
+    markSuggestedPrompt()
+    const ownedRevision = revision
+    return () => {
+      if (revision !== ownedRevision) return
+      setText('')
+      promptOrigin.value = 'typed'
+      starterPrompt.value = null
+      resetPromptHistory()
+    }
+  }
+
   function setInsertionPoint(point: ComposerInsertionPoint): void {
     insertionPoint.value = point
   }
@@ -614,6 +628,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     rejectedDraftUnchanged,
     markRejectedDraft,
     setText,
+    prefillGreeting,
     setInsertionPoint,
     resetPromptHistory,
     applyEditorPrompt,
