@@ -103,7 +103,7 @@
           data-testid="widget-select-default-overlay"
           position="popper"
           :side-offset="1"
-          align="start"
+          :align="unifiedRows ? 'end' : 'start'"
           :class="
             cn(
               'z-overlay overflow-hidden rounded-lg border border-solid border-border bg-background p-0 shadow-md',
