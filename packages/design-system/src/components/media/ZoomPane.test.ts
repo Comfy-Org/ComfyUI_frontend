@@ -8,6 +8,7 @@ type Transform = { scale: number; x: number; y: number }
 
 function renderPane() {
   render(ZoomPane, {
+    attrs: { 'data-testid': 'zoom-pane' },
     slots: {
       default: (slotProps: { style: { transform: string } }) =>
         h('img', { alt: 'output', src: '/output.png', ...slotProps })
@@ -26,7 +27,7 @@ function readTransform(image: HTMLElement): Transform {
 
 async function touch(
   target: HTMLElement,
-  type: 'pointerDown' | 'pointerMove' | 'pointerUp',
+  type: 'pointerDown' | 'pointerMove' | 'pointerUp' | 'lostPointerCapture',
   pointerId: number,
   clientX: number,
   clientY = 0
@@ -94,6 +95,41 @@ describe(ZoomPane, () => {
       x: afterPinch.x + 20,
       y: afterPinch.y + 30
     })
+  })
+
+  it('pans instead of pinching once a touch loses pointer capture', async () => {
+    const image = renderPane()
+    const before = readTransform(image)
+
+    await touch(image, 'pointerDown', 1, 10, 10)
+    await touch(image, 'pointerDown', 2, 60, 10)
+    await touch(
+      screen.getByTestId('zoom-pane'),
+      'lostPointerCapture',
+      2,
+      60,
+      10
+    )
+    await touch(image, 'pointerMove', 1, 40, 25)
+
+    expect(readTransform(image)).toEqual({
+      scale: before.scale,
+      x: before.x + 30,
+      y: before.y + 15
+    })
+  })
+
+  it('keeps pinching when a slotted child loses its implicit capture', async () => {
+    const image = renderPane()
+    const before = readTransform(image)
+
+    await touch(image, 'pointerDown', 1, -50)
+    await touch(image, 'pointerDown', 2, 50)
+    await touch(image, 'lostPointerCapture', 2, 50)
+    await touch(image, 'pointerMove', 1, -100)
+    await touch(image, 'pointerMove', 2, 100)
+
+    expect(readTransform(image).scale).toBeGreaterThan(before.scale)
   })
 
   it('pans by the distance a single pointer drags', async () => {

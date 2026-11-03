@@ -103,6 +103,7 @@ const transform = computed(() => {
     @pointermove="handleMove"
     @pointerup="handleUp"
     @pointercancel="handleUp"
+    @lostpointercapture.self="handleUp"
   >
     <slot :style="{ transform }" />
   </div>
