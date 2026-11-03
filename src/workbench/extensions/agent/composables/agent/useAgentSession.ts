@@ -1495,7 +1495,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       nextLocalErrorId(),
       text,
       reattached
-        ? i18n.global.t('agent.sendTurnInProgress')
+        ? i18n.global.t(
+            conversationStore.awaitsRunApproval
+              ? 'agent.sendAwaitingRunApproval'
+              : 'agent.sendTurnInProgress'
+          )
         : `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
