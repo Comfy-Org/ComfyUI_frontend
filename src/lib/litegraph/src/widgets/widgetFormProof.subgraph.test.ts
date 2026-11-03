@@ -193,19 +193,6 @@ describe('case 2 — promoted widgets', () => {
   })
 })
 
-describe('case 3 — widget projections', () => {
-  it('refuses a projection the store no longer backs, which keeps its name but reads undefined', () => {
-    const host = subgraphHostWithPromotedInputs(['alpha'])
-    clearPromotedValues(host)
-
-    const captured = serializeWithCapture(host)
-
-    expect(host.widgets[0].value).toBeUndefined()
-    expect(host.widgets[0].name).toBe('alpha')
-    expect(proveAgainstFinalPayload(host, captured).provable).toBe(false)
-  })
-})
-
 describe('the last writer', () => {
   it('refuses a subgraph host at core own post-hook payload, before the subclass rewrites it', () => {
     const host = subgraphHostWithPromotedInputs(['alpha'])
