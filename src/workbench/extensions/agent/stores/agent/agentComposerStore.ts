@@ -8,6 +8,7 @@ import {
   shallowRef,
   watch
 } from 'vue'
+import { z } from 'zod'
 
 import {
   getWorkspaceId,
@@ -57,18 +58,18 @@ function composerReferencePosition(reference: ComposerReference): string {
   return `${composerReferenceKey(reference)}@${reference.textOffset}`
 }
 
-/**
- * The unsent draft as written to localStorage, tagged with the chat it
- * belongs to (`null` for a chat with no thread yet). Only text and workflow
- * references are kept: node references are scoped to a tab instance, skill
- * references to the loaded skill-pack scope, and attachments to in-memory
- * blobs, none of which survive a page load.
- */
-interface SavedDraft {
-  threadId: string | null
-  text: string
-  workflowReferences: WorkflowReference[]
-}
+const zSavedDraft = z.object({
+  threadId: z.string().nullable(),
+  text: z.string(),
+  workflowReferences: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      unavailable: z.boolean().optional(),
+      textOffset: z.number()
+    })
+  )
+})
 
 interface SubmittedDraft {
   attachments: ComposerAttachment[]
@@ -631,10 +632,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     releaseUnusedAssets()
   }
 
-  // PM-2002: the unsent draft survives a page refresh. Nothing is written
-  // until the panel reports which chat is open, so the empty composer of a
-  // freshly loaded page cannot overwrite the draft before it is restored.
-  const savedDraft = useLocalStorage<SavedDraft | null>(
+  const savedDraft = useLocalStorage<unknown>(
     StorageKeys.agentComposerDraft(getWorkspaceId()),
     null,
     { serializer: StorageSerializers.object }
@@ -650,23 +648,17 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
         : null
   })
 
-  /**
-   * Tells the composer which chat is open. The first call after a page load
-   * restores the saved draft when it was written in that same chat; later
-   * calls only retag what is saved.
-   */
   function trackDraftThread(threadId: string | null): void {
-    const saved = savedDraft.value
-    if (
-      draftThreadId.value === undefined &&
-      saved?.threadId === threadId &&
-      !hasDraft.value
-    )
-      replaceDraft({
-        text: saved.text,
-        workflowReferences: saved.workflowReferences,
-        attachments: []
-      })
+    if (draftThreadId.value === undefined) {
+      const saved = zSavedDraft.nullable().safeParse(savedDraft.value)
+      if (!saved.success) savedDraft.value = null
+      else if (saved.data?.threadId === threadId && !hasDraft.value)
+        replaceDraft({
+          text: saved.data.text,
+          workflowReferences: saved.data.workflowReferences,
+          attachments: []
+        })
+    }
     draftThreadId.value = threadId
   }
 

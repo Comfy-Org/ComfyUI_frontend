@@ -5,10 +5,6 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-// PM-2002 (https://linear.app/comfyorg/issue/PM-2002): refreshing the page
-// wiped an unsent Agent chat draft with no warning. The draft now survives a
-// reload in the chat it was written in, and New Chat (PM-2251) still starts
-// empty after a reload rather than bringing the discarded draft back.
 test.describe(
   'Agent composer draft survives a page refresh',
   { tag: ['@cloud', '@ui'] },

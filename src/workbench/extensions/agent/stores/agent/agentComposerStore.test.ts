@@ -2,6 +2,10 @@ import { getActivePinia } from 'pinia'
 import { assert, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import { useAgentComposerStore } from './agentComposerStore'
@@ -383,8 +387,6 @@ describe('composer draft presence', () => {
 })
 
 describe('composer draft persistence (PM-2002)', () => {
-  // A page load is a fresh store, with no in-memory state, over the same
-  // localStorage.
   async function reloadPage() {
     await nextTick()
     const store = useAgentComposerStore()
@@ -425,6 +427,28 @@ describe('composer draft persistence (PM-2002)', () => {
     })
     expect(restored.attachments).toEqual([])
   })
+
+  it.for([
+    { threadId: null, text: null, workflowReferences: [] },
+    { threadId: null, text: 'Hi', workflowReferences: null },
+    { threadId: null, text: 'Hi', workflowReferences: [{ id: 'wf' }] },
+    { threadId: null, text: 'Hi', workflowReferences: ['wf'] }
+  ])(
+    'discards a malformed saved draft %j and keeps the composer usable',
+    async (saved) => {
+      const key = StorageKeys.agentComposerDraft(getWorkspaceId())
+      localStorage.setItem(key, JSON.stringify(saved))
+
+      const store = useAgentComposerStore()
+      expect(() => store.trackDraftThread(null)).not.toThrow()
+      expect(store.hasDraft).toBe(false)
+      await nextTick()
+      expect(localStorage.getItem(key)).toBeNull()
+
+      store.setText('Make it blue')
+      expect(store.prompt).toEqual({ text: 'Make it blue', references: [] })
+    }
+  )
 
   it('forgets the draft once it is sent or cleared', async () => {
     const sent = useAgentComposerStore()
