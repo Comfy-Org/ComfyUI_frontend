@@ -11,7 +11,7 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { wasWidgetRefused } from '@/lib/litegraph/src/node/widgetsView'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import type {
   BaseDOMWidget,

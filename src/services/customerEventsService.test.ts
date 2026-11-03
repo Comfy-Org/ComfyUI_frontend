@@ -1,94 +1,28 @@
-import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
-import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-vi.mock(import('firebase/auth'))
 
 import {
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
-import {
-  WebSessionTokenError,
-  webSessionResourceHeader
-} from '@/platform/auth/session/webSessionFetch'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
-
-// Hoist the mocks to avoid hoisting issues
-const mockAxiosInstance = vi.hoisted(() => ({
-  get: vi.fn(),
-  interceptors: { response: { use: vi.fn() } }
-}))
 
 const mockI18n = vi.hoisted(() => ({
   d: vi.fn()
 }))
 
-// Mock dependencies
-vi.mock<unknown>(import('axios'), () => ({
-  default: {
-    create: vi.fn(() => mockAxiosInstance),
-    isAxiosError: vi.fn()
+vi.mock(import('@/i18n'), async () => {
+  const { createI18n } = await import('vue-i18n')
+  return {
+    d: mockI18n.d,
+    t: (key: string, plural?: unknown) =>
+      typeof plural === 'number' ? `${key}[${plural}]` : key,
+    i18n: createI18n({ legacy: false, locale: 'en' })
   }
-}))
-
-vi.mock(import('@/i18n'), () => ({
-  d: mockI18n.d,
-  t: (key: string) => key
-}))
-
-vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
-  isAbortError: vi.fn()
-}))
-
-vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
+})
 
 describe('useCustomerEventsService', () => {
   let service: ReturnType<typeof useCustomerEventsService>
 
-  const mockAuthHeaders = {
-    Authorization: 'Bearer mock-token'
-  } satisfies AuthHeader
-
-  const mockEventsResponse = {
-    events: [
-      {
-        event_id: 'event-1',
-        event_type: 'credit_added',
-        params: {
-          amount: 1000,
-          transaction_id: 'txn-123',
-          payment_method: 'stripe'
-        },
-        createdAt: '2024-01-01T10:00:00Z'
-      },
-      {
-        event_id: 'event-2',
-        event_type: 'api_usage_completed',
-        params: {
-          api_name: 'Image Generation',
-          model: 'sdxl-base',
-          duration: 5000,
-          cost: 50
-        },
-        createdAt: '2024-01-02T10:00:00Z'
-      }
-    ],
-    total: 2,
-    page: 1,
-    limit: 10,
-    totalPages: 1
-  }
-
   beforeEach(() => {
-    remoteConfig.value = { comfy_api_base_url: 'https://api.example.com' }
-    vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
-    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(
-      mockAuthHeaders
-    )
-    vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-a')
     mockI18n.d.mockImplementation((date, options) => {
       // Mock i18n date formatting
       if (options?.month === 'short') {
@@ -103,253 +37,6 @@ describe('useCustomerEventsService', () => {
     })
 
     service = useCustomerEventsService()
-
-    return () => {
-      remoteConfig.value = {}
-    }
-  })
-
-  describe('initialization', () => {
-    it('should initialize with default state', () => {
-      expect(service.isLoading.value).toBe(false)
-      expect(service.error.value).toBeNull()
-    })
-  })
-
-  describe('getMyEvents', () => {
-    it('should fetch events successfully', async () => {
-      mockAxiosInstance.get.mockResolvedValue({ data: mockEventsResponse })
-
-      const result = await service.getMyEvents({
-        page: 1,
-        limit: 10
-      })
-
-      expect(useAuthStore().getUserAuthHeader).toHaveBeenCalled()
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
-        baseURL: 'https://api.example.com',
-        params: { page: 1, limit: 10 },
-        headers: mockAuthHeaders
-      })
-
-      expect(result).toEqual(mockEventsResponse)
-      expect(service.isLoading.value).toBe(false)
-      expect(service.error.value).toBeNull()
-    })
-
-    it('sends the request to the base URL configured after service creation', async () => {
-      remoteConfig.value = { comfy_api_base_url: 'https://changed.example.com' }
-      mockAxiosInstance.get.mockResolvedValue({ data: mockEventsResponse })
-
-      await service.getMyEvents()
-
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
-        baseURL: 'https://changed.example.com',
-        params: { page: 1, limit: 10 },
-        headers: mockAuthHeaders
-      })
-    })
-
-    it('should use default parameters when none provided', async () => {
-      mockAxiosInstance.get.mockResolvedValue({ data: mockEventsResponse })
-
-      await service.getMyEvents()
-
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
-        baseURL: 'https://api.example.com',
-        params: { page: 1, limit: 10 },
-        headers: mockAuthHeaders
-      })
-    })
-
-    it.for([
-      {
-        name: 'no web session sends the user header',
-        session: undefined,
-        headers: mockAuthHeaders,
-        userHeaderCalls: 1
-      },
-      {
-        name: 'a web session sends its own header instead',
-        session: { Authorization: 'Bearer session-jwt' },
-        headers: { Authorization: 'Bearer session-jwt' },
-        userHeaderCalls: 0
-      }
-    ])(
-      'authorizes the request: $name',
-      async ({ session, headers, userHeaderCalls }) => {
-        vi.mocked(webSessionResourceHeader).mockResolvedValue(session)
-        mockAxiosInstance.get.mockResolvedValue({ data: mockEventsResponse })
-
-        await service.getMyEvents()
-
-        expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-          '/customers/events',
-          {
-            baseURL: 'https://api.example.com',
-            params: { page: 1, limit: 10 },
-            headers
-          }
-        )
-        expect(useAuthStore().getUserAuthHeader).toHaveBeenCalledTimes(
-          userHeaderCalls
-        )
-      }
-    )
-
-    it('keeps the mint error message and hides its code', async () => {
-      vi.mocked(webSessionResourceHeader).mockRejectedValue(
-        new WebSessionTokenError(
-          new SessionTokenError({
-            status: 'error',
-            code: 'SESSION_REVOKED',
-            retryable: false
-          }),
-          'Your session ended. Sign in again to continue.'
-        )
-      )
-      vi.mocked(axios.isAxiosError).mockReturnValue(false)
-
-      const result = await service.getMyEvents()
-
-      expect(result).toBeNull()
-      expect(service.error.value).toContain(
-        'Your session ended. Sign in again to continue.'
-      )
-      expect(service.error.value).not.toContain('SESSION_REVOKED')
-      expect(service.isLoading.value).toBe(false)
-      expect(mockAxiosInstance.get).not.toHaveBeenCalled()
-    })
-
-    it('should return null when auth headers are missing', async () => {
-      vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
-
-      const result = await service.getMyEvents()
-
-      expect(result).toBeNull()
-      expect(service.error.value).toBe('Authentication header is missing')
-      expect(mockAxiosInstance.get).not.toHaveBeenCalled()
-    })
-
-    it('discards events that resolve after an A->B API key switch', async () => {
-      let resolveEvents!: (value: unknown) => void
-      const eventsRequestStarted = new Promise<void>((requestStarted) => {
-        mockAxiosInstance.get.mockImplementation(() => {
-          requestStarted()
-          return new Promise((resolve) => {
-            resolveEvents = resolve
-          })
-        })
-      })
-
-      const request = service.getMyEvents()
-      await eventsRequestStarted
-      vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-b')
-      resolveEvents({ data: mockEventsResponse })
-
-      await expect(request).resolves.toBeNull()
-    })
-
-    it('never exposes a stale error after an A->B API key switch', async () => {
-      let rejectEvents!: (reason: unknown) => void
-      const eventsRequestStarted = new Promise<void>((requestStarted) => {
-        mockAxiosInstance.get.mockImplementation(() => {
-          requestStarted()
-          return new Promise((_resolve, reject) => {
-            rejectEvents = reject
-          })
-        })
-      })
-      vi.mocked(axios.isAxiosError).mockReturnValue(true)
-
-      const request = service.getMyEvents()
-      await eventsRequestStarted
-      vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-b')
-      rejectEvents({
-        response: { status: 400, data: { message: 'account A backend error' } }
-      })
-
-      await expect(request).resolves.toBeNull()
-      expect(service.error.value).toBeNull()
-      expect(service.isLoading.value).toBe(false)
-    })
-
-    it('ignores a stale auth preflight once a newer request begins', async () => {
-      let resolveStaleHeader!: (
-        value: Awaited<
-          ReturnType<ReturnType<typeof useAuthStore>['getUserAuthHeader']>
-        >
-      ) => void
-      vi.mocked(useAuthStore().getUserAuthHeader).mockImplementationOnce(
-        () =>
-          new Promise((resolve) => {
-            resolveStaleHeader = resolve
-          })
-      )
-      const staleRequest = service.getMyEvents()
-
-      vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-b')
-      const activeRequestStarted = new Promise<void>((requestStarted) => {
-        mockAxiosInstance.get.mockImplementation(() => {
-          requestStarted()
-          return new Promise(() => {})
-        })
-      })
-      const activeRequest = service.getMyEvents()
-      await activeRequestStarted
-
-      resolveStaleHeader(null)
-      await expect(staleRequest).resolves.toBeNull()
-
-      expect(service.error.value).toBeNull()
-      expect(service.isLoading.value).toBe(true)
-      void activeRequest
-    })
-
-    it('should handle 400 errors', async () => {
-      const errorResponse = {
-        response: {
-          status: 400,
-          data: { message: 'Invalid input' }
-        }
-      }
-      mockAxiosInstance.get.mockRejectedValue(errorResponse)
-      vi.mocked(axios.isAxiosError).mockReturnValue(true)
-
-      const result = await service.getMyEvents()
-
-      expect(result).toBeNull()
-      expect(service.error.value).toBe('Invalid input, object invalid')
-    })
-
-    it('should handle 404 errors', async () => {
-      const errorResponse = {
-        response: {
-          status: 404,
-          data: { message: 'Not found' }
-        }
-      }
-      mockAxiosInstance.get.mockRejectedValue(errorResponse)
-      vi.mocked(axios.isAxiosError).mockReturnValue(true)
-
-      const result = await service.getMyEvents()
-
-      expect(result).toBeNull()
-      expect(service.error.value).toBe('Not found')
-    })
-
-    it('should handle network errors', async () => {
-      const networkError = new Error('Network Error')
-      mockAxiosInstance.get.mockRejectedValue(networkError)
-      vi.mocked(axios.isAxiosError).mockReturnValue(false)
-
-      const result = await service.getMyEvents()
-
-      expect(result).toBeNull()
-      expect(service.error.value).toBe(
-        'Fetching customer events failed: Network Error'
-      )
-    })
   })
 
   describe('formatEventType', () => {
@@ -434,48 +121,183 @@ describe('useCustomerEventsService', () => {
     })
   })
 
+  type Params = Record<string, unknown> | undefined
+  type ParamsCase = [label: string, params: Params, eventType?: string]
+
+  const makeEvent = (params: Params, eventType = 'api_node_usage') => ({
+    event_id: 'test',
+    event_type: eventType,
+    params,
+    createdAt: '2024-01-01T10:00:00Z'
+  })
+
+  const unrenderableParams = {
+    prompt: 'a private prompt from another workspace member',
+    credits: 500000000,
+    final_unit_deduction: 12345
+  }
+
   describe('hasAdditionalInfo', () => {
-    it('should return true when event has additional parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'api_usage_completed',
-        params: {
+    const withAdditionalInfo: ParamsCase[] = [
+      ['duration', { duration: 1000 }],
+      ['credits_used', { credits_used: 7 }],
+      ['endpoint', { endpoint: '/v1/images' }],
+      ['subscription_id', { subscription_id: 'sub-1' }],
+      ['gpu_seconds', { gpu_seconds: 3 }],
+      [
+        'api_name and model on a type whose details column omits them',
+        { api_name: 'test-api', model: 'test-model', ...unrenderableParams }
+      ],
+      [
+        'amount on a type whose details column omits it',
+        { amount: 1000 },
+        'topup_completed'
+      ]
+    ]
+
+    it.for(withAdditionalInfo)(
+      'should return true when event has %s',
+      ([, params, eventType]) => {
+        expect(service.hasAdditionalInfo(makeEvent(params, eventType))).toBe(
+          true
+        )
+      }
+    )
+
+    const withoutAdditionalInfo: ParamsCase[] = [
+      [
+        'only the api usage keys its details column shows',
+        { api_name: 'test-api', model: 'test-model' },
+        EventType.API_USAGE_COMPLETED
+      ],
+      [
+        'only the amount its details column shows',
+        { amount: 1000 },
+        EventType.CREDIT_ADDED
+      ],
+      ['only params outside the allowlist', unrenderableParams],
+      [
+        'only null or empty allowlisted values',
+        { duration: null, endpoint: '' }
+      ],
+      ['no params', {}],
+      ['undefined params', undefined]
+    ]
+
+    it.for(withoutAdditionalInfo)(
+      'should return false when event has %s',
+      ([, params, eventType]) => {
+        expect(service.hasAdditionalInfo(makeEvent(params, eventType))).toBe(
+          false
+        )
+      }
+    )
+  })
+
+  describe('getTooltipContent', () => {
+    it('should render every allowlisted parameter in allowlist order', () => {
+      const result = service.getTooltipContent(
+        makeEvent({
+          duration: 5000,
+          gpu_seconds: 3,
+          subscription_id: 'sub-1',
+          endpoint: '/v1/images',
           api_name: 'test-api',
           model: 'test-model',
-          duration: 1000,
-          extra_param: 'extra_value'
-        },
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      expect(service.hasAdditionalInfo(event)).toBe(true)
-    })
-
-    it('should return false when event only has known parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'api_usage_completed',
-        params: {
           amount: 1000,
-          api_name: 'test-api',
-          model: 'test-model'
-        },
-        createdAt: '2024-01-01T10:00:00Z'
-      }
+          credits_used: 12
+        })
+      )
 
-      expect(service.hasAdditionalInfo(event)).toBe(false)
+      expect(result).toBe(
+        [
+          'Credits Used: 12',
+          'Amount: 1,000',
+          'Model: test-model',
+          'Api Name: test-api',
+          'Endpoint: /v1/images',
+          'Subscription Id: sub-1',
+          'Gpu Seconds: 3',
+          'Duration: 5,000'
+        ].join('\n')
+      )
     })
 
-    it('should return false when params is undefined', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: undefined,
-        createdAt: '2024-01-01T10:00:00Z'
-      }
+    it('should never render provider cost params or prompts', () => {
+      const result = service.getTooltipContent(
+        makeEvent({ duration: 5000, ...unrenderableParams })
+      )
 
-      expect(service.hasAdditionalInfo(event)).toBe(false)
+      expect(result).toBe('Duration: 5,000')
     })
+
+    it.for([
+      { charge: 33_044, expected: 'credits.charge: 7 credits.creditUnit[7]' },
+      { charge: '36209', expected: 'credits.charge: 8 credits.creditUnit[8]' },
+      {
+        charge: 10_000_000_000,
+        expected: 'credits.charge: 2,110,000 credits.creditUnit[2110000]'
+      },
+      { charge: 0, expected: 'credits.charge: 0 credits.creditUnit[0]' },
+      {
+        charge: 1,
+        expected: 'credits.charge: credits.lessThanOne credits.creditUnit[2]'
+      },
+      {
+        charge: 1_000,
+        expected: 'credits.charge: credits.lessThanOne credits.creditUnit[2]'
+      },
+      {
+        charge: 3_318,
+        expected: 'credits.charge: credits.lessThanOne credits.creditUnit[2]'
+      },
+      { charge: 4_740, expected: 'credits.charge: 1 credits.creditUnit[1]' },
+      { charge: 6_636, expected: 'credits.charge: 1 credits.creditUnit[1]' },
+      { charge: 'n/a', expected: 'Charge Micro Usd: n/a' }
+    ])(
+      'should render charge_micro_usd $charge as $expected',
+      ({ charge, expected }) => {
+        expect(
+          service.getTooltipContent(makeEvent({ charge_micro_usd: charge }))
+        ).toBe(expected)
+      }
+    )
+
+    it.for([
+      [0, 'Credits'],
+      [1, 'Credit'],
+      [2, 'Credits'],
+      [7, 'Credits']
+    ] as const)(
+      'English charge unit for a count of %s is %s',
+      async ([count, unit]) => {
+        const { createI18n } = await import('vue-i18n')
+        const { default: en } = await import('@/locales/en/main.json')
+        const english = createI18n({
+          legacy: false,
+          locale: 'en',
+          messages: { en }
+        })
+        expect(english.global.t('credits.creditUnit', count)).toBe(unit)
+      }
+    )
+
+    const withNothingToRender: ParamsCase[] = [
+      ['params carry only non-allowlisted keys', unrenderableParams],
+      [
+        'allowlisted values are null or empty',
+        { duration: null, endpoint: '' }
+      ],
+      ['there are no params', {}],
+      ['params are undefined', undefined]
+    ]
+
+    it.for(withNothingToRender)(
+      'should return empty string when %s',
+      ([, params]) => {
+        expect(service.getTooltipContent(makeEvent(params))).toBe('')
+      }
+    )
   })
 
   describe('formatJsonKey', () => {
@@ -497,33 +319,6 @@ describe('useCustomerEventsService', () => {
       const result = service.formatJsonValue(dateString)
       expect(typeof result).toBe('string')
       expect(result).not.toBe(dateString) // Should be formatted
-    })
-  })
-
-  describe('error handling edge cases', () => {
-    it('should handle non-Error objects', async () => {
-      const stringError = 'String error'
-      mockAxiosInstance.get.mockRejectedValue(stringError)
-      vi.mocked(axios.isAxiosError).mockReturnValue(false)
-
-      const result = await service.getMyEvents()
-
-      expect(result).toBeNull()
-      expect(service.error.value).toBe(
-        'Fetching customer events failed: String error'
-      )
-    })
-
-    it('should reset error state on new request', async () => {
-      // First request fails
-      mockAxiosInstance.get.mockRejectedValueOnce(new Error('First error'))
-      await service.getMyEvents()
-      expect(service.error.value).toBeTruthy()
-
-      // Second request succeeds
-      mockAxiosInstance.get.mockResolvedValueOnce({ data: mockEventsResponse })
-      await service.getMyEvents()
-      expect(service.error.value).toBeNull()
     })
   })
 

@@ -6,7 +6,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import type {
   SettingDialogProps,
   SettingPanelType
-} from '@/platform/settings/types'
+} from '@comfyorg/settings-core/types'
 
 const DIALOG_KEY = 'global-settings'
 

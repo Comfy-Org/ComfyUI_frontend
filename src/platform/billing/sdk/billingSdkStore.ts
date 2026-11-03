@@ -30,7 +30,7 @@ import { computed, shallowRef } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { webSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -61,7 +61,7 @@ import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdenti
 import { useWorkspaceSession } from '@/platform/workspace/ports/workspaceSession'
 import { getCheckoutJourneyPaymentIntentSource } from '@/platform/billing/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
-import { fetchWithRetry } from '@/utils/fetchWithRetry'
+import { fetchWithRetry } from '@comfyorg/api-client/fetchWithRetry'
 
 import { projectBillingBalance } from './billingBalanceView'
 import { projectBillingCapabilities } from './billingCapabilitiesView'
@@ -123,6 +123,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const callerStarted = new Set<BillingOperationKind>()
   const offeredActions = new Map<string, Set<string>>()
   const progressToasts = new Map<string, ProgressToast>()
+  const closedProgressToasts = new Set<string>()
 
   function sessionPorts(): Pick<
     BillingSdkOptions,
@@ -279,6 +280,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       return
     }
     clearProgressToast(state.id)
+    closedProgressToasts.delete(state.id)
     dismissed.value = new Set(
       [...dismissed.value].filter((id) => id !== state.id)
     )
@@ -298,8 +300,16 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     })
     const current = progressToasts.get(state.id)
     if (current?.kind === progress) return
+    if (current && toast.takeClosedByUser(current.id)) {
+      closedProgressToasts.add(state.id)
+    }
     clearProgressToast(state.id)
-    if (progress === undefined) return
+    if (
+      progress === undefined ||
+      (progress === 'processing' && closedProgressToasts.has(state.id))
+    ) {
+      return
+    }
     const title = t(PROGRESS_SUMMARY[kind][progress])
     const id =
       progress === 'action' ? toast.warning(title) : toast.loading(title)
@@ -316,6 +326,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   function onSubscriptionChanged(state: BillingOperationState) {
     if (state.phase !== 'pending') {
       clearProgressToast(state.id)
+      closedProgressToasts.delete(state.id)
       offeredActions.delete(state.id)
       if (resumedOperations.delete(state.id)) {
         void settleResumedSubscription(state)

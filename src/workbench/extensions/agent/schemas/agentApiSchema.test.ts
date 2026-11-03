@@ -436,6 +436,7 @@ describe('agentApiSchema contract subtleties', () => {
     'agent_message_done',
     'agent_message_draft',
     'agent_thinking',
+    'agent_thinking_draft',
     'agent_tool_call'
   ])('recognizes %s as an Agent event', (type) => {
     expect(isAgentEvent(type)).toBe(true)
@@ -569,6 +570,32 @@ describe('agentApiSchema contract subtleties', () => {
         data: { workflow_id: 'wf-1', node_locator_id: 'invalid:42' }
       }).success
     ).toBe(false)
+  })
+
+  it.for([
+    { name: 'an unknown action', data: { action: 'paused' } },
+    { name: 'an empty pack name', data: { pack: '' } },
+    {
+      name: 'a bidi override in the pack name',
+      data: { pack: 'evil\u202Epack' }
+    },
+    { name: 'a newline in the pack name', data: { pack: 'two\nlines' } },
+    { name: 'no restart flag', data: { restart_required: undefined } }
+  ])('rejects an agent_extension_changed frame with $name', ({ data }) => {
+    const parsed = zAgentWsEvent.safeParse({
+      type: 'agent_extension_changed',
+      data: {
+        message_id: 'm',
+        thread_id: 't',
+        action: 'removed',
+        pack: 'comfy-cushions',
+        agent_created: false,
+        restart_required: true,
+        ...data
+      }
+    })
+
+    expect(parsed.success).toBe(false)
   })
 
   it('accepts an AgentMessage with status interrupted', () => {

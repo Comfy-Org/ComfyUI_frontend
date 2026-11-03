@@ -86,23 +86,35 @@
 </template>
 
 <script setup lang="ts">
+import {
+  autoTopUpOffView,
+  formatPlanDate
+} from '@comfyorg/account-core/billing'
 import type { AutoTopUpCardAction } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
+import { computedAsync } from '@vueuse/core'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCredits, formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
-import { formatPlanDate } from '@/platform/billing/components/billingTab/planRow'
+import { zAutoReloadSettings } from '@comfyorg/ingest-types/zod'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
 type Status = AutoReloadSettings['status']
-type ViewKey = Status | 'turnedOff'
+type ViewKey =
+  | Status
+  | 'turnedOff'
+  | 'maximumReached'
+  | 'noPaymentMethod'
+  | 'noDefaultPaymentMethod'
 
 interface Line {
   text: string
@@ -172,6 +184,29 @@ const STATUS = {
     dot: 'bg-warning-background',
     action: MANAGE
   },
+  maximumReached: {
+    ...NEUTRAL,
+    label: 'workspacePanel.billingTab.autoTopUp.status.maximumReached',
+    dot: 'bg-warning-background',
+    action: MANAGE
+  },
+  noPaymentMethod: {
+    ...NEUTRAL,
+    label: 'workspacePanel.billingTab.autoTopUp.status.off',
+    dot: 'bg-muted-foreground',
+    action: {
+      ...UPDATE_PAYMENT,
+      label: 'workspacePanel.billingTab.autoTopUp.actions.addPaymentMethod',
+      variant: 'secondary',
+      icon: OPEN
+    }
+  },
+  noDefaultPaymentMethod: {
+    ...NEUTRAL,
+    label: 'workspacePanel.billingTab.autoTopUp.status.off',
+    dot: 'bg-muted-foreground',
+    action: { ...UPDATE_PAYMENT, variant: 'secondary', icon: OPEN }
+  },
   on: {
     ...NEUTRAL,
     label: 'workspacePanel.billingTab.autoTopUp.status.on',
@@ -196,7 +231,7 @@ const STATUS = {
 
 const { t, locale } = useI18n()
 const { autoTopUpSetup } = useBillingCapabilities()
-const { state, isReady, ensureRead, retry } = useBillingAutoTopUpCard()
+const { scope, state, isReady, ensureRead, retry } = useBillingAutoTopUpCard()
 ensureRead()
 
 useAutoTopUpCardViewed(() => {
@@ -269,15 +304,29 @@ function limitLines(settings: AutoReloadSettings): Line[] {
   ]
 }
 
-function pausedLine({ cycle_resets_at: resumesAt }: AutoReloadSettings): Line {
+const BUDGET_COPY = {
+  paused: {
+    dated: 'workspacePanel.billingTab.autoTopUp.paused',
+    undated: 'workspacePanel.billingTab.autoTopUp.pausedNoDate'
+  },
+  pausedByRemainder: {
+    dated: 'workspacePanel.billingTab.autoTopUp.pausedByRemainder',
+    undated: 'workspacePanel.billingTab.autoTopUp.pausedByRemainderNoDate'
+  },
+  maximumReached: {
+    dated: 'workspacePanel.billingTab.autoTopUp.maximumReached',
+    undated: 'workspacePanel.billingTab.autoTopUp.maximumReachedNoDate'
+  }
+} as const
+
+function budgetLine(
+  copy: keyof typeof BUDGET_COPY,
+  { cycle_resets_at: resetsAt }: AutoReloadSettings
+): Line {
+  const { dated, undated } = BUDGET_COPY[copy]
   return {
-    text:
-      resumesAt === null
-        ? t('workspacePanel.billingTab.autoTopUp.pausedNoDate')
-        : t('workspacePanel.billingTab.autoTopUp.paused', {
-            date: day(resumesAt)
-          }),
-    tooltip: limitTooltip(resumesAt)
+    text: resetsAt === null ? t(undated) : t(dated, { date: day(resetsAt) }),
+    tooltip: limitTooltip(resetsAt)
   }
 }
 
@@ -287,28 +336,88 @@ const LINES: Record<ViewKey, (settings: AutoReloadSettings) => Line[]> = {
     { text: t('workspacePanel.billingTab.autoTopUp.turnedOff') }
   ],
   off: () => [{ text: t('workspacePanel.billingTab.autoTopUp.off') }],
+  noPaymentMethod: () => [
+    { text: t('workspacePanel.billingTab.autoTopUp.noPaymentMethod') }
+  ],
+  noDefaultPaymentMethod: () => [
+    { text: t('workspacePanel.billingTab.autoTopUp.noDefaultPaymentMethod') }
+  ],
   on_hold: (settings) => [
     ...ruleLines(settings),
     { text: t('workspacePanel.billingTab.autoTopUp.onHold') }
   ],
   paused_by_budget: (settings) => [
     ...ruleLines(settings),
-    pausedLine(settings)
+    budgetLine(
+      settings.paused_by_budget_remainder ? 'pausedByRemainder' : 'paused',
+      settings
+    )
+  ],
+  maximumReached: (settings) => [
+    ...ruleLines(settings),
+    budgetLine('maximumReached', settings)
   ],
   on: (settings) => [...ruleLines(settings), ...limitLines(settings)]
 }
 
 function isStatus(status: string): status is Status {
-  return Object.hasOwn(STATUS, status)
+  return zAutoReloadSettings.shape.status.safeParse(status).success
+}
+
+const offSettings = computed(() =>
+  state.value.kind === 'loaded' && state.value.settings.status === 'off'
+    ? state.value.settings
+    : null
+)
+
+const savedPaymentMethodsRead = computedAsync(async () => {
+  const requestScope = scope.value
+  if (
+    !offSettings.value ||
+    autoTopUpOffView({
+      setup: autoTopUpSetup.value,
+      savedPaymentMethodCount: null
+    }) === 'off'
+  ) {
+    return null
+  }
+  const result = await useBillingSdkStore().readPaymentMethods()
+  if (result.status === 'ok') {
+    return { scope: requestScope, methods: result.value }
+  }
+  reportError(new Error(`Saved payment methods read failed: ${result.code}`), {
+    errorType: 'auto_top_up_payment_methods_read_failed',
+    surface: 'billing'
+  })
+  return null
+}, null)
+
+const savedPaymentMethods = computed(() => {
+  const read = savedPaymentMethodsRead.value
+  return read?.scope === scope.value ? read.methods : null
+})
+
+function offViewKey(): ViewKey {
+  return autoTopUpOffView({
+    setup: autoTopUpSetup.value,
+    savedPaymentMethodCount: savedPaymentMethods.value?.length ?? null
+  })
 }
 
 function viewKey(settings: AutoReloadSettings): ViewKey {
   if (!isStatus(settings.status)) return 'off'
+  if (settings.status === 'off') return offViewKey()
   if (
     settings.status === 'failed' &&
     settings.disabled_reason === 'consecutive_declines'
   ) {
     return 'turnedOff'
+  }
+  if (
+    settings.status === 'paused_by_budget' &&
+    settings.monthly_budget_is_default
+  ) {
+    return 'maximumReached'
   }
   return settings.status
 }

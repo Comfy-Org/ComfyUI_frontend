@@ -18,7 +18,16 @@ import type {
 import type { User } from 'firebase/auth'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mocked } from 'vitest'
 import {
   computed,
@@ -43,6 +52,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
+import type { ConsentOfferHooks } from './composables/agent/useAgentConsent'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
@@ -115,7 +125,11 @@ const socketSend = vi.hoisted(() => vi.fn())
 let agentSocket: ReturnType<typeof createFakeAgentSocket>
 const currentUserInfo = ref<{ id: string } | null>(null)
 const withConsent = vi.fn<
-  (trigger: AgentConsentTrigger, onAccept: () => void) => Promise<void>
+  (
+    trigger: AgentConsentTrigger,
+    onAccept: () => void,
+    hooks?: ConsentOfferHooks
+  ) => Promise<void>
 >(async (_trigger, onAccept) => onAccept())
 
 vi.mock(import('./composables/agent/useAgentConsent'), { spy: true })
@@ -267,7 +281,7 @@ const paywallCapabilities = reactive({
 })
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null,
-  type: 'workspace' as 'workspace' | 'legacy',
+  type: 'workspace' as 'workspace' | 'unknown',
   status: 'paid' as BillingStatus | null,
   isActive: true,
   fetchStatus: vi.fn<() => Promise<void>>()
@@ -357,7 +371,10 @@ beforeEach(() => {
     reset: vi.fn(),
     stop: () => {}
   })
-  useAuthStore().currentUser = fromPartial<User>({ uid: 'account-a' })
+  useAuthStore().currentUser = fromPartial<User>({
+    uid: 'account-a',
+    getIdToken: async () => 'id-token'
+  })
   vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue({
     Authorization: 'Bearer id-token'
   })
@@ -508,6 +525,7 @@ beforeEach(() => {
   socketSend.mockReset()
   vi.mocked(reportError).mockClear()
   paywallWorkspace.role = 'owner'
+  vi.spyOn(useTeamWorkspaceStore(), 'initialize').mockResolvedValue()
   vi.spyOn(
     useTeamWorkspaceStore(),
     'activeWorkspace',
@@ -683,6 +701,7 @@ function addTab(
     suffix,
     isTemporary: false,
     isModified: false,
+    isLoaded: true,
     activeState: null,
     ...overrides
   })
@@ -1008,19 +1027,8 @@ describe('AgentPanelRoot onboarding', () => {
     expect(useTelemetry()!.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
   })
 
-  it('walks through the four cards and leaves the composer usable after Done', async () => {
-    render(
-      defineComponent({
-        setup: () => () =>
-          h('div', [
-            h('section', { class: 'graph-canvas-panel' }, [
-              h('div', { role: 'toolbar' })
-            ]),
-            h(AgentPanelRoot)
-          ])
-      }),
-      { global: { plugins: [i18n] } }
-    )
+  it('walks through the three cards and leaves the composer usable after Done', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     for (const [index, { title, description }] of [
       {
@@ -1029,14 +1037,9 @@ describe('AgentPanelRoot onboarding', () => {
           'Describe your ideas, ask it to build and run workflows. It sees your canvas and files.'
       },
       {
-        title: "Your agent edits the workflow you're viewing",
+        title: 'The agent edits one workflow at a time',
         description:
-          'It switches with your tabs until you send a message, choose a workflow, or add a node reference.'
-      },
-      {
-        title: 'Let the agent run while you edit',
-        description:
-          'You can still edit the graph or switch tabs while the agent is working.'
+          'That workflow is named at the top of the message box. Click the name to pick another. Clicking a workflow tab can open its latest chat, unless the message box has a draft.'
       },
       {
         title: 'Pick up where you left off',
@@ -1047,11 +1050,11 @@ describe('AgentPanelRoot onboarding', () => {
       const dialog = await screen.findByRole('dialog', { name: title })
       expect(dialog).toHaveAccessibleDescription(description)
       await waitFor(() =>
-        expect(within(dialog).getByText(`${index + 1} of 4`)).toBeVisible()
+        expect(within(dialog).getByText(`${index + 1} of 3`)).toBeVisible()
       )
       await userEvent.click(
         within(dialog).getByRole('button', {
-          name: index === 3 ? 'Done' : 'Next'
+          name: index === 2 ? 'Done' : 'Next'
         })
       )
     }
@@ -2296,9 +2299,9 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
-  it('stays hidden on the legacy rail whose unloaded balance reads as false', async () => {
+  it('stays hidden while the billing type is unknown and the balance reads as false', async () => {
     paywallHasFunds.value = false
-    paywallBilling.type = 'legacy'
+    paywallBilling.type = 'unknown'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     activateThread()
     await screen.findByRole('textbox')
@@ -2594,13 +2597,13 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     )
   })
 
-  it('does not refresh workspace status for a legacy billing turn', async () => {
+  it('does not refresh workspace status while the billing type is unknown', async () => {
     paywallHasFunds.value = true
-    paywallBilling.type = 'legacy'
+    paywallBilling.type = 'unknown'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     activateThread()
     const conversation = useAgentConversationStore()
-    const turnId = toTurnId('legacy-billing-refresh')
+    const turnId = toTurnId('unknown-billing-refresh')
 
     conversation.startTurn(turnId)
     paywallBilling.fetchStatus.mockClear()
@@ -2876,6 +2879,7 @@ function setupOwnedSelectionCanvas() {
   const canvas = new LGraphCanvas(canvasElement, rootGraph, {
     skip_render: true
   })
+  onTestFinished(() => canvas.unbindEvents())
   canvas.onSelectionChange = () => syncFakeSelection()
 
   appMock.graph.nodes = rootGraph.nodes
@@ -7583,6 +7587,146 @@ describe('AgentPanelRoot history', () => {
     })
   })
 
+  describe("the local host's loopback-fence refusal (cloud#14874)", () => {
+    const refusal = {
+      error:
+        'The agent only works when ComfyUI is opened on the computer it runs on, by a local address. Open http://127.0.0.1:8188 in a browser on that computer to use the agent.',
+      code: 'agent_loopback_only'
+    }
+
+    it("shows the host's reason in the panel on open, not the run-error overlay", async () => {
+      executionErrors.showErrorOverlay.mockClear()
+      respondToFetch(threadListRoute, () => json(403, refusal))
+
+      const panel = renderWithSelectedTarget()
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
+      expect(screen.getByTestId('agent-panel-chat-controls')).toHaveAttribute(
+        'inert'
+      )
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+      expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+      expect(executionErrors.recordPromptError).not.toHaveBeenCalled()
+      expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error_class: 'thread_list_load_failed',
+          ui_treatment: 'inline_notice'
+        })
+      )
+
+      useAgentPanelStore().view = {
+        screen: 'history',
+        previousThreadId: null,
+        selection: { status: 'idle' }
+      }
+      await nextTick()
+      expect(
+        screen.queryByTestId('agent-panel-chat-controls')
+      ).not.toBeInTheDocument()
+      expect(screen.getByRole('alert')).toHaveTextContent(refusal.error)
+
+      useAgentPanelStore().view = { screen: 'chat' }
+      respondToFetch(threadListRoute, () => json(200, agentThreadList([])))
+      panel.unmount()
+      renderWithSelectedTarget()
+
+      await vi.waitFor(() =>
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      )
+      expect(
+        screen.getByTestId('agent-panel-chat-controls')
+      ).not.toHaveAttribute('inert')
+    })
+
+    it('clears the refusal in the same panel when a workflow-follow refresh succeeds', async () => {
+      const first = addTab('workflows/first.json')
+      workflowStore.activeWorkflow = addTab('workflows/second.json')
+      respondToFetch(/\/api\/workflows/, () =>
+        json(200, {
+          data: [{ id: 'wf-first', name: 'first' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      )
+      respondToFetch(threadListRoute, (input) =>
+        String(input).includes('workflow_id=wf-first')
+          ? json(200, agentThreadList([]))
+          : json(403, refusal)
+      )
+
+      renderWithSelectedTarget()
+      expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+
+      await activateTabAsUser(first)
+
+      await vi.waitFor(() =>
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      )
+      expect(
+        fetchRequests(/\/api\/agent\/threads\?.*workflow_id=wf-first/)
+      ).toHaveLength(1)
+      expect(
+        screen.getByTestId('agent-panel-chat-controls')
+      ).not.toHaveAttribute('inert')
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
+    })
+
+    it('keeps a newer refusal when an older listing succeeds after it', async () => {
+      let listings = 0
+      let answerFirstListing: (() => void) | undefined
+      respondToFetch(threadListRoute, async () => {
+        listings += 1
+        if (listings > 1) return json(403, refusal)
+        await new Promise<void>((resolve) => {
+          answerFirstListing = resolve
+        })
+        return json(200, agentThreadList([]))
+      })
+
+      renderWithSelectedTarget()
+      await vi.waitFor(() => expect(answerFirstListing).toBeDefined())
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
+
+      expect(listings).toBe(2)
+      answerFirstListing?.()
+      await settleFollow()
+      await nextTick()
+
+      expect(screen.getByRole('alert')).toHaveTextContent(refusal.error)
+
+      useAgentPanelStore().view = { screen: 'chat' }
+      await nextTick()
+      expect(screen.getByRole('alert')).toHaveTextContent(refusal.error)
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+    })
+
+    it('leaves an ordinary auth refusal on the run-error overlay', async () => {
+      executionErrors.showErrorOverlay.mockClear()
+      respondToFetch(threadListRoute, () => json(403, { error: 'no access' }))
+
+      renderWithSelectedTarget()
+
+      await vi.waitFor(() =>
+        expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+      )
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(
+        screen.getByTestId('agent-panel-chat-controls')
+      ).not.toHaveAttribute('inert')
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
+    })
+  })
+
   it('records a thread-list request that never reached the server', async () => {
     telemetry.trackAgentError.mockClear()
     vi.mocked(reportError).mockClear()
@@ -8699,7 +8843,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(withConsent).toHaveBeenCalledExactlyOnceWith(
       'first_message',
-      expect.any(Function)
+      expect.any(Function),
+      { onExit: expect.any(Function) }
     )
     expect(bodies).toHaveLength(0)
 
@@ -8708,7 +8853,79 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
 
-  it.for(['workspace', 'legacy'] as const)(
+  it('reports the consent hold and its release against the attempt that is then sent', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
+      Object.assign(useAgentConsentStore(), { accepted: true })
+      onAccept()
+    })
+    renderWithSelectedTarget()
+
+    await sendFromComposer('build me a workflow')
+    await waitFor(() => expect(bodies).toHaveLength(1))
+
+    expect(telemetry.trackAgentSendGated.mock.calls).toEqual([
+      [
+        {
+          gate: 'consent',
+          outcome: 'held',
+          reason: null,
+          client_message_id: 'client-message-1',
+          held_ms: null,
+          thread_id: null,
+          client_session_id: expect.any(String)
+        }
+      ],
+      [
+        {
+          gate: 'consent',
+          outcome: 'released',
+          reason: 'accepted',
+          client_message_id: 'client-message-1',
+          held_ms: expect.any(Number),
+          thread_id: null,
+          client_session_id: expect.any(String)
+        }
+      ]
+    ])
+    expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith(
+      expect.objectContaining({ client_message_id: 'client-message-1' })
+    )
+  })
+
+  it.for(['declined', 'dismissed'] as const)(
+    'reports a send dropped because consent was %s',
+    async (exit) => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      Object.assign(useAgentConsentStore(), { accepted: false })
+      withConsent.mockImplementationOnce(async (_trigger, _onAccept, hooks) =>
+        hooks?.onExit?.(exit)
+      )
+      renderWithSelectedTarget()
+
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('build me a workflow')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+
+      expect(telemetry.trackAgentSendGated).toHaveBeenLastCalledWith({
+        gate: 'consent',
+        outcome: 'dropped',
+        reason: exit,
+        client_message_id: 'client-message-1',
+        held_ms: expect.any(Number),
+        thread_id: null,
+        client_session_id: expect.any(String)
+      })
+      expect(telemetry.trackAgentSendGated).toHaveBeenCalledTimes(2)
+      expect(bodies).toHaveLength(0)
+    }
+  )
+
+  it.for(['workspace', 'unknown'] as const)(
     'leaves the $ post-consent billing refresh to the dock host on first send',
     async (billingType) => {
       makeTab('wf-42')
@@ -8755,7 +8972,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
       expect(withConsent).toHaveBeenCalledExactlyOnceWith(
         'first_message',
-        expect.any(Function)
+        expect.any(Function),
+        { onExit: expect.any(Function) }
       )
       expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
       expect(bodies).toHaveLength(0)
@@ -9030,6 +9248,36 @@ describe('AgentPanelRoot workflow binding', () => {
       await waitFor(() => expect(bodies).toHaveLength(1))
     })
 
+    it('reports the coach hold as released when the tour is skipped', async () => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
+      const coach = await sendHeldByCoach('build me a workflow')
+
+      expect(telemetry.trackAgentSendGated).toHaveBeenLastCalledWith({
+        gate: 'coach',
+        outcome: 'held',
+        reason: null,
+        client_message_id: 'client-message-1',
+        held_ms: null,
+        thread_id: null,
+        client_session_id: expect.any(String)
+      })
+
+      await userEvent.click(within(coach).getByRole('button', { name: 'Skip' }))
+      await waitFor(() => expect(bodies).toHaveLength(1))
+
+      expect(telemetry.trackAgentSendGated).toHaveBeenLastCalledWith({
+        gate: 'coach',
+        outcome: 'released',
+        reason: 'skipped',
+        client_message_id: 'client-message-1',
+        held_ms: expect.any(Number),
+        thread_id: null,
+        client_session_id: expect.any(String)
+      })
+    })
+
     it('shows no hold notice on a replay with nothing held', async () => {
       withConsent.mockReset()
       Object.assign(useAgentConsentStore(), { accepted: true })
@@ -9065,6 +9313,23 @@ describe('AgentPanelRoot workflow binding', () => {
       )
 
       await waitFor(() => expect(bodies).toHaveLength(1))
+      expect(telemetry.trackAgentSendGated).toHaveBeenCalledWith({
+        gate: 'coach',
+        outcome: 'released',
+        reason: 'elsewhere',
+        client_message_id: 'client-message-1',
+        held_ms: expect.any(Number),
+        thread_id: null,
+        client_session_id: expect.any(String)
+      })
+      const coachOutcomes = telemetry.trackAgentSendGated.mock.calls
+        .map(([metadata]) => metadata)
+        .filter((metadata) => metadata.gate === 'coach')
+        .map(({ outcome, reason }) => ({ outcome, reason }))
+      expect(coachOutcomes).toEqual([
+        { outcome: 'held', reason: null },
+        { outcome: 'released', reason: 'elsewhere' }
+      ])
     })
 
     it('sends once when a coach step never finds its target', async () => {
@@ -9075,6 +9340,9 @@ describe('AgentPanelRoot workflow binding', () => {
       renderWithSelectedTarget()
 
       await sendHeldByCoach('build me a workflow')
+      screen
+        .getByRole('button', { name: 'Show chat history', hidden: true })
+        .removeAttribute('id')
       await user.click(
         within(
           await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
@@ -9083,10 +9351,13 @@ describe('AgentPanelRoot workflow binding', () => {
       await user.click(
         within(
           await screen.findByRole('dialog', {
-            name: "Your agent edits the workflow you're viewing"
+            name: 'The agent edits one workflow at a time'
           })
         ).getByRole('button', { name: 'Next' })
       )
+      expect(
+        screen.queryByRole('dialog', { name: 'Pick up where you left off' })
+      ).not.toBeInTheDocument()
       expect(bodies).toHaveLength(0)
 
       await vi.advanceTimersByTimeAsync(8_000)
@@ -9128,6 +9399,45 @@ describe('AgentPanelRoot workflow binding', () => {
       }
     )
 
+    it('puts the draft back when App Mode releases the hold in the update that closes the panel', async () => {
+      Object.assign(useAgentPanelStore(), { enabled: true, isOpen: true })
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      const settleSubmission = vi.spyOn(
+        useAgentComposerStore(),
+        'settleSubmission'
+      )
+      const { unmount } = renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+      const stopCloseOnAppMode = watch(
+        () => canvasStore.linearMode,
+        () => {
+          useAgentPanelStore().close('close_button')
+          unmount()
+        },
+        { flush: 'post' }
+      )
+
+      try {
+        canvasStore.linearMode = true
+
+        await waitFor(() =>
+          expect(settleSubmission).toHaveBeenCalledWith(
+            expect.any(Number),
+            false
+          )
+        )
+      } finally {
+        stopCloseOnAppMode()
+      }
+      expect(bodies).toHaveLength(0)
+      renderWithSelectedTarget()
+      expect(await screen.findByRole('textbox')).toHaveTextContent(
+        'build me a workflow'
+      )
+      expect(bodies).toHaveLength(0)
+    })
+
     it('puts the draft back when consent is cleared before App Mode releases the hold', async () => {
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
@@ -9147,6 +9457,20 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(bodies).toHaveLength(0)
     })
 
+    it('shows the feedback form which gate holds the send until the panel closes', async () => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+      const { unmount } = renderWithSelectedTarget()
+
+      await sendHeldByCoach('build me a workflow')
+      expect(useAgentPanelStore().heldSendGate).toBe('coach')
+
+      useAgentPanelStore().close('close_button')
+      unmount()
+
+      expect(useAgentPanelStore().heldSendGate).toBeNull()
+    })
+
     it('puts the draft back instead of sending when the panel closes', async () => {
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
@@ -9164,6 +9488,14 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
       )
       expect(bodies).toHaveLength(0)
+      const coachOutcomes = telemetry.trackAgentSendGated.mock.calls
+        .map(([metadata]) => metadata)
+        .filter((metadata) => metadata.gate === 'coach')
+        .map(({ outcome, reason }) => ({ outcome, reason }))
+      expect(coachOutcomes).toEqual([
+        { outcome: 'held', reason: null },
+        { outcome: 'dropped', reason: 'panel_closed' }
+      ])
       renderWithSelectedTarget()
       expect(await screen.findByRole('textbox')).toHaveTextContent(
         'build me a workflow'
@@ -9469,7 +9801,7 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  it('resumes following on New Chat after an explicit pick while preserving draft text', async () => {
+  it('resumes following on New Chat after an explicit pick and starts with an empty composer', async () => {
     const {
       target,
       references: [other]
@@ -9499,7 +9831,7 @@ describe('AgentPanelRoot workflow binding', () => {
     workflowStore.activeWorkflow = other
     await nextTick()
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
-    expect(screen.getByRole('textbox')).toHaveTextContent('keep this draft')
+    expect(screen.getByRole('textbox')).toHaveTextContent('')
   })
 
   it('retains the first Send target through failure, reopen and retry until New Chat', async () => {
@@ -10102,6 +10434,46 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(openWorkflow).toHaveBeenCalledTimes(attempts)
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
     expect(workflowStore.activeWorkflow.path).toBe(other.path)
+  })
+
+  it('preserves a new unsent draft when Back leaves a failed history selection', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint(
+      'wf-42',
+      [{ id: 'wf-42', name: 'current' }],
+      [
+        agentThread({
+          id: 'th-1',
+          title: 'Previous chat',
+          last_message_at: '2026-09-25T00:00:00Z'
+        })
+      ]
+    )
+    const request = vi.mocked(fetch).getMockImplementation()
+    assert.exists(request)
+    vi.mocked(fetch).mockImplementation((input, init) =>
+      String(input).includes('/messages') && init?.method !== 'POST'
+        ? Promise.resolve(json(500, {}))
+        : request(input, init)
+    )
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Keep my new draft')
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Previous chat' })
+    )
+    await screen.findByRole('alert')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    expect(screen.getByRole('textbox')).toHaveTextContent('Keep my new draft')
   })
 
   it('restores Current after remounting an interrupted return instead of reusing stale messages', async () => {
@@ -10716,6 +11088,90 @@ describe('AgentPanelRoot workflow binding', () => {
     } finally {
       recordUnsyncedHumanOps('previous-panel', [])
     }
+  })
+
+  it('leaves a workflow unbound after a local edit made before its follower subscribe confirms', async () => {
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({ status: 'pending' }),
+      reset: vi.fn(),
+      stop: () => {}
+    })
+    makeTab('wf-42')
+    const target = addTab('workflows/target.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-target' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-target', target.path)
+    const messagesFor = (threadId: string, text: string): AgentMessages => [
+      {
+        id: `row-${threadId}`,
+        thread_id: threadId,
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: 'wf-target',
+        content: { text }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/th-first/messages'))
+        return json(200, messagesFor('th-first', 'First request'))
+      if (url.includes('/th-second/messages'))
+        return json(200, messagesFor('th-second', 'Second request'))
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [{ id: 'wf-target', name: 'target' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      return json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-first',
+            title: 'First chat',
+            last_message_at: '2026-09-01T00:00:00Z'
+          }),
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-08-01T00:00:00Z'
+          })
+        ])
+      )
+    })
+    renderWithSelectedTarget()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('First chat'))
+    await screen.findAllByText('First request')
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-first')
+    )
+    await vi.waitFor(() =>
+      expect(docOpMinterDeps.current?.boundRootGraphId()).not.toBeNull()
+    )
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+    docOpMinterDeps.current?.onUnboundLocalIntent?.()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Second chat'))
+    await screen.findAllByText('Second request')
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-second')
+    )
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
   })
 
   it('binds the session to the workflow a history thread restored, not only a reload', async () => {
@@ -15233,6 +15689,32 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
+  it('reveals the selected-node prompt only after a node-selection-mode addition', async () => {
+    distribution.isCloud = false
+    makeTab('wf-42')
+    const state = setupNodeSelectionCanvas()
+    const view = renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+    const prompt = i18n.global.t('agent.suggestedPrompts.local.2')
+
+    expect(screen.queryByRole('button', { name: prompt })).toBeNull()
+    await enterNodeSelectionMode()
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    expect(canvasStore.isPickingNodes).toBe(true)
+    expect(screen.queryByRole('button', { name: prompt })).toBeNull()
+
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+
+    expect(await screen.findByRole('button', { name: prompt })).toBeVisible()
+
+    view.unmount()
+    renderWithSelectedTarget()
+    await nextTick()
+    expect(screen.getByRole('button', { name: prompt })).toBeVisible()
+  })
+
   it('excludes referenced nodes from the mention picker', async () => {
     makeTab()
     setupNodeSelectionCanvas()
@@ -15462,33 +15944,35 @@ describe('AgentPanelRoot workflow binding', () => {
         name: i18n.global.t('agent.switchWorkflow')
       })
     ).toHaveTextContent('other')
-    expect(screen.getByRole('textbox')).toHaveTextContent('Keep this draft')
+    expect(screen.getByRole('textbox')).toHaveTextContent('')
     workflowStore.activeWorkflow = target
     await nextTick()
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Fresh prompt')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(bodies).toHaveLength(1))
     expect(bodies[0]).toMatchObject({
-      content: 'Keep this draft',
+      content: 'Fresh prompt',
       workflow_id: 'wf-42'
     })
     expect(bodies[0]).not.toHaveProperty('selection')
   })
 
   it.for(['current', 'other'] as const)(
-    'preserves carried node references through New Chat while viewing $0',
+    'drops staged node references on New Chat while viewing $0',
     async (visibleTab) => {
       const tabs = {
         current: makeTab('wf-42'),
         other: addTab('workflows/other.json')
       }
-      const bodies = mockMessagesEndpoint('wf-42')
+      mockMessagesEndpoint('wf-42')
       setupNodeSelectionCanvas()
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       useAgentPanelStore().isOpen = true
       await openMentionPicker()
       await userEvent.click(await screen.findByText('KSampler'))
-      await userEvent.paste('Keep these nodes')
+      await userEvent.paste('Edit these nodes')
       workflowStore.activeWorkflow = tabs[visibleTab]
       await nextTick()
 
@@ -15498,23 +15982,47 @@ describe('AgentPanelRoot workflow binding', () => {
         screen.getByRole('button', {
           name: i18n.global.t('agent.switchWorkflow')
         })
-      ).toHaveTextContent('current')
-      expect(screen.getByRole('textbox')).toHaveTextContent('Keep these nodes')
+      ).toHaveTextContent(visibleTab)
+      expect(screen.getByRole('textbox')).toHaveTextContent('')
       expect(
-        screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
-      ).toBeVisible()
-
-      workflowStore.activeWorkflow = addTab('workflows/third.json')
-      await nextTick()
-      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-      await vi.waitFor(() => expect(bodies).toHaveLength(1))
-      expect(bodies[0]).toMatchObject({
-        content: '@[Node: KSampler #12] Keep these nodes',
-        workflow_id: 'wf-42',
-        selection: { node_ids: ['12'], workflow_id: 'wf-42' }
-      })
+        screen.queryByRole('button', { name: 'Remove KSampler #12 reference' })
+      ).toBeNull()
     }
   )
+
+  it('restages the unchanged canvas selection in a new chat', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const state = setupNodeSelectionCanvas()
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+
+    await enterNodeSelectionMode()
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+    await nextTick()
+    expect(
+      screen.getByRole('button', {
+        name: /Remove VAE Decode #\d+ reference/
+      })
+    ).toBeVisible()
+
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+    expect(
+      screen.queryByRole('button', {
+        name: /Remove VAE Decode #\d+ reference/
+      })
+    ).toBeNull()
+
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+    await enterNodeSelectionMode()
+    expect(
+      screen.getByRole('button', {
+        name: /Remove VAE Decode #\d+ reference/
+      })
+    ).toBeVisible()
+  })
 
   it('clears old node references when selecting another workflow with the same node id', async () => {
     const {

@@ -4,7 +4,12 @@
   </div>
   <div
     v-else
-    :class="cn('lg-node-header w-full min-w-0 p-1 text-xs', headerShapeClass)"
+    :class="
+      cn(
+        'lg-node-header w-full min-w-0 py-1 pr-2 pl-1 text-xs',
+        headerShapeClass
+      )
+    "
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
@@ -57,6 +62,14 @@
         class="icon-[comfy--pin]"
         data-testid="node-pin-indicator"
       />
+      <i
+        v-if="showMissingWarning"
+        role="img"
+        :aria-label="
+          st('rightSidePanel.missingResourcesWarning', 'Missing resources')
+        "
+        class="icon-[lucide--triangle-alert]"
+      />
     </div>
   </div>
 </template>
@@ -83,9 +96,11 @@ import type { NodeBadgeProps } from './NodeBadge.vue'
 interface NodeHeaderProps {
   nodeData?: NodeState
   collapsed?: boolean
+  showMissingWarning?: boolean
 }
 
-const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
+const { nodeData, collapsed, showMissingWarning } =
+  defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []

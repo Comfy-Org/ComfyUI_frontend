@@ -14,7 +14,7 @@ import type {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
@@ -55,6 +55,25 @@ export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
 
+export function toolCallEvent(
+  toolCallId: string,
+  toolName: string,
+  status: 'running' | 'success' | 'error',
+  skill?: string
+): AgentWsEvent {
+  return {
+    type: 'agent_tool_call',
+    data: {
+      tool_call_id: toolCallId,
+      tool_name: toolName,
+      status,
+      message_id: TURN_ID,
+      thread_id: THREAD_ID,
+      ...(skill === undefined ? {} : { skill })
+    }
+  }
+}
+
 export function pushHostFrames(
   ws: WebSocketRoute,
   frames: readonly HostFrame[]
@@ -90,6 +109,7 @@ const FUNDED_BILLING_STATUS = {
   scoped_effective_has_funds: { agent: true },
   scoped_has_funds: { agent: true },
   scheduled_change: null,
+  next_charge: null,
   subscription_duration: 'MONTHLY',
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
@@ -300,6 +320,17 @@ export const RUNNING_OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
   }
 }
 
+export const RUNNING_RUN_TOOL_EVENT: AgentWsEvent = {
+  type: 'agent_tool_call',
+  data: {
+    tool_call_id: 'call-run',
+    tool_name: 'run',
+    status: 'running',
+    message_id: TURN_ID,
+    thread_id: THREAD_ID
+  }
+}
+
 export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
@@ -351,6 +382,7 @@ async function mockAgentBoot(
   page: Page,
   {
     agentConsentAccepted,
+    agentConsentLoadStatus,
     agentConsentReads,
     agentConsentSave,
     agentConsentWebSession,
@@ -566,6 +598,8 @@ async function mockAgentBoot(
         return route.fulfill({ status: 401 })
       }
       agentConsentReads.push(consentAccepted)
+      if (agentConsentLoadStatus >= 400)
+        return route.fulfill({ status: agentConsentLoadStatus })
       return route.fulfill(
         consentAccepted
           ? jsonRoute(storedConsent)
@@ -665,6 +699,7 @@ type AgentFixtures = {
   acceptedTurns: AgentTurnAccepted[]
   agentBilling: AgentBillingFixture
   agentConsentAccepted: boolean
+  agentConsentLoadStatus: number
   agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWebSession: boolean
@@ -688,6 +723,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use(new AgentBillingFixture())
   },
   agentConsentAccepted: [true, { option: true }],
+  agentConsentLoadStatus: [200, { option: true }],
   agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
@@ -710,6 +746,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   page: async (
     {
       agentConsentAccepted,
+      agentConsentLoadStatus,
       agentConsentReads,
       agentConsentSave,
       agentConsentWebSession,
@@ -732,6 +769,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   ) => {
     await mockAgentBoot(page, {
       agentConsentAccepted,
+      agentConsentLoadStatus,
       agentConsentReads,
       agentConsentSave,
       agentConsentWebSession,

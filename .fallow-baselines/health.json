@@ -1837,12 +1837,18 @@
         "count": 1
       }
     },
-    "src/platform/settings/settingStore.ts": {
-      "complexity_high": {
+    "packages/settings-core/src/settingStore.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
         "count": 1
       },
       "crap_high": {
         "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
       }
     },
     "src/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider.ts": {
@@ -2609,15 +2615,21 @@
         "count": 1
       }
     },
-    "src/scripts/api.ts": {
+    "packages/api-client/src/ComfyApi.ts": {
       "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
         "count": 1
       },
       "crap_critical": {
         "count": 1
       },
+      "crap_high": {
+        "count": 2
+      },
       "crap_moderate": {
-        "count": 1
+        "count": 2
       }
     },
     "src/scripts/app.ts": {

@@ -405,7 +405,7 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'missing_node'
       )
       expect(missingGroup?.displayMessage).toBe(
-        "These nodes aren't on Studio Build v2. Replace them, or pick a deployment that has them."
+        "These nodes aren't on Studio Build v2. Add their packs to its build, or replace them."
       )
     })
 
@@ -493,8 +493,8 @@ describe('useErrorGroups', () => {
       ])
       await nextTick()
 
-      const errorIndices = groups.allErrorGroups.value.flatMap(
-        (group, index) => (group.severity === 'error' ? [index] : [])
+      const errorIndices = groups.allErrorGroups.value.flatMap((group, index) =>
+        group.severity === 'error' ? [index] : []
       )
       const missingIndices = groups.allErrorGroups.value.flatMap(
         (group, index) => (group.severity === 'missing' ? [index] : [])

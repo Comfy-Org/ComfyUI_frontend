@@ -1,6 +1,6 @@
 import type { Token } from 'marked'
 
-import { isMediaRoute } from '@/platform/auth/session/sessionMediaUrl'
+import { isMediaRoute } from '@comfyorg/api-client/sessionMediaUrl'
 import { api } from '@/scripts/api'
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 import type { AugmentedResultItem } from '@/utils/resultItem'
