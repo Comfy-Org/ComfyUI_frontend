@@ -44,6 +44,19 @@ describe('deriveSessionTitle', () => {
     expect(sessionTitle.deriveSessionTitle([userEntry('hello')])).toBe('hello')
     expect(Intl.Segmenter).toHaveBeenCalledOnce()
   })
+
+  it('falls back to code points when Intl.Segmenter is unavailable', async () => {
+    vi.stubGlobal('Intl', { Segmenter: undefined })
+    vi.resetModules()
+    try {
+      const sessionTitle = await import('./sessionTitle')
+      expect(
+        sessionTitle.deriveSessionTitle([userEntry(`${'a'.repeat(59)}🙂tail`)])
+      ).toBe(`${'a'.repeat(59)}🙂`)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })
 
 describe('withCurrentSessionTitle', () => {

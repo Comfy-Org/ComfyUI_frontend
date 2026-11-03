@@ -5,9 +5,17 @@ import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agen
 
 const MAX_DERIVED_TITLE_LENGTH = 60
 
-const graphemeSegmenter = once(
-  () => new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+const graphemeSegmenter = once(() =>
+  typeof Intl.Segmenter === 'function'
+    ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+    : undefined
 )
+
+function splitGraphemes(text: string): string[] {
+  const segmenter = graphemeSegmenter()
+  if (!segmenter) return Array.from(text)
+  return Array.from(segmenter.segment(text), ({ segment }) => segment)
+}
 
 /** First user message, trimmed and capped at 60 graphemes. */
 export function deriveSessionTitle(
@@ -19,7 +27,7 @@ export function deriveSessionTitle(
   )
   const text = firstUser?.text.trim() ?? ''
   return (
-    Array.from(graphemeSegmenter().segment(text), ({ segment }) => segment)
+    splitGraphemes(text)
       .slice(0, MAX_DERIVED_TITLE_LENGTH)
       .join('')
       .trimEnd() || undefined
