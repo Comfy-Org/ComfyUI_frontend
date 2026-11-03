@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 
 import ZoomPane from './ZoomPane.vue'
@@ -59,18 +59,50 @@ describe(ZoomPane, () => {
   })
 
   it('keeps the content under an off-center pinch midpoint in place', async () => {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(100, 50, 200, 100)
+    )
     const image = renderPane()
     const before = readTransform(image)
 
-    await touch(image, 'pointerDown', 1, 50)
-    await touch(image, 'pointerDown', 2, 150)
-    await touch(image, 'pointerMove', 1, 0)
-    await touch(image, 'pointerMove', 2, 200)
+    await touch(image, 'pointerDown', 1, 225, 130)
+    await touch(image, 'pointerDown', 2, 275, 130)
+    await touch(image, 'pointerMove', 1, 200, 130)
+    await touch(image, 'pointerMove', 2, 300, 130)
 
     const after = readTransform(image)
     expect(after.scale / before.scale).toBeCloseTo(2)
-    expect(after.x).toBeCloseTo(-100)
-    expect(after.y).toBeCloseTo(0)
+    expect(after.x).toBeCloseTo(-50)
+    expect(after.y).toBeCloseTo(-30)
+  })
+
+  it('holds the zoom when two touches move together at the zoom limit', async () => {
+    const image = renderPane()
+    await pinch(image, 100, 1)
+    await touch(image, 'pointerUp', 1, -1)
+    await touch(image, 'pointerUp', 2, 1)
+    const atLimit = readTransform(image)
+
+    await touch(image, 'pointerDown', 1, 0)
+    await touch(image, 'pointerDown', 2, 80)
+    for (const shift of [8, 16, 24]) {
+      await touch(image, 'pointerMove', 1, shift)
+      await touch(image, 'pointerMove', 2, 80 + shift)
+    }
+
+    expect(readTransform(image).scale).toBeCloseTo(atLimit.scale)
+  })
+
+  it('restores the zoom when touches meet and separate again', async () => {
+    const image = renderPane()
+    const before = readTransform(image)
+
+    await touch(image, 'pointerDown', 1, -50)
+    await touch(image, 'pointerDown', 2, 50)
+    await touch(image, 'pointerMove', 1, 50)
+    await touch(image, 'pointerMove', 1, -50)
+
+    expect(readTransform(image).scale).toBeCloseTo(before.scale)
   })
 
   it('zooms out when two touches pinch together', async () => {

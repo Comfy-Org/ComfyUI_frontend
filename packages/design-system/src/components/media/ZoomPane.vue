@@ -3,6 +3,7 @@ import { clamp } from 'es-toolkit'
 import { computed, ref, useTemplateRef } from 'vue'
 
 type Point = { x: number; y: number }
+type PinchStart = { spread: number; zoom: number }
 
 const MIN_ZOOM = -500
 const MAX_ZOOM = 1200
@@ -14,6 +15,7 @@ const panX = ref(0.0)
 const panY = ref(0.0)
 
 const activePointers = new Map<number, Point>()
+let pinchStart: PinchStart | undefined
 
 function zoomAt(zoomDelta: number, clientX: number, clientY: number) {
   const zoomPaneEl = zoomPane.value
@@ -44,6 +46,7 @@ function handleDown(e: PointerEvent) {
 
   zoomPaneEl.setPointerCapture(e.pointerId)
   activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+  pinchStart = undefined
 }
 
 function distance(a: Point, b: Point) {
@@ -55,16 +58,22 @@ function midpoint(a: Point, b: Point): Point {
 }
 
 function pinch(previous: Point, current: Point, anchor: Point) {
-  const previousDistance = distance(previous, anchor)
-  if (previousDistance === 0) return
-
   const previousCenter = midpoint(previous, anchor)
   const center = midpoint(current, anchor)
   panX.value += center.x - previousCenter.x
   panY.value += center.y - previousCenter.y
 
-  const ratio = distance(current, anchor) / previousDistance
-  zoomAt((30 * Math.log(ratio)) / Math.log(1.1), center.x, center.y)
+  const spread = distance(current, anchor)
+  pinchStart ??= { spread: distance(previous, anchor), zoom: zoom.value }
+  if (pinchStart.spread === 0) {
+    pinchStart = { spread, zoom: zoom.value }
+    return
+  }
+
+  const targetZoom =
+    pinchStart.zoom +
+    (30 * Math.log(spread / pinchStart.spread)) / Math.log(1.1)
+  zoomAt(targetZoom - zoom.value, center.x, center.y)
 }
 
 function handleMove(e: PointerEvent) {
@@ -86,6 +95,7 @@ function handleMove(e: PointerEvent) {
 
 function handleUp(e: PointerEvent) {
   activePointers.delete(e.pointerId)
+  pinchStart = undefined
 }
 
 const transform = computed(() => {
