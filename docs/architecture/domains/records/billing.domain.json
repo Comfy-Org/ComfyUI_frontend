@@ -268,8 +268,7 @@
         "src/platform/billing/stores/billingOperationStore.test.ts",
         "src/platform/billing/composables/useTopupOperation.test.ts",
         "src/platform/billing/composables/usePendingTopup.test.ts",
-        "src/platform/billing/composables/topupBalanceRefresh.test.ts",
-        "src/platform/billing/components/AddCreditsDialogContent.test.ts"
+        "src/platform/billing/composables/topupBalanceRefresh.test.ts"
       ]
     },
     {

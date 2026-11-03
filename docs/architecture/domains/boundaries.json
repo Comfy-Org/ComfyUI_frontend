@@ -569,7 +569,6 @@
           "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.test.ts",
           "src/platform/billing/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts",
           "src/platform/billing/components/AddCreditsDialogContent.vue",
-          "src/platform/billing/components/AddCreditsDialogContent.test.ts",
           "src/platform/billing/components/UnifiedPricingTable.stories.ts",
           "src/platform/billing/components/UnifiedPricingTable.vue",
           "src/platform/billing/components/UnifiedPricingTable.test.ts",
