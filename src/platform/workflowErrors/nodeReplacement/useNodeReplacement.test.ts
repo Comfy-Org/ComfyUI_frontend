@@ -728,6 +728,142 @@ describe('useNodeReplacement', () => {
       ).toHaveBeenCalledTimes(1)
     })
 
+    it('assigns a dynamic child value mapped before the value that creates it', () => {
+      const placeholder = createPlaceholderNode(1, 'OldScaler')
+      placeholder.last_serialization!.widgets_values = [1.5, 'multiplier']
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode(
+        [],
+        [],
+        [{ name: 'resize_type', value: '' }]
+      )
+      const resizeType = newNode.widgets![0]
+      let resizeTypeValue: unknown = ''
+      Object.defineProperty(resizeType, 'value', {
+        get: () => resizeTypeValue,
+        set(value) {
+          resizeTypeValue = value
+          newNode.widgets!.splice(1, Infinity, {
+            ...resizeType,
+            name: 'resize_type.multiplier',
+            value: 1
+          })
+        }
+      })
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldScaler', {
+          new_node_id: 'NewScaler',
+          old_node_id: 'OldScaler',
+          old_widget_ids: ['scale_by', 'mode'],
+          input_mapping: [
+            { new_id: 'resize_type.multiplier', old_id: 'scale_by' },
+            { new_id: 'resize_type', old_id: 'mode' }
+          ],
+          output_mapping: null
+        })
+      ])
+
+      expect(newNode.widgets!.map((widget) => widget.value)).toEqual([
+        'multiplier',
+        1.5
+      ])
+    })
+
+    it('lets the later mapping win when two mappings target one widget', () => {
+      const placeholder = createPlaceholderNode(1, 'OldScaler')
+      placeholder.last_serialization!.widgets_values = ['saved']
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode([], [], [{ name: 'mode', value: '' }])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldScaler', {
+          new_node_id: 'NewScaler',
+          old_node_id: 'OldScaler',
+          old_widget_ids: ['mode'],
+          input_mapping: [
+            { new_id: 'mode', old_id: 'mode' },
+            { new_id: 'mode', set_value: 'forced' }
+          ],
+          output_mapping: null
+        })
+      ])
+
+      expect(newNode.widgets![0].value).toBe('forced')
+    })
+
+    it('keeps a restored value that an earlier widget callback resets', () => {
+      const placeholder = createPlaceholderNode(1, 'OldSampler')
+      placeholder.last_serialization!.widgets_values = ['portrait', 7]
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode(
+        [],
+        [],
+        [
+          { name: 'preset', value: '' },
+          { name: 'steps', value: 0 }
+        ]
+      )
+      newNode.widgets![0].callback = () => {
+        newNode.widgets![1].value = 20
+      }
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldSampler', {
+          new_node_id: 'NewSampler',
+          old_node_id: 'OldSampler',
+          old_widget_ids: ['preset', 'steps'],
+          input_mapping: [
+            { new_id: 'preset', old_id: 'preset' },
+            { new_id: 'steps', old_id: 'steps' }
+          ],
+          output_mapping: null
+        })
+      ])
+
+      expect(newNode.widgets!.map((widget) => widget.value)).toEqual([
+        'portrait',
+        7
+      ])
+    })
+
+    it('replaces a node reached through two instances of one subgraph once', () => {
+      const placeholder = createPlaceholderNode(1, 'OldType')
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder, placeholder])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(createNewNode())
+
+      const result = useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldType', {
+          new_node_id: 'NewType',
+          old_node_id: 'OldType',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(result).toEqual(['OldType'])
+      expect(useToast().error).not.toHaveBeenCalled()
+    })
+
     it('should transfer widget values using old_widget_ids', () => {
       const placeholder = createPlaceholderNode(1, 'ResizeImagesByLongerEdge')
       // Set widget values in serialized data
