@@ -78,24 +78,18 @@ export function applyControlValues(
   const control = targetId ? store.getWidgetControl(targetId) : undefined
   if (!control && !config) return index
 
-  let next = index
-  const mode = parseValueControlMode(values[next])
-  if (!mode) return next
+  const mode = parseValueControlMode(values[index])
+  if (!mode) return index
 
-  if (config) config.mode = mode
-  if (targetId) store.updateWidgetControl(targetId, { mode })
-  next++
-  if (valueCount === 1) return next
-  const filter = values[next]
-  if (
-    (control?.filter !== undefined || config?.hasFilter) &&
+  const filter = values[index + 1]
+  const restoreFilter =
+    valueCount !== 1 &&
+    (control?.filter !== undefined || config?.hasFilter === true) &&
     typeof filter === 'string'
-  ) {
-    if (config) config.filter = filter
-    if (targetId) store.updateWidgetControl(targetId, { filter })
-    next++
-  }
-  return next
+  const restored = restoreFilter ? { mode, filter } : { mode }
+  if (config) Object.assign(config, restored)
+  if (targetId) store.updateWidgetControl(targetId, restored)
+  return index + 1 + Number(restoreFilter)
 }
 
 export interface WidgetValueLayoutEntry {
@@ -149,6 +143,22 @@ export function decodeWidgetValueLayout(
 ): WidgetValueLayoutEntry[] {
   const store = useWidgetValueStore()
   const memo = new Map<string, WidgetValueLayoutCandidate | null>()
+  const constraints = widgets.map((widget) => {
+    const control =
+      (widget.widgetId ? store.getWidgetControl(widget.widgetId) : undefined) ??
+      widget.controlConfig
+    return {
+      hasControl: !!control,
+      hasFilter:
+        control && 'hasFilter' in control
+          ? control.hasFilter
+          : control?.filter !== undefined,
+      targetValue: widget.widgetId
+        ? store.getWidget(widget.widgetId)?.value
+        : undefined,
+      preferControlValues: preferControlValuesFor?.has(widget)
+    }
+  })
 
   const decode = (
     widgetIndex: number,
@@ -187,17 +197,8 @@ export function decodeWidgetValueLayout(
       return result
     }
 
-    const widget = widgets[widgetIndex]
-    const control =
-      (widget.widgetId ? store.getWidgetControl(widget.widgetId) : undefined) ??
-      widget.controlConfig
-    const hasFilter =
-      control && 'hasFilter' in control
-        ? control.hasFilter
-        : control?.filter !== undefined
-    const target = widget.widgetId
-      ? store.getWidget(widget.widgetId)
-      : undefined
+    const { hasControl, hasFilter, targetValue, preferControlValues } =
+      constraints[widgetIndex]
     const nextValueIndex = valueIndex + 1
     let best: WidgetValueLayoutCandidate | undefined
 
@@ -211,12 +212,12 @@ export function decodeWidgetValueLayout(
         entries: [{ valueIndex, controlValueCount }, ...remainder.entries],
         preferredControlValueCount:
           remainder.preferredControlValueCount +
-          (preferControlValuesFor?.has(widget) ? controlValueCount : 0),
+          (preferControlValues ? controlValueCount : 0),
         targetValueCount: remainder.targetValueCount + 1,
         targetTypeMatchCount:
           remainder.targetTypeMatchCount +
-          (target?.value != null &&
-          typeof target.value === typeof values[valueIndex]
+          (targetValue != null &&
+          typeof targetValue === typeof values[valueIndex]
             ? 1
             : 0),
         controlValueCount: remainder.controlValueCount + controlValueCount
@@ -224,7 +225,7 @@ export function decodeWidgetValueLayout(
     }
 
     addCandidate(0)
-    if (control && parseValueControlMode(values[nextValueIndex])) {
+    if (hasControl && parseValueControlMode(values[nextValueIndex])) {
       addCandidate(1)
       if (hasFilter && typeof values[nextValueIndex + 1] === 'string') {
         addCandidate(2)

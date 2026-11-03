@@ -42,9 +42,7 @@ export function runWidgetControl(
   controlMode: WidgetControlPhase,
   queuedNodeIds?: ReadonlySet<string>
 ): void {
-  const runBefore = controlMode === 'before'
-  if (phase === 'before' && !runBefore) return
-  if (phase === 'after' && runBefore) return
+  if (phase !== controlMode) return
 
   const store = useWidgetValueStore()
   const { linkFed, live } = collectGraphTargets(graph)
@@ -58,9 +56,9 @@ export function runWidgetControl(
     ) {
       continue
     }
-    if (!live.has(targetId)) continue
+    const widget = live.get(targetId)
     const target = store.getWidget(targetId)
-    if (!target || linkFed.has(targetId)) continue
+    if (!widget || !target || linkFed.has(targetId)) continue
 
     const firstRun = !control.hasExecuted
     store.updateWidgetControl(targetId, { hasExecuted: true })
@@ -73,6 +71,6 @@ export function runWidgetControl(
     if (next === undefined) continue
 
     store.setValue(targetId, next)
-    live.get(targetId)?.callback?.(next)
+    widget.callback?.(next)
   }
 }
