@@ -1,7 +1,11 @@
 import type { AutoReloadSettings } from '@comfyorg/ingest-types'
 import { describe, expect, it } from 'vitest'
 
-import { deriveAutoTopUpCard, deriveAutoTopUpSection } from './autoTopUpCard'
+import {
+  autoTopUpOffView,
+  deriveAutoTopUpCard,
+  deriveAutoTopUpSection
+} from './autoTopUpCard'
 import type { AutoTopUpSectionFacts } from './autoTopUpCard'
 
 const settings: AutoReloadSettings = {
@@ -90,4 +94,31 @@ describe('deriveAutoTopUpSection', () => {
   ])('shows $kind for $case', ({ facts, kind }) => {
     expect(deriveAutoTopUpSection(facts).kind).toBe(kind)
   })
+})
+
+describe('autoTopUpOffView', () => {
+  const missingDefault = {
+    state: 'frozen',
+    reason: 'default_payment_method_missing'
+  } as const
+
+  it.for([
+    { setup: null, count: null, view: 'off' },
+    { setup: { state: 'ready' }, count: 0, view: 'off' },
+    {
+      setup: { state: 'frozen', reason: 'billing_paused' },
+      count: 0,
+      view: 'off'
+    },
+    { setup: missingDefault, count: 0, view: 'noPaymentMethod' },
+    { setup: missingDefault, count: 2, view: 'noDefaultPaymentMethod' },
+    { setup: missingDefault, count: null, view: 'noDefaultPaymentMethod' }
+  ] as const)(
+    'reads setup $setup with $count saved methods as $view',
+    ({ setup, count, view }) => {
+      expect(autoTopUpOffView({ setup, savedPaymentMethodCount: count })).toBe(
+        view
+      )
+    }
+  )
 })
