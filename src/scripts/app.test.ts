@@ -1324,6 +1324,10 @@ describe('ComfyApp', () => {
       async ({ load }) => {
         app.canvasElRef.value = document.createElement('canvas')
         const graph = new LGraph()
+        const previousGraph = singletonApp.rootGraphOrUndefined
+        onTestFinished(() => {
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        })
         Reflect.set(app, 'rootGraphInternal', graph)
         Reflect.set(singletonApp, 'rootGraphInternal', graph)
         const activationError = new Error('Failed to load file')
@@ -1345,6 +1349,10 @@ describe('ComfyApp', () => {
     it('holds the graph-load guard through each queued import activation', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+      })
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
       let finishFirst = () => {}
@@ -1378,6 +1386,10 @@ describe('ComfyApp', () => {
     it('lets an activation recovery load within the held graph load', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+      })
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
       mockWorkflowService.afterLoadNewGraph.mockImplementationOnce(async () => {
@@ -1394,6 +1406,10 @@ describe('ComfyApp', () => {
     it('keeps the graph-load guard after a recovery load fails before configuring', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+      })
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
       let recoveryLoaded: Awaited<ReturnType<ComfyApp['loadGraphData']>>
