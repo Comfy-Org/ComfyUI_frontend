@@ -22,7 +22,8 @@ import type {
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import type {
   AskUserResolution,
-  AssistantMessage
+  AssistantMessage,
+  ToolPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   askIdOf,
@@ -292,10 +293,6 @@ function storedCallIdOf(
   }
 }
 
-/**
- * A stored row carries no canvas observation, so a settled turn keeps the
- * verdict its live tool calls reached in this page session, confirmed or not.
- */
 function preserveCanvasVerdicts(
   liveParts: AssistantMessage['parts'],
   persistedParts: AssistantMessage['parts']
@@ -305,16 +302,23 @@ function preserveCanvasVerdicts(
     persistedParts,
     liveToolOffset(liveParts, persistedParts)
   )
-  const verdicts = new Map<string, boolean>()
+  const liveByStoredCallId = new Map<string, ToolPart>()
   for (const part of liveParts) {
-    if (part.type === 'tool' && part.canvasConfirmed !== undefined)
-      verdicts.set(storedCallId(part.callId), part.canvasConfirmed)
+    if (part.type === 'tool')
+      liveByStoredCallId.set(storedCallId(part.callId), part)
   }
   return persistedParts.map((part) => {
     if (part.type !== 'tool' || part.ok !== true) return part
-    const canvasConfirmed = verdicts.get(part.callId)
+    const live = liveByStoredCallId.get(part.callId)
+    if (live?.name !== part.name) return part
+    const canvasConfirmed = liveCanvasVerdict(live)
     return canvasConfirmed === undefined ? part : { ...part, canvasConfirmed }
   })
+}
+
+function liveCanvasVerdict(part: ToolPart): boolean | undefined {
+  if (part.canvasConfirmed !== undefined) return part.canvasConfirmed
+  return part.ok === true && part.state === 'streaming' ? false : undefined
 }
 
 function finishSnapshotTurn(

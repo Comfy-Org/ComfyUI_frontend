@@ -311,8 +311,6 @@ function parseToolCallEntry(
       callId: toolCallId || id,
       name: toolName,
       state,
-      // No `canvasConfirmed`: a stored row carries no browser observation of
-      // the canvas, so it makes no claim either way (FRONT-3803).
       ...toolPartOptionalFields(ok, skill, durationMs)
     }
   }

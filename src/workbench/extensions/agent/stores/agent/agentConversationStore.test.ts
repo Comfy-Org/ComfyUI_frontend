@@ -2347,13 +2347,34 @@ describe('useAgentConversationStore', () => {
     })
 
     it.for([
-      { gate: 'awaiting', canvasConfirmed: true, through: 'socket' },
-      { gate: 'unavailable', canvasConfirmed: false, through: 'socket' },
-      { gate: 'awaiting', canvasConfirmed: true, through: 'recovery read' },
-      { gate: 'unavailable', canvasConfirmed: false, through: 'recovery read' }
+      { gate: 'awaiting', observed: true, verdict: true, through: 'socket' },
+      {
+        gate: 'unavailable',
+        observed: false,
+        verdict: false,
+        through: 'socket'
+      },
+      {
+        gate: 'awaiting',
+        observed: true,
+        verdict: true,
+        through: 'recovery read'
+      },
+      {
+        gate: 'unavailable',
+        observed: false,
+        verdict: false,
+        through: 'recovery read'
+      },
+      {
+        gate: 'awaiting',
+        observed: false,
+        verdict: false,
+        through: 'recovery read'
+      }
     ] as const)(
-      'keeps the live canvas verdict $canvasConfirmed when the $through settles the turn',
-      ({ gate, canvasConfirmed, through }) => {
+      'keeps the live canvas verdict $verdict ($gate, observed: $observed) when the $through settles the turn',
+      ({ gate, observed, verdict, through }) => {
         const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
         const turn = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
         const store = useAgentConversationStore()
@@ -2366,7 +2387,8 @@ describe('useAgentConversationStore', () => {
             op_ids: ['op-add']
           })
         )
-        store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+        if (observed)
+          store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
 
         if (through === 'socket') {
           store.ingest(done(SNAPSHOT_ROW_ID))
@@ -2377,9 +2399,31 @@ describe('useAgentConversationStore', () => {
 
         expect(
           reconciledParts(store)?.find((part) => part.type === 'tool')
-        ).toMatchObject({ callId: 'call-add_node', canvasConfirmed })
+        ).toMatchObject({ callId: 'call-add_node', canvasConfirmed: verdict })
       }
     )
+
+    it('does not move a live canvas verdict onto a different stored tool', () => {
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'unavailable')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success'))
+
+      store.settleTurn({ threadId: 'th', messageId: SNAPSHOT_ROW_ID }, [
+        {
+          type: 'tool',
+          callId: 'row-fallback-id',
+          name: 'search_nodes',
+          state: 'done',
+          ok: true
+        }
+      ])
+
+      expect(
+        reconciledParts(store)?.find((part) => part.type === 'tool')
+      ).not.toHaveProperty('canvasConfirmed')
+    })
 
     it('waits for a held tool call to clear before announcing the turn', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
@@ -2476,7 +2520,6 @@ describe('useAgentConversationStore', () => {
 
       store.retireAsk('turn-7:call-1', { status: 'retired' })
 
-      // The held call timed out unobserved, so its live denial carries over.
       expect(reconciledParts(store)).toEqual(
         storedParts().map((part) =>
           part.type === 'tool' ? { ...part, canvasConfirmed: false } : part

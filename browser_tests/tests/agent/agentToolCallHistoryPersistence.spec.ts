@@ -153,8 +153,6 @@ test(
     const reopenedPanel = page.locator('#agent-panel-root')
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
-    // FRONT-3803: a restored row carries no browser observation of the
-    // canvas, so it must not read as an unconfirmed write.
     const summary = reopenedPanel.getByRole('button', {
       name: enMessages.agent.worked,
       exact: true
