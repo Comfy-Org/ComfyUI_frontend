@@ -89,4 +89,29 @@ describe('isModalOpen', () => {
 
     expect(isModalOpen(0)).toBe(true)
   })
+
+  it('ignores a dialog inside closed details content', () => {
+    document.body.innerHTML = `
+      <details>
+        <summary>Advanced</summary>
+        <div role="dialog" aria-modal="true"></div>
+      </details>
+    `
+    const dialog = document.querySelector('[role="dialog"]')!
+    disableCheckVisibility(dialog)
+
+    expect(isModalOpen(0)).toBe(false)
+  })
+
+  it('detects a dialog inside the summary of closed details', () => {
+    document.body.innerHTML = `
+      <details>
+        <summary><div role="dialog" aria-modal="true"></div></summary>
+      </details>
+    `
+    const dialog = document.querySelector('[role="dialog"]')!
+    disableCheckVisibility(dialog)
+
+    expect(isModalOpen(0)).toBe(true)
+  })
 })

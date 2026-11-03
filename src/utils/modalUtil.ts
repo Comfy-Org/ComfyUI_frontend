@@ -12,6 +12,19 @@ function ancestorHidesDescendants(style: CSSStyleDeclaration): boolean {
   return style.display === 'none' || style.contentVisibility === 'hidden'
 }
 
+function closedDetailsHidesElement(
+  ancestor: HTMLElement,
+  element: Element
+): boolean {
+  if (!(ancestor instanceof HTMLDetailsElement) || ancestor.open) return false
+
+  const summary = Array.from(ancestor.children).find(
+    (child): child is HTMLElement =>
+      child instanceof HTMLElement && child.tagName === 'SUMMARY'
+  )
+  return summary?.contains(element) !== true
+}
+
 function isRendered(element: Element): boolean {
   if (element.closest('[hidden], [aria-hidden="true"]') !== null) return false
 
@@ -23,6 +36,7 @@ function isRendered(element: Element): boolean {
       current;
       current = current.parentElement
     ) {
+      if (closedDetailsHidesElement(current, element)) return false
       if (ancestorHidesDescendants(getComputedStyle(current))) return false
     }
 
