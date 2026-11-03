@@ -1,11 +1,13 @@
 <template>
   <div
+    ref="root"
     :class="
       cn(
         'flex w-[min(400px,95vw)] flex-col rounded-2xl border bg-card text-sm text-foreground shadow-md',
         ui.root
       )
     "
+    :style="{ marginTop: `${growth}px` }"
     data-testid="add-credits-dialog"
     :data-step="dialog.state.value.step"
   >
@@ -343,7 +345,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
+import { useResizeObserver, useWindowSize } from '@vueuse/core'
 import type { Component } from 'vue'
 import { RadioGroupItem, RadioGroupRoot } from 'reka-ui'
 
@@ -439,6 +442,21 @@ const dialog = useAddCreditsDialog({
     ...(pendingTopup === undefined ? {} : { pendingTopup })
   }),
   onLanded: () => emit('close')
+})
+
+const VIEWPORT_GUTTER_PX = 16
+const root = useTemplateRef('root')
+const defaultHeight = ref<number>()
+const height = ref(0)
+const { height: viewportHeight } = useWindowSize()
+useResizeObserver(root, ([entry]) => {
+  height.value = entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height
+  defaultHeight.value ??= height.value
+})
+const growth = computed(() => {
+  if (defaultHeight.value === undefined) return 0
+  const room = viewportHeight.value - 2 * VIEWPORT_GUTTER_PX - height.value
+  return Math.max(0, Math.min(height.value - defaultHeight.value, room))
 })
 
 const fieldId = useId()
