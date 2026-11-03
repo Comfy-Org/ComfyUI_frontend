@@ -130,10 +130,10 @@ describe('WidgetSelectDefault', () => {
   it.for([
     { current: 42, action: 'Next', expected: 89 },
     { current: 42, action: 'Previous', expected: 11 },
-    { current: 89, action: 'Next', expected: 11 },
-    { current: 11, action: 'Previous', expected: 89 }
+    { current: 11, action: 'Next', expected: 42 },
+    { current: 89, action: 'Previous', expected: 42 }
   ])(
-    'cycles $action from $current to raw value $expected',
+    'steps $action from $current to raw value $expected',
     async ({ current, action, expected }) => {
       const { user, onUpdate } = renderComponent(
         createWidget([11, 42, 89]),
@@ -146,6 +146,25 @@ describe('WidgetSelectDefault', () => {
         screen.getByRole('button', { name: `test_combo: ${action}` })
       )
       expect(onUpdate).toHaveBeenCalledWith(expected)
+    }
+  )
+
+  it.for([
+    { values: [11, 42, 89], current: 11, expected: [true, false] },
+    { values: [11, 42, 89], current: 89, expected: [false, true] },
+    { values: [11], current: 11, expected: [true, true] },
+    { values: [], current: undefined, expected: [true, true] }
+  ])(
+    'disables unavailable directions for $values with current=$current',
+    ({ values, current, expected }) => {
+      renderComponent(createWidget(values), current, undefined, false, true)
+
+      expect(
+        [
+          screen.getByRole('button', { name: 'test_combo: Previous' }),
+          screen.getByRole('button', { name: 'test_combo: Next' })
+        ].map((button) => button.hasAttribute('disabled'))
+      ).toEqual(expected)
     }
   )
 

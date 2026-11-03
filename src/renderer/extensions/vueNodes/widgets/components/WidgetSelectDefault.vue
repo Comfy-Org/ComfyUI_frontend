@@ -62,14 +62,14 @@
               type="button"
               tabindex="-1"
               :aria-label="`${widgetLabel}: ${$t(button.labelKey)}`"
-              :disabled="disabled || !normalizedOptions.length"
+              :disabled="disabled || !adjacentOption(button.direction)"
               :class="
                 cn(
                   'flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none not-disabled:hover:bg-muted disabled:cursor-default disabled:opacity-30',
                   button.className
                 )
               "
-              @click="cycleOption(button.direction)"
+              @click="stepOption(button.direction)"
             >
               <i :class="button.icon" aria-hidden="true" />
             </button>
@@ -409,17 +409,19 @@ function selectOption(option: SelectOption | null) {
   isOpen.value = false
 }
 
-function cycleOption(direction: -1 | 1) {
-  refreshOptions()
+function adjacentOption(direction: -1 | 1) {
   const options = normalizedOptions.value
   const index = selectedOption.value
     ? options.indexOf(selectedOption.value)
     : direction === 1
       ? -1
-      : 0
-  const option = options.at(
-    (index + direction + options.length) % options.length
-  )
+      : options.length
+  return options[index + direction]
+}
+
+function stepOption(direction: -1 | 1) {
+  refreshOptions()
+  const option = adjacentOption(direction)
   if (option) selectOption(option)
 }
 
