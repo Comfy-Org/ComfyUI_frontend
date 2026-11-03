@@ -281,6 +281,7 @@ function onMentionHover(index: number): void {
 }
 
 function onEditorInput(): void {
+  prefillFadeMs.value = null
   syncMention()
   if (mentionVisible.value) requestDescription('input')
 }
@@ -450,7 +451,7 @@ const composerContainerRef = useTemplateRef<HTMLDivElement>(
   'composerContainerRef'
 )
 
-function focusAllowsComposerStop(): boolean {
+function focusIsWithinComposerOrUnset(): boolean {
   const active = document.activeElement
   return (
     active === null ||
@@ -469,7 +470,7 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
     return false
   if (event.defaultPrevented) return false
 
-  if (!focusAllowsComposerStop()) return false
+  if (!focusIsWithinComposerOrUnset()) return false
 
   event.preventDefault()
   if (!event.repeat) emit('stop', 'escape')
@@ -499,7 +500,8 @@ async function focusPrefill(delayMs: number): Promise<void> {
   const prefilled = composer.prompt.value
   prefillFadeMs.value = delayMs
   await nextTick()
-  if (composer.prompt.value !== prefilled) return
+  if (composer.prompt.value !== prefilled || !focusIsWithinComposerOrUnset())
+    return
   editorRef.value?.focusAtEnd()
 }
 
@@ -641,11 +643,12 @@ defineExpose({
         <div class="grid flex-1">
           <div
             ref="editorHostRef"
+            data-testid="composer-editor"
+            v-bind="prefillFade"
             class="col-start-1 row-start-1 flex flex-col"
           >
             <InlinePromptEditor
               ref="editorRef"
-              v-bind="prefillFade"
               :model-value="composer.prompt.value"
               :label="placeholderLabel"
               :expanded="mentionVisible"

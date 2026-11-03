@@ -1,19 +1,24 @@
 import type { AgentUsageStatusResponse } from '@comfyorg/ingest-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { effectScope, nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { AgentGreetingAssignment } from '@/workbench/extensions/agent/types/proactiveGreeting'
 import { useProactiveGreeting } from './useProactiveGreeting'
 
+vi.mock(import('@comfyorg/telemetry/reportError'))
+
 const cleanups: (() => void)[] = []
 afterEach(() => cleanups.splice(0).forEach((cleanup) => cleanup()))
 
 function deferred<T>() {
   let resolve!: (value: T) => void
-  const promise = new Promise<T>((done) => {
+  let reject!: (reason: unknown) => void
+  const promise = new Promise<T>((done, fail) => {
     resolve = done
+    reject = fail
   })
-  return { promise, resolve }
+  return { promise, resolve, reject }
 }
 
 function setup() {
@@ -65,19 +70,79 @@ describe('first-use qualification', () => {
     expect(state.greeting.value).toEqual({ variant: 'B', canvas: 'empty' })
   })
 
-  it('ignores an old-scope response and keeps query failure unknown', async () => {
+  it('preserves the current greeting when an old workspace response arrives later', async () => {
+    const state = setup()
+    const old = deferred<AgentUsageStatusResponse>()
+    const current = deferred<AgentUsageStatusResponse>()
+    state.getUsageStatus
+      .mockReturnValueOnce(old.promise)
+      .mockReturnValueOnce(current.promise)
+    state.assignment.value = assigned
+    state.identity.value = { userId: 'user-a', workspaceId: 'workspace-b' }
+    state.assignment.value = { ...assigned, workspaceId: 'workspace-b' }
+    current.resolve({ has_used_agent: false })
+    await nextTick()
+    expect(state.greeting.value).toEqual({ variant: 'B', canvas: 'empty' })
+    old.resolve({ has_used_agent: true })
+    await nextTick()
+    expect(state.greeting.value).toEqual({ variant: 'B', canvas: 'empty' })
+  })
+
+  it('reports a failed query once, stays unqualified and recovers on refresh', async () => {
+    const state = setup()
+    const error = new Error('offline')
+    state.getUsageStatus
+      .mockRejectedValueOnce(error)
+      .mockResolvedValueOnce({ has_used_agent: false })
+    state.assignment.value = assigned
+    await nextTick()
+    expect(state.greeting.value).toBeUndefined()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'agent',
+      errorType: 'failure_loading_agent_usage_status',
+      level: 'warning'
+    })
+    await state.refresh()
+    expect(state.greeting.value).toEqual({ variant: 'B', canvas: 'empty' })
+    expect(reportError).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores an old workspace failure after the current query succeeds', async () => {
     const state = setup()
     const old = deferred<AgentUsageStatusResponse>()
     state.getUsageStatus
       .mockReturnValueOnce(old.promise)
-      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({ has_used_agent: false })
     state.assignment.value = assigned
     state.identity.value = { userId: 'user-a', workspaceId: 'workspace-b' }
     state.assignment.value = { ...assigned, workspaceId: 'workspace-b' }
-    old.resolve({ has_used_agent: false })
     await nextTick()
-    expect(state.greeting.value).toBeUndefined()
+    old.reject(new Error('old workspace failed'))
+    await nextTick()
+    expect(state.greeting.value).toEqual({ variant: 'B', canvas: 'empty' })
+    expect(reportError).not.toHaveBeenCalled()
   })
+
+  it.for(['closed', 'disposed'] as const)(
+    'does not report a request aborted when %s',
+    async (end) => {
+      const state = setup()
+      const pending = deferred<AgentUsageStatusResponse>()
+      state.getUsageStatus.mockReturnValueOnce(pending.promise)
+      state.assignment.value = assigned
+      const finish = {
+        closed: () => {
+          state.active.value = false
+        },
+        disposed: state.dispose
+      }
+      finish[end]()
+      pending.reject(new DOMException('Aborted', 'AbortError'))
+      await nextTick()
+      expect(state.greeting.value).toBeUndefined()
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
 
   it('never lets a late negative overwrite an accepted message', async () => {
     const state = setup()

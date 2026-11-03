@@ -435,7 +435,7 @@ onMounted(() => {
         )
       }
       view.updateState(view.state.apply(transaction))
-      if (transaction.docChanged) {
+      if (transaction.docChanged && !transaction.getMeta('syncExternalModel')) {
         const draft = promptDraft(view.state.doc)
         if (transaction.getMeta('resolveSkillMetadata'))
           emit('resolveSkillMetadata', draft)
@@ -637,7 +637,11 @@ watch(
       doc.slice(start, end.b + overlap)
     )
     view.dispatch(
-      closeHistory(transaction.setMeta('addToHistory', !metadataOnly))
+      closeHistory(
+        transaction
+          .setMeta('addToHistory', !metadataOnly)
+          .setMeta('syncExternalModel', true)
+      )
     )
   },
   { flush: 'post', deep: true }

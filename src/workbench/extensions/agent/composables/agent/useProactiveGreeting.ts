@@ -1,4 +1,5 @@
 import type { AgentUsageStatusResponse } from '@comfyorg/ingest-types'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
 import type {
@@ -77,8 +78,19 @@ export function useProactiveGreeting(options: Options) {
         status: result.has_used_agent ? 'has-sent' : 'never-sent',
         scope: currentScope
       }
-    } catch {
-      if (currentGeneration === generation) state.value = { status: 'unknown' }
+    } catch (error) {
+      if (
+        request.signal.aborted ||
+        currentGeneration !== generation ||
+        currentScope !== scope.value
+      )
+        return
+      state.value = { status: 'unknown' }
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_loading_agent_usage_status',
+        level: 'warning'
+      })
     }
   }
 
