@@ -10910,23 +10910,7 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   })
 
-  // FRONT-3581: a restore binds the session to its workflow immediately,
-  // before the follower's subscribe to that workflow is necessarily
-  // confirmed (the agent identity lookup pending here is one concrete way
-  // that window opens; a tab that hasn't been switched to yet is another).
-  // A host edit made in that window is never captured by the follower's op
-  // coalescer, since it only coalesces ops for the workflow it is actively
-  // subscribed to -- so nothing records it as unsynced the way a
-  // captured-then-lost op would. Opening a second old thread that targets
-  // the same workflow with no new turn in between (the ticket's own
-  // "reloads (or opens an old thread)" framing, and exactly what
-  // `loadThread` resets `boundWorkflowId`/`rememberedWorkflowId` for on
-  // every thread switch, matching what a real reload resets on a fresh
-  // page) must still leave the workflow unbound on that second restore,
-  // exactly as it already does when an op capture loses a batch outright
-  // -- otherwise the restore-time catch-up merge could run over an edit
-  // nothing here ever saw.
-  it('leaves a workflow unbound on a second restore when it was bound without its follower subscribe ever confirming', async () => {
+  it('leaves a workflow unbound after a local edit made before its follower subscribe confirms', async () => {
     vi.mocked(resolveAgentIdentity).mockReturnValue({
       state: ref<AgentIdentityState>({ status: 'pending' }),
       reset: vi.fn(),
@@ -10990,18 +10974,12 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(useAgentChatHistoryStore().activeId).toBe('th-first')
     )
-    // Bound (the first-ever restore has nothing recorded against it yet),
-    // but never actively subscribed: the agent identity lookup never
-    // resolves, so the follower never confirms and never captures ops.
     await vi.waitFor(() =>
       expect(docOpMinterDeps.current?.boundRootGraphId()).not.toBeNull()
     )
     expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+    docOpMinterDeps.current?.onUnboundLocalIntent?.()
 
-    // A second old thread for the same workflow, with no turn sent on the
-    // first one -- `loadThread` resets `boundWorkflowId` on every switch,
-    // so this re-enters the restore-and-bind guard exactly as a reload
-    // would.
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.showChatHistory')

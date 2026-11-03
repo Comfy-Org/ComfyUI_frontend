@@ -63,6 +63,8 @@ export interface DocOpMinterDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /** Records a local edit that cannot yet enter the semantic document. */
+  onUnboundLocalIntent?(): void
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
   /** The live root graph, or null when no workflow is open. */
@@ -1188,7 +1190,23 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function onIntent(event: GraphIntentEvent): void {
     if (event.source !== 'local') return
-    if (!deps.isEnabled() || !deps.isDocBound()) {
+    if (!deps.isEnabled()) {
+      if (event.type === 'set_widget')
+        heldPromotedWrites.delete(heldWriteKey(event))
+      return
+    }
+    if (!deps.isDocBound()) {
+      const graph = deps.getGraph()
+      const boundRootGraphId = deps.boundRootGraphId()
+      const eventRootGraphId =
+        'graph' in event
+          ? event.graph.rootGraph.id
+          : graph !== null &&
+              reachableIntentGraph(graph, event.graphId) !== null
+            ? graph.id
+            : null
+      if (boundRootGraphId !== null && eventRootGraphId === boundRootGraphId)
+        deps.onUnboundLocalIntent?.()
       if (event.type === 'set_widget')
         heldPromotedWrites.delete(heldWriteKey(event))
       return
