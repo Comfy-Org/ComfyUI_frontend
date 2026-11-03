@@ -85,6 +85,18 @@ describe('copyPngTextMetadata', () => {
     )
   })
 
+  it('rejects a corrupt text chunk after IDAT instead of copying it into edited layers', async () => {
+    const original = await pixelImage(100)
+    const corrupt = textChunks[0].slice()
+    corrupt[corrupt.length - 1] ^= 1
+    const source = await new Blob([
+      original.slice(0, -12),
+      corrupt,
+      original.slice(-12)
+    ]).arrayBuffer()
+    expect(copyPngTextMetadata(source, await pixelImage(200))).toBeNull()
+  })
+
   it('keeps images with no PNG text metadata unchanged', async () => {
     const image = await pixelImage(200)
     expect(copyPngTextMetadata(await image.arrayBuffer(), image)).toBe(image)

@@ -109,6 +109,22 @@ describe('useMaskEditorSaver', () => {
   const originalCreateElement = document.createElement.bind(document)
 
   beforeEach(async () => {
+    const append = FormData.prototype.append
+    vi.spyOn(FormData.prototype, 'append').mockImplementation(function (
+      this: FormData,
+      name,
+      value,
+      filename
+    ) {
+      append.call(
+        this,
+        name,
+        value instanceof Blob
+          ? new File([value], filename ?? 'blob', { type: value.type })
+          : value
+      )
+    })
+
     vi.mocked(api.apiURL).mockImplementation(
       (route) => `http://localhost:8188${route}`
     )
@@ -216,21 +232,6 @@ describe('useMaskEditorSaver', () => {
       type: 'input'
     }
     mockNode.previewMediaType = 'image'
-    const append = FormData.prototype.append
-    vi.spyOn(FormData.prototype, 'append').mockImplementation(function (
-      this: FormData,
-      name,
-      value,
-      filename
-    ) {
-      append.call(
-        this,
-        name,
-        value instanceof Blob
-          ? new File([value], filename ?? 'blob', { type: value.type })
-          : value
-      )
-    })
     const uploaded = new Map<string, Blob>([
       ['with metadata #1.png', originalBlob]
     ])
@@ -331,6 +332,22 @@ describe('useMaskEditorSaver', () => {
       message: 'Invalid mask editor source PNG'
     })),
     {
+      name: 'corrupt-text-crc',
+      response: async () => {
+        const original = await encodeRgbaAsPng({
+          data: new Uint8ClampedArray([10, 20, 30, 255]),
+          width: 1,
+          height: 1
+        })
+        const corrupt = textChunk('tEXt', Buffer.from('note\0hello'))
+        corrupt[corrupt.length - 1] ^= 1
+        return new Response(
+          new Blob([original.slice(0, -12), corrupt, original.slice(-12)])
+        )
+      },
+      message: 'Invalid mask editor source PNG'
+    },
+    {
       name: 'invalid-png',
       response: () =>
         Promise.resolve(
@@ -428,6 +445,77 @@ describe('useMaskEditorSaver', () => {
     expect(Array.from(png.pixels.slice(0, 4))).toEqual([10, 20, 30, 255])
   })
 
+  it('does not publish or upload an old session after cancellation during the source read', async () => {
+    let answer!: (response: Response) => void
+    let started!: () => void
+    const pending = new Promise<Response>((resolve) => {
+      answer = resolve
+    })
+    const ready = new Promise<void>((resolve) => {
+      started = resolve
+    })
+    const request = vi.mocked(api.fetchApi).getMockImplementation()!
+    vi.mocked(api.fetchApi).mockImplementation((route, options) => {
+      if (route.startsWith('/view?')) {
+        started()
+        return pending
+      }
+      return request(route, options)
+    })
+    const controller = new AbortController()
+    const task = useMaskEditorSaver().save(controller.signal)
+    await ready
+    controller.abort()
+    mockDataStore.inputData!.sourceRef.filename = 'new-session.png'
+    mockDataStore.outputData = null
+    answer(new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])))
+    expect(await task).toBe('cancelled')
+    expect(mockDataStore.outputData).toBeNull()
+    expect(mockDataStore.inputData?.sourceRef.filename).toBe('new-session.png')
+    expect(mockNode.imgs).toBeUndefined()
+    expect(mockNode.widgets?.[0].value).toBe('original.png [input]')
+    expect(
+      vi
+        .mocked(api.fetchApi)
+        .mock.calls.filter(([, options]) => options?.method === 'POST')
+    ).toHaveLength(0)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('stops later layer uploads and node writes when a session is cancelled during upload', async () => {
+    let answer!: (response: Response) => void
+    let started!: () => void
+    const pending = new Promise<Response>((resolve) => {
+      answer = resolve
+    })
+    const ready = new Promise<void>((resolve) => {
+      started = resolve
+    })
+    const request = vi.mocked(api.fetchApi).getMockImplementation()!
+    vi.mocked(api.fetchApi).mockImplementation((route, options) => {
+      if (options?.method === 'POST') {
+        started()
+        return pending
+      }
+      return request(route, options)
+    })
+    const controller = new AbortController()
+    const task = useMaskEditorSaver().save(controller.signal)
+    await ready
+    controller.abort()
+    mockDataStore.outputData = null
+    answer(Response.json({ name: 'old-session.png', type: 'input' }))
+    expect(await task).toBe('cancelled')
+    expect(mockDataStore.outputData).toBeNull()
+    expect(mockNode.widgets?.[0].value).toBe('original.png [input]')
+    expect(
+      vi
+        .mocked(api.fetchApi)
+        .mock.calls.filter(([, options]) => options?.method === 'POST')
+    ).toHaveLength(1)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('registers node outputs in store after save for node without prior execution outputs', async () => {
     const store = useNodeOutputStore()
     const locatorId = String(mockNode.id)
@@ -512,17 +600,17 @@ describe('useMaskEditorSaver', () => {
     // canvas, then decode the uploaded blobs and verify both the applied
     // alpha and that the RGB survives where the alpha is 0 (the pixels a
     // canvas-derived blob would serialize as black).
-    const imgPixels = new Uint8ClampedArray(CANVAS_BYTES)
-    for (let p = 0; p < CANVAS_BYTES / 4; p++) {
-      imgPixels[p * 4] = (p * 7) % 256
-      imgPixels[p * 4 + 1] = (p * 11) % 256
-      imgPixels[p * 4 + 2] = (p * 13) % 256
-      imgPixels[p * 4 + 3] = 255
-    }
-    const maskPixels = new Uint8ClampedArray(CANVAS_BYTES)
-    for (let p = 0; p < CANVAS_BYTES / 8; p++) {
-      maskPixels[p * 4 + 3] = 255
-    }
+    const imgPixels = new Uint8ClampedArray([
+      0, 0, 0, 255, 7, 11, 13, 255, 14, 22, 26, 255, 21, 33, 39, 255, 28, 44,
+      52, 255, 35, 55, 65, 255, 42, 66, 78, 255, 49, 77, 91, 255, 56, 88, 104,
+      255, 63, 99, 117, 255, 70, 110, 130, 255, 77, 121, 143, 255, 84, 132, 156,
+      255, 91, 143, 169, 255, 98, 154, 182, 255, 105, 165, 195, 255
+    ])
+    const maskPixels = new Uint8ClampedArray([
+      0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0,
+      0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ])
     mockEditorStore.imgCanvas = createMockCanvas(imgPixels)
     mockEditorStore.maskCanvas = createMockCanvas(maskPixels)
     mockEditorStore.rgbCanvas = createMockCanvas()
@@ -531,30 +619,40 @@ describe('useMaskEditorSaver', () => {
     await save()
 
     expect(api.fetchApi).toHaveBeenCalledTimes(5)
-    const decodedUploads = []
-    for (const [, init] of vi
+    const files = vi
       .mocked(api.fetchApi)
-      .mock.calls.filter(([, options]) => options?.method === 'POST')) {
-      const body = init?.body as FormData
-      const file = body.get('image') as Blob
-      try {
-        decodedUploads.push(decodePng(new Uint8Array(await file.arrayBuffer())))
-      } catch {
-        // not an encoder-produced PNG (canvas-derived layer)
-        continue
-      }
-    }
-
-    expect(decodedUploads).toHaveLength(2)
-    for (const { width, height, pixels } of decodedUploads) {
-      expect(width).toBe(CANVAS_SIZE)
-      expect(height).toBe(CANVAS_SIZE)
-      for (let i = 0; i < pixels.length; i += 4) {
-        expect(pixels[i + 3]).toBe(255 - maskPixels[i + 3])
-        expect(pixels[i]).toBe(imgPixels[i])
-        expect(pixels[i + 1]).toBe(imgPixels[i + 1])
-        expect(pixels[i + 2]).toBe(imgPixels[i + 2])
-      }
-    }
+      .mock.calls.filter(([, options]) => options?.method === 'POST')
+      .map(([, options]) => {
+        const body = options?.body
+        assert.instanceOf(body, FormData)
+        const file = body.get('image')
+        assert.instanceOf(file, File)
+        return file
+      })
+    const masked = files.find((file) => file.name.startsWith('clipspace-mask-'))
+    const paintedMasked = files.find((file) =>
+      file.name.startsWith('clipspace-painted-masked-')
+    )
+    assert.exists(masked)
+    assert.exists(paintedMasked)
+    const decoded = await Promise.all(
+      [masked, paintedMasked].map((file) => savedPng(file))
+    )
+    const expectedPixels = [
+      0, 0, 0, 0, 7, 11, 13, 0, 14, 22, 26, 0, 21, 33, 39, 0, 28, 44, 52, 0, 35,
+      55, 65, 0, 42, 66, 78, 0, 49, 77, 91, 0, 56, 88, 104, 255, 63, 99, 117,
+      255, 70, 110, 130, 255, 77, 121, 143, 255, 84, 132, 156, 255, 91, 143,
+      169, 255, 98, 154, 182, 255, 105, 165, 195, 255
+    ]
+    expect(
+      decoded.map(({ width, height, pixels }) => ({
+        width,
+        height,
+        pixels: Array.from(pixels)
+      }))
+    ).toEqual([
+      { width: 4, height: 4, pixels: expectedPixels },
+      { width: 4, height: 4, pixels: expectedPixels }
+    ])
   })
 })

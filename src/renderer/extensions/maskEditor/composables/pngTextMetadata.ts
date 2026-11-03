@@ -1,3 +1,5 @@
+import { crc32 } from '@/utils/pngEncodeUtil'
+
 const TEXT_CHUNKS = new Set(['tEXt', 'zTXt', 'iTXt'])
 const PNG_HEADER_SIZE = 33
 
@@ -24,8 +26,14 @@ function readTextChunks(source: ArrayBuffer, view: DataView): Blob[] | null {
     if (end > source.byteLength) return null
     const type = String.fromCharCode(...new Uint8Array(source, offset + 4, 4))
     if (type === 'IEND') return length === 0 ? chunks : null
-    if (TEXT_CHUNKS.has(type))
+    if (TEXT_CHUNKS.has(type)) {
+      if (
+        crc32(new Uint8Array(source, offset + 4, length + 4)) !==
+        view.getUint32(offset + length + 8)
+      )
+        return null
       chunks.push(new Blob([source.slice(offset, end)]))
+    }
     offset = end
   }
   return null
