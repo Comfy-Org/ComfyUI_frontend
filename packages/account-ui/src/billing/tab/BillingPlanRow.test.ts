@@ -117,6 +117,34 @@ describe('BillingPlanRow', () => {
       },
       title: 'Enterprise',
       line: 'Billed by contract. Renews March 1, 2027.'
+    },
+    {
+      case: 'an ended plan with a date',
+      state: {
+        kind: 'ended',
+        planName: 'Pro',
+        cadence: 'monthly',
+        endedAt: '2026-10-01T00:00:00Z'
+      },
+      title: 'Pro',
+      line: 'Ended October 1.'
+    },
+    {
+      case: 'no plan without free runs',
+      state: { kind: 'noPlan', freeRuns: null },
+      title: 'This workspace has no active plan',
+      line: 'Subscribe to run workflows on Cloud.'
+    },
+    {
+      case: 'a sales-managed plan without a renewal',
+      state: {
+        kind: 'salesManaged',
+        planName: 'Enterprise Plus',
+        cadence: null,
+        renewsAt: null
+      },
+      title: 'Enterprise Plus',
+      line: 'Billed by contract.'
     }
   ])('renders $case', ({ state, title, line }) => {
     renderRow(state)
@@ -132,6 +160,17 @@ describe('BillingPlanRow', () => {
 
     expect(screen.getByRole('heading', { name: 'Your plan' })).toBeTruthy()
     expect(screen.queryByTestId('billing-plan-line')).toBeNull()
+  })
+
+  it('gives a member no subscribe line when there is no plan', () => {
+    renderRow(
+      { kind: 'noPlan', freeRuns: null },
+      { canManageSubscription: false }
+    )
+
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      'Managed by the workspace owner.'
+    )
   })
 
   it('tells a member who manages the plan', () => {

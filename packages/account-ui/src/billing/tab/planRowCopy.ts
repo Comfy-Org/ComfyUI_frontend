@@ -71,40 +71,67 @@ function statusLine(
   switch (state.kind) {
     case 'activating':
       return copy.activating(state.planName)
-    case 'active': {
-      const date = formatPlanDate(state.nextInvoice, locale, state.cadence)
-      const billed =
-        state.cadence === 'monthly'
-          ? copy.activeMonthly(date)
-          : copy.activeYearly(date)
-      if (!state.scheduledChange) return billed
-      const change = copy.scheduledChange(
-        state.scheduledChange.planName,
-        formatPlanDate(state.scheduledChange.effectiveAt, locale, state.cadence)
-      )
-      return `${billed} ${change}`
-    }
+    case 'active':
+      return activeLine(state, copy, locale)
     case 'paused':
       return copy.paused
     case 'noPlan':
-      if (!canManageSubscription) return ''
-      if (!state.freeRuns) return copy.noPlanLine
-      return state.freeRuns.remaining > 0
-        ? copy.freeRunsLeft(state.freeRuns.remaining, state.freeRuns.total)
-        : copy.freeRunsUsed(state.freeRuns.total)
+      return canManageSubscription ? noPlanLine(state, copy) : ''
     case 'salesManaged':
-      return state.renewsAt
-        ? copy.salesManagedRenews(
-            formatPlanDate(state.renewsAt, locale, state.cadence)
-          )
-        : copy.salesManagedLine
+      return salesManagedLine(state, copy, locale)
     case 'ending':
       return copy.ending(formatPlanDate(state.endsAt, locale, state.cadence))
     case 'ended':
-      return state.endedAt
-        ? copy.ended(formatPlanDate(state.endedAt, locale, state.cadence))
-        : copy.endedNoDate
+      return endedLine(state, copy, locale)
     default:
       return ''
   }
+}
+
+function salesManagedLine(
+  state: Extract<PlanRowState, { kind: 'salesManaged' }>,
+  copy: PlanRowCopy,
+  locale: string
+): string {
+  if (!state.renewsAt) return copy.salesManagedLine
+  return copy.salesManagedRenews(
+    formatPlanDate(state.renewsAt, locale, state.cadence)
+  )
+}
+
+function endedLine(
+  state: Extract<PlanRowState, { kind: 'ended' }>,
+  copy: PlanRowCopy,
+  locale: string
+): string {
+  if (!state.endedAt) return copy.endedNoDate
+  return copy.ended(formatPlanDate(state.endedAt, locale, state.cadence))
+}
+
+function activeLine(
+  state: Extract<PlanRowState, { kind: 'active' }>,
+  copy: PlanRowCopy,
+  locale: string
+): string {
+  const date = formatPlanDate(state.nextInvoice, locale, state.cadence)
+  const billed =
+    state.cadence === 'monthly'
+      ? copy.activeMonthly(date)
+      : copy.activeYearly(date)
+  if (!state.scheduledChange) return billed
+  const change = copy.scheduledChange(
+    state.scheduledChange.planName,
+    formatPlanDate(state.scheduledChange.effectiveAt, locale, state.cadence)
+  )
+  return `${billed} ${change}`
+}
+
+function noPlanLine(
+  state: Extract<PlanRowState, { kind: 'noPlan' }>,
+  copy: PlanRowCopy
+): string {
+  if (!state.freeRuns) return copy.noPlanLine
+  return state.freeRuns.remaining > 0
+    ? copy.freeRunsLeft(state.freeRuns.remaining, state.freeRuns.total)
+    : copy.freeRunsUsed(state.freeRuns.total)
 }

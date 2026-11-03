@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { fn } from 'storybook/test'
 
 import BillingPlanRow from './BillingPlanRow.vue'
 import { planRowCopy } from './__fixtures__/copy'
@@ -11,7 +12,18 @@ const meta: Meta<typeof BillingPlanRow> = {
     copy: planRowCopy,
     locale: 'en',
     canManageSubscription: true,
-    action: 'manage'
+    action: 'manage',
+    salesVariant: 'secondary',
+    addCreditsVariant: 'secondary',
+    onAction: fn()
+  },
+  argTypes: {
+    action: {
+      control: 'select',
+      options: ['manage', 'subscribe', 'choosePlan', 'contactSales', null]
+    },
+    salesVariant: { control: 'select', options: ['secondary', 'inverted'] },
+    addCreditsVariant: { control: 'select', options: ['secondary', 'inverted'] }
   },
   decorators: [
     (story) => ({
@@ -80,13 +92,7 @@ export const MemberView: Story = {
 
 export const PlatformRestyled: Story = {
   args: {
-    classes: { root: 'rounded-md border-dashed' },
-    state: {
-      kind: 'active',
-      planName: 'Pro',
-      cadence: 'monthly',
-      nextInvoice: '2026-11-20T00:00:00Z',
-      scheduledChange: null
-    }
+    ...Active.args,
+    classes: { root: 'rounded-md border-dashed' }
   }
 }

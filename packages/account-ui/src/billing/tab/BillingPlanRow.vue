@@ -60,10 +60,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * The Billing tab plan row for a served plan state. The action is emitted;
- * the host opens the plans page or the sales contact.
- */
 import { computed } from 'vue'
 
 import type {
