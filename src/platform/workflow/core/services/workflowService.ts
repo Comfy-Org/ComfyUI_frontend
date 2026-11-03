@@ -483,24 +483,18 @@ export const useWorkflowService = () => {
     useApp().enqueueGraphLoad(async () => {
       if (workflow.graph !== graph || graphsAwaitingNodeTypes.has(graph))
         return false
-      const replaceCanvas = beforeLoadNewGraph(true)
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-      if (workflow.graph !== graph) {
-        useNodeOutputStore().restorePreviewsForWorkflow(
-          getActiveWorkflow()?.path
-        )
-        return false
-      }
-      replaceCanvas()
-      const app = useApp()
-      useSubgraphNavigationStore().suppressRootGraphHash(graph)
-      app.activateRootGraph(graph)
-      useMissingModelStore().createVerificationAbortController().abort()
-      useMissingMediaStore().createVerificationAbortController().abort()
-      useMissingModelStore().setMissingModels([])
-      useMissingMediaStore().setMissingMedia([])
-      missingNodesErrorStore.setMissingNodeTypes([])
+      if (workflow.graph !== graph) return false
       try {
+        beforeLoadNewGraph(true)()
+        const app = useApp()
+        useSubgraphNavigationStore().suppressRootGraphHash(graph)
+        app.activateRootGraph(graph)
+        useMissingModelStore().createVerificationAbortController().abort()
+        useMissingMediaStore().createVerificationAbortController().abort()
+        useMissingModelStore().setMissingModels([])
+        useMissingMediaStore().setMissingMedia([])
+        missingNodesErrorStore.setMissingNodeTypes([])
         const loaded = await workflowStore.openWorkflow(workflow)
         bindCanvasTracker(loaded.changeTracker)
         useExecutionErrorStore().setActiveGraph(graph.id, loaded.path)

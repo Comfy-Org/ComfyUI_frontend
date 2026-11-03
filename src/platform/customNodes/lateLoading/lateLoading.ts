@@ -7,7 +7,6 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useUserBusy } from '@/platform/customNodes/useUserBusy'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { couldBootOnDeployment } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { useApp } from '@/scripts/appInstance'
 import type { StartupHookFailure } from '@/platform/extensions/services/extensionService'
@@ -23,7 +22,7 @@ import type {
   CpuServerWatch
 } from './cpuServerStep'
 import { isBeingSetUp, watchCpuServer } from './cpuServerStep'
-import { graphsAwaitingNodeTypes } from './lateNodeTypes'
+import { markOpenGraphsAwaitingNodeTypes } from './lateNodeTypes'
 import {
   showFailedToast,
   showReadyToast,
@@ -151,9 +150,7 @@ function watchLateWork(signal: AbortSignal, onAbort: () => void) {
 
 async function rebuildOpenWorkflow() {
   await useApp().enqueueGraphLoad(async () => {
-    for (const workflow of useWorkflowStore().openWorkflows) {
-      if (workflow.graph) graphsAwaitingNodeTypes.add(workflow.graph)
-    }
+    markOpenGraphsAwaitingNodeTypes()
   })
   await useWorkflowService().reloadCurrentWorkflow()
 }

@@ -593,6 +593,22 @@ describe('useWorkflowService', () => {
       expect(calls).toEqual(['beforeLoadGraph:false', 'afterLoadGraph:true'])
     })
 
+    it('lets extensions see the outgoing workflow before its tracker is deactivated', async () => {
+      const deactivate = vi.mocked(previous.changeTracker.deactivate)
+      let deactivationsBeforeHook: number | undefined
+      useExtensionStore().registerExtension({
+        name: 'Test.HookOrder',
+        beforeLoadGraph: () => {
+          deactivationsBeforeHook = deactivate.mock.calls.length
+        }
+      })
+
+      await useWorkflowService().openWorkflow(next)
+
+      expect(deactivationsBeforeHook).toBe(0)
+      expect(deactivate).toHaveBeenCalledOnce()
+    })
+
     it('still reconfigures when the open is forced', async () => {
       await useWorkflowService().openWorkflow(next, { force: true })
 

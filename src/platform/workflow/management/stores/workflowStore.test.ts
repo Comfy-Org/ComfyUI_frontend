@@ -854,6 +854,24 @@ describe('useWorkflowStore', () => {
       expect(workflow.graph).toBeNull()
       expect(clear).toHaveBeenCalledOnce()
     })
+    it('forgets a closed temporary workflow even when releasing its graph throws', async () => {
+      const workflow = store.createTemporary('test.json')
+      await store.openWorkflow(workflow)
+      const graph = new LGraph()
+      const node = new LGraphNode('throws on removal')
+      node.onRemoved = () => {
+        throw new Error('onRemoved failed')
+      }
+      graph.add(node)
+      workflow.adoptGraph(graph)
+
+      await expect(store.closeWorkflow(workflow)).rejects.toThrow(
+        'onRemoved failed'
+      )
+
+      expect(store.isOpen(workflow)).toBe(false)
+      expect(store.getWorkflowByPath(workflow.path)).toBeNull()
+    })
     it('detaches the graph before a node removal hook can throw during release', async () => {
       const workflow = store.createTemporary('test.json')
       await store.openWorkflow(workflow)

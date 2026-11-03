@@ -346,16 +346,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
     )
     useWorkflowDraftStoreV2().removeDraft(workflow.path)
     if (workflow.isTemporary) {
-      workflow.releaseGraph()
       forgetNodeHistories(workflow)
       clearThumbnail(workflow.key)
       delete workflowLookup.value[workflow.path]
+      workflow.releaseGraph()
     } else {
       workflow.unload()
-      // Closing discards the in-memory edits and their draft. A modified mark
-      // left behind keeps the workflow in `modifiedWorkflows`, where a later
-      // bulk save (sign-out) would write the unloaded state, `null`, over
-      // the stored file.
       workflow.isModified = false
     }
   }

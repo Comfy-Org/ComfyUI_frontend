@@ -41,7 +41,10 @@ import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { graphsAwaitingNodeTypes } from '@/platform/customNodes/lateLoading/lateNodeTypes'
+import {
+  graphsAwaitingNodeTypes,
+  markOpenGraphsAwaitingNodeTypes
+} from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -937,9 +940,8 @@ export class ComfyApp implements IComfyApp {
     workflow: ComfyWorkflow | null,
     clean: boolean
   ): LGraph {
-    if (workflow?.graph) return workflow.graph
     const current = this.rootGraph
-    if (!clean) return current
+    if (!clean) return workflow?.graph ?? current
     return isOwnedByWorkflow(current) ? this.createRootGraph() : current
   }
 
@@ -1208,16 +1210,6 @@ export class ComfyApp implements IComfyApp {
     }
   }
 
-  private disownFailedLoadGraph(workflow: string | null | ComfyWorkflow): void {
-    if (
-      workflow instanceof ComfyWorkflow &&
-      workflow.graph === this.rootGraphInternal &&
-      !useWorkflowStore().isActive(workflow)
-    ) {
-      workflow.releaseGraph()
-    }
-  }
-
   private async reportGraphLoadFailure(
     error: unknown,
     options: { notifyExtensions?: boolean } = {}
@@ -1453,7 +1445,6 @@ export class ComfyApp implements IComfyApp {
       } catch (error) {
         try {
           await this.reportGraphLoadFailure(error)
-          if (clean) this.disownFailedLoadGraph(workflow)
         } finally {
           ChangeTracker.isLoadingGraph = false
         }
@@ -1559,7 +1550,6 @@ export class ComfyApp implements IComfyApp {
           }
         } catch (error) {
           await this.reportGraphLoadFailure(error)
-          if (clean) this.disownFailedLoadGraph(workflow)
           return false
         }
         const snapTo = LiteGraph.alwaysSnapToGrid
@@ -2804,11 +2794,12 @@ export class ComfyApp implements IComfyApp {
     for (const nodeId in defs) {
       await this.registerNodeDef(nodeId, defs[nodeId])
     }
-    // Refresh combo widgets in all nodes including those in subgraphs
+    markOpenGraphsAwaitingNodeTypes({
+      except: useWorkflowStore().activeWorkflow
+    })
     const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {
       const def = defs[node.type] as ComfyNodeDefV1 | undefined
-      // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
 
       if (!def?.input) return
@@ -2832,8 +2823,6 @@ export class ComfyApp implements IComfyApp {
         }
       }
 
-      // Re-trigger previews on media nodes (e.g. LoadImage)
-      // to bust browser cache when files are edited externally
       if (isImageNode(node) || isVideoNode(node)) {
         nodeOutputStore.refreshNodeOutputs(node)
       }
@@ -2844,7 +2833,6 @@ export class ComfyApp implements IComfyApp {
       defs
     )
 
-    // Promoted widgets keep hosted option snapshots; sync them after source refresh hooks run.
     syncPromotedComboHostOptions(this.rootGraph)
 
     if (this.vueAppReady) {

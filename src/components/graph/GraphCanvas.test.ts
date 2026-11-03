@@ -30,7 +30,10 @@ import {
   readDeploymentHint
 } from '@/platform/workspace/deploymentHint'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
@@ -677,6 +680,45 @@ describe('GraphCanvas widget control mode watcher', () => {
     setRootGraph(graph)
     await nextTick()
     expect(controlWidget.label).toBe(labelBeforeMode)
+  })
+})
+
+describe('GraphCanvas vue nodes toggle', () => {
+  function addComboWidgetNode(graph: LGraph) {
+    const node = new LGraphNode('Test node')
+    const widget = node.addWidget('combo', 'choice', 'a', () => {}, {
+      values: ['a']
+    })
+    graph.add(node)
+    return vi.spyOn(widget, 'syncLiveVisibilityOptions')
+  }
+
+  it('syncs widget visibility on the graphs of background workflows too', async () => {
+    await mountGraphCanvas()
+    useCanvasStore().canvas = app.canvas
+    const visible = new LGraph()
+    const visibleSync = addComboWidgetNode(visible)
+    const background = new LGraph()
+    const backgroundSync = addComboWidgetNode(background)
+    const workflow = new ComfyWorkflow({
+      path: 'workflows/background.json',
+      modified: 0,
+      size: 0
+    })
+    workflow.adoptGraph(background)
+    useWorkflowStore().attachWorkflow(workflow, 0)
+    setRootGraph(visible)
+    useCanvasStore().currentGraph = visible
+    await nextTick()
+
+    const settingStore = useSettingStore()
+    settingStore.settingValues['Comfy.VueNodes.Enabled'] = false
+    await nextTick()
+    settingStore.settingValues['Comfy.VueNodes.Enabled'] = true
+    await nextTick()
+
+    expect(visibleSync).toHaveBeenCalled()
+    expect(backgroundSync).toHaveBeenCalledTimes(visibleSync.mock.calls.length)
   })
 })
 
