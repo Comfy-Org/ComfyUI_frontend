@@ -1403,7 +1403,8 @@ export class LiveGraphApplier {
       }
       pending = unresolved
     }
-    this.applyMountedRowCounts(node, controllers, widgets, documentWidgets)
+    if (!Array.isArray(documentWidgets))
+      this.applyMountedRowCounts(node, controllers, widgets, documentWidgets)
     this.unappliedRegrownRows.delete(node)
   }
 
@@ -1417,20 +1418,21 @@ export class LiveGraphApplier {
     node: LGraphNode,
     before: ReadonlySet<IBaseWidget>,
     widgets: Record<string, unknown>,
-    documentWidgets: DocNode['widgets']
+    documentWidgets: Record<string, unknown>
   ): void {
-    if (documentWidgets === undefined || Array.isArray(documentWidgets)) return
-    for (const widget of node.widgets ?? []) {
-      if (before.has(widget) || !isDynamicGroupController(widget)) continue
-      if (Object.hasOwn(widgets, widget.name)) continue
-      const entry: [string, unknown] = [
+    const mounted = (node.widgets ?? [])
+      .filter(
+        (widget) =>
+          isDynamicGroupController(widget) &&
+          !before.has(widget) &&
+          !Object.hasOwn(widgets, widget.name)
+      )
+      .map((widget): [string, unknown] => [
         widget.name,
         documentWidgets[widget.name]
-      ]
-      if (!isWidgetEntry(entry) || this.holdsLocalWrite(node, ...entry))
-        continue
-      this.applyDynamicGroupRowCount(node, widget, entry[1])
-    }
+      ])
+      .filter(isWidgetEntry)
+    this.applyWidgetRound(node, mounted, documentWidgets)
   }
 
   private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {
