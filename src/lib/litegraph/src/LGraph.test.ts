@@ -923,9 +923,16 @@ describe('Store-driven serialization parity', () => {
     expect
   }) => {
     const stranded = new DummyNode()
-    const graph = createGraph(stranded)
+    const rootGraph = new LGraph()
+    const graph = createTestSubgraph({ rootGraph })
+    graph.add(stranded)
     const strandedId = stranded.id
+    stranded._state.graphId = 'stored-state-graph-id'
     graph._nodes = []
+
+    expect(
+      new Set([graph.id, rootGraph.id, stranded._state.graphId]).size
+    ).toBe(3)
 
     expect(graph.asSerialisable().nodes).toEqual([])
     expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
@@ -935,13 +942,14 @@ describe('Store-driven serialization parity', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        tags: { outcome: 'degraded' },
         context: {
           graphId: graph.id,
-          rootGraphId: graph.rootGraph.id,
+          rootGraphId: rootGraph.id,
           mismatch: `stored node ${strandedId} has no live adapter`,
           mismatchKind: 'stored_without_live_adapter',
           nodeId: strandedId,
-          stateGraphId: graph.id
+          stateGraphId: 'stored-state-graph-id'
         }
       }
     )

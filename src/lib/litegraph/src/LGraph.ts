@@ -478,42 +478,56 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     ordered.length !== adapters.size
   ) {
     const liveNodes = [...adapters.values()]
-    const missingState = ordered.find((state) => !adapters.has(state.id))
-    let missingAdapter: LGraphNode | undefined
-    if (missingState === undefined) {
-      const stateIds = new Set(ordered.map((state) => state.id))
-      missingAdapter = liveNodes.find((adapter) => !stateIds.has(adapter.id))
-    }
-    const mismatch = missingState
-      ? `stored node ${missingState.id} has no live adapter`
-      : missingAdapter
-        ? `live node ${missingAdapter.id} has no stored state`
-        : `${ordered.length} stored nodes do not match ${adapters.size} live nodes`
+    const stateIds = new Set(ordered.map((state) => state.id))
+    const storedOnlyState = ordered.find((state) => !adapters.has(state.id))
+    const liveOnlyAdapter = liveNodes.find(
+      (adapter) => !stateIds.has(adapter.id)
+    )
+    const mismatchDetails = storedOnlyState
+      ? liveOnlyAdapter
+        ? {
+            mismatch: `stored node ${storedOnlyState.id} has no live adapter; live node ${liveOnlyAdapter.id} has no stored state`,
+            mismatchKind: 'stored_and_live_diverged',
+            storedOnlyNodeId: storedOnlyState.id,
+            storedOnlyStateGraphId: storedOnlyState.graphId,
+            liveOnlyNodeId: liveOnlyAdapter.id,
+            liveOnlyNodeGraphId: liveOnlyAdapter.graph?.id ?? null,
+            liveOnlyStateGraphId: liveOnlyAdapter._state.graphId,
+            liveOnlyRegistrationRootGraphId:
+              liveOnlyAdapter._graphScope?.rootGraphId ?? null,
+            liveOnlyRegistrationOwningGraphId:
+              liveOnlyAdapter._graphScope?.owningGraphId ?? null
+          }
+        : {
+            mismatch: `stored node ${storedOnlyState.id} has no live adapter`,
+            mismatchKind: 'stored_without_live_adapter',
+            nodeId: storedOnlyState.id,
+            stateGraphId: storedOnlyState.graphId
+          }
+      : liveOnlyAdapter
+        ? {
+            mismatch: `live node ${liveOnlyAdapter.id} has no stored state`,
+            mismatchKind: 'live_without_stored_state',
+            nodeId: liveOnlyAdapter.id,
+            nodeGraphId: liveOnlyAdapter.graph?.id ?? null,
+            stateGraphId: liveOnlyAdapter._state.graphId,
+            registrationRootGraphId:
+              liveOnlyAdapter._graphScope?.rootGraphId ?? null,
+            registrationOwningGraphId:
+              liveOnlyAdapter._graphScope?.owningGraphId ?? null
+          }
+        : {
+            mismatch: `${ordered.length} stored nodes do not match ${adapters.size} live nodes`,
+            mismatchKind: 'count_mismatch'
+          }
     reportError(new Error('Graph serialization state mismatch'), {
       surface: 'graph',
       errorType: 'graph_serialization_state_mismatch',
+      tags: { outcome: 'degraded' },
       context: {
         graphId: owner.id,
         rootGraphId: owner.rootGraph.id,
-        mismatch,
-        ...(missingState
-          ? {
-              mismatchKind: 'stored_without_live_adapter',
-              nodeId: missingState.id,
-              stateGraphId: missingState.graphId
-            }
-          : missingAdapter
-            ? {
-                mismatchKind: 'live_without_stored_state',
-                nodeId: missingAdapter.id,
-                nodeGraphId: missingAdapter.graph?.id ?? null,
-                stateGraphId: missingAdapter._state.graphId,
-                registrationRootGraphId:
-                  missingAdapter._graphScope?.rootGraphId ?? null,
-                registrationGraphId:
-                  missingAdapter._graphScope?.owningGraphId ?? null
-              }
-            : { mismatchKind: 'count_mismatch' })
+        ...mismatchDetails
       }
     })
     const nodes = sortNodes

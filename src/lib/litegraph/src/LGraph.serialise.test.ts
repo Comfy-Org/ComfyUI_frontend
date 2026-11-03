@@ -105,6 +105,7 @@ describe('LGraph Serialisation', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        tags: { outcome: 'degraded' },
         context: {
           graphId: graph.id,
           rootGraphId: graph.rootGraph.id,
@@ -114,7 +115,94 @@ describe('LGraph Serialisation', () => {
           nodeGraphId: graph.id,
           stateGraphId: graph.id,
           registrationRootGraphId: graph.rootGraph.id,
-          registrationGraphId: graph.id
+          registrationOwningGraphId: graph.id
+        }
+      }
+    )
+  })
+
+  test('reports absent graph provenance for a detached live node', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const registered = new LGraphNode('Registered')
+    graph.add(registered)
+    const detached = new LGraphNode('Detached')
+    detached.id = toNodeId(99)
+    graph._nodes.push(detached)
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual([
+      'Registered',
+      'Detached'
+    ])
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        surface: 'graph',
+        errorType: 'graph_serialization_state_mismatch',
+        tags: { outcome: 'degraded' },
+        context: {
+          graphId: graph.id,
+          rootGraphId: graph.rootGraph.id,
+          mismatch: `live node ${detached.id} has no stored state`,
+          mismatchKind: 'live_without_stored_state',
+          nodeId: detached.id,
+          nodeGraphId: null,
+          stateGraphId: detached._state.graphId,
+          registrationRootGraphId: null,
+          registrationOwningGraphId: null
+        }
+      }
+    )
+  })
+
+  test('reports both sides of mixed stored and live divergence', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const storedOnly = new LGraphNode('Stored only')
+    graph.add(storedOnly)
+    graph._nodes = []
+    storedOnly._state.graphId = 'stored-only-state-graph-id'
+    const liveOnly = new LGraphNode('Live only')
+    liveOnly.id = toNodeId(99)
+    liveOnly.graph = new LGraph()
+    liveOnly._state.graphId = 'live-only-state-graph-id'
+    liveOnly._graphScope = graphScopeOf({
+      id: 'live-only-registration-owning-graph-id',
+      rootGraph: { id: 'live-only-registration-root-graph-id' }
+    })
+    graph._nodes.push(liveOnly)
+
+    const serialized = graph.serialize()
+
+    expect(serialized.nodes.map(({ title }) => title)).toEqual(['Live only'])
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Graph serialization state mismatch'
+      }),
+      {
+        surface: 'graph',
+        errorType: 'graph_serialization_state_mismatch',
+        tags: { outcome: 'degraded' },
+        context: {
+          graphId: graph.id,
+          rootGraphId: graph.rootGraph.id,
+          mismatch: `stored node ${storedOnly.id} has no live adapter; live node ${liveOnly.id} has no stored state`,
+          mismatchKind: 'stored_and_live_diverged',
+          storedOnlyNodeId: storedOnly.id,
+          storedOnlyStateGraphId: 'stored-only-state-graph-id',
+          liveOnlyNodeId: liveOnly.id,
+          liveOnlyNodeGraphId: liveOnly.graph.id,
+          liveOnlyStateGraphId: 'live-only-state-graph-id',
+          liveOnlyRegistrationRootGraphId:
+            'live-only-registration-root-graph-id',
+          liveOnlyRegistrationOwningGraphId:
+            'live-only-registration-owning-graph-id'
         }
       }
     )
@@ -158,6 +246,7 @@ describe('LGraph Serialisation', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        tags: { outcome: 'degraded' },
         context: {
           graphId: subgraph.id,
           rootGraphId: rootGraph.id,
@@ -167,7 +256,7 @@ describe('LGraph Serialisation', () => {
           nodeGraphId: attachedGraph.id,
           stateGraphId: 'state-graph-id',
           registrationRootGraphId: 'registration-root-graph-id',
-          registrationGraphId: 'registration-owning-graph-id'
+          registrationOwningGraphId: 'registration-owning-graph-id'
         }
       }
     )
