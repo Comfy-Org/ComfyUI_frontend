@@ -1,0 +1,162 @@
+{
+  "src/auth/TurnstileWidget.test.ts": {
+    "unicorn/no-null": {
+      "count": 2
+    }
+  },
+  "src/billing/__fixtures__/billingHarness.ts": {
+    "unicorn/no-null": {
+      "count": 4
+    }
+  },
+  "src/billing/addCredits/AddCreditsDialog.test.ts": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/addCredits/AddCreditsDialog.vue": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/addCredits/useAddCreditsDialog.ts": {
+    "unicorn/no-null": {
+      "count": 2
+    }
+  },
+  "src/billing/checkout/CheckoutSavedMethods.test.ts": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/checkout/CheckoutSavedMethods.vue": {
+    "unicorn/no-null": {
+      "count": 2
+    }
+  },
+  "src/billing/checkout/CheckoutSubscribeConfirm.test.ts": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/checkout/CheckoutSubscribeConfirm.vue": {
+    "unicorn/no-null": {
+      "count": 7
+    }
+  },
+  "src/billing/checkout/CheckoutSuccess.vue": {
+    "unicorn/no-null": {
+      "count": 2
+    }
+  },
+  "src/billing/checkout/CheckoutTeamSuccess.vue": {
+    "unicorn/no-null": {
+      "count": 2
+    }
+  },
+  "src/billing/checkout/CheckoutTitle.vue": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/checkout/CheckoutTransitionConfirm.vue": {
+    "unicorn/no-null": {
+      "count": 9
+    }
+  },
+  "src/billing/stripe/StripePaymentForm.vue": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/tab/AddCreditsAction.vue": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/tab/BillingAutoTopUpCard.stories.ts": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/tab/BillingAutoTopUpCard.test.ts": {
+    "unicorn/no-null": {
+      "count": 4
+    }
+  },
+  "src/billing/tab/BillingAutoTopUpCard.vue": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/tab/BillingBanner.stories.ts": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/tab/BillingBanner.test.ts": {
+    "unicorn/no-null": {
+      "count": 11
+    }
+  },
+  "src/billing/tab/BillingCreditsBalance.vue": {
+    "unicorn/no-null": {
+      "count": 2
+    }
+  },
+  "src/billing/tab/BillingCreditsCard.stories.ts": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/tab/BillingCreditsCard.test.ts": {
+    "unicorn/no-null": {
+      "count": 19
+    }
+  },
+  "src/billing/tab/BillingCreditsCard.vue": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/tab/BillingCreditsPlanCell.vue": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/tab/BillingPlanRow.stories.ts": {
+    "unicorn/no-null": {
+      "count": 3
+    }
+  },
+  "src/billing/tab/BillingPlanRow.test.ts": {
+    "unicorn/no-null": {
+      "count": 10
+    }
+  },
+  "src/billing/tab/__fixtures__/autoTopUpSettings.ts": {
+    "unicorn/no-null": {
+      "count": 10
+    }
+  },
+  "src/billing/tab/autoTopUpCardView.ts": {
+    "unicorn/no-null": {
+      "count": 1
+    }
+  },
+  "src/billing/tab/billingBannerView.test.ts": {
+    "unicorn/no-null": {
+      "count": 14
+    }
+  },
+  "src/billing/tab/billingBannerView.ts": {
+    "unicorn/no-null": {
+      "count": 11
+    }
+  },
+  "src/billing/tab/creditsCardCopy.ts": {
+    "unicorn/no-null": {
+      "count": 2
+    }
+  }
+}
