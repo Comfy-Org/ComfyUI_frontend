@@ -1202,6 +1202,7 @@
     "apiPricing": "API 가격",
     "charge": "청구",
     "credits": "크레딧",
+    "creditUnit": "크레딧",
     "creditsAvailable": "사용 가능한 크레딧",
     "details": "세부 정보",
     "eventType": "이벤트 유형",

@@ -1202,6 +1202,7 @@
     "apiPricing": "API 价格",
     "charge": "扣费",
     "credits": "积分",
+    "creditUnit": "积分",
     "creditsAvailable": "积分可用",
     "details": "详情",
     "eventType": "事件类型",
