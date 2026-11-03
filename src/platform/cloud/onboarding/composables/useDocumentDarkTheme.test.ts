@@ -26,7 +26,7 @@ describe('useDocumentDarkTheme', () => {
     expect([
       rootStyle().getPropertyValue('--background'),
       rootStyle().colorScheme
-    ]).toEqual(['#171718', 'dark'])
+    ]).toEqual(['#09090a', 'dark'])
 
     unmount()
     expect([

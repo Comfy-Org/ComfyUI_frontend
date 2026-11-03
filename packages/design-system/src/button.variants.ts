@@ -5,7 +5,7 @@ export const buttonVariants = cva({
   base: 'relative inline-flex cursor-pointer touch-manipulation appearance-none items-center justify-center gap-2 rounded-md border-none font-inter text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([width]):not([height])]:size-4',
   variants: {
     variant: {
-      secondary: 'bg-secondary text-foreground hover:bg-accent',
+      secondary: 'bg-secondary text-foreground hover:bg-secondary/80',
       primary: 'bg-primary text-foreground hover:bg-primary/90',
       inverted: 'bg-foreground text-background hover:bg-foreground/80',
       destructive: 'bg-destructive text-foreground hover:bg-destructive/90',
@@ -20,7 +20,7 @@ export const buttonVariants = cva({
       base: 'bg-background text-foreground hover:bg-accent',
       tertiary: 'bg-muted text-foreground hover:bg-muted/80',
       subscribe:
-        'border-transparent bg-credit text-charcoal-800 hover:opacity-80',
+        'border-transparent bg-credit text-charcoal-900 hover:opacity-80',
       'brand-ghost':
         'bg-white/8 text-primary-warm-white hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-brand-yellow',
       'brand-solid':

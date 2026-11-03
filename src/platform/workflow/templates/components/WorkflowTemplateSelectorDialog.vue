@@ -322,7 +322,7 @@
                       :key="tag"
                       :label="tag"
                       shape="square"
-                      class="bg-charcoal-500/50 opacity-80"
+                      class="bg-charcoal-800/50 opacity-80"
                     />
                     <Tooltip v-if="tags.hidden.length" open-on-click>
                       <TooltipTrigger as-child>
@@ -335,7 +335,7 @@
                           <Tag
                             :label="`+${tags.hidden.length}`"
                             shape="square"
-                            class="bg-charcoal-500/50 opacity-80"
+                            class="bg-charcoal-800/50 opacity-80"
                           />
                         </button>
                       </TooltipTrigger>

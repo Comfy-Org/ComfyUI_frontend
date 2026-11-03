@@ -19,7 +19,7 @@ export const tagVariants = cva({
       false: 'px-2 py-1'
     },
     interactive: {
-      true: 'cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
+      true: 'cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1 hover:bg-secondary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
       false: ''
     }
   },
