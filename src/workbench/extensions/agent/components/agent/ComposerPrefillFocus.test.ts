@@ -4,6 +4,7 @@ import { assert, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import AgentPanel from './AgentPanel.vue'
 import Composer from './Composer.vue'
@@ -25,13 +26,35 @@ function mountPanel() {
     },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
-      stubs: { WorkflowSelectorChip: true }
+      directives: { tooltip: {} }
     }
   })
 }
 
 describe('Greeting prefill focus and animation', () => {
+  it.for([
+    { control: 'workflow selector', label: enMessages.agent.switchWorkflow },
+    { control: 'reference button', label: enMessages.agent.reference }
+  ])(
+    'preserves the focused $control when a prefill arrives',
+    async ({ label }) => {
+      const view = mountPanel()
+      const control = screen.getByRole('button', { name: label })
+      control.focus()
+      expect(control).toHaveFocus()
+
+      await view.rerender({ greeting: { variant: 'C', canvas: 'workflow' } })
+      await waitFor(() =>
+        expect(screen.getByRole('textbox')).toHaveTextContent(
+          'Help me improve this workflow'
+        )
+      )
+      await nextTick()
+
+      expect(control).toHaveFocus()
+    }
+  )
+
   it('preserves canvas focus when the first workflow triggers a prefill', async () => {
     const view = mountPanel()
     render({

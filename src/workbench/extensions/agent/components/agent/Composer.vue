@@ -496,11 +496,21 @@ const prefillFade = computed(() =>
       }
 )
 
+function focusIsWithinEditorOrUnset(): boolean {
+  const active = document.activeElement
+  return (
+    active === null ||
+    active === document.body ||
+    (editorHostRef.value?.contains(active) === true &&
+      active.getAttribute('contenteditable') === 'true')
+  )
+}
+
 async function focusPrefill(delayMs: number): Promise<void> {
   const prefilled = composer.prompt.value
   prefillFadeMs.value = delayMs
   await nextTick()
-  if (composer.prompt.value !== prefilled || !focusIsWithinComposerOrUnset())
+  if (composer.prompt.value !== prefilled || !focusIsWithinEditorOrUnset())
     return
   editorRef.value?.focusAtEnd()
 }
