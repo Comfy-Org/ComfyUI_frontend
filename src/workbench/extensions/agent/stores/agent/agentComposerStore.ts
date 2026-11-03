@@ -1,6 +1,18 @@
+import { StorageSerializers, useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, onScopeDispose, ref, shallowReactive, shallowRef } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  ref,
+  shallowReactive,
+  shallowRef,
+  watch
+} from 'vue'
 
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { AgentInputMethod } from '@comfyorg/telemetry/types'
@@ -43,6 +55,19 @@ function resetTextWhenReferencesCleared(
 
 function composerReferencePosition(reference: ComposerReference): string {
   return `${composerReferenceKey(reference)}@${reference.textOffset}`
+}
+
+/**
+ * The unsent draft as written to localStorage, tagged with the chat it
+ * belongs to (`null` for a chat with no thread yet). Only text and workflow
+ * references are kept: node references are scoped to a tab instance, skill
+ * references to the loaded skill-pack scope, and attachments to in-memory
+ * blobs, none of which survive a page load.
+ */
+interface SavedDraft {
+  threadId: string | null
+  text: string
+  workflowReferences: WorkflowReference[]
 }
 
 interface SubmittedDraft {
@@ -606,6 +631,45 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     releaseUnusedAssets()
   }
 
+  // PM-2002: the unsent draft survives a page refresh. Nothing is written
+  // until the panel reports which chat is open, so the empty composer of a
+  // freshly loaded page cannot overwrite the draft before it is restored.
+  const savedDraft = useLocalStorage<SavedDraft | null>(
+    StorageKeys.agentComposerDraft(getWorkspaceId()),
+    null,
+    { serializer: StorageSerializers.object }
+  )
+  const draftThreadId = ref<string | null>()
+
+  watch([draftState, draftThreadId], ([state, threadId]) => {
+    if (threadId === undefined) return
+    const references = workflowReferences.value
+    savedDraft.value =
+      state.text.trim() !== '' || references.length > 0
+        ? { threadId, text: state.text, workflowReferences: references }
+        : null
+  })
+
+  /**
+   * Tells the composer which chat is open. The first call after a page load
+   * restores the saved draft when it was written in that same chat; later
+   * calls only retag what is saved.
+   */
+  function trackDraftThread(threadId: string | null): void {
+    const saved = savedDraft.value
+    if (
+      draftThreadId.value === undefined &&
+      saved?.threadId === threadId &&
+      !hasDraft.value
+    )
+      replaceDraft({
+        text: saved.text,
+        workflowReferences: saved.workflowReferences,
+        attachments: []
+      })
+    draftThreadId.value = threadId
+  }
+
   return {
     draftState,
     draft,
@@ -648,6 +712,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     settleSubmission,
     takeFailedSubmission,
     invalidateSubmission,
-    clearDraft
+    clearDraft,
+    trackDraftThread
   }
 })

@@ -1,4 +1,6 @@
+import { getActivePinia } from 'pinia'
 import { assert, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -377,6 +379,75 @@ describe('composer draft presence', () => {
     const store = useAgentComposerStore()
     fill(store)
     expect(store.hasDraft).toBe(expected)
+  })
+})
+
+describe('composer draft persistence (PM-2002)', () => {
+  // A page load is a fresh store, with no in-memory state, over the same
+  // localStorage.
+  async function reloadPage() {
+    await nextTick()
+    const store = useAgentComposerStore()
+    store.$dispose()
+    delete getActivePinia()?.state.value[store.$id]
+    return useAgentComposerStore()
+  }
+
+  it('does not restore a draft into a different chat', async () => {
+    const store = useAgentComposerStore()
+    store.trackDraftThread('thread-a')
+    store.setText('Only for thread A')
+
+    const otherChat = await reloadPage()
+    otherChat.trackDraftThread('thread-b')
+    expect(otherChat.hasDraft).toBe(false)
+  })
+
+  it('restores text and workflow references, dropping node references and attachments', async () => {
+    const store = useAgentComposerStore()
+    store.trackDraftThread('thread-a')
+    store.setText('Use  as the style')
+    store.setWorkflowReferences([
+      { id: 'wf-portrait', name: 'portrait', textOffset: 4 }
+    ])
+    store.setNodeScope('tab-1')
+    store.setNodes([{ id: '7', title: 'KSampler' }])
+    store.addAttachment({ id: 'a-1', name: 'cat.png', ref: 'cat.png' })
+    const text = store.draft
+
+    const restored = await reloadPage()
+    restored.trackDraftThread('thread-a')
+    expect(restored.prompt).toEqual({
+      text,
+      references: [
+        { kind: 'workflow', id: 'wf-portrait', name: 'portrait', textOffset: 4 }
+      ]
+    })
+    expect(restored.attachments).toEqual([])
+  })
+
+  it('forgets the draft once it is sent or cleared', async () => {
+    const sent = useAgentComposerStore()
+    sent.trackDraftThread(null)
+    sent.setText('Make it blue')
+    await nextTick()
+    const id = sent.startSubmission({
+      prompt: sent.prompt,
+      attachments: [],
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    sent.settleSubmission(id, true)
+    const afterSend = await reloadPage()
+    afterSend.trackDraftThread(null)
+    expect(afterSend.hasDraft).toBe(false)
+
+    afterSend.setText('Make it red')
+    await nextTick()
+    afterSend.clearDraft()
+    const afterClear = await reloadPage()
+    afterClear.trackDraftThread(null)
+    expect(afterClear.hasDraft).toBe(false)
   })
 })
 
