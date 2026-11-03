@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="first"
+    v-if="first && !deploymentDialogOpen"
     class="flex w-full items-center gap-2 pr-8"
     data-testid="error-overlay-deployment-offer"
   >
@@ -28,7 +28,7 @@
     </Button>
   </div>
   <div
-    v-else-if="customDeploymentOffered"
+    v-else-if="customDeploymentOffered && !deploymentDialogOpen"
     class="flex w-full items-center gap-2 pr-8"
     data-testid="error-overlay-custom-deployment-offer"
   >
@@ -54,7 +54,10 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import { useCustomDeploymentOffered } from '@/platform/workspace/composables/useCustomDeploymentOffered'
 import { useMissingNodeDeploymentOffer } from '@/platform/workspace/composables/useMissingNodeDeploymentOffer'
-import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import {
+  isWorkflowNeedsDeploymentDialogOpen,
+  openWorkflowNeedsDeploymentDialog
+} from '@/platform/workspace/openCustomDeploymentDialog'
 
 const { t } = useI18n()
 const { offer, choose, isSwitching, openSwitcher } =
@@ -62,6 +65,7 @@ const { offer, choose, isSwitching, openSwitcher } =
 const customDeploymentOffered = useCustomDeploymentOffered(
   () => offer.value?.kind === 'none'
 )
+const deploymentDialogOpen = computed(isWorkflowNeedsDeploymentDialogOpen)
 
 const choices = computed(() =>
   offer.value?.kind === 'choices' ? offer.value.choices : []

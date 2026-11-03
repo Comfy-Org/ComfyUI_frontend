@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
@@ -24,6 +24,7 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { DeploymentPickState } from '@/platform/workspace/deploymentPickState'
+import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -189,6 +190,27 @@ function expectNoticeAsToday() {
 function customDeploymentOffer() {
   return screen.queryByTestId('error-overlay-custom-deployment-offer')
 }
+
+const offerRows = [
+  {
+    row: 'Switch',
+    testId: 'error-overlay-deployment-offer',
+    arrange: () => {
+      useDeploymentPickStore().state = readyOn([plain, agencyA])
+      vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+        answer([agencyA], [plain])
+      )
+    }
+  },
+  {
+    row: 'Set up',
+    testId: 'error-overlay-custom-deployment-offer',
+    arrange: () => {
+      onComfyCloud([])
+      useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)
+    }
+  }
+]
 
 describe('ErrorOverlay deployment offer', () => {
   const reload = vi.fn()
@@ -481,5 +503,52 @@ describe('ErrorOverlay deployment offer', () => {
     await nextTick()
 
     expect(customDeploymentOffer()).toBeNull()
+  })
+
+  it.for(offerRows)(
+    'hides the $row row, and keeps the rest of the notice, while the deployment dialog is open',
+    async ({ testId, arrange }) => {
+      arrange()
+      renderNotice()
+      await screen.findByTestId(testId)
+
+      await openWorkflowNeedsDeploymentDialog()
+
+      await waitFor(() => expect(screen.queryByTestId(testId)).toBeNull())
+      expectNoticeAsToday()
+    }
+  )
+
+  it.for(offerRows)(
+    'shows the $row row again once the deployment dialog closes',
+    async ({ testId, arrange }) => {
+      arrange()
+      renderNotice()
+      await screen.findByTestId(testId)
+      await openWorkflowNeedsDeploymentDialog()
+
+      useDialogStore().closeDialog({ key: 'global-workflow-needs-deployment' })
+
+      expect(await screen.findByTestId(testId)).toBeInTheDocument()
+    }
+  )
+
+  it('keeps the Switch row while a different dialog is open', async () => {
+    useDeploymentPickStore().state = readyOn([plain, agencyA])
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+      answer([agencyA], [plain])
+    )
+    renderNotice()
+    await screen.findByTestId('error-overlay-deployment-offer')
+
+    useDialogStore().showDialog({
+      key: 'global-settings',
+      component: defineComponent(() => () => null)
+    })
+    await nextTick()
+
+    expect(
+      screen.getByTestId('error-overlay-deployment-offer')
+    ).toBeInTheDocument()
   })
 })
