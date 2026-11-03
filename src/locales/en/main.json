@@ -2983,6 +2983,11 @@
   },
   "credits": {
     "activity": "Activity",
+    "addCreditsRefusal": {
+      "topupPurchasesPaused": "Buying credits isn't available right now. Try again later, or message support.",
+      "paymentPastDue": "Update your payment method to add credits.",
+      "unavailable": "Adding credits isn't available for this workspace right now."
+    },
     "workspaceCredits": "Workspace credits",
     "insufficient": {
       "memberTitle": "This workspace is out of credits",
@@ -3774,6 +3779,8 @@
         "pastDuePersonalBody": "You've used all your credits. Update your payment method to add more.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
+        "refusedBody": "Your team has used all its credits.",
+        "refusedPersonalBody": "You've used all your credits.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },

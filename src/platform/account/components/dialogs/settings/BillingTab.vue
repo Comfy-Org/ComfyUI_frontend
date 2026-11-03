@@ -71,7 +71,13 @@
     >
       <BillingCreditsCard
         :state="creditsCard"
-        :can-top-up="capabilities.canTopUp.value"
+        :add-credits="
+          addCreditsAvailability({
+            resolved: capabilities.hasResolvedCapabilities.value,
+            canTopUp: capabilities.canTopUp.value,
+            denial: capabilities.topUpDenial.value
+          })
+        "
         :add-credits-variant="addCreditsVariant"
         :plan-credit-note="planCreditNote"
         @retry="retryBalance"
@@ -176,6 +182,7 @@ import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanChe
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/billing/components/billingTab/BillingPlanRow.vue'
+import { addCreditsAvailability } from '@/platform/billing/addCreditsAvailability'
 import { addCreditsEmphasis } from '@/platform/billing/components/billingTab/creditsCard'
 import {
   deriveBillingTabLoad,
