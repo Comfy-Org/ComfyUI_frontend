@@ -5,7 +5,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 type WidgetCallback = NonNullable<IBaseWidget['callback']>
 
-export type WirableWidget = Pick<IBaseWidget, 'name' | 'value' | 'callback'>
+type WirableWidget = Pick<IBaseWidget, 'name' | 'value' | 'callback'>
 
 interface NodeWithWirableWidgets {
   widgets?: WirableWidget[]
