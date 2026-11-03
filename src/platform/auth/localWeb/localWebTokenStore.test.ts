@@ -91,6 +91,30 @@ describe('createStorageTokenStore', () => {
     ).toBeUndefined()
   })
 
+  it('forgets one workspace and keeps the others', () => {
+    const storage = memoryStorage()
+    const store = createStorageTokenStore(storage, new EventTarget())
+    const other = { ...TOKENS, accessToken: 'access-2' }
+    store.writeWorkspace('ws-1', TOKENS)
+    store.writeWorkspace('ws-2', other)
+
+    store.forgetWorkspace('ws-1', TOKENS)
+
+    const reloaded = createStorageTokenStore(storage, new EventTarget())
+    expect(reloaded.readWorkspace('ws-1')).toBeUndefined()
+    expect(reloaded.readWorkspace('ws-2')).toEqual(other)
+  })
+
+  it('keeps a workspace whose tokens were replaced after the stale read', () => {
+    const store = createStorageTokenStore(memoryStorage(), new EventTarget())
+    const renewed = { ...TOKENS, refreshToken: 'refresh-2' }
+    store.writeWorkspace('ws-1', renewed)
+
+    store.forgetWorkspace('ws-1', TOKENS)
+
+    expect(store.readWorkspace('ws-1')).toEqual(renewed)
+  })
+
   it('forgets the tokens on clear', () => {
     const storage = memoryStorage()
     const store = createStorageTokenStore(storage, new EventTarget())
@@ -102,7 +126,7 @@ describe('createStorageTokenStore', () => {
     expect(storage.items.has(LOCAL_WEB_TOKENS_KEY)).toBe(false)
   })
 
-  it('reports a change another tab made to its key, and only its key', () => {
+  it('reports a change another tab made to its keys, and only its keys', () => {
     const events = new EventTarget()
     const store = createStorageTokenStore(memoryStorage(), events)
     const listener = vi.fn()
@@ -110,8 +134,9 @@ describe('createStorageTokenStore', () => {
 
     events.dispatchEvent(storageEvent('Comfy.Other'))
     events.dispatchEvent(storageEvent(LOCAL_WEB_TOKENS_KEY))
+    events.dispatchEvent(storageEvent('Comfy.LocalWebSignIn.WorkspaceTokens'))
     events.dispatchEvent(storageEvent(null))
 
-    expect(listener).toHaveBeenCalledTimes(2)
+    expect(listener).toHaveBeenCalledTimes(3)
   })
 })

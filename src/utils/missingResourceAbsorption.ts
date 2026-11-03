@@ -10,7 +10,7 @@ import {
 } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
-import type { PromptError } from '@/platform/remote/comfyui/types'
+import type { PromptError } from '@comfyorg/api-client/types'
 
 export type MissingResourceAbsorption = 'missing_model' | 'missing_media'
 

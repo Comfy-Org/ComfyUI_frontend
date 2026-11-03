@@ -785,6 +785,7 @@ describe('deployment model options at startup', () => {
       deployment_id: 'dep-1',
       release_id: 'r-1',
       status: 'ready',
+      can_start: false,
       created_at: ''
     } as const
 
@@ -981,9 +982,11 @@ describe('deployment model options at startup', () => {
       kind: 'error',
       description: 'deploymentSwitcher.lookupUnavailableDetail',
       duration: Number.POSITIVE_INFINITY,
-      action: { label: 'deploymentSwitcher.reload' }
+      actions: [
+        { label: 'deploymentSwitcher.reload', onClick: expect.any(Function) }
+      ]
     })
-    toast?.action?.onClick()
+    toast?.actions[0]?.onClick()
     expect(reload).toHaveBeenCalledOnce()
     store.bootDeployment = {
       deployment_id: 'dep-1',
@@ -992,6 +995,7 @@ describe('deployment model options at startup', () => {
       build_name: 'Build',
       release_version: 1,
       status: 'ready',
+      can_start: false,
       created_at: ''
     }
     await nextTick()
@@ -1048,6 +1052,7 @@ describe('deployment model options at startup', () => {
       build_name: 'Build',
       release_version: 1,
       status: 'ready',
+      can_start: false,
       created_at: ''
     } as const
     vi.spyOn(store, 'loadOnce').mockReturnValue(

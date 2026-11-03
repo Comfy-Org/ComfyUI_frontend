@@ -39,9 +39,9 @@ import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
 import { useImportFailedDetection } from '@/platform/customNodes/manager/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
-import { useNodeConflictDialog } from '@/platform/customNodes/manager/composables/useNodeConflictDialog'
+import { useNodeConflictDialog } from '@/platform/customNodes/manager/composables/dialogs/useNodeConflictDialog'
 import { useConflictDetectionStore } from '@/platform/customNodes/manager/stores/conflictDetectionStore'
-import type { components as ManagerComponents } from '@/platform/customNodes/manager/types/generatedManagerTypes'
+import type { components as ManagerComponents } from '@comfyorg/api-client/generatedManagerTypes'
 
 const TOGGLE_DEBOUNCE_MS = 256
 

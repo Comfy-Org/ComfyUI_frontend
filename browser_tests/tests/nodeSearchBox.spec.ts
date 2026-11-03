@@ -1,3 +1,5 @@
+import { ok } from 'node:assert/strict'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -36,10 +38,46 @@ test.describe('Node search box', { tag: '@node' }, () => {
     }
   })
 
-  test(`Can trigger on empty canvas double click`, async ({ comfyPage }) => {
-    await comfyPage.canvasOps.doubleClick()
-    await expect(comfyPage.searchBox.input).toHaveCount(1)
-  })
+  for (const { renderer, tag, previewId } of [
+    { renderer: 'canvas', tag: '@node', previewId: 'node-preview' },
+    { renderer: 'Vue', tag: '@vue-nodes', previewId: 'node-preview-body' }
+  ]) {
+    test(
+      `opens centered on the viewport with ${renderer} previews`,
+      { tag },
+      async ({ comfyPage }) => {
+        await comfyPage.canvasOps.doubleClick()
+        await expect(comfyPage.searchBox.input).toHaveCount(1)
+        await comfyPage.searchBox.typeQuery('KSampler')
+        await expect(comfyPage.searchBox.resultOptions.first()).toBeVisible()
+
+        const dialog = comfyPage.page.getByRole('dialog')
+        const preview = comfyPage.page.getByTestId(previewId)
+
+        await test.step('center search at 1920px with preview visible', async () => {
+          await comfyPage.page.setViewportSize({ width: 1920, height: 720 })
+          await expect(async () => {
+            const box = await dialog.boundingBox()
+            ok(box)
+            expect(box.x + box.width / 2).toBeCloseTo(960, 0)
+            expect(box.y + box.height / 2).toBeCloseTo(360, 0)
+          }).toPass({ timeout: 5000 })
+          await expect(preview).toBeInViewport({ ratio: 1 })
+        })
+
+        await test.step('center search at 1280px with preview hidden', async () => {
+          await comfyPage.page.setViewportSize({ width: 1280, height: 720 })
+          await expect(async () => {
+            const box = await dialog.boundingBox()
+            ok(box)
+            expect(box.x + box.width / 2).toBeCloseTo(640, 0)
+            expect(box.y + box.height / 2).toBeCloseTo(360, 0)
+          }).toPass({ timeout: 5000 })
+          await expect(preview).toBeHidden()
+        })
+      }
+    )
+  }
 
   test(`Can trigger on group body double click`, async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('groups/single_group_only')

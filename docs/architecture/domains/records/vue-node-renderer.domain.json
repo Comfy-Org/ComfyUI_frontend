@@ -4,145 +4,40 @@
   "description": "Shared technical module, not a business domain. The Node 2.0 DOM renderer that draws each LiteGraph node as a Vue component: node shell, header, badges, footer, slots, widget grid host, node image, video, and live previews, execution and error state, pointer, drag, snap, resize, z-index, tooltip, and slot link interactions, and DOM measurement fed into the layout store. Composables that read or drive LiteGraph nodes, canvas pointers, link connectors, and the widget render model are integration. Widget components and constructors belong to vue-node-widgets; capability previews already recorded elsewhere (audio, GLSL, and others) stay with their records.",
   "modules": [
     {
-      "path": "src/composables/useVueFeatureFlags.ts",
-      "role": "application"
+      "path": "src/composables/useVueFeatureFlags.ts"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/VideoPreview.agentReset.test.ts",
-      "role": "presentation"
+      "path": "src/renderer/extensions/vueNodes/VideoPreview.vue"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/VideoPreview.test.ts",
-      "role": "presentation"
+      "path": "src/renderer/extensions/vueNodes/components/**"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/VideoPreview.vue",
-      "role": "presentation"
+      "path": "src/renderer/extensions/vueNodes/composables/**"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/components/**",
-      "role": "presentation"
+      "path": "src/renderer/extensions/vueNodes/execution/**"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/composables/**",
-      "role": "integration"
+      "path": "src/renderer/extensions/vueNodes/interactions/**"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/composables/slotLinkDragContext.ts",
-      "role": "application"
+      "path": "src/renderer/extensions/vueNodes/layout/**"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/composables/useNodeEventHandlers.test.ts",
-      "role": "application"
+      "path": "src/renderer/extensions/vueNodes/preview/**"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/composables/useNodeEventHandlers.ts",
-      "role": "application"
+      "path": "src/renderer/extensions/vueNodes/types/**"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/composables/useNodeSnap.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/composables/useNodeTooltips.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/composables/useNodeTooltips.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/composables/useNodeZIndex.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/composables/useNodeZIndex.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/composables/usePartitionedBadges.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/composables/usePartitionedBadges.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/composables/useShiftKeySync.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/execution/**",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/interactions/**",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/layout/**",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/preview/**",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/types/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/utils/**",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/utils/eventUtils.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils.ts",
-      "role": "domain"
+      "path": "src/renderer/extensions/vueNodes/utils/**"
     }
   ],
   "publicEntryPoints": [
     "src/renderer/extensions/vueNodes/composables/useViewportKeepAlive.ts",
     "src/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins.ts"
   ],
-  "allowedDependencies": [
-    "graph-layout",
-    "graph-model",
-    "litegraph-api",
-    "link-connection"
-  ],
-  "allowedConsumers": ["app-host"],
   "characterizationScenarios": [
     {
       "name": "Viewport keep-alive bounds active nodes and retains transient browser state and link-drag sources until released",

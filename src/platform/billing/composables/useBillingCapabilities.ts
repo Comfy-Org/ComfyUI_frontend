@@ -10,6 +10,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/remote/ingest/capabilityRevision'
 import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
+import { parseBillingTopUpDenial } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
@@ -115,8 +116,8 @@ function useBillingCapabilitiesInternal() {
   )
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
   const canTopUp = computed(() => capabilities.value?.can_top_up ?? false)
-  const topUpDenial = computed<string | undefined>(
-    () => resolvedResponse.value?.denied_reasons?.can_top_up
+  const topUpDenial = computed(() =>
+    parseBillingTopUpDenial(resolvedResponse.value?.denied_reasons?.can_top_up)
   )
   const canManageBilling = computed(() =>
     receiveServerFact(
@@ -195,6 +196,12 @@ function useBillingCapabilitiesInternal() {
     receiveServerFact(
       'can_manage_auto_top_up',
       capabilities.value?.can_manage_auto_top_up ?? false
+    )
+  )
+  const autoTopUpEnabled = computed(() =>
+    receiveServerFact(
+      'auto_top_up_enabled',
+      resolvedResponse.value?.auto_top_up_enabled ?? false
     )
   )
   const autoTopUpSetup = computed(
@@ -570,6 +577,7 @@ function useBillingCapabilitiesInternal() {
     canManageSubscription,
     canDowngradeToPersonal,
     canManageAutoTopUp,
+    autoTopUpEnabled,
     autoTopUpSetup,
     canRunWorkflows,
     planKind,

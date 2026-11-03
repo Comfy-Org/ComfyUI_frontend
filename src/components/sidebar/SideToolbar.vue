@@ -38,17 +38,13 @@
         :class="groupClasses"
       >
         <ComfyMenuButton />
-        <SidebarIcon
+        <SidebarExtensionTabButton
           v-for="tab in tabs"
           :key="tab.id"
-          :icon="tab.icon"
-          :icon-badge="tab.iconBadge"
-          :tooltip="tab.tooltip"
+          :tab
           :tooltip-suffix="getTabTooltipSuffix(tab)"
-          :label="tab.label || tab.title"
           :is-small
           :selected="tab.id === selectedTab?.id"
-          :data-testid="`${tab.id}-tab-button`"
           @click="onTabClick(tab)"
         />
         <SidebarTemplatesButton />
@@ -103,7 +99,7 @@ import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
-import SidebarIcon from './SidebarIcon.vue'
+import SidebarExtensionTabButton from './SidebarExtensionTabButton.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 

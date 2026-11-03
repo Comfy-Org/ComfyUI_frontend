@@ -2,7 +2,7 @@ import type { WorkflowErrorManager } from '@/platform/workflowErrors/workflowErr
 import { useMissingNodes } from '@/platform/customNodes/manager/composables/nodePack/useMissingNodes'
 import { usePackInstall } from '@/platform/customNodes/manager/composables/nodePack/usePackInstall'
 import { useApplyChanges } from '@/platform/customNodes/manager/composables/useApplyChanges'
-import { useManagerDialog } from '@/platform/customNodes/manager/composables/useManagerDialog'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
 import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'

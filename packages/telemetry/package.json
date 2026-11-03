@@ -5,10 +5,12 @@
   "type": "module",
   "exports": {
     ".": {
+      "@comfyorg/telemetry": "./src/index.ts",
       "types": "./dist-types/index.d.ts",
       "default": "./src/index.ts"
     },
     "./*": {
+      "@comfyorg/telemetry": "./src/*.ts",
       "types": "./dist-types/*.d.ts",
       "default": "./src/*.ts"
     }

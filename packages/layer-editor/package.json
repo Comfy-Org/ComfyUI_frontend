@@ -12,14 +12,17 @@
   },
   "exports": {
     "./*": {
+      "@comfyorg/layer-editor": "./src/*.ts",
       "types": "./dist/*.d.ts",
       "default": "./src/*.ts"
     },
     "./kinds": {
+      "@comfyorg/layer-editor": "./src/kinds/index.ts",
       "types": "./dist/kinds/index.d.ts",
       "default": "./src/kinds/index.ts"
     },
     "./tools": {
+      "@comfyorg/layer-editor": "./src/tools/index.ts",
       "types": "./dist/tools/index.d.ts",
       "default": "./src/tools/index.ts"
     }

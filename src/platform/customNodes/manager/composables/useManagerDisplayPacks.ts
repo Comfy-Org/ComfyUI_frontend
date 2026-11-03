@@ -13,7 +13,7 @@ import {
   PACK_SORTABLE_FIELDS,
   getPackSortValue
 } from '@/platform/customNodes/manager/utils/nodePackSort'
-import { getPackUpdateStatus } from '@/platform/customNodes/manager/utils/packUpdateStatus'
+import { getPackUpdateStatus } from '@/platform/customNodes/manager/composables/nodePack/packUpdateStatus'
 
 type NodePack = components['schemas']['Node']
 
