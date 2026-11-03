@@ -12,9 +12,8 @@ import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
-  AgentStarterPromptAssignment,
   AgentStopMethod
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
@@ -58,6 +57,7 @@ const {
   canOpenAssets = false,
   isMaximized = false,
   selectionTags = [],
+  hasNodeSelectionModeAddition = false,
   nodeReferenceDisabledReason,
   availableWorkflows = [],
   selectWorkflowReference,
@@ -84,9 +84,8 @@ const {
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
-  starterPromptAssignment = 'control',
-  attributeStarterPromptExperiment = false,
-  syncRetryAvailable = false
+  syncRetryAvailable = false,
+  blocked = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -96,6 +95,7 @@ const {
   canOpenAssets?: boolean
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
+  hasNodeSelectionModeAddition?: boolean
   nodeReferenceDisabledReason?: string
   availableWorkflows?: WorkflowReferenceOption[]
   selectWorkflowReference?: (
@@ -129,9 +129,8 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
-  starterPromptAssignment?: AgentStarterPromptAssignment
-  attributeStarterPromptExperiment?: boolean
   syncRetryAvailable?: boolean
+  blocked?: boolean
 }>()
 const emit = defineEmits<{
   send: [
@@ -152,7 +151,7 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
   standingPaywallShown: []
-  newChat: []
+  newChat: [source: 'new_chat_button' | 'history_back']
   startTour: []
   toggleSize: []
   close: []
@@ -167,7 +166,6 @@ const emit = defineEmits<{
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
-  starterPromptRendered: [assignment: AgentStarterPromptAssignment]
   retrySync: []
 }>()
 
@@ -222,9 +220,11 @@ watch(
   { immediate: true }
 )
 
-function onNewChat(): void {
+function onNewChat(
+  source: 'new_chat_button' | 'history_back' = 'new_chat_button'
+): void {
   view.value = { screen: 'chat' }
-  emit('newChat')
+  emit('newChat', source)
 }
 function onOpenHistory(): void {
   view.value = {
@@ -268,7 +268,7 @@ function onBackFromHistory(): void {
     (view.value.selection.status === 'idle' || currentChatReady)
   )
     view.value = { screen: 'chat' }
-  else if (view.value.previousThreadId === null) onNewChat()
+  else if (view.value.previousThreadId === null) onNewChat('history_back')
   else void openHistoryChat(view.value.previousThreadId, 'leave')
 }
 
@@ -420,14 +420,18 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       @close="onClose"
     />
 
+    <slot name="panelNotice" />
+
     <FreeUseNotice
       v-if="!showHistory && freeUsePlacement === 'top-banner'"
+      :inert="blocked"
       placement="top-banner"
       @notice="emit('freeUseNotice', $event)"
     />
 
     <template v-if="showHistory">
       <ChatHistoryScreen
+        :inert="blocked"
         :groups="historyGroups"
         :loading-id="loadingHistoryId"
         :failed-id="failedHistoryId"
@@ -441,7 +445,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     </template>
 
     <template v-else>
-      <div class="flex h-10 shrink-0 items-center px-2">
+      <div
+        data-testid="agent-panel-chat-controls"
+        :inert="blocked"
+        class="flex h-10 shrink-0 items-center px-2"
+      >
         <Button
           id="agent-chat-history"
           :tooltip="t('agent.showChatHistory')"
@@ -453,7 +461,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           class="size-6 shrink-0 data-coach-hover:bg-accent"
           @click="onOpenHistory"
         >
-          <span class="icon-[lucide--history] size-4 shrink-0" />
+          <i aria-hidden="true" class="icon-[lucide--history]" />
         </Button>
         <template v-if="renaming">
           <Input
@@ -499,22 +507,23 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :aria-label="t('agent.chatOptions')"
                 class="size-6 shrink-0"
               >
-                <span class="icon-[lucide--chevron-down] size-3" />
+                <i
+                  aria-hidden="true"
+                  class="icon-[lucide--chevron-down] size-3"
+                />
               </Button>
             </template>
           </Menu>
         </div>
       </div>
 
-      <div class="relative min-h-0 flex-1">
+      <div :inert="blocked" class="relative min-h-0 flex-1">
         <EmptyState
           v-if="!entries.length"
           :aria-busy="openingChat"
           :inert="openingChat"
           :user-name
-          :assignment="starterPromptAssignment"
-          :attribute-experiment="attributeStarterPromptExperiment"
-          @rendered="emit('starterPromptRendered', $event)"
+          :has-selection="hasNodeSelectionModeAddition"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)
@@ -547,7 +556,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             (workflowId, workflowName) =>
               emit('openReferenceWorkflow', workflowId, workflowName)
           "
-          @paywall-action="emit('paywallAction', $event, 'refused_send')"
+          @paywall-action="
+            (action, surface) => emit('paywallAction', action, surface)
+          "
         />
         <div
           v-if="showChatLoading"
@@ -561,9 +572,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           "
           class="absolute inset-0 z-10 flex items-center justify-center gap-2 bg-background/80 px-6 text-center text-sm"
         >
-          <span
+          <i
             aria-hidden="true"
-            class="icon-[lucide--loader-circle] size-4 shrink-0 motion-safe:animate-spin"
+            class="icon-[lucide--loader-circle] motion-safe:animate-spin"
           />
           {{
             t('agent.openingWorkflowChat', {
@@ -575,7 +586,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer
         data-testid="agent-panel-footer"
-        :inert="openingChat"
+        :inert="openingChat || blocked"
         class="shrink-0 py-3 inert:opacity-50"
       >
         <div

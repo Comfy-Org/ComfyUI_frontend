@@ -12,6 +12,7 @@
   },
   "exports": {
     "./*": {
+      "@comfyorg/mask-editor": "./src/*.ts",
       "types": "./dist/*.d.ts",
       "default": "./src/*.ts"
     }
@@ -23,6 +24,7 @@
   },
   "dependencies": {
     "@alloc/quick-lru": "catalog:",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
     "@vueuse/core": "catalog:",
     "es-toolkit": "catalog:",
     "pinia": "catalog:",

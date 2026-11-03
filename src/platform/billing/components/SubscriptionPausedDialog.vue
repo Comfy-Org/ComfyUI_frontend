@@ -1,5 +1,5 @@
 <template>
-  <AppDialogPanel size="compact" @close="onClose">
+  <AppDialogPanel size="compact" class="w-90 max-w-full" @close="onClose">
     <template #title>
       {{ $t(titleKey) }}
     </template>
@@ -17,7 +17,7 @@
       >
         <i
           v-if="canManage && isUpdatingPayment"
-          class="pi pi-spin pi-spinner"
+          class="icon-[lucide--loader-circle] animate-spin motion-reduce:animate-none"
         />
         {{
           $t(

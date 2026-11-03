@@ -10,7 +10,7 @@
       :disabled="closeDisabled"
       @click="onClose"
     >
-      <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+      <i class="icon-[lucide--x]" aria-hidden="true" />
     </Button>
 
     <div class="flex flex-col gap-5">

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Tag from '@/components/chip/Tag.vue'
+import Tag from '@comfyorg/design-system/chip/Tag'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
@@ -38,7 +38,7 @@ const tooltipCopy = computed(() => {
         >
           <template #icon>
             <i
-              class="icon-[tabler--crown-filled] size-4 text-brand-yellow"
+              class="icon-[tabler--crown-filled] text-brand-yellow"
               aria-hidden="true"
             />
           </template>

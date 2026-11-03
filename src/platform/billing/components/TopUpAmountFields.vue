@@ -70,7 +70,7 @@
         @update:model-value="emit('credits', $event)"
       >
         <template #prefix>
-          <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
+          <i class="icon-[lucide--coins] text-credit" />
         </template>
       </FormNumberField>
     </div>

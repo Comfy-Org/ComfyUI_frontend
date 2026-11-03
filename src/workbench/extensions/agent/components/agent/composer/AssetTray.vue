@@ -106,7 +106,7 @@ function scrollPage(direction: -1 | 1): void {
           class="pointer-events-auto size-7 shrink-0 rounded-full shadow-sm ring-1 ring-border/50"
           @click="scrollPage(-1)"
         >
-          <span aria-hidden="true" class="icon-[lucide--chevron-left] size-4" />
+          <i aria-hidden="true" class="icon-[lucide--chevron-left]" />
         </Button>
       </div>
       <div
@@ -125,10 +125,7 @@ function scrollPage(direction: -1 | 1): void {
           class="pointer-events-auto size-7 shrink-0 rounded-full shadow-sm ring-1 ring-border/50"
           @click="scrollPage(1)"
         >
-          <span
-            aria-hidden="true"
-            class="icon-[lucide--chevron-right] size-4"
-          />
+          <i aria-hidden="true" class="icon-[lucide--chevron-right]" />
         </Button>
       </div>
     </template>

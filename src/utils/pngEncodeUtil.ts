@@ -1,7 +1,7 @@
-interface RgbaImage {
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
+
+interface RgbaImage extends Readonly<Size2D> {
   readonly data: Uint8ClampedArray
-  readonly width: number
-  readonly height: number
 }
 
 const PNG_SIGNATURE = new Uint8Array([

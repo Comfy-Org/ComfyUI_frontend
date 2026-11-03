@@ -9,7 +9,7 @@
     :aria-label="compact ? t('load3d.menuBar.switchProjection') : undefined"
     @click="switchCamera"
   >
-    <i class="icon-[lucide--camera] size-4" />
+    <i class="icon-[lucide--camera]" />
     <span v-if="!compact">{{ cameraTypeLabel }}</span>
   </Button>
 
@@ -26,10 +26,7 @@
   >
     <i
       :class="
-        cn(
-          useCustomUp ? 'icon-[lucide--compass]' : 'icon-[lucide--rotate-ccw]',
-          'size-4'
-        )
+        useCustomUp ? 'icon-[lucide--compass]' : 'icon-[lucide--rotate-ccw]'
       "
     />
     <span v-if="!compact">{{ upLabel }}</span>
@@ -46,7 +43,7 @@
         type="button"
         :aria-label="compact ? t('load3d.menuBar.fov') : undefined"
       >
-        <i class="icon-[lucide--focus] size-4" />
+        <i class="icon-[lucide--focus]" />
         <span v-if="!compact">{{ t('load3d.menuBar.fov') }}</span>
       </Button>
     </PopoverTrigger>

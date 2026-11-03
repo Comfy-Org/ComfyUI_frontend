@@ -58,7 +58,7 @@
             </div>
             <i
               v-if="isCurrentWorkspace(workspace)"
-              class="pi pi-check shrink-0 text-sm text-foreground"
+              class="icon-[lucide--check] size-3.5 text-foreground"
             />
           </button>
         </div>
@@ -70,8 +70,11 @@
       class="flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted-foreground"
     >
       <Tooltip>
-        <TooltipTrigger as-child>
-          <i class="pi pi-info-circle text-xs" />
+        <TooltipTrigger
+          :aria-label="$t('workspaceSwitcher.scopeCaption')"
+          class="flex"
+        >
+          <i class="icon-[lucide--info] size-3" />
         </TooltipTrigger>
         <TooltipContent side="left">{{
           $t('workspaceSwitcher.scopeTooltip')
@@ -100,7 +103,7 @@
             )
           "
         >
-          <i class="pi pi-plus text-sm text-muted-foreground" />
+          <i class="icon-[lucide--plus] size-3.5 text-muted-foreground" />
         </div>
         <div class="flex min-w-0 flex-1 flex-col text-sm text-muted-foreground">
           <span>{{ createWorkspaceLabel }}</span>
@@ -121,6 +124,7 @@ import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
+import { useCreateWorkspaceRefusal } from '@/platform/workspace/composables/useCreateWorkspaceRefusal'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
@@ -165,17 +169,15 @@ const {
   workspaceId,
   workspaces,
   canCreateWorkspace,
-  workspacesManagedByOrganization,
   isFetchingWorkspaces,
   isSwitching
 } = storeToRefs(workspaceStore)
+const createRefusal = useCreateWorkspaceRefusal()
 
 const isSelectionDisabled = computed(() => !isCloud && isSwitching.value)
 const createWorkspaceLabel = computed(() => {
   if (canCreateWorkspace.value) return t('workspaceSwitcher.createWorkspace')
-  return workspacesManagedByOrganization.value
-    ? t('workspaceSwitcher.managedByOrganization')
-    : t('workspaceSwitcher.maxWorkspacesReached')
+  return createRefusal.value
 })
 
 const visibleWorkspaces = computed<AvailableWorkspace[]>(() =>

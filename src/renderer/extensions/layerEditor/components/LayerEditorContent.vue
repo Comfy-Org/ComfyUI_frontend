@@ -8,7 +8,7 @@
         :disabled="!session.canUndo.value"
         @click="onRestore"
       >
-        <i class="icon-[lucide--rotate-ccw] size-4" />
+        <i class="icon-[lucide--rotate-ccw]" />
         {{ t('g.restore') }}
       </Button>
     </Teleport>

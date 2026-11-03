@@ -20,6 +20,6 @@ defineEmits<{ run: [] }>()
     @click="$emit('run')"
   >
     {{ $t(label) }}
-    <span v-if="icon" :class="icon" />
+    <i v-if="icon" aria-hidden="true" :class="icon" />
   </Button>
 </template>

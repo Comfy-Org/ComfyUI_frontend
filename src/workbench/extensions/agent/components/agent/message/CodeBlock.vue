@@ -49,7 +49,7 @@ watchDebounced(
       <span
         class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
       >
-        <span class="icon-[lucide--file-code] size-3.5" />
+        <i aria-hidden="true" class="icon-[lucide--file-code] size-3.5" />
         <span class="text-foreground">{{ lang }}</span>
       </span>
       <Button
@@ -59,7 +59,8 @@ watchDebounced(
         class="gap-1 font-mono"
         @click="copy(code)"
       >
-        <span
+        <i
+          aria-hidden="true"
           :class="
             cn(
               'size-3.5',

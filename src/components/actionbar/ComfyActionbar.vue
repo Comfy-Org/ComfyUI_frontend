@@ -40,7 +40,7 @@
           :aria-label="t('menu.interrupt')"
           @click="cancelCurrentJob"
         >
-          <i class="icon-[lucide--x] size-4" />
+          <i class="icon-[lucide--x]" />
         </Button>
         <ContextMenu :model="queueContextMenuItems">
           <Button
@@ -114,8 +114,8 @@ import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
@@ -442,7 +442,7 @@ const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto',
     isDragging.value && 'pointer-events-none select-none',
-    !isDocked.value && 'fixed z-1300 floating-panel'
+    !isDocked.value && 'fixed z-1 floating-panel'
   )
 )
 </script>

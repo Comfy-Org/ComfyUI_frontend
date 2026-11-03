@@ -5,17 +5,14 @@ import {
 } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { deriveAutoTopUpCard } from '@comfyorg/account-core/billing'
+import type { AutoTopUpCardState } from '@comfyorg/account-core/billing'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-
-type AutoTopUpCardState =
-  | { kind: 'loading' }
-  | { kind: 'unavailable' }
-  | { kind: 'loaded'; settings: AutoReloadSettings }
 
 interface ScopedRead {
   scope: string
@@ -78,12 +75,12 @@ function useBillingAutoTopUpCardInternal() {
     return current?.scope === scope.value ? current : null
   })
 
-  const state = computed<AutoTopUpCardState>(() => {
-    const settings = answer.value?.settings
-    if (read.isLoading.value && !settings) return { kind: 'loading' }
-    if (settings) return { kind: 'loaded', settings }
-    return { kind: 'unavailable' }
-  })
+  const state = computed<AutoTopUpCardState>(() =>
+    deriveAutoTopUpCard({
+      isLoading: read.isLoading.value,
+      settings: answer.value?.settings ?? null
+    })
+  )
 
   const isReady = computed(() => answer.value !== null && !read.isLoading.value)
 

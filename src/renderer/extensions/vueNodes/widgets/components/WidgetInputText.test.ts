@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import Input from '@comfyorg/design-system/input/Input'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputText from './WidgetInputText.vue'

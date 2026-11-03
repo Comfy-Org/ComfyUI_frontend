@@ -2,7 +2,7 @@
   <AppDialogPanel unpadded @close="onClose">
     <template #title>
       <template v-if="step === 'invited'">
-        <i class="pi pi-check-circle size-4 text-success" />
+        <i class="icon-[lucide--circle-check] text-success" />
         {{
           $t(
             'workspacePanel.inviteLinks.sentTitle',
@@ -94,7 +94,7 @@ import { refAutoReset } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import Button from '@comfyorg/design-system/button/Button'
 import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
 import InviteLinkList from '@/platform/workspace/components/dialogs/InviteLinkList.vue'

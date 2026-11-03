@@ -15,7 +15,7 @@
         :disabled="queuedCount === 0"
         @click="$emit('clearQueued')"
       >
-        <i class="icon-[lucide--list-x] size-4" />
+        <i class="icon-[lucide--list-x]" />
       </Button>
     </div>
     <JobHistoryActionsMenu @clear-history="$emit('clearHistory')" />

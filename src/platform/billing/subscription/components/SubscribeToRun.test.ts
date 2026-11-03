@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
@@ -22,7 +22,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock<unknown>(import('@vueuse/core'), () => ({
   breakpointsTailwind: { md: 768 },

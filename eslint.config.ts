@@ -207,7 +207,12 @@ const commonParserOptions = {
   extraFileExtensions
 } as const
 
-// Tailwind CSS v4 linting (class ordering, duplicates, conflicts, etc.)
+const layerClassRestriction = {
+  pattern: '^(?:.*:)?!?-?z-(?:[0-9]{3,}|\\[.*\\]|\\(.*\\))!?$',
+  message:
+    'Use a named layer for cross-component ordering; keep local stacking inside an isolated owner.'
+}
+
 const tailwindConfigs = defineConfig([
   betterTailwindcss.configs.recommended,
   {
@@ -245,6 +250,16 @@ const tailwindConfigs = defineConfig([
     }
   },
   {
+    name: 'design-system/owned-layers',
+    files: ['src/**/*.{ts,vue}'],
+    rules: {
+      'better-tailwindcss/no-restricted-classes': [
+        'error',
+        { restrict: [layerClassRestriction] }
+      ]
+    }
+  },
+  {
     name: 'design-system/core-ui-theme-tokens',
     files: [
       'src/components/ui/**/*.{ts,vue}',
@@ -255,6 +270,7 @@ const tailwindConfigs = defineConfig([
         'error',
         {
           restrict: [
+            layerClassRestriction,
             {
               pattern: specializedThemeClassPattern,
               message:
@@ -341,6 +357,13 @@ export default defineConfig([
       pluginVue.configs['flat/recommended'],
       ...tailwindConfigs,
       {
+        files: ['**/*.vue'],
+        plugins: { 'template-classes': templateClasses },
+        rules: {
+          'template-classes/icon-element': 'error'
+        }
+      },
+      {
         files: [
           'src/**/*.vue',
           'apps/billing-web/**/*.vue',
@@ -376,6 +399,8 @@ export default defineConfig([
           'vue/multi-word-component-names': 'off', // TODO: fix
           'vue/no-template-shadow': 'off', // TODO: fix
           'vue/match-component-import-name': 'error',
+          'vue/no-content-outside-block': 'error',
+          'vue/no-props-shadow': 'error',
           'vue/no-unused-properties': 'error',
           'vue/no-unused-refs': 'error',
           'vue/no-useless-mustaches': 'error',

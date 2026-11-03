@@ -9,6 +9,7 @@ import {
   createCapabilitiesReader,
   readCapabilityRevision
 } from './capabilities'
+import { decodeCapabilityDenials } from './capabilityDenials'
 import { createSessionBillingTransport } from './transport'
 import {
   authenticated,
@@ -80,6 +81,24 @@ function capabilitiesBody(overrides: Record<string, unknown> = {}) {
 }
 
 describe('createCapabilitiesReader', () => {
+  it.for([
+    { wire: { auto_top_up_enabled: true }, expected: true },
+    { wire: { auto_top_up_enabled: false }, expected: false },
+    { wire: {}, expected: undefined }
+  ])(
+    'preserves auto top-up state $expected without deriving it',
+    async ({ wire, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([httpOk(capabilitiesBody(wire))])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      expect(reader.getSnapshot()?.autoTopUpEnabled).toBe(expected)
+    }
+  )
+
   it('decodes the server answer and reports the resolved scope', async () => {
     const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(capabilitiesBody())])
@@ -144,6 +163,34 @@ describe('createCapabilitiesReader', () => {
       expect(result.status).toBe('ok')
       if (result.status !== 'ok') return
       expect(result.value.planKind).toBe(expected)
+    }
+  )
+
+  it.for([
+    {
+      served: { state: 'frozen', reason: 'payment_past_due' },
+      expected: { state: 'frozen', reason: 'payment_past_due' }
+    },
+    { served: { state: 'ready' }, expected: { state: 'ready' } },
+    { served: undefined, expected: undefined }
+  ] as const)(
+    'keeps auto_top_up_setup $served.state instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined ? {} : { auto_top_up_setup: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.autoTopUpSetup).toEqual(expected)
     }
   )
 
@@ -497,27 +544,31 @@ describe('createCapabilitiesReader', () => {
       )
     })
 
-    it('keeps the capability set usable when a reason is unrecognized', async () => {
-      const { scopeSource } = fakeSession()
-      const { transport } = fakeTransport([
-        httpOk(
-          capabilitiesBody({
-            denied_reasons: { can_top_up: 'something_new' }
-          })
-        )
-      ])
+    it.for(['something_new', 'reason_from_a_newer_server'])(
+      'keeps the capability set usable for unrecognized reason %s',
+      async (reason) => {
+        const { scopeSource } = fakeSession()
+        const { transport } = fakeTransport([
+          httpOk(
+            capabilitiesBody({
+              denied_reasons: { can_top_up: reason }
+            })
+          )
+        ])
 
-      const result = await createCapabilitiesReader({
-        transport,
-        scopeSource
-      }).read()
+        const result = await createCapabilitiesReader({
+          transport,
+          scopeSource
+        }).read()
 
-      // The point of the lenient decode: a reason this client predates must
-      // not cost the caller the capability set that gates its UI.
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
-      expect(result.value.capabilities.can_top_up).toBe(true)
-    })
+        // The point of the lenient decode: a reason this client predates must
+        // not cost the caller the capability set that gates its UI.
+        expect(result.status).toBe('ok')
+        if (result.status !== 'ok') return
+        expect(result.value.capabilities.can_top_up).toBe(true)
+        expect(result.value.denials.can_top_up).toBe('unspecified')
+      }
+    )
 
     it('reads an absent denials object as no reasons, not as a granted capability', async () => {
       const { scopeSource } = fakeSession()
@@ -708,5 +759,13 @@ describe('readCapabilityRevision', () => {
     ['a value beyond the safe integer range', '9007199254740993']
   ] as const)('reports nothing for %s', ([, value]) => {
     expect(readCapabilityRevision(() => value)).toBeUndefined()
+  })
+})
+
+describe('decodeCapabilityDenials', () => {
+  it('keeps topup_purchases_paused as a known reason', () => {
+    expect(
+      decodeCapabilityDenials({ can_top_up: 'topup_purchases_paused' })
+    ).toEqual({ can_top_up: 'topup_purchases_paused' })
   })
 })

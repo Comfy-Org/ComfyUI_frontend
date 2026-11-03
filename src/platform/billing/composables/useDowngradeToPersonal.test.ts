@@ -7,7 +7,7 @@ import { computed, ref } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { t } from '@/i18n'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
@@ -80,7 +80,7 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.test'
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 function createMember(
   overrides: Partial<WorkspaceMember> = {}

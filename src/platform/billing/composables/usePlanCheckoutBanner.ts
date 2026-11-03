@@ -4,10 +4,10 @@ import { computed, shallowRef, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
-import { planCheckoutBannerFor } from '@/platform/billing/components/billingTab/planCheckoutBanner'
-import type { PlanCheckoutBanner } from '@/platform/billing/components/billingTab/planCheckoutBanner'
+import { planCheckoutBannerFor } from '@comfyorg/account-core/billing'
+import type { PlanCheckoutBanner } from '@comfyorg/account-core/billing'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 export function usePlanCheckoutBanner() {

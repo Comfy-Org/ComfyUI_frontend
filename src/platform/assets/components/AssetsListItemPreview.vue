@@ -19,7 +19,7 @@
       <i
         v-else
         aria-hidden="true"
-        class="absolute inset-0 m-auto icon-[lucide--video-off] size-4 text-muted-foreground"
+        class="absolute inset-0 m-auto icon-[lucide--video-off] text-muted-foreground"
       />
     </template>
     <img
@@ -33,7 +33,7 @@
     <i
       v-else
       aria-hidden="true"
-      class="absolute inset-0 m-auto icon-[lucide--image] size-4 text-muted-foreground"
+      class="absolute inset-0 m-auto icon-[lucide--image] text-muted-foreground"
     />
   </div>
   <div
@@ -46,7 +46,7 @@
       :class="
         cn(
           iconName ?? 'icon-[lucide--image]',
-          'size-4 text-muted-foreground',
+          'text-muted-foreground',
           iconClass
         )
       "

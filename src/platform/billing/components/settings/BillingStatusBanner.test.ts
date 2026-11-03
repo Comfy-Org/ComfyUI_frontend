@@ -6,7 +6,7 @@ import {
   runDeniedPaymentPastDueFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -15,7 +15,7 @@ import type {
   BillingPortalOutcome,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
-import type { BillingStatus } from '@comfyorg/billing-core'
+import type { BillingStatus, BillingTopUpDenial } from '@comfyorg/billing-core'
 import type { WorkspaceWithRole } from '@comfyorg/ingest-types'
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 
@@ -44,9 +44,9 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: true,
   canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
-  manageSubscription: vi.fn(
-    async (): Promise<BillingPortalOutcome> => ({ ok: true })
-  ),
+  manageSubscription: vi.fn(async (): Promise<BillingPortalOutcome> => ({
+    ok: true
+  })),
   handleResubscribe: vi.fn(),
   showSubscriptionDialog: vi.fn()
 }))
@@ -122,6 +122,15 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      credits: {
+        addCreditsRefusal: {
+          topupPurchasesPaused:
+            "Buying credits isn't available right now. Try again later, or message support.",
+          paymentPastDue: 'Update your payment method to add credits.',
+          unavailable:
+            "Adding credits isn't available for this workspace right now."
+        }
+      },
       workspacePanel: {
         members: {
           resubscribe: 'Resubscribe',
@@ -148,6 +157,8 @@ const i18n = createI18n({
               'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.',
             memberBodyNoDate:
               'Your team has used all its credits. Ask your workspace owner to add more credits.',
+            refusedBody: 'Your team has used all its credits.',
+            refusedPersonalBody: "You've used all your credits.",
             addCredits: 'Add credits',
             dismiss: 'Dismiss'
           },
@@ -213,7 +224,9 @@ const globalOptions = {
   plugins: [i18n]
 }
 
-function renderBanner(section?: 'planCredits' | 'members' | 'allowlist') {
+function renderBanner(
+  section?: 'planCredits' | 'members' | 'allowlist' | 'billing'
+) {
   return render(BillingStatusBanner, {
     props: { section },
     global: globalOptions
@@ -287,6 +300,106 @@ describe('BillingStatusBanner', () => {
     state.shouldUseWorkspaceBilling = true
   })
 
+  describe('on the Billing tab', () => {
+    it.for([
+      {
+        name: 'plan ending',
+        enter: () => {
+          state.subscription = {
+            ...state.subscription!,
+            isCancelled: true,
+            endDate: '2026-10-28T00:00:00Z'
+          }
+        },
+        text: 'Your Team plan ends on'
+      },
+      {
+        name: 'a scheduled change while out of credits',
+        enter: () => {
+          scheduledFor('pro-annual')
+          state.subscription = { ...state.subscription!, hasFunds: false }
+        },
+        text: 'Your plan changes to'
+      },
+      {
+        name: 'plan ending while out of credits',
+        enter: () => {
+          state.subscription = {
+            ...state.subscription!,
+            hasFunds: false,
+            isCancelled: true,
+            endDate: '2026-10-28T00:00:00Z'
+          }
+        },
+        text: 'Your Team plan ends on'
+      },
+      {
+        name: 'plan ended',
+        enter: () => {
+          state.subscriptionStatus = 'ended'
+          state.billingStatus = 'inactive'
+          state.canAccessSubscriptionFeatures = false
+          state.subscription = {
+            hasFunds: false,
+            isCancelled: true,
+            endDate: '2026-09-12T12:00:00Z',
+            scheduledChange: null,
+            tier: 'PRO'
+          }
+        },
+        text: 'Your Team plan ended on September 12, 2026'
+      }
+    ])('shows $name with no buttons', ({ enter, text }) => {
+      enter()
+      renderBanner('billing')
+
+      const banner = screen.getByRole('status')
+      expect(banner).toHaveTextContent(text)
+      expect(within(banner).queryAllByRole('button')).toEqual([])
+    })
+
+    it.for([
+      {
+        name: 'a scheduled change',
+        enter: () => scheduledFor('pro-annual')
+      },
+      {
+        name: 'plan ended',
+        enter: () => {
+          state.subscriptionStatus = 'ended'
+          state.billingStatus = 'inactive'
+          state.canAccessSubscriptionFeatures = false
+          state.subscription = {
+            hasFunds: false,
+            isCancelled: true,
+            endDate: '2026-09-12T12:00:00Z',
+            scheduledChange: null,
+            tier: 'PRO'
+          }
+        }
+      }
+    ])('keeps $name after another tab dismisses it', async ({ enter }) => {
+      enter()
+      renderBanner('planCredits')
+      await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+      renderBanner('billing')
+
+      expect(screen.getByRole('status')).toBeInTheDocument()
+    })
+
+    it.for([
+      { name: 'out of credits', enter: exhausted },
+      { name: 'paused', enter: pausedState }
+    ])('leaves $name to the Billing tab banners', ({ enter }) => {
+      enter()
+      renderBanner('billing')
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+  })
+
   it('renders nothing for a healthy funded team', () => {
     renderBanner()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
@@ -318,14 +431,55 @@ describe('BillingStatusBanner', () => {
     expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
   })
 
-  it('shows no out-of-credits banner to an owner who cannot buy credits', () => {
+  it.for<{ denial: BillingTopUpDenial | undefined; body: string }>([
+    {
+      denial: 'not_workspace_owner',
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits.'
+    },
+    {
+      denial: 'not_a_member',
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits.'
+    },
+    {
+      denial: 'topup_purchases_paused',
+      body: "Buying credits isn't available right now. Try again later, or message support."
+    },
+    {
+      denial: 'creator_only_provisioning',
+      body: 'Your team has used all its credits.'
+    },
+    { denial: undefined, body: 'Your team has used all its credits.' }
+  ])(
+    'explains a refused top-up served as $denial without an Add credits action',
+    ({ denial, body }) => {
+      exhausted()
+      useBillingCapabilities().canTopUp = computed(() => false)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+
+      renderBanner()
+
+      const banner = screen.getByRole('status')
+      expect(banner).toHaveTextContent('Out of credits')
+      expect(within(banner).getByText(body)).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Add credits' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Dismiss' })
+      ).toBeInTheDocument()
+    }
+  )
+
+  it('offers Add credits to whoever the server lets top up', () => {
     exhausted()
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    state.canManageSubscription = false
+    useBillingCapabilities().canTopUp = computed(() => true)
 
     renderBanner()
 
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
   })
 
   it.for([
@@ -462,6 +616,7 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = false
     useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'not_workspace_owner')
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(

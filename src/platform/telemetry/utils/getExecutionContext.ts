@@ -6,7 +6,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 
-import type { ExecutionContext } from '@/platform/telemetry/types'
+import type { ExecutionContext } from '@comfyorg/telemetry/types'
 
 type NodeMetrics = {
   custom_node_count: number

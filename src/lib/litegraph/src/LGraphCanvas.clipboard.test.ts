@@ -27,19 +27,19 @@ import {
   SubgraphNode,
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   ClipboardItems,
   ExportedSubgraph,
   ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/services/litegraphService'))

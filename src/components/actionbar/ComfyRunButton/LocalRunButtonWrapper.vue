@@ -12,7 +12,7 @@
       aria-describedby="partner-run-gate-caption"
       @click="openPartnerSignInDialog"
     >
-      <i class="icon-[lucide--log-in] size-4" aria-hidden="true" />
+      <i class="icon-[lucide--log-in]" aria-hidden="true" />
       {{ t('actionbar.partnerRunGate.signInToRun') }}
     </Button>
   </div>

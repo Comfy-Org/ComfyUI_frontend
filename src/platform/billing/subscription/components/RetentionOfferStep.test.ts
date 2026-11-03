@@ -17,7 +17,6 @@ import RetentionOfferStep from './RetentionOfferStep.vue'
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/api/billingApi'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 type TerminalOperation = Awaited<
   ReturnType<ReturnType<typeof useBillingOperationStore>['startOperation']>
@@ -30,6 +29,7 @@ function settlesAs(status: TerminalOperation['status']) {
       type,
       status,
       errorMessage: null,
+      paymentMethodUrl: null,
       startedAt: 0,
       operationStartedAt: 0,
       actionUrl: null,

@@ -109,7 +109,7 @@
           :disabled="loading || failed"
           @click="seekToStart"
         >
-          <i class="icon-[lucide--skip-back] size-4 text-foreground" />
+          <i class="icon-[lucide--skip-back] text-foreground" />
         </Button>
         <Button
           variant="textonly"
@@ -134,7 +134,7 @@
           :disabled="loading || failed"
           @click="seekToEnd"
         >
-          <i class="icon-[lucide--skip-forward] size-4 text-foreground" />
+          <i class="icon-[lucide--skip-forward] text-foreground" />
         </Button>
       </div>
 
@@ -147,7 +147,7 @@
           :disabled="loading || failed"
           @click="toggleMute"
         >
-          <i :class="cn(volumeIcon, 'size-4 text-foreground')" />
+          <i :class="cn(volumeIcon, 'text-foreground')" />
         </Button>
         <Slider
           :model-value="[volume * 100]"
@@ -173,7 +173,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, toRef } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Slider from '@comfyorg/design-system/slider/Slider'
@@ -220,6 +220,7 @@ const {
   handleWaveformClick
 } = useWaveAudioPlayer({
   src: mediaSrc,
+  logicalSrc: toRef(() => src),
   barCount
 })
 

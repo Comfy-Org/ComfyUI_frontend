@@ -12,7 +12,7 @@
           :disabled="interactionLocked"
           @click="emit('back')"
         >
-          <i class="pi pi-arrow-left text-base" />
+          <i class="icon-[lucide--arrow-left]" />
         </CheckoutButton>
         <CheckoutTitle
           class="m-0 flex-1 text-center text-xl font-semibold text-foreground lg:text-2xl"

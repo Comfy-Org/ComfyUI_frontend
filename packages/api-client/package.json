@@ -1,0 +1,37 @@
+{
+  "name": "@comfyorg/api-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./clientFeatureFlags.json": "./src/clientFeatureFlags.json",
+    "./*": {
+      "@comfyorg/api-client": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.declarations.json",
+    "typecheck": "tsc --noEmit",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check"
+  },
+  "dependencies": {
+    "@comfyorg/account-core": "workspace:*",
+    "@comfyorg/graph-model": "workspace:*",
+    "@comfyorg/ingest-types": "workspace:*",
+    "@comfyorg/object-info-parser": "workspace:*",
+    "@comfyorg/settings-core": "workspace:*",
+    "@comfyorg/telemetry": "workspace:*",
+    "@sentry/vue": "catalog:",
+    "axios": "catalog:",
+    "es-toolkit": "catalog:",
+    "vue": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

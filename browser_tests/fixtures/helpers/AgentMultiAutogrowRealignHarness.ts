@@ -2,18 +2,20 @@ import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { JobsListResponse } from '@comfyorg/ingest-types'
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
-import type { PromptResponse } from '@/platform/remote/comfyui/types'
+import type {
+  ModelFolderInfo,
+  PromptResponse
+} from '@comfyorg/api-client/types'
 import type {
   ComfyApiWorkflow,
   WorkflowJSON04
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import {
   zComfyApiWorkflow,
   zComfyWorkflow
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   AgentMessages,
   AgentRunModePreference,

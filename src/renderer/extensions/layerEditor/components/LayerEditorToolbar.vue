@@ -13,7 +13,7 @@
         :title="t('layerEditor.selectTool')"
         :aria-label="t('layerEditor.selectTool')"
       >
-        <i class="icon-[lucide--mouse-pointer-2] size-4" />
+        <i class="icon-[lucide--mouse-pointer-2]" />
       </ToggleGroupItem>
       <ToggleGroupItem
         value="hand"
@@ -21,7 +21,7 @@
         :title="t('layerEditor.handTool')"
         :aria-label="t('layerEditor.handTool')"
       >
-        <i class="icon-[lucide--hand] size-4" />
+        <i class="icon-[lucide--hand]" />
       </ToggleGroupItem>
     </ToggleGroup>
 
@@ -66,7 +66,7 @@
       :aria-label="t('layerEditor.undo')"
       @click="session.undo()"
     >
-      <i class="icon-[lucide--undo-2] size-4" />
+      <i class="icon-[lucide--undo-2]" />
     </button>
     <button
       :class="toolButtonClass(false)"
@@ -75,7 +75,7 @@
       :aria-label="t('layerEditor.redo')"
       @click="session.redo()"
     >
-      <i class="icon-[lucide--redo-2] size-4" />
+      <i class="icon-[lucide--redo-2]" />
     </button>
     <button
       :class="toolButtonClass(false)"
@@ -84,7 +84,7 @@
       :aria-label="t('layerEditor.exportPsd')"
       @click="onExportPsd"
     >
-      <i class="icon-[lucide--file-down] size-4" />
+      <i class="icon-[lucide--file-down]" />
     </button>
   </div>
 </template>

@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
@@ -70,10 +71,7 @@ export class KeybindingPanel {
     await this.searchInput.clear()
   }
 
-  async openContextMenu(
-    commandId: string,
-    position?: { x: number; y: number }
-  ) {
+  async openContextMenu(commandId: string, position?: Point2D) {
     await this.commandLabel(commandId).click({ button: 'right', position })
     await expect(
       this.comfyPage.contextMenu.menuItem('Change keybinding')

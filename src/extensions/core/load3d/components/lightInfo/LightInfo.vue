@@ -63,7 +63,7 @@
           :aria-label="$t('lightInfo.addLight')"
           @click="addLight('directional')"
         >
-          <i class="icon-[lucide--plus] size-4" />
+          <i class="icon-[lucide--plus]" />
         </Button>
         <Button
           v-if="selectedLight"
@@ -73,7 +73,7 @@
           :aria-label="$t('lightInfo.removeLight')"
           @click="removeSelectedLight"
         >
-          <i class="icon-[lucide--trash-2] size-4" />
+          <i class="icon-[lucide--trash-2]" />
         </Button>
         <WidgetHistoryButtons
           class="ml-auto"
@@ -110,7 +110,7 @@ import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButton
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import { LIGHT_TYPE_LABEL_KEYS } from '@comfyorg/viewport3d/lightInfo/types'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 

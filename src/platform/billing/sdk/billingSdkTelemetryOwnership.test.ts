@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import {
   BILLING_STATUS_ROUTE,
   CANCEL_SUBSCRIPTION_ROUTE,
@@ -27,7 +26,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { Plan } from '@comfyorg/billing-core'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
@@ -43,7 +42,7 @@ import {
   stubFirebaseAuthHarness
 } from '@/utils/__tests__/stubAccountIdentityPort'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
@@ -138,6 +137,7 @@ const DOWNGRADE_PREVIEW = {
 }
 
 const STATUS = {
+  ended_at: null,
   billing_rail: 'stripe',
   has_funds: true,
   is_active: true,
@@ -148,6 +148,7 @@ const STATUS = {
 }
 
 const CAPABILITIES = {
+  auto_top_up_enabled: false,
   capabilities: {
     can_cancel: true,
     can_change_seats: false,
@@ -336,14 +337,6 @@ async function driveCheckoutSubscribe() {
   await checkout.handleConfirmTransition()
 }
 
-async function driveLegacyStripeCheckoutSubscribe() {
-  useWorkspaceBillingStateStore().setWorkspaceBillingRail(
-    'ws-1',
-    'legacy_stripe'
-  )
-  await driveCheckoutSubscribe()
-}
-
 async function driveDowngrade() {
   const billing = workspaceBilling()
   Object.assign(useBillingContext(), {
@@ -493,16 +486,6 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
       routes: rejected(SUBSCRIBE_ROUTE),
       drive: driveCheckoutSubscribe,
       expected: [STARTED, REFUSED]
-    },
-    {
-      name: 'a checkout that reports no started subscribes',
-      routes: issuedThenSettled(
-        SUBSCRIBE_ROUTE,
-        { status: 'pending_payment' },
-        { status: 'succeeded' }
-      ),
-      drive: driveLegacyStripeCheckoutSubscribe,
-      expected: [LIFECYCLE_STARTED, SUCCEEDED]
     },
     {
       name: 'downgrade to personal succeeds',

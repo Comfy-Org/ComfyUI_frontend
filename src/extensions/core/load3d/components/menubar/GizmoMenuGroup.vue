@@ -10,7 +10,7 @@
     :aria-label="compact ? t('load3d.gizmo.toggle') : undefined"
     @click="toggleGizmo"
   >
-    <i class="icon-[lucide--axis-3d] size-4" />
+    <i class="icon-[lucide--axis-3d]" />
     <span v-if="!compact">{{ t('load3d.gizmo.toggle') }}</span>
   </Button>
 
@@ -28,7 +28,7 @@
         type="button"
         @click="setGizmoMode(m.mode)"
       >
-        <i :class="cn(m.icon, 'size-4')" />
+        <i :class="m.icon" />
         <span>{{ t(m.labelKey) }}</span>
       </Button>
       <Button
@@ -40,7 +40,7 @@
         type="button"
         @click="resetGizmoTransform"
       >
-        <i class="icon-[lucide--rotate-ccw] size-4" />
+        <i class="icon-[lucide--rotate-ccw]" />
         <span>{{ t('load3d.gizmo.reset') }}</span>
       </Button>
     </template>
@@ -56,8 +56,8 @@
           :aria-label="activeModeLabel"
           data-testid="gizmo-mode-menu"
         >
-          <i :class="cn(activeModeDef.icon, 'size-4')" />
-          <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
+          <i :class="activeModeDef.icon" />
+          <i class="icon-[lucide--chevron-down] opacity-70" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" :side-offset="8" :class="menuPanelClass">
@@ -71,11 +71,11 @@
           "
           @click="selectMode(m.mode)"
         >
-          <i :class="cn(m.icon, 'size-4')" />
+          <i :class="m.icon" />
           {{ t(m.labelKey) }}
         </button>
         <button type="button" :class="menuButtonClass" @click="selectReset">
-          <i class="icon-[lucide--rotate-ccw] size-4" />
+          <i class="icon-[lucide--rotate-ccw]" />
           {{ t('load3d.gizmo.reset') }}
         </button>
       </PopoverContent>

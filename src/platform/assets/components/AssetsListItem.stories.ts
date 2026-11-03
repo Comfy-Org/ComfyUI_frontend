@@ -128,7 +128,7 @@ function renderRunningJobWithActions(args: AssetsListItemProps) {
         </template>
         <template #actions>
           <Button variant="destructive" size="icon" aria-label="Cancel">
-            <i class="icon-[lucide--x] size-4" />
+            <i class="icon-[lucide--x]" />
           </Button>
         </template>
       </AssetsListItem>
