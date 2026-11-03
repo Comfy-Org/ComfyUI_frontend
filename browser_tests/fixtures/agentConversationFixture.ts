@@ -936,9 +936,6 @@ export class AgentConversationHarness {
     ])
   }
 
-  // Host edits made while this client follows another workflow: the host
-  // fans them out only to subscribers, so they reach this client only in the
-  // catch-up that answers its next subscribe.
   applyOpsOnHostUnsent(operations: RecordedGraphOperation[]): void {
     this.host.apply(operations)
     for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
