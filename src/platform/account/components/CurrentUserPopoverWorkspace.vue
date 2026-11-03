@@ -94,18 +94,17 @@
       >
         <i class="icon-[lucide--circle-help]" />
       </Button>
-      <Button
-        v-if="addCredits.kind !== 'hidden'"
+      <AddCreditsButton
+        :availability="addCredits"
+        :reason-id="refusalReasonId"
         variant="secondary"
         size="sm"
         data-testid="add-credits-button"
-        :disabled="addCredits.kind === 'disabled'"
-        :aria-describedby="refusalReason ? refusalReasonId : undefined"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"
       >
         {{ $t('subscription.addCredits') }}
-      </Button>
+      </AddCreditsButton>
       <Button
         v-if="paymentRecoveryAvailable"
         variant="secondary"
@@ -140,13 +139,12 @@
       </Button>
     </div>
 
-    <p
-      v-if="!accountActionsOnly && refusalReason"
-      :id="refusalReasonId"
+    <AddCreditsRefusalReason
+      v-if="!accountActionsOnly"
+      :availability="addCredits"
+      :reason-id="refusalReasonId"
       class="m-0 px-4 pb-2 text-xs text-muted-foreground"
-    >
-      {{ refusalReason }}
-    </p>
+    />
 
     <p
       v-if="processingPayment"
@@ -285,6 +283,8 @@ import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/util
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { addCreditsAvailability } from '@/platform/billing/addCreditsAvailability'
+import AddCreditsButton from '@/platform/billing/components/AddCreditsButton.vue'
+import AddCreditsRefusalReason from '@/platform/billing/components/AddCreditsRefusalReason.vue'
 import { useAccountUI } from '@/platform/account/composables/useAccountUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -361,10 +361,7 @@ const {
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
 
-const { locale, t } = useI18n()
-const refusalReason = computed(() =>
-  addCredits.value.kind === 'disabled' ? t(addCredits.value.reasonKey) : null
-)
+const { locale } = useI18n()
 const isLoadingBalance = isLoading
 
 const displayedCredits = computed(() => {
