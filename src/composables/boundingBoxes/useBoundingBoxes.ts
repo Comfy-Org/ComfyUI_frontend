@@ -734,7 +734,7 @@ export function useBoundingBoxes(
   })
 
   const { backgroundConnected, backgroundUrl, incomingBoxes } =
-    useBoundingBoxesSources(litegraphNode)
+    useBoundingBoxesSources(litegraphNode, nodeId)
 
   watch(
     [litegraphNode, backgroundConnected],

@@ -1,5 +1,5 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { clipspaceExtension } from './clipspace'

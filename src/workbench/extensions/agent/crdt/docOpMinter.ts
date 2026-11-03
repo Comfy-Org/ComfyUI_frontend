@@ -270,7 +270,7 @@ function promotedHostWrite(
     value_index: valueIndex,
     instance_path: [String(event.nodeId)],
     host_widgets_values: hostInputs.map((input, index) => {
-      if (index === valueIndex) return event.value
+      if (index === valueIndex) return undefined
       const value = widgetValueStore.getWidget(input.widgetId)?.value
       return isWidgetValue(value) ? value : undefined
     })
@@ -325,8 +325,7 @@ function routedWidgetOperation(
     op: 'set_widget',
     node_id: event.nodeId,
     widget: event.name,
-    value: event.value,
-    old: event.previous
+    value: event.value
   } as const
   const owningGraphId = node?.graph?.id ?? event.graphId
   if (owningGraphId === rootGraphId) {
@@ -804,14 +803,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     graphId: string,
     event: IntentOf<'set_widget'>
   ): void {
-    const key = `owner:${nodeKey(graphId, event.nodeId)}`
+    const key = `owner:${nodeKey(graphId, event.nodeId)}:${event.name}`
     if (reportedRefusals.has(key)) return
     reportedRefusals.add(key)
     reportLostEdit('mint_divergence', [{ op: 'set_widget' }], {
       code: 'unresolvable_widget_owner',
       errorType: 'agent_crdt_widget_owner_unresolved',
       graphId,
-      nodeId: event.nodeId
+      nodeId: event.nodeId,
+      widget: event.name
     })
   }
 

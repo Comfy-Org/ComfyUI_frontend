@@ -36,6 +36,7 @@ function capabilitiesFor(
   isOwner: boolean
 ): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
     resolved_for: {
       user_id: canonicalUserId,
       workspace_id: TEAM_WORKSPACE_ID

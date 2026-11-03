@@ -89,17 +89,14 @@ export interface OpSenderDeps {
   tab: string
   /** `human:<user>:<tab>` (vocabulary §7). */
   actor(): string
-  /** The follower's last observed doc sequence (stamps `base_version`). */
+  /** The follower's last observed doc sequence (a floor for `base_version`). */
   baseVersion(): number
-  /**
-   * Terminal per-batch report: 'acknowledged' carries the host's result;
-   * 'unacknowledged' means one resend after silence also drew no result;
-   * 'unconfirmed' means the transport carried it at least once but its doc
-   * was unbound before any result arrived, so the host may or may not have
-   * applied it; 'undeliverable' means the transport never carried it within
-   * the retry budget or no doc was bound.
-   */
-  onBatchSettled(outcome: BatchOutcome): void
+  /** The highest Lamport counter in the document the follower holds. */
+  observedCounter(): number | undefined
+  onBatchSettled(
+    outcome: BatchOutcome,
+    admissionWorkflowId: string | null
+  ): void
 }
 
 export type BatchOutcome =
@@ -148,6 +145,8 @@ export interface OpSender {
    * `undeliverable` exactly as it would have. Idempotent.
    */
   resume(): void
+  /** Retries a batch held after transport exhaustion. */
+  retryTransport(): void
   /**
    * Eager abort seam (FE #16637 residual): settle the in-flight batch NOW
    * ('unconfirmed' once transmitted, 'undeliverable' otherwise) if its
@@ -183,6 +182,11 @@ interface WireBatch {
   wire: DocOp[]
 }
 
+function liftCounter(op: Op, shift: number): Op {
+  const counter = op.base_version + shift
+  return { ...op, base_version: counter, stamp: [counter, op.actor] }
+}
+
 function toWireBatch(workflowId: string, chunk: readonly SizedOp[]): WireBatch {
   return {
     workflowId,
@@ -198,6 +202,7 @@ interface Admission {
   admitted: SizedOp[]
   rejected: Op[]
   cause: unknown
+  exhausted: boolean
 }
 
 interface InFlight extends WireBatch {
@@ -206,6 +211,8 @@ interface InFlight extends WireBatch {
   reportedThrow: boolean
   resent: boolean
   parked: boolean
+  awaitingTransport: boolean
+  sendMayHaveLeft: boolean
   timer: ReturnType<typeof setTimeout> | null
 }
 
@@ -218,6 +225,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // observed sequence reads 0 between a subscribe and its ack, so only the
   // cursor keeps a re-bound workflow's stamps past ones this actor used there.
   const lastMintedVersions = new Map<string, number>()
+  const lastSentVersions = new Map<string, number>()
   let detached = false
   let suspended = false
   let pumping = false
@@ -237,9 +245,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const mayReportLostEdit = createReportBudget()
   const mayReportSettlementFailure = createReportBudget()
   const mayReportSerializationFailure = createReportBudget()
+  const mayReportCounterExhaustion = createReportBudget()
+
+  function observedFloor(): number {
+    const floor = (deps.observedCounter() ?? -1) + 1
+    return Number.isSafeInteger(floor) ? floor : 0
+  }
 
   function mintBaseVersion(workflowId: string | null): number {
-    const observed = deps.baseVersion()
+    const observed = Math.max(deps.baseVersion(), observedFloor())
     if (workflowId === null) return observed
     const lastMinted = lastMintedVersions.get(workflowId)
     return lastMinted === undefined
@@ -285,7 +299,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           { shouldReport: mayReportLostEdit() }
         )
       try {
-        deps.onBatchSettled(outcome)
+        deps.onBatchSettled(outcome, workflowId)
       } catch (cause) {
         if (reportedFailure || !mayReportSettlementFailure()) return
         reportedFailure = true
@@ -326,18 +340,49 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           SEND_RETRY_INTERVAL_MS
         )
       } else {
-        settleUnbound(batch, 'transport_exhausted')
+        batch.awaitingTransport = true
       }
       return
     }
+    batch.awaitingTransport = false
+    recordSentCounters(batch)
     batch.sends++
     armResultTimeout(batch)
   }
 
+  function stampAboveObserved(batch: InFlight): void {
+    if (batch.sends > 0 || batch.sendMayHaveLeft) return
+    const counters = batch.ops.map((op) => op.base_version)
+    const floor = Math.max(
+      observedFloor(),
+      (lastSentVersions.get(batch.workflowId) ?? -1) + 1
+    )
+    const shift = floor - Math.min(...counters)
+    if (shift > 0 && Number.isSafeInteger(Math.max(...counters) + shift)) {
+      batch.ops = batch.ops.map((op) => liftCounter(op, shift))
+      batch.wire = batch.wire.map((wire, index) => ({
+        ...wire,
+        base_version: batch.ops[index].base_version,
+        stamp: batch.ops[index].stamp
+      }))
+    }
+  }
+
+  function recordSentCounters(batch: InFlight): void {
+    const highest = Math.max(...batch.ops.map((op) => op.base_version))
+    const lastSent = lastSentVersions.get(batch.workflowId) ?? -1
+    lastSentVersions.set(batch.workflowId, Math.max(lastSent, highest))
+    const lastMinted = lastMintedVersions.get(batch.workflowId) ?? -1
+    lastMintedVersions.set(batch.workflowId, Math.max(lastMinted, highest))
+  }
+
   function trySend(batch: InFlight): boolean {
+    stampAboveObserved(batch)
     try {
       return deps.sendOps(batch.workflowId, deps.tab, batch.wire)
     } catch (error) {
+      batch.sendMayHaveLeft = true
+      recordSentCounters(batch)
       if (!batch.reportedThrow) {
         batch.reportedThrow = true
         reportError(error, {
@@ -443,6 +488,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           reportedThrow: false,
           resent: false,
           parked: false,
+          awaitingTransport: false,
+          sendMayHaveLeft: false,
           timer: null
         }
         transmit(inFlight, 0)
@@ -487,15 +534,23 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   function mintAdmission(
     operations: GraphOperation[],
     workflowId: string | null
-  ): Op[] {
+  ): { minted: Op[]; exhausted: boolean } {
     const baseVersion = mintBaseVersion(workflowId)
     const actor = deps.actor()
+    const highest = baseVersion + (operations.length - 1)
+    if (!Number.isSafeInteger(highest))
+      return {
+        minted: mintWireOps(operations, {
+          actor,
+          baseVersion: Number.MAX_SAFE_INTEGER
+        }),
+        exhausted: true
+      }
     const minted = operations.flatMap((operation, index) =>
       mintWireOps([operation], { actor, baseVersion: baseVersion + index })
     )
-    if (workflowId !== null)
-      lastMintedVersions.set(workflowId, baseVersion + minted.length - 1)
-    return minted
+    if (workflowId !== null) lastMintedVersions.set(workflowId, highest)
+    return { minted, exhausted: false }
   }
 
   function appendToOpenGroup(workflowId: string, admitted: SizedOp[]): void {
@@ -516,17 +571,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   function admit(operations: GraphOperation[]): void {
     if (operations.length === 0) return
     const workflowId = deps.workflowId()
-    const minted = mintAdmission(operations, workflowId)
+    const { minted, exhausted } = mintAdmission(operations, workflowId)
     const admission: Admission = {
       workflowId,
       minted,
       admitted: [],
       rejected: [],
-      cause: undefined
+      cause: undefined,
+      exhausted
     }
     const nested = admitting.length > 0
     admitting.push(admission)
-    Object.assign(admission, measureMintedOps(minted))
+    if (!exhausted) Object.assign(admission, measureMintedOps(minted))
     if (nested) return
     commitAdmissions()
   }
@@ -547,7 +603,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     minted,
     admitted,
     rejected,
-    cause
+    cause,
+    exhausted
   }: Admission): void {
     if (detached) {
       settleUndeliverableInBoundedGroups(
@@ -563,6 +620,25 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     )
     if (workflowId === null) {
       settleUndeliverableInBoundedGroups(minted, notifyFailure, workflowId)
+      return
+    }
+    if (exhausted) {
+      if (mayReportCounterExhaustion()) {
+        reportDegraded(
+          new RangeError(
+            'Agent human op counters left the safe integers; the edit was not sent'
+          ),
+          'failure_minting_agent_op_counter'
+        )
+      }
+      settleUndeliverableInBoundedGroups(
+        minted,
+        guardedSettlementNotifier(
+          'failure_settling_agent_op_sender',
+          'counter_exhausted'
+        ),
+        workflowId
+      )
       return
     }
     appendToOpenGroup(workflowId, admitted)
@@ -672,6 +748,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         transmit(inFlight, 0)
       }
     },
+    retryTransport() {
+      if (!inFlight?.awaitingTransport) return
+      inFlight.awaitingTransport = false
+      transmit(inFlight, 0)
+    },
     abortIfUnbound() {
       if (inFlight && deps.workflowId() !== inFlight.workflowId) {
         settleUnbound(inFlight, 'unbound')
@@ -679,7 +760,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     },
     abortAll() {
       const resetWorkflowId = deps.workflowId()
-      if (resetWorkflowId !== null) lastMintedVersions.delete(resetWorkflowId)
+      if (resetWorkflowId !== null) {
+        lastMintedVersions.delete(resetWorkflowId)
+        lastSentVersions.delete(resetWorkflowId)
+      }
       drainOutstanding(
         guardedSettlementNotifier(
           'failure_settling_agent_op_sender_abort',

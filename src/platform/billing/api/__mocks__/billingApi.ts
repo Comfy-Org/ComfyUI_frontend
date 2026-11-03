@@ -5,6 +5,7 @@ import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 export const billingApi = vi.mockObject<typeof realBillingApi>(
   {
     getBillingStatus: async () => ({
+      ended_at: null,
       is_active: false,
       has_funds: false,
       subscription_tier: 'FREE',
@@ -20,6 +21,7 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
     getBillingCapabilities: async (signal) => {
       signal?.throwIfAborted()
       return {
+        auto_top_up_enabled: false,
         capabilities: {
           can_cancel: false,
           can_change_seats: false,
@@ -54,16 +56,21 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
       }
     },
     getBillingAutoReload: async () => ({
+      card_expiry: null,
       configured: false,
       cycle_resets_at: null,
+      declined_payment_method: null,
       disabled_reason: null,
       enabled: false,
       last_failure_at: null,
       last_failure_reason: null,
       max_monthly_budget_cents: 0,
+      max_reload_credits: null,
       min_reload_credits: 0,
       monthly_budget_cents: null,
+      monthly_budget_is_default: false,
       paused_by_budget: false,
+      paused_by_budget_remainder: false,
       paused_by_decline: false,
       reload_amount_cents: null,
       reload_credits: null,

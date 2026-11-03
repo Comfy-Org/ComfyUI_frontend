@@ -4,85 +4,28 @@
   "description": "Layered image composition and layer editing: layer state, editing orchestration, rendering, PSD export, dialogs, extension registrations, Vue-node adaptation, and LiteGraph widget integration.",
   "modules": [
     {
-      "path": "src/extensions/core/imageCompositor.test.ts",
-      "role": "integration"
+      "path": "src/extensions/core/imageCompositor.ts"
     },
     {
-      "path": "src/extensions/core/imageCompositor.ts",
-      "role": "integration"
+      "path": "src/extensions/core/layerEditor.ts"
     },
     {
-      "path": "src/extensions/core/layerEditor.ts",
-      "role": "integration"
+      "path": "src/lib/litegraph/src/widgets/CompositorWidget.ts"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/CompositorWidget.ts",
-      "role": "integration"
+      "path": "src/renderer/extensions/compositor/**"
     },
     {
-      "path": "src/renderer/extensions/compositor/**",
-      "role": "application"
+      "path": "src/renderer/extensions/layerEditor/**"
     },
     {
-      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
-      "role": "presentation"
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts"
     },
     {
-      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/components/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/composables/**",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/composables/layerEditorDialog.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/composables/layerEditorDialog.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/composables/layerPanelDnd.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/composables/layerPanelDnd.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/psdExport.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/psdExport.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/psdMapping.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/layerEditor/psdMapping.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
-      "role": "integration"
+      "path": "packages/layer-editor/src/**"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["dialog-host"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Compositor sessions preserve layer state and save behavior",

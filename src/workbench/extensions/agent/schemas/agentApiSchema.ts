@@ -14,6 +14,7 @@ import {
   zAgentToolCallData as zGeneratedAgentToolCallData,
   zAgentThinkingEntry,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
+  zAgentTurnUsage as zGeneratedAgentTurnUsage,
   zToolCallSummary,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
@@ -62,7 +63,8 @@ export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
 export const RENDERED_ASK_KINDS = [
   'run_approval',
   'ask_user',
-  'delete_approval'
+  'delete_approval',
+  'paused'
 ] as const satisfies readonly AgentAskKind[]
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
@@ -300,7 +302,8 @@ const zAgentUsage = z
     output_tokens: z.number().nullish(),
     total_tokens: z.number().nullish(),
     cache_read_input_tokens: z.number().nullish(),
-    cache_creation_input_tokens: z.number().nullish()
+    cache_creation_input_tokens: z.number().nullish(),
+    charge_micro_usd: zGeneratedAgentTurnUsage.shape.charge_micro_usd
   })
   .passthrough()
 
@@ -347,6 +350,11 @@ const zAgentMessageDraftEvent = z.object({
   data: zAgentMessageDraftData
 })
 
+const zAgentThinkingDraftEvent = z.object({
+  type: z.literal('agent_thinking_draft'),
+  data: zAgentMessageDraftData
+})
+
 const zAgentMessageDoneEvent = z.object({
   type: z.literal('agent_message_done'),
   data: zAgentMessageDoneData
@@ -372,6 +380,7 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentToolCallEvent,
   zAgentMessageDeltaEvent,
   zAgentMessageDraftEvent,
+  zAgentThinkingDraftEvent,
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,

@@ -4,45 +4,19 @@
   "description": "Right-side properties panel state and presentation: selected-node targeting, favorited widgets, parameters, node settings, hierarchy, and node information. Workflow errors and subgraph promotion remain separate.",
   "modules": [
     {
-      "path": "src/components/rightSidePanel/**",
-      "role": "presentation"
+      "path": "src/components/rightSidePanel/**"
     },
     {
-      "path": "src/components/rightSidePanel/rightSidePanelTabTelemetry.test.ts",
-      "role": "application"
+      "path": "src/composables/graph/useGraphHierarchy.ts"
     },
     {
-      "path": "src/components/rightSidePanel/rightSidePanelTabTelemetry.ts",
-      "role": "application"
+      "path": "src/stores/workspace/favoritedWidgetsStore.ts"
     },
     {
-      "path": "src/components/rightSidePanel/shared.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/rightSidePanel/shared.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/graph/useGraphHierarchy.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/graph/useGraphHierarchy.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/favoritedWidgetsStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/rightSidePanelStore.ts",
-      "role": "application"
+      "path": "src/stores/workspace/rightSidePanelStore.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["selection-toolbox"],
   "characterizationScenarios": [
     {
       "name": "Panel routes between tabs for the current selection and reports tab telemetry",

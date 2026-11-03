@@ -61,6 +61,7 @@ function capabilitiesResponse(
   overrides: Partial<BillingCapabilitiesResponse['capabilities']> = {}
 ): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
     resolved_for: {
       user_id: 'canonical-user-1',
       workspace_id: workspaceId
@@ -410,6 +411,30 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canManageBilling.value).toBe(true)
   })
 
+  it.for(['unspecified', 'billing_operation_in_progress'])(
+    'drops the off-contract top-up denial %s',
+    async (reason) => {
+      const response = capabilitiesResponse(
+        true,
+        'workspace-1',
+        true,
+        {},
+        {
+          can_top_up: false
+        }
+      )
+      response.denied_reasons = { can_top_up: reason as never }
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
+        response
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+      expect(billingCapabilities.topUpDenial.value).toBeUndefined()
+    }
+  )
+
   it.for([
     { served: true, expected: true },
     { served: false, expected: false },
@@ -426,6 +451,24 @@ describe('useBillingCapabilities', () => {
       await billingCapabilities.initialize()
 
       expect(billingCapabilities.paymentRecoveryAvailable.value).toBe(expected)
+    }
+  )
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false }
+  ])(
+    'renders auto_top_up_enabled $served as $expected',
+    async ({ served, expected }) => {
+      const response = capabilitiesResponse(true, 'workspace-1', true)
+      response.auto_top_up_enabled = served
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
+        response
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.autoTopUpEnabled.value).toBe(expected)
     }
   )
 

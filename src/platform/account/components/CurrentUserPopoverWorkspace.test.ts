@@ -15,6 +15,7 @@ import { setImmediate } from 'node:timers/promises'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import type {
   BalanceInfo,
@@ -266,6 +267,22 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.keyboard('{Escape}')
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('reports a failed balance read once instead of leaving it unhandled', async () => {
+    const failure = new Error('Balance temporarily unavailable')
+    vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(failure)
+
+    renderComponent()
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'billing',
+        errorType: 'error_refreshing_balance',
+        level: 'warning'
+      })
+    )
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('keeps account actions available without workspace context', () => {

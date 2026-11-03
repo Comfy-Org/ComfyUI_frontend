@@ -13,11 +13,12 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type {
   ExecutedWsMessage,
   ResultItem
-} from '@/platform/remote/comfyui/execution/types'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+} from '@comfyorg/api-client/executionTypes'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { clone } from '@/scripts/utils'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type {
   NodeExecutionId,
@@ -26,7 +27,11 @@ import type {
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { parseFilePath } from '@/utils/formatUtil'
-import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import {
+  executionIdToNodeLocatorId,
+  getNodeByLocatorId
+} from '@/utils/graphTraversalUtil'
+import { parseImageWidgetValue } from '@/utils/imageUtil'
 import {
   isAnimatedOutput,
   isVideoNode,
@@ -54,6 +59,21 @@ const createOutputs = (
       )
     })
   }
+}
+
+function isResolvedPreviewOf(
+  output: ExecutedWsMessage['output'] | undefined,
+  widgetValue: string
+): boolean {
+  const images = output?.images ?? []
+  if (images.length !== 1 || !images[0].preview_id) return false
+  const [image] = images
+  const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
+  return (
+    image.filename === filename &&
+    (image.subfolder ?? '') === subfolder &&
+    image.type === type
+  )
 }
 
 const isResultItem = (
@@ -248,9 +268,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const locatorId = nodeToNodeLocatorId(node)
     if (!locatorId) return
     if (typeof filenames === 'string') {
+      const existingOutput = nodeOutputs.value[locatorId]
+      const outputs = createOutputs([filenames], folder, isAnimated)
       setOutputsByLocatorId(
         locatorId,
-        createOutputs([filenames], folder, isAnimated)
+        isResolvedPreviewOf(existingOutput, filenames)
+          ? { ...outputs, images: existingOutput?.images }
+          : outputs
       )
     } else if (!Array.isArray(filenames)) {
       setOutputsByLocatorId(locatorId, filenames)
@@ -297,15 +321,44 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function setNodeOutputsByExecutionId(
     executionId: NodeExecutionId,
-    outputs: ExecutedWsMessage['output'] | ResultItem,
+    outputs: ExecutedWsMessage['output'] | ResultItem | null | undefined,
     options: SetOutputOptions = {}
   ) {
-    const nodeLocatorId = executionIdToNodeLocatorId(
-      useApp().rootGraph,
-      executionId
-    )
-    if (!nodeLocatorId) return
+    const rootGraph = useApp().rootGraphOrUndefined
+    const nodeLocatorId = executionIdToNodeLocatorId(rootGraph, executionId)
+    if (
+      !nodeLocatorId ||
+      (rootGraph && !getNodeByLocatorId(rootGraph, nodeLocatorId))
+    ) {
+      reportUnresolvedExecutionId(executionId, outputs)
+      return
+    }
     setOutputsByLocatorId(nodeLocatorId, outputs, options)
+  }
+
+  function reportUnresolvedExecutionId(
+    executionId: NodeExecutionId,
+    outputs: ExecutedWsMessage['output'] | ResultItem | null | undefined
+  ) {
+    const incomingImages =
+      typeof outputs === 'object' && outputs !== null && 'images' in outputs
+        ? outputs.images
+        : undefined
+    const filenames = Array.isArray(incomingImages)
+      ? incomingImages
+          .filter(isResultItem)
+          .map((image) => image.filename)
+          .filter((filename): filename is string => !!filename)
+      : undefined
+    reportError(new Error('No live node resolves the executed output'), {
+      surface: 'graph',
+      errorType: 'failure_resolving_node_output_execution_id',
+      level: 'warning',
+      tags: { executionId },
+      context: {
+        filenames: filenames?.length ? filenames : undefined
+      }
+    })
   }
 
   function setNodePreviewsByExecutionId(

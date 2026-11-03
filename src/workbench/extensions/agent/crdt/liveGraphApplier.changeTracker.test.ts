@@ -495,8 +495,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
           op: 'set_widget',
           node_id: '1',
           widget: 'after',
-          value: 'human tail',
-          old: 'remote tail'
+          value: 'human tail'
         }
       ])
     )

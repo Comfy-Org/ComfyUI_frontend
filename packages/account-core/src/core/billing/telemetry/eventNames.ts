@@ -36,6 +36,7 @@ export const BILLING_TELEMETRY_EVENTS = {
   BILLING_WEB_HANDOFF_OPENED: 'billing.web_handoff.opened',
   BILLING_ENTRY_PAYWALL_SHOWN: 'billing.entry.paywall_shown',
   BILLING_ENTRY_ADD_CREDITS_CLICKED: 'billing.entry.add_credits_clicked',
+  BILLING_ENTRY_PRICING_LINK_REFUSED: 'billing.entry.pricing_link_refused',
   BILLING_CANCEL_INTENT: 'billing.cancel.intent',
   BILLING_CANCEL_ABANDONED: 'billing.cancel.abandoned',
   BILLING_CANCEL_FAILED: 'billing.cancel.failed',

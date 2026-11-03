@@ -105,8 +105,10 @@ const ACTIVE_STANDARD = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -251,9 +253,6 @@ async function setupParity(
     routes.balanceRequests.push(route.request())
     return route.fulfill(jsonRoute(balance(server.balanceMicros)))
   })
-  await page.route('**/customers/balance', (route) =>
-    route.fulfill(jsonRoute(balance(server.balanceMicros)))
-  )
   await page.route('**/api/billing/plans', (route) =>
     route.fulfill(jsonRoute(PLAN_CATALOG))
   )

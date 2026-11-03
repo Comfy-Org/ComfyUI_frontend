@@ -4,29 +4,19 @@
   "description": "Image-crop presentation, composable behavior, extension registration, and LiteGraph widget integration.",
   "modules": [
     {
-      "path": "src/components/imagecrop/**",
-      "role": "presentation"
+      "path": "src/components/imagecrop/**"
     },
     {
-      "path": "src/composables/useImageCrop.test.ts",
-      "role": "application"
+      "path": "src/composables/useImageCrop.ts"
     },
     {
-      "path": "src/composables/useImageCrop.ts",
-      "role": "application"
+      "path": "src/extensions/core/imageCrop.ts"
     },
     {
-      "path": "src/extensions/core/imageCrop.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/widgets/ImageCropWidget.ts",
-      "role": "integration"
+      "path": "src/lib/litegraph/src/widgets/ImageCropWidget.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Crop bounds and widget values preserve image-crop behavior",

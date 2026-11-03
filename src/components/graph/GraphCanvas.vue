@@ -1,4 +1,54 @@
 <template>
+  <div class="absolute inset-0 isolate">
+    <canvas
+      id="graph-canvas"
+      ref="canvasRef"
+      tabindex="1"
+      class="absolute inset-0 size-full touch-none"
+    />
+    <TransformPane
+      v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+      ref="transformPaneRef"
+      :canvas="comfyApp.canvas"
+      :inert="canvasStore.isPickingNodes"
+      @wheel.capture="canvasInteractions.forwardEventToCanvas"
+      @pointerdown.capture="forwardPointerDownPanEvent"
+      @pointerup.capture="forwardPointerUpPanEvent"
+      @pointermove.capture="forwardPointerMovePanEvent"
+      @keydown.space="forwardSpaceKeyEvent"
+    >
+      <KeepAlive v-for="nodeData in allNodes" :key="nodeData.id">
+        <LGraphNode
+          v-if="renderedNodeIds.has(nodeData.id)"
+          :node-data
+          :data-node-id="nodeData.id"
+        />
+      </KeepAlive>
+    </TransformPane>
+    <NodeBoxOverlay
+      v-if="shouldRenderVueNodes && comfyAppReady && isLowQuality"
+      :get-boxes="getNodeBoxes"
+      :content-version="boxContentVersion"
+    />
+    <LinkOverlayCanvas
+      v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+      :canvas="comfyApp.canvas"
+      @ready="onLinkOverlayReady"
+      @dispose="onLinkOverlayDispose"
+    />
+    <SelectionRectangle v-if="comfyAppReady" />
+    <NodeTooltip v-if="tooltipEnabled" />
+    <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
+    <NodeDragPreview />
+    <VueNodeSwitchPopup />
+    <template v-if="comfyAppReady">
+      <TitleEditor />
+      <SelectionToolbox v-if="selectionToolboxEnabled" />
+      <NodeContextMenu />
+      <DomWidgets v-if="!shouldRenderVueNodes" />
+    </template>
+    <slot name="legacy-menu" />
+  </div>
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
@@ -42,10 +92,6 @@
       />
     </template>
     <template #graph-canvas-panel>
-      <GraphCanvasMenu
-        v-if="canvasMenuEnabled && !isBuilderMode"
-        class="pointer-events-auto"
-      />
       <MiniMap
         v-if="
           comfyAppReady &&
@@ -56,66 +102,13 @@
         "
         class="pointer-events-auto"
       />
+      <GraphCanvasMenu
+        v-if="canvasMenuEnabled && !isBuilderMode"
+        class="pointer-events-auto"
+      />
       <NodeSelectionModeBanner />
     </template>
   </LiteGraphCanvasSplitterOverlay>
-  <canvas
-    id="graph-canvas"
-    ref="canvasRef"
-    tabindex="1"
-    class="absolute inset-0 size-full touch-none"
-  />
-
-  <!-- TransformPane for Vue node rendering -->
-  <TransformPane
-    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
-    ref="transformPaneRef"
-    :canvas="comfyApp.canvas"
-    :inert="canvasStore.isPickingNodes"
-    @wheel.capture="canvasInteractions.forwardEventToCanvas"
-    @pointerdown.capture="forwardPointerDownPanEvent"
-    @pointerup.capture="forwardPointerUpPanEvent"
-    @pointermove.capture="forwardPointerMovePanEvent"
-    @keydown.space="forwardSpaceKeyEvent"
-  >
-    <KeepAlive v-for="nodeData in allNodes" :key="nodeData.id">
-      <LGraphNode
-        v-if="renderedNodeIds.has(nodeData.id)"
-        :node-data
-        :data-node-id="nodeData.id"
-      />
-    </KeepAlive>
-  </TransformPane>
-
-  <NodeBoxOverlay
-    v-if="shouldRenderVueNodes && comfyAppReady && isLowQuality"
-    :get-boxes="getNodeBoxes"
-    :content-version="boxContentVersion"
-  />
-
-  <LinkOverlayCanvas
-    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
-    :canvas="comfyApp.canvas"
-    @ready="onLinkOverlayReady"
-    @dispose="onLinkOverlayDispose"
-  />
-
-  <SelectionRectangle v-if="comfyAppReady" />
-
-  <NodeTooltip v-if="tooltipEnabled" />
-  <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
-  <NodeDragPreview />
-  <VueNodeSwitchPopup />
-
-  <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
-  canvasStore.canvas to be initialized. -->
-  <template v-if="comfyAppReady">
-    <TitleEditor />
-    <SelectionToolbox v-if="selectionToolboxEnabled" />
-    <NodeContextMenu />
-    <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
-    <DomWidgets v-if="!shouldRenderVueNodes" />
-  </template>
 </template>
 
 <script lang="ts">
@@ -213,12 +206,12 @@ import {
   applyLightThemeColor,
   isRenderableColor
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
-import { UnauthorizedError } from '@/scripts/api'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
-import { loadExtensions } from '@/services/extensionLoader'
+import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import { isNodeExcludedFromCulling } from '@/services/vueNodeCullingService'
@@ -686,7 +679,7 @@ useEventListener(
 )
 
 let disposed = false
-const lateExtensionWork = new AbortController()
+const lateCustomNodeWork = new AbortController()
 const startupOwner = Symbol()
 
 function finishStartup(outcome: 'completed' | 'failed') {
@@ -748,7 +741,7 @@ onMounted(async () => {
     }
 
     await bootstrapTracer.settle('bootstrap/extensions-load', () =>
-      loadExtensions(lateExtensionWork.signal)
+      loadExtensions(lateCustomNodeWork.signal)
     )
 
     const canvas = canvasRef.value
@@ -790,6 +783,7 @@ onMounted(async () => {
     bootstrapOutcome = 'completed'
   } finally {
     if (!disposed) {
+      workflowStore.markTabsRestored()
       finishStartup(bootstrapOutcome)
     }
   }
@@ -822,7 +816,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   disposed = true
-  lateExtensionWork.abort()
+  lateCustomNodeWork.abort()
   void nextTick(() => {
     if (activeStartup !== startupOwner) return
     activeStartup = undefined

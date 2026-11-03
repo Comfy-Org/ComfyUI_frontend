@@ -3,12 +3,12 @@ import axios from 'axios'
 import {
   webSessionRequests,
   webSessionSend
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import {
   UNKNOWN_ERROR_CODE,
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import { createWebSessionAdapter } from './webSessionAdapter'
 import { attachCapabilityRevisionInterceptor } from './capabilityRevision'
 import {

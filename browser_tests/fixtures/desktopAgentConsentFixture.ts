@@ -18,6 +18,7 @@ declare global {
 class DesktopConsentSignIn {
   requests = 0
   state: ComfyDesktop2AuthState = { status: 'signed_out' }
+  readonly consentAuthorizationHeaders: string[] = []
   private resolve: (state: ComfyDesktop2AuthState) => void = () => {}
   private readonly result = new Promise<ComfyDesktop2AuthState>((resolve) => {
     this.resolve = resolve
@@ -47,11 +48,13 @@ export const desktopAgentConsentTest = mergeTests(
   webSocketFixture
 ).extend<{
   desktopConsentSignIn: DesktopConsentSignIn
+  desktopWorkspaceToken: string | null
 }>({
   desktopConsentSignIn: async ({ browserName: _browserName }, use) => {
     await use(new DesktopConsentSignIn())
   },
-  page: async ({ page, desktopConsentSignIn }, use) => {
+  desktopWorkspaceToken: ['mock-workspace-token', { option: true }],
+  page: async ({ page, desktopConsentSignIn, desktopWorkspaceToken }, use) => {
     await mockWorkspace(page, workspace('personal', 'owner'), [])
     await page.exposeFunction('__desktopConsentSignIn', () =>
       desktopConsentSignIn.request()
@@ -60,7 +63,7 @@ export const desktopAgentConsentTest = mergeTests(
       '__desktopConsentAuthState',
       () => desktopConsentSignIn.state
     )
-    await page.addInitScript(() => {
+    await page.addInitScript((workspaceToken) => {
       let state: ComfyDesktop2AuthState | undefined
       const listeners = new Set<(next: ComfyDesktop2AuthState) => void>()
       const push = (next: ComfyDesktop2AuthState) => {
@@ -79,7 +82,7 @@ export const desktopAgentConsentTest = mergeTests(
           (state ??= await window.__desktopConsentAuthState()),
         getWorkspaceToken: async (workspaceId: string) =>
           state?.status === 'signed_in' && state.workspaceId === workspaceId
-            ? 'mock-workspace-token'
+            ? workspaceToken
             : null,
         requestSignIn: async () => push(await window.__desktopConsentSignIn()),
         signOut: async () => push({ status: 'signed_out' }),
@@ -95,6 +98,16 @@ export const desktopAgentConsentTest = mergeTests(
           Auth: auth
         }
       })
+    }, desktopWorkspaceToken)
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname.endsWith('/api/global-settings')
+      ) {
+        desktopConsentSignIn.consentAuthorizationHeaders.push(
+          request.headers()['authorization'] ?? ''
+        )
+      }
     })
     await use(page)
   }
