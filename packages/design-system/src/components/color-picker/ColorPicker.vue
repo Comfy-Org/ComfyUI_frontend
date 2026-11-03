@@ -19,6 +19,7 @@ import ColorPickerPanel from './ColorPickerPanel.vue'
 
 const {
   alpha = true,
+  align = 'start',
   accessibleLabel,
   triggerId
 } = defineProps<ColorPickerProps>()
@@ -125,7 +126,7 @@ const isOpen = ref(false)
       </slot>
     </PopoverTrigger>
     <PopoverContent
-      align="start"
+      :align
       :side-offset="7"
       class="w-auto border-0 bg-transparent p-0 shadow-none"
     >

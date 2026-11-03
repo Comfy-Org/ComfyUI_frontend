@@ -43,6 +43,7 @@ watch(controlModel, props.widget.controlWidget.update)
             />
           </PopoverTrigger>
           <PopoverContent
+            :align="unifiedRows ? 'start' : 'center'"
             :side-offset="5"
             dismiss-on-viewport-change
             class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"

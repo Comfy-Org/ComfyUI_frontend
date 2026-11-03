@@ -4,6 +4,7 @@
       v-model="localValue"
       :trigger-id="inputId"
       :alpha="format !== 'int'"
+      :align="unifiedRows ? 'end' : 'start'"
       :class="unifiedRows ? 'bg-transparent' : undefined"
       @update:model-value="onUpdate"
     />

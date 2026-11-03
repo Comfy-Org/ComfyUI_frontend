@@ -7,13 +7,14 @@ import {
 } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, inject, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 
 import type {
   FilterOption,
@@ -68,6 +69,7 @@ interface Props {
 }
 
 const { t } = useI18n()
+const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 
 const {
   inputId,
@@ -337,7 +339,7 @@ function showPicker() {
     <PopoverRoot v-model:open="isOpen">
       <PopoverAnchor as="template" :reference="triggerAnchorRef ?? undefined" />
       <PopoverContent
-        align="start"
+        :align="unifiedRows ? 'end' : 'start'"
         class="pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
         @interact-outside.prevent
         @close-auto-focus.prevent="focusTrigger"

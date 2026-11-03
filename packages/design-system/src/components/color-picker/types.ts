@@ -1,3 +1,5 @@
+import type { PopoverContentProps } from 'reka-ui'
+
 export interface HSVA {
   h: number
   s: number
@@ -7,6 +9,7 @@ export interface HSVA {
 
 export interface ColorPickerProps {
   triggerId?: string
+  align?: PopoverContentProps['align']
   class?: string
   disabled?: boolean
   alpha?: boolean

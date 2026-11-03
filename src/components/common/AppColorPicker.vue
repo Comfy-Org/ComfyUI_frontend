@@ -9,11 +9,12 @@ const {
   alpha = true,
   disabled = false,
   accessibleLabel,
-  triggerId
+  triggerId,
+  align
 } = defineProps<
   Pick<
     ColorPickerProps,
-    'class' | 'alpha' | 'disabled' | 'accessibleLabel' | 'triggerId'
+    'class' | 'alpha' | 'disabled' | 'accessibleLabel' | 'triggerId' | 'align'
   >
 >()
 
@@ -29,6 +30,7 @@ const { t } = useI18n()
     :disabled
     :accessible-label="accessibleLabel"
     :trigger-id="triggerId"
+    :align
     :hex-label="t('color.hex')"
     :rgba-label="t('color.rgba')"
     :hue-label="t('color.hue')"
