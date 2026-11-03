@@ -1,13 +1,5 @@
-/** Brief an agent follows to help create a custom deployment on Comfy Cloud. */
-export const CUSTOM_DEPLOYMENT_BRIEF = `# Create a custom deployment on Comfy Cloud
-
-Help the user create a **custom deployment** on the Comfy developer platform. A
-custom deployment runs ComfyUI on Comfy Cloud with the custom node packs and
-models the user chooses, including ones Comfy Cloud does not have. Once it is
-deployed, it appears under **Run on** in the ComfyUI editor for everyone in the
-user's workspace.
-
-## Before you start
+/** The section of a Build brief that sends an agent to the build recipe. */
+export const BUILD_RECIPE_SECTION = `## Before you start
 
 Read the build recipe, and follow it:
 
@@ -17,7 +9,18 @@ comfy skills show comfy-build
 
 If \`comfy\` or that skill is missing, install the current CLI first with
 \`pip install -U comfy-cli\`. The recipe owns every command, the pins, the
-models, the targets, the cut, watching the release and reading a failure.
+models, the targets, the cut, watching the release and reading a failure.`
+
+/** Brief an agent follows to help create a custom deployment on Comfy Cloud. */
+export const CUSTOM_DEPLOYMENT_BRIEF = `# Create a custom deployment on Comfy Cloud
+
+Help the user create a **custom deployment** on the Comfy developer platform. A
+custom deployment runs ComfyUI on Comfy Cloud with the custom node packs and
+models the user chooses, including ones Comfy Cloud does not have. Once it is
+deployed, it appears under **Run on** in the ComfyUI editor for everyone in the
+user's workspace.
+
+${BUILD_RECIPE_SECTION}
 
 ## Where the user decides
 
