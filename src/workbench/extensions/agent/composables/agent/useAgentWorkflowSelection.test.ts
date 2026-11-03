@@ -358,25 +358,53 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  it('keeps the current view and reports a failed restore when a listed workflow has no saved file', async () => {
+  it('opens the chat with its workflow unavailable when a listed workflow has no saved file', async () => {
     const { selection, workflows, panel, current, warnRestoreFailed } = setup()
 
     expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
-      false
+      true
+    )
+
+    expect(workflows.syncWorkflows).toHaveBeenCalledOnce()
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnavailable).toBe(true)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('opens the chat with its workflow unavailable when two saved workflows share its name', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      current,
+      listCloudWorkflows,
+      warnRestoreFailed
+    } = setup()
+    listCloudWorkflows.mockImplementation(async () =>
+      listing([
+        { id: 'wf-saved', name: 'saved' },
+        { id: 'wf-other', name: 'saved' },
+        { id: 'wf-current', name: 'current' }
+      ])
+    )
+    for (const path of ['workflows/saved.json', 'workflows/a/saved.json'])
+      workflows.attachWorkflow(
+        createMockLoadedWorkflow({
+          path,
+          filename: 'saved',
+          isTemporary: false
+        })
+      )
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      true
     )
 
     expect(workflows.activeWorkflow?.path).toBe(current.path)
-    expect(panel.selectedWorkflow).toBeNull()
-    expect(panel.targetUnavailable).toBe(false)
-    expect(warnRestoreFailed).toHaveBeenCalledOnce()
-    expect(reportError).toHaveBeenCalledWith(
-      new Error('No saved workflow resolves to the chat target'),
-      {
-        surface: 'agent',
-        errorType: 'agent_workflow_restore_failed',
-        context: { workflowId: 'wf-saved' }
-      }
-    )
+    expect(panel.targetUnavailable).toBe(true)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
   it.for([

@@ -23,7 +23,7 @@ import type {
 } from './useAgentWorkflowResolver'
 
 type RestorationOutcome =
-  | { outcome: 'open'; target: ComfyWorkflow | null }
+  | { outcome: 'open'; target: ComfyWorkflow | null; listed: boolean }
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
 
@@ -52,7 +52,7 @@ function restorationOutcomeFor(
       return { outcome: 'deleted' }
     case 'live':
     case 'unknown':
-      return { outcome: 'open', target }
+      return { outcome: 'open', target, listed: false }
   }
 }
 
@@ -93,6 +93,7 @@ export function useAgentWorkflowSelection({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
+    cloudListingIncludes,
     cloudListingOmits,
     cloudWorkflowLifecycle
   } = resolver
@@ -275,7 +276,11 @@ export function useAgentWorkflowSelection({
       target = localOwnerFor(workflowId)
     }
     if (!listed || !cloudListingOmits(workflowId))
-      return { outcome: 'open', target }
+      return {
+        outcome: 'open',
+        target,
+        listed: listed && cloudListingIncludes(workflowId)
+      }
     if (target === null) return { outcome: 'deleted' }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
@@ -320,19 +325,35 @@ export function useAgentWorkflowSelection({
       panelStore.markWorkflowTargetUnavailable()
       return NOT_RESTORED
     }
-    return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
+    return openRestoredWorkflow(
+      resolved.target,
+      workflowId,
+      isCurrent,
+      resolved.listed
+    )
   }
 
+  /**
+   * `listed` says the workflow listing names this workflow. One that is still
+   * not found after a fresh sync then has no saved copy this browser can open
+   * (an unsaved tab in another browser, or a name shared by two saved
+   * workflows), so retrying cannot help: the chat opens without it.
+   */
   async function openRestoredWorkflow(
     target: ComfyWorkflow | null,
     workflowId: string,
-    isCurrent: () => boolean
+    isCurrent: () => boolean,
+    listed = false
   ): Promise<WorkflowRestoration> {
     try {
       if (target === null) {
         await workflowStore.syncWorkflows()
         if (!isCurrent()) return RESTORE_ABANDONED
         target = storedWorkflowFor(workflowId)
+      }
+      if (target === null && listed) {
+        panelStore.markWorkflowTargetUnavailable()
+        return NOT_RESTORED
       }
       if (target === null) {
         panelStore.setWorkflowTarget(null)
