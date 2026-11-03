@@ -2425,6 +2425,49 @@ describe('useAgentConversationStore', () => {
       ).not.toHaveProperty('canvasConfirmed')
     })
 
+    it('does not move a live canvas verdict onto a stored tool when the row omits a call', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const liveAddNode = (n: number): AgentChatEvent =>
+        chat({
+          type: 'agent_tool_call',
+          data: {
+            tool_call_id: `live-${n}`,
+            tool_name: 'add_node',
+            status: 'success',
+            workflow_id: workflowId,
+            op_ids: [`op-${n}`],
+            message_id: SNAPSHOT_ROW_ID,
+            thread_id: 'th'
+          }
+        })
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(liveAddNode(1))
+      store.ingest(liveAddNode(2))
+      store.ingest(liveAddNode(3))
+      store.notifyCanvasCaughtUp(
+        liveCanvasEvidence(workflowId, ['op-1', 'op-3'])
+      )
+      const stored = (callId: string): AssistantMessage['parts'][number] => ({
+        type: 'tool',
+        callId,
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      })
+
+      store.settleTurn({ threadId: 'th', messageId: SNAPSHOT_ROW_ID }, [
+        stored('row-1'),
+        stored('row-3')
+      ])
+
+      expect(
+        reconciledParts(store)?.filter((part) => part.type === 'tool')
+      ).toEqual([stored('row-1'), stored('row-3')])
+    })
+
     it('waits for a held tool call to clear before announcing the turn', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
       const store = useAgentConversationStore()

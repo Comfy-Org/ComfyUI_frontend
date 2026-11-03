@@ -297,15 +297,22 @@ function preserveCanvasVerdicts(
   liveParts: AssistantMessage['parts'],
   persistedParts: AssistantMessage['parts']
 ): AssistantMessage['parts'] {
-  const storedCallId = storedCallIdOf(
-    liveParts,
-    persistedParts,
-    liveToolOffset(liveParts, persistedParts)
+  const offset = liveToolOffset(liveParts, persistedParts)
+  const storedCallId = storedCallIdOf(liveParts, persistedParts, offset)
+  const liveTools = toolPartsOf(liveParts)
+  const persistedCallIds = new Set(toolCallIdsOf(persistedParts))
+  const liveCounts = toolNameCounts(liveTools)
+  const alignedCounts = toolNameCounts(
+    toolPartsOf(persistedParts).slice(offset, offset + liveTools.length)
   )
   const liveByStoredCallId = new Map<string, ToolPart>()
-  for (const part of liveParts) {
-    if (part.type === 'tool')
-      liveByStoredCallId.set(storedCallId(part.callId), part)
+  for (const part of liveTools) {
+    if (
+      !persistedCallIds.has(part.callId) &&
+      liveCounts.get(part.name) !== alignedCounts.get(part.name)
+    )
+      continue
+    liveByStoredCallId.set(storedCallId(part.callId), part)
   }
   return persistedParts.map((part) => {
     if (part.type !== 'tool' || part.ok !== true) return part
@@ -314,6 +321,17 @@ function preserveCanvasVerdicts(
     const canvasConfirmed = liveCanvasVerdict(live)
     return canvasConfirmed === undefined ? part : { ...part, canvasConfirmed }
   })
+}
+
+function toolPartsOf(parts: AssistantMessage['parts']): ToolPart[] {
+  return parts.filter((part): part is ToolPart => part.type === 'tool')
+}
+
+function toolNameCounts(tools: ToolPart[]): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const tool of tools)
+    counts.set(tool.name, (counts.get(tool.name) ?? 0) + 1)
+  return counts
 }
 
 function liveCanvasVerdict(part: ToolPart): boolean | undefined {
