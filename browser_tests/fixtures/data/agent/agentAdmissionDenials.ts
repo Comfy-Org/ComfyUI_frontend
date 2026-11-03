@@ -5,9 +5,9 @@ import type {
 
 /** The statuses the generated contract maps to an admission denial. */
 type AdmissionStatus = {
-  [Status in keyof AgentPostMessageErrors]: AgentPostMessageErrors[Status] extends AgentAdmissionError
-    ? Status
-    : never
+  [
+    Status in keyof AgentPostMessageErrors
+  ]: AgentPostMessageErrors[Status] extends AgentAdmissionError ? Status : never
 }[keyof AgentPostMessageErrors]
 
 /**

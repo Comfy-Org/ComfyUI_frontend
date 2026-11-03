@@ -206,12 +206,10 @@ function harness(options: {
     invalidate,
     dispose: () => {}
   }
-  const readCredits = vi.fn(
-    async (): Promise<BillingResult<never>> => ({
-      status: 'error',
-      code: 'REQUEST_FAILED'
-    })
-  )
+  const readCredits = vi.fn(async (): Promise<BillingResult<never>> => ({
+    status: 'error',
+    code: 'REQUEST_FAILED'
+  }))
   const credits: CreditsReader = {
     read: readCredits,
     getSnapshot: () => undefined,

@@ -15,7 +15,7 @@ import type {
   BillingPortalOutcome,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
-import type { BillingStatus } from '@comfyorg/billing-core'
+import type { BillingStatus, BillingTopUpDenial } from '@comfyorg/billing-core'
 import type { WorkspaceWithRole } from '@comfyorg/ingest-types'
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 
@@ -44,9 +44,9 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: true,
   canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
-  manageSubscription: vi.fn(
-    async (): Promise<BillingPortalOutcome> => ({ ok: true })
-  ),
+  manageSubscription: vi.fn(async (): Promise<BillingPortalOutcome> => ({
+    ok: true
+  })),
   handleResubscribe: vi.fn(),
   showSubscriptionDialog: vi.fn()
 }))
@@ -122,6 +122,15 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      credits: {
+        addCreditsRefusal: {
+          topupPurchasesPaused:
+            "Buying credits isn't available right now. Try again later, or message support.",
+          paymentPastDue: 'Update your payment method to add credits.',
+          unavailable:
+            "Adding credits isn't available for this workspace right now."
+        }
+      },
       workspacePanel: {
         members: {
           resubscribe: 'Resubscribe',
@@ -148,6 +157,8 @@ const i18n = createI18n({
               'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.',
             memberBodyNoDate:
               'Your team has used all its credits. Ask your workspace owner to add more credits.',
+            refusedBody: 'Your team has used all its credits.',
+            refusedPersonalBody: "You've used all your credits.",
             addCredits: 'Add credits',
             dismiss: 'Dismiss'
           },
@@ -420,14 +431,55 @@ describe('BillingStatusBanner', () => {
     expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
   })
 
-  it('shows no out-of-credits banner to an owner who cannot buy credits', () => {
+  it.for<{ denial: BillingTopUpDenial | undefined; body: string }>([
+    {
+      denial: 'not_workspace_owner',
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits.'
+    },
+    {
+      denial: 'not_a_member',
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits.'
+    },
+    {
+      denial: 'topup_purchases_paused',
+      body: "Buying credits isn't available right now. Try again later, or message support."
+    },
+    {
+      denial: 'creator_only_provisioning',
+      body: 'Your team has used all its credits.'
+    },
+    { denial: undefined, body: 'Your team has used all its credits.' }
+  ])(
+    'explains a refused top-up served as $denial without an Add credits action',
+    ({ denial, body }) => {
+      exhausted()
+      useBillingCapabilities().canTopUp = computed(() => false)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+
+      renderBanner()
+
+      const banner = screen.getByRole('status')
+      expect(banner).toHaveTextContent('Out of credits')
+      expect(within(banner).getByText(body)).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Add credits' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Dismiss' })
+      ).toBeInTheDocument()
+    }
+  )
+
+  it('offers Add credits to whoever the server lets top up', () => {
     exhausted()
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    state.canManageSubscription = false
+    useBillingCapabilities().canTopUp = computed(() => true)
 
     renderBanner()
 
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
   })
 
   it.for([
@@ -564,6 +616,7 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = false
     useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'not_workspace_owner')
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(

@@ -9,7 +9,11 @@ import {
 } from 'vue'
 import type { Ref } from 'vue'
 
-import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
+import {
+  observedDocCounter,
+  SCHEMA_VERSION,
+  SchemaVersionError
+} from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -59,7 +63,8 @@ import type { BatchOutcome, OpsResultView } from './opSender'
 import { createRejectedOpNotifier } from './rejectedOpNotice'
 import {
   forgetUnsyncedAtLoad,
-  recordUnsyncedHumanOps
+  recordUnsyncedHumanOps,
+  releaseUnsyncedHumanOpsRecorder
 } from './unsyncedHumanOps'
 
 export { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
@@ -371,6 +376,7 @@ export function useAgentCrdtFollower(
       }),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       follower.value?.enqueueHumanOperations(operations),
+    noteUnboundLocalIntent: () => follower.value?.noteUnboundLocalIntent(),
     retrySubscription: () => follower.value?.retrySubscription(),
     docInputNames: (nodeId: NodeId) =>
       follower.value?.docInputNames(nodeId) ?? null,
@@ -469,6 +475,13 @@ function startAgentCrdtFollower(
     catchUpAwaitingProjectionFor = null
   }
 
+  function followerDocIsBehind(): boolean {
+    return (
+      bridge.isCatchingUp ||
+      (syncCanvasMayBeStale.value && catchUpAwaitingProjectionFor === null)
+    )
+  }
+
   function clearCanvasStaleness(): void {
     syncCanvasMayBeStale.value = false
     projectionFailureFor.value = null
@@ -535,25 +548,22 @@ function startAgentCrdtFollower(
       ])
   }
 
-  const workflowByUnsettledOpId = new Map<string, string>()
-  const workflowsWithLostOps = new Set<string>()
+  const workflowsWithUnsyncedOps = new Set<string>()
   const recordUnsynced = (): void => {
-    const unsynced = new Set(workflowsWithLostOps)
-    for (const { workflowId, ops } of sender.pendingOps()) {
-      unsynced.add(workflowId)
-      for (const op of ops) workflowByUnsettledOpId.set(op.op_id, workflowId)
-    }
+    const unsynced = new Set(workflowsWithUnsyncedOps)
+    for (const { workflowId } of sender.pendingOps()) unsynced.add(workflowId)
     recordUnsyncedHumanOps(tabId, unsynced)
   }
-  const noteSettledHumanOps = (outcome: BatchOutcome): void => {
-    const workflowId = workflowByUnsettledOpId.get(outcome.ops[0]?.op_id ?? '')
-    for (const op of outcome.ops) workflowByUnsettledOpId.delete(op.op_id)
-    if (workflowId !== undefined && outcome.state !== 'acknowledged')
-      workflowsWithLostOps.add(workflowId)
+  const noteSettledHumanOps = (
+    outcome: BatchOutcome,
+    workflowId: string | null
+  ): void => {
+    if (workflowId !== null && outcome.state !== 'acknowledged')
+      workflowsWithUnsyncedOps.add(workflowId)
     recordUnsynced()
   }
 
-  const settleHumanOps = (outcome: BatchOutcome) => {
+  const settleHumanOps = (outcome: BatchOutcome, workflowId: string | null) => {
     if (outcome.state === 'acknowledged') {
       trackAcknowledgedDeletes(outcome)
       recordDevEvent('human_ops_settled', outcome)
@@ -561,11 +571,13 @@ function startAgentCrdtFollower(
     projection.settleLocalWrites(outcome.ops)
     if (outcome.state === 'acknowledged' && !outcome.result.ok)
       revertRejectedOps(outcome)
-    noteSettledHumanOps(outcome)
+    noteSettledHumanOps(outcome, workflowId)
   }
 
+  let counterReadFailureReported = false
   const sender = createOpSender({
-    sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
+    sendOps: (target, tab, ops) =>
+      !followerDocIsBehind() && client.sendOps(target, tab, ops),
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         // `docFrameClient` already validated this into a DocOpsResult, which
@@ -584,6 +596,29 @@ function startAgentCrdtFollower(
     },
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
+    observedCounter: () => {
+      try {
+        return observedDocCounter(bridge.follower.doc)
+      } catch (error) {
+        if (
+          !counterReadFailureReported &&
+          !(error instanceof SchemaVersionError)
+        ) {
+          counterReadFailureReported = true
+          reportError(error, {
+            surface: 'agent',
+            errorType: 'failure_reading_agent_doc_counter',
+            tags: {
+              feature_area: 'agent',
+              operation: 'sync',
+              outcome: 'degraded'
+            },
+            level: 'warning'
+          })
+        }
+        return undefined
+      }
+    },
     onBatchSettled: settleHumanOps
   })
   const coalescer = createOpCoalescer((operations) => {
@@ -814,8 +849,13 @@ function startAgentCrdtFollower(
       const workflowId = subscribedWorkflowId.value
       const projectionIsClean =
         workflowId === null || retryFailedProjection(workflowId)
-      if (projectionIsClean && subscribeBaselineIsIntegrated(detail.seq))
-        clearCanvasStaleness()
+      if (subscribeBaselineIsIntegrated(detail.seq)) {
+        if (projectionIsClean) clearCanvasStaleness()
+        else {
+          clearSyncStaleness()
+          markProjectionStale(workflowId)
+        }
+      }
       terminal.value = null
       lifecycle.onSubscribeConfirmed()
       forgetUnsyncedAtLoad(subscribedWorkflowId.value)
@@ -840,6 +880,7 @@ function startAgentCrdtFollower(
     if (!update.catchUp) return
     if (outcome.applied) clearSyncStaleness()
     else catchUpAwaitingProjectionFor = update.workflowId
+    sender.retryTransport()
   }
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -907,7 +948,7 @@ function startAgentCrdtFollower(
     projection.replaceOnNextFrame(detail.workflowId)
     reportPendingFrames(detail.workflowId, 'discarded', NOTHING_APPLIED)
     sender.abortAll()
-    workflowsWithLostOps.delete(detail.workflowId)
+    workflowsWithUnsyncedOps.delete(detail.workflowId)
     recordUnsynced()
     events.onReset?.(detail.workflowId)
     connected.value = false
@@ -1214,6 +1255,7 @@ function startAgentCrdtFollower(
       () => bridge.destroy(),
       () => client.destroy()
     ])
+    releaseUnsyncedHumanOpsRecorder(tabId)
   })
 
   const status = computed<AgentCrdtStatus>(() => ({
@@ -1249,6 +1291,12 @@ function startAgentCrdtFollower(
         if (operation.op === 'add_node') sentAdds.add(String(operation.node_id))
       projection.noteLocalWrites(operations)
       coalescer.enqueue(operations)
+    },
+    noteUnboundLocalIntent: () => {
+      const target = workflowId.value
+      if (target === null) return
+      workflowsWithUnsyncedOps.add(target)
+      recordUnsynced()
     },
     docInputNames: (nodeId: NodeId) =>
       readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
