@@ -1389,79 +1389,43 @@ export class LiveGraphApplier {
       return
     }
     const { documentWidgets = widgets, reportMissing = true } = options
-    let unresolved = this.applyPendingWidgets(
-      node,
-      ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry),
-      documentWidgets
-    )
-    if (!Array.isArray(documentWidgets))
-      unresolved = this.applyNestedGroups(
-        node,
-        { widgets, documentWidgets },
-        unresolved
-      )
-    this.reportMissingWidgets(node, unresolved, reportMissing)
-    this.unappliedRegrownRows.delete(node)
-  }
-
-  private applyPendingWidgets(
-    node: LGraphNode,
-    pending: [string, WidgetValue][],
-    documentWidgets: DocNode['widgets']
-  ): [string, WidgetValue][] {
+    let pending = ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry)
     while (pending.length > 0) {
       const { resolved, unresolved } = this.applyWidgetRound(
         node,
         pending,
         documentWidgets
       )
-      if (!resolved) return unresolved
+      if (!resolved) {
+        this.reportMissingWidgets(node, unresolved, reportMissing)
+        break
+      }
       pending = unresolved
     }
-    return []
+    if (!Array.isArray(documentWidgets))
+      this.checkNestedRowCounts(node, widgets, documentWidgets)
+    this.unappliedRegrownRows.delete(node)
   }
 
-  private applyNestedGroups(
+  private checkNestedRowCounts(
     node: LGraphNode,
-    frame: {
-      widgets: Record<string, unknown>
-      documentWidgets: Record<string, unknown>
-    },
-    unresolved: [string, WidgetValue][]
-  ): [string, WidgetValue][] {
-    const retry = new Set(unresolved.map(([name]) => name))
-    const replay = new Set<string>()
-    for (const controller of nestedGroupControllers(
-      node,
-      Object.keys(frame.widgets)
-    )) {
-      const from = Number(controller.value)
+    widgets: Record<string, unknown>,
+    documentWidgets: Record<string, unknown>
+  ): void {
+    const written = Object.entries(widgets)
+      .filter(isWidgetEntry)
+      .filter(([name, value]) => !this.holdsLocalWrite(node, name, value))
+      .map(([name]) => name)
+    for (const controller of nestedGroupControllers(node, written)) {
       const count: [string, unknown] = [
         controller.name,
-        frame.documentWidgets[controller.name]
+        documentWidgets[controller.name]
       ]
-      if (isWidgetEntry(count))
-        this.applyWidgetRound(node, [count], frame.documentWidgets)
-      for (const name of grownRowFields(
-        controller,
-        from,
-        frame.documentWidgets
-      ))
-        if (retry.has(name) || !Object.hasOwn(frame.widgets, name))
-          replay.add(name)
+      if (!isWidgetEntry(count) || this.holdsLocalWrite(node, ...count))
+        continue
+      if (!reachesDynamicGroupRowCount(controller, count[1]))
+        this.reportDynamicGroupRowMismatch(node, controller, count[1])
     }
-    const entries = Object.fromEntries(
-      [...replay].map((name) => [name, frame.documentWidgets[name]])
-    )
-    const left = this.applyPendingWidgets(
-      node,
-      ordinaryWidgetEntries(node, entries).filter(isWidgetEntry),
-      frame.documentWidgets
-    )
-    return [
-      ...unresolved.filter(([name]) => !replay.has(name)),
-      ...left.filter(([name]) => retry.has(name))
-    ]
   }
 
   private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {
@@ -1898,19 +1862,6 @@ function nestedGroupControllers(
       !written.includes(widget.name) &&
       written.some((name) => widget.name.startsWith(`${name}.`))
   )
-}
-
-function grownRowFields(
-  controller: IBaseWidget,
-  from: number,
-  documentWidgets: Record<string, unknown>
-): string[] {
-  const prefix = `${controller.name}.`
-  return Object.keys(documentWidgets).filter((name) => {
-    if (!name.startsWith(prefix)) return false
-    const row = Number(name.slice(prefix.length).split('.')[0])
-    return row >= from && row < Number(controller.value)
-  })
 }
 
 function isWidgetEntry(
