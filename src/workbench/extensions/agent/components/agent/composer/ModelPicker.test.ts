@@ -113,4 +113,38 @@ describe('ModelPicker', () => {
       expect.objectContaining({ method: 'GET' })
     )
   })
+
+  it('shows why the default cannot be used and lets the chat pick another', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      jsonResponse(200, {
+        models: MODELS.models.map((model) =>
+          model.route === 'cloud'
+            ? { ...model, reason: 'not_available_for_account' }
+            : model
+        ),
+        default: 'cloud:claude-opus-4-8'
+      })
+    )
+    useAgentConversationStore().setThreadId('t1')
+    await useAgentModelStore().load()
+    mount()
+
+    const trigger = await screen.findByTestId('agent-model-picker')
+    expect(trigger).toHaveTextContent('Claude Opus 4.8 (Comfy Cloud)')
+
+    await userEvent.click(trigger)
+    expect(
+      await screen.findByTestId('agent-model-unavailable-note')
+    ).toHaveTextContent(
+      'Claude Opus 4.8 (Comfy Cloud): not available for your Comfy account. Pick another model.'
+    )
+    await userEvent.click(
+      screen.getByRole('menuitemradio', { name: /qwen \(this computer\)/ })
+    )
+
+    expect(useAgentModelStore().modelForSend('t1')).toBe('local')
+    expect(await screen.findByTestId('agent-model-picker')).toHaveTextContent(
+      'qwen (this computer)'
+    )
+  })
 })

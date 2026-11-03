@@ -123,6 +123,34 @@ describe('agentModelStore', () => {
     expect(store.modelForSend('t1')).toBeUndefined()
   })
 
+  it('shows an unusable default without sending it, until the chat picks', async () => {
+    const refusedForAccount = {
+      models: SIGNED_IN.models.map((model) =>
+        model.route === 'cloud'
+          ? { ...model, available: false, reason: 'not_available_for_account' }
+          : model
+      ),
+      default: 'cloud:claude-opus-4-8'
+    }
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      jsonResponse(200, refusedForAccount)
+    )
+    const store = useAgentModelStore()
+    await store.load()
+
+    expect(store.selectedFor('t1')).toMatchObject({
+      id: 'cloud:claude-opus-4-8',
+      available: false,
+      reason: 'not_available_for_account'
+    })
+    expect(store.available.map((model) => model.id)).toEqual(['local'])
+    expect(store.modelForSend('t1')).toBeUndefined()
+
+    store.select('t1', 'local')
+    expect(store.selectedFor('t1')?.id).toBe('local')
+    expect(store.modelForSend('t1')).toBe('local')
+  })
+
   it('ignores a stored choice map it cannot read', () => {
     localStorage.setItem('Comfy.Agent.ModelChoiceByThread', '{bad')
     const store = useAgentModelStore()

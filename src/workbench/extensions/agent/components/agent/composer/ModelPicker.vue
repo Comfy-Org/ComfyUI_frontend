@@ -41,6 +41,26 @@ function onOpenChange(next: boolean): void {
 
 const selected = computed(() => store.selectedFor(conversationStore.threadId))
 
+const REASON_KEYS: Record<string, string> = {
+  not_signed_in: 'agent.modelReasonNotSignedIn',
+  sign_in_refused: 'agent.modelReasonSignInRefused',
+  checking: 'agent.modelReasonChecking',
+  not_available_for_account: 'agent.modelReasonNotForAccount',
+  no_key: 'agent.modelReasonNoKey',
+  setting_off: 'agent.modelReasonSettingOff'
+}
+
+/** Why the shown default can't be used, when it can't. */
+const unavailableNote = computed(() => {
+  const model = selected.value
+  if (!model || model.available) return null
+  const key = model.reason ? REASON_KEYS[model.reason] : undefined
+  return t('agent.modelUnavailableNote', {
+    model: model.label,
+    reason: key ? t(key) : t('agent.modelReasonUnknown')
+  })
+})
+
 const ROUTE_ICONS: Record<string, string> = {
   cloud: 'icon-[lucide--cloud]',
   local: 'icon-[lucide--monitor]',
@@ -73,9 +93,24 @@ function onSelect(value: unknown): void {
         :aria-label="t('agent.modelPickerLabel', { model: selected.label })"
         variant="muted-textonly"
         size="md"
-        :class="cn('max-w-48 gap-1', open && 'bg-accent')"
+        :class="
+          cn(
+            'max-w-48 gap-1',
+            open && 'bg-accent',
+            !selected.available && 'text-muted-foreground'
+          )
+        "
       >
-        <span :class="cn('size-4 shrink-0', iconFor(selected.route))" />
+        <span
+          :class="
+            cn(
+              'size-4 shrink-0',
+              selected.available
+                ? iconFor(selected.route)
+                : 'icon-[lucide--triangle-alert] text-warning'
+            )
+          "
+        />
         <span class="truncate">{{ selected.label }}</span>
         <span class="icon-[lucide--chevron-down] size-4 shrink-0" />
       </Button>
@@ -89,6 +124,14 @@ function onSelect(value: unknown): void {
       >
         <div aria-hidden="true" class="text-sm/5 text-foreground">
           {{ t('agent.modelPickerTitle') }}
+        </div>
+        <div
+          v-if="unavailableNote"
+          data-testid="agent-model-unavailable-note"
+          role="note"
+          class="text-xs/4 text-muted-foreground"
+        >
+          {{ unavailableNote }}
         </div>
         <DropdownMenuRadioGroup
           :model-value="selected.id"
