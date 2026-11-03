@@ -10,21 +10,12 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import { parseImageWidgetValue } from '@/utils/imageUtil'
+import {
+  extractWidgetStringValue,
+  parseImageWidgetValue
+} from '@/utils/imageUtil'
 import type { ViewableResultItem } from '@/utils/resultItemUtil'
 import { findViewableResultItem, toViewRequest } from '@/utils/resultItemUtil'
-
-export function extractWidgetStringValue(value: unknown): string | undefined {
-  if (typeof value === 'string') return value
-  if (
-    value &&
-    typeof value === 'object' &&
-    'filename' in value &&
-    typeof value.filename === 'string'
-  )
-    return value.filename
-  return undefined
-}
 
 // Private image utility functions
 interface ImageLayerFilenames {

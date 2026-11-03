@@ -11,12 +11,45 @@
           "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
           "src/platform/account/composables/useCreateWorkspaceUrlLoader.ts",
           "src/platform/account/composables/useInviteUrlLoader.ts",
-          "src/platform/account/composables/useWorkspaceDialogs.ts"
+          "src/platform/account/composables/useWorkspaceDialogs.ts",
+          "src/platform/account/composables/__mocks__/useWorkspaceDialogs.ts"
         ]
       },
       {
         "name": "comfyui-api/public",
         "patterns": ["packages/api-client/src/executionTypes.ts"]
+      },
+      {
+        "name": "image-compare/public",
+        "patterns": [
+          "src/extensions/core/imageCompare.ts",
+          "src/lib/litegraph/src/widgets/ImageCompareWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts"
+        ]
+      },
+      {
+        "name": "image-compositor/public",
+        "patterns": [
+          "src/extensions/core/imageCompositor.ts",
+          "src/extensions/core/layerEditor.ts",
+          "src/lib/litegraph/src/widgets/CompositorWidget.ts",
+          "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
+          "src/renderer/extensions/layerEditor/composables/useLayerEditor.ts",
+          "src/renderer/extensions/layerEditor/layerEditorDialogKey.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
+          "packages/layer-editor/src/mode.ts",
+          "packages/layer-editor/src/node.ts"
+        ]
+      },
+      {
+        "name": "image-crop/public",
+        "patterns": [
+          "src/components/imagecrop/WidgetImageCrop.vue",
+          "src/composables/useImageCrop.ts",
+          "src/extensions/core/imageCrop.ts",
+          "src/lib/litegraph/src/widgets/ImageCropWidget.ts"
+        ]
       },
       {
         "name": "ingest-api/public",
@@ -35,6 +68,27 @@
           "src/platform/keybindings/canvasActionShortcuts.ts",
           "src/platform/keybindings/composables/useShortcutsTab.ts",
           "src/platform/keybindings/commandStore.ts"
+        ]
+      },
+      {
+        "name": "mask-editor/public",
+        "patterns": [
+          "src/extensions/core/clipspace.ts",
+          "src/extensions/core/maskeditor.ts",
+          "src/renderer/extensions/maskEditor/composables/useMaskEditor.ts",
+          "src/scripts/clipspace.ts",
+          "packages/mask-editor/src/brushUtils.ts",
+          "packages/mask-editor/src/maskEditorStore.ts",
+          "packages/mask-editor/src/StrokeProcessor.ts"
+        ]
+      },
+      {
+        "name": "painter/public",
+        "patterns": [
+          "src/extensions/core/painter.ts",
+          "src/lib/litegraph/src/widgets/PainterWidget.ts",
+          "src/renderer/extensions/painter/components/WidgetPainter.vue",
+          "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts"
         ]
       },
       {
@@ -1988,8 +2042,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2005,8 +2064,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2017,12 +2081,83 @@
         ]
       },
       {
+        "from": "image-compare/public",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "_inventory",
+          "image-compare",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-compositor/public",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "_inventory",
+          "image-compositor",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "image-crop/public",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "_inventory",
+          "image-crop",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "ingest-api/public",
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2038,8 +2173,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2050,12 +2190,61 @@
         ]
       },
       {
+        "from": "mask-editor/public",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "_inventory",
+          "mask-editor",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "painter/public",
+        "allow": [
+          "account/public",
+          "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
+          "remote-config/public",
+          "server-facts/public",
+          "webcam-capture/public",
+          "_inventory",
+          "painter",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "remote-config/public",
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2070,8 +2259,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2087,8 +2281,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2104,8 +2303,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2121,8 +2325,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2137,8 +2346,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2154,8 +2368,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2171,8 +2390,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2188,8 +2412,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2205,8 +2434,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2222,8 +2456,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2239,8 +2478,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2256,8 +2500,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2273,8 +2522,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2289,8 +2543,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2305,8 +2564,13 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "image-compare/public",
+          "image-compositor/public",
+          "image-crop/public",
           "ingest-api/public",
           "keybindings/public",
+          "mask-editor/public",
+          "painter/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",

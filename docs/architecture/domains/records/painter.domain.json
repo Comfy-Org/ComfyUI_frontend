@@ -16,13 +16,25 @@
       "path": "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/extensions/core/painter.ts",
+    "src/lib/litegraph/src/widgets/PainterWidget.ts",
+    "src/renderer/extensions/painter/components/WidgetPainter.vue",
+    "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts"
+  ],
   "characterizationScenarios": [
     {
       "name": "Painter settings, canvas sizing, input image, and mask serialization preserve widget behavior",
       "checks": [
         "src/renderer/extensions/painter/components/WidgetPainter.test.ts",
         "src/renderer/extensions/painter/composables/usePainter.test.ts"
+      ]
+    },
+    {
+      "name": "Core extensions register the painter, and the painter widget renders on node bodies only",
+      "checks": [
+        "src/extensions/core/index.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/richWidgetPanelVisibility.test.ts"
       ]
     }
   ],
