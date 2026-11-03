@@ -359,6 +359,7 @@
           "src/App.test.ts",
           "src/__mocks__/**",
           "src/bootstrap.ts",
+          "src/bootstrap.test.ts",
           "src/components/graph/GraphCanvas.vue",
           "src/components/graph/GraphCanvas.test.ts",
           "src/composables/useExternalLink.ts",

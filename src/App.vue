@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, markRaw, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useAgentExtensionNotices } from '@/composables/useAgentExtensionNotices'
@@ -26,15 +26,15 @@ import {
   reportResourceLoadError
 } from '@/platform/telemetry/assetLoadErrorReporting'
 import { app } from '@/scripts/app'
-import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 
-registerExtensionDialogService(createExtensionDialogService())
 const workspaceStore = useWorkspaceStore()
-app.extensionManager = useWorkspaceStore()
+app.extensionManager = Object.assign(workspaceStore, {
+  dialog: markRaw(createExtensionDialogService())
+})
 
 const conflictDetection = useConflictDetection()
 useAgentExtensionNotices()
