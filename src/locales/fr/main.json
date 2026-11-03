@@ -1216,6 +1216,7 @@
     "apiPricing": "Tarification de l’API",
     "charge": "Débiter",
     "credits": "Crédits",
+    "creditUnit": "Crédits",
     "creditsAvailable": "Crédits disponibles",
     "details": "Détails",
     "eventType": "Type d'événement",
