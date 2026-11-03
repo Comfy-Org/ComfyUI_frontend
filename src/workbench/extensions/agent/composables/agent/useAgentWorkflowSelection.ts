@@ -351,28 +351,14 @@ export function useAgentWorkflowSelection({
         if (!isCurrent()) return RESTORE_ABANDONED
         target = storedWorkflowFor(workflowId)
       }
-      if (target === null && listed) {
-        panelStore.markWorkflowTargetUnavailable()
-        return NOT_RESTORED
-      }
-      if (target === null) {
-        panelStore.setWorkflowTarget(null)
-        failRestore(
-          workflowId,
-          new Error('No saved workflow resolves to the chat target')
-        )
-        return RESTORE_ABANDONED
-      }
+      if (target === null) return restoreUnresolved(workflowId, listed)
       const opened = await workflowService.openWorkflow(target, { isCurrent })
       if (!isCurrent()) return RESTORE_ABANDONED
-      if (!opened) {
-        panelStore.setWorkflowTarget(null)
-        failRestore(
+      if (!opened)
+        return abandonRestore(
           workflowId,
-          new Error('The chat target workflow did not open')
+          'The chat target workflow did not open'
         )
-        return RESTORE_ABANDONED
-      }
       commitWorkflowTarget(target, workflowId, 'restored')
       return { ready: true, committedWorkflowId: workflowId }
     } catch (error) {
@@ -380,6 +366,28 @@ export function useAgentWorkflowSelection({
       failRestore(workflowId, error)
       return RESTORE_ABANDONED
     }
+  }
+
+  function restoreUnresolved(
+    workflowId: string,
+    listed: boolean
+  ): WorkflowRestoration {
+    if (!listed)
+      return abandonRestore(
+        workflowId,
+        'No saved workflow resolves to the chat target'
+      )
+    panelStore.markWorkflowTargetUnavailable()
+    return NOT_RESTORED
+  }
+
+  function abandonRestore(
+    workflowId: string,
+    message: string
+  ): WorkflowRestoration {
+    panelStore.setWorkflowTarget(null)
+    failRestore(workflowId, new Error(message))
+    return RESTORE_ABANDONED
   }
 
   function failRestore(workflowId: string, cause: unknown): void {
