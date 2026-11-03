@@ -104,7 +104,14 @@ test.describe(
       await agentPanel.sendMessage('Remember this and prepare another tab')
       await expect.poll(() => postedMessages.length).toBe(1)
 
-      pushAgentEvent(ws, toolCallEvent('call-remember', 'remember', 'running'))
+      pushAgentEvent(
+        ws,
+        toolCallEvent('call-remember-1', 'remember', 'success')
+      )
+      pushAgentEvent(
+        ws,
+        toolCallEvent('call-remember-2', 'remember', 'running')
+      )
       pushAgentEvent(ws, toolCallEvent('call-new-tab', 'new_tab', 'success'))
       pushAgentEvent(
         ws,
@@ -126,6 +133,7 @@ test.describe(
       })
 
       await expect(unknownRow).toHaveCount(1)
+      await expect(unknownRow).toContainText('×2')
       await expect(successRow).toHaveCount(1)
       await expect(failureRow).toHaveCount(1)
       await expect(unknownRow.locator('i')).not.toHaveClass(/lucide--circle-x/)

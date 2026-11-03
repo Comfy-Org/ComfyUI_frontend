@@ -144,12 +144,13 @@ describe('ActivityTrace', () => {
     render(ActivityTrace, {
       props: {
         parts: [
-          tool('c1', 'remember', 'done'),
-          tool('c2', 'new_tab', 'done', true),
-          tool('c3', 'switch_tab', 'done', false),
-          tool('c4', 'run', 'done'),
-          tool('c5', 'list_slots', 'done', true),
-          tool('c6', 'set_widget', 'done', false)
+          tool('c1', 'remember', 'done', true),
+          tool('c2', 'remember', 'done'),
+          tool('c3', 'new_tab', 'done', true),
+          tool('c4', 'switch_tab', 'done', false),
+          tool('c5', 'run', 'done'),
+          tool('c6', 'list_slots', 'done', true),
+          tool('c7', 'set_widget', 'done', false)
         ]
       },
       global: { plugins: [i18n] }
@@ -158,6 +159,7 @@ describe('ActivityTrace', () => {
     expect(
       screen.getByText('Saving a preference — outcome unknown')
     ).toBeInTheDocument()
+    expect(screen.getByText('×2')).toBeInTheDocument()
     expect(screen.getByText('Opened a new tab')).toBeInTheDocument()
     expect(screen.getByText('Switching tabs failed')).toBeInTheDocument()
     expect(screen.getByText('Run')).toBeInTheDocument()
