@@ -13,7 +13,8 @@ import type {
 import { isUnconfirmedCanvasWrite } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   toolGlyph,
-  toolLabel
+  toolLabel,
+  toolUsesOutcomeCopy
 } from '@/workbench/extensions/agent/services/agent/agentToolGlyph'
 
 const { parts, live = false } = defineProps<{
@@ -51,6 +52,7 @@ function skillLabel(
 }
 
 function settledToolLabel(row: Extract<ActivityRow, { kind: 'tool' }>): string {
+  if (!toolUsesOutcomeCopy(row.name)) return toolLabel(row.name, row.state, t)
   const activeLabel = toolLabel(row.name, 'streaming', t)
   return t(row.ok === false ? 'agent.toolFailed' : 'agent.toolOutcomeUnknown', {
     tool: activeLabel

@@ -160,9 +160,9 @@ describe('ActivityTrace', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Opened a new tab')).toBeInTheDocument()
     expect(screen.getByText('Switching tabs failed')).toBeInTheDocument()
-    expect(screen.getByText('Run — outcome unknown')).toBeInTheDocument()
+    expect(screen.getByText('Run')).toBeInTheDocument()
     expect(screen.getByText('List slots')).toBeInTheDocument()
-    expect(screen.getByText('Set widget failed')).toBeInTheDocument()
+    expect(screen.getByText('Set widget')).toBeInTheDocument()
   })
 
   it('names the skill while it loads and after it finishes', async () => {
