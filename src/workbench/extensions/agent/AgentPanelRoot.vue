@@ -1030,17 +1030,11 @@ async function onWorkflowRestoredAndBound(
   return ready
 }
 
-// Loading a chat clears the session binding, which is the CRDT follower's
-// subscribe target. A chat restored onto its workflow's tab binds it again;
-// without that the follower stays detached and the agent's edits to that
-// workflow never reach its canvas.
 function bindRestoredWorkflow(workflowId: string): void {
   if (hasUnsyncedHumanOps(workflowId)) return
   if (boundWorkflowId.value !== workflowId) bindWorkflow(workflowId)
 }
 
-// A followed chat adopts the tab it followed instead of restoring one, so it
-// binds here rather than in `onWorkflowRestoredAndBound`.
 function adoptFollowedWorkflow(
   workflow: ComfyWorkflow,
   workflowId: string
