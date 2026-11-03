@@ -223,6 +223,7 @@ describe('attachDocOpMinter', () => {
   let unbound: boolean
   let refusals: Array<[string, string]>
   let seededPromotedDocs: Set<ReturnType<typeof mint>>
+  let unboundLocalIntents: number
 
   beforeEach(() => {
     graph = new LGraph()
@@ -237,9 +238,11 @@ describe('attachDocOpMinter', () => {
     unbound = false
     refusals = []
     seededPromotedDocs = new Set()
+    unboundLocalIntents = 0
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      onUnboundLocalIntent: () => unboundLocalIntents++,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => (graphAvailable ? graph : null),
       boundRootGraphId: () => (unbound ? null : rootGraphId),
@@ -451,6 +454,19 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
 
     expect(source.widgets![0].value).toBe(6)
+    expect(minted).toEqual([])
+    expect(unboundLocalIntents).toBe(1)
+  })
+
+  it('marks only edits to the bound workflow while its document is unconfirmed', async () => {
+    const { source } = seedGraph(graph)
+    bound = false
+    source.widgets![0].value = 5
+    unbound = true
+    source.widgets![0].value = 6
+    await afterFlush()
+
+    expect(unboundLocalIntents).toBe(1)
     expect(minted).toEqual([])
   })
 
