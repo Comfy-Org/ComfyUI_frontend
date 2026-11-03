@@ -31,6 +31,22 @@ test.describe('App mode mobile image picker', { tag: ['@mobile'] }, () => {
 
     await expect(picker).toBeVisible()
     await expect(search).toBeFocused()
+
+    const imageName = await comfyPage.appMode.widgets
+      .getSelectDropdown('image')
+      .selectedItem()
+    const imageItem = picker.getByRole('img', { name: imageName })
+    const noItems = picker.getByTitle('No items')
+    await expect(imageItem).toBeVisible()
+
+    await search.fill('no-image-matches-this-query')
+    await expect(noItems).toBeVisible()
+    await expect(imageItem).toBeHidden()
+
+    await search.fill(imageName)
+    await expect(imageItem).toBeVisible()
+    await expect(noItems).toBeHidden()
+    await expect(picker).toBeVisible()
   })
 
   test('closes when the device rotates', async ({ comfyPage }) => {
