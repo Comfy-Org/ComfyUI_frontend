@@ -3653,6 +3653,7 @@
         "pausedByRemainderNoDate": "Next top-up would go over your monthly limit.",
         "maximumReached": "Monthly maximum reached. Resets {date}.",
         "maximumReachedNoDate": "Monthly maximum reached.",
+        "member": "Credits can top up automatically when they run low. Contact a workspace owner to manage this.",
         "rule": "Tops up to {target} credits when below {threshold} credits.",
         "status": {
           "failed": "Failed",
