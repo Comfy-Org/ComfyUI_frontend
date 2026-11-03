@@ -1,8 +1,28 @@
 function isRendered(element: Element): boolean {
-  return (
-    element.closest('[hidden], [aria-hidden="true"]') === null &&
-    element.checkVisibility({ visibilityProperty: true })
-  )
+  if (element.closest('[hidden], [aria-hidden="true"]') !== null) return false
+
+  if (typeof element.checkVisibility !== 'function') {
+    for (
+      let current: Element | null = element;
+      current;
+      current = current.parentElement
+    ) {
+      const style = getComputedStyle(current)
+      if (
+        style.display === 'none' ||
+        (current === element && style.display === 'contents') ||
+        style.visibility === 'hidden' ||
+        style.visibility === 'collapse' ||
+        style.contentVisibility === 'hidden'
+      ) {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  return element.checkVisibility({ visibilityProperty: true })
 }
 
 function hasOpenRekaDialog(): boolean {
