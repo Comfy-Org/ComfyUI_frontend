@@ -19,9 +19,11 @@ export function useCreateWorkspaceRefusal() {
 
   return computed(() =>
     createWorkspaceRefusal.value
-      ? t(REFUSAL_KEYS[createWorkspaceRefusal.value], {
-          max: maxOwnedWorkspaces.value
-        })
+      ? t(
+          REFUSAL_KEYS[createWorkspaceRefusal.value],
+          { max: maxOwnedWorkspaces.value },
+          maxOwnedWorkspaces.value ?? 0
+        )
       : null
   )
 }

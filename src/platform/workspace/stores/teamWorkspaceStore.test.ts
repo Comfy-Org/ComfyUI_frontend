@@ -1523,7 +1523,7 @@ describe('useTeamWorkspaceStore', () => {
         response: {
           workspaces: [mockPersonalWorkspace],
           can_create_workspace: false,
-          max_owned_workspaces: 10,
+          max_owned_workspaces: 25,
           denied_reasons: { can_create_workspace: 'owned_workspace_limit' }
         }
       },
@@ -1534,6 +1534,17 @@ describe('useTeamWorkspaceStore', () => {
           default_workspace_id: mockTeamWorkspace.id,
           can_create_workspace: false,
           max_owned_workspaces: 10
+        }
+      },
+      {
+        reason: 'unknown',
+        response: {
+          workspaces: [mockPersonalWorkspace],
+          can_create_workspace: false,
+          max_owned_workspaces: 10,
+          denied_reasons: {
+            can_create_workspace: 'a_reason_this_build_predates'
+          }
         }
       }
     ] as const)(
@@ -1546,6 +1557,7 @@ describe('useTeamWorkspaceStore', () => {
 
         expect(store.canCreateWorkspace).toBe(false)
         expect(store.createWorkspaceRefusal).toBe(reason)
+        expect(store.maxOwnedWorkspaces).toBe(response.max_owned_workspaces)
       }
     )
 

@@ -189,6 +189,25 @@ type CreationDeniedReason = NonNullable<
   NonNullable<ListWorkspacesResponse['denied_reasons']>['can_create_workspace']
 >
 
+const CREATION_DENIED_REASONS: Record<CreationDeniedReason, true> = {
+  organization_managed: true,
+  owned_workspace_limit: true
+}
+
+function isCreationDeniedReason(
+  reason: string
+): reason is CreationDeniedReason {
+  return Object.hasOwn(CREATION_DENIED_REASONS, reason)
+}
+
+function parseCreationDeniedReason(
+  reason: string | undefined
+): CreationDeniedReason | undefined {
+  return reason !== undefined && isCreationDeniedReason(reason)
+    ? reason
+    : undefined
+}
+
 function reportSsoLanding(
   { default_workspace_id }: ListedWorkspaces,
   workspaceId: string
@@ -284,7 +303,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       response.workspaces.map(createWorkspaceState)
     )
     serverRefusesCreation.value = response.can_create_workspace === false
-    creationDeniedReason.value = response.denied_reasons?.can_create_workspace
+    creationDeniedReason.value = parseCreationDeniedReason(
+      response.denied_reasons?.can_create_workspace
+    )
     maxOwnedWorkspaces.value = response.max_owned_workspaces
   }
 
