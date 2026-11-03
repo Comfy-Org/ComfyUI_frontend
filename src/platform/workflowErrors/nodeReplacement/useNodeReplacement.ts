@@ -13,7 +13,7 @@ import {
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
-import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -35,6 +35,11 @@ import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
+
+interface WidgetAssignment {
+  name: string
+  value: TWidgetValue
+}
 
 interface ReplacementGroup {
   type: string
@@ -188,28 +193,34 @@ function soleMappedWidgetName(
   return widgetIds.length === 1 ? widgetIds : []
 }
 
+function mappingDepth(inputMap: { new_id: string }): number {
+  return inputMap.new_id.split('.').length
+}
+
 function assignMappedInputs(
   newNode: LGraphNode,
   replacement: NodeReplacement,
   savedValues: Record<string, TWidgetValue>
-): IBaseWidget[] {
-  const assigned: IBaseWidget[] = []
-  const assign = (inputName: string, value: unknown) => {
-    const widget = newNode.widgets?.find((w) => w.name === inputName)
+): WidgetAssignment[] {
+  const assigned: WidgetAssignment[] = []
+  const assign = (name: string, value: unknown) => {
+    const widget = newNode.widgets?.find((w) => w.name === name)
     if (!widget) return
     try {
       widget.value = value as TWidgetValue
-      assigned.push(widget)
+      assigned.push({ name, value: widget.value })
     } catch (error) {
-      console.error(`Failed to set widget ${inputName}`, error)
+      console.error(`Failed to set widget ${name}`, error)
     }
   }
-  const inputMaps = replacement.input_mapping ?? []
+  const inputMaps = [...(replacement.input_mapping ?? [])].sort(
+    (a, b) => mappingDepth(a) - mappingDepth(b)
+  )
   for (const inputMap of inputMaps) {
-    if ('set_value' in inputMap) assign(inputMap.new_id, inputMap.set_value)
-  }
-  for (const inputMap of inputMaps) {
-    if (!('old_id' in inputMap)) continue
+    if ('set_value' in inputMap) {
+      assign(inputMap.new_id, inputMap.set_value)
+      continue
+    }
     growAutogrowInput(newNode, inputMap.new_id)
     if (Object.hasOwn(savedValues, inputMap.old_id))
       assign(inputMap.new_id, savedValues[inputMap.old_id])
@@ -388,11 +399,14 @@ function replaceWithMapping(
   node.graph = null
   nodeGraph._nodes_by_id[newNode.id] = newNode
 
-  for (const widget of assignedWidgets) {
+  for (const { name, value } of assignedWidgets) {
+    const widget = newNode.widgets?.find((w) => w.name === name)
+    if (!widget) continue
     try {
-      widget.callback?.(widget.value)
+      if (widget.value !== value) widget.value = value
+      widget.callback?.(value)
     } catch (error) {
-      console.error(`Failed to set widget ${widget.name}`, error)
+      console.error(`Failed to set widget ${name}`, error)
     }
   }
   for (const widget of newNode.widgets ?? []) {
@@ -499,7 +513,7 @@ export function useNodeReplacement() {
         return !!originalType && targetTypes.has(originalType)
       })
 
-      for (const node of placeholders) {
+      for (const node of new Set(placeholders)) {
         const match = findMatchingType(node, selectedTypes)
         if (!match?.replacement) continue
 
