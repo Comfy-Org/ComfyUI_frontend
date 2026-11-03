@@ -7,24 +7,13 @@ import { nodesNeedingDeployment } from '@/platform/workspace/missingForDeploymen
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
 /**
- * Whether Comfy Cloud offers a custom deployment for the open workflow's
- * missing nodes, given the deployments that run it (null until checked).
+ * Whether the open workflow needs a deployment: it lacks nodes with no
+ * replacement, on a page booted on Comfy Cloud that was served the listing.
  */
-export function useCustomDeploymentOffered(
-  deploymentsThatRunIt: MaybeRefOrGetter<readonly (string | null)[] | null>
-) {
+export function useWorkflowNeedsDeployment() {
   const pickStore = useDeploymentPickStore()
   const missingNodesErrorStore = useMissingNodesErrorStore()
   const switcherOffered = useDeploymentSwitcherOffered()
-
-  function noDeploymentRunsIt(): boolean {
-    const runIt = toValue(deploymentsThatRunIt)
-    return (
-      pickStore.deployments.length === 0 ||
-      (runIt !== null && runIt.length === 0)
-    )
-  }
-
   return computed(
     () =>
       switcherOffered.value &&
@@ -32,7 +21,23 @@ export function useCustomDeploymentOffered(
       pickStore.bootDeployment === null &&
       nodesNeedingDeployment(
         missingNodesErrorStore.missingNodesError?.nodeTypes ?? []
-      ).length > 0 &&
-      noDeploymentRunsIt()
+      ).length > 0
+  )
+}
+
+/**
+ * Whether Comfy Cloud offers a custom deployment for the open workflow's
+ * missing nodes, given whether Cloud and each deployment were found lacking.
+ */
+export function useCustomDeploymentOffered(
+  noneRunIt: MaybeRefOrGetter<boolean>
+) {
+  const pickStore = useDeploymentPickStore()
+  const needsDeployment = useWorkflowNeedsDeployment()
+
+  return computed(
+    () =>
+      needsDeployment.value &&
+      (pickStore.deployments.length === 0 || toValue(noneRunIt))
   )
 }
