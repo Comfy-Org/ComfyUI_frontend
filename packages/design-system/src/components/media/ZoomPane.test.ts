@@ -58,6 +58,21 @@ describe(ZoomPane, () => {
     expect(readTransform(image).scale).toBeGreaterThan(before.scale)
   })
 
+  it('keeps the content under an off-center pinch midpoint in place', async () => {
+    const image = renderPane()
+    const before = readTransform(image)
+
+    await touch(image, 'pointerDown', 1, 50)
+    await touch(image, 'pointerDown', 2, 150)
+    await touch(image, 'pointerMove', 1, 0)
+    await touch(image, 'pointerMove', 2, 200)
+
+    const after = readTransform(image)
+    expect(after.scale / before.scale).toBeCloseTo(2)
+    expect(after.x).toBeCloseTo(-100)
+    expect(after.y).toBeCloseTo(0)
+  })
+
   it('zooms out when two touches pinch together', async () => {
     const image = renderPane()
     const before = readTransform(image)
