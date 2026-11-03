@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, useId, useTemplateRef } from 'vue'
+import { computed, inject, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
@@ -22,7 +22,6 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 const { locale } = useI18n()
 const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 const inputId = useId()
-const layoutField = useTemplateRef('layoutField')
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
@@ -162,7 +161,6 @@ const inputAriaAttrs = computed(() => ({
 
 <template>
   <WidgetLayoutField
-    ref="layoutField"
     data-testid="widget-number-row"
     :widget
     :input-id="inputId"
@@ -172,54 +170,55 @@ const inputAriaAttrs = computed(() => ({
     :root-class="
       cn(unifiedRows && 'cursor-ew-resize touch-pan-y', props.rootClass)
     "
-    :value-text="formattedValue"
   >
     <template #between><slot name="between" /></template>
-    <Tooltip :disabled="!buttonTooltip">
-      <TooltipTrigger as-child>
-        <ScrubableNumberInput
-          v-model="modelValue"
-          :min="filteredProps.min"
-          :max="filteredProps.max"
-          :step="stepValue"
-          :display-value="formattedValue"
-          :disabled="isDisabled"
-          :hide-buttons="buttonsDisabled && !unifiedRows"
-          :buttons-disabled="buttonsDisabled"
-          :edge-buttons="unifiedRows"
-          :parse-value="parseWidgetValue"
-          :input-attrs="inputAriaAttrs"
-          :label-element="layoutField?.labelElement"
-          :scrub-element="unifiedRows ? layoutField?.rowElement : undefined"
-          :class="
-            cn(
-              WidgetInputBaseClass,
-              'flex grow text-xs',
-              unifiedRows && 'not-disabled:bg-transparent',
-              !unifiedRows && 'relative',
-              useWidgetHeight()
-            )
-          "
-        >
-          <template #background>
-            <div
-              :class="
-                cn(
-                  'pointer-events-none absolute size-full overflow-clip rounded-md',
-                  unifiedRows && 'inset-0'
-                )
-              "
-            >
+    <template #default="{ labelElement, rowElement }">
+      <Tooltip :disabled="!buttonTooltip">
+        <TooltipTrigger as-child>
+          <ScrubableNumberInput
+            v-model="modelValue"
+            :min="filteredProps.min"
+            :max="filteredProps.max"
+            :step="stepValue"
+            :display-value="formattedValue"
+            :disabled="isDisabled"
+            :hide-buttons="buttonsDisabled && !unifiedRows"
+            :buttons-disabled="buttonsDisabled"
+            :edge-buttons="unifiedRows"
+            :parse-value="parseWidgetValue"
+            :input-attrs="inputAriaAttrs"
+            :label-element
+            :scrub-element="unifiedRows ? rowElement : undefined"
+            :class="
+              cn(
+                WidgetInputBaseClass,
+                'flex grow text-xs',
+                unifiedRows && 'not-disabled:bg-transparent',
+                !unifiedRows && 'relative',
+                useWidgetHeight()
+              )
+            "
+          >
+            <template #background>
               <div
-                class="size-full bg-primary/15"
-                :style="{ width: `${sliderWidth}%` }"
-              />
-            </div>
-          </template>
-          <slot />
-        </ScrubableNumberInput>
-      </TooltipTrigger>
-      <TooltipContent>{{ buttonTooltip }}</TooltipContent>
-    </Tooltip>
+                :class="
+                  cn(
+                    'pointer-events-none absolute size-full overflow-clip rounded-md',
+                    unifiedRows && 'inset-0'
+                  )
+                "
+              >
+                <div
+                  class="size-full bg-primary/15"
+                  :style="{ width: `${sliderWidth}%` }"
+                />
+              </div>
+            </template>
+            <slot />
+          </ScrubableNumberInput>
+        </TooltipTrigger>
+        <TooltipContent>{{ buttonTooltip }}</TooltipContent>
+      </Tooltip>
+    </template>
   </WidgetLayoutField>
 </template>

@@ -93,14 +93,13 @@ describe('WidgetSelectDefault', () => {
         widget: createWidget(['euler', 'heun']),
         modelValue: 'euler'
       },
-      attrs: { 'data-testid': 'combo-row' },
       global: {
         plugins: [i18n],
         provide: { [UnifiedWidgetRowsKey]: true }
       }
     })
 
-    await user.click(screen.getByTestId('combo-row'))
+    await user.click(screen.getByTestId('widget-row-hit-area'))
 
     expect(screen.getByRole('combobox')).toHaveAttribute(
       'aria-expanded',
@@ -165,6 +164,38 @@ describe('WidgetSelectDefault', () => {
           screen.getByRole('button', { name: 'test_combo: Next' })
         ].map((button) => button.hasAttribute('disabled'))
       ).toEqual(expected)
+    }
+  )
+
+  it.for([
+    { initial: [11, 42], action: 'Next', expected: 89 },
+    { initial: [42, 89], action: 'Previous', expected: 11 }
+  ])(
+    'discovers new dynamic options with $action without opening the popup',
+    async ({ initial, action, expected }) => {
+      let values = initial
+      const { user, onUpdate } = renderComponent(
+        createWidget(() => values),
+        42,
+        undefined,
+        false,
+        true
+      )
+      const arrow = screen.getByRole('button', {
+        name: `test_combo: ${action}`
+      })
+
+      await user.click(arrow)
+      expect(onUpdate).not.toHaveBeenCalled()
+
+      values = [11, 42, 89]
+      await user.click(arrow)
+
+      expect(onUpdate).toHaveBeenCalledWith(expected)
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      )
     }
   )
 

@@ -5,7 +5,10 @@ import {
 
 test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
   for (const type of ['slider', 'gradientslider'] as const) {
-    test(`${type} retains a usable drag range`, async ({ comfyPage }) => {
+    test(`${type} retains a usable drag range`, async ({
+      comfyPage,
+      comfyMouse
+    }) => {
       await comfyPage.page.evaluate((widgetType) => {
         const node = window.app!.graph.nodes.find(
           (node) => node.type === 'KSampler'
@@ -22,13 +25,12 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
         .getWidgetRowByLabel('KSampler', 'strength')
         .getByRole('slider')
       await expect(slider).toHaveAttribute('aria-valuenow', '0.25')
-      await slider.hover()
       const box = (await slider.boundingBox())!
-      await comfyPage.page.mouse.down()
-      await comfyPage.page.mouse.move(box.x + 40, box.y + box.height / 2, {
-        steps: 10
-      })
-      await comfyPage.page.mouse.up()
+      await comfyMouse.dragAndDrop(
+        { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+        { x: box.x + 40, y: box.y + box.height / 2 },
+        { steps: 10 }
+      )
       await expect
         .poll(async () => Number(await slider.getAttribute('aria-valuenow')))
         .toBeGreaterThan(0.25)

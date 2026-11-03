@@ -68,7 +68,7 @@
               type="button"
               tabindex="-1"
               :aria-label="`${widgetLabel}: ${$t(button.labelKey)}`"
-              :disabled="disabled || !adjacentOption(button.direction)"
+              :disabled="isStepDisabled(button.direction)"
               :class="
                 cn(
                   'flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none not-disabled:hover:bg-muted disabled:cursor-default disabled:opacity-30',
@@ -314,6 +314,9 @@ const widgetOptions = computed(
   () => widget.options as SelectWidgetOptions | undefined
 )
 
+const dynamicOptions = computed(
+  () => typeof widgetOptions.value?.values === 'function'
+)
 const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
 const rowCursor = computed(() =>
   unifiedRows && !disabled.value ? 'cursor-pointer' : undefined
@@ -426,6 +429,10 @@ function adjacentOption(direction: -1 | 1) {
       ? -1
       : options.length
   return options[index + direction]
+}
+
+function isStepDisabled(direction: -1 | 1) {
+  return disabled.value || (!dynamicOptions.value && !adjacentOption(direction))
 }
 
 function stepOption(direction: -1 | 1) {

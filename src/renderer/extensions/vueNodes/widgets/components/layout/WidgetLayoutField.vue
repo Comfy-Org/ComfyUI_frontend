@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref, useTemplateRef } from 'vue'
+import { computed, inject, useTemplateRef } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
@@ -14,6 +14,7 @@ const {
   labelClass,
   hasLeadingButton,
   fullWidthControl,
+  noBorder,
   activateOnClick = true
 } = defineProps<{
   widget: Pick<
@@ -40,8 +41,6 @@ const leadingPadding = computed(() => {
 })
 const labelElement = useTemplateRef<HTMLLabelElement>('labelElement')
 const rowElement = useTemplateRef<HTMLDivElement>('rowElement')
-defineExpose({ labelElement, rowElement })
-const editingValue = ref<string>()
 const label = computed(() =>
   widget.name ? (widget.displayLabel ?? (widget.label || widget.name)) : ''
 )
@@ -51,53 +50,42 @@ const borderStyle = computed(() =>
     widget.borderStyle
   )
 )
-
-function measureInput(event: Event) {
-  if (event.target instanceof HTMLInputElement && event.target.type === 'text')
-    editingValue.value = event.target.value
-}
-
-function activateControl(event: MouseEvent) {
-  if (!unifiedRows || !activateOnClick || !inputId || event.defaultPrevented)
-    return
-  if (
-    event.target instanceof Element &&
-    event.target.closest(
-      'label, button, input, textarea, select, a, [role="slider"]'
-    )
+const rowClass = computed(() =>
+  cn(
+    unifiedRows
+      ? 'relative isolate flex min-w-0 items-center rounded-md bg-input focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none [&_[data-slot=number-field]:focus-within]:ring-0'
+      : 'grid min-w-0 grid-cols-subgrid justify-between gap-2',
+    leadingPadding.value,
+    fullWidthRow.value && 'py-2',
+    unifiedRows && !noBorder && widget.borderStyle,
+    rootClass
   )
-    return
-
-  const control = document.getElementById(inputId)
-  if (!control || control.matches(':disabled, [aria-disabled="true"]')) return
-
-  control.focus()
-  control.click()
-}
+)
+const controlClass = computed(() =>
+  cn(
+    'min-w-0 rounded-md transition-all',
+    !noBorder && !unifiedRows && borderStyle.value,
+    unifiedRows ? 'col-start-1 row-start-1 cursor-[inherit]' : 'cursor-default',
+    fullWidthRow.value && 'absolute inset-0'
+  )
+)
 </script>
 
 <template>
   <div
     ref="rowElement"
-    :class="
-      cn(
-        unifiedRows
-          ? 'relative flex min-w-0 items-center rounded-md bg-input focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none [&_[data-slot=number-field]:focus-within]:ring-0'
-          : 'grid min-w-0 grid-cols-subgrid justify-between gap-2',
-        leadingPadding,
-        fullWidthRow && 'py-2',
-        unifiedRows && !noBorder && widget.borderStyle,
-        rootClass
-      )
-    "
+    :class="rowClass"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop
-    @input="measureInput"
-    @focusout="editingValue = undefined"
-    @keyup.enter="editingValue = undefined"
-    @click="activateControl"
   >
+    <label
+      v-if="unifiedRows && activateOnClick && inputId"
+      :for="inputId"
+      aria-hidden="true"
+      data-testid="widget-row-hit-area"
+      class="absolute inset-0 -z-10 cursor-[inherit]"
+    />
     <label
       v-if="!hideLayoutField"
       ref="labelElement"
@@ -131,9 +119,9 @@ function activateControl(event: MouseEvent) {
       "
     >
       <span
-        v-if="unifiedRows"
+        v-if="unifiedRows && valueText !== undefined"
         aria-hidden="true"
-        :data-value="editingValue ?? valueText"
+        :data-value="valueText"
         :class="
           cn(
             'invisible col-start-1 row-start-1 truncate pl-2 after:content-[attr(data-value)]',
@@ -141,19 +129,8 @@ function activateControl(event: MouseEvent) {
           )
         "
       />
-      <div
-        :class="
-          cn(
-            'min-w-0 rounded-md transition-all',
-            !noBorder && !unifiedRows && borderStyle,
-            unifiedRows
-              ? 'col-start-1 row-start-1 cursor-[inherit]'
-              : 'cursor-default',
-            fullWidthRow && 'absolute inset-0'
-          )
-        "
-      >
-        <slot :border-style />
+      <div :class="controlClass">
+        <slot :border-style :label-element :row-element />
       </div>
     </div>
   </div>

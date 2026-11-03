@@ -29,6 +29,13 @@
       <i class="icon-[lucide--minus]" />
     </Button>
     <div class="relative my-0.25 min-w-[4ch] flex-1 py-1.5">
+      <span
+        v-if="edgeButtons"
+        aria-hidden="true"
+        class="invisible block truncate px-2"
+      >
+        {{ draft ?? displayValue ?? modelValue }}
+      </span>
       <input
         ref="inputField"
         v-bind="inputAttrs"

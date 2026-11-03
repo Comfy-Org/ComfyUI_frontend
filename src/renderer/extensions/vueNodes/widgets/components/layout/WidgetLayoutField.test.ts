@@ -19,19 +19,17 @@ function renderField(
   {
     hideLayoutField = false,
     unifiedRows = false,
-    valueText,
     slotContent = '<span data-testid="slot">content</span>'
   }: {
     hideLayoutField?: boolean
     unifiedRows?: boolean
-    valueText?: string
     slotContent?: string
   } = {}
 ) {
   const Harness = defineComponent({
     components: { WidgetLayoutField },
-    setup: () => ({ widget, valueText }),
-    template: `<WidgetLayoutField :widget="widget" :value-text="valueText">${slotContent}</WidgetLayoutField>`
+    setup: () => ({ widget }),
+    template: `<WidgetLayoutField :widget="widget">${slotContent}</WidgetLayoutField>`
   })
   return render(Harness, {
     global: {
@@ -69,7 +67,9 @@ describe('WidgetLayoutField', () => {
         global: { provide: { [UnifiedWidgetRowsKey]: unifiedRows } }
       })
       const targets = {
-        row: screen.getByTestId('row'),
+        row: unifiedRows
+          ? screen.getByTestId('widget-row-hit-area')
+          : screen.getByTestId('row'),
         primary: screen.getByRole('button', { name: 'field' }),
         secondary: screen.getByRole('button', { name: 'Secondary' })
       }
@@ -121,11 +121,6 @@ describe('WidgetLayoutField', () => {
   })
 
   describe('Slot content', () => {
-    it('renders the default slot', () => {
-      renderField({ name: 'seed' }, { unifiedRows: true, valueText: 'content' })
-      expect(screen.getByText('content')).toBeInTheDocument()
-    })
-
     it('passes borderStyle to the default slot', () => {
       const Harness = defineComponent({
         components: { WidgetLayoutField },

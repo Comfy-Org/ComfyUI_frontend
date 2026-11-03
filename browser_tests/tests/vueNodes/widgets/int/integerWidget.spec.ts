@@ -4,6 +4,28 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
+  test('reclaims numeric draft width after keyboard stepping', async ({
+    comfyPage
+  }) => {
+    const [node] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    await node.centerOnNode()
+    const row = comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'steps')
+    const input = row.getByRole('spinbutton', { name: 'steps' })
+
+    await input.fill('123456789012345')
+    await expect(input).toHaveValue('123456789012345')
+    const draftBounds = (await input.boundingBox())!
+
+    await input.press('ArrowUp')
+
+    await expect(input).toHaveValue('21')
+    await expect(async () => {
+      const steppedBounds = (await input.boundingBox())!
+      expect(steppedBounds.width).toBeLessThan(draftBounds.width - 50)
+    }).toPass({ timeout: 5000 })
+    await expect(row.getByText('steps', { exact: true })).toBeVisible()
+  })
+
   test('should be suppressed while linked and editable after unlinking', async ({
     comfyPage
   }) => {
