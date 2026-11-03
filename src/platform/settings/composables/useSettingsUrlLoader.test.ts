@@ -32,20 +32,24 @@ describe('useSettingsUrlLoader', () => {
     expect(useRouter().replace).not.toHaveBeenCalled()
   })
 
-  it('opens the Plans & Credits panel and strips the param', async () => {
-    useRoute().query.settings = 'plan-credits'
+  it.for([
+    ['plan-credits', 'workspace'],
+    ['members', 'workspace-members']
+  ] as const)(
+    'opens the panel for ?settings=%s and strips the param',
+    async ([param, panel]) => {
+      useRoute().query.settings = param
 
-    const { loadSettingsFromUrl } = useSettingsUrlLoader()
-    await loadSettingsFromUrl()
+      const { loadSettingsFromUrl } = useSettingsUrlLoader()
+      await loadSettingsFromUrl()
 
-    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
-      'workspace'
-    )
-    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
-    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
-      'settings'
-    )
-  })
+      expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(panel)
+      expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+        'settings'
+      )
+    }
+  )
 
   it('preserves unrelated params when stripping', async () => {
     useRoute().query.settings = 'plan-credits'

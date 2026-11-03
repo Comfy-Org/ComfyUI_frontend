@@ -1,29 +1,28 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { fromAny } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ComfyApi } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
-import type { WidgetState } from '@/types/widgetState'
-import { widgetId } from '@/types/widgetId'
-import { toNodeId } from '@/types/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { getLoaderDropIndicator } from './useLoaderDropIndicator'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
 
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>({
-    apiURL: vi.fn((route: string) => `http://localhost:8188/api${route}`)
-  })
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    getPreviewFormatParam: vi.fn(() => '&preview=webp')
-  })
-}))
+vi.mock(import('@/scripts/app'))
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation(
+    (route) => `http://localhost:8188/api${route}`
+  )
+  vi.mocked(app.getPreviewFormatParam).mockReturnValue('&preview=webp')
+})
 
 function makeWidget(
   name: string,

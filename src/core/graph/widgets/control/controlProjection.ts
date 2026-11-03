@@ -2,9 +2,11 @@ import type {
   IBaseWidget,
   IComboWidget,
   IStringWidget
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { t } from '@/i18n'
 import { widgetControlLabel } from '@/lib/litegraph/src/widgetControlLabel'
+import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import {
@@ -15,6 +17,30 @@ import {
 
 const modeProjectionCache = new WeakMap<IBaseWidget, IComboWidget>()
 const filterProjectionCache = new WeakMap<IBaseWidget, IStringWidget>()
+
+function announceControlValue(
+  target: IBaseWidget,
+  control: IBaseWidget,
+  previous: unknown
+): void {
+  if (!target.widgetId) return
+  const state = useWidgetValueStore().getWidget(target.widgetId)
+  if (!state) return
+  emitGraphIntent({
+    type: 'set_widget',
+    graphId: parseWidgetId(target.widgetId).graphId,
+    nodeId: state.nodeId,
+    name: control.name,
+    value: control.value,
+    previous
+  })
+}
+
+export function announceControlValues(target: IBaseWidget): void {
+  for (const control of getControlProjections(target)) {
+    announceControlValue(target, control, undefined)
+  }
+}
 
 function createModeProjection(target: IBaseWidget): IComboWidget {
   const store = useWidgetValueStore()
@@ -60,10 +86,12 @@ function createModeProjection(target: IBaseWidget): IComboWidget {
     },
     set value(value) {
       if (isValueControlMode(value)) {
+        const previous = this.value
         if (target.controlConfig) target.controlConfig.mode = value
         if (target.widgetId) {
           store.updateWidgetControl(target.widgetId, { mode: value })
         }
+        if (value !== previous) announceControlValue(target, this, previous)
       }
     },
     callback(value) {
@@ -108,11 +136,13 @@ function createFilterProjection(target: IBaseWidget): IStringWidget {
         : (target.controlConfig?.filter ?? '')
     },
     set value(value) {
+      const previous = this.value
       const filter = value
       if (target.controlConfig) target.controlConfig.filter = filter
       if (target.widgetId) {
         store.updateWidgetControl(target.widgetId, { filter })
       }
+      if (value !== previous) announceControlValue(target, this, previous)
     },
     callback(value) {
       this.value = String(value)

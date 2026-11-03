@@ -16,40 +16,65 @@ function awarenessFrame(state: unknown, expiresAt: unknown = 123) {
 }
 
 describe('awareness frame validation', () => {
-  it('rejects state whose JSON encoding exceeds 8 KiB', () => {
-    expect(
-      parseServerDocFrame(awarenessFrame({ value: 'x'.repeat(8 * 1024) }))
-    ).toBeNull()
-  })
-
-  it('accepts state whose JSON encoding is exactly 8 KiB', () => {
-    // `{"value":"x…"}` wraps the string in 12 bytes of JSON syntax.
-    const state = { value: 'x'.repeat(8 * 1024 - 12) }
-    expect(new TextEncoder().encode(JSON.stringify(state)).byteLength).toBe(
-      8 * 1024
-    )
-    expect(parseServerDocFrame(awarenessFrame(state))).toMatchObject({
-      data: { state }
-    })
-  })
-
-  it('rejects array-shaped state', () => {
-    expect(parseServerDocFrame(awarenessFrame(['cursor', 10, 20]))).toBeNull()
-  })
-
-  it('treats a null state as absent rather than rejecting the frame', () => {
-    // The Go server's `State map[string]any` has `omitempty` and never
-    // actually emits `state: null`, but this is defence in depth: null
-    // should fold into "no state", not discard the whole frame (and with
-    // it actor/expires_at). discussion_r3911665011.
-    expect(parseServerDocFrame(awarenessFrame(null, 456))).toEqual({
-      type: 'awareness',
-      data: {
-        workflowId: 'wf-1',
-        actor: 'human:user:tab-a',
-        expiresAt: 456
+  it.for([
+    {
+      name: 'keeps the frame without a state when state is missing',
+      state: undefined,
+      expected: {
+        type: 'awareness',
+        data: { workflowId: 'wf-1', actor: 'human:user:tab-a', expiresAt: 456 }
       }
-    })
+    },
+    // The Go server omits an empty state and never sends `state: null`; null
+    // still counts as absent so the frame keeps actor and expires_at (#16653).
+    {
+      name: 'keeps the frame without a state when state is null',
+      state: null,
+      expected: {
+        type: 'awareness',
+        data: { workflowId: 'wf-1', actor: 'human:user:tab-a', expiresAt: 456 }
+      }
+    },
+    { name: 'rejects a string state', state: 'cursor', expected: null },
+    {
+      name: 'rejects an array state',
+      state: ['cursor', 10, 20],
+      expected: null
+    },
+    // `{"value":"x…"}` wraps the string in 12 bytes of JSON syntax.
+    {
+      name: 'accepts a state whose JSON is exactly 8 KiB',
+      state: { value: 'x'.repeat(8 * 1024 - 12) },
+      expected: {
+        type: 'awareness',
+        data: {
+          workflowId: 'wf-1',
+          actor: 'human:user:tab-a',
+          state: { value: 'x'.repeat(8 * 1024 - 12) },
+          expiresAt: 456
+        }
+      }
+    },
+    {
+      name: 'rejects a state whose JSON is 8 KiB plus one byte',
+      state: { value: 'x'.repeat(8 * 1024 - 11) },
+      expected: null
+    },
+    {
+      name: 'passes a valid state through',
+      state: { cursor: [10, 20], selection: 'node-1' },
+      expected: {
+        type: 'awareness',
+        data: {
+          workflowId: 'wf-1',
+          actor: 'human:user:tab-a',
+          state: { cursor: [10, 20], selection: 'node-1' },
+          expiresAt: 456
+        }
+      }
+    }
+  ])('$name', ({ state, expected }) => {
+    expect(parseServerDocFrame(awarenessFrame(state, 456))).toEqual(expected)
   })
 
   it('rejects negative expires_at', () => {
@@ -77,22 +102,6 @@ describe('awareness frame validation', () => {
   it('accepts a zero expires_at', () => {
     expect(parseServerDocFrame(awarenessFrame({}, 0))).toMatchObject({
       data: { expiresAt: 0 }
-    })
-  })
-
-  it('accepts a valid awareness frame', () => {
-    expect(
-      parseServerDocFrame(
-        awarenessFrame({ cursor: [10, 20], selection: 'node-1' }, 456)
-      )
-    ).toEqual({
-      type: 'awareness',
-      data: {
-        workflowId: 'wf-1',
-        actor: 'human:user:tab-a',
-        state: { cursor: [10, 20], selection: 'node-1' },
-        expiresAt: 456
-      }
     })
   })
 })

@@ -1,4 +1,0 @@
-schema_version: '1.1'
-name: requeues-after-pop
-context:
-  scaffold_script: fixture.sh

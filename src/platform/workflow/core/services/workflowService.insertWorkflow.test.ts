@@ -7,22 +7,18 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedNode,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    canvas: { _deserializeItems: vi.fn() }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(import('@/scripts/defaultGraph'), () => ({
   defaultGraph: {},
@@ -31,12 +27,10 @@ vi.mock<unknown>(import('@/scripts/defaultGraph'), () => ({
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock<unknown>(
-  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // eslint-disable-line import-x/no-restricted-paths
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // oxlint-disable-line comfy/no-restricted-paths
 
   () => ({
     useWorkflowThumbnail: () => ({
@@ -46,7 +40,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const PROBE_NODE_TYPE = 'test/insert-workflow-probe'
 
@@ -95,6 +89,7 @@ function stubWorkflow(initialState: SerialisableGraph): ComfyWorkflow {
 
 beforeEach(() => {
   LiteGraph.registerNodeType(PROBE_NODE_TYPE, InsertWorkflowProbeNode)
+  vi.mocked(app.canvas._deserializeItems).mockImplementation(() => undefined)
   const canvasPrototype: {
     getContext(
       contextId: '2d',

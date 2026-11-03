@@ -31,8 +31,7 @@ const {
   getSearchRoot,
   resetCapturedSearchRoot,
   mockExpandNode,
-  mockToggleNodeOnEvent,
-  mockWorkflowService
+  mockToggleNodeOnEvent
 } = vi.hoisted(() => {
   let capturedSearchRoot: TreeExplorerNode<ComfyWorkflow> | null = null
 
@@ -45,20 +44,12 @@ const {
       capturedSearchRoot = null
     },
     mockExpandNode: vi.fn(),
-    mockToggleNodeOnEvent: vi.fn(),
-    mockWorkflowService: {
-      openWorkflow: vi.fn().mockResolvedValue(undefined),
-      closeWorkflow: vi.fn().mockResolvedValue(undefined),
-      renameWorkflow: vi.fn().mockResolvedValue(undefined),
-      deleteWorkflow: vi.fn().mockResolvedValue(undefined),
-      insertWorkflow: vi.fn().mockResolvedValue(undefined),
-      duplicateWorkflow: vi.fn().mockResolvedValue(undefined)
-    }
+    mockToggleNodeOnEvent: vi.fn()
   }
 })
 
 vi.mock<unknown>(
-  import('@/components/sidebar/tabs/SidebarTopArea.vue'),
+  import('@comfyorg/design-system/navigation/SidebarTopArea'),
   () => ({
     default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
   })
@@ -119,12 +110,7 @@ vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => mockWorkflowService
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const i18n = createI18n({
   legacy: false,

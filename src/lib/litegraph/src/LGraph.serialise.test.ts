@@ -1,4 +1,4 @@
-import { beforeEach, describe } from 'vitest'
+import { describe } from 'vitest'
 
 import {
   LGraph,
@@ -8,19 +8,15 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { test } from './__fixtures__/testExtensions'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
-
-beforeEach(() => {
-  mockReportError.mockClear()
-})
 
 describe('LGraph Serialisation', () => {
   test('can (de)serialise node / group titles', ({ expect, minimalGraph }) => {
@@ -103,6 +99,7 @@ describe('LGraph Serialisation', () => {
         message: 'Graph serialization state mismatch'
       }),
       {
+        surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
         context: {
           graphId: graph.id,
@@ -425,14 +422,13 @@ describe('LGraph Serialisation', () => {
     const node = new LGraphNode('Extended')
     const cyclic: Record<string, unknown> = {}
     cyclic.self = cyclic
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     node.onSerialize = (data) => {
       Object.assign(data, { cyclic })
     }
 
     expect(() => node.serialize()).not.toThrow()
     expect(node.serialize()).not.toHaveProperty('extensions.cyclic')
-    expect(warn).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       'LiteGraph: ignoring non-serializable extension payload'
     )
   })

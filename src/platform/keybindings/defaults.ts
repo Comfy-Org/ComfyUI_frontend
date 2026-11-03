@@ -1,4 +1,4 @@
-import type { Keybinding } from './types'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 
 export const CORE_KEYBINDINGS: Keybinding[] = [
   {
@@ -165,6 +165,13 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       ctrl: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Mute',
+    targetElementId: 'graph-canvas-container'
+  },
+  {
+    combo: {
+      key: 'l'
+    },
+    commandId: 'Comfy.Canvas.ToggleSelectedNodes.Links',
     targetElementId: 'graph-canvas-container'
   },
   {

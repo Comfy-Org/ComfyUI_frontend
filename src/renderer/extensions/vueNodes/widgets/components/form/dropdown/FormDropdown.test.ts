@@ -1,12 +1,13 @@
 import { getActivePinia } from 'pinia'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { render, screen } from '@testing-library/vue'
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
-import PrimeVue from 'primevue/config'
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
 import FormDropdown from './FormDropdown.vue'
 import { DROPDOWN_PANEL_CLASS } from './shared'
@@ -18,16 +19,7 @@ function createItem(id: string, name: string): FormDropdownItem {
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
-const transformState = vi.hoisted(() => ({ camera: { x: 0, y: 0, z: 1 } }))
-
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  async () => {
-    const { reactive } = await import('vue')
-    transformState.camera = reactive(transformState.camera)
-    return { useTransformState: () => ({ camera: transformState.camera }) }
-  }
-)
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 const MockFormDropdownMenu = {
   name: 'FormDropdownMenu',
@@ -107,7 +99,7 @@ function mountDropdown(
       'onUpdate:isOpen': options.onUpdateIsOpen
     },
     global: {
-      plugins: [PrimeVue, i18n, getActivePinia()!],
+      plugins: [i18n, getActivePinia()!],
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
         FormDropdownMenu: MockFormDropdownMenu
@@ -137,17 +129,7 @@ async function openDropdown(user: ReturnType<typeof userEvent.setup>) {
   await screen.findByTestId('dropdown-menu')
 }
 
-beforeEach(() => {
-  vi.mocked(useToastStore().addAlert).mockImplementation(() => undefined)
-})
-
 describe('FormDropdown', () => {
-  beforeEach(() => {
-    transformState.camera.x = 0
-    transformState.camera.y = 0
-    transformState.camera.z = 1
-  })
-
   describe('filteredItems updates when items prop changes', () => {
     it('updates displayed items when items prop changes', async () => {
       const { rerender, user } = mountDropdown([
@@ -420,6 +402,29 @@ describe('FormDropdown', () => {
     expect(onUpdateSelected).not.toHaveBeenCalled()
   })
 
+  it('restores trigger focus after Escape', async () => {
+    const { user } = mountDropdown([createItem('1', 'alpha')])
+    await openDropdown(user)
+    await user.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+    )
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    { type: 'resize', target: window },
+    { type: 'scroll', target: document }
+  ])('dismisses on viewport $type', async ({ type, target }) => {
+    const { user } = mountDropdown([createItem('1', 'alpha')])
+    await openDropdown(user)
+    await fireEvent(target, new Event(type))
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+    )
+  })
+
   it('closes on a pointerdown outside the menu and trigger', async () => {
     const onUpdateIsOpen = vi.fn()
     const { user } = mountDropdown([createItem('1', 'alpha')], {
@@ -439,6 +444,8 @@ describe('FormDropdown', () => {
   })
 
   it('closes when the canvas viewport moves', async () => {
+    const camera = reactive({ x: 0, y: 0, z: 1 })
+    vi.mocked(useTransformState()).camera = camera
     const onUpdateIsOpen = vi.fn()
     const { user } = mountDropdown([createItem('1', 'alpha')], {
       onUpdateIsOpen
@@ -447,7 +454,7 @@ describe('FormDropdown', () => {
 
     expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
 
-    transformState.camera.x += 77
+    camera.x += 77
     await flushPromises()
 
     expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)

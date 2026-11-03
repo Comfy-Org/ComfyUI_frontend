@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n'
 import type {
   LogEntry,
   LogsWsMessage
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 

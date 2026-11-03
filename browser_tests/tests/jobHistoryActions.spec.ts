@@ -1,83 +1,85 @@
-import type { Locator } from '@playwright/test'
-
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Job History Actions', { tag: '@ui' }, () => {
+  test.use({
+    initialSettings: {
+      'Comfy.Queue.QPOV2': false,
+      'Comfy.Queue.ShowRunProgressBar': true
+    }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
-    // Expand the queue overlay so the JobHistoryActionsMenu is visible
-    await comfyPage.page.getByTestId('queue-overlay-toggle').click()
+    await comfyPage.queuePanel.overlayToggle.click()
   })
 
-  async function openMoreOptionsPopover(comfyPage: {
-    page: { getByLabel(label: string | RegExp): Locator }
-  }) {
-    const moreButton = comfyPage.page.getByLabel(/More options/i).first()
-    await moreButton.click()
-  }
-
-  test('More options popover opens', async ({ comfyPage }) => {
-    await openMoreOptionsPopover(comfyPage)
-
-    await expect(
-      comfyPage.page.getByTestId('docked-job-history-action')
-    ).toBeVisible()
-  })
-
-  test('Docked job history action is visible with text', async ({
+  test('opens settings and explains what clearing history preserves', async ({
     comfyPage
   }) => {
-    await openMoreOptionsPopover(comfyPage)
-
-    const action = comfyPage.page.getByTestId('docked-job-history-action')
-    await expect(action).toBeVisible()
-    await expect(action).not.toBeEmpty()
-  })
-
-  test('Show run progress bar action is visible', async ({ comfyPage }) => {
-    await openMoreOptionsPopover(comfyPage)
-
-    await expect(
-      comfyPage.page.getByTestId('show-run-progress-bar-action')
-    ).toBeVisible()
-  })
-
-  test('Clear history action is visible', async ({ comfyPage }) => {
-    await openMoreOptionsPopover(comfyPage)
-
-    await expect(
-      comfyPage.page.getByTestId('clear-history-action')
-    ).toBeVisible()
-  })
-
-  test('Clicking docked job history closes popover', async ({ comfyPage }) => {
-    await openMoreOptionsPopover(comfyPage)
-
-    const action = comfyPage.page.getByTestId('docked-job-history-action')
-    await expect(action).toBeVisible()
-    await action.click()
-
-    await expect(action).toBeHidden()
-  })
-
-  test('Clicking show run progress bar toggles setting', async ({
-    comfyPage
-  }) => {
-    const settingBefore = await comfyPage.settings.getSetting<boolean>(
-      'Comfy.Queue.ShowRunProgressBar'
+    const panel = comfyPage.queuePanel
+    await panel.moreOptionsButton.click()
+    await expect(panel.dockedHistoryAction).not.toBeChecked()
+    await expect(panel.runProgressAction).toBeChecked()
+    await expect(panel.clearHistoryAction).toHaveAccessibleDescription(
+      "Media assets won't be deleted."
     )
+  })
 
-    await openMoreOptionsPopover(comfyPage)
+  test('docking history closes the menu', async ({ comfyPage }) => {
+    const panel = comfyPage.queuePanel
+    await panel.moreOptionsButton.click()
+    await panel.dockedHistoryAction.click()
+    await expect(panel.menu).toBeHidden()
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.Queue.QPOV2'))
+      .toBe(true)
+  })
 
-    const action = comfyPage.page.getByTestId('show-run-progress-bar-action')
-    await action.click()
-
+  test('keyboard toggles run progress without closing the menu', async ({
+    comfyPage
+  }) => {
+    const panel = comfyPage.queuePanel
+    await panel.moreOptionsButton.focus()
+    await panel.moreOptionsButton.press('ArrowDown')
+    await expect(panel.dockedHistoryAction).toBeFocused()
+    await panel.dockedHistoryAction.press('ArrowDown')
+    await expect(panel.runProgressAction).toBeFocused()
+    await panel.runProgressAction.press('Enter')
+    await expect(panel.runProgressAction).not.toBeChecked()
     await expect
       .poll(() =>
-        comfyPage.settings.getSetting<boolean>('Comfy.Queue.ShowRunProgressBar')
+        comfyPage.settings.getSetting('Comfy.Queue.ShowRunProgressBar')
       )
-      .toBe(!settingBefore)
+      .toBe(false)
+    await panel.runProgressAction.press('Escape')
+    await expect(panel.menu).toBeHidden()
+    await expect(panel.moreOptionsButton).toBeFocused()
   })
+
+  for (const { control, initial, selected } of [
+    {
+      control: 'filterButton',
+      initial: 'All workflows',
+      selected: 'Current workflow'
+    },
+    {
+      control: 'sortButton',
+      initial: 'Most recent',
+      selected: 'Total generation time (longest first)'
+    }
+  ] as const) {
+    test(`${control} selects one option and closes`, async ({ comfyPage }) => {
+      const panel = comfyPage.queuePanel
+      await panel[control].click()
+      await expect(panel.menuOption(initial)).toBeChecked()
+      await panel.menuOption(selected).click()
+      await expect(panel.menu).toBeHidden()
+      await expect(panel[control]).toBeFocused()
+      await panel[control].click()
+      await expect(panel.menuOption(selected)).toBeChecked()
+      await expect(panel.menuOption(initial)).not.toBeChecked()
+    })
+  }
 })

@@ -1,0 +1,14 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useDialogStore } from '@/stores/dialogStore'
+
+vi.mock(import('@/i18n'))
+
+describe('showBillingComingSoonDialog', () => {
+  it("opens at size 'sm'", () => {
+    useBillingDialogs().showBillingComingSoonDialog()
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
+    expect(args.dialogComponentProps?.size).toBe('sm')
+  })
+})

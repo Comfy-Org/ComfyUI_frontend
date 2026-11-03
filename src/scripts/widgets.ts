@@ -1,18 +1,9 @@
-import { getControlProjections } from '@/core/graph/widgets/control/controlProjection'
-import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/widgetControl'
-import { isValueControlMode } from '@/core/graph/widgets/control/valueControl'
-import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
-import { t } from '@/i18n'
-import { isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IComboWidget,
-  IStringWidget
-} from '@/lib/litegraph/src/types/widgets'
-import { registerWidgetControlLabelProvider } from '@/lib/litegraph/src/widgetControlLabel'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
+import {
+  addValueControlWidget as _addValueControlWidget,
+  addValueControlWidgets as _addValueControlWidgets,
+  updateControlWidgetLabel as _updateControlWidgetLabel
+} from '@/core/graph/widgets/valueControlWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useCurveWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useCurveWidget'
@@ -23,6 +14,7 @@ import { useCompositorWidget } from '@/renderer/extensions/vueNodes/widgets/comp
 import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 import { useGalleriaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget'
 import { useBoundingBoxesWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget'
+import { useLightInfoWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget'
 import { useColorsWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorsWidget'
 import { useImageCompareWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
@@ -33,50 +25,15 @@ import { useRangeWidget } from '@/renderer/extensions/vueNodes/widgets/composabl
 import { useResolutionPreviewWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useResolutionPreviewWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
+import { useVideoConcatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useVideoConcatWidget'
 import { useVideoEditWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useVideoEditWidget'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
-import type { ComfyApp } from './app'
+import type { ComfyWidgetConstructor } from '@/types/comfy'
+
 import './domWidget'
-import './errorNodeWidgets'
 
-registerWidgetControlLabelProvider(() =>
-  useSettingStore().get('Comfy.WidgetControlMode') === 'before'
-    ? t('g.control_before_generate')
-    : t('g.control_after_generate')
-)
-
-export type ComfyWidgetConstructorV2 = (
-  node: LGraphNode,
-  inputSpec: InputSpecV2
-) => IBaseWidget
-
-export type ComfyWidgetConstructor = (
-  node: LGraphNode,
-  inputName: string,
-  inputData: InputSpec,
-  app: ComfyApp,
-  widgetName?: string
-) => { widget: IBaseWidget; minWidth?: number; minHeight?: number }
-
-export type CustomComfyWidgetConstructor = (
-  ...args: Parameters<ComfyWidgetConstructor>
-) =>
-  | {
-      widget?: IBaseWidget
-      minWidth?: number
-      minHeight?: number
-    }
-  | IBaseWidget
-  | undefined
-
-/**
- * Transforms a V2 widget constructor to a V1 widget constructor.
- * @param widgetConstructorV2 The V2 widget constructor to transform.
- * @returns The transformed V1 widget constructor.
- */
 const transformWidgetConstructorV2ToV1 = (
   widgetConstructorV2: ComfyWidgetConstructorV2
 ): ComfyWidgetConstructor => {
@@ -91,162 +48,6 @@ const transformWidgetConstructorV2ToV1 = (
       minHeight: widget.options.minNodeSize?.[1]
     }
   }
-}
-
-function toControlMode(value: string | undefined): ValueControlMode {
-  return isValueControlMode(value) ? value : 'randomize'
-}
-
-interface ValueControlOptions extends Record<string, unknown> {
-  addFilterList?: boolean
-  controlAfterGenerateName?: string
-  controlFilterListName?: string
-}
-
-function configureValueControl(
-  targetWidget: IBaseWidget,
-  defaultValue: string | undefined,
-  addFilterList: boolean
-): void {
-  targetWidget.controlConfig = {
-    mode: toControlMode(defaultValue),
-    hasFilter: isComboWidget(targetWidget) && addFilterList
-  }
-  registerWidgetControlFromConfig(targetWidget)
-}
-
-function resolveControlTarget(
-  nodeOrTarget: LGraphNode | IBaseWidget,
-  legacyTarget: IBaseWidget | undefined
-): IBaseWidget {
-  if (legacyTarget) return legacyTarget
-  if ('options' in nodeOrTarget) return nodeOrTarget
-  throw new TypeError('Value control target widget is required')
-}
-
-function configuredControlProjections(
-  targetWidget: IBaseWidget
-): [IComboWidget, ...IStringWidget[]] | undefined {
-  const [mode, ...filters] = getControlProjections(targetWidget)
-  return mode ? [mode, ...filters] : undefined
-}
-
-function legacyControlName(
-  defaultName: string,
-  optionName: keyof ValueControlOptions,
-  options: ValueControlOptions,
-  inputData: InputSpec | undefined
-): string {
-  const optionNameValue = options[optionName]
-  if (typeof optionNameValue === 'string') return optionNameValue
-  const inputName = inputData?.[1]?.[defaultName]
-  if (typeof inputName === 'string') return inputName
-  const prefix = inputData?.[1]?.control_prefix
-  return prefix ? `${prefix} ${defaultName}` : defaultName
-}
-
-export function addValueControlWidget(
-  targetWidget: IBaseWidget,
-  defaultValue?: string
-): void
-export function addValueControlWidget(
-  node: LGraphNode,
-  targetWidget: IBaseWidget,
-  defaultValue?: string,
-  values?: unknown,
-  widgetName?: string,
-  inputData?: InputSpec
-): IComboWidget
-export function addValueControlWidget(
-  nodeOrTarget: LGraphNode | IBaseWidget,
-  targetOrDefault?: IBaseWidget | string,
-  legacyDefault?: string,
-  _legacyValues?: unknown,
-  legacyWidgetName?: string,
-  legacyInputData?: InputSpec
-): void | IComboWidget {
-  const legacyTarget =
-    typeof targetOrDefault === 'object' ? targetOrDefault : undefined
-  const targetWidget = resolveControlTarget(nodeOrTarget, legacyTarget)
-  const defaultValue = legacyTarget
-    ? legacyDefault
-    : typeof targetOrDefault === 'string'
-      ? targetOrDefault
-      : undefined
-  configureValueControl(targetWidget, defaultValue, false)
-  if (!legacyTarget) return
-
-  const projections = configuredControlProjections(targetWidget)
-  if (!projections) return
-  const [mode] = projections
-  mode.name = legacyControlName(
-    'control_after_generate',
-    'controlAfterGenerateName',
-    { controlAfterGenerateName: legacyWidgetName },
-    legacyInputData
-  )
-  return mode
-}
-
-export function addValueControlWidgets(
-  targetWidget: IBaseWidget,
-  defaultValue?: string,
-  options?: ValueControlOptions
-): void
-export function addValueControlWidgets(
-  node: LGraphNode,
-  targetWidget: IBaseWidget,
-  defaultValue?: string,
-  options?: ValueControlOptions,
-  inputData?: InputSpec
-): [IComboWidget, ...IStringWidget[]]
-export function addValueControlWidgets(
-  nodeOrTarget: LGraphNode | IBaseWidget,
-  targetOrDefault?: IBaseWidget | string,
-  defaultOrOptions?: string | ValueControlOptions,
-  legacyOptions: ValueControlOptions = {},
-  legacyInputData?: InputSpec
-): void | [IComboWidget, ...IStringWidget[]] {
-  const legacyTarget =
-    typeof targetOrDefault === 'object' ? targetOrDefault : undefined
-  const targetWidget = resolveControlTarget(nodeOrTarget, legacyTarget)
-  const defaultValue = legacyTarget
-    ? typeof defaultOrOptions === 'string'
-      ? defaultOrOptions
-      : undefined
-    : typeof targetOrDefault === 'string'
-      ? targetOrDefault
-      : undefined
-  const options = legacyTarget
-    ? legacyOptions
-    : typeof defaultOrOptions === 'object'
-      ? defaultOrOptions
-      : {}
-  configureValueControl(
-    targetWidget,
-    defaultValue,
-    options.addFilterList !== false
-  )
-  if (!legacyTarget) return
-
-  const projections = configuredControlProjections(targetWidget)
-  if (!projections) return
-  projections[0].name = legacyControlName(
-    'control_after_generate',
-    'controlAfterGenerateName',
-    options,
-    legacyInputData
-  )
-  const filter = projections.at(1)
-  if (filter) {
-    filter.name = legacyControlName(
-      'control_filter_list',
-      'controlFilterListName',
-      options,
-      legacyInputData
-    )
-  }
-  return projections
 }
 
 export const ComfyWidgets = {
@@ -268,10 +69,12 @@ export const ComfyWidgets = {
   CURVE: transformWidgetConstructorV2ToV1(useCurveWidget()),
   RANGE: transformWidgetConstructorV2ToV1(useRangeWidget()),
   VIDEO_EDIT: transformWidgetConstructorV2ToV1(useVideoEditWidget()),
+  VIDEO_CONCAT: transformWidgetConstructorV2ToV1(useVideoConcatWidget()),
   RESOLUTION_PREVIEW: transformWidgetConstructorV2ToV1(
     useResolutionPreviewWidget()
   ),
   BOUNDING_BOXES: transformWidgetConstructorV2ToV1(useBoundingBoxesWidget()),
+  LIGHT_INFO_PREVIEW: transformWidgetConstructorV2ToV1(useLightInfoWidget()),
   COLORS: transformWidgetConstructorV2ToV1(useColorsWidget()),
   ...dynamicWidgets
 } as const
@@ -281,3 +84,7 @@ export function isValidWidgetType(
 ): key is keyof typeof ComfyWidgets {
   return typeof key === 'string' && Object.hasOwn(ComfyWidgets, key)
 }
+
+export const addValueControlWidget = _addValueControlWidget
+export const addValueControlWidgets = _addValueControlWidgets
+export const updateControlWidgetLabel = _updateControlWidgetLabel

@@ -1,10 +1,11 @@
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
 import type { SafeControlWidget } from '@/types/simplifiedWidget'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import { parseValueControlMode } from './valueControl'
+import { getControlProjections } from './controlProjection'
 
 export function registerWidgetControlFromConfig(widget: IBaseWidget): void {
   const config = widget.controlConfig
@@ -22,7 +23,7 @@ export function registerWidgetControlFromConfig(widget: IBaseWidget): void {
 }
 
 export function getWidgetControlView(
-  widget: Pick<IBaseWidget, 'widgetId' | 'controlConfig'>
+  widget: IBaseWidget
 ): SafeControlWidget | undefined {
   const targetId = widget.widgetId
   if (!targetId) return undefined
@@ -33,10 +34,8 @@ export function getWidgetControlView(
     value: normalizeControlOption(control.mode),
     update: (value) => {
       const mode = normalizeControlOption(value)
-      if (widget.controlConfig) widget.controlConfig.mode = mode
-      store.updateWidgetControl(targetId, {
-        mode
-      })
+      const [projection] = getControlProjections(widget)
+      if (projection) projection.value = mode
     }
   }
 }
@@ -106,6 +105,7 @@ export interface WidgetValueLayoutEntry {
 
 interface WidgetValueLayoutCandidate {
   entries: WidgetValueLayoutEntry[]
+  preferredControlValueCount: number
   targetValueCount: number
   targetTypeMatchCount: number
   controlValueCount: number
@@ -117,6 +117,14 @@ function betterLayout(
 ): WidgetValueLayoutCandidate | undefined {
   if (!candidate) return current
   if (!current) return candidate
+  if (
+    candidate.preferredControlValueCount !== current.preferredControlValueCount
+  ) {
+    return candidate.preferredControlValueCount >
+      current.preferredControlValueCount
+      ? candidate
+      : current
+  }
   if (candidate.targetValueCount !== current.targetValueCount) {
     return candidate.targetValueCount > current.targetValueCount
       ? candidate
@@ -134,7 +142,10 @@ function betterLayout(
 
 export function decodeWidgetValueLayout(
   widgets: readonly Pick<IBaseWidget, 'widgetId' | 'controlConfig'>[],
-  values: readonly unknown[]
+  values: readonly unknown[],
+  preferControlValuesFor?: ReadonlySet<
+    Pick<IBaseWidget, 'widgetId' | 'controlConfig'>
+  >
 ): WidgetValueLayoutEntry[] {
   const store = useWidgetValueStore()
   const memo = new Map<string, WidgetValueLayoutCandidate | null>()
@@ -152,6 +163,7 @@ export function decodeWidgetValueLayout(
         valueIndex === values.length
           ? {
               entries: [],
+              preferredControlValueCount: 0,
               targetValueCount: 0,
               targetTypeMatchCount: 0,
               controlValueCount: 0
@@ -166,6 +178,7 @@ export function decodeWidgetValueLayout(
         entries: widgets
           .slice(widgetIndex)
           .map(() => ({ valueIndex, controlValueCount: 0 as const })),
+        preferredControlValueCount: 0,
         targetValueCount: 0,
         targetTypeMatchCount: 0,
         controlValueCount: 0
@@ -196,6 +209,9 @@ export function decodeWidgetValueLayout(
       if (!remainder) return
       best = betterLayout(best, {
         entries: [{ valueIndex, controlValueCount }, ...remainder.entries],
+        preferredControlValueCount:
+          remainder.preferredControlValueCount +
+          (preferControlValuesFor?.has(widget) ? controlValueCount : 0),
         targetValueCount: remainder.targetValueCount + 1,
         targetTypeMatchCount:
           remainder.targetTypeMatchCount +

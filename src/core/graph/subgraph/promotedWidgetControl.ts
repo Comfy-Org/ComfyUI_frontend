@@ -1,7 +1,8 @@
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/types/widgetId'
 
 export function copyPromotedWidgetControl(
   sourceWidget: Readonly<IBaseWidget>,

@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { useSettingsDialog as realUseSettingsDialog } from '../useSettingsDialog'
+import type { useSettingsDialog as realUseSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 const settingsDialog: ReturnType<typeof realUseSettingsDialog> = {
   show: vi.fn(),

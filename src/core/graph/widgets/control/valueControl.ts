@@ -1,12 +1,8 @@
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { ValueControlMode } from '@comfyorg/graph-model/widgetState'
 import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 
-export type ValueControlMode =
-  | 'fixed'
-  | 'increment'
-  | 'increment-wrap'
-  | 'decrement'
-  | 'randomize'
+export type { ValueControlMode } from '@comfyorg/graph-model/widgetState'
 
 export const COMBO_CONTROL_MODES: readonly ValueControlMode[] = [
   'fixed',

@@ -4,7 +4,9 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 test.use({ connectWebSocketToServer: false })
 
@@ -38,17 +40,13 @@ test(
       (route) => route.fulfill({ path: assetPath('image64x64.webp') })
     )
 
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton })
-      .click()
+    const panel = await new AgentPanel(page).open()
     await page
       .getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,
         exact: true
       })
       .click()
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
     await panel
       .getByRole('button', { name: enMessages.agent.switchWorkflow })
       .click()
@@ -88,7 +86,7 @@ test(
       )
     })
 
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
     // `fill` clears the editor's whole ProseMirror doc before typing, which
     // deletes the atom node the drop above just inserted (see
     // agentInlineReferences.spec.ts for the same constraint) - use

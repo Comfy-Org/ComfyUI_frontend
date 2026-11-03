@@ -6,8 +6,8 @@
  * server reads the scope out of its bootstrap payload instead, and never
  * hands the core a session client it does not have.
  */
-import type { BillingSession } from './billingContracts.js'
-import type { AccountCredential } from '../sessionContracts.js'
+import type { BillingSession } from './billingContracts'
+import type { AccountCredential } from '#/core/sessionContracts'
 
 export interface BillingScope {
   readonly userId: string

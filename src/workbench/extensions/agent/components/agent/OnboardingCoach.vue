@@ -1,43 +1,83 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { autoUpdate, offset, shift, useFloating } from '@floating-ui/vue'
+import { arrow, autoUpdate, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware } from '@floating-ui/vue'
 import {
   useElementBounding,
   useEventListener,
+  useTimeoutFn,
   useWindowSize
 } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
-import Button from '@/components/ui/button/Button.vue'
-import { clampSpotlight } from '@/platform/onboarding/coachmarkLayout'
+import Button from '@comfyorg/design-system/button/Button'
+import {
+  CARD_GAP,
+  SPOTLIGHT_PAD,
+  clampSpotlight,
+  unionRect
+} from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import type { CoachStep } from '../../composables/agent/useOnboarding'
-import { useOnboarding } from '../../composables/agent/useOnboarding'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentOnboardingAction } from '@comfyorg/telemetry/types'
+import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
+import {
+  reportMissingCoachTarget,
+  useOnboarding
+} from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
-const { steps, storageKey } = defineProps<{
+/** Long enough for any panel layout to settle; a target still absent is a regression. */
+const TARGET_MISSING_AFTER_MS = 8000
+const COACH_HOVER_ATTRIBUTE = 'data-coach-hover'
+const NUDGE_MS = 1200
+const ARROW_CORNER_CLEARANCE = 20
+
+const { steps, storageKey, holdNotice } = defineProps<{
   steps: CoachStep[]
   storageKey?: string
+  holdNotice?: string
+}>()
+const emit = defineEmits<{
+  finished: [action: 'finish' | 'skip' | 'elsewhere']
+  stalled: []
 }>()
 
-const { active, index, step, isLast, next, finish } = useOnboarding(
-  () => steps,
-  storageKey
-)
+const { active, index, step, isLast, next, previous, finish, restart } =
+  useOnboarding(() => steps, storageKey)
+
+// Reported off `visible` below, latched so one tour reports once.
+let reportedShown = false
+
+// The replay control lives in the panel header, outside this component.
+// `reportedShown` is latched per tour, so a replay has to clear it or the
+// second showing never reaches trackAgentOnboardingShown().
+defineExpose({
+  restart: () => {
+    reportedShown = false
+    restart()
+  }
+})
 
 const titleId = useId()
 const bodyId = useId()
+const holdNoticeId = useId()
+const describedBy = computed(() =>
+  holdNotice ? `${bodyId} ${holdNoticeId}` : bodyId
+)
+const advanceLabelKey = computed(() =>
+  isLast.value ? 'onboardingCoachmarks.done' : 'g.next'
+)
 const target = ref<HTMLElement | null>(null)
 const visible = computed(() => active.value && target.value !== null)
 // Let surfaces like the What's New popup defer while a coach card is on
 // screen. The store drops the source with this component's scope on unmount.
 useOnboardingOverlayStore().registerSource(() => visible.value)
-const toolbar = ref<HTMLElement | null>(null)
 const card = ref<HTMLElement | null>(null)
+const arrowElement = ref<HTMLElement | null>(null)
+const tooltip = ref<HTMLElement | null>(null)
 const bounds = useElementBounding(target)
-const toolbarBounds = useElementBounding(toolbar)
+const tooltipBounds = useElementBounding(tooltip)
 const { width, height } = useWindowSize()
 let targetRetryTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -54,26 +94,95 @@ function resolveTargets(): void {
   const nextTarget = active.value
     ? document.querySelector<HTMLElement>(step.value.target)
     : null
-  const nextToolbar =
-    active.value && step.value.toolbarTarget
-      ? document.querySelector<HTMLElement>(step.value.toolbarTarget)
-      : null
   if (target.value !== nextTarget) target.value = nextTarget
-  if (toolbar.value !== nextToolbar) toolbar.value = nextToolbar
   bounds.update()
-  toolbarBounds.update()
   scheduleTargetRetry()
 }
+
+// Reported off `visible`, the same condition the card renders and the overlay
+// source registers on, so the tour is never counted as seen while it is still
+// waiting for a target to mount.
+watch(visible, (isVisible) => {
+  if (!isVisible || reportedShown) return
+  reportedShown = true
+  useTelemetry()?.trackAgentOnboardingShown()
+})
+
+function reportStep(action: AgentOnboardingAction): void {
+  useTelemetry()?.trackAgentOnboardingStep({
+    step: index.value + 1,
+    card: step.value.card,
+    total: steps.length,
+    action
+  })
+}
+
+let finishedHere = false
+
+function onNext(): void {
+  const finished = isLast.value
+  reportStep(isLast.value ? 'finish' : 'next')
+  if (finished) finishedHere = true
+  next()
+  if (finished) emit('finished', 'finish')
+}
+
+function onSkip(): void {
+  reportStep('skip')
+  finishedHere = true
+  finish()
+  emit('finished', 'skip')
+}
+
+const completed = computed(() => !active.value && !!step.value)
+watch(completed, (isCompleted) => {
+  if (isCompleted && !finishedHere) emit('finished', 'elsewhere')
+  finishedHere = false
+})
 
 const targetObserver = new MutationObserver(resolveTargets)
 targetObserver.observe(document.body, {
   childList: true,
   subtree: true
 })
+let reportedStalled = false
+const missingTarget = computed(() =>
+  active.value && !target.value ? step.value.target : null
+)
+const { start: startMissingTargetTimer, stop: stopMissingTargetTimer } =
+  useTimeoutFn(
+    (selector: string, step: number) => {
+      reportMissingCoachTarget(selector, step)
+      if (reportedStalled) return
+      reportedStalled = true
+      emit('stalled')
+    },
+    TARGET_MISSING_AFTER_MS,
+    { immediate: false }
+  )
+watch(
+  missingTarget,
+  (selector) => {
+    stopMissingTargetTimer()
+    if (selector) startMissingTargetTimer(selector, index.value + 1)
+  },
+  { immediate: true }
+)
 onBeforeUnmount(() => {
   targetObserver.disconnect()
   clearTimeout(targetRetryTimer)
 })
+
+watch([target, () => step.value?.tooltip], ([element, text], _, onCleanup) => {
+  if (!element || !text) return
+  element.setAttribute(COACH_HOVER_ATTRIBUTE, '')
+  onCleanup(() => element.removeAttribute(COACH_HOVER_ATTRIBUTE))
+})
+
+const tooltipStyle = computed(() => ({
+  left: `${bounds.right.value}px`,
+  top: `${bounds.top.value + bounds.height.value / 2}px`
+}))
 
 watch(
   [active, step],
@@ -85,64 +194,99 @@ watch(
 )
 
 const middleware = computed<Middleware[]>(() => {
-  const result = [
+  return [
     offset({
-      mainAxis: 16,
+      mainAxis: CARD_GAP,
       crossAxis: step.value?.placement === 'left-start' ? -16 : 0
-    })
+    }),
+    shift({ padding: 8, crossAxis: true })
   ]
-  if (step.value?.placement === 'graph-bottom') {
-    const bottom = toolbar.value ? toolbarBounds.top.value : bounds.bottom.value
-    result.push({
-      name: 'graphBottom',
-      fn: ({ rects }) => ({
-        x:
-          rects.reference.x +
-          (rects.reference.width - rects.floating.width) / 2,
-        y:
-          Math.min(bottom, rects.reference.y + rects.reference.height) -
-          16 -
-          rects.floating.height
-      })
-    })
+})
+
+const pointsAtTarget = computed(() => step.value?.placement.startsWith('left'))
+
+const { floatingStyles, isPositioned, middlewareData } = useFloating(
+  target,
+  card,
+  {
+    strategy: 'fixed',
+    transform: false,
+    placement: () =>
+      step.value?.placement === 'left-center'
+        ? 'left'
+        : step.value?.placement === 'left-end'
+          ? 'left-end'
+          : 'left-start',
+    middleware: () => [
+      ...middleware.value,
+      arrow({ element: arrowElement, padding: ARROW_CORNER_CLEARANCE })
+    ],
+    whileElementsMounted: autoUpdate
   }
-  return [...result, shift({ padding: 8, crossAxis: true })]
-})
-
-const { floatingStyles, isPositioned } = useFloating(target, card, {
-  strategy: 'fixed',
-  transform: false,
-  placement: () =>
-    step.value?.placement === 'left-center'
-      ? 'left'
-      : step.value?.placement === 'left-end'
-        ? 'left-end'
-        : 'left-start',
-  middleware,
-  whileElementsMounted: autoUpdate
-})
-
-const spotlightStyle = computed(() =>
-  clampSpotlight(
-    new DOMRect(
-      bounds.left.value,
-      bounds.top.value,
-      bounds.width.value,
-      bounds.height.value
-    ),
-    0,
-    { width: width.value, height: height.value }
-  )
 )
 
+const arrowStyle = computed(() => {
+  const { arrow: arrowData, shift: shiftData } = middlewareData.value
+  const besideTarget = (shiftData?.x ?? 0) < CARD_GAP
+  const reachesTargetCenter = arrowData?.centerOffset === 0
+  return arrowData?.y !== undefined && besideTarget && reachesTargetCenter
+    ? { top: `${arrowData.y}px` }
+    : { visibility: 'hidden' as const }
+})
+
+const cardBorderClass = computed(() =>
+  index.value < 2 ? 'border-muted-foreground' : 'border-smoke-500/20'
+)
+const cardStyle = computed(() => ({
+  ...floatingStyles.value,
+  opacity: isPositioned.value ? 1 : 0
+}))
+
+const {
+  isPending: nudged,
+  start: startNudgeTimer,
+  stop: stopNudgeTimer
+} = useTimeoutFn(() => undefined, NUDGE_MS, { immediate: false })
+const nudgedAttribute = computed(() => (nudged.value ? '' : undefined))
+watch([index, active], stopNudgeTimer)
+function nudgeCard(): void {
+  startNudgeTimer()
+  card.value?.focus()
+}
+
+const spotlightStyle = computed(() => {
+  const targetRect = new DOMRect(
+    bounds.left.value,
+    bounds.top.value,
+    bounds.width.value,
+    bounds.height.value
+  )
+  const hasTooltip = tooltipBounds.width.value > 0
+  return clampSpotlight(
+    hasTooltip
+      ? unionRect(
+          targetRect,
+          new DOMRect(
+            tooltipBounds.left.value,
+            tooltipBounds.top.value,
+            tooltipBounds.width.value,
+            tooltipBounds.height.value
+          )
+        )
+      : targetRect,
+    hasTooltip ? SPOTLIGHT_PAD : 0,
+    { width: width.value, height: height.value }
+  )
+})
+
 useEventListener(
-  document,
+  window,
   'keydown',
   (event) => {
     if (!active.value || !target.value || event.key !== 'Escape') return
     event.preventDefault()
     event.stopPropagation()
-    finish()
+    onSkip()
   },
   { capture: true }
 )
@@ -150,36 +294,68 @@ useEventListener(
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" v-reka-z-index class="agent-scope fixed inset-0">
-      <div class="absolute inset-0" />
+    <div v-if="visible" class="agent-scope fixed inset-0 z-tour">
+      <div
+        class="absolute inset-0"
+        data-testid="agent-coach-scrim"
+        @click="nudgeCard"
+      />
       <div
         aria-hidden="true"
         data-testid="agent-coach-spotlight"
         :style="{ ...spotlightStyle }"
-        class="pointer-events-none absolute rounded-lg shadow-[0_0_0_9999px_var(--color-coach-scrim)]"
+        class="pointer-events-none absolute rounded-lg border-2 border-foreground shadow-[0_0_0_9999px_color-mix(in_srgb,var(--color-black)_60%,transparent)]"
       />
+      <div
+        v-if="step.tooltip"
+        ref="tooltip"
+        role="tooltip"
+        :style="tooltipStyle"
+        class="pointer-events-none absolute flex max-w-50 -translate-y-1/2 items-center"
+      >
+        <span
+          aria-hidden="true"
+          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-border"
+        />
+        <div
+          class="rounded-md border bg-background px-3 py-2 text-xs/tight wrap-break-word whitespace-pre-line text-foreground shadow-md"
+        >
+          {{ step.tooltip }}
+        </div>
+      </div>
       <FocusScope as-child trapped loop>
         <div
           ref="card"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="titleId"
-          :aria-describedby="bodyId"
+          :aria-describedby="describedBy"
           tabindex="-1"
-          :style="{
-            ...floatingStyles,
-            opacity: isPositioned ? 1 : 0
-          }"
+          :data-nudged="nudgedAttribute"
+          :style="cardStyle"
           :class="
             cn(
-              'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 overflow-y-auto rounded-2xl border bg-base-background p-4 font-inter text-base-foreground shadow-lg',
-              index < 2
-                ? 'border-secondary-background'
-                : 'border-alpha-smoke-500-20'
+              'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 rounded-2xl border bg-background p-4 text-foreground shadow-lg transition-shadow',
+              cardBorderClass,
+              nudged &&
+                'ring-2 ring-foreground ring-offset-2 ring-offset-background'
             )
           "
         >
-          <div class="flex flex-col gap-6">
+          <span
+            v-if="pointsAtTarget"
+            ref="arrowElement"
+            aria-hidden="true"
+            data-testid="agent-coach-arrow"
+            :style="arrowStyle"
+            :class="
+              cn(
+                'pointer-events-none absolute -right-2 size-4 rotate-45 border-t border-r bg-background',
+                cardBorderClass
+              )
+            "
+          />
+          <div class="-m-1 flex min-h-0 flex-col gap-6 overflow-y-auto p-1">
             <div class="flex flex-col gap-2">
               <p class="m-0 text-xs/normal opacity-50">
                 {{
@@ -189,19 +365,45 @@ useEventListener(
                   })
                 }}
               </p>
-              <h3 :id="titleId" class="m-0 text-base/normal font-semibold">
+              <h3
+                :id="titleId"
+                class="m-0 text-base/normal font-semibold text-pretty"
+              >
                 {{ step.title }}
               </h3>
-              <p :id="bodyId" class="m-0 text-sm/normal text-muted-foreground">
+              <p
+                :id="bodyId"
+                class="m-0 text-sm/normal text-pretty text-muted-foreground"
+              >
                 {{ step.body }}
+              </p>
+              <p
+                v-if="holdNotice"
+                :id="holdNoticeId"
+                class="m-0 text-xs/normal text-muted-foreground"
+                data-testid="agent-coach-hold-notice"
+              >
+                {{ holdNotice }}
               </p>
             </div>
             <div class="flex justify-end gap-3">
-              <Button variant="secondary" size="md" @click="finish">{{
-                $t('agent.skip')
-              }}</Button>
-              <Button variant="inverted" size="md" @click="next">{{
-                $t(isLast ? 'onboardingCoachmarks.done' : 'g.next')
+              <Button
+                v-if="index > 0"
+                variant="textonly"
+                size="md"
+                class="mr-auto"
+                @click="previous"
+                >{{ $t('onboardingCoachmarks.back') }}</Button
+              >
+              <Button
+                v-if="!isLast"
+                variant="secondary"
+                size="md"
+                @click="onSkip"
+                >{{ $t('agent.skip') }}</Button
+              >
+              <Button variant="inverted" size="md" @click="onNext">{{
+                $t(advanceLabelKey)
               }}</Button>
             </div>
           </div>

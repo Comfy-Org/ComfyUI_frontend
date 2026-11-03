@@ -35,10 +35,18 @@ const readFromStorage = (namespace: string): Record<string, string> | null => {
       return null
     }
     return parsed
-  } catch (error) {
+  } catch {
     console.warn('[preservedQuery] storage operation failed')
-    sessionStorage.removeItem(getStorageKey(namespace))
+    removeFromStorage(namespace)
     return null
+  }
+}
+
+const removeFromStorage = (namespace: string) => {
+  try {
+    sessionStorage.removeItem(getStorageKey(namespace))
+  } catch {
+    return
   }
 }
 

@@ -1,0 +1,344 @@
+import { fromAny } from '@total-typescript/shoehorn'
+import * as THREE from 'three'
+import { describe, expect, it, vi } from 'vitest'
+
+import { downloadBlob } from './downloadBlob'
+import { ModelExporter } from './ModelExporter'
+
+const { gltfParseMock, objParseMock, stlParseMock, fbxParseAsyncMock } =
+  vi.hoisted(() => ({
+    gltfParseMock: vi.fn(),
+    objParseMock: vi.fn(),
+    stlParseMock: vi.fn(),
+    fbxParseAsyncMock: vi.fn()
+  }))
+
+vi.mock(import('./downloadBlob'), () => ({
+  downloadBlob: vi.fn()
+}))
+
+vi.mock(import('three/examples/jsm/exporters/GLTFExporter'), () => ({
+  GLTFExporter: fromAny(
+    class {
+      parse = gltfParseMock
+    }
+  )
+}))
+
+vi.mock(import('three/examples/jsm/exporters/OBJExporter'), () => ({
+  OBJExporter: fromAny(
+    class {
+      parse = objParseMock
+    }
+  )
+}))
+
+vi.mock(import('three/examples/jsm/exporters/STLExporter'), () => ({
+  STLExporter: fromAny(
+    class {
+      parse = stlParseMock
+    }
+  )
+}))
+
+vi.mock(import('@comfyorg/fbx-exporter-three'), () => ({
+  FBXExporter: fromAny(
+    class {
+      parseAsync = fbxParseAsyncMock
+    }
+  )
+}))
+
+const rejectedWith = (message: string) => ({
+  status: 'rejected',
+  reason: { message }
+})
+
+describe('ModelExporter', () => {
+  describe('detectFormatFromURL', () => {
+    it('extracts the lowercase extension from the filename query parameter', () => {
+      expect(
+        ModelExporter.detectFormatFromURL(
+          'http://example.com/api/view?filename=model.GLB'
+        )
+      ).toBe('glb')
+    })
+
+    it('returns null when there is no filename parameter', () => {
+      expect(
+        ModelExporter.detectFormatFromURL('http://example.com/api/view?foo=bar')
+      ).toBeNull()
+    })
+
+    it('returns null when there is no query string at all', () => {
+      expect(
+        ModelExporter.detectFormatFromURL('http://example.com/file.glb')
+      ).toBeNull()
+    })
+
+    it('returns the whole basename when the filename has no dotted extension', () => {
+      // split('.').pop() returns the only segment when no dot is present.
+      expect(
+        ModelExporter.detectFormatFromURL(
+          'http://example.com/api/view?filename=cube'
+        )
+      ).toBe('cube')
+    })
+  })
+
+  describe('canUseDirectURL', () => {
+    it('returns false for a null URL', () => {
+      expect(ModelExporter.canUseDirectURL(null, 'glb')).toBe(false)
+    })
+
+    it('returns true when the URL extension matches the requested format (case-insensitive)', () => {
+      expect(
+        ModelExporter.canUseDirectURL(
+          'http://example.com/api/view?filename=cube.GLB',
+          'glb'
+        )
+      ).toBe(true)
+    })
+
+    it('returns false when the URL extension does not match', () => {
+      expect(
+        ModelExporter.canUseDirectURL(
+          'http://example.com/api/view?filename=cube.obj',
+          'glb'
+        )
+      ).toBe(false)
+    })
+
+    it('returns false when the URL has no detectable format', () => {
+      expect(
+        ModelExporter.canUseDirectURL('http://example.com/file.glb', 'glb')
+      ).toBe(false)
+    })
+  })
+
+  describe('downloadFromURL', () => {
+    it('fetches the URL and downloads the resulting blob', async () => {
+      const blob = new Blob(['x'])
+      vi.mocked(fetch).mockImplementation(async () => new Response(blob))
+
+      await ModelExporter.downloadFromURL(
+        'http://example.com/cube.glb',
+        'cube.glb'
+      )
+
+      expect(downloadBlob).toHaveBeenCalledWith('cube.glb', blob)
+      vi.unstubAllGlobals()
+    })
+
+    it('rethrows when fetch fails', async () => {
+      vi.mocked(fetch).mockRejectedValue(new Error('network'))
+
+      await expect(
+        ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
+      ).rejects.toThrow('network')
+      vi.unstubAllGlobals()
+    })
+
+    it('rethrows when the response status is not ok', async () => {
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(new Blob(['x']), { status: 404 })
+      )
+
+      await expect(
+        ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
+      ).rejects.toThrow('HTTP 404')
+      expect(downloadBlob).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+  })
+
+  describe('exportGLB', () => {
+    it('takes the direct-URL fast path when the original URL is already a .glb', async () => {
+      const blob = new Blob(['x'])
+      vi.mocked(fetch).mockImplementation(async () => new Response(blob))
+      const model = new THREE.Object3D()
+
+      await ModelExporter.exportGLB(
+        model,
+        'out.glb',
+        'http://example.com/api/view?filename=src.glb'
+      )
+
+      expect(downloadBlob).toHaveBeenCalledWith('out.glb', blob)
+      expect(gltfParseMock).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+
+    it('falls through to GLTFExporter when there is no direct URL', async () => {
+      gltfParseMock.mockImplementation(
+        (
+          _model: unknown,
+          onDone: (gltf: ArrayBuffer) => void,
+          _onError: unknown,
+          options: { binary: boolean }
+        ) => {
+          expect(options.binary).toBe(true)
+          onDone(new ArrayBuffer(8))
+        }
+      )
+
+      const promise = ModelExporter.exportGLB(new THREE.Object3D(), 'out.glb')
+      await vi.runAllTimersAsync()
+      await promise
+
+      expect(gltfParseMock).toHaveBeenCalled()
+      expect(downloadBlob).toHaveBeenCalledWith('out.glb', expect.any(Blob))
+    })
+
+    it('rethrows when GLTFExporter rejects', async () => {
+      gltfParseMock.mockImplementation(
+        (_model: unknown, _onDone: unknown, onError: (e: Error) => void) =>
+          onError(new Error('parse fail'))
+      )
+
+      const promise = ModelExporter.exportGLB(new THREE.Object3D(), 'out.glb')
+      const settled = Promise.allSettled([promise])
+      await vi.runAllTimersAsync()
+      expect(await settled).toMatchObject([rejectedWith('parse fail')])
+    })
+  })
+
+  describe('exportOBJ', () => {
+    it('uses the direct-URL fast path for matching .obj URLs', async () => {
+      const blob = new Blob(['x'])
+      vi.mocked(fetch).mockImplementation(async () => new Response(blob))
+
+      await ModelExporter.exportOBJ(
+        new THREE.Object3D(),
+        'out.obj',
+        'http://example.com/api/view?filename=src.obj'
+      )
+
+      expect(downloadBlob).toHaveBeenCalledWith('out.obj', blob)
+      expect(objParseMock).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+
+    it('serializes via OBJExporter and downloads as text when there is no direct URL', async () => {
+      objParseMock.mockReturnValue('# obj data')
+
+      const promise = ModelExporter.exportOBJ(new THREE.Object3D(), 'out.obj')
+      await vi.runAllTimersAsync()
+      await promise
+
+      expect(objParseMock).toHaveBeenCalled()
+      expect(downloadBlob).toHaveBeenCalledWith('out.obj', expect.any(Blob))
+    })
+
+    it('rethrows when OBJExporter throws', async () => {
+      objParseMock.mockImplementation(() => {
+        throw new Error('obj fail')
+      })
+
+      const promise = ModelExporter.exportOBJ(new THREE.Object3D(), 'out.obj')
+      const settled = Promise.allSettled([promise])
+      await vi.runAllTimersAsync()
+      expect(await settled).toMatchObject([rejectedWith('obj fail')])
+    })
+  })
+
+  describe('exportSTL', () => {
+    it('uses the direct-URL fast path for matching .stl URLs', async () => {
+      const blob = new Blob(['x'])
+      vi.mocked(fetch).mockImplementation(async () => new Response(blob))
+
+      await ModelExporter.exportSTL(
+        new THREE.Object3D(),
+        'out.stl',
+        'http://example.com/api/view?filename=src.stl'
+      )
+
+      expect(downloadBlob).toHaveBeenCalledWith('out.stl', blob)
+      expect(stlParseMock).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+
+    it('serializes via STLExporter and downloads as text when there is no direct URL', async () => {
+      stlParseMock.mockReturnValue('solid model')
+
+      const promise = ModelExporter.exportSTL(new THREE.Object3D(), 'out.stl')
+      await vi.runAllTimersAsync()
+      await promise
+
+      expect(stlParseMock).toHaveBeenCalled()
+      expect(downloadBlob).toHaveBeenCalledWith('out.stl', expect.any(Blob))
+    })
+
+    it('rethrows when STLExporter throws', async () => {
+      stlParseMock.mockImplementation(() => {
+        throw new Error('stl fail')
+      })
+
+      const promise = ModelExporter.exportSTL(new THREE.Object3D(), 'out.stl')
+      const settled = Promise.allSettled([promise])
+      await vi.runAllTimersAsync()
+      expect(await settled).toMatchObject([rejectedWith('stl fail')])
+    })
+  })
+
+  describe('exportDirect', () => {
+    it('downloads the original source file unchanged', async () => {
+      const blob = new Blob(['x'])
+      vi.mocked(fetch).mockImplementation(async () => new Response(blob))
+
+      await ModelExporter.exportDirect(
+        'http://example.com/api/view?filename=src.ply',
+        'out.ply',
+        'ply'
+      )
+
+      expect(downloadBlob).toHaveBeenCalledWith('out.ply', blob)
+      vi.unstubAllGlobals()
+    })
+
+    it('throws when there is no source URL', async () => {
+      await expect(
+        ModelExporter.exportDirect(null, 'out.spz', 'spz')
+      ).rejects.toThrow('No source file available to export as spz')
+      expect(downloadBlob).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('exportFBX', () => {
+    it('uses the direct-URL fast path for matching .fbx URLs', async () => {
+      const blob = new Blob(['x'])
+      vi.mocked(fetch).mockImplementation(async () => new Response(blob))
+
+      await ModelExporter.exportFBX(
+        new THREE.Object3D(),
+        'out.fbx',
+        'http://example.com/api/view?filename=src.fbx'
+      )
+
+      expect(downloadBlob).toHaveBeenCalledWith('out.fbx', blob)
+      expect(fbxParseAsyncMock).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+
+    it('serializes via FBXExporter and downloads as binary when there is no direct URL', async () => {
+      const bytes = new Uint8Array([0x4b, 0x61, 0x79, 0x64, 0x61, 0x72, 0x61])
+      fbxParseAsyncMock.mockResolvedValue(bytes)
+
+      const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')
+      await vi.runAllTimersAsync()
+      await promise
+
+      expect(fbxParseAsyncMock).toHaveBeenCalled()
+      expect(downloadBlob).toHaveBeenCalledWith('out.fbx', expect.any(Blob))
+    })
+
+    it('rethrows when FBXExporter throws', async () => {
+      fbxParseAsyncMock.mockRejectedValue(new Error('fbx fail'))
+
+      const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')
+      const settled = Promise.allSettled([promise])
+      await vi.runAllTimersAsync()
+      expect(await settled).toMatchObject([rejectedWith('fbx fail')])
+    })
+  })
+})

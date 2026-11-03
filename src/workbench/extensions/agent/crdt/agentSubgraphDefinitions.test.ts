@@ -1,6 +1,6 @@
 import { mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -8,7 +8,7 @@ import type {
   ExportedSubgraph,
   ISerialisedNode,
   SerialisableLLink
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 import {
   readSubgraphDefinitionIds,
@@ -125,6 +125,58 @@ describe('readSubgraphDefinitions', () => {
     const [projected] = readSubgraphDefinitions(seed(definition))
 
     expect(projected).toEqual(definition)
+  })
+
+  it('does not copy a declared widget form onto a projected interior node', () => {
+    const declared = Object.assign(interiorNode(1), {
+      widgets_values: { output: '42' },
+      widgets_values_form: { order: ['output'] }
+    })
+    const definition = createTestSubgraphData({ nodes: [declared] })
+
+    const [projected] = readSubgraphDefinitions(seed(definition))
+
+    expect(projected.nodes).toEqual([
+      expect.objectContaining({ widgets_values_named: { output: '42' } })
+    ])
+    expect(projected.nodes?.[0]).not.toHaveProperty('__widgets_form')
+  })
+
+  it('does not project an excluded definition body', () => {
+    const excluded = createTestSubgraphData({ nodes: [interiorNode(1)] })
+    const included = createTestSubgraphData({ nodes: [interiorNode(2)] })
+    const doc = seed(excluded, included)
+    const body = new Y.Text('expensive body')
+    storedDefinition(doc, excluded.id).set('name', body)
+    const toJSON = vi.spyOn(body, 'toJSON')
+
+    expect(readSubgraphDefinitions(doc, new Set([excluded.id]))).toEqual([
+      included
+    ])
+    expect(toJSON).not.toHaveBeenCalled()
+  })
+
+  it('does not project an excluded nested definition body', () => {
+    const excluded = createTestSubgraphData({ nodes: [interiorNode(1)] })
+    const included = createTestSubgraphData({ nodes: [interiorNode(2)] })
+    const outer = createTestSubgraphData({
+      definitions: { subgraphs: [excluded, included] }
+    })
+    const doc = seed(outer)
+    const nestedDefinitions = storedDefinition(doc, outer.id).get('definitions')
+    assert.instanceOf(nestedDefinitions, Y.Map)
+    const nestedSubgraphs = nestedDefinitions.get('subgraphs')
+    assert.instanceOf(nestedSubgraphs, Y.Map)
+    const storedExcluded = nestedSubgraphs.get(excluded.id)
+    assert.instanceOf(storedExcluded, Y.Map)
+    const body = new Y.Text('expensive nested body')
+    storedExcluded.set('name', body)
+    const toJSON = vi.spyOn(body, 'toJSON')
+
+    expect(readSubgraphDefinitions(doc, new Set([excluded.id]))).toEqual([
+      { ...outer, definitions: { subgraphs: [included] } }
+    ])
+    expect(toJSON).not.toHaveBeenCalled()
   })
 
   it('keeps interior nodes and links in mint order, not key order', () => {

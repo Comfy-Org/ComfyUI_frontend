@@ -9,5 +9,8 @@ export const PRESERVED_QUERY_NAMESPACES = {
   TOPUP: 'topup',
   SETTINGS: 'settings',
   ASSETS: 'assets',
-  DESKTOP_LOGIN: 'desktop_login'
+  DESKTOP_LOGIN: 'desktop_login',
+  WORKSPACE: 'workspace',
+  DEPLOYMENT: 'deployment',
+  WORKFLOWS: 'workflows'
 } as const

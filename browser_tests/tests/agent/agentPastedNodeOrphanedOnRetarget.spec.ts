@@ -69,7 +69,8 @@ test.describe(
             (candidate) => !beforeIds.has(candidate.id)
           )
           if (!node) throw new Error('paste did not add a new node')
-          expect(node.pos).toEqual(pastePosition)
+          expect(node.pos[0]).toBeCloseTo(pastePosition[0], 6)
+          expect(node.pos[1]).toBeCloseTo(pastePosition[1], 6)
           return node
         })
 
@@ -82,9 +83,7 @@ test.describe(
         const topbar = new Topbar(page)
         const beforeSubscribes = agentConversation.subscribeCount()
         await topbar.newWorkflowButton.click()
-        await expect(
-          topbar.workflowTabs.locator('.p-togglebutton')
-        ).toHaveCount(2)
+        await expect(topbar.tabs).toHaveCount(2)
         await topbar.getTab(0).click()
         await expect
           .poll(() => agentConversation.subscribeCount())

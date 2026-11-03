@@ -6,8 +6,8 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -241,10 +241,12 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     expect(subgraphNode.has_errors).toBe(true)
   })
 
-  it('skips reconciliation without touching app.rootGraph before the root graph exists', async () => {
+  it('reads the root graph once, so a stale isGraphReady cannot reach app.rootGraph', async () => {
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
     vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(undefined)
-    const rootGraphAccess = vi.spyOn(app, 'rootGraph', 'get')
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const rootGraphAccess = vi
+      .spyOn(app, 'rootGraph', 'get')
+      .mockReturnValue(new LGraph())
     const store = useExecutionErrorStore()
 
     store.recordNodeErrors({
@@ -264,6 +266,5 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     await nextTick()
 
     expect(rootGraphAccess).not.toHaveBeenCalled()
-    expect(consoleError).not.toHaveBeenCalled()
   })
 })

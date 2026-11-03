@@ -6,6 +6,11 @@ Date: 2026-09-19
 
 Proposed
 
+Revised 2026-09-29 by
+[FE-3032](https://linear.app/comfyorg/issue/FE-3032/agentcrdt-pr-and-stale-adr-cleanup-after-store-first-removal)
+after the graph-intent write path replaced the deleted mint-port wiring. The
+authority and delivery decisions are unchanged.
+
 ## Context
 
 The In-App Agent edits a shared per-workflow document that the frontend follows
@@ -13,15 +18,19 @@ The In-App Agent edits a shared per-workflow document that the frontend follows
 Two channels carry the human's canvas to the server:
 
 1. **Semantic operations.** While a chat is bound to the workflow and its tab
-   is active, the mint ports turn canvas edits into `doc_ops`
-   (`src/workbench/extensions/agent/crdt/mintPortWiring.ts`,
-   `layoutMintPort.ts`, `opSender.ts`). The gate
-   (`mintGate.ts`) is closed when no thread is bound: before the first turn
-   acknowledges, and after "new chat". The sender drops queued operations as
-   `undeliverable` when the binding changes or the transport stays refused.
+   is active, litegraph's graph API emits provenance-tagged commands through
+   `src/lib/litegraph/src/graphIntents.ts`.
+   `src/workbench/extensions/agent/crdt/docOpMinter.ts` turns local commands
+   into `doc_ops`, and `opSender.ts` delivers them. The minter's document-bound
+   gate is closed when no thread is bound: before the first turn acknowledges,
+   and after "new chat". The sender drops queued operations as `undeliverable`
+   when the binding changes, and holds them through a refused transport
+   ([CRDT-REPLAY-0039](CRDT-REPLAY-0039-retain-exhausted-operations-for-same-page-replay.md)). Remote follower
+   writes use the same graph API with `agent-remote` provenance, so they update
+   the live graph and stores without minting operations back to the host.
 2. **The turn draft.** Every turn whose target has a cloud workflow id, and
    every first turn of a new chat, posts the live canvas as `draft`
-   (`src/workbench/extensions/agent/composables/agent/useAgentSession.ts`).
+   (`src/workbench/extensions/agent/AgentPanelRoot.vue`).
    The client sends `draft.content` only; the server derives the version it
    compares against from the document it already holds.
 
@@ -65,7 +74,8 @@ depends on it.
    thread, the retained id and the cleared draft, not a different id.
 3. **Operations are best-effort delivery; the draft is the reconciliation
    primitive.** The frontend does not persist or re-send operations dropped as
-   `undeliverable`. Operations minted in one tick form one sender admission
+   `undeliverable`; transport exhaustion is no longer such a drop
+   (CRDT-REPLAY-0039). Operations minted in one tick form one sender admission
    (`opCoalescer.ts`), which `OpSender` splits into the minimum number of
    wire-capped batches. Edits within the wire cap therefore take one round trip
    instead of N, narrowing the window in which a clear made while bound is lost
@@ -90,10 +100,11 @@ depends on it.
    assumes that one.
 6. **The server's sequence check is the guard against a stale canvas.** A
    human-authored draft posted from a canvas that missed follower frames (gap,
-   disconnect) would revert agent work the user never saw. We rely on the
-   sequence check the assumed backend change carries and record as a
-   follow-up that the client should withhold `draft` while a bound follower
-   is disconnected or in a gap.
+   disconnect) would revert agent work the user never saw. The server's
+   sequence check is one guard; the client also withholds `draft` when the
+   follower marks the canvas stale after a disconnect, gap, or reset. A fresh
+   subscription awaiting its first catch-up does not itself mark the canvas
+   stale: `isCatchingUp` gates operation sends, not the draft.
 
 Alternatives considered and rejected:
 
@@ -135,16 +146,22 @@ Alternatives considered and rejected:
   target whose document diverged from the cleared canvas) still fails in
   production; the frontend cannot fix it alone, and nothing in this
   repository can confirm when that happens.
-- The stale-canvas risk in decision 6 is accepted, not removed, until the
-  withhold-draft follow-up lands.
+- The draft path is a whole-document replace, not a CRDT merge. It stays the
+  reconciliation primitive for what ops cannot carry (edits made while unbound
+  or in a subgraph interior). Conflicts on a bound document are settled by op
+  stamps under
+  [CRDT-STAMPS-0051](CRDT-STAMPS-0051-human-ops-stamp-above-what-they-have-received.md).
 - Coalescing shares one batch's prefix-abort semantics across operations that
   were independent before: a host rejection of one operation leaves the later
   operations of that batch unapplied, where separate batches were independent.
   Chunking at the wire cap bounds a batch, and the ledger already models
   `unprocessed`.
-- Human operations settled `undeliverable` or `unconfirmed` (at unbind, at
-  `doc_reset`, on a dead transport) are still reported only to the dev panel;
-  surfacing them to the user is a follow-up.
+- Human operations settled `undeliverable`, `unconfirmed`, or
+  `unacknowledged` produce one `reportError` call and a dev-panel entry per
+  batch. Reports include the mint-time workflow id and termination cause.
+  `doc_reset` identifies batches superseded by the draft under decision 4,
+  so lost-edit queries can exclude them. User-facing notices for sender
+  termination remain a follow-up.
 - Two browser tabs on the same document, both agent-bound, are out of scope:
   which tab's draft wins a divergence is decided by the server's sequence
   check, not by anything the frontend promises.

@@ -1,0 +1,193 @@
+{
+  "id": "node-widgets",
+  "capability": "Node widgets",
+  "description": "The legacy LiteGraph widget layer for generic widget kinds, the widget type contracts, the node.widgets compatibility view over the widget value store, value-control and dynamic input widgets, and named-value diffing. Feature-specific Vue-only widget stubs belong to their feature domains; Vue widget components belong to the renderer.",
+  "modules": [
+    {
+      "path": "src/composables/node/useWatchWidget.ts"
+    },
+    {
+      "path": "src/core/graph/widgets/__fixtures__/**"
+    },
+    {
+      "path": "src/core/graph/widgets/comboWidgetInventory.ts"
+    },
+    {
+      "path": "src/core/graph/widgets/controlWidgetMarker.ts"
+    },
+    {
+      "path": "src/core/graph/widgets/dynamicGroupWidget.ts"
+    },
+    {
+      "path": "src/core/graph/widgets/dynamicInputSpec.ts"
+    },
+    {
+      "path": "src/core/graph/widgets/dynamicWidgets.ts"
+    },
+    {
+      "path": "src/core/graph/widgets/matchTypeConfiguring.test.ts"
+    },
+    {
+      "path": "src/core/graph/widgets/matchTypeFallback.test.ts"
+    },
+    {
+      "path": "src/core/graph/widgets/nodeWidgetValues.ts"
+    },
+    {
+      "path": "src/core/graph/widgets/revealDynamicInputSlot.ts"
+    },
+    {
+      "path": "src/core/graph/widgets/control/valueControl.ts"
+    },
+    {
+      "path": "src/core/graph/widgets/valueControlWidgets.ts"
+    },
+    {
+      "path": "src/extensions/core/customWidgets.ts"
+    },
+    {
+      "path": "src/extensions/core/saveImageExtraOutput.ts"
+    },
+    {
+      "path": "src/extensions/core/widgetInputs.ts"
+    },
+    {
+      "path": "src/extensions/core/widgetValuePropagation.ts"
+    },
+    {
+      "path": "src/lib/litegraph/src/CurveEditor.ts"
+    },
+    {
+      "path": "src/lib/litegraph/src/node/widgetsView.ts"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/mathParser.ts"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiff.ts"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/restoredWidgetValue.ts"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/widget.ts"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgetConnectionSuppression.test.ts"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgetValueNullContract.test.ts"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/**"
+    },
+    {
+      "path": "src/stores/widgetValueStore.ts"
+    },
+    {
+      "path": "src/types/widgetId.test.ts"
+    },
+    {
+      "path": "src/types/widgetState.ts"
+    },
+    {
+      "path": "src/types/widgetVisibility.ts"
+    },
+    {
+      "path": "src/utils/nodeDefUtil.ts"
+    },
+    {
+      "path": "src/utils/searchAndReplace.ts"
+    },
+    {
+      "path": "src/utils/widgetBinding.ts"
+    },
+    {
+      "path": "src/utils/widgetUtil.ts"
+    }
+  ],
+  "publicEntryPoints": [],
+  "characterizationScenarios": [
+    {
+      "name": "Legacy canvas widgets render and respond to input for each generic kind",
+      "checks": [
+        "src/lib/litegraph/src/widgets/BaseWidget.test.ts",
+        "src/lib/litegraph/src/widgets/ComboWidget.test.ts",
+        "src/lib/litegraph/src/widgets/NumberWidget.test.ts",
+        "src/lib/litegraph/src/widgets/NumericWidgetRendering.test.ts",
+        "src/lib/litegraph/src/widgets/widgetMap.test.ts"
+      ]
+    },
+    {
+      "name": "node.widgets stays a consistent view over stored widget values",
+      "checks": [
+        "src/lib/litegraph/src/node/widgetsView.test.ts",
+        "src/lib/litegraph/src/node/widgetsView.uniqueWidgetName.test.ts",
+        "src/lib/litegraph/src/widgetValueNullContract.test.ts",
+        "src/core/graph/widgets/nodeWidgetValues.test.ts"
+      ]
+    },
+    {
+      "name": "Dynamic inputs and value controls create and update widgets",
+      "checks": [
+        "src/core/graph/widgets/dynamicWidgets.test.ts",
+        "src/core/graph/widgets/dynamicGroupWidget.test.ts",
+        "src/core/graph/widgets/control/valueControl.test.ts",
+        "src/core/graph/widgets/valueControlWidgets.controlAfterGenerateName.test.ts"
+      ]
+    },
+    {
+      "name": "Widget value store keeps scoped widget state reactive across graph edits and announces value intents",
+      "checks": [
+        "src/stores/widgetValueStore.test.ts",
+        "src/stores/widgetValueStore.graphReactivity.test.ts"
+      ]
+    },
+    {
+      "name": "Widget default values and renames stay consistent",
+      "checks": ["src/utils/widgetUtil.test.ts"]
+    },
+    {
+      "name": "Widget ids stay unique per node and widget visibility derives canvas, Vue node, and panel surfaces",
+      "checks": [
+        "src/types/widgetId.test.ts",
+        "src/types/widgetVisibility.test.ts"
+      ]
+    },
+    {
+      "name": "PrimitiveNode and widget-to-input conversion keep widget config, combo refresh, and propagated values",
+      "checks": [
+        "src/extensions/core/widgetInputs.test.ts",
+        "src/extensions/core/widgetInputs.refreshCombo.test.ts",
+        "src/extensions/core/widgetValuePropagation.test.ts"
+      ]
+    },
+    {
+      "name": "CustomCombo and primitive numeric nodes keep options across copy, paste, and subgraph promotion",
+      "checks": [
+        "src/extensions/core/customWidgets.test.ts",
+        "src/extensions/core/customWidgets.clone.test.ts",
+        "src/extensions/core/customWidgets.numericOptions.test.ts",
+        "src/extensions/core/customWidgets.subgraphPromotion.test.ts"
+      ]
+    },
+    {
+      "name": "Save node filename prefixes apply text replacements at serialization",
+      "checks": ["src/extensions/core/saveImageExtraOutput.test.ts"]
+    }
+  ],
+  "adrs": [
+    "docs/adr/ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md",
+    "docs/adr/WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md",
+    "docs/adr/WIDGET-GROUP-0031-dynamic-group-widget-lifecycle.md"
+  ],
+  "compatibilityPromises": [
+    "widget.value, widget.callback, node.widgets array access, and widgets_values serialisation keep their extension-facing behaviour.",
+    "LegacyWidget keeps supporting extension-drawn custom widgets.",
+    "Inventory grants no new cross-domain permissions; widgetMap importing feature-owned widget stubs remains inherited debt."
+  ],
+  "deepImports": "inventory"
+}
