@@ -16,13 +16,6 @@ import {
 } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-// The agent edits saved workflow A while the user is on saved workflow B, whose
-// own chat the panel follows. Returning to A must show every edit the agent
-// made there, without a reload. Following a tab's chat loads that chat, which
-// clears the session binding the CRDT follower subscribes to; unless the
-// followed chat binds its workflow again, the follower stays detached.
-// Source: frontend 1.60 QA check CNV06 step 5,
-// https://linear.app/comfyorg/issue/FRONT-3804
 const CASE = 'agent-rec-set-widget-existing'
 const A_NAME = 'Unsaved Workflow'
 const B = {
