@@ -525,6 +525,26 @@ describe('ErrorOverlay deployment offer', () => {
   )
 
   it.for(offerRows)(
+    'shows the $row row in a later notice after the deployment dialog closes',
+    async ({ testId, arrange }) => {
+      arrange()
+      renderNotice()
+      await screen.findByTestId(testId)
+      await openWorkflowNeedsDeploymentDialog()
+      await waitFor(() => expect(screen.queryByTestId(testId)).toBeNull())
+      useDialogStore().closeDialog({ key: 'global-workflow-needs-deployment' })
+      useExecutionErrorStore().dismissErrorOverlay()
+      await waitFor(() =>
+        expect(screen.queryByTestId('error-overlay')).toBeNull()
+      )
+
+      useExecutionErrorStore().showErrorOverlay()
+
+      expect(await screen.findByTestId(testId)).toBeInTheDocument()
+    }
+  )
+
+  it.for(offerRows)(
     'hides the $row row when the notice opens behind the deployment dialog',
     async ({ testId, arrange, offerSettled }) => {
       arrange()
