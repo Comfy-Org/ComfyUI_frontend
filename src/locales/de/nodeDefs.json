@@ -26714,7 +26714,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "Branchenübliches Upscaling und Bildverbesserung.",
+    "description": "Upscaling und Bildverbesserung nach Industriestandard. Maximale Ausgabe: 179 Megapixel.",
     "display_name": "Topaz-Bildverbesserung",
     "inputs": {
       "image": {
@@ -26752,11 +26752,11 @@
       },
       "output_height": {
         "name": "Ausgabehöhe",
-        "tooltip": "Ein Wert von null bedeutet, dass die gleiche Höhe wie beim Original verwendet oder proportional zu output_width skaliert wird, falls angegeben. Wonder 3.5 unterstützt nur Upscaling-Faktoren von 1x bis 6x. Bloom 2 und Wonder 3.5 bewahren das Eingabe-Seitenverhältnis und behandeln die angeforderte Größe als Zielgröße."
+        "tooltip": "Ein Wert von null bedeutet, dass die Ausgabe dieselbe Höhe wie das Original hat oder proportional zu output_width skaliert wird, falls angegeben. Wonder 3.5 und Wonder 4 unterstützen Upscale-Faktoren von 1x bis 6x, Bloom 2 von 1x bis 12x. Bloom 2, Wonder 3.5 und Wonder 4 behalten immer das Seitenverhältnis der Eingabe bei: Wenn beide Größen festgelegt sind und ihr Verhältnis abweicht, setzt sich der größere Skalierungsfaktor durch, und die Ausgabe (und der Preis) fällt größer als die angeforderte Größe aus."
       },
       "output_width": {
         "name": "Ausgabebreite",
-        "tooltip": "Ein Wert von null bedeutet automatische Berechnung (in der Regel die Originalgröße oder proportional zu output_height skaliert, falls angegeben). Wonder 3.5 unterstützt nur Upscaling-Faktoren von 1x bis 6x. Bloom 2 und Wonder 3.5 bewahren das Eingabe-Seitenverhältnis und behandeln die angeforderte Größe als Zielgröße."
+        "tooltip": "Ein Wert von null bedeutet, dass automatisch berechnet wird (in der Regel entspricht die Größe der Originalgröße oder wird proportional zu output_height skaliert, falls angegeben). Wonder 3.5 und Wonder 4 unterstützen Upscale-Faktoren von 1x bis 6x, Bloom 2 von 1x bis 12x. Bloom 2, Wonder 3.5 und Wonder 4 behalten immer das Seitenverhältnis der Eingabe bei: Wenn beide Größen festgelegt sind und ihr Verhältnis abweicht, setzt sich der größere Skalierungsfaktor durch, und die Ausgabe (und der Preis) fällt größer als die angeforderte Größe aus."
       }
     },
     "outputs": {

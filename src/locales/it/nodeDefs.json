@@ -26714,7 +26714,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "Upscaling e miglioramento delle immagini di livello industriale.",
+    "description": "Upscaling e miglioramento delle immagini di livello professionale. Output massimo: 179 megapixel.",
     "display_name": "Topaz Image Enhance",
     "inputs": {
       "image": {
@@ -26752,11 +26752,11 @@
       },
       "output_height": {
         "name": "altezza_output",
-        "tooltip": "Un valore pari a zero significa mantenere la stessa altezza dell'originale o scalare proporzionalmente a output_width se specificato. Wonder 3.5 supporta solo fattori di upscaling da 1x a 6x. Bloom 2 e Wonder 3.5 preservano il rapporto d'aspetto dell'input e trattano la dimensione richiesta come obiettivo."
+        "tooltip": "Un valore pari a zero indica un output con la stessa altezza dell'originale o ridimensionato proporzionalmente a output_width, se specificata. Wonder 3.5 e Wonder 4 supportano fattori di upscaling da 1x a 6x, Bloom 2 da 1x a 12x. Bloom 2, Wonder 3.5 e Wonder 4 mantengono sempre le proporzioni dell'immagine di input: se vengono impostate entrambe le dimensioni e il loro rapporto differisce, prevale il fattore di scala maggiore e l'output (e il prezzo) sarà più grande della dimensione richiesta."
       },
       "output_width": {
         "name": "larghezza_output",
-        "tooltip": "Un valore pari a zero significa calcolo automatico (di solito sarà la dimensione originale o scalata proporzionalmente a output_height se specificato). Wonder 3.5 supporta solo fattori di upscaling da 1x a 6x. Bloom 2 e Wonder 3.5 preservano il rapporto d'aspetto dell'input e trattano la dimensione richiesta come obiettivo."
+        "tooltip": "Un valore pari a zero indica il calcolo automatico (solitamente corrisponderà alle dimensioni originali o verrà ridimensionato proporzionalmente a output_height, se specificata). Wonder 3.5 e Wonder 4 supportano fattori di upscaling da 1x a 6x, Bloom 2 da 1x a 12x. Bloom 2, Wonder 3.5 e Wonder 4 mantengono sempre le proporzioni dell'immagine di input: se vengono impostate entrambe le dimensioni e il loro rapporto differisce, prevale il fattore di scala maggiore e l'output (e il prezzo) sarà più grande della dimensione richiesta."
       }
     },
     "outputs": {

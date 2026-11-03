@@ -26714,7 +26714,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "Agrandissement et amélioration d’image de référence dans l’industrie.",
+    "description": "Agrandissement et amélioration d'image conformes aux normes du secteur. Sortie maximale : 179 mégapixels.",
     "display_name": "Topaz Amélioration d’Image",
     "inputs": {
       "image": {
@@ -26752,11 +26752,11 @@
       },
       "output_height": {
         "name": "hauteur de sortie",
-        "tooltip": "Une valeur zéro signifie une sortie à la même hauteur que l’original ou proportionnelle à output_width si spécifié. Wonder 3.5 prend en charge des facteurs d’agrandissement de 1x à 6x uniquement. Bloom 2 et Wonder 3.5 conservent le rapport d’aspect d’entrée et considèrent la taille demandée comme une cible."
+        "tooltip": "Une valeur de zéro signifie une sortie à la même hauteur que l'original ou une mise à l'échelle proportionnelle à output_width si elle est spécifiée. Wonder 3.5 et Wonder 4 prennent en charge des facteurs d'agrandissement de 1x à 6x, Bloom 2 de 1x à 12x. Bloom 2, Wonder 3.5 et Wonder 4 conservent toujours le rapport hauteur/largeur de l'entrée : si les deux dimensions sont définies et que leur ratio diffère, l'échelle la plus grande l'emporte et la sortie (et le prix) est supérieure à la taille demandée."
       },
       "output_width": {
         "name": "largeur de sortie",
-        "tooltip": "Une valeur zéro signifie un calcul automatique (généralement la taille d’origine ou proportionnelle à output_height si spécifié). Wonder 3.5 prend en charge des facteurs d’agrandissement de 1x à 6x uniquement. Bloom 2 et Wonder 3.5 conservent le rapport d’aspect d’entrée et considèrent la taille demandée comme une cible."
+        "tooltip": "Une valeur de zéro signifie que le calcul se fait automatiquement (généralement, il s'agira de la taille d'origine ou d'une mise à l'échelle proportionnelle à output_height si elle est spécifiée). Wonder 3.5 et Wonder 4 prennent en charge des facteurs d'agrandissement de 1x à 6x, Bloom 2 de 1x à 12x. Bloom 2, Wonder 3.5 et Wonder 4 conservent toujours le rapport hauteur/largeur de l'entrée : si les deux dimensions sont définies et que leur ratio diffère, l'échelle la plus grande l'emporte et la sortie (et le prix) est supérieure à la taille demandée."
       }
     },
     "outputs": {

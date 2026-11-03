@@ -26714,7 +26714,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "Endüstri standardı büyütme ve görüntü iyileştirme.",
+    "description": "Sektör standardında büyütme ve görüntü iyileştirme. Maksimum çıktı: 179 megapiksel.",
     "display_name": "Topaz Görüntü İyileştirme",
     "inputs": {
       "image": {
@@ -26752,11 +26752,11 @@
       },
       "output_height": {
         "name": "output_height",
-        "tooltip": "Sıfır değeri, orijinal yükseklikle aynı veya output_width belirtilmişse orantılı olarak ölçeklenmiş çıktı anlamına gelir. Wonder 3.5 yalnızca 1x ila 6x büyütme faktörlerini destekler. Bloom 2 ve Wonder 3.5 giriş en-boy oranını korur ve istenen boyutu hedef olarak alır."
+        "tooltip": "Sıfır değeri, özgün görüntüyle aynı yükseklikte çıktı alma veya belirtilmişse output_width değerine orantılı olarak ölçekleme anlamına gelir. Wonder 3.5 ve Wonder 4, 1x ile 6x arasındaki büyütme katsayılarını; Bloom 2 ise 1x ile 12x arasındaki katsayıları destekler. Bloom 2, Wonder 3.5 ve Wonder 4 her zaman giriş en-boy oranını korur: her iki boyut da ayarlanmışsa ve oranları farklıysa, daha büyük ölçek kazanır ve çıktı (ve fiyat) istenen boyuttan daha büyük olur."
       },
       "output_width": {
         "name": "output_width",
-        "tooltip": "Sıfır değeri otomatik hesaplama anlamına gelir (genellikle orijinal boyut veya output_height belirtilmişse orantılı olarak ölçeklenir). Wonder 3.5 yalnızca 1x ila 6x büyütme faktörlerini destekler. Bloom 2 ve Wonder 3.5 giriş en-boy oranını korur ve istenen boyutu hedef olarak alır."
+        "tooltip": "Sıfır değeri, otomatik olarak hesaplama anlamına gelir (genellikle özgün boyut olur veya belirtilmişse output_height değerine orantılı olarak ölçeklenir). Wonder 3.5 ve Wonder 4, 1x ile 6x arasındaki büyütme katsayılarını; Bloom 2 ise 1x ile 12x arasındaki katsayıları destekler. Bloom 2, Wonder 3.5 ve Wonder 4 her zaman giriş en-boy oranını korur: her iki boyut da ayarlanmışsa ve oranları farklıysa, daha büyük ölçek kazanır ve çıktı (ve fiyat) istenen boyuttan daha büyük olur."
       }
     },
     "outputs": {
