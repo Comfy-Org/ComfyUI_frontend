@@ -175,14 +175,12 @@ watch(availableCents, (cents, previous) => {
 
 const audience = computed(() => (isTeamPlan.value ? 'team' : 'personal'))
 
-const cycleResetDate = computed(() =>
-  longDate(billing.renewalDate?.value ?? null)
+const refillDate = computed(() =>
+  longDate(billing.nextCreditRefillAt?.value ?? null)
 )
 
 function datedBody(key: string, noDateKey: string): string {
-  return cycleResetDate.value
-    ? t(key, { date: cycleResetDate.value })
-    : t(noDateKey)
+  return refillDate.value ? t(key, { date: refillDate.value }) : t(noDateKey)
 }
 
 function pastDueBodyKey(): string {
@@ -237,7 +235,15 @@ function refusedOutOfCreditsBody(): string {
     )
   }
   if (denial === 'topup_purchases_paused') {
-    return t('credits.addCreditsRefusal.topupPurchasesPaused')
+    return audience.value === 'personal'
+      ? datedBody(
+          `${bs}.outOfCredits.pausedPersonalBody`,
+          `${bs}.outOfCredits.pausedPersonalBodyNoDate`
+        )
+      : datedBody(
+          `${bs}.outOfCredits.pausedBody`,
+          `${bs}.outOfCredits.pausedBodyNoDate`
+        )
   }
   return t(
     audience.value === 'personal'
@@ -257,6 +263,8 @@ function creditsLeft(): string {
 }
 
 function lowCreditsBodyKey(): string {
+  if (topUpDenial.value === 'topup_purchases_paused')
+    return `${bs}.lowCredits.pausedBody`
   if (!isCloud) return `${bs}.lowCredits.localBody`
   if (workspaceType.value !== 'team') return `${bs}.lowCredits.personalBody`
   return canManageBilling.value

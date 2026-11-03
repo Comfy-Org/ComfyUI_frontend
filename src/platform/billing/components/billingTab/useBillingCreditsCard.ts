@@ -1,7 +1,6 @@
 import { computed } from 'vue'
 import type { Ref } from 'vue'
 
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { getPlanCreditGrant } from '@/platform/billing/subscription/utils/planCreditGrant'
 import { deriveCreditsCard } from '@/platform/billing/components/billingTab/creditsCard'
@@ -13,10 +12,9 @@ export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
     billingStatus,
     subscription,
     currentTeamCreditStop,
-    renewalDate,
+    nextCreditRefillAt,
     periodCreditGrant
   } = useBillingContext()
-  const { planKind } = useBillingCapabilities()
 
   const planPoolCredits = computed(
     () =>
@@ -31,11 +29,10 @@ export function useBillingCreditsCard(planRow: Ref<PlanRowState>) {
     deriveCreditsCard({
       balance: balance.value,
       planKind: planRow.value.kind,
-      servedPlanKind: planKind.value,
       billingStatus: billingStatus.value,
       periodCreditGrant: periodCreditGrant.value,
       planPoolCredits: planPoolCredits.value,
-      renewalDate: renewalDate.value,
+      nextCreditRefillAt: nextCreditRefillAt.value,
       endDate: planRow.value.kind === 'ending' ? planRow.value.endsAt : null
     })
   )
