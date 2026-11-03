@@ -15,20 +15,9 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetType } from './assetTypeUtil'
 
-/**
- * Get the download/view URL for an asset
- * Constructs the proper URL with filename encoding, type, and subfolder parameters
- *
- * @param asset The asset to get URL for
- * @param defaultType Default type if asset doesn't have tags (default: 'output')
- * @returns Full URL for viewing/downloading the asset
- *
- * @example
- * const url = getAssetUrl(asset)
- * downloadFile(url, asset.name)
- */
+/** `/view` URL of the asset, typed by its preview URL or tags and placed in its subfolder. */
 export function getAssetUrl(
-  asset: AssetItem,
+  asset: Pick<AssetItem, 'name' | 'tags' | 'preview_url' | 'user_metadata'>,
   defaultType: 'input' | 'output' = 'output'
 ): string {
   const assetType = getAssetType(asset, defaultType)
@@ -55,16 +44,10 @@ export function getAssetViewUrl(asset: AssetItem): string {
   return api.apiURL(`/view?${params}`)
 }
 
-/**
- * Get the subfolder an asset lives in, relative to its type root
- *
- * Reads `preview_url` first and falls back to `user_metadata`, mirroring how
- * {@link getAssetType} resolves the type.
- *
- * @param asset The asset to get the subfolder for
- * @returns The subfolder, or an empty string when the asset is at the root
- */
-export function getAssetSubfolder(asset: AssetItem): string {
+/** Subfolder of the asset under its type root, or `''` at the root. */
+export function getAssetSubfolder(
+  asset: Pick<AssetItem, 'preview_url' | 'user_metadata'>
+): string {
   const previewSubfolder = new URLSearchParams(
     (asset.preview_url ?? '').split('?')[1] ?? ''
   ).get('subfolder')
@@ -84,22 +67,12 @@ export function getAssetContentId(
   return getOutputAssetMetadata(asset.user_metadata)?.assetId || asset.id
 }
 
-/**
- * URL of the asset's own file, for downloading or loading it whole.
- *
- * With the assets API enabled the file is served by id, so no path inference
- * is needed and a preview that is only a thumbnail is never mistaken for the
- * file. Otherwise the item came from the history API, whose `preview_url`
- * already points at the file, with a `/view` URL as fallback.
- *
- * `disposition: 'inline'` asks the assets-API content endpoint to serve the
- * file for in-page rendering (e.g. a `<video>` source) instead of its
- * default `attachment` disposition, which browsers try to save rather than
- * play. It has no effect on the history-backed fallback, whose `/view`
- * endpoint has no such distinction.
- */
+/** URL of the asset's own file: its assets-API content route, else its history `/view` URL. */
 export function getAssetFileUrl(
-  asset: AssetItem,
+  asset: Pick<
+    AssetItem,
+    'id' | 'name' | 'tags' | 'preview_url' | 'user_metadata'
+  >,
   options?: { disposition?: 'inline' | 'attachment' }
 ): string {
   if (useFeatureFlags().flags.assetsEnabled) {
@@ -109,6 +82,22 @@ export function getAssetFileUrl(
     return api.apiURL(`/assets/${getAssetContentId(asset)}/content${query}`)
   }
   return asset.preview_url || getAssetUrl(asset)
+}
+
+/**
+ * The `api.fetchApi` route of a media URL on this page's own API, or
+ * `undefined` for any other URL, which must not be sent credentials.
+ */
+export function getApiMediaRoute(href: string): string | undefined {
+  const url = URL.parse(href, window.location.origin)
+  const apiBase = new URL(api.apiURL(''), window.location.origin)
+  const basePath = apiBase.pathname.replace(/\/$/, '')
+  if (url?.origin !== apiBase.origin) return undefined
+  if (!url.pathname.startsWith(`${basePath}/`)) return undefined
+  const route = `${url.pathname.slice(basePath.length)}${url.search}`
+  const isUnambiguous =
+    !url.pathname.includes('%') && !route.startsWith('/api/')
+  return isUnambiguous && isMediaRoute(route) ? route : undefined
 }
 
 /**

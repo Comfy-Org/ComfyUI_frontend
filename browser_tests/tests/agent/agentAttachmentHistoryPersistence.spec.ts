@@ -114,14 +114,23 @@ for (const scenario of [
             contentType: 'video/mp4'
           })
       )
+      await page.route(
+        '**/api/assets/asset-first/content?disposition=inline',
+        (route) => route.fulfill({ path: assetPath('image64x64.webp') })
+      )
+      await page.route(
+        '**/api/assets/asset-second/content?disposition=inline',
+        (route) => route.fulfill({ path: assetPath('image32x32.webp') })
+      )
+      await page.route(
+        '**/api/assets/asset-video/content?disposition=inline',
+        (route) =>
+          route.fulfill({
+            path: assetPath('workflowInMedia/workflow.mp4'),
+            contentType: 'video/mp4'
+          })
+      )
 
-      // The real ingest API returns the message row's `content` map verbatim,
-      // including `attachment_refs` once a turn's attachments resolve
-      // server-side (services/agent/server/agent_handler.go's getMessages sets
-      // messageResponse.Content = m.Content directly). Stand in for that GET
-      // response here since the shared prompt-history fixture's own mock does
-      // not yet carry attachments through to `content` at all. POST still goes
-      // through the fixture's handler unmodified (route.fallback()).
       await page.route('**/api/agent/threads/*/messages', (route) => {
         const threadId = new URL(route.request().url()).pathname
           .split('/')
@@ -180,9 +189,6 @@ for (const scenario of [
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
 
-      // Simulate dropping a generated asset card into the composer, the same
-      // way agentBatchOutputAttachment.spec.ts does: the real drag source puts
-      // this shape on the DataTransfer.
       await dropAssets(page, panel, scenario.assets)
 
       const composer = panel.getByRole('textbox', {
@@ -198,8 +204,6 @@ for (const scenario of [
       await expectAssets(panel, scenario.assets)
       await panel.screenshot({ path: testInfo.outputPath('before-reload.png') })
 
-      // Settle the (WS-less) turn so the reload below is not racing a
-      // permanently-streaming assistant message.
       await panel
         .getByRole('button', { name: enMessages.agent.stop, exact: true })
         .click()

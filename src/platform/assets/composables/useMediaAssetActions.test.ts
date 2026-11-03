@@ -469,31 +469,27 @@ describe('useMediaAssetActions', () => {
 
       it('assigns hashes with annotations derived from each asset type', async () => {
         const addedNodes = captureAddedNodes()
-        const typeByAssetId = new Map([
-          ['1', 'input'],
-          ['2', 'temp'],
-          ['3', 'output']
-        ])
-        mockGetAssetType.mockImplementation(
-          (asset: AssetItem) => typeByAssetId.get(asset.id) ?? 'input'
-        )
+        mockGetAssetType.mockImplementation((asset) => asset.tags[0])
         const { actions, unmount } = mountMediaActions()
 
         const assets = [
           createMockAsset({
             id: '1',
             name: 'file1.jpeg',
-            hash: 'hash1.jpeg'
+            hash: 'hash1.jpeg',
+            tags: ['input']
           }),
           createMockAsset({
             id: '2',
             name: 'file2.jpeg',
-            hash: 'hash2.jpeg'
+            hash: 'hash2.jpeg',
+            tags: ['temp']
           }),
           createMockAsset({
             id: '3',
             name: 'file3.jpeg',
-            hash: 'hash3.jpeg'
+            hash: 'hash3.jpeg',
+            tags: ['output']
           })
         ]
 
@@ -1229,15 +1225,16 @@ describe('useMediaAssetActions', () => {
     })
 
     it('should export temp history outputs through their job IDs', async () => {
-      mockGetAssetType.mockImplementation((asset: AssetItem) =>
-        asset.id === 'temp-job' ? 'temp' : 'output'
-      )
-      const tempOutput = createOutputAsset(
-        'temp-job',
-        'ComfyUI_temp_audio.flac',
-        'temp-job',
-        1
-      )
+      mockGetAssetType.mockImplementation((asset) => asset.tags[0])
+      const tempOutput = {
+        ...createOutputAsset(
+          'temp-job',
+          'ComfyUI_temp_audio.flac',
+          'temp-job',
+          1
+        ),
+        tags: ['temp']
+      }
       const savedOutput = createOutputAsset(
         'output-job',
         'ComfyUI_output.png',
@@ -1260,8 +1257,8 @@ describe('useMediaAssetActions', () => {
     })
 
     it('should export inputs with output-shaped metadata through their asset IDs', async () => {
-      mockGetAssetType.mockImplementation((asset: AssetItem) =>
-        asset.id === 'input-asset' ? 'input' : 'output'
+      mockGetAssetType.mockImplementation((asset) =>
+        asset.tags.includes('input') ? 'input' : 'output'
       )
       const inputWithJobMetadata = createMockAsset({
         id: 'input-asset',
@@ -1370,7 +1367,7 @@ describe('useMediaAssetActions', () => {
         (path: string, defaultValue?: unknown) =>
           path === 'assets' ? true : defaultValue
       )
-      mockGetAssetType.mockImplementation((asset: AssetItem) =>
+      mockGetAssetType.mockImplementation((asset) =>
         asset.tags.includes('input') ? 'input' : 'output'
       )
       mockGetOutputAssetMetadata.mockImplementation(

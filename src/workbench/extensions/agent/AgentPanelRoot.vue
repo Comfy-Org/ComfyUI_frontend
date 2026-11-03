@@ -152,6 +152,7 @@ import {
   describeAgentRequestFailure
 } from './services/agent/agentRequestFailure'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import { attachmentFileUrl } from './utils/attachmentFileUrl'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import {
@@ -2264,9 +2265,7 @@ const attachment = useAttachment({
       ref: filename,
       url: isHdrImageFilename(file.name)
         ? undefined
-        : api.apiURL(
-            `/view?filename=${encodeURIComponent(filename)}&type=input`
-          )
+        : attachmentFileUrl({ ref: filename })
     }
   },
   resolveStoredPreview: async (file, ref) =>

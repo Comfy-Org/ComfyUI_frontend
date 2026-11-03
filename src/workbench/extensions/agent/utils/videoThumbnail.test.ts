@@ -4,6 +4,10 @@ import {
   createMockCanvasRenderingContext2D,
   createTestCanvasElement
 } from '@/utils/__tests__/canvasTestUtils'
+import {
+  releaseSharedObjectUrl,
+  retainSharedObjectUrl
+} from '@/utils/objectUrlUtil'
 
 import { createVideoThumbnail } from './videoThumbnail'
 
@@ -104,4 +108,29 @@ describe('video thumbnail capture platform boundary', () => {
       expect(URL.createObjectURL).not.toHaveBeenCalled()
     }
   )
+
+  it('hands out a poster that a sent message keeps after the composer releases it', async () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const { video, canvas } = mediaPlatform(
+      createTestCanvasElement({
+        ctx: createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
+      })
+    )
+    vi.spyOn(canvas, 'toBlob').mockImplementation((callback) =>
+      callback(new Blob(['frame'], { type: 'image/jpeg' }))
+    )
+    const result = createVideoThumbnail(
+      '/clip.mp4',
+      new AbortController().signal
+    )
+    video.dispatchEvent(new Event('loadeddata'))
+    const poster = await result
+
+    retainSharedObjectUrl(poster)
+    releaseSharedObjectUrl(poster)
+    expect(revoke).not.toHaveBeenCalled()
+
+    releaseSharedObjectUrl(poster)
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:poster')
+  })
 })
