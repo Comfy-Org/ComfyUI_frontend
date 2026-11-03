@@ -8,6 +8,7 @@ import {
   MESSAGE_DONE_EVENT,
   OPEN_TAB_TOOL_EVENT,
   RUNNING_OPEN_TAB_TOOL_EVENT,
+  RUNNING_RUN_TOOL_EVENT,
   THINKING_EVENT,
   agentTest,
   pushAgentEvent,
@@ -61,6 +62,33 @@ test.describe(
       await expect(settledRow).toHaveCount(1)
       await expect(agentPanel.activityRows).toHaveCount(1)
       await expect(settledRow.locator('.animate-spin')).toHaveCount(0)
+    })
+
+    test('stops an unresolved tool spinner neutrally before the next message', async ({
+      agentPanel,
+      getAgentSocket,
+      postedMessages
+    }) => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+
+      const ws = await getAgentSocket()
+      await agentPanel.sendMessage('Run the workflow')
+      await expect.poll(() => postedMessages.length).toBe(1)
+
+      pushAgentEvent(ws, RUNNING_RUN_TOOL_EVENT)
+      const runRow = agentPanel.activityRows.filter({ hasText: 'Run' })
+      await expect(runRow.locator('.animate-spin')).toBeVisible()
+
+      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+      await expect(agentPanel.sendButton).toBeVisible()
+      await agentPanel.sendMessage('Continue')
+      await expect.poll(() => postedMessages.length).toBe(2)
+
+      await agentPanel.openWorkSummary()
+      await expect(runRow).toHaveCount(1)
+      await expect(runRow.locator('.animate-spin')).toHaveCount(0)
+      await expect(runRow.locator('i')).not.toHaveClass(/lucide--circle-x/)
     })
 
     test('renders a multi-sentence thinking update in full instead of cutting it off', async ({

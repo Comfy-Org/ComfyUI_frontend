@@ -2139,26 +2139,47 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     expect(emit.mock.calls.length).toBe(callsAfterDispose)
   })
 
-  // PM-1674: a tool call that never received a terminal `agent_tool_call`
-  // status (still genuinely `running`, no success/error frame ever arrived)
-  // is not held in `pendingCanvasSync` at all, so the existing dispose
-  // coverage above never exercises it. Tearing the transport down this way
-  // happens whenever a new turn starts while the previous one is still
-  // active (`startTurn` -> `abortActiveTurn` in agentConversationStore), e.g.
-  // the user sending a follow-up message while an earlier "Run" step is
-  // still spinning. Without this clamp the part is stranded at 'streaming'
-  // forever, so its spinner never stops.
-  it('dispose clamps a never-resolved streaming tool call to done', () => {
+  it('settles a never-resolved tool call without inventing an outcome', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit)
 
     transport.ingest(toolCall('run', 'running'))
-    expect(toolParts(message)[0].state).toBe('streaming')
-    expect(toolParts(message)[0].ok).toBeUndefined()
+    transport.settle()
 
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+    expect(toolParts(message)[0].ok).toBeUndefined()
+  })
+
+  it('does not mutate a detached tool part during settlement or disposal', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(toolCall('run', 'running'))
+    const detached = toolParts(message)[0]
+    message.parts = []
+    transport.settle()
     transport.dispose()
-    expect(toolParts(message)[0]).toMatchObject({ state: 'done', ok: false })
+
+    expect(detached).toMatchObject({ state: 'streaming' })
+    expect(detached.ok).toBeUndefined()
+    expect(emit.mock.calls.at(-1)?.[0].parts).toEqual([])
+  })
+
+  it('ignores terminal frames after disposal', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(toolCall('run', 'running'))
+    transport.dispose()
+    const callsAfterDispose = emit.mock.calls.length
+    transport.ingest(toolCall('run', 'success'))
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+    expect(toolParts(message)[0].ok).toBeUndefined()
+    expect(emit).toHaveBeenCalledTimes(callsAfterDispose)
   })
 })
 
