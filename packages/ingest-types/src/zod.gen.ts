@@ -4543,6 +4543,10 @@ export const zAgentViewableAttachmentExtension = z.enum([
   '.heif'
 ])
 
+export const zAgentUsageStatusResponse = z.object({
+  has_used_agent: z.boolean()
+})
+
 /**
  * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
  */
@@ -5479,6 +5483,11 @@ export const zAgentCancelMessagePath = z.object({
  * Cancellation requested; the terminal state arrives over the WebSocket
  */
 export const zAgentCancelMessageResponse = zAgentCancelAccepted
+
+/**
+ * Message usage for the authenticated user and workspace.
+ */
+export const zAgentGetUsageStatusResponse = zAgentUsageStatusResponse
 
 export const zListAssetsQuery = z.object({
   include_tags: z.array(z.string()).optional(),

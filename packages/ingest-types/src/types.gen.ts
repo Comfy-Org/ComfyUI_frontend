@@ -7629,6 +7629,13 @@ export type AgentViewableAttachmentExtension =
   | '.heic'
   | '.heif'
 
+export type AgentUsageStatusResponse = {
+  /**
+   * Whether a persisted user-role message exists in a thread owned by this user in the current workspace. Does not imply a successful Agent reply, experiment eligibility or permanent retention of historical usage after server-side deletion.
+   */
+  has_used_agent: boolean
+}
+
 /**
  * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
  */
@@ -9833,6 +9840,57 @@ export type AgentCancelMessageResponses = {
 
 export type AgentCancelMessageResponse =
   AgentCancelMessageResponses[keyof AgentCancelMessageResponses]
+
+export type AgentGetUsageStatusData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/agent/usage-status'
+}
+
+export type AgentGetUsageStatusErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid identity; no usage status is returned.
+   */
+  401: ErrorResponse | AgentError
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Agent feature is unavailable for this caller.
+   */
+  404: unknown
+  /**
+   * Usage could not be determined; never interpret this as unused.
+   */
+  500: ErrorResponse | AgentError
+  /**
+   * Agent service unavailable.
+   */
+  502: ErrorResponse
+  /**
+   * Agent proxy is not configured.
+   */
+  503: ErrorResponse
+}
+
+export type AgentGetUsageStatusError =
+  AgentGetUsageStatusErrors[keyof AgentGetUsageStatusErrors]
+
+export type AgentGetUsageStatusResponses = {
+  /**
+   * Message usage for the authenticated user and workspace.
+   */
+  200: AgentUsageStatusResponse
+}
+
+export type AgentGetUsageStatusResponse =
+  AgentGetUsageStatusResponses[keyof AgentGetUsageStatusResponses]
 
 export type ListAssetsData = {
   body?: never
