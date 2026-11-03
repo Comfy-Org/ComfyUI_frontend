@@ -182,6 +182,54 @@ export {
 } from '#/telemetry'
 export * from './telemetry/index'
 export type {
+  AddCreditsAmount,
+  AddCreditsAmountCheck,
+  AddCreditsAmountError,
+  AddCreditsBounds
+} from './addCredits/addCreditsAmount'
+export {
+  ADD_CREDITS_DEFAULT_CENTS,
+  ADD_CREDITS_FALLBACK_BOUNDS,
+  ADD_CREDITS_PRESETS_CENTS,
+  checkAddCreditsAmount,
+  initialAddCreditsAmount
+} from './addCredits/addCreditsAmount'
+export type {
+  AddCreditsRefusal,
+  AddCreditsWait
+} from './addCredits/addCreditsRefusal'
+export {
+  addCreditsRefusalFor,
+  addCreditsRefusalForDenial,
+  addCreditsWait
+} from './addCredits/addCreditsRefusal'
+export type {
+  AddCreditsAmountView,
+  AddCreditsEvent,
+  AddCreditsFacts,
+  AddCreditsNotice,
+  AddCreditsPendingTopup,
+  AddCreditsState
+} from './addCredits/addCreditsDialog'
+export {
+  addCreditsRefusalBlocks,
+  reduceAddCredits,
+  startAddCredits,
+  viewAddCreditsAmount
+} from './addCredits/addCreditsDialog'
+export type {
+  AddCreditsCopyKey,
+  AddCreditsCopyParams,
+  AddCreditsPlanLine,
+  AddCreditsTranslate
+} from './addCredits/addCreditsCopy'
+export {
+  ADD_CREDITS_COPY,
+  amountErrorCopyKey,
+  translateAddCreditsDefault,
+  waitCopy
+} from './addCredits/addCreditsCopy'
+export type {
   EmbeddedChallengeOutcome,
   EmbeddedChallengePort
 } from './challengeDriver'
