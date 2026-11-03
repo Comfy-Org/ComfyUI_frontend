@@ -1,6 +1,6 @@
 <template>
   <div
-    class="fixed bottom-4 left-1/2 z-1000 flex -translate-x-1/2 flex-col items-center"
+    class="fixed bottom-4 left-1/2 flex -translate-x-1/2 flex-col items-center"
   >
     <!-- "Opens as" attachment tab -->
     <BuilderOpensAsPopover
@@ -87,10 +87,7 @@
                 data-testid="builder-save-as-chevron"
                 class="w-6 rounded-l-none border-l px-0"
               >
-                <i
-                  class="icon-[lucide--chevron-down] size-4"
-                  aria-hidden="true"
-                />
+                <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
               </Button>
             </template>
           </Menu>
@@ -116,10 +113,10 @@ import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
+import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'

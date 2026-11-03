@@ -103,7 +103,7 @@
             </div>
             <i
               v-if="selectedWorkspaceId === workspace.id"
-              class="icon-[lucide--check] size-4 shrink-0 text-foreground"
+              class="icon-[lucide--check] text-foreground"
               aria-hidden="true"
             />
           </RadioGroupItem>
@@ -127,7 +127,7 @@
               class="flex items-center gap-2"
             >
               <i
-                class="icon-[lucide--check] size-4 shrink-0 text-brand-yellow"
+                class="icon-[lucide--check] text-brand-yellow"
                 aria-hidden="true"
               />
               <span class="text-sm">
@@ -204,8 +204,8 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   OAuthApiError,
   fetchOAuthConsentChallenge,

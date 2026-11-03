@@ -1,6 +1,6 @@
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import { toTierKey } from '@/platform/billing/subscription/constants/tierPricing'
-import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
+import type { SubscriptionTier } from '@comfyorg/billing-core'
 
 export function resolveSubscriptionTierKey(
   tier: SubscriptionTier | null | undefined

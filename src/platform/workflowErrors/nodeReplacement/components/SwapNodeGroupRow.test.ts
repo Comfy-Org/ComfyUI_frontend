@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import type { SwapNodeGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import SwapNodeGroupRow from './SwapNodeGroupRow.vue'
 

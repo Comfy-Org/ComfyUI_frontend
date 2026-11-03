@@ -5,7 +5,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import type { PreviewSubscribeResponse } from '@comfyorg/billing-core'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 
 const mockInviteSubmit = vi.hoisted(() => vi.fn())

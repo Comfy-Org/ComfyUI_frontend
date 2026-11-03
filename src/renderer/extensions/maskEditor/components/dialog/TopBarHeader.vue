@@ -137,11 +137,11 @@
 
     <div class="flex gap-3">
       <Button variant="primary" :disabled="!saveEnabled" @click="handleSave">
-        <i class="pi pi-check" />
+        <i class="icon-[lucide--check]" />
         {{ saveButtonText }}
       </Button>
       <Button variant="secondary" @click="handleCancel">
-        <i class="pi pi-times" />
+        <i class="icon-[lucide--x]" />
         {{ t('g.cancel') }}
       </Button>
     </div>
@@ -152,7 +152,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCanvasTools } from '@comfyorg/mask-editor/useCanvasTools'
 import { useCanvasTransform } from '@comfyorg/mask-editor/useCanvasTransform'
 import { useMaskEditorSaver } from '@/renderer/extensions/maskEditor/composables/useMaskEditorSaver'

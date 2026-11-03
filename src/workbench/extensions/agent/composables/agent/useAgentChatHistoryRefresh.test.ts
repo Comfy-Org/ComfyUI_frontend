@@ -1,6 +1,7 @@
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import type { AgentThreadSummary } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentRestClient,
   ThreadListing
@@ -8,27 +9,26 @@ import type {
 import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentChatHistoryRefresh } from './useAgentChatHistoryRefresh'
 
+function thread(id: string, workflowId = '', title = id): AgentThreadSummary {
+  return {
+    id,
+    title,
+    preview: '',
+    workflow_id: workflowId,
+    status: 'active',
+    message_count: 1,
+    created_at: '2026-09-01T00:00:00Z',
+    updated_at: '2026-09-20T00:00:00Z',
+    last_message_at: '2026-10-01T00:00:00Z'
+  }
+}
+
 function completedListing(
   id: string,
   workflowId = '',
   title = id
 ): ThreadListing {
-  return {
-    status: 'complete',
-    threads: [
-      {
-        id,
-        title,
-        preview: '',
-        workflow_id: workflowId,
-        status: 'active',
-        message_count: 1,
-        created_at: '2026-09-01T00:00:00Z',
-        updated_at: '2026-09-20T00:00:00Z',
-        last_message_at: '2026-10-01T00:00:00Z'
-      }
-    ]
-  }
+  return { status: 'complete', threads: [thread(id, workflowId, title)] }
 }
 
 function deferredListing() {
@@ -65,18 +65,13 @@ function setup() {
 
 const missingCursor: ThreadListing = {
   status: 'incomplete',
-  reason: 'missing_cursor'
+  reason: 'missing_cursor',
+  threads: [thread('partial')]
 }
 const requestFailure: ThreadListing = {
   status: 'failed',
   cause: new TypeError('Failed to fetch')
 }
-
-const failures = [
-  missingCursor,
-  { status: 'incomplete', reason: 'repeated_cursor' },
-  requestFailure
-] satisfies ThreadListing[]
 
 const lateResults = [
   { name: 'success', result: completedListing('older') },
@@ -85,21 +80,42 @@ const lateResults = [
 ]
 
 describe('useAgentChatHistoryRefresh', () => {
-  it.for(failures)(
-    'retains history and reports a $status outcome',
-    async (failure) => {
-      const { history, listThreads, onFailure, refreshHistory } = setup()
-      listThreads.mockResolvedValueOnce(failure)
+  it('retains history and reports a failed listing', async () => {
+    const { history, listThreads, onFailure, refreshHistory } = setup()
+    listThreads.mockResolvedValueOnce(requestFailure)
 
-      await expect(refreshHistory()).resolves.toBe(failure.status)
+    await expect(refreshHistory()).resolves.toBe('failed')
 
-      expect(history.sessions.map(({ id }) => id)).toEqual(['kept'])
-      expect(onFailure).toHaveBeenCalledExactlyOnceWith(
-        failure,
-        'error_overlay'
-      )
-    }
-  )
+    expect(history.sessions.map(({ id }) => id)).toEqual(['kept'])
+    expect(onFailure).toHaveBeenCalledExactlyOnceWith(
+      requestFailure,
+      'error_overlay'
+    )
+  })
+
+  it('shows a truncated listing and reports it without keeping chats this refresh never listed', async () => {
+    const { history, listThreads, onFailure, refreshHistory } = setup()
+    listThreads.mockResolvedValueOnce(missingCursor)
+
+    await expect(refreshHistory()).resolves.toBe('incomplete')
+
+    expect(history.sessions.map(({ id }) => id)).toEqual(['partial'])
+    expect(onFailure).toHaveBeenCalledExactlyOnceWith(
+      missingCursor,
+      'error_overlay'
+    )
+  })
+
+  it('keeps the chats it already listed when a later listing is truncated', async () => {
+    const { history, listThreads, refreshHistory } = setup()
+    listThreads.mockResolvedValueOnce(completedListing('shown'))
+    await expect(refreshHistory()).resolves.toBe('complete')
+
+    listThreads.mockResolvedValueOnce(missingCursor)
+    await expect(refreshHistory()).resolves.toBe('incomplete')
+
+    expect(history.sessions.map(({ id }) => id)).toEqual(['partial', 'shown'])
+  })
 
   it.for(lateResults)(
     'ignores an older $name after a newer refresh succeeds',
@@ -162,22 +178,24 @@ describe('useAgentChatHistoryRefresh', () => {
     newer.resolve(requestFailure)
     await expect(newerRefresh).resolves.toBe('failed')
 
-    expect(history.sessions.map(({ id }) => id)).toEqual(['kept'])
+    expect(history.sessions.map(({ id }) => id)).toEqual(['partial'])
     expect(onFailure).toHaveBeenCalledExactlyOnceWith(
       requestFailure,
       'error_overlay'
     )
   })
 
-  it.for(failures)('keeps a silent $status failure silent', async (failure) => {
-    const { history, listThreads, onFailure, refreshHistory } = setup()
-    listThreads.mockResolvedValueOnce(failure)
+  it.for([missingCursor, requestFailure])(
+    'keeps a silent $status listing silent',
+    async (failure) => {
+      const { listThreads, onFailure, refreshHistory } = setup()
+      listThreads.mockResolvedValueOnce(failure)
 
-    await expect(refreshHistory('none')).resolves.toBe(failure.status)
+      await expect(refreshHistory('none')).resolves.toBe(failure.status)
 
-    expect(history.sessions.map(({ id }) => id)).toEqual(['kept'])
-    expect(onFailure).toHaveBeenCalledExactlyOnceWith(failure, 'none')
-  })
+      expect(onFailure).toHaveBeenCalledExactlyOnceWith(failure, 'none')
+    }
+  )
 
   it('preserves an explicit failure while a newer silent refresh is pending', async () => {
     const { listThreads, onFailure, refreshHistory } = setup()
@@ -214,6 +232,21 @@ describe('useAgentChatHistoryRefresh', () => {
 
     expect(history.sessions.map(({ id }) => id)).toEqual(['newer'])
     expect(onFailure).not.toHaveBeenCalled()
+  })
+
+  it('ignores an older explicit failure after a silent truncated listing shows chats', async () => {
+    const { history, listThreads, onFailure, refreshHistory } = setup()
+    const explicit = deferredListing()
+    listThreads.mockReturnValueOnce(explicit.promise)
+    const explicitRefresh = refreshHistory()
+    listThreads.mockResolvedValueOnce(missingCursor)
+    await expect(refreshHistory('none')).resolves.toBe('incomplete')
+
+    explicit.resolve(requestFailure)
+    await expect(explicitRefresh).resolves.toBe('superseded')
+
+    expect(history.sessions.map(({ id }) => id)).toEqual(['partial'])
+    expect(onFailure).toHaveBeenCalledExactlyOnceWith(missingCursor, 'none')
   })
 
   it('ignores an aborted result without replacing history or reporting failure', async () => {

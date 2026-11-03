@@ -4,12 +4,10 @@ import { shallowRef } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { app } from '@/scripts/app'
 
 import { canvasOrReport } from './touchCanvasAccess'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const canvasEl = vi.hoisted(() => document.createElement('canvas'))
 

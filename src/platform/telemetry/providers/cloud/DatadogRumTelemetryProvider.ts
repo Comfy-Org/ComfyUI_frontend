@@ -20,9 +20,11 @@ import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import type {
+  AgentSendGatedMetadata,
   AuthMetadata,
   BootstrapCompleteMetadata,
   ExecutionOutcomeMetadata,
+  FetchStatusRetryMetadata,
   FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
   TelemetryProvider,
@@ -30,8 +32,8 @@ import type {
   UnifiedAuthRetryMetadata,
   WorkspaceScopeMismatchMetadata,
   WorkspaceTelemetryContext
-} from '@/platform/telemetry/types'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
   private isWatchingLogout = false
@@ -59,6 +61,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     datadogRum.addAction(TelemetryEvents.FETCH_TIMEOUT, metadata)
   }
 
+  trackFetchStatusRetry(metadata: FetchStatusRetryMetadata): void {
+    datadogRum.addAction(TelemetryEvents.FETCH_STATUS_RETRY, metadata)
+  }
+
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
     datadogRum.addAction(
       metadata.outcome === 'succeeded'
@@ -83,6 +89,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
 
   trackSsoEvent(event: SsoTelemetryEvent): void {
     datadogRum.addAction(event.name, event.properties)
+  }
+
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    datadogRum.addAction(TelemetryEvents.AGENT_SEND_GATED, metadata)
   }
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {

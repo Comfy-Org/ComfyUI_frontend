@@ -123,6 +123,21 @@ describe('CreditSlider', () => {
     )
   })
 
+  it('shows the new stop price as soon as the stop changes', async () => {
+    const { rerender } = renderSlider({ modelValue: 700 })
+    await flush()
+
+    await rerender({ modelValue: 1400 })
+    await flush()
+
+    expect(screen.getByTestId('credit-slider-price')).toHaveTextContent(
+      '$1,190'
+    )
+    expect(
+      screen.getByTestId('credit-slider-original-price')
+    ).toHaveTextContent('$1,400')
+  })
+
   it('bills the yearly total the server charges, not 12x the monthly price', async () => {
     renderSlider({
       modelValue: 700,

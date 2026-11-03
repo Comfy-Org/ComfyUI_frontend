@@ -47,10 +47,10 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatUsdFromCents } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 const {
   planName,

@@ -8,12 +8,9 @@
         <div class="flex items-center gap-2">
           <i
             :class="
-              cn(
-                'size-4 shrink-0',
-                banner.muted
-                  ? 'icon-[lucide--circle-alert] text-muted-foreground'
-                  : 'icon-[lucide--triangle-alert] text-warning'
-              )
+              banner.muted
+                ? 'icon-[lucide--circle-alert] text-muted-foreground'
+                : 'icon-[lucide--triangle-alert] text-warning'
             "
           />
           <span class="text-sm text-foreground">{{ banner.title }}</span>
@@ -82,11 +79,11 @@
 
 <script setup lang="ts">
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useLongDate } from '@/platform/billing/composables/useLongDate'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
@@ -100,12 +97,13 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { isMemberTopUpDenial } from '@comfyorg/account-core/billing'
 import { pausedBannerCopy } from '@/platform/billing/composables/usePausedBanner'
 import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/billing/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 type BannerAction =
@@ -116,15 +114,29 @@ type BannerAction =
   | 'updatePayment'
 
 const { section } = defineProps<{
-  section?: 'planCredits' | 'members' | 'allowlist'
+  section?: 'planCredits' | 'members' | 'allowlist' | 'billing'
 }>()
 
-const { t, d } = useI18n()
-const { renewalDate, subscription } = useBillingContext()
-const { permissions, canReactivatePlan, workspaceType } = useWorkspaceUI()
-const { canTopUp, topUpDenial, canManageBilling, runDeniedPaymentPastDue } =
-  useBillingCapabilities()
-const { kind, audience, dismiss } = useBillingBanner()
+const { t } = useI18n()
+const { longDate } = useLongDate()
+const { nextCreditRefillAt, subscription } = useBillingContext()
+const { permissions, canReactivatePlan, workspaceType } = useBillingUI()
+const {
+  canTopUp,
+  topUpDenial,
+  hasResolvedCapabilities,
+  canManageBilling,
+  runDeniedPaymentPastDue
+} = useBillingCapabilities()
+const {
+  kind: overallKind,
+  lifecycleKind,
+  audience,
+  dismiss
+} = useBillingBanner()
+const kind = computed(() =>
+  section === 'billing' ? lifecycleKind.value : overallKind.value
+)
 const { formatTierName } = useWorkspaceTierLabel()
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const {
@@ -144,12 +156,7 @@ const canManage = computed(() => permissions.value.canManageSubscription)
 const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
 )
-function longDate(raw: string | null | undefined): string {
-  const date = raw ? new Date(raw) : null
-  if (!date || Number.isNaN(date.getTime())) return ''
-  return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
-}
-const cycleResetDate = computed(() => longDate(renewalDate.value))
+const refillDate = computed(() => longDate(nextCreditRefillAt.value))
 const planEndDate = computed(() => longDate(subscription.value?.endDate))
 const planName = computed(() => formatTierName(subscription.value?.tier, false))
 
@@ -167,12 +174,18 @@ const audienceCopy = {
   team: {
     outOfCreditsBody: `${bs}.outOfCredits.body`,
     outOfCreditsBodyNoDate: `${bs}.outOfCredits.bodyNoDate`,
+    outOfCreditsRefusedBody: `${bs}.outOfCredits.refusedBody`,
+    outOfCreditsPausedBody: `${bs}.outOfCredits.pausedBody`,
+    outOfCreditsPausedBodyNoDate: `${bs}.outOfCredits.pausedBodyNoDate`,
     endingTitle: `${bs}.ending.title`,
     endingBody: `${bs}.ending.body`
   },
   personal: {
     outOfCreditsBody: `${bs}.outOfCredits.personalBody`,
     outOfCreditsBodyNoDate: `${bs}.outOfCredits.personalBodyNoDate`,
+    outOfCreditsRefusedBody: `${bs}.outOfCredits.refusedPersonalBody`,
+    outOfCreditsPausedBody: `${bs}.outOfCredits.pausedPersonalBody`,
+    outOfCreditsPausedBodyNoDate: `${bs}.outOfCredits.pausedPersonalBodyNoDate`,
     endingTitle: `${bs}.ending.personalTitle`,
     endingBody: `${bs}.ending.personalBody`
   }
@@ -186,15 +199,18 @@ const PLAN_LIFECYCLE_KINDS: ReadonlySet<BillingBannerKind> = new Set([
   'planChange'
 ])
 
-// A personal workspace's Members tab carries its own upgrade pitch, so the
-// plan lifecycle notices stay on the Plan & Credits tab.
-const isHiddenOnSection = computed(
-  () =>
+const isLifecycleKind = computed(
+  () => kind.value !== null && PLAN_LIFECYCLE_KINDS.has(kind.value)
+)
+
+const isHiddenOnSection = computed(() => {
+  if (section === 'billing') return !isLifecycleKind.value
+  return (
     section === 'members' &&
     workspaceType.value === 'personal' &&
-    kind.value !== null &&
-    PLAN_LIFECYCLE_KINDS.has(kind.value)
-)
+    isLifecycleKind.value
+  )
+})
 
 // Sales-managed plans (Enterprise, and unrecognized tiers, which fail closed
 // to sales) return through sales; only a strict ENTERPRISE tier is named.
@@ -254,7 +270,7 @@ const planEndedView = (): BannerView => {
 }
 
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
-  cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
+  refillDate.value ? t(key, { date: refillDate.value }) : t(noDateKey)
 
 const pausedView = (): BannerView => {
   const paused = pausedBannerCopy(canManageBilling.value)
@@ -283,30 +299,44 @@ const pastDueView = (): BannerView => ({
   dismissible: true
 })
 
+function refusedOutOfCreditsBody(): string {
+  const denial = topUpDenial.value
+  if (isMemberTopUpDenial(denial)) {
+    return outOfCreditsBody(
+      `${bs}.outOfCredits.memberBody`,
+      `${bs}.outOfCredits.memberBodyNoDate`
+    )
+  }
+  if (denial === 'topup_purchases_paused') {
+    return outOfCreditsBody(
+      copy.value.outOfCreditsPausedBody,
+      copy.value.outOfCreditsPausedBodyNoDate
+    )
+  }
+  return t(copy.value.outOfCreditsRefusedBody)
+}
+
 const outOfCreditsView = (): BannerView | null => {
   if (runDeniedPaymentPastDue.value) return pastDueView()
   if (isTopUpDeniedPastDue(topUpDenial.value)) return pastDueView()
-  if (!canManage.value) {
+  if (canTopUp.value) {
     return {
       muted: false,
       title: t(`${bs}.outOfCredits.title`),
       body: outOfCreditsBody(
-        `${bs}.outOfCredits.memberBody`,
-        `${bs}.outOfCredits.memberBodyNoDate`
+        copy.value.outOfCreditsBody,
+        copy.value.outOfCreditsBodyNoDate
       ),
-      action: null,
+      action: 'addCredits',
       dismissible: true
     }
   }
-  if (!canTopUp.value) return null
+  if (!hasResolvedCapabilities.value) return null
   return {
     muted: false,
     title: t(`${bs}.outOfCredits.title`),
-    body: outOfCreditsBody(
-      copy.value.outOfCreditsBody,
-      copy.value.outOfCreditsBodyNoDate
-    ),
-    action: 'addCredits',
+    body: refusedOutOfCreditsBody(),
+    action: null,
     dismissible: true
   }
 }
@@ -362,15 +392,19 @@ const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
   planChange: planChangeView
 }
 
-const banner = computed<BannerView | null>(() =>
-  kind.value && !isHiddenOnSection.value ? bannerViews[kind.value]() : null
-)
+const banner = computed<BannerView | null>(() => {
+  if (!kind.value || isHiddenOnSection.value) return null
+  const view = bannerViews[kind.value]()
+  return view && section === 'billing'
+    ? { ...view, action: null, dismissible: false }
+    : view
+})
 
 function handleAddCredits() {
   void showTopUpCreditsDialog()
 }
 function handleResubscribePlan() {
-  subscriptionDialog.show({
+  void subscriptionDialog.show({
     planMode: audience.value === 'personal' ? 'personal' : 'team',
     reason: 'settings_billing_panel'
   })

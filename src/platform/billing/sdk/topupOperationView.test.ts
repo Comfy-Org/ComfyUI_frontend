@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { readBillingErrorCode } from '@comfyorg/account-core/billing'
+
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import { failedTopup, pendingTopup, settledTopup } from './billingSdkTestUtils'
 import {
@@ -133,6 +135,30 @@ describe('projectTopupResult', () => {
         failureCategory: 'stale_operation',
         message:
           'A top-up you started earlier is still going through. Finish verifying it or wait for it to complete before adding more credits.'
+      })
+    )
+  })
+
+  it('carries the sentence the server wrote for a refused purchase', () => {
+    expect(() =>
+      projectTopupResult(
+        {
+          status: 'error',
+          code: 'REQUEST_FAILED',
+          httpStatus: 429,
+          serverCode: readBillingErrorCode({
+            code: 'TOPUP_RATE_LIMITED',
+            message: 'Too many top-ups in a short time.'
+          }),
+          serverMessage: 'Too many top-ups in a short time.'
+        },
+        1000
+      )
+    ).toThrow(
+      expect.objectContaining({
+        name: 'WorkspaceApiError',
+        code: 'TOPUP_RATE_LIMITED',
+        message: 'Too many top-ups in a short time.'
       })
     )
   })

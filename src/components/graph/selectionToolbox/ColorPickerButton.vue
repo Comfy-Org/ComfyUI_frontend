@@ -2,7 +2,6 @@
   <div class="relative">
     <Button
       :tooltip="localizedCurrentColorName ?? t('color.noColor')"
-      data-testid="color-picker-button"
       variant="muted-textonly"
       :aria-label="t('g.color')"
       @click="() => (showColorPicker = !showColorPicker)"
@@ -56,9 +55,10 @@ import type { Raw } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import type {
   ColorOption as CanvasColorOption,
   LiteGraphCanvasEvent,

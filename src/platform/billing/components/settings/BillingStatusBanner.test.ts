@@ -6,7 +6,7 @@ import {
   runDeniedPaymentPastDueFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -15,10 +15,8 @@ import type {
   BillingPortalOutcome,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
-import type {
-  BillingStatus,
-  WorkspaceType
-} from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatus, BillingTopUpDenial } from '@comfyorg/billing-core'
+import type { WorkspaceWithRole } from '@comfyorg/ingest-types'
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 
 interface Subscription {
@@ -40,15 +38,15 @@ const state = vi.hoisted(() => ({
     endDate: null,
     scheduledChange: null
   } as Subscription | null,
-  renewalDate: null as string | null,
-  workspaceType: 'team' as WorkspaceType,
+  nextCreditRefillAt: null as string | null,
+  workspaceType: 'team' as WorkspaceWithRole['type'],
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
   canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
-  manageSubscription: vi.fn(
-    async (): Promise<BillingPortalOutcome> => ({ ok: true })
-  ),
+  manageSubscription: vi.fn(async (): Promise<BillingPortalOutcome> => ({
+    ok: true
+  })),
   handleResubscribe: vi.fn(),
   showSubscriptionDialog: vi.fn()
 }))
@@ -82,7 +80,8 @@ vi.mock<unknown>(
       plans: computed(() => [
         { slug: 'pro-annual', tier: 'PRO', duration: 'ANNUAL' }
       ]),
-      renewalDate: computed(() => state.renewalDate),
+      renewalDate: computed(() => '2026-12-15T00:00:00Z'),
+      nextCreditRefillAt: computed(() => state.nextCreditRefillAt),
       manageSubscription: state.manageSubscription,
       fetchStatus: vi.fn(),
       fetchBalance: vi.fn()
@@ -90,19 +89,16 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canManageSubscription: state.canManageSubscription,
-        canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-      })),
-      workspaceType: computed(() => state.workspaceType),
-      canReactivatePlan: computed(() => state.canReactivatePlan)
-    })
+vi.mock<unknown>(import('@/platform/billing/composables/useBillingUI'), () => ({
+  useBillingUI: () => ({
+    permissions: computed(() => ({
+      canManageSubscription: state.canManageSubscription,
+      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+    })),
+    workspaceType: computed(() => state.workspaceType),
+    canReactivatePlan: computed(() => state.canReactivatePlan)
   })
-)
+}))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
@@ -127,6 +123,15 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      credits: {
+        addCreditsRefusal: {
+          topupPurchasesPaused:
+            "Buying credits isn't available right now. Try again later, or message support.",
+          paymentPastDue: 'Update your payment method to add credits.',
+          unavailable:
+            "Adding credits isn't available for this workspace right now."
+        }
+      },
       workspacePanel: {
         members: {
           resubscribe: 'Resubscribe',
@@ -153,6 +158,16 @@ const i18n = createI18n({
               'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.',
             memberBodyNoDate:
               'Your team has used all its credits. Ask your workspace owner to add more credits.',
+            refusedBody: 'Your team has used all its credits.',
+            refusedPersonalBody: "You've used all your credits.",
+            pausedBody:
+              "Your team has used all its credits. Buying credits isn't available right now. Credits refill on {date}.",
+            pausedBodyNoDate:
+              "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+            pausedPersonalBody:
+              "You've used all your credits. Buying credits isn't available right now. Credits refill on {date}.",
+            pausedPersonalBodyNoDate:
+              "You've used all your credits. Buying credits isn't available right now. Try again later.",
             addCredits: 'Add credits',
             dismiss: 'Dismiss'
           },
@@ -218,7 +233,9 @@ const globalOptions = {
   plugins: [i18n]
 }
 
-function renderBanner(section?: 'planCredits' | 'members' | 'allowlist') {
+function renderBanner(
+  section?: 'planCredits' | 'members' | 'allowlist' | 'billing'
+) {
   return render(BillingStatusBanner, {
     props: { section },
     global: globalOptions
@@ -283,13 +300,113 @@ describe('BillingStatusBanner', () => {
       endDate: null,
       scheduledChange: null
     }
-    state.renewalDate = null
+    state.nextCreditRefillAt = null
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
     useBillingCapabilities().canReactivate = computed(() => true)
     state.canReactivatePlan = true
     state.shouldUseWorkspaceBilling = true
+  })
+
+  describe('on the Billing tab', () => {
+    it.for([
+      {
+        name: 'plan ending',
+        enter: () => {
+          state.subscription = {
+            ...state.subscription!,
+            isCancelled: true,
+            endDate: '2026-10-28T00:00:00Z'
+          }
+        },
+        text: 'Your Team plan ends on'
+      },
+      {
+        name: 'a scheduled change while out of credits',
+        enter: () => {
+          scheduledFor('pro-annual')
+          state.subscription = { ...state.subscription!, hasFunds: false }
+        },
+        text: 'Your plan changes to'
+      },
+      {
+        name: 'plan ending while out of credits',
+        enter: () => {
+          state.subscription = {
+            ...state.subscription!,
+            hasFunds: false,
+            isCancelled: true,
+            endDate: '2026-10-28T00:00:00Z'
+          }
+        },
+        text: 'Your Team plan ends on'
+      },
+      {
+        name: 'plan ended',
+        enter: () => {
+          state.subscriptionStatus = 'ended'
+          state.billingStatus = 'inactive'
+          state.canAccessSubscriptionFeatures = false
+          state.subscription = {
+            hasFunds: false,
+            isCancelled: true,
+            endDate: '2026-09-12T12:00:00Z',
+            scheduledChange: null,
+            tier: 'PRO'
+          }
+        },
+        text: 'Your Team plan ended on September 12, 2026'
+      }
+    ])('shows $name with no buttons', ({ enter, text }) => {
+      enter()
+      renderBanner('billing')
+
+      const banner = screen.getByRole('status')
+      expect(banner).toHaveTextContent(text)
+      expect(within(banner).queryAllByRole('button')).toEqual([])
+    })
+
+    it.for([
+      {
+        name: 'a scheduled change',
+        enter: () => scheduledFor('pro-annual')
+      },
+      {
+        name: 'plan ended',
+        enter: () => {
+          state.subscriptionStatus = 'ended'
+          state.billingStatus = 'inactive'
+          state.canAccessSubscriptionFeatures = false
+          state.subscription = {
+            hasFunds: false,
+            isCancelled: true,
+            endDate: '2026-09-12T12:00:00Z',
+            scheduledChange: null,
+            tier: 'PRO'
+          }
+        }
+      }
+    ])('keeps $name after another tab dismisses it', async ({ enter }) => {
+      enter()
+      renderBanner('planCredits')
+      await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+      renderBanner('billing')
+
+      expect(screen.getByRole('status')).toBeInTheDocument()
+    })
+
+    it.for([
+      { name: 'out of credits', enter: exhausted },
+      { name: 'paused', enter: pausedState }
+    ])('leaves $name to the Billing tab banners', ({ enter }) => {
+      enter()
+      renderBanner('billing')
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
   })
 
   it('renders nothing for a healthy funded team', () => {
@@ -323,14 +440,55 @@ describe('BillingStatusBanner', () => {
     expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
   })
 
-  it('shows no out-of-credits banner to an owner who cannot buy credits', () => {
+  it.for<{ denial: BillingTopUpDenial | undefined; body: string }>([
+    {
+      denial: 'not_workspace_owner',
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits.'
+    },
+    {
+      denial: 'not_a_member',
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits.'
+    },
+    {
+      denial: 'topup_purchases_paused',
+      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later."
+    },
+    {
+      denial: 'creator_only_provisioning',
+      body: 'Your team has used all its credits.'
+    },
+    { denial: undefined, body: 'Your team has used all its credits.' }
+  ])(
+    'explains a refused top-up served as $denial without an Add credits action',
+    ({ denial, body }) => {
+      exhausted()
+      useBillingCapabilities().canTopUp = computed(() => false)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+
+      renderBanner()
+
+      const banner = screen.getByRole('status')
+      expect(banner).toHaveTextContent('Out of credits')
+      expect(within(banner).getByText(body)).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Add credits' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Dismiss' })
+      ).toBeInTheDocument()
+    }
+  )
+
+  it('offers Add credits to whoever the server lets top up', () => {
     exhausted()
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    state.canManageSubscription = false
+    useBillingCapabilities().canTopUp = computed(() => true)
 
     renderBanner()
 
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
   })
 
   it.for([
@@ -363,11 +521,106 @@ describe('BillingStatusBanner', () => {
         scheduledChange: null,
         tier: audience === 'personal' ? 'PRO' : undefined
       }
-      state.renewalDate = '2026-11-01T00:00:00Z'
+      state.nextCreditRefillAt = '2026-11-01T00:00:00Z'
       useBillingCapabilities().canTopUp = computed(() => false)
       useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
       useBillingCapabilities().canManageBilling =
         canManageBillingFact(canManageBilling)
+
+      renderBanner()
+
+      const banner = screen.getByRole('status')
+      expect(banner).toHaveTextContent('Out of credits')
+      expect(banner).toHaveTextContent(body)
+      expect(
+        screen
+          .queryAllByRole('button')
+          .map((button) => button.textContent.trim())
+      ).toEqual(buttons)
+    }
+  )
+
+  it.for<{
+    reason: 'topup_purchases_paused' | 'not_workspace_owner' | undefined
+    owner: boolean
+    personal: boolean
+    refill: string | null
+    body: string
+    buttons: string[]
+  }>([
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      personal: false,
+      refill: '2027-10-28T00:00:00Z',
+      body: "Your team has used all its credits. Buying credits isn't available right now. Credits refill on October 28, 2027.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      personal: false,
+      refill: null,
+      body: "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      personal: true,
+      refill: '2027-10-28T00:00:00Z',
+      body: "You've used all your credits. Buying credits isn't available right now. Credits refill on October 28, 2027.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'topup_purchases_paused',
+      owner: true,
+      personal: true,
+      refill: null,
+      body: "You've used all your credits. Buying credits isn't available right now. Try again later.",
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'not_workspace_owner',
+      owner: false,
+      personal: false,
+      refill: '2027-10-28T00:00:00Z',
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on October 28, 2027.',
+      buttons: ['Dismiss']
+    },
+    {
+      reason: 'not_workspace_owner',
+      owner: false,
+      personal: false,
+      refill: null,
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits.',
+      buttons: ['Dismiss']
+    },
+    {
+      reason: undefined,
+      owner: true,
+      personal: false,
+      refill: null,
+      body: 'Your team has used all its credits. Add more credits.',
+      buttons: ['Dismiss', 'Add credits']
+    },
+    {
+      reason: undefined,
+      owner: true,
+      personal: true,
+      refill: '2027-10-28T00:00:00Z',
+      body: "You've used all your credits. Add more credits or wait until credits refill on October 28, 2027.",
+      buttons: ['Dismiss', 'Add credits']
+    }
+  ])(
+    'words out of credits for reason $reason, owner $owner, personal $personal, refill $refill',
+    ({ reason, owner, personal, refill, body, buttons }) => {
+      if (personal) personalProWorkspace()
+      state.subscription = { ...state.subscription!, hasFunds: false }
+      state.canManageSubscription = owner
+      state.nextCreditRefillAt = refill
+      useBillingCapabilities().canTopUp = computed(() => reason === undefined)
+      useBillingCapabilities().topUpDenial = computed(() => reason)
 
       renderBanner()
 
@@ -467,6 +720,7 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = false
     useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'not_workspace_owner')
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -899,29 +1153,29 @@ describe('BillingStatusBanner', () => {
     it.for([
       {
         personal: false,
-        renewalDate: '2026-10-01T00:00:00Z',
+        nextCreditRefillAt: '2026-10-01T00:00:00Z',
         body: 'Your team has used all its credits. Add more credits or wait until credits refill on October 1, 2026.'
       },
       {
         personal: false,
-        renewalDate: null,
+        nextCreditRefillAt: null,
         body: 'Your team has used all its credits. Add more credits.'
       },
       {
         personal: true,
-        renewalDate: '2026-10-01T00:00:00Z',
+        nextCreditRefillAt: '2026-10-01T00:00:00Z',
         body: "You've used all your credits. Add more credits or wait until credits refill on October 1, 2026."
       },
       {
         personal: true,
-        renewalDate: null,
+        nextCreditRefillAt: null,
         body: "You've used all your credits. Add more credits."
       }
     ])(
-      'words out of credits for the audience (personal: $personal, date: $renewalDate)',
-      async ({ personal, renewalDate, body }) => {
+      'words out of credits for the audience from the served refill date (personal: $personal, refill: $nextCreditRefillAt)',
+      async ({ personal, nextCreditRefillAt, body }) => {
         if (personal) personalPlan()
-        state.renewalDate = renewalDate
+        state.nextCreditRefillAt = nextCreditRefillAt
         state.subscription = { ...state.subscription!, hasFunds: false }
         renderBanner()
 

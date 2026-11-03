@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionDialogAccess } from '@/platform/billing/subscription/composables/subscriptionDialogAccess'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -44,7 +44,7 @@ function onDismiss() {
 
 function onUpgrade() {
   dialogStore.closeDialog({ key: 'invite-member-upsell' })
-  subscriptionDialog.show({
+  void subscriptionDialog.show({
     planMode: 'team',
     reason: 'invite_member_upsell'
   })

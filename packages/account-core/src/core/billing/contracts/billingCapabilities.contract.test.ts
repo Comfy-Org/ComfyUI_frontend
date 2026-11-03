@@ -47,6 +47,7 @@ function capabilitiesBody(
   overrides: Partial<CapabilitiesResponseBody> = {}
 ): CapabilitiesResponseBody {
   return {
+    auto_top_up_enabled: false,
     capabilities: capabilities(),
     expires_at: '2024-06-15T12:01:00.000Z',
     resolved_for: { user_id: 'uid-1', workspace_id: 'ws-1' },
@@ -61,6 +62,7 @@ function capabilitiesBody(
 }
 
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
+  | 'auto_top_up_enabled'
   | 'auto_top_up_setup'
   | 'capabilities'
   | 'denied_reason_params'

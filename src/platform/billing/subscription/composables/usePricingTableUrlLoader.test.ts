@@ -5,7 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
 
-import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
+import type { TeamCreditStops } from '@comfyorg/billing-core'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import { usePricingTableUrlLoader } from './usePricingTableUrlLoader'
 
@@ -22,23 +24,23 @@ vi.mock(
 
 vi.mock(import('vue-router'))
 
+vi.mock(import('@comfyorg/telemetry'))
+
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
-const mockPermissions = vi.hoisted(() => ({
-  value: { canManageSubscription: true }
-}))
+const mockPermissions = ref({ canManageSubscription: true })
 const mockTeamCreditStops = ref<TeamCreditStops | null>(null)
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
+const mockCanOpenPricingSurface = ref(true)
 
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
@@ -70,11 +72,15 @@ function setRouteQuery(value: LocationQueryRaw) {
 
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
-    const workspaceUI = useWorkspaceUI()
+    const workspaceUI = useBillingUI()
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
       ...defaultPermissions,
-      ...mockPermissions.value
+      ...mockPermissions.value,
+      canManageSubscription: receiveServerFact(
+        'can_manage_subscription',
+        mockPermissions.value.canManageSubscription
+      )
     }))
     workspaceUI.canOpenPricingSurface = computed(
       () => mockCanOpenPricingSurface.value
@@ -85,6 +91,7 @@ describe('usePricingTableUrlLoader', () => {
 
     mockPermissions.value = { canManageSubscription: true }
     mockCanOpenPricingSurface.value = true
+    vi.mocked(useTelemetry()!.trackBillingEvent).mockClear()
 
     mockTeamCreditStops.value = TEAM_CREDIT_STOPS
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
@@ -408,6 +415,106 @@ describe('usePricingTableUrlLoader', () => {
         })
       })
     )
+  })
+
+  describe('refusal telemetry', () => {
+    function refusal(
+      reason: 'pricing_surface_unavailable' | 'cannot_manage_subscription',
+      phase: 'before_catalog_fetch' | 'after_catalog_fetch'
+    ) {
+      return {
+        operation: 'entry',
+        stage: 'pricing_link_refused',
+        outcome: 'pending',
+        reason,
+        phase
+      }
+    }
+
+    async function load() {
+      const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+      await loadPricingTableFromUrl()
+      return vi.mocked(useTelemetry()!.trackBillingEvent)
+    }
+
+    it('reports a link refused for manage permission before the fetch', async () => {
+      setRouteQuery({ pricing: '1' })
+      mockPermissions.value = { canManageSubscription: false }
+
+      const track = await load()
+
+      expect(track).toHaveBeenCalledExactlyOnceWith(
+        refusal('cannot_manage_subscription', 'before_catalog_fetch')
+      )
+    })
+
+    it('reports a link refused for pricing access before the fetch', async () => {
+      setRouteQuery({ pricing: '1' })
+      mockCanOpenPricingSurface.value = false
+
+      const track = await load()
+
+      expect(track).toHaveBeenCalledExactlyOnceWith(
+        refusal('pricing_surface_unavailable', 'before_catalog_fetch')
+      )
+    })
+
+    it('reports a link refused for pricing access after the fetch', async () => {
+      setRouteQuery({ pricing: 'team', stop: 'team_700', cycle: 'yearly' })
+      mockTeamCreditStops.value = null
+      vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
+        async () => {
+          mockCanOpenPricingSurface.value = false
+        }
+      )
+
+      const track = await load()
+
+      expect(track).toHaveBeenCalledExactlyOnceWith(
+        refusal('pricing_surface_unavailable', 'after_catalog_fetch')
+      )
+    })
+
+    it('reports a link refused for manage permission after the fetch', async () => {
+      setRouteQuery({ pricing: 'team', stop: 'team_700', cycle: 'yearly' })
+      mockTeamCreditStops.value = null
+      vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
+        async () => {
+          mockPermissions.value = { canManageSubscription: false }
+        }
+      )
+
+      const track = await load()
+
+      expect(track).toHaveBeenCalledExactlyOnceWith(
+        refusal('cannot_manage_subscription', 'after_catalog_fetch')
+      )
+    })
+
+    it('reports nothing when the pricing table opens', async () => {
+      setRouteQuery({ pricing: '1' })
+
+      const track = await load()
+
+      expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalled()
+      expect(track).not.toHaveBeenCalled()
+    })
+  })
+
+  it('does not open when the workspace becomes sales-managed during the catalog fetch', async () => {
+    setRouteQuery({ pricing: 'team', stop: 'team_700', cycle: 'yearly' })
+    mockTeamCreditStops.value = null
+    vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
+      async () => {
+        mockCanOpenPricingSurface.value = false
+      }
+    )
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(useBillingContext().fetchPlans).toHaveBeenCalledOnce()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
   it('falls back to the Team table when the catalog fetch fails', async () => {

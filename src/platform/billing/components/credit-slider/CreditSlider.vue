@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import {
-  TransitionPresets,
-  usePreferredReducedMotion,
-  useTransition
-} from '@vueuse/core'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Slider from '@/components/ui/slider/Slider.vue'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import { getStopDiscountedMonthlyUsd } from '@comfyorg/account-ui/billing/catalog'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
@@ -89,23 +84,8 @@ const discountedMonthly = computed(() =>
 const saveAmount = computed(() => current.value.usd - discountedMonthly.value)
 const hasDiscount = computed(() => effectiveDiscountPercent.value > 0)
 
-/**
- * Smoothly count the price figures up/down as the slider moves between stops
- * instead of snapping. Honors the user's reduced-motion preference. The save
- * badge ("X% ($Y)") is intentionally left snapping — its percent is a discrete
- * tier, so animating the bracketed amount alone would read inconsistently.
- */
-const prefersReducedMotion = usePreferredReducedMotion()
-const priceTween = {
-  duration: 350,
-  easing: TransitionPresets.easeOutCubic,
-  disabled: computed(() => prefersReducedMotion.value === 'reduce')
-}
-const animatedMonthly = useTransition(discountedMonthly, priceTween)
-const animatedOriginal = useTransition(() => current.value.usd, priceTween)
-
-const displayMonthly = computed(() => Math.round(animatedMonthly.value))
-const displayOriginal = computed(() => Math.round(animatedOriginal.value))
+const displayMonthly = computed(() => Math.round(discountedMonthly.value))
+const displayOriginal = computed(() => Math.round(current.value.usd))
 const displayBilledYearly = computed(
   () => current.value.periodChargeUsd?.yearly ?? displayMonthly.value * 12
 )
@@ -226,7 +206,7 @@ const { t } = useI18n()
         <i
           :class="
             cn(
-              'icon-[lucide--coins] size-3 shrink-0',
+              'icon-[lucide--coins] size-3',
               i === selectedIndex ? 'bg-credit' : 'bg-muted-foreground'
             )
           "

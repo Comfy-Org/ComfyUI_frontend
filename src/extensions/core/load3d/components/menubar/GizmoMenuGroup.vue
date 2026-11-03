@@ -10,7 +10,7 @@
     :aria-label="compact ? t('load3d.gizmo.toggle') : undefined"
     @click="toggleGizmo"
   >
-    <i class="icon-[lucide--axis-3d] size-4" />
+    <i class="icon-[lucide--axis-3d]" />
     <span v-if="!compact">{{ t('load3d.gizmo.toggle') }}</span>
   </Button>
 
@@ -28,7 +28,7 @@
         type="button"
         @click="setGizmoMode(m.mode)"
       >
-        <i :class="cn(m.icon, 'size-4')" />
+        <i :class="m.icon" />
         <span>{{ t(m.labelKey) }}</span>
       </Button>
       <Button
@@ -40,11 +40,11 @@
         type="button"
         @click="resetGizmoTransform"
       >
-        <i class="icon-[lucide--rotate-ccw] size-4" />
+        <i class="icon-[lucide--rotate-ccw]" />
         <span>{{ t('load3d.gizmo.reset') }}</span>
       </Button>
     </template>
-    <Popover v-else v-model:open="modeMenuOpen">
+    <PopoverRoot v-else v-model:open="modeMenuOpen">
       <PopoverTrigger as-child>
         <Button
           variant="textonly"
@@ -56,16 +56,11 @@
           :aria-label="activeModeLabel"
           data-testid="gizmo-mode-menu"
         >
-          <i :class="cn(activeModeDef.icon, 'size-4')" />
-          <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
+          <i :class="activeModeDef.icon" />
+          <i class="icon-[lucide--chevron-down] opacity-70" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        side="bottom"
-        align="start"
-        :side-offset="8"
-        :class="menuPanelClass"
-      >
+      <PopoverContent align="start" :side-offset="8" :class="menuPanelClass">
         <button
           v-for="m in modeDefs"
           :key="m.mode"
@@ -76,20 +71,20 @@
           "
           @click="selectMode(m.mode)"
         >
-          <i :class="cn(m.icon, 'size-4')" />
+          <i :class="m.icon" />
           {{ t(m.labelKey) }}
         </button>
         <button type="button" :class="menuButtonClass" @click="selectReset">
-          <i class="icon-[lucide--rotate-ccw] size-4" />
+          <i class="icon-[lucide--rotate-ccw]" />
           {{ t('load3d.gizmo.reset') }}
         </button>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
   </template>
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -100,13 +95,12 @@ import {
   menuPanelClass
 } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuButtonClass,
   selectedMenuButtonClass
-} from '@/components/ui/menu/menuStyles'
+} from '@comfyorg/design-system/lib/menu/menuStyles'
 import type {
   GizmoMode,
   ModelConfig

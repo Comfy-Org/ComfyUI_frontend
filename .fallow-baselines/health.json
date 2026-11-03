@@ -5,531 +5,6 @@
         "count": 2
       }
     },
-    "apps/website/scripts/generate-models.ts": {
-      "complexity_critical": {
-        "count": 4
-      },
-      "crap_critical": {
-        "count": 4
-      },
-      "crap_moderate": {
-        "count": 2
-      }
-    },
-    "apps/website/scripts/validate-jsonld.ts": {
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/blocks/CardArticle01.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/blocks/CardArticleGallery01.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/blocks/CardSplitContent01.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/blocks/FAQSplit01.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/blocks/FeatureGrid02.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/blocks/FeatureRows01.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/blocks/FeaturedCarousel01.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 2
-      }
-    },
-    "apps/website/src/components/blocks/HeroBackdrop01.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 2
-      }
-    },
-    "apps/website/src/components/blocks/HeroLivestream01.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/blocks/HeroSplit01.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/blocks/StepsGrid01.vue": {
-      "crap_high": {
-        "count": 3
-      }
-    },
-    "apps/website/src/components/blocks/WatchPageLayout.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/blocks/WatchRecommendedCard.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/careers/RolesSection.vue": {
-      "crap_moderate": {
-        "count": 2
-      }
-    },
-    "apps/website/src/components/cloud-nodes/PackBanner.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/cloud-nodes/PackDetail.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/common/BreadcrumbBar.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/common/ContentSection.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/common/FAQSection.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/common/FooterLinkColumn.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/common/HeaderMain/HeaderMainDesktop.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/common/HeaderMain/HeaderMainMobile.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/common/NodeBadge.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/common/SocialProofBarSection.vue": {
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/common/VideoPlayer.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/common/WireNodeLayout.vue": {
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/customers/ArticleNav.vue": {
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/customers/DetailHeroSection.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/customers/content/AuthorBio.astro": {
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/customers/content/Figure.astro": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/gallery/GalleryDetailModal.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/gallery/GallerySection.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/home/GetStartedSection.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/home/ProductShowcaseSection.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/home/UseCaseSection.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/learning/FeaturedTutorialCard.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/learning/LearningCategoryNav.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/learning/LearningWatchPage.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/learning/TutorialRow.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/legal/LegalContentSection.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/models/ModelCreationsSection.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/models/ModelHeroSection.vue": {
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/pricing/PricingPlanFeatureList.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/pricing/PricingSection.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/pricing/WhatsIncludedSection.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/product/api/HeroSection.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/product/enterprise/OrchestrationSection.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/product/local/MobileDownloadEmailForm.vue": {
-      "complexity_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/product/shared/FeatureShowcaseSection.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/product/shared/ReasonSection.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/ui/button/Button.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/ui/copyable-field/CopyableField.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/ui/sheet/SheetContent.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/components/ui/slider/Slider.vue": {
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 2
-      }
-    },
-    "apps/website/src/components/ui/toggle-group/ToggleGroupItem.vue": {
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/composables/scrollLock.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/composables/useBannerDismissal.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/composables/useFrameScrub.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/composables/useHeroAnimation.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/composables/useHeroLogo.ts": {
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/composables/useParallax.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/composables/usePinScrub.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/config/banner.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/config/contentSections.ts": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/layouts/BaseLayout.astro": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/scripts/smoothScroll.ts": {
-      "crap_moderate": {
-        "count": 2
-      }
-    },
-    "apps/website/src/scripts/snakeGame.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 3
-      },
-      "crap_high": {
-        "count": 2
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/brand/BrandBackground.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/brand/BrandColorSection.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/drops/AnnouncementBanner.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/events/EventPage.astro": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/events/EventVideoDialog.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/events/PastEventsSection.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/events/UpcomingEventsSection.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/mcp/ComfyMcpDemo.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/mcp/SetupSection.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/model-launch/ModelLaunchGallerySection.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/model-launch/ModelLaunchHeroSection.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/model-launch/ModelLaunchPage.astro": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/templates/model-launch/modelLaunchPages.test.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/utils/ashby.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/website/src/utils/cloudNodes.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "browser_tests/fixtures/helpers/AssetHelper.ts": {
       "complexity_high": {
         "count": 1
@@ -2362,12 +1837,18 @@
         "count": 1
       }
     },
-    "src/platform/settings/settingStore.ts": {
-      "complexity_high": {
+    "packages/settings-core/src/settingStore.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
         "count": 1
       },
       "crap_high": {
         "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
       }
     },
     "src/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider.ts": {
@@ -3134,15 +2615,21 @@
         "count": 1
       }
     },
-    "src/scripts/api.ts": {
+    "packages/api-client/src/ComfyApi.ts": {
       "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
         "count": 1
       },
       "crap_critical": {
         "count": 1
       },
+      "crap_high": {
+        "count": 2
+      },
       "crap_moderate": {
-        "count": 1
+        "count": 2
       }
     },
     "src/scripts/app.ts": {
@@ -3472,7 +2959,7 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/components/ManagerProgressToast.vue": {
+    "src/platform/customNodes/manager/components/ManagerProgressToast.vue": {
       "complexity_high": {
         "count": 1
       },
@@ -3480,12 +2967,12 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/components/manager/ManagerDialog.vue": {
+    "src/platform/customNodes/manager/components/manager/ManagerDialog.vue": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue": {
+    "src/platform/customNodes/manager/components/manager/NodeConflictDialogContent.vue": {
       "complexity_high": {
         "count": 1
       },
@@ -3493,7 +2980,7 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/components/manager/infoPanel/InfoPanel.vue": {
+    "src/platform/customNodes/manager/components/manager/infoPanel/InfoPanel.vue": {
       "complexity_high": {
         "count": 1
       },
@@ -3501,22 +2988,22 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/components/manager/infoPanel/MarkdownText.vue": {
+    "src/platform/customNodes/manager/components/manager/infoPanel/MarkdownText.vue": {
       "complexity_moderate": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/components/manager/infoPanel/tabs/DescriptionTabPanel.vue": {
+    "src/platform/customNodes/manager/components/manager/infoPanel/tabs/DescriptionTabPanel.vue": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/nodePack/useMissingNodes.test.ts": {
+    "src/platform/customNodes/manager/composables/nodePack/useMissingNodes.test.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/useConflictDetection.ts": {
+    "src/platform/customNodes/manager/composables/useConflictDetection.ts": {
       "crap_high": {
         "count": 1
       },
@@ -3524,22 +3011,22 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/useManagerDialog.ts": {
+    "src/platform/customNodes/manager/composables/useManagerDialog.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts": {
+    "src/platform/customNodes/manager/composables/useManagerDisplayPacks.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/useManagerState.ts": {
+    "src/platform/customNodes/manager/composables/useManagerState.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/services/comfyManagerService.ts": {
+    "src/platform/customNodes/manager/services/comfyManagerService.ts": {
       "crap_moderate": {
         "count": 1
       }
@@ -3585,7 +3072,7 @@
     "src/services/litegraphService.ts:circular dependency",
     "src/lib/litegraph/src/subgraph/SubgraphNode.ts:circular dependency",
     "src/components/rightSidePanel/errors/MissingPackGroupRow.vue:complexity",
-    "src/workbench/extensions/manager/composables/nodePack/useMissingNodes.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/nodePack/useMissingNodes.ts:circular dependency",
     "browser_tests/fixtures/ComfyPage.ts:circular dependency",
     "src/platform/billing/subscription/composables/useSubscriptionDialog.ts:circular dependency",
     "src/components/error/useErrorOverlayState.ts:high impact",
@@ -3611,7 +3098,7 @@
     "src/services/dialogService.ts:circular dependency",
     "src/scripts/ui/utils.ts:complexity",
     "src/composables/usePaste.ts:circular dependency",
-    "src/workbench/extensions/manager/composables/useConflictDetection.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/useConflictDetection.ts:circular dependency",
     "src/renderer/core/canvas/canvasStore.ts:circular dependency",
     "src/base/webviewDetection.ts:high impact",
     "src/components/builder/useResolvedSelectedInputs.ts:high impact",
@@ -3620,7 +3107,7 @@
     "src/platform/workspace/components/CurrentUserPopoverWorkspace.vue:complexity",
     "src/composables/useCanvasDrop.ts:complexity",
     "src/renderer/extensions/linearMode/LinearControls.vue:complexity",
-    "src/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/button/PackEnableToggle.vue:circular dependency",
     "src/composables/graph/useMoreOptionsMenu.ts:circular dependency",
     "src/platform/workflowErrors/missingMedia/missingMediaStore.ts:circular dependency",
     "src/stores/assetsStore.ts:complexity",
@@ -3630,12 +3117,12 @@
     "src/extensions/core/widgetInputs.ts:high impact",
     "src/extensions/core/groupNode.ts:complexity",
     "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts:circular dependency",
-    "src/workbench/extensions/manager/components/manager/button/PackInstallButton.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/button/PackInstallButton.vue:circular dependency",
     "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue:complexity",
     "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts:complexity",
-    "src/workbench/extensions/manager/composables/nodePack/usePackInstall.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/nodePack/usePackInstall.ts:circular dependency",
     "src/lib/litegraph/src/LGraphGroup.ts:circular dependency",
-    "src/workbench/extensions/manager/stores/comfyManagerStore.ts:circular dependency",
+    "src/platform/customNodes/manager/stores/comfyManagerStore.ts:circular dependency",
     "src/lib/litegraph/src/DragAndScale.ts:circular dependency",
     "src/components/videoEdit/VideoEditPanel.vue:complexity",
     "src/utils/eventUtils.ts:high impact",
@@ -3647,25 +3134,22 @@
     "src/components/rightSidePanel/errors/ErrorNodeCard.vue:complexity",
     "src/platform/settings/settingStore.ts:circular dependency",
     "src/platform/billing/components/SubscriptionPanelContentWorkspace.vue:complexity",
-    "src/workbench/extensions/manager/services/comfyManagerService.ts:circular dependency",
-    "src/workbench/extensions/manager/composables/useManagerState.ts:circular dependency",
+    "src/platform/customNodes/manager/services/comfyManagerService.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/useManagerState.ts:circular dependency",
     "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts:complexity",
-    "apps/website/src/components/common/VideoPlayer.vue:complexity",
-    "apps/website/src/components/common/ContentSection.vue:complexity",
     "src/lib/litegraph/src/node/NodeSlot.ts:complexity",
     "src/lib/litegraph/src/subgraph/subgraphUtils.ts:circular dependency",
-    "src/composables/useNewMenuItemIndicator.ts:high impact",
     "src/utils/hdrFormatUtil.ts:high impact",
     "src/lib/litegraph/src/canvas/LinkConnector.ts:complexity",
     "src/lib/litegraph/src/widgets/NumberWidget.ts:high impact",
-    "src/workbench/extensions/manager/components/manager/infoPanel/InfoPanel.vue:circular dependency",
-    "src/workbench/extensions/manager/components/manager/infoPanel/InfoPanelMultiItem.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/infoPanel/InfoPanel.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/infoPanel/InfoPanelMultiItem.vue:circular dependency",
     "src/extensions/core/load3d/services/load3dService.ts:circular dependency",
     "src/platform/workspace/components/dialogs/settings/MembersPanelContent.vue:complexity",
     "src/lib/litegraph/src/node/NodeOutputSlot.ts:circular dependency",
     "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.ts:complexity",
     "src/components/dialog/GlobalDialog.vue:complexity",
-    "src/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/PackVersionSelectorPopover.vue:circular dependency",
     "src/components/graph/GraphCanvas.vue:complexity",
     "src/renderer/glsl/useGLSLPreview.ts:complexity",
     "src/core/graph/widgets/dynamicWidgets.ts:untested risk",
@@ -3673,7 +3157,6 @@
     "browser_tests/fixtures/helpers/SubgraphHelper.ts:circular dependency",
     "packages/mask-editor/src/useKeyboard.ts:high impact",
     "src/core/graph/subgraph/migration/proxyWidgetMigration.ts:complexity",
-    "apps/website/src/composables/useCurrentPath.ts:high impact",
     "src/renderer/extensions/vueNodes/widgets/components/DisplayCarousel.vue:complexity",
     "src/extensions/core/load3d/components/menubar/SceneMenuGroup.vue:complexity",
     "src/extensions/core/load3d/composables/useLoad3dViewer.ts:circular dependency",
@@ -3681,19 +3164,18 @@
     "src/composables/node/useNodePricing.ts:complexity",
     "src/platform/workflowErrors/missingModel/components/MissingModelRow.vue:complexity",
     "src/utils/linkFixer.ts:complexity",
-    "src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/useManagerDisplayPacks.ts:circular dependency",
     "src/extensions/core/load3d/Load3dUtils.ts:circular dependency",
-    "src/workbench/extensions/manager/components/manager/packCard/PackCard.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/packCard/PackCard.vue:circular dependency",
     "src/components/dialog/content/SignInContent.vue:complexity",
     "src/lib/litegraph/src/ContextMenu.ts:complexity",
-    "src/workbench/extensions/manager/components/manager/PackVersionBadge.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/PackVersionBadge.vue:circular dependency",
     "src/platform/workflow/sharing/components/publish/ComfyHubThumbnailStep.vue:complexity",
-    "src/workbench/extensions/manager/components/manager/packCard/PackCardFooter.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/packCard/PackCardFooter.vue:circular dependency",
     "src/lib/litegraph/src/LiteGraphGlobal.ts:circular dependency",
     "src/platform/cloud/onboarding/survey/DynamicSurveyField.vue:complexity",
     "src/platform/keybindings/composables/useEditKeybindingDialog.ts:circular dependency",
     "packages/mask-editor/src/maskEditorStore.ts:circular dependency",
-    "apps/website/src/components/blocks/FeaturedCarousel01.vue:complexity",
     "src/components/videoEdit/VideoFilmstripTrim.vue:complexity",
     "src/composables/boundingBoxes/useBoundingBoxes.ts:complexity",
     "src/extensions/core/rerouteNode.ts:complexity",
@@ -3703,23 +3185,21 @@
     "src/scripts/metadata/avif.ts:complexity",
     "src/components/rightSidePanel/errors/ErrorGroupList.vue:complexity",
     "src/renderer/extensions/linearMode/DropZone.vue:complexity",
-    "src/workbench/extensions/manager/components/manager/ManagerDialog.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/ManagerDialog.vue:circular dependency",
     "packages/mask-editor/src/useCanvasHistory.ts:circular dependency",
-    "src/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/button/PackUpdateButton.vue:circular dependency",
     "src/platform/billing/subscription/components/PricingTable.vue:complexity",
     "src/composables/sidebarTabs/useJobHistorySidebarTab.ts:circular dependency",
-    "src/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/nodePack/useUpdateAvailableNodes.ts:circular dependency",
     "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue:complexity",
     "src/components/helpcenter/HelpCenterMenuContent.vue:complexity",
     "src/scripts/pnginfo.ts:complexity",
     "src/scripts/metadata/png.ts:complexity",
     "src/composables/graph/useSelectionMenuOptions.ts:circular dependency",
     "src/lib/litegraph/src/widgets/LegacyWidget.ts:circular dependency",
-    "src/workbench/extensions/manager/composables/useManagerDialog.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/useManagerDialog.ts:circular dependency",
     "browser_tests/fixtures/components/SubgraphEditor.ts:circular dependency",
     "scripts/cicd/extract-playwright-counts.ts:complexity",
-    "apps/website/scripts/generate-models.ts:complexity",
-    "apps/website/src/components/ui/button-mask/ButtonMask.vue:circular dependency",
     "browser_tests/fixtures/components/QueuePanel.ts:circular dependency",
     "scripts/cicd/resolve-comfyui-release.ts:complexity",
     "scripts/perf-report.ts:complexity"

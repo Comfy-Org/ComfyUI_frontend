@@ -34,9 +34,9 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
@@ -45,7 +45,7 @@ import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useN
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
@@ -64,7 +64,7 @@ const props = defineProps<OutputSlotProps>()
 const hasNoLabel = computed(
   () => !props.slotData.localized_name && props.slotData.name === ''
 )
-const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
+const effectiveDotOnly = computed(() => props.dotOnly || hasNoLabel.value)
 // Error boundary implementation
 const renderError = ref<string | null>(null)
 
@@ -101,7 +101,7 @@ const slotWrapperClass = computed(() =>
   cn(
     'lg-slot lg-slot--output group flex h-5 items-center justify-end rounded-l-lg',
     'cursor-crosshair',
-    dotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-2',
+    effectiveDotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-2',
     {
       'lg-slot--connected': props.connected,
       'lg-slot--compatible': props.compatible,

@@ -1,0 +1,30 @@
+{
+  "name": "@comfyorg/billing-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "@comfyorg/billing-core": "./src/index.ts",
+      "types": "./dist-types/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./sdk": {
+      "@comfyorg/billing-core": "./src/createBillingSdk.ts",
+      "types": "./dist-types/createBillingSdk.d.ts",
+      "default": "./src/createBillingSdk.ts"
+    }
+  },
+  "scripts": {
+    "build:declarations": "tsc -b tsconfig.declarations.json"
+  },
+  "dependencies": {
+    "@comfyorg/account-core": "workspace:*",
+    "@comfyorg/ingest-types": "workspace:*",
+    "axios": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

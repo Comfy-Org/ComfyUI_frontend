@@ -4,7 +4,9 @@
       <SearchInput
         v-model="searchQuery"
         :clear-label="$t('g.clear')"
-        :accessible-label="$t('g.search')"
+        :accessible-label="
+          $t('g.searchPlaceholder', { subject: $t('g.keybindings') })
+        "
         class="max-w-96"
         size="lg"
         autofocus
@@ -103,28 +105,31 @@ import { useI18n } from 'vue-i18n'
 import { RovingFocusGroup } from 'reka-ui'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import AppPagination from '@/components/common/AppPagination.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Table from '@/components/ui/table/Table.vue'
-import TableBody from '@/components/ui/table/TableBody.vue'
-import TableHead from '@/components/ui/table/TableHead.vue'
-import TableHeader from '@/components/ui/table/TableHeader.vue'
-import TableRow from '@/components/ui/table/TableRow.vue'
-import TableSortHead from '@/components/ui/table/TableSortHead.vue'
-import { filterByQuery, sortByText } from '@/components/ui/table/tableUtils'
-import type { TableSortDirection } from '@/components/ui/table/tableUtils'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Table from '@comfyorg/design-system/table/Table'
+import TableBody from '@comfyorg/design-system/table/TableBody'
+import TableHead from '@comfyorg/design-system/table/TableHead'
+import TableHeader from '@comfyorg/design-system/table/TableHeader'
+import TableRow from '@comfyorg/design-system/table/TableRow'
+import TableSortHead from '@comfyorg/design-system/table/TableSortHead'
+import {
+  filterByQuery,
+  sortByText
+} from '@comfyorg/design-system/lib/table/tableUtils'
+import type { TableSortDirection } from '@comfyorg/design-system/lib/table/tableUtils'
 import { useEditKeybindingDialog } from '@/platform/keybindings/composables/useEditKeybindingDialog'
-import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
@@ -399,6 +404,7 @@ function handleRemoveAllKeybindings(command: KeybindingCommand) {
     headerProps: { title: t('g.removeAllKeybindingsTitle') },
     props: { promptText: t('g.removeAllKeybindingsMessage') },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.removeAll'),
       confirmVariant: 'destructive',
       onCancel: () => dialogStore.closeDialog(dialog),
@@ -450,6 +456,7 @@ function resetAllKeybindings() {
       promptText: t('g.resetAllKeybindingsMessage')
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.resetAll'),
       confirmVariant: 'destructive',
       onCancel: () => {

@@ -20,7 +20,7 @@ test.describe('App chrome', { tag: ['@screenshot', '@ui'] }, () => {
 
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.nodeOps.clearGraph()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    await comfyPage.expectNodeCount(0)
   })
 
   test('side toolbar', async ({ comfyPage }) => {

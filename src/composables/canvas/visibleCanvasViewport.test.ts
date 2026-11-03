@@ -4,7 +4,7 @@ import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 describe('visibleCanvasViewport', () => {
   beforeEach(() => {

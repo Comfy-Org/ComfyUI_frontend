@@ -317,8 +317,8 @@ Stripped from production builds. Set a JSON value under an `ff:` prefix in
 `localStorage`:
 
 ```js
-localStorage.setItem('ff:linear_toggle_enabled', 'true')
-localStorage.removeItem('ff:linear_toggle_enabled')
+localStorage.setItem('ff:node_library_essentials_enabled', 'true')
+localStorage.removeItem('ff:node_library_essentials_enabled')
 ```
 
 #### Session overrides (`?ff=` query parameter)

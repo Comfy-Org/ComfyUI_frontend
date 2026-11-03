@@ -14,7 +14,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { app } from '@/scripts/app'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas

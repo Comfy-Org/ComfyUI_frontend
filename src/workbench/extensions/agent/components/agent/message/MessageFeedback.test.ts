@@ -9,8 +9,6 @@ import { api } from '@/scripts/api'
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({

@@ -11,7 +11,7 @@ import { validateActionUrl } from '@comfyorg/account-core/billing'
 import type {
   BillingAuthenticationState,
   BillingOperationPhase
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { declineDetail } from './topupOperationView'
 

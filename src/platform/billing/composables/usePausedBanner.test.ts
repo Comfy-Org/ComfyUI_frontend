@@ -3,7 +3,7 @@ import { computed, effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatus } from '@comfyorg/billing-core'
 
 import { pausedBannerCopy, usePausedBanner } from './usePausedBanner'
 
@@ -15,7 +15,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 describe('usePausedBanner', () => {
