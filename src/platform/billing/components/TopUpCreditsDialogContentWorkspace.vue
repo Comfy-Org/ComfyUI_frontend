@@ -143,7 +143,8 @@
       :pay-amount
       :credits="creditsModel"
       :selected-preset
-      :max-amount="MAX_AMOUNT"
+      :max-amount="maxTopup.usd"
+      :max-credits="maxTopup.credits"
       :plan-credit-copy
       @preset="handlePresetClick"
       @pay-amount="handlePayAmountChange"
@@ -171,7 +172,7 @@
       <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.minRequired', {
-          credits: formatNumber(usdToCredits(MIN_AMOUNT))
+          credits: formatNumber(minTopup.credits)
         })
       }}
     </p>
@@ -182,7 +183,7 @@
       <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.maxAllowed', {
-          credits: formatNumber(usdToCredits(MAX_AMOUNT))
+          credits: formatNumber(maxTopup.credits)
         })
       }}
       <span>{{ $t('credits.topUp.needMore') }}</span>
@@ -365,13 +366,14 @@
 </template>
 
 <script setup lang="ts">
-import Card from '@comfyorg/design-system/card/Card'
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import {
+  servedTopUpBound,
   getTopupAmountPreset,
   PURCHASE_REFUSAL_SERVER_CODES
 } from '@comfyorg/account-core/billing'
+import Card from '@comfyorg/design-system/card/Card'
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -596,8 +598,29 @@ const creditsModel = computed({
   }
 })
 
+const minTopup = computed(() =>
+  servedTopUpBound(
+    { usd: MIN_AMOUNT, credits: usdToCredits(MIN_AMOUNT) },
+    {
+      cents: balance.value?.minTopupCents,
+      credits: balance.value?.minTopupCredits
+    }
+  )
+)
+const maxTopup = computed(() =>
+  servedTopUpBound(
+    { usd: MAX_AMOUNT, credits: usdToCredits(MAX_AMOUNT) },
+    {
+      cents: balance.value?.maxTopupCents,
+      credits: balance.value?.maxTopupCredits
+    }
+  )
+)
+
 const isValidAmount = computed(
-  () => payAmount.value >= MIN_AMOUNT && payAmount.value <= MAX_AMOUNT
+  () =>
+    payAmount.value >= minTopup.value.usd &&
+    payAmount.value <= maxTopup.value.usd
 )
 
 const negativeBalanceCredits = computed(() => {
@@ -608,8 +631,8 @@ const negativeBalanceCredits = computed(() => {
   return centsToCredits(-cents)
 })
 
-const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
-const showCeilingWarning = computed(() => payAmount.value >= MAX_AMOUNT)
+const isBelowMin = computed(() => payAmount.value < minTopup.value.usd)
+const showCeilingWarning = computed(() => payAmount.value >= maxTopup.value.usd)
 
 const displayTotal = computed(() =>
   n(payAmount.value, {

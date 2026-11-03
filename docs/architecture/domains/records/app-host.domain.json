@@ -4,88 +4,67 @@
   "description": "Shared technical module for app composition and startup: entrypoints, router, i18n, bootstrap state, GraphView, configuration, and desktop host wiring. Feature implementations remain in their own records.",
   "modules": [
     {
-      "path": "src/App.vue",
-      "role": "presentation"
+      "path": "src/App.vue"
     },
     {
-      "path": "src/__mocks__/**",
-      "role": "application"
+      "path": "src/__mocks__/**"
     },
     {
-      "path": "src/bootstrap.ts",
-      "role": "integration"
+      "path": "src/bootstrap.ts"
     },
     {
-      "path": "src/components/graph/GraphCanvas.vue",
-      "role": "integration"
+      "path": "src/components/graph/GraphCanvas.vue"
     },
     {
-      "path": "src/composables/useExternalLink.ts",
-      "role": "infrastructure"
+      "path": "src/composables/useExternalLink.ts"
     },
     {
-      "path": "src/composables/useUrlActionLoaders.ts",
-      "role": "integration"
+      "path": "src/composables/useUrlActionLoaders.ts"
     },
     {
-      "path": "src/config.ts",
-      "role": "domain"
+      "path": "src/config.ts"
     },
     {
-      "path": "src/config/comfyApi.ts",
-      "role": "infrastructure"
+      "path": "src/config/comfyApi.ts"
     },
     {
-      "path": "src/config/viteSeo.test.ts",
-      "role": "infrastructure"
+      "path": "src/config/viteSeo.test.ts"
     },
     {
-      "path": "src/constants/**",
-      "role": "domain"
+      "path": "src/constants/**"
     },
     {
-      "path": "src/extensions/core/electronAdapter.ts",
-      "role": "integration"
+      "path": "src/extensions/core/electronAdapter.ts"
     },
     {
-      "path": "src/i18n.ts",
-      "role": "application"
+      "path": "src/i18n.ts"
     },
     {
-      "path": "src/locales/**",
-      "role": "domain"
+      "path": "src/locales/**"
     },
     {
-      "path": "src/main.ts",
-      "role": "integration"
+      "path": "src/main.ts"
     },
     {
-      "path": "src/platform/distribution/types.ts",
-      "role": "infrastructure"
+      "path": "src/platform/distribution/types.ts"
     },
     {
-      "path": "src/router.ts",
-      "role": "integration"
+      "path": "src/router.ts"
     },
     {
-      "path": "src/stores/bootstrapStore.ts",
-      "role": "application"
+      "path": "src/stores/bootstrapStore.ts"
     },
     {
-      "path": "src/utils/electronMirrorCheck.ts",
-      "role": "infrastructure"
+      "path": "src/utils/electronMirrorCheck.ts"
     },
     {
-      "path": "src/utils/envUtil.ts",
-      "role": "infrastructure"
+      "path": "src/utils/envUtil.ts"
     },
     {
-      "path": "src/views/**",
-      "role": "presentation"
+      "path": "src/views/**"
     },
     {
-      "path": "src/vite-env.d.ts",
-      "role": "domain"
+      "path": "src/vite-env.d.ts"
     }
   ],
   "publicEntryPoints": [],

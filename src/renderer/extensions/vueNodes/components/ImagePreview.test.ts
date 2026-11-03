@@ -559,6 +559,35 @@ describe('ImagePreview', () => {
     })
   })
 
+  describe('legacy node image sync', () => {
+    it('syncs the loaded image onto its node', async () => {
+      const sync = vi.spyOn(useNodeOutputStore(), 'syncLegacyNodeImgs')
+      renderImagePreview({
+        imageUrls: ['/api/view?filename=test1.png&type=input'],
+        nodeId: '1'
+      })
+
+      const img = screen.getByRole('img')
+      await fireEvent.load(img)
+
+      expect(sync).toHaveBeenCalledWith('1', img, 0)
+    })
+
+    it('ignores an image that finishes loading after unmount', async () => {
+      const sync = vi.spyOn(useNodeOutputStore(), 'syncLegacyNodeImgs')
+      const { unmount } = renderImagePreview({
+        imageUrls: ['/api/view?filename=test1.png&type=input'],
+        nodeId: '1'
+      })
+      const img = screen.getByRole('img')
+
+      unmount()
+      await fireEvent.load(img)
+
+      expect(sync).not.toHaveBeenCalled()
+    })
+  })
+
   describe('batch cycling with identical URLs', () => {
     it('should not enter persistent loading state when cycling through identical images', async () => {
       const user = userEvent.setup({

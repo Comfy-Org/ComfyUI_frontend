@@ -145,7 +145,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
     await comfyPage.toast.closeToasts()
     await page.getByRole('button', { name: 'Current user' }).click()
-    await expect(page.getByTestId('add-credits-button')).toBeVisible()
+    await expect(page.getByTestId('add-credits-button')).toBeEnabled()
     const longWorkspaceCapabilities = page.waitForResponse(
       (response) =>
         response.url().includes('/api/billing/capabilities') &&
@@ -161,7 +161,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await comfyPage.waitForAppReady()
 
     await page.getByRole('button', { name: 'Current user' }).click()
-    await expect(page.getByTestId('add-credits-button')).toHaveCount(0)
+    await expect(page.getByTestId('add-credits-button')).toBeDisabled()
   })
 
   test('isolates all open workflow tabs between workspaces', async ({
