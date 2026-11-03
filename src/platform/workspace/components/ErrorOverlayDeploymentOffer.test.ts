@@ -242,6 +242,47 @@ describe('ErrorOverlay deployment offer', () => {
   })
 
   it.for([
+    'stopped',
+    'failed',
+    'starting'
+  ] satisfies WorkspaceDeployment['status'][])(
+    'leaves the notice as it was when only a %s deployment has every node',
+    async (status) => {
+      onComfyCloud([plain, { ...agencyA, status }])
+      useMissingNodesErrorStore().setMissingNodeTypes(NO_REPLACEMENT)
+      vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+        answer([agencyA], [plain])
+      )
+      renderNotice()
+      await compatibilityAnswered()
+
+      expectNoticeAsToday()
+    }
+  )
+
+  it('names only the ready deployment when a stopped one also has every node', async () => {
+    useDeploymentPickStore().state = readyOn([
+      plain,
+      { ...agencyA, status: 'stopped' },
+      agencyB
+    ])
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+      answer([agencyA, agencyB], [plain])
+    )
+    renderNotice()
+
+    const offer = await screen.findByTestId('error-overlay-deployment-offer')
+    expect(offer).toHaveTextContent('Runs on Agency B flux · dep-agency-b')
+    expect(within(offer).queryByRole('button', { name: /more/ })).toBeNull()
+
+    await userEvent.click(within(offer).getByRole('button', { name: 'Switch' }))
+
+    expect(workspaceApi.pickDeployment).toHaveBeenCalledWith('ws-1', {
+      deployment_id: agencyB.deployment_id
+    })
+  })
+
+  it.for([
     {
       when: 'no deployment has every node',
       state: readyOn([plain, agencyA]),
