@@ -862,10 +862,14 @@ export const useWorkflowService = () => {
         await waitForClosingWorkflowLoads(workflow)
       return await completeWorkflowClose(workflow, closingPath, options)
     } finally {
-      const remainingCloses = closingWorkflowCounts.get(closing) ?? 0
-      if (remainingCloses <= 1) closingWorkflowCounts.delete(closing)
-      else closingWorkflowCounts.set(closing, remainingCloses - 1)
+      releaseWorkflowClose(closing)
     }
+  }
+
+  function releaseWorkflowClose(closing: ComfyWorkflow) {
+    const remainingCloses = closingWorkflowCounts.get(closing) ?? 0
+    if (remainingCloses <= 1) closingWorkflowCounts.delete(closing)
+    else closingWorkflowCounts.set(closing, remainingCloses - 1)
   }
 
   /**
@@ -914,14 +918,33 @@ export const useWorkflowService = () => {
     }
 
     if (workflowStore.isOpen(workflow)) {
-      await closeWorkflows([workflow], {
-        warnIfUnsaved: !confirmed,
-        initiator: silent ? undefined : 'user',
+      await closeWorkflowForDeletion(workflow, {
+        confirmed,
+        silent,
         isCurrent: options.isCurrent
       })
       if (workflowStore.isOpen(workflow)) return false
     }
     return finishWorkflowDeletion(workflow, silent, options)
+  }
+
+  function closeWorkflowForDeletion(
+    workflow: ComfyWorkflow,
+    {
+      confirmed,
+      silent,
+      isCurrent
+    }: {
+      confirmed: boolean | null
+      silent: boolean
+      isCurrent?: () => boolean
+    }
+  ) {
+    return closeWorkflows([workflow], {
+      warnIfUnsaved: !confirmed,
+      initiator: silent ? undefined : 'user',
+      isCurrent
+    })
   }
 
   async function finishWorkflowDeletion(
@@ -1082,6 +1105,15 @@ export const useWorkflowService = () => {
       useTelemetry()?.trackEnterLinear({ source: 'workflow' })
   }
 
+  function isActivationContextCurrent(
+    context: ReturnType<typeof createActivationContext>
+  ) {
+    return (
+      context.graphState === useApp().rootGraphOrUndefined?.state &&
+      context.options.isCurrent?.() !== false
+    )
+  }
+
   async function restoreActivatedDocument(
     workflow: ComfyWorkflow,
     workflowData: ComfyWorkflowJSON,
@@ -1089,11 +1121,7 @@ export const useWorkflowService = () => {
     mode: 'fresh' | 'loaded'
   ) {
     const loaded = await openActivationWorkflow(workflow, context.options)
-    if (
-      context.graphState !== useApp().rootGraphOrUndefined?.state ||
-      context.options.isCurrent?.() === false
-    )
-      return
+    if (!isActivationContextCurrent(context)) return
     bindCanvasTracker(loaded.changeTracker)
     useExecutionErrorStore().setActiveGraph(context.rootGraphId, loaded.path)
     if (mode === 'fresh') {
@@ -1128,11 +1156,7 @@ export const useWorkflowService = () => {
     if (context.options.shareId) temp.shareId = context.options.shareId
     trackAppEntry(temp, context.wasAppMode)
     const loaded = await openActivationWorkflow(temp, context.options)
-    if (
-      context.graphState !== useApp().rootGraphOrUndefined?.state ||
-      context.options.isCurrent?.() === false
-    )
-      return
+    if (!isActivationContextCurrent(context)) return
     bindCanvasTracker(loaded.changeTracker)
     useExecutionErrorStore().setActiveGraph(context.rootGraphId, loaded.path)
   }
