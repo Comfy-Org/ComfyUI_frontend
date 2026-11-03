@@ -543,7 +543,7 @@ describe('createCapabilitiesReader', () => {
       )
     })
 
-    it.for(['something_new', 'topup_purchases_paused'])(
+    it.for(['something_new', 'reason_from_a_newer_server'])(
       'keeps the capability set usable for unrecognized reason %s',
       async (reason) => {
         const { scopeSource } = fakeSession()

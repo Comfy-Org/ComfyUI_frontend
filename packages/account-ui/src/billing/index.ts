@@ -36,3 +36,17 @@ export type { Checkout, CheckoutOptions } from './useCheckout'
 export { useCheckout } from './useCheckout'
 export type { PaymentAction } from './CheckoutSteps.vue'
 export { default as CheckoutSteps } from './CheckoutSteps.vue'
+export type {
+  AddCreditsCheckoutResult,
+  AddCreditsCheckoutTab,
+  AddCreditsDialogOptions,
+  AddCreditsPorts,
+  AddCreditsQuote,
+  AddCreditsQuoteResult
+} from './addCredits/useAddCreditsDialog'
+export {
+  addCreditsClientPorts,
+  reserveBrowserTab,
+  useAddCreditsDialog
+} from './addCredits/useAddCreditsDialog'
+export { default as AddCreditsDialog } from './addCredits/AddCreditsDialog.vue'

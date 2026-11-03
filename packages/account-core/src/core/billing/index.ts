@@ -181,6 +181,7 @@ export {
   BILLING_OPERATION_TELEMETRY_EVENT
 } from '#/telemetry'
 export * from './telemetry/index'
+export * from './addCredits/index'
 export type {
   EmbeddedChallengeOutcome,
   EmbeddedChallengePort
