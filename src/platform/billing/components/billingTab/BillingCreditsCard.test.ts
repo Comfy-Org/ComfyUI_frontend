@@ -6,7 +6,10 @@ import { createI18n } from 'vue-i18n'
 import type { BalanceInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
 import { deriveCreditsCard } from '@comfyorg/account-core/billing'
-import type { CreditsCardFacts } from '@comfyorg/account-core/billing'
+import type {
+  AddCreditsAvailability,
+  CreditsCardFacts
+} from '@comfyorg/account-core/billing'
 
 import BillingCreditsCard from './BillingCreditsCard.vue'
 
@@ -45,13 +48,15 @@ const CARD_NOTES = [
   "Couldn't load your balance."
 ]
 
+const ENABLED: AddCreditsAvailability = { kind: 'enabled' }
+
 function renderCard(
   facts: CreditsCardFacts,
-  canTopUp = true,
+  addCredits: AddCreditsAvailability = ENABLED,
   planCreditNote: string | null = null
 ) {
   return render(BillingCreditsCard, {
-    props: { state: deriveCreditsCard(facts), canTopUp, planCreditNote },
+    props: { state: deriveCreditsCard(facts), addCredits, planCreditNote },
     global: {
       plugins: [
         createI18n({
@@ -68,7 +73,7 @@ describe('BillingCreditsCard', () => {
   it.for<{
     case: string
     facts: Partial<CreditsCardFacts>
-    canTopUp?: boolean
+    availability?: AddCreditsAvailability
     planCreditNote?: string
     available: string
     plan: string | null
@@ -166,9 +171,9 @@ describe('BillingCreditsCard', () => {
       notes: [SUBSCRIBE_NOTE]
     },
     {
-      case: 'a server that refuses top-up',
+      case: 'a server that refuses top-up to a member',
       facts: {},
-      canTopUp: false,
+      availability: { kind: 'hidden' },
       available: '1,477',
       plan: '844 of 1,000',
       topUp: '633',
@@ -204,7 +209,7 @@ describe('BillingCreditsCard', () => {
   ])('renders $case', (row) => {
     renderCard(
       { ...activeFacts, ...row.facts },
-      row.canTopUp ?? true,
+      row.availability ?? ENABLED,
       row.planCreditNote ?? null
     )
 
@@ -225,6 +230,50 @@ describe('BillingCreditsCard', () => {
       row.notes
     )
   })
+
+  it.for<{
+    case: string
+    facts: Partial<CreditsCardFacts>
+    reasonKey: string
+    reason: string
+  }>([
+    {
+      case: 'paused top-up purchases on a plan',
+      facts: {},
+      reasonKey: 'credits.addCreditsRefusal.topupPurchasesPaused',
+      reason:
+        "Buying credits isn't available right now. Try again later, or message support."
+    },
+    {
+      case: 'a past-due payment on a plan',
+      facts: {},
+      reasonKey: 'credits.addCreditsRefusal.paymentPastDue',
+      reason: 'Update your payment method to add credits.'
+    },
+    {
+      case: 'another refusal without a plan',
+      facts: {
+        planKind: 'noPlan',
+        balance: balanceOf({ effective: 200, plan: 0, topUp: 200 })
+      },
+      reasonKey: 'credits.addCreditsRefusal.unavailable',
+      reason: "Adding credits isn't available for this workspace right now."
+    }
+  ])(
+    'shows Add credits disabled with the reason for $case',
+    async ({ facts, reasonKey, reason }) => {
+      const { emitted } = renderCard(
+        { ...activeFacts, ...facts },
+        { kind: 'disabled', reasonKey }
+      )
+
+      const addCredits = screen.getByRole('button', { name: 'Add credits' })
+      expect(addCredits).toBeDisabled()
+      expect(addCredits).toHaveAccessibleDescription(reason)
+      await userEvent.click(addCredits)
+      expect(emitted('addCredits')).toBeUndefined()
+    }
+  )
 
   it.for<{
     case: string
