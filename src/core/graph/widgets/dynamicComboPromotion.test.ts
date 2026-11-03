@@ -20,7 +20,7 @@ import {
   bindPromotedDynamicInput,
   unbindPromotedDynamicInput
 } from '@/core/graph/widgets/dynamicWidgets'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useLitegraphService } from '@/services/litegraphService'
 import { graphToPrompt } from '@/utils/executionUtil'
 
@@ -159,6 +159,16 @@ describe('Promoting a dynamic combo onto a subgraph node', () => {
       widgets: ['mode', 'mode.factor']
     })
     expect(widget(host, 'mode.factor').value).toBe(7)
+  })
+
+  test('rejects a link to the promoted combo input from a node output', () => {
+    const { graph, host } = buildPromoted()
+    const source = LiteGraph.createNode(SOURCE_NODE_TYPE)
+    assert(source)
+    graph.add(source)
+
+    expect(source.connect(0, host, 0)).toBeNull()
+    expect(host.isInputConnected(0)).toBe(false)
   })
 
   test('switching the subgraph node option swaps its child inputs', () => {

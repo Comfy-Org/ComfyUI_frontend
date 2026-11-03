@@ -329,6 +329,14 @@ function withComfyDynamicCombo(
   const combos: DynamicComboNode['comfyDynamic']['dynamicCombo'] = {}
   node.comfyDynamic.dynamicCombo = combos
 
+  const originalOnConnectInput = node.onConnectInput
+  node.onConnectInput = function (slot: number, ...args) {
+    const name = this.inputs.at(slot)?.widget?.name
+    if (name && Object.hasOwn(combos, name) && !isSubgraphInput(args[1]))
+      return false
+    return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
+  }
+
   node.onAfterGraphConfigured = useChainCallback(
     node.onAfterGraphConfigured,
     () => {
