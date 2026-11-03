@@ -7,7 +7,7 @@ import { usePopoverViewportDismiss } from './usePopoverViewportDismiss'
 const PORTRAIT = { width: 393, height: 851 }
 const KEYBOARD_SHOWN = { width: PORTRAIT.width, height: 450 }
 const LANDSCAPE = { width: PORTRAIT.height, height: PORTRAIT.width }
-const TALLER = { width: PORTRAIT.width, height: 900 }
+const KEYBOARD_HIDING = { width: PORTRAIT.width, height: 600 }
 
 function happyDOM(): DetachedWindowAPI {
   const api: unknown = Reflect.get(window, 'happyDOM')
@@ -35,9 +35,13 @@ function focusElement(focus: Focus) {
   input.focus()
 }
 
-async function mountOpenPopover(device: Device, focus: Focus) {
+async function mountOpenPopover(
+  device: Device,
+  focus: Focus,
+  openedAt: { width: number; height: number } = PORTRAIT
+) {
   happyDOM().settings.navigator.maxTouchPoints = device === 'touch' ? 5 : 0
-  happyDOM().setViewport(PORTRAIT)
+  happyDOM().setViewport(openedAt)
   const anchor = document.createElement('button')
   document.body.append(anchor)
   focusElement(focus)
@@ -74,6 +78,7 @@ describe(usePopoverViewportDismiss, () => {
     when: string
     device: Device
     focus: Focus
+    openedAt?: { width: number; height: number }
     resizeTo: Resize
     staysOpen: boolean
   }>([
@@ -85,9 +90,17 @@ describe(usePopoverViewportDismiss, () => {
       staysOpen: true
     },
     {
-      when: 'a resize event repeats the size under a focused search input',
+      when: 'the keyboard that was up when it opened hides',
       device: 'touch',
-      focus: 'search input',
+      focus: 'nothing',
+      openedAt: KEYBOARD_SHOWN,
+      resizeTo: PORTRAIT,
+      staysOpen: true
+    },
+    {
+      when: 'a touch viewport repeats its size with nothing focused',
+      device: 'touch',
+      focus: 'nothing',
       resizeTo: 'same-size resize event',
       staysOpen: true
     },
@@ -96,6 +109,13 @@ describe(usePopoverViewportDismiss, () => {
       device: 'desktop',
       focus: 'search input',
       resizeTo: KEYBOARD_SHOWN,
+      staysOpen: false
+    },
+    {
+      when: 'a desktop window repeats its size',
+      device: 'desktop',
+      focus: 'nothing',
+      resizeTo: 'same-size resize event',
       staysOpen: false
     },
     {
@@ -127,20 +147,6 @@ describe(usePopoverViewportDismiss, () => {
       staysOpen: false
     },
     {
-      when: 'a touch viewport grows with nothing focused',
-      device: 'touch',
-      focus: 'nothing',
-      resizeTo: TALLER,
-      staysOpen: false
-    },
-    {
-      when: 'a resize event repeats the size with nothing focused',
-      device: 'touch',
-      focus: 'nothing',
-      resizeTo: 'same-size resize event',
-      staysOpen: false
-    },
-    {
       when: 'the device rotates while a search input is focused',
       device: 'touch',
       focus: 'search input',
@@ -149,8 +155,8 @@ describe(usePopoverViewportDismiss, () => {
     }
   ])(
     'stays open: $staysOpen when $when',
-    async ({ device, focus, resizeTo, staysOpen }) => {
-      const popover = await mountOpenPopover(device, focus)
+    async ({ device, focus, openedAt, resizeTo, staysOpen }) => {
+      const popover = await mountOpenPopover(device, focus, openedAt)
       stop = popover.stop
 
       resize(resizeTo)
@@ -159,61 +165,26 @@ describe(usePopoverViewportDismiss, () => {
     }
   )
 
-  it('stays open while the on-screen keyboard opens and closes again', async () => {
-    const popover = await mountOpenPopover('touch', 'search input')
-    stop = popover.stop
-
-    resize(KEYBOARD_SHOWN)
-    resize(PORTRAIT)
-
-    expect(popover.open.value).toBe(true)
-  })
-
-  it('stays open when the keyboard closes after focus leaves the search input', async () => {
+  it('stays open while the keyboard hides in steps after focus leaves the search input', async () => {
     const popover = await mountOpenPopover('touch', 'search input')
     stop = popover.stop
 
     resize(KEYBOARD_SHOWN)
     moveFocusToButton()
+    resize(KEYBOARD_HIDING)
     resize(PORTRAIT)
 
     expect(popover.open.value).toBe(true)
   })
 
-  it('stays open when a same-size resize follows the keyboard closing after focus left the search input', async () => {
+  it('closes when the viewport shortens again after the keyboard hid with focus elsewhere', async () => {
     const popover = await mountOpenPopover('touch', 'search input')
     stop = popover.stop
 
     resize(KEYBOARD_SHOWN)
     moveFocusToButton()
     resize(PORTRAIT)
-    resize('same-size resize event')
-
-    expect(popover.open.value).toBe(true)
-  })
-
-  it('forgets the keyboard once the popover closes and reopens', async () => {
-    const popover = await mountOpenPopover('touch', 'search input')
-    stop = popover.stop
-    resize(KEYBOARD_SHOWN)
-    popover.open.value = false
-    await nextTick()
-    moveFocusToButton()
-
-    popover.open.value = true
-    await nextTick()
-    resize('same-size resize event')
-
-    expect(popover.open.value).toBe(false)
-  })
-
-  it('closes when the viewport grows past its opened height after focus leaves the search input', async () => {
-    const popover = await mountOpenPopover('touch', 'search input')
-    stop = popover.stop
-
-    resize(KEYBOARD_SHOWN)
-    moveFocusToButton()
-    resize(TALLER)
+    resize(KEYBOARD_HIDING)
 
     expect(popover.open.value).toBe(false)
   })

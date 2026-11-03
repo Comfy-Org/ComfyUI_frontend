@@ -27,50 +27,41 @@ function readViewportSize(): ViewportSize {
   return { width: window.innerWidth, height: window.innerHeight }
 }
 
+function isOnScreenKeyboardResize(
+  previous: ViewportSize,
+  next: ViewportSize
+): boolean {
+  if (!window.matchMedia('(pointer: coarse)').matches) return false
+  if (next.width !== previous.width) return false
+  return (
+    next.height >= previous.height ||
+    opensOnScreenKeyboard(document.activeElement)
+  )
+}
+
 export function usePopoverViewportDismiss(
   open: Ref<boolean>,
   anchor: MaybeRefOrGetter<Element | null | undefined>
 ) {
-  let openedSize: ViewportSize | undefined
-  let keyboardViewportHeight: number | undefined
+  let viewportSize: ViewportSize | undefined
   watch(
     open,
     (isOpen) => {
-      if (!isOpen) return
-      openedSize = readViewportSize()
-      keyboardViewportHeight = undefined
+      if (isOpen) viewportSize = readViewportSize()
     },
     { immediate: true }
   )
-
-  function isKeyboardClosing(opened: ViewportSize, nextHeight: number) {
-    return (
-      keyboardViewportHeight !== undefined &&
-      nextHeight >= keyboardViewportHeight &&
-      nextHeight <= opened.height
-    )
-  }
-
-  function isOnScreenKeyboardResize(): boolean {
-    if (!openedSize || !window.matchMedia('(pointer: coarse)').matches)
-      return false
-    const next = readViewportSize()
-    if (next.width !== openedSize.width) return false
-    return (
-      opensOnScreenKeyboard(document.activeElement) ||
-      isKeyboardClosing(openedSize, next.height)
-    )
-  }
 
   useEventListener(
     () => (open.value ? window : undefined),
     'resize',
     () => {
-      if (!isOnScreenKeyboardResize()) {
+      const next = readViewportSize()
+      if (!viewportSize || !isOnScreenKeyboardResize(viewportSize, next)) {
         open.value = false
         return
       }
-      keyboardViewportHeight = window.innerHeight
+      viewportSize = next
     }
   )
   useEventListener(
