@@ -11,9 +11,11 @@ import {
   BACKGROUND_TAB_CASE,
   backgroundEdits,
   backgroundTabChats,
-  FOREGROUND_NAME
+  FOREGROUND_NAME,
+  USER_NOTE_POSITION
 } from '@e2e/fixtures/data/agent/backgroundTabEdits'
 import { AgentWorkflowChatsMock } from '@e2e/fixtures/helpers/agentWorkflowChats'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 test.describe(
   'Agent edits to a background workflow tab',
@@ -21,14 +23,10 @@ test.describe(
   () => {
     test.use({ conversationCase: BACKGROUND_TAB_CASE })
 
-    test('are on the canvas when the user returns to that tab', async ({
-      agentConversation,
-      page
-    }) => {
+    test.beforeEach(async ({ agentConversation, page }) => {
       test.setTimeout(120_000)
       const panel = new AgentPanel(page)
       const topbar = agentConversation.topbar
-      const aId = agentConversation.conversation.workflow.id
       const aRequest = agentConversation.conversation.turns[0].request.content
 
       await test.step('agent edits workflow A', () =>
@@ -42,7 +40,7 @@ test.describe(
         })
         await new AgentWorkflowChatsMock(
           backgroundTabChats({
-            id: aId,
+            id: agentConversation.conversation.workflow.id,
             threadId: THREAD_ID,
             request: aRequest
           })
@@ -60,9 +58,21 @@ test.describe(
         ).toBeVisible()
       })
 
-      await test.step('user returns to A, then switches to B by its tab', async () => {
+      await test.step('user returns to A by its tab', async () => {
         await topbar.getWorkflowTab(FOREGROUND_NAME).click()
         await expect(panel.userMessageBubbles).toHaveText([aRequest])
+      })
+    })
+
+    test('are on the canvas when the user returns to that tab', async ({
+      agentConversation,
+      page
+    }) => {
+      const panel = new AgentPanel(page)
+      const topbar = agentConversation.topbar
+      const aRequest = agentConversation.conversation.turns[0].request.content
+
+      await test.step('user switches to B by its tab', async () => {
         await topbar.getWorkflowTab(BACKGROUND.name).click()
         await expect(panel.userMessageBubbles).toHaveText([BACKGROUND.request])
         await expect(
@@ -85,6 +95,45 @@ test.describe(
               .getNodeLocator(String(id))
               .getByTestId('node-title')
           ).toHaveText(title)
+      })
+    })
+
+    test('do not rebind a tab the user edited while its chat was loading', async ({
+      agentConversation,
+      page
+    }) => {
+      const panel = new AgentPanel(page)
+      const topbar = agentConversation.topbar
+      const subscribesBefore = agentConversation.subscribeCount(BACKGROUND.id)
+      const transcript = await agentConversation.holdTranscript(
+        BACKGROUND.threadId
+      )
+
+      const noteId =
+        await test.step('user edits B before its chat loads', async () => {
+          await topbar.getWorkflowTab(BACKGROUND.name).click()
+          await transcript.requested
+          const id = await agentConversation.addNoteThroughSearchBox({
+            x: USER_NOTE_POSITION[0],
+            y: USER_NOTE_POSITION[1]
+          })
+          await expect(
+            agentConversation.vueNodes.getNodeLocator(id)
+          ).toBeVisible()
+          return id
+        })
+
+      await test.step('B stays unbound and keeps the edit', async () => {
+        transcript.release()
+        await expect(panel.userMessageBubbles).toHaveText([BACKGROUND.request])
+        await nextFrame(page)
+        await nextFrame(page)
+        expect(agentConversation.subscribeCount(BACKGROUND.id)).toBe(
+          subscribesBefore
+        )
+        await expect(
+          agentConversation.vueNodes.getNodeLocator(noteId)
+        ).toBeVisible()
       })
     })
   }

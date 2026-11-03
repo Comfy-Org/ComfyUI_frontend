@@ -941,6 +941,25 @@ export class AgentConversationHarness {
     for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
   }
 
+  /** Holds `threadId`'s transcript reads until `release` is called. */
+  async holdTranscript(
+    threadId: string
+  ): Promise<{ requested: Promise<void>; release: () => void }> {
+    let release!: () => void
+    let reached!: () => void
+    const held = new Promise<void>((resolve) => (release = resolve))
+    const requested = new Promise<void>((resolve) => (reached = resolve))
+    await this.page.route(
+      `**/api/agent/threads/${threadId}/messages`,
+      async (route) => {
+        reached()
+        await held
+        return route.fallback()
+      }
+    )
+    return { requested, release }
+  }
+
   /** Serves a second workflow's document beside the recorded one. */
   serveWorkflow(workflowId: string, seed: WorkflowJSON): void {
     this.hostSocket.addWorkflow(

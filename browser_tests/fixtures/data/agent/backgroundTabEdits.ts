@@ -95,3 +95,5 @@ export function backgroundTabChats(
     )
   }
 }
+
+export const USER_NOTE_POSITION: [number, number] = [400, 400]

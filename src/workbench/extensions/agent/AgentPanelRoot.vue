@@ -1267,10 +1267,18 @@ function boundRootGraphId(): RootGraphId | null {
 function followerCanDeliver(): boolean {
   return isFollowerActive.value && subscriptionSent()
 }
+function noteUnboundVisibleIntent(): void {
+  const visible = workflowStore.activeWorkflow
+  const workflowId = visible
+    ? bindingStore.workflowIdFor(visible.path)
+    : undefined
+  if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
+}
 const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
   onUnboundLocalIntent: noteUnboundLocalIntent,
+  onUnboundVisibleIntent: noteUnboundVisibleIntent,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
