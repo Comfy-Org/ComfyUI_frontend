@@ -76,15 +76,21 @@ export function sentryThirdPartyErrorFilter(
 
 export function tagSentryNonFirstPartyOrigin(event: ErrorEvent): ErrorEvent {
   try {
-    const frame = event.exception?.values?.at(-1)?.stacktrace?.frames?.at(-1)
-    const path = frame?.abs_path ?? frame?.filename
-    if (
-      !path ||
-      path.trim() === '' ||
-      path === '<anonymous>' ||
-      path === '[native code]'
-    )
-      return event
+    const frames = event.exception?.values?.at(-1)?.stacktrace?.frames ?? []
+    let path: string | undefined
+    for (let index = frames.length - 1; index >= 0; index--) {
+      const candidate = frames[index]?.abs_path ?? frames[index]?.filename
+      const normalized = candidate?.trim()
+      if (
+        normalized &&
+        normalized !== '<anonymous>' &&
+        normalized !== '[native code]'
+      ) {
+        path = normalized
+        break
+      }
+    }
+    if (!path) return event
 
     const origin = classifyTelemetryErrorOrigin(path)
     if (origin.origin === 'first_party') return event
