@@ -40,6 +40,7 @@ import {
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
+  zAgentWorkflowDraft,
   zAttachmentRejection,
   zCloudWorkflowIndex
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -51,6 +52,7 @@ import type {
   AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
+  AgentWorkflowDraft,
   CloudWorkflowEntry
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -87,6 +89,7 @@ type AgentApiOperation =
   | 'cancel_thread_message'
   | 'get_agent_identity'
   | 'get_cloud_workflow'
+  | 'get_workflow_draft'
   | 'get_models'
   | 'get_run_mode'
   | 'get_thread_messages'
@@ -787,6 +790,17 @@ export function createAgentRestClient() {
     return { entries: items, complete: stopReason === undefined }
   }
 
+  async function getWorkflowDraft(
+    workflowId: string
+  ): Promise<AgentWorkflowDraft> {
+    return request(
+      'get_workflow_draft',
+      `/agent/draft?workflow_id=${encodeURIComponent(workflowId)}`,
+      { method: 'GET' },
+      zAgentWorkflowDraft
+    )
+  }
+
   async function getCloudWorkflow(
     workflowId: string
   ): Promise<WorkflowResponse> {
@@ -862,6 +876,7 @@ export function createAgentRestClient() {
     getModels,
     listCloudWorkflows,
     getCloudWorkflow,
+    getWorkflowDraft,
     cancelMessage,
     answerAsk,
     refreshCredential,

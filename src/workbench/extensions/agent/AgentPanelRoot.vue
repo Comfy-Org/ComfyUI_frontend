@@ -60,6 +60,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -508,6 +509,7 @@ const {
   canSelectTarget: () => !isSending.value && status.value === 'idle',
   warnWorkflowUnavailable,
   warnRestoreFailed,
+  loadHostWorkflow,
   onTargetBound: (workflowId, previousWorkflowId, source) =>
     reportWorkflowBound(workflowId, previousWorkflowId, source)
 })
@@ -858,6 +860,13 @@ function onWorkflowAdopted(
 
 function warnWorkflowUnavailable(): void {
   toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
+}
+
+async function loadHostWorkflow(
+  workflowId: string
+): Promise<ComfyWorkflowJSON | null> {
+  const draft = await rest.getWorkflowDraft(workflowId)
+  return validateComfyWorkflow(draft.content, () => {})
 }
 
 function warnRestoreFailed(): void {

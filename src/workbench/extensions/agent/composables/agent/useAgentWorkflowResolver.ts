@@ -264,6 +264,7 @@ export function useAgentWorkflowResolver({
     storedWorkflowFor,
     cloudListingIncludes,
     cloudListingOmits,
+    listedNameFor: indexedNameFor,
     cloudWorkflowLifecycle,
     openWorkflowFor,
     availableWorkflowReferences,

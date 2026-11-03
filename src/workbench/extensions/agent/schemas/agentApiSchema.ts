@@ -410,6 +410,17 @@ export const zAgentModels = z.object({
   default: z.string().min(1)
 })
 
+/**
+ * A local host's copy of a workflow's graph (GET /agent/draft). Only local
+ * hosts serve it; the content is validated as a workflow where it is used.
+ */
+export const zAgentWorkflowDraft = z.object({
+  workflow_id: z.string(),
+  content: z.unknown(),
+  version: z.number()
+})
+
+export type AgentWorkflowDraft = z.infer<typeof zAgentWorkflowDraft>
 export type AgentModelChoice = z.infer<typeof zAgentModelChoice>
 export type AgentModels = z.infer<typeof zAgentModels>
 

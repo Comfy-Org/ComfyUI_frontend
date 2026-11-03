@@ -8772,6 +8772,79 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
+  it('reopens a chat workflow from the host copy when this browser has none', async () => {
+    makeTab('wf-42')
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/agent/draft'))
+        return json(200, {
+          workflow_id: 'wf-elsewhere',
+          version: 3,
+          content: {
+            version: 0.4,
+            last_node_id: 0,
+            last_link_id: 0,
+            nodes: [],
+            links: [],
+            groups: [],
+            config: {},
+            extra: {}
+          }
+        })
+      if (url.includes('/messages'))
+        return json(200, [
+          {
+            id: 'history-user',
+            thread_id: 'th-history',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'history-turn',
+            workflow_id: 'wf-elsewhere',
+            content: { text: 'Historical prompt' }
+          }
+        ])
+      if (url.includes('/agent/threads'))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-history',
+              title: 'Earlier chat',
+              last_message_at: '2026-09-01T00:00:00Z'
+            })
+          ])
+        )
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [{ id: 'wf-elsewhere', name: 'Unsaved Workflow (2)' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      return json(200, {})
+    })
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Earlier chat'))
+
+    await screen.findAllByText('Historical prompt')
+    expect(
+      screen.queryByText(i18n.global.t('agent.historyOpenFailed'))
+    ).toBeNull()
+    const reopened = useAgentPanelStore().selectedWorkflow
+    assert.exists(reopened)
+    expect(reopened.isTemporary).toBe(true)
+    expect(reopened.filename).toBe('Unsaved Workflow (2)')
+    expect(workflowStore.activeWorkflow?.path).toBe(reopened.path)
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-elsewhere')).toBe(
+      reopened.path
+    )
+    expect(useAgentPanelStore().targetUnavailable).toBe(false)
+  })
+
   it('does not commit a pending selection after its tab closes', async () => {
     const current = makeTab('wf-42')
     const scratch = addTab('workflows/scratch.json', { isTemporary: true })
