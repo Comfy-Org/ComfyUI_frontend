@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -28,6 +29,9 @@ function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
   const panel = useAgentPanelStore()
   panel.beginWorkflowRestoration()
   const warnRestoreFailed = vi.fn()
+  const loadHostWorkflow = vi.fn(
+    async (_workflowId: string): Promise<ComfyWorkflowJSON | null> => null
+  )
   const listCloudWorkflows = vi.fn(
     async (): Promise<CloudWorkflowListing> =>
       listing([
@@ -84,7 +88,8 @@ function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
           resolver,
           canSelectTarget: () => true,
           warnWorkflowUnavailable: vi.fn(),
-          warnRestoreFailed
+          warnRestoreFailed,
+          loadHostWorkflow
         })
         return () => null
       }
@@ -102,7 +107,21 @@ function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
     listCloudWorkflows,
     getCloudWorkflow,
     cloudRows,
-    warnRestoreFailed
+    warnRestoreFailed,
+    loadHostWorkflow
+  }
+}
+
+function hostGraph(): ComfyWorkflowJSON {
+  return {
+    version: 0.4,
+    last_node_id: 0,
+    last_link_id: 0,
+    nodes: [],
+    links: [],
+    groups: [],
+    config: {},
+    extra: {}
   }
 }
 
@@ -369,6 +388,73 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow).toBeNull()
     expect(panel.targetUnavailable).toBe(true)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
+  it('reopens a listed workflow from the host copy in a new tab bound to the chat', async () => {
+    const {
+      selection,
+      workflows,
+      bindings,
+      panel,
+      loadHostWorkflow,
+      warnRestoreFailed
+    } = setup()
+    loadHostWorkflow.mockResolvedValueOnce(hostGraph())
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(true)
+
+    expect(loadHostWorkflow).toHaveBeenCalledWith('wf-saved')
+    const reopened = workflows.activeWorkflow
+    assert.exists(reopened)
+    expect(reopened.isTemporary).toBe(true)
+    expect(reopened.filename).toBe('saved')
+    expect(bindings.tabPathFor('wf-saved')).toBe(reopened.path)
+    expect(panel.selectedWorkflow?.path).toBe(reopened.path)
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { host: 'has no copy', load: async () => null },
+    {
+      host: 'fails',
+      load: async (): Promise<never> => {
+        throw new Error('offline')
+      }
+    }
+  ])(
+    'opens the chat with its workflow unavailable when the host $host',
+    async ({ load }) => {
+      const { selection, workflows, panel, current, loadHostWorkflow } =
+        setup()
+      loadHostWorkflow.mockImplementationOnce(load)
+
+      expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(true)
+
+      expect(workflows.activeWorkflow?.path).toBe(current.path)
+      expect(panel.targetUnavailable).toBe(true)
+    }
+  )
+
+  it('does not reopen the host copy for a superseded restoration', async () => {
+    const { selection, workflows, panel, current, loadHostWorkflow } = setup()
+    let finishLoad = (_graph: ComfyWorkflowJSON | null) => {}
+    loadHostWorkflow.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishLoad = resolve
+        })
+    )
+    let stillCurrent = true
+    const restoration = selection.restoreTarget('wf-saved', () => stillCurrent)
+    await vi.waitFor(() => expect(loadHostWorkflow).toHaveBeenCalled())
+
+    stillCurrent = false
+    finishLoad(hostGraph())
+
+    expect((await restoration).ready).toBe(false)
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.targetUnavailable).toBe(false)
   })
 
   it('opens the chat with its workflow unavailable when two saved workflows share its name', async () => {

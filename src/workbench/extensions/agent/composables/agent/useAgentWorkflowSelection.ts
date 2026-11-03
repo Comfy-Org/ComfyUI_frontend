@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type { AgentWorkflowBindSource } from '@/platform/telemetry/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
@@ -60,6 +61,11 @@ interface WorkflowSelectionOptions {
   canSelectTarget: () => boolean
   warnWorkflowUnavailable: () => void
   warnRestoreFailed: () => void
+  /**
+   * The graph a local host keeps for a workflow, or null when it has none.
+   * Lets a browser with no copy of a chat's workflow reopen it.
+   */
+  loadHostWorkflow?: (workflowId: string) => Promise<ComfyWorkflowJSON | null>
   onTargetBound?: (
     workflowId: string,
     previousWorkflowId: string | null,
@@ -72,6 +78,7 @@ export function useAgentWorkflowSelection({
   canSelectTarget,
   warnWorkflowUnavailable,
   warnRestoreFailed,
+  loadHostWorkflow,
   onTargetBound
 }: WorkflowSelectionOptions) {
   const workflowStore = useWorkflowStore()
@@ -94,6 +101,7 @@ export function useAgentWorkflowSelection({
     storedWorkflowFor,
     cloudListingIncludes,
     cloudListingOmits,
+    listedNameFor,
     cloudWorkflowLifecycle
   } = resolver
   const editableWorkflowId = computed(() =>
@@ -351,6 +359,8 @@ export function useAgentWorkflowSelection({
         target = storedWorkflowFor(workflowId)
       }
       if (target === null && listed) {
+        const reopened = await reopenFromHost(workflowId, isCurrent)
+        if (reopened !== null) return reopened
         panelStore.markWorkflowTargetUnavailable()
         return NOT_RESTORED
       }
@@ -377,6 +387,28 @@ export function useAgentWorkflowSelection({
 
   function adoptTarget(workflow: ComfyWorkflow, workflowId: string): void {
     commitWorkflowTarget(workflow, workflowId, 'restored')
+  }
+
+  /**
+   * Opens the host's copy of the workflow in a new tab bound to the chat.
+   * Null when there is no copy or it does not open, so the caller falls back
+   * to marking the workflow unavailable.
+   */
+  async function reopenFromHost(
+    workflowId: string,
+    isCurrent: () => boolean
+  ): Promise<WorkflowRestoration | null> {
+    if (!loadHostWorkflow) return null
+    const data = await loadHostWorkflow(workflowId).catch(() => null)
+    if (!isCurrent()) return RESTORE_ABANDONED
+    if (data === null) return null
+    const name = listedNameFor(workflowId) ?? 'Unsaved Workflow'
+    const tab = workflowStore.createTemporary(`${name}.json`, data)
+    const opened = await workflowService.openWorkflow(tab, { isCurrent })
+    if (!isCurrent()) return RESTORE_ABANDONED
+    if (!opened) return null
+    commitWorkflowTarget(tab, workflowId, 'restored')
+    return { ready: true, committedWorkflowId: workflowId }
   }
 
   function cancelSelection(): void {
