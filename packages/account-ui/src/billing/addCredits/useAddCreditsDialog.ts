@@ -141,7 +141,9 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
       if (cents === undefined) return
       const scope = new AbortController()
       quoteScope = scope
-      const result = await ports.quote(cents, scope.signal)
+      const result = await ports
+        .quote(cents, scope.signal)
+        .catch((): AddCreditsQuoteResult => ({ status: 'error' }))
       if (scope.signal.aborted) return
       quoteRead.value = {
         cents,
@@ -175,7 +177,12 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     })
     const scope = new AbortController()
     checkoutScope = scope
-    const session = await ports.createCheckout(amountCents, scope.signal)
+    const session = await ports
+      .createCheckout(amountCents, scope.signal)
+      .catch((): AddCreditsCheckoutResult => ({
+        status: 'error',
+        refusal: { kind: 'checkout_failed' }
+      }))
     if (scope.signal.aborted) {
       tab?.close()
       dispatch({ type: 'checkout_abandoned' })

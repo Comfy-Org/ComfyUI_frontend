@@ -198,7 +198,10 @@ const BLOCKING_REFUSALS: ReadonlySet<AddCreditsRefusal['kind']> = new Set([
   'not_allowed'
 ])
 
-function blocks(refusal: AddCreditsRefusal | undefined): boolean {
+/** A refusal that holds Continue and Reopen until the server lifts it. */
+export function addCreditsRefusalBlocks(
+  refusal: AddCreditsRefusal | undefined
+): boolean {
   return refusal !== undefined && BLOCKING_REFUSALS.has(refusal.kind)
 }
 
@@ -235,6 +238,7 @@ export function viewAddCreditsAmount(
     notice,
     locked,
     opening,
-    canContinue: !locked && check.status === 'valid' && !blocks(refusal)
+    canContinue:
+      !locked && check.status === 'valid' && !addCreditsRefusalBlocks(refusal)
   }
 }

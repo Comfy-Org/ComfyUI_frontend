@@ -43,9 +43,14 @@ class FakePorts implements AddCreditsPorts {
   landed: (() => void) | undefined
   watchStopped = false
 
+  quoteRejects = false
+  checkoutRejects = false
+
   quote = (amountCents: number): Promise<AddCreditsQuoteResult> => {
     this.quotes.push(amountCents)
     if (this.quoteHeld) return new Promise(() => {})
+    if (this.quoteRejects)
+      return Promise.reject(new TypeError('Failed to fetch'))
     return Promise.resolve(
       this.quoteFails
         ? { status: 'error' }
@@ -55,6 +60,8 @@ class FakePorts implements AddCreditsPorts {
 
   createCheckout = (amountCents: number) => {
     this.checkouts.push(amountCents)
+    if (this.checkoutRejects)
+      return Promise.reject(new TypeError('Failed to fetch'))
     return new Promise<AddCreditsCheckoutResult>((resolve) => {
       this.checkoutHeld = resolve
       if (this.checkoutAnswer) resolve(this.checkoutAnswer)
@@ -226,18 +233,32 @@ describe('AddCreditsDialog amount step', () => {
     )
   })
 
-  it('shows a skeleton while quoting and "— credits" when the quote fails', async () => {
-    const held = renderDialog()
-    held.ports.quoteHeld = true
-    await held.user.click(preset('$10'))
-    expect(screen.getByTestId('add-credits-credits-loading')).toBeVisible()
-    held.unmount()
+  it('shows a skeleton while the quote is pending', async () => {
+    const { ports, user } = renderDialog()
+    ports.quoteHeld = true
 
-    const failing = renderDialog()
-    failing.ports.quoteFails = true
-    await failing.user.click(preset('$10'))
+    await user.click(preset('$10'))
+
+    expect(screen.getByTestId('add-credits-credits-loading')).toBeVisible()
+  })
+
+  it('shows "— credits" when the quote fails and keeps Continue enabled', async () => {
+    const { ports, user } = renderDialog()
+    ports.quoteFails = true
+
+    await user.click(preset('$10'))
+
     expect(await within(summary()).findByText('— credits')).toBeVisible()
     expect(continueButton()).toBeEnabled()
+  })
+
+  it('shows "— credits" when the quote port rejects', async () => {
+    const { ports, user } = renderDialog()
+    ports.quoteRejects = true
+
+    await user.click(preset('$10'))
+
+    expect(await within(summary()).findByText('— credits')).toBeVisible()
   })
 
   it('an earlier payment still processing keeps Continue enabled', () => {
@@ -315,6 +336,17 @@ describe('AddCreditsDialog checkout hand-off', () => {
     expect(continueButton()).toBeEnabled()
   })
 
+  it('a rejected checkout port closes the reserved tab and keeps Continue', async () => {
+    const { ports, user } = renderDialog()
+    ports.checkoutRejects = true
+
+    await user.click(continueButton())
+
+    expect(ports.tabs[0].closed).toBe(true)
+    expect(notice()).toHaveTextContent("Couldn't open checkout")
+    expect(continueButton()).toBeEnabled()
+  })
+
   it('reopen creates a fresh checkout', async () => {
     const { ports, user } = renderDialog()
 
@@ -323,6 +355,20 @@ describe('AddCreditsDialog checkout hand-off', () => {
 
     expect(ports.checkouts).toEqual([5000, 5000])
     expect(ports.tabs[1].url).toBe(CHECKOUT_URL)
+  })
+
+  it('a rate limit on reopen shows its copy and disables Reopen', async () => {
+    const { ports, user } = renderDialog()
+    await user.click(continueButton())
+    ports.refuse({ kind: 'rate_limited', retryAfterSeconds: 2400 })
+
+    await user.click(screen.getByTestId('add-credits-reopen'))
+
+    expect(notice()).toHaveTextContent("You've hit the top-up limit for now")
+    expect(notice()).toHaveTextContent(
+      'Try again in 40 minutes, or message support.'
+    )
+    expect(screen.getByTestId('add-credits-reopen')).toBeDisabled()
   })
 
   it('offers a plain link to the session when the pop-up is blocked', async () => {
@@ -348,39 +394,32 @@ describe('AddCreditsDialog checkout hand-off', () => {
 })
 
 describe('AddCreditsDialog refusals', () => {
-  it.for([
+  it.for<{ refusal: AddCreditsRefusal; wait: string }>([
     {
-      retryAfterSeconds: 2400,
+      refusal: { kind: 'rate_limited', retryAfterSeconds: 2400 },
       wait: 'Try again in 40 minutes, or message support.'
     },
     {
-      retryAfterSeconds: 3600,
+      refusal: { kind: 'rate_limited', retryAfterSeconds: 3600 },
       wait: 'Try again in an hour, or message support.'
     },
     {
-      retryAfterSeconds: undefined,
+      refusal: { kind: 'rate_limited' },
       wait: 'Try again later, or message support.'
     }
-  ])(
-    'rate limited for $retryAfterSeconds seconds',
-    async ({ retryAfterSeconds, wait }) => {
-      const { ports, user } = renderDialog()
-      ports.refuse(
-        retryAfterSeconds === undefined
-          ? { kind: 'rate_limited' }
-          : { kind: 'rate_limited', retryAfterSeconds }
-      )
+  ])('rate limited, shows "$wait"', async ({ refusal, wait }) => {
+    const { ports, user } = renderDialog()
+    ports.refuse(refusal)
 
-      await user.click(continueButton())
+    await user.click(continueButton())
 
-      expect(notice()).toHaveTextContent("You've hit the top-up limit for now")
-      expect(notice()).toHaveTextContent(wait)
-      expect(
-        within(notice()).getByRole('link', { name: 'message support' })
-      ).toHaveAttribute('href', SUPPORT_URL)
-      expect(continueButton()).toBeDisabled()
-    }
-  )
+    expect(notice()).toHaveTextContent("You've hit the top-up limit for now")
+    expect(notice()).toHaveTextContent(wait)
+    expect(
+      within(notice()).getByRole('link', { name: 'message support' })
+    ).toHaveAttribute('href', SUPPORT_URL)
+    expect(continueButton()).toBeDisabled()
+  })
 
   it('purchases stopped after Continue', async () => {
     const { ports, user } = renderDialog()

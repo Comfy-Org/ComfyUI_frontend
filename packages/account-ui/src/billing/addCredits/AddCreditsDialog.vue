@@ -63,8 +63,9 @@
       v-else-if="state.step === 'checkout_opened'"
       :amount-cents="state.amountCents"
       :credits="openedCredits"
-      :refused="state.refusal !== undefined"
-      :can-reopen="canTopUp"
+      :refusal="state.refusal"
+      :can-reopen="canTopUp && !addCreditsRefusalBlocks(state.refusal)"
+      :support-url
       :translate
       :format
       :ui
@@ -88,6 +89,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import {
   ADD_CREDITS_FALLBACK_BOUNDS,
+  addCreditsRefusalBlocks,
   addCreditsRefusalForDenial,
   initialAddCreditsAmount,
   translateAddCreditsDefault

@@ -30,7 +30,7 @@
       :id="errorId"
       :class="cn('m-0 min-h-5 text-destructive', ui.error)"
       data-testid="add-credits-amount-error"
-      :aria-live="error ? 'polite' : undefined"
+      aria-live="polite"
     >
       {{ error }}
     </p>

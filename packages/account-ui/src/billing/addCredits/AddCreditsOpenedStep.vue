@@ -16,17 +16,14 @@
         <dd class="m-0 tabular-nums">{{ format.money(amountCents) }}</dd>
       </div>
     </dl>
-    <div
-      v-if="refused"
-      role="alert"
-      class="flex gap-2 rounded-lg border border-solid border-warning/60 bg-warning/10 p-3"
-    >
-      <i
-        class="mt-0.5 icon-[lucide--circle-alert] text-warning"
-        aria-hidden="true"
-      />
-      <span>{{ translate('checkoutFailed.title') }}</span>
-    </div>
+    <AddCreditsNotice
+      v-if="refusalCopy"
+      :copy="refusalCopy"
+      :kind="refusal?.kind"
+      :support-url
+      :support-label="translate('messageSupport')"
+      :notice-class="ui.notice"
+    />
   </div>
   <div :class="footerBarClass(ui, 'justify-end')">
     <button
@@ -57,23 +54,42 @@
 </template>
 
 <script setup lang="ts">
-import type { AddCreditsTranslate } from '@comfyorg/account-core/billing'
+import { computed } from 'vue'
+
+import type {
+  AddCreditsRefusal,
+  AddCreditsTranslate
+} from '@comfyorg/account-core/billing'
 import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import AddCreditsNotice from './AddCreditsNotice.vue'
 import type { AddCreditsFormat, AddCreditsUi } from './addCreditsPresentation'
-import { footerBarClass } from './addCreditsPresentation'
+import { footerBarClass, noticeCopyFor } from './addCreditsPresentation'
 
-const { amountCents, credits, refused, canReopen, translate, format, ui } =
-  defineProps<{
-    amountCents: number
-    credits: string
-    refused: boolean
-    canReopen: boolean
-    translate: AddCreditsTranslate
-    format: AddCreditsFormat
-    ui: AddCreditsUi
-  }>()
+const {
+  amountCents,
+  credits,
+  refusal,
+  canReopen,
+  supportUrl,
+  translate,
+  format,
+  ui
+} = defineProps<{
+  amountCents: number
+  credits: string
+  refusal: AddCreditsRefusal | undefined
+  canReopen: boolean
+  supportUrl: string
+  translate: AddCreditsTranslate
+  format: AddCreditsFormat
+  ui: AddCreditsUi
+}>()
 
 const emit = defineEmits<{ reopen: []; close: [] }>()
+
+const refusalCopy = computed(() =>
+  noticeCopyFor(refusal && { kind: 'refusal', refusal }, { translate, format })
+)
 </script>
