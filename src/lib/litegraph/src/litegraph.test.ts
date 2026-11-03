@@ -1,5 +1,5 @@
 import { clamp } from 'es-toolkit/compat'
-import { describe, expect } from 'vitest'
+import { describe, expect, vi } from 'vitest'
 
 import {
   LiteGraphGlobal,
@@ -43,6 +43,28 @@ describe('Litegraph module', () => {
 
     liteGraph.unregisterNodeType('test/second')
     expect(liteGraph.Nodes.SharedNode).toBeUndefined()
+  })
+
+  test('fills deferred slot type tables once, on first read', () => {
+    const liteGraph = new LiteGraphGlobal()
+    const fill = vi.fn(() => {
+      liteGraph.slot_types_default_out.IMAGE = ['Reroute', 'SaveImage']
+    })
+    liteGraph.deferSlotTypeTables(fill)
+    const PreviewNode = class extends LGraphNode {
+      static override type = 'PreviewImage'
+    }
+
+    liteGraph.registerNodeAndSlotType(new PreviewNode('Preview'), 'IMAGE')
+    expect(fill).not.toHaveBeenCalled()
+
+    expect(liteGraph.slot_types_default_out).toEqual({
+      IMAGE: ['Reroute', 'SaveImage']
+    })
+    expect(liteGraph.registered_slot_in_types).toEqual({
+      IMAGE: { nodes: ['PreviewImage'] }
+    })
+    expect(fill).toHaveBeenCalledTimes(1)
   })
 })
 

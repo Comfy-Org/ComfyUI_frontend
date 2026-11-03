@@ -12,6 +12,10 @@
         <SearchInput
           ref="searchBoxRef"
           v-model="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="
+            $t('g.searchPlaceholder', { subject: $t('g.nodes') })
+          "
           :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
           @search="handleSearch"
         />
@@ -97,7 +101,7 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { mapValues } from 'es-toolkit'
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import {
   computed,
   nextTick,
@@ -109,13 +113,13 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import FilterDropdown from '@/components/common/FilterDropdown.vue'
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
-import TabPanel from '@/components/tab/TabPanel.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import MenuRadioGroup from '@/components/ui/menu/MenuRadioGroup.vue'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import TabPanel from '@comfyorg/design-system/tab/TabPanel'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
@@ -126,16 +130,16 @@ import {
   DEFAULT_TAB_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { buildNodeDefTree, useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   NodeCategoryId,
+  NodeLibrarySection,
   NodeSection,
   SortingStrategyId,
   TabId
 } from '@/types/nodeOrganizationTypes'
 import type {
-  NodeLibrarySection,
   RenderedTreeExplorerNode,
   TreeNode
 } from '@/types/treeExplorerTypes'
@@ -145,7 +149,7 @@ import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
 import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
-import SidebarTopArea from './SidebarTopArea.vue'
+import SidebarTopArea from '@comfyorg/design-system/navigation/SidebarTopArea'
 
 const { flags } = useFeatureFlags()
 
@@ -241,7 +245,7 @@ const sections = computed(() => {
   return nodeOrganizationService.organizeNodesTab(activeNodes.value)
 })
 
-function getFolderIcon(node: TreeNode): string {
+function getFolderIcon(node: TreeNode<ComfyNodeDefImpl>): string {
   const firstLeaf = findFirstLeaf(node)
   if (
     firstLeaf?.data?.api_node &&
@@ -252,7 +256,9 @@ function getFolderIcon(node: TreeNode): string {
   return 'icon-[lucide--folder]'
 }
 
-function findFirstLeaf(node: TreeNode): TreeNode | undefined {
+function findFirstLeaf(
+  node: TreeNode<ComfyNodeDefImpl>
+): TreeNode<ComfyNodeDefImpl> | undefined {
   if (node.leaf) return node
   for (const child of node.children ?? []) {
     const leaf = findFirstLeaf(child)
@@ -262,7 +268,7 @@ function findFirstLeaf(node: TreeNode): TreeNode | undefined {
 }
 
 function fillNodeInfo(
-  node: TreeNode
+  node: TreeNode<ComfyNodeDefImpl>
 ): RenderedTreeExplorerNode<ComfyNodeDefImpl> {
   const children = node.children?.map(fillNodeInfo)
   const totalLeaves = node.leaf
@@ -271,7 +277,7 @@ function fillNodeInfo(
 
   return {
     key: node.key,
-    label: node.leaf ? node.data?.display_name : node.label,
+    label: node.leaf ? (node.data?.display_name ?? node.label) : node.label,
     leaf: node.leaf,
     data: node.data,
     icon: node.leaf ? 'icon-[comfy--node]' : getFolderIcon(node),
@@ -281,7 +287,9 @@ function fillNodeInfo(
   }
 }
 
-function applySorting(tree: TreeNode): TreeNode {
+function applySorting(
+  tree: TreeNode<ComfyNodeDefImpl>
+): TreeNode<ComfyNodeDefImpl> {
   if (sortOrder.value === 'alphabetical') {
     return sortedTree(tree, { groupLeaf: true })
   }
@@ -316,7 +324,7 @@ const renderedSections = computed(() =>
   )
 )
 
-function collectFolderKeys(node: TreeNode): string[] {
+function collectFolderKeys(node: TreeNode<ComfyNodeDefImpl>): string[] {
   if (node.leaf) return []
   const keys = [node.key]
   for (const child of node.children ?? []) {

@@ -1,3 +1,4 @@
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -7,8 +8,9 @@ import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { i18n } from '@/i18n'
 import {
@@ -21,7 +23,6 @@ import {
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
 import {
-  cachedLegacyBillingMigrationEnabled,
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
@@ -30,7 +31,13 @@ import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
+import {
+  startDesktopHostSession,
+  stopDesktopHostSession
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { partnerNodeTokens } from '@/platform/auth/partnerNode/partnerNodeTokens'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -44,7 +51,7 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -59,56 +66,21 @@ type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
  */
 const mockAuth = fromPartial<Auth>({ currentUser: null })
 
-// Mock fetch
-const mockFetch = vi.fn()
+const CUSTOMERS_URL = /\/customers$/
+const CUSTOMER_POST = { method: 'POST', url: CUSTOMERS_URL }
 
 const customerRequestBody = (): Record<string, unknown> | undefined => {
-  const customerCall = mockFetch.mock.calls.find(([url]) =>
-    String(url).endsWith('/customers')
-  )
-  const body = customerCall?.[1]?.body
+  const body = fetchRequests(CUSTOMERS_URL)[0]?.body
   return typeof body === 'string'
     ? (JSON.parse(body) as Record<string, unknown>)
     : undefined
 }
 
-// Mock successful API responses
-const mockCreateCustomerResponse = {
-  ok: true,
-  statusText: 'OK',
-  json: () => Promise.resolve({ id: 'test-customer-id' })
-}
-
-const mockFetchBalanceResponse = {
-  ok: true,
-  json: () => Promise.resolve({ balance: 0 })
-}
-
-const mockAddCreditsResponse = {
-  ok: true,
-  statusText: 'OK',
-  json: () => Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
-}
-
-const mockAccessBillingPortalResponse = {
-  ok: true,
-  statusText: 'OK',
-  json: () =>
-    Promise.resolve({ billing_portal_url: 'https://billing.stripe.com/test' })
-}
-
-// A failed API response shaped so parseErrorResponse can extract `message`
-// from the JSON body via `.text()` (the real Response contract).
-const mockErrorResponse = (status: number, message: string) => ({
-  ok: false,
-  status,
-  statusText: 'Error',
-  text: () => Promise.resolve(JSON.stringify({ message }))
-})
+const createCustomerResponse = () => Response.json({ id: 'test-customer-id' })
 
 vi.mock(import('firebase/auth'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 let mockResetSocket: Mock
 
@@ -136,7 +108,6 @@ describe('useAuthStore', () => {
 
   beforeEach(async () => {
     mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
-    vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
     // Setup dialog service mock
@@ -158,22 +129,7 @@ describe('useAuthStore', () => {
       }
     )
 
-    // Mock fetch responses
-    mockFetch.mockImplementation((url: string) => {
-      if (url.endsWith('/customers')) {
-        return Promise.resolve(mockCreateCustomerResponse)
-      }
-      if (url.endsWith('/customers/balance')) {
-        return Promise.resolve(mockFetchBalanceResponse)
-      }
-      if (url.endsWith('/customers/credit')) {
-        return Promise.resolve(mockAddCreditsResponse)
-      }
-      if (url.endsWith('/customers/billing')) {
-        return Promise.resolve(mockAccessBillingPortalResponse)
-      }
-      return Promise.reject(new Error('Unexpected API call'))
-    })
+    respondToFetch(CUSTOMERS_URL, createCustomerResponse)
 
     store = useAuthStore()
     await vi.waitFor(() => expect(store.isInitialized).toBe(true))
@@ -258,63 +214,23 @@ describe('useAuthStore', () => {
     await store.login('test@example.com', 'correct-password')
   })
 
-  describe('fetchBalance identity isolation', () => {
-    it('discards a late balance response from the previous account after an A->B switch', async () => {
-      let signalBalanceRequested: () => void = () => {}
-      const balanceRequested = new Promise<void>((resolve) => {
-        signalBalanceRequested = resolve
-      })
-      let resolveBalanceJson: (value: unknown) => void = () => {}
-      const balanceJson = new Promise((resolve) => {
-        resolveBalanceJson = resolve
-      })
-      mockFetch.mockImplementation((url: string) => {
-        if (url.endsWith('/customers/balance')) {
-          signalBalanceRequested()
-          return Promise.resolve({ ok: true, json: () => balanceJson })
-        }
-        return Promise.reject(new Error('Unexpected API call'))
-      })
+  describe('partner-node session revoke', () => {
+    it.for([
+      { name: 'sign-out', next: () => null, revokes: 1 },
+      {
+        name: 'an account switch',
+        next: () => ({ ...mockUser, uid: 'account-b' }),
+        revokes: 1
+      },
+      { name: 'the same account again', next: () => mockUser, revokes: 0 }
+    ])('revokes $revokes time(s) on $name', ({ next, revokes }) => {
+      const revokeAll = vi
+        .spyOn(partnerNodeTokens, 'revokeAll')
+        .mockResolvedValue(undefined)
 
-      // Request starts while account A is current.
-      const pending = store.fetchBalance()
-      await balanceRequested
+      authStateCallback(next())
 
-      // Firebase transitions directly to account B before the response lands.
-      authStateCallback({ ...mockUser, uid: 'account-b' })
-      resolveBalanceJson({ balance: 4242 })
-
-      expect(await pending).toBeNull()
-      expect(store.balance).toBeNull()
-    })
-  })
-
-  describe('fetchBalance', () => {
-    it('returns null when the customer record is not found (404)', async () => {
-      mockFetch.mockImplementation((url: string) =>
-        url.endsWith('/customers/balance')
-          ? Promise.resolve({ ok: false, status: 404, statusText: 'Not Found' })
-          : Promise.reject(new Error('Unexpected API call'))
-      )
-
-      const result = await store.fetchBalance()
-
-      expect(result).toBeNull()
-    })
-
-    it('throws with the parsed error message on a non-404 failure', async () => {
-      mockFetch.mockImplementation((url: string) =>
-        url.endsWith('/customers/balance')
-          ? Promise.resolve(mockErrorResponse(500, 'Balance service down'))
-          : Promise.reject(new Error('Unexpected API call'))
-      )
-
-      await expect(store.fetchBalance()).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.failedToFetchBalance', {
-          error: 'Balance service down'
-        })
-      })
+      expect(revokeAll).toHaveBeenCalledTimes(revokes)
     })
   })
 
@@ -391,7 +307,7 @@ describe('useAuthStore', () => {
     })
   })
 
-  describe('user-scoped billing endpoints with API-key sessions', () => {
+  describe('customer provisioning with API-key sessions', () => {
     beforeEach(() => {
       authStateCallback(null)
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
@@ -400,311 +316,14 @@ describe('useAuthStore', () => {
       vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue('test-api-key')
     })
 
-    it('fetchBalance sends the stored API key when no Firebase user exists', async () => {
-      const result = await store.fetchBalance()
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers/balance'),
-        expect.objectContaining({
-          headers: expect.objectContaining({ 'X-API-KEY': 'test-api-key' })
-        })
-      )
-      expect(result).toEqual({ balance: 0 })
-    })
-
-    it('fetchBalance throws userNotAuthenticated when neither credential exists', async () => {
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
-
-      await expect(store.fetchBalance()).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-      expect(mockFetch).not.toHaveBeenCalled()
-    })
-
-    it('drops a late balance response after the API key changes mid-flight', async () => {
-      let resolveBalance!: (value: unknown) => void
-      mockFetch.mockReturnValueOnce(
-        new Promise((resolve) => {
-          resolveBalance = resolve
-        })
-      )
-
-      const request = store.fetchBalance()
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      resolveBalance({ ok: true, json: () => Promise.resolve({ balance: 7 }) })
-
-      await expect(request).resolves.toBeNull()
-      expect(store.balance).toBeNull()
-    })
-
-    it('fetchBalance prefers the Firebase token over the API key when signed in', async () => {
-      authStateCallback(mockUser)
-
-      await store.fetchBalance()
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers/balance'),
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            Authorization: 'Bearer mock-id-token'
-          })
-        })
-      )
-      expect(
-        vi.mocked(useApiKeyAuthStore().getAuthHeader)
-      ).not.toHaveBeenCalled()
-    })
-
-    it('initiateCreditPurchase sends the stored API key when no Firebase user exists', async () => {
-      mockFetch.mockImplementation((url: string) => {
-        if (url.endsWith('/customers')) {
-          return Promise.resolve(mockCreateCustomerResponse)
-        }
-        if (url.endsWith('/customers/credit')) {
-          return Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
-          })
-        }
-        return Promise.reject(new Error('Unexpected API call'))
-      })
-
-      await store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers/credit'),
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({ 'X-API-KEY': 'test-api-key' })
-        })
-      )
-    })
-
-    it('accessBillingPortal sends the stored API key when no Firebase user exists', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({ billing_portal_url: 'https://stripe.test/portal' })
-      })
-
-      await store.accessBillingPortal()
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers/billing'),
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({ 'X-API-KEY': 'test-api-key' })
-        })
-      )
-    })
-
-    it('accessBillingPortal throws userNotAuthenticated when neither credential exists', async () => {
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
-
-      await expect(store.accessBillingPortal()).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-      expect(mockFetch).not.toHaveBeenCalled()
-    })
-    it('re-provisions the customer after the API key changes', async () => {
-      let customerPostCount = 0
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          customerPostCount++
-          return Promise.resolve(mockCreateCustomerResponse)
-        }
-        if (url.endsWith('/customers/credit')) {
-          return Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
-          })
-        }
-        return Promise.reject(new Error('Unexpected API call'))
-      })
-      const payload = { amount_micros: 5_000_000, currency: 'usd' }
-
-      await store.initiateCreditPurchase(payload)
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      await store.initiateCreditPurchase(payload)
-
-      expect(customerPostCount).toBe(2)
-    })
-
-    it('does not retry with the old API key after a mid-recovery switch', async () => {
-      const missingCustomerResponse = {
-        ok: false,
-        status: 409,
-        clone: () => ({
-          json: () => Promise.resolve({ message: 'Failed to find customer' })
-        }),
-        json: () => Promise.resolve({ message: 'Failed to find customer' }),
-        text: () =>
-          Promise.resolve(
-            JSON.stringify({ message: 'Failed to find customer' })
-          )
-      }
-      let resolveCreate!: (value: unknown) => void
-      let billingCallCount = 0
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          return new Promise((resolve) => {
-            resolveCreate = resolve
-          })
-        }
-        if (url.endsWith('/customers/billing')) {
-          billingCallCount++
-          return Promise.resolve(missingCustomerResponse)
-        }
-        return Promise.reject(new Error('Unexpected API call'))
-      })
-
-      const request = store.accessBillingPortal()
-      await new Promise<void>((resolve) => setTimeout(resolve, 0))
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      resolveCreate(mockCreateCustomerResponse)
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-      expect(billingCallCount).toBe(1)
-    })
-
-    it('aborts a credit purchase when the API key changes during recovery', async () => {
-      let resolveCreate!: (value: unknown) => void
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          return new Promise((resolve) => {
-            resolveCreate = resolve
-          })
-        }
-        return Promise.reject(new Error('Unexpected API call'))
-      })
-
-      const request = store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-      await new Promise<void>((resolve) => setTimeout(resolve, 0))
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      resolveCreate(mockCreateCustomerResponse)
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-      expect(mockFetch.mock.calls.map(([url]) => url)).not.toContainEqual(
-        expect.stringMatching(/\/customers\/credit$/)
-      )
-    })
-
-    it('withholds a portal URL that succeeds after an A->B API key switch', async () => {
-      let resolveBilling!: (value: unknown) => void
-      const billingRequestStarted = new Promise<void>((requestStarted) => {
-        mockFetch.mockImplementation((url: string) => {
-          if (url.endsWith('/customers/billing')) {
-            requestStarted()
-            return new Promise((resolve) => {
-              resolveBilling = resolve
-            })
-          }
-          return Promise.reject(new Error('Unexpected API call'))
-        })
-      })
-
-      const request = store.accessBillingPortal()
-      await billingRequestStarted
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      resolveBilling({
-        ok: true,
-        status: 200,
-        json: () =>
-          Promise.resolve({ billing_portal_url: 'https://stripe.test/portal' })
-      })
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-
-    it('withholds a checkout URL that succeeds after an A->B API key switch', async () => {
-      let resolveCredit!: (value: unknown) => void
-      const creditRequestStarted = new Promise<void>((requestStarted) => {
-        mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-          if (url.endsWith('/customers') && init?.method === 'POST') {
-            return Promise.resolve(mockCreateCustomerResponse)
-          }
-          if (url.endsWith('/customers/credit')) {
-            requestStarted()
-            return new Promise((resolve) => {
-              resolveCredit = resolve
-            })
-          }
-          return Promise.reject(new Error('Unexpected API call'))
-        })
-      })
-
-      const request = store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-      await creditRequestStarted
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      resolveCredit({
-        ok: true,
-        status: 200,
-        json: () =>
-          Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
-      })
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-
     it('rejects a customer record created before an A->B API key switch', async () => {
-      let resolveCreate!: (value: unknown) => void
+      let resolveCreate!: (value: Response) => void
       const createRequestStarted = new Promise<void>((requestStarted) => {
-        mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-          if (url.endsWith('/customers') && init?.method === 'POST') {
-            requestStarted()
-            return new Promise((resolve) => {
-              resolveCreate = resolve
-            })
-          }
-          return Promise.reject(new Error('Unexpected API call'))
+        respondToFetch(CUSTOMER_POST, () => {
+          requestStarted()
+          return new Promise<Response>((resolve) => {
+            resolveCreate = resolve
+          })
         })
       })
 
@@ -716,7 +335,7 @@ describe('useAuthStore', () => {
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'another-api-key'
       })
-      resolveCreate(mockCreateCustomerResponse)
+      resolveCreate(createCustomerResponse())
 
       await expect(request).rejects.toMatchObject({
         name: 'AuthStoreError',
@@ -724,93 +343,11 @@ describe('useAuthStore', () => {
       })
     })
 
-    it('withholds a portal URL when the API key changes while the body parses', async () => {
-      let resolvePortalBody!: (value: unknown) => void
-      const bodyParsingStarted = new Promise<void>((parsingStarted) => {
-        mockFetch.mockImplementation((url: string) => {
-          if (url.endsWith('/customers/billing')) {
-            return Promise.resolve({
-              ok: true,
-              status: 200,
-              json: () => {
-                parsingStarted()
-                return new Promise((resolve) => {
-                  resolvePortalBody = resolve
-                })
-              }
-            })
-          }
-          return Promise.reject(new Error('Unexpected API call'))
-        })
-      })
-
-      const request = store.accessBillingPortal()
-      await bodyParsingStarted
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
+    const accountAFailureResponse = () =>
+      Response.json(
+        { message: 'account A backend error' },
+        { status: 500, statusText: 'Internal Server Error' }
       )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      resolvePortalBody({ billing_portal_url: 'https://stripe.test/portal' })
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-
-    it('withholds a checkout URL when the API key changes while the body parses', async () => {
-      let resolveCreditBody!: (value: unknown) => void
-      const bodyParsingStarted = new Promise<void>((parsingStarted) => {
-        mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-          if (url.endsWith('/customers') && init?.method === 'POST') {
-            return Promise.resolve(mockCreateCustomerResponse)
-          }
-          if (url.endsWith('/customers/credit')) {
-            return Promise.resolve({
-              ok: true,
-              status: 200,
-              json: () => {
-                parsingStarted()
-                return new Promise((resolve) => {
-                  resolveCreditBody = resolve
-                })
-              }
-            })
-          }
-          return Promise.reject(new Error('Unexpected API call'))
-        })
-      })
-
-      const request = store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-      await bodyParsingStarted
-      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
-        'another-api-key'
-      )
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
-        'X-API-KEY': 'another-api-key'
-      })
-      resolveCreditBody({ checkout_url: 'https://stripe.test/checkout' })
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-
-    const accountAFailureResponse = {
-      ok: false,
-      status: 500,
-      statusText: 'Internal Server Error',
-      clone: () => ({
-        json: () => Promise.resolve({ message: 'account A backend error' })
-      }),
-      json: () => Promise.resolve({ message: 'account A backend error' }),
-      text: () =>
-        Promise.resolve(JSON.stringify({ message: 'account A backend error' }))
-    }
 
     const switchToAnotherApiKey = () => {
       vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
@@ -821,101 +358,21 @@ describe('useAuthStore', () => {
       })
     }
 
-    it('suppresses a balance error that rejects after an A->B API key switch', async () => {
-      let resolveBalance!: (value: unknown) => void
-      const balanceRequestStarted = new Promise<void>((requestStarted) => {
-        mockFetch.mockImplementation((url: string) => {
-          if (url.endsWith('/customers/balance')) {
-            requestStarted()
-            return new Promise((resolve) => {
-              resolveBalance = resolve
-            })
-          }
-          return Promise.reject(new Error('Unexpected API call'))
-        })
-      })
-
-      const request = store.fetchBalance()
-      await balanceRequestStarted
-      switchToAnotherApiKey()
-      resolveBalance(accountAFailureResponse)
-
-      await expect(request).resolves.toBeNull()
-      expect(store.balance).toBeNull()
-    })
-
-    it('withholds a checkout error that rejects after an A->B API key switch', async () => {
-      let resolveCredit!: (value: unknown) => void
-      const creditRequestStarted = new Promise<void>((requestStarted) => {
-        mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-          if (url.endsWith('/customers') && init?.method === 'POST') {
-            return Promise.resolve(mockCreateCustomerResponse)
-          }
-          if (url.endsWith('/customers/credit')) {
-            requestStarted()
-            return new Promise((resolve) => {
-              resolveCredit = resolve
-            })
-          }
-          return Promise.reject(new Error('Unexpected API call'))
-        })
-      })
-
-      const request = store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-      await creditRequestStarted
-      switchToAnotherApiKey()
-      resolveCredit(accountAFailureResponse)
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-
-    it('withholds a portal error that rejects after an A->B API key switch', async () => {
-      let resolveBilling!: (value: unknown) => void
-      const billingRequestStarted = new Promise<void>((requestStarted) => {
-        mockFetch.mockImplementation((url: string) => {
-          if (url.endsWith('/customers/billing')) {
-            requestStarted()
-            return new Promise((resolve) => {
-              resolveBilling = resolve
-            })
-          }
-          return Promise.reject(new Error('Unexpected API call'))
-        })
-      })
-
-      const request = store.accessBillingPortal()
-      await billingRequestStarted
-      switchToAnotherApiKey()
-      resolveBilling(accountAFailureResponse)
-
-      await expect(request).rejects.toMatchObject({
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-
     it('withholds a customer-creation error that rejects after an A->B API key switch', async () => {
-      let resolveCreate!: (value: unknown) => void
+      let resolveCreate!: (value: Response) => void
       const createRequestStarted = new Promise<void>((requestStarted) => {
-        mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-          if (url.endsWith('/customers') && init?.method === 'POST') {
-            requestStarted()
-            return new Promise((resolve) => {
-              resolveCreate = resolve
-            })
-          }
-          return Promise.reject(new Error('Unexpected API call'))
+        respondToFetch(CUSTOMER_POST, () => {
+          requestStarted()
+          return new Promise<Response>((resolve) => {
+            resolveCreate = resolve
+          })
         })
       })
 
       const request = store.createCustomer()
       await createRequestStarted
       switchToAnotherApiKey()
-      resolveCreate(accountAFailureResponse)
+      resolveCreate(accountAFailureResponse())
 
       await expect(request).rejects.toMatchObject({
         message: i18n.global.t('toastMessages.userNotAuthenticated')
@@ -1034,7 +491,7 @@ describe('useAuthStore', () => {
 
       await store.register('new@example.com', 'password', 'turnstile-abc')
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/customers'),
         expect.objectContaining({
           method: 'POST',
@@ -1075,7 +532,7 @@ describe('useAuthStore', () => {
 
       await store.register('completed@example.com', 'password')
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/customers'),
         expect.objectContaining({
           headers: expect.objectContaining({
@@ -1090,14 +547,8 @@ describe('useAuthStore', () => {
         user: mockUser
       } as Partial<UserCredential> as UserCredential)
       // The server-side customer creation (where Turnstile is validated) fails.
-      mockFetch.mockImplementation((url: string) =>
-        url.endsWith('/customers')
-          ? Promise.resolve({
-              ok: false,
-              statusText: 'Forbidden',
-              json: () => Promise.resolve({})
-            })
-          : Promise.reject(new Error('Unexpected API call'))
+      respondToFetch(CUSTOMERS_URL, () =>
+        Response.json({}, { status: 403, statusText: 'Forbidden' })
       )
 
       await expect(
@@ -1113,14 +564,8 @@ describe('useAuthStore', () => {
         user: mockUser
       } as Partial<UserCredential> as UserCredential)
       mockUser.delete.mockRejectedValue(new Error('delete down'))
-      mockFetch.mockImplementation((url: string) =>
-        url.endsWith('/customers')
-          ? Promise.resolve({
-              ok: false,
-              statusText: 'Forbidden',
-              json: () => Promise.resolve({})
-            })
-          : Promise.reject(new Error('Unexpected API call'))
+      respondToFetch(CUSTOMERS_URL, () =>
+        Response.json({}, { status: 403, statusText: 'Forbidden' })
       )
 
       await expect(
@@ -1153,14 +598,8 @@ describe('useAuthStore', () => {
       vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
         user: mockUser
       } as Partial<UserCredential> as UserCredential)
-      mockFetch.mockImplementation((url: string) =>
-        url.endsWith('/customers')
-          ? Promise.resolve({
-              ok: false,
-              statusText: 'Forbidden',
-              json: () => Promise.resolve({})
-            })
-          : Promise.reject(new Error('Unexpected API call'))
+      respondToFetch(CUSTOMERS_URL, () =>
+        Response.json({}, { status: 403, statusText: 'Forbidden' })
       )
 
       await expect(
@@ -1813,173 +1252,6 @@ describe('useAuthStore', () => {
     })
   })
 
-  describe('accessBillingPortal', () => {
-    it('should call billing endpoint without body when no targetTier provided', async () => {
-      const result = await store.accessBillingPortal()
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers/billing'),
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            Authorization: 'Bearer mock-id-token',
-            'Content-Type': 'application/json'
-          })
-        })
-      )
-
-      const callArgs = mockFetch.mock.calls.find((call) =>
-        (call[0] as string).endsWith('/customers/billing')
-      )
-      expect(callArgs?.[1]).not.toHaveProperty('body')
-      expect(result).toEqual({
-        billing_portal_url: 'https://billing.stripe.com/test'
-      })
-    })
-
-    it('sends cancel_subscription only when requested, and never with a target tier', async () => {
-      const bodyOf = () =>
-        mockFetch.mock.calls
-          .filter((call) => (call[0] as string).endsWith('/customers/billing'))
-          .map((call) => call[1]?.body as string | undefined)
-          .at(-1)
-
-      await store.accessBillingPortal(undefined, { cancelSubscription: true })
-      expect(JSON.parse(bodyOf()!)).toEqual({ cancel_subscription: true })
-
-      await expect(
-        store.accessBillingPortal('creator', { cancelSubscription: true })
-      ).rejects.toThrow(/target tier/)
-
-      await store.accessBillingPortal(undefined, { cancelSubscription: false })
-      expect(bodyOf()).toBeUndefined()
-    })
-
-    it('should include target_tier in request body when targetTier provided', async () => {
-      await store.accessBillingPortal('creator')
-
-      const callArgs = mockFetch.mock.calls.find((call) =>
-        (call[0] as string).endsWith('/customers/billing')
-      )
-      expect(callArgs?.[1]).toHaveProperty('body')
-      expect(JSON.parse(callArgs?.[1]?.body as string)).toEqual({
-        target_tier: 'creator'
-      })
-    })
-
-    it('should handle different checkout tier formats', async () => {
-      const tiers = [
-        'standard',
-        'creator',
-        'pro',
-        'standard-yearly',
-        'creator-yearly',
-        'pro-yearly'
-      ] as const
-
-      for (const tier of tiers) {
-        mockFetch.mockClear()
-        await store.accessBillingPortal(tier)
-
-        const callArgs = mockFetch.mock.calls.find((call) =>
-          (call[0] as string).endsWith('/customers/billing')
-        )
-        expect(JSON.parse(callArgs?.[1]?.body as string)).toEqual({
-          target_tier: tier
-        })
-      }
-    })
-
-    it('should throw error when API returns error response', async () => {
-      mockFetch.mockImplementationOnce(() =>
-        Promise.resolve({
-          ok: false,
-          json: () => Promise.resolve({ message: 'Billing portal unavailable' })
-        })
-      )
-
-      await expect(store.accessBillingPortal()).rejects.toThrow()
-    })
-
-    it('surfaces the parsed error message on a failed response', async () => {
-      mockFetch.mockImplementationOnce(() =>
-        Promise.resolve(mockErrorResponse(503, 'Billing portal unavailable'))
-      )
-
-      await expect(store.accessBillingPortal()).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.failedToAccessBillingPortal', {
-          error: 'Billing portal unavailable'
-        })
-      })
-    })
-
-    it('throws when no authentication method is available', async () => {
-      authStateCallback(null)
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
-
-      await expect(store.accessBillingPortal()).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-  })
-
-  describe('addCredits / initiateCreditPurchase', () => {
-    it('throws when no authentication method is available', async () => {
-      authStateCallback(null)
-      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
-
-      await expect(
-        store.initiateCreditPurchase({
-          amount_micros: 5_000_000,
-          currency: 'usd'
-        })
-      ).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-    })
-
-    it('surfaces the parsed error message on a failed response', async () => {
-      mockFetch.mockImplementation((url: string) =>
-        url.endsWith('/customers/credit')
-          ? Promise.resolve(mockErrorResponse(402, 'Card declined'))
-          : Promise.resolve(mockCreateCustomerResponse)
-      )
-
-      await expect(
-        store.initiateCreditPurchase({
-          amount_micros: 5_000_000,
-          currency: 'usd'
-        })
-      ).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.failedToInitiateCreditPurchase', {
-          error: 'Card declined'
-        }),
-        status: 402
-      })
-    })
-
-    it('skips the customer pre-flight once a customer is known to exist', async () => {
-      await store.createCustomer()
-      mockFetch.mockClear()
-      mockFetch.mockImplementation((url: string) =>
-        url.endsWith('/customers/credit')
-          ? Promise.resolve(mockAddCreditsResponse)
-          : Promise.reject(new Error('Unexpected API call'))
-      )
-
-      await store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-
-      expect(customerRequestBody()).toBeUndefined()
-    })
-  })
-
   describe('getAuthHeaderOrThrow', () => {
     it('returns auth header when authenticated', async () => {
       const header = await store.getAuthHeaderOrThrow()
@@ -2037,7 +1309,7 @@ describe('useAuthStore', () => {
 
       const result = await store.createCustomer()
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/customers'),
         expect.objectContaining({
           method: 'POST',
@@ -2052,7 +1324,7 @@ describe('useAuthStore', () => {
     it('should use Firebase token when Firebase user is present', async () => {
       const result = await store.createCustomer()
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('/customers'),
         expect.objectContaining({
           method: 'POST',
@@ -2071,10 +1343,8 @@ describe('useAuthStore', () => {
       })
 
       await expect(store.createCustomer()).rejects.toThrow()
-      expect(
-        vi.mocked(useApiKeyAuthStore().getAuthHeader)
-      ).not.toHaveBeenCalled()
-      expect(mockFetch).not.toHaveBeenCalled()
+      expect(useApiKeyAuthStore().getAuthHeader).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
     })
 
     it('should throw when no auth method is available', async () => {
@@ -2082,26 +1352,35 @@ describe('useAuthStore', () => {
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
 
       await expect(store.createCustomer()).rejects.toThrow()
-      expect(mockFetch).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
     })
 
     it('carries the HTTP status on a non-ok response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 422,
-        statusText: 'Unprocessable Entity'
-      })
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(null, { status: 422, statusText: 'Unprocessable Entity' })
+      )
 
       const error = await store.createCustomer().catch((e: unknown) => e)
       expect(error).toBeInstanceOf(AuthStoreError)
       expect((error as AuthStoreError).status).toBe(422)
     })
 
-    it('throws when the response is ok but carries no customer id', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({})
+    it('names the SSO organization when the server requires SSO', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json(
+          { code: 'sso_required', message: 'x', organization_id: 'org_1' },
+          { status: 403 }
+        )
+      )
+
+      await expect(store.createCustomer()).rejects.toMatchObject({
+        name: 'SsoRequiredAuthError',
+        organizationId: 'org_1'
       })
+    })
+
+    it('throws when the response is ok but carries no customer id', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(Response.json({}))
 
       await expect(store.createCustomer()).rejects.toMatchObject({
         name: 'AuthStoreError',
@@ -2109,457 +1388,6 @@ describe('useAuthStore', () => {
           error: 'No customer ID returned'
         })
       })
-    })
-
-    it('rejects a customer record created before an A->B Firebase identity switch', async () => {
-      let signalCustomerRequested: () => void = () => {}
-      const customerRequested = new Promise<void>((resolve) => {
-        signalCustomerRequested = resolve
-      })
-      let resolveJson: (value: unknown) => void = () => {}
-      const customerJson = new Promise((resolve) => {
-        resolveJson = resolve
-      })
-      mockFetch.mockImplementation((url: string) => {
-        if (url.endsWith('/customers')) {
-          signalCustomerRequested()
-          return Promise.resolve({
-            ok: true,
-            statusText: 'OK',
-            json: () => customerJson
-          })
-        }
-        return Promise.reject(new Error('Unexpected API call'))
-      })
-
-      // The auth header is resolved for account A; only the response body
-      // (fetched below) races the A->B switch.
-      const createPromise = store.createCustomer()
-      await customerRequested
-      authStateCallback({ ...mockUser, uid: 'different-user-id' })
-      resolveJson({ id: 'test-customer-id' })
-
-      await expect(createPromise).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: i18n.global.t('toastMessages.userNotAuthenticated')
-      })
-
-      // A subsequent credit pre-flight must still provision a customer for
-      // this (different) identity rather than trusting the stale flag.
-      mockFetch.mockClear()
-      mockFetch.mockImplementation((url: string) =>
-        url.endsWith('/customers/credit')
-          ? Promise.resolve(mockAddCreditsResponse)
-          : Promise.resolve(mockCreateCustomerResponse)
-      )
-
-      await store.initiateCreditPurchase({
-        amount_micros: 5_000_000,
-        currency: 'usd'
-      })
-
-      expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
-    })
-  })
-
-  describe('fetchWithCustomerRecovery', () => {
-    function make409(message: string) {
-      const body = { message }
-      return {
-        ok: false,
-        status: 409,
-        statusText: 'Conflict',
-        json: () => Promise.resolve(body),
-        clone: () => ({ json: () => Promise.resolve(body) })
-      }
-    }
-    function makeConflictResponse() {
-      return make409('Failed to find customer')
-    }
-
-    function countCustomerPosts() {
-      return mockFetch.mock.calls.filter(
-        ([url, init]) =>
-          typeof url === 'string' &&
-          url.endsWith('/customers') &&
-          (init as RequestInit | undefined)?.method === 'POST'
-      ).length
-    }
-
-    it('should provision the customer and retry once when a /customers/* call returns 409', async () => {
-      let balanceCalls = 0
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          return Promise.resolve(mockCreateCustomerResponse)
-        }
-        if (url.endsWith('/customers/balance')) {
-          balanceCalls++
-          return Promise.resolve(
-            balanceCalls === 1
-              ? makeConflictResponse()
-              : mockFetchBalanceResponse
-          )
-        }
-        return Promise.reject(new Error('Unexpected API call'))
-      })
-
-      const result = await store.fetchBalance()
-
-      expect(result).toEqual({ balance: 0 })
-      expect(balanceCalls).toBe(2)
-      expect(countCustomerPosts()).toBe(1)
-    })
-
-    it('should deduplicate concurrent recovery attempts into a single customer creation', async () => {
-      const seenUrls = new Set<string>()
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          return Promise.resolve(mockCreateCustomerResponse)
-        }
-        if (!seenUrls.has(url)) {
-          seenUrls.add(url)
-          return Promise.resolve(makeConflictResponse())
-        }
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
-      })
-
-      const [first, second] = await Promise.all([
-        store.fetchWithCustomerRecovery('https://api.test/customers/balance'),
-        store.fetchWithCustomerRecovery(
-          'https://api.test/customers/cloud-subscription-status'
-        )
-      ])
-
-      expect(first.ok).toBe(true)
-      expect(second.ok).toBe(true)
-      expect(countCustomerPosts()).toBe(1)
-    })
-
-    it('should not provision the customer again after a successful recovery', async () => {
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          return Promise.resolve(mockCreateCustomerResponse)
-        }
-        // Endpoint keeps conflicting even after recovery succeeds
-        return Promise.resolve(makeConflictResponse())
-      })
-
-      const first = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
-      const second = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
-
-      expect(first.status).toBe(409)
-      expect(second.status).toBe(409)
-      expect(countCustomerPosts()).toBe(1)
-    })
-
-    it('should return the original 409 response when customer provisioning fails', async () => {
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          return Promise.resolve({
-            ok: false,
-            status: 500,
-            statusText: 'Internal Server Error'
-          })
-        }
-        return Promise.resolve(makeConflictResponse())
-      })
-
-      const response = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
-
-      expect(response.status).toBe(409)
-      expect(countCustomerPosts()).toBe(1)
-    })
-
-    it('should pass through non-409 responses without provisioning', async () => {
-      mockFetch.mockImplementation(() =>
-        Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
-      )
-
-      const response = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
-
-      expect(response.ok).toBe(true)
-      expect(countCustomerPosts()).toBe(0)
-    })
-
-    it('should not provision for a 409 that is not a missing-customer conflict', async () => {
-      mockFetch.mockImplementation(() =>
-        Promise.resolve(make409('Subscription already active'))
-      )
-
-      const response = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/cloud-subscription-checkout/standard',
-        { method: 'POST' }
-      )
-
-      expect(response.status).toBe(409)
-      expect(countCustomerPosts()).toBe(0)
-    })
-
-    it('should not provision for a 409 from a non-customer endpoint', async () => {
-      mockFetch.mockImplementation(() =>
-        Promise.resolve(makeConflictResponse())
-      )
-
-      const response = await store.fetchWithCustomerRecovery(
-        'https://api.test/workflows'
-      )
-
-      expect(response.status).toBe(409)
-      expect(countCustomerPosts()).toBe(0)
-    })
-
-    it('should not provision when /customers/ is not the root path segment', async () => {
-      mockFetch.mockImplementation(() =>
-        Promise.resolve(makeConflictResponse())
-      )
-
-      const response = await store.fetchWithCustomerRecovery(
-        'https://api.test/foo/customers/bar'
-      )
-
-      expect(response.status).toBe(409)
-      expect(countCustomerPosts()).toBe(0)
-    })
-
-    it('does not treat an unparsable URL as a customer endpoint', async () => {
-      mockFetch.mockImplementation(() =>
-        Promise.resolve(makeConflictResponse())
-      )
-
-      const response = await store.fetchWithCustomerRecovery('http://')
-
-      expect(response.status).toBe(409)
-      expect(countCustomerPosts()).toBe(0)
-    })
-
-    it('passes through a 409 whose body cannot be parsed without provisioning', async () => {
-      mockFetch.mockImplementation(() =>
-        Promise.resolve({
-          ok: false,
-          status: 409,
-          statusText: 'Conflict',
-          json: () => Promise.reject(new Error('invalid json')),
-          clone: () => ({
-            json: () => Promise.reject(new Error('invalid json'))
-          })
-        })
-      )
-
-      const response = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
-
-      expect(response.status).toBe(409)
-      expect(countCustomerPosts()).toBe(0)
-    })
-
-    it('should re-provision after the auth state changes to a different session', async () => {
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          return Promise.resolve(mockCreateCustomerResponse)
-        }
-        return Promise.resolve(makeConflictResponse())
-      })
-
-      await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
-      expect(countCustomerPosts()).toBe(1)
-
-      // Sign out, then a different account signs in: the memoized recovery
-      // from the previous account must not short-circuit the new one.
-      authStateCallback(null)
-      authStateCallback(mockUser)
-
-      await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
-      expect(countCustomerPosts()).toBe(2)
-    })
-
-    it('re-provisions when the active uid changes without an auth-state reset', async () => {
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          return Promise.resolve(mockCreateCustomerResponse)
-        }
-        return Promise.resolve(makeConflictResponse())
-      })
-
-      await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
-      expect(countCustomerPosts()).toBe(1)
-
-      // A uid change that did not pass through onAuthStateChanged (which would
-      // otherwise clear the memo) must still start a fresh recovery rather than
-      // reuse the previous account's settled one.
-      store.currentUser = {
-        ...mockUser,
-        uid: 'different-uid'
-      } as Partial<User> as User
-
-      await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
-      expect(countCustomerPosts()).toBe(2)
-    })
-
-    it('should return the original 409 when the retry fails at the network level', async () => {
-      let balanceCalls = 0
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          return Promise.resolve(mockCreateCustomerResponse)
-        }
-        balanceCalls++
-        return balanceCalls === 1
-          ? Promise.resolve(makeConflictResponse())
-          : Promise.reject(new TypeError('network down'))
-      })
-
-      const response = await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
-
-      expect(response.status).toBe(409)
-      expect(countCustomerPosts()).toBe(1)
-    })
-
-    it('should share one customer creation between concurrent credit pre-flights', async () => {
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          return Promise.resolve(mockCreateCustomerResponse)
-        }
-        if (url.endsWith('/customers/credit')) {
-          return Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
-          })
-        }
-        return Promise.reject(new Error('Unexpected API call'))
-      })
-
-      await Promise.all([
-        store.initiateCreditPurchase({
-          amount_micros: 5_000_000,
-          currency: 'usd'
-        }),
-        store.initiateCreditPurchase({
-          amount_micros: 5_000_000,
-          currency: 'usd'
-        })
-      ])
-
-      expect(countCustomerPosts()).toBe(1)
-    })
-
-    it('stale rejection from previous session does not null out a new in-flight recovery', async () => {
-      let rejectSession1Create!: (reason: unknown) => void
-      let resolveSession2Create!: (value: Response) => void
-      let postCount = 0
-
-      const session1CreateP = new Promise<Response>((_, reject) => {
-        rejectSession1Create = reject
-      })
-      const session2CreateP = new Promise<Response>((resolve) => {
-        resolveSession2Create = resolve
-      })
-
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          postCount++
-          return postCount === 1 ? session1CreateP : session2CreateP
-        }
-        return Promise.resolve(makeConflictResponse())
-      })
-
-      // Session 1: trigger a recovery whose POST will hang
-      const session1Done = store
-        .fetchWithCustomerRecovery('https://api.test/customers/balance')
-        .then(() => 'session1')
-        .catch(() => 'session1-failed')
-
-      // Drain microtasks so session1's POST is registered
-      await new Promise<void>((resolve) => setTimeout(resolve, 0))
-
-      // Auth resets; new session starts
-      authStateCallback(null)
-      authStateCallback(mockUser)
-
-      // Session 2 recovery — should create a new independent in-flight promise
-      const session2Done = store
-        .fetchWithCustomerRecovery('https://api.test/customers/balance')
-        .then(() => 'session2')
-        .catch(() => 'session2-failed')
-
-      await new Promise<void>((resolve) => setTimeout(resolve, 0))
-
-      // Session 1's POST fails — stale rejection fires; must NOT null out session 2's recovery
-      rejectSession1Create(new Error('network error'))
-      await session1Done
-
-      // Session 2's POST resolves successfully
-      resolveSession2Create({
-        ok: true,
-        statusText: 'OK',
-        json: () => Promise.resolve({ id: 'id-2' })
-      } as Response)
-      const session2Result = await session2Done
-
-      // Session 2 must succeed, proving its recovery was not nulled by session 1's rejection
-      expect(session2Result).toBe('session2')
-    })
-
-    it('does not skip re-provisioning when createCustomer resolves after sign-out', async () => {
-      let resolveCreate!: (value: Response) => void
-      const slowCreateP = new Promise<Response>((resolve) => {
-        resolveCreate = resolve
-      })
-      let postCount = 0
-
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          postCount++
-          return postCount === 1
-            ? slowCreateP
-            : Promise.resolve(mockCreateCustomerResponse)
-        }
-        return Promise.resolve(makeConflictResponse())
-      })
-
-      // Session 1 triggers recovery with a slow POST
-      const session1Done = store
-        .fetchWithCustomerRecovery('https://api.test/customers/balance')
-        .catch(() => {})
-
-      await new Promise<void>((resolve) => setTimeout(resolve, 0))
-
-      // User signs out before the POST resolves
-      authStateCallback(null)
-      authStateCallback(mockUser)
-
-      // Stale POST resolves successfully after session reset
-      resolveCreate({
-        ok: true,
-        statusText: 'OK',
-        json: () => Promise.resolve({ id: 'stale-id' })
-      } as Response)
-      await session1Done
-
-      // A fresh recovery for the new session must POST again;
-      // customerCreated must not have been set by the stale resolution.
-      await store.fetchWithCustomerRecovery(
-        'https://api.test/customers/balance'
-      )
-      expect(postCount).toBe(2)
     })
   })
 
@@ -2608,7 +1436,7 @@ describe('useAuthStore', () => {
         .mockImplementationOnce(async (_route, options) => {
           options?.onAuthHeader?.(true)
           return new Response(
-            JSON.stringify({ legacy_billing_migration_enabled: false }),
+            JSON.stringify({ subscription_required: false }),
             { status: 200 }
           )
         })
@@ -2619,19 +1447,16 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
       expect(accountASignal?.aborted).toBe(true)
       expect(remoteConfigState.value).toBe('unloaded')
-      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
 
       await refreshRemoteConfig()
       resolveAccountA?.(
-        new Response(
-          JSON.stringify({ legacy_billing_migration_enabled: true }),
-          { status: 200 }
-        )
+        new Response(JSON.stringify({ subscription_required: true }), {
+          status: 200
+        })
       )
       await accountARefresh
 
-      expect(remoteConfig.value.legacy_billing_migration_enabled).toBe(false)
-      expect(cachedLegacyBillingMigrationEnabled.value).toBe(false)
+      expect(remoteConfig.value.subscription_required).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {
@@ -2688,8 +1513,6 @@ describe('useAuthStore in local/desktop distribution', () => {
     mockDistributionTypes.isDesktop = false
     mockDistributionTypes.DISTRIBUTION = 'localhost'
 
-    vi.stubGlobal('fetch', mockFetch)
-
     vi.mocked(firebaseAuth.initializeAuth).mockReturnValue(mockAuth)
 
     const port = replayIdentityPort(() => mockUser)
@@ -2699,12 +1522,7 @@ describe('useAuthStore in local/desktop distribution', () => {
     )
     vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(() => vi.fn())
 
-    mockFetch.mockImplementation((url: string) => {
-      if (url.endsWith('/customers')) {
-        return Promise.resolve(mockCreateCustomerResponse)
-      }
-      return Promise.reject(new Error('Unexpected API call'))
-    })
+    respondToFetch(CUSTOMERS_URL, createCustomerResponse)
 
     store = useAuthStore()
     await vi.waitFor(() => expect(store.isInitialized).toBe(true))
@@ -2770,6 +1588,247 @@ describe('useAuthStore in local/desktop distribution', () => {
       'mintAtLogin is gated on isCloud; local/desktop has no Cloud workspace JWT to mint'
     ).not.toHaveBeenCalled()
   })
+
+  describe('with the Desktop host session', () => {
+    const hostBridge = (state: DesktopHostAuthState) => {
+      const listeners = new Set<(next: DesktopHostAuthState) => void>()
+      return {
+        getState: vi.fn(async () => state),
+        getWorkspaceToken: vi.fn(
+          async (_workspaceId: string): Promise<string | null> => 'host-token'
+        ),
+        requestSignIn: vi.fn(async () => state),
+        signOut: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+          status: 'signed_out'
+        })),
+        onChanged: vi.fn((listener: (next: DesktopHostAuthState) => void) => {
+          listeners.add(listener)
+          return () => listeners.delete(listener)
+        }),
+        push: (next: DesktopHostAuthState) =>
+          listeners.forEach((listener) => listener(next))
+      }
+    }
+
+    beforeEach(() => {
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'stored-key'
+      })
+    })
+
+    afterEach(() => stopDesktopHostSession())
+
+    it('uses the Desktop account over the Firebase user and stored API key', async () => {
+      const bridge = hostBridge({
+        status: 'signed_in',
+        userId: 'host-user',
+        email: 'host@example.com',
+        workspaceId: 'ws-host'
+      })
+      await startDesktopHostSession(bridge)
+
+      expect(store.isAuthenticated).toBe(true)
+      expect(store.userId).toBe('host-user')
+      expect(store.userEmail).toBe('host@example.com')
+      await expect(store.getWorkspaceAuthToken()).resolves.toBe('host-token')
+      await expect(store.getAuthToken()).resolves.toBe('host-token')
+      const hostHeader = { Authorization: 'Bearer host-token' }
+      await expect(store.getAuthHeader()).resolves.toEqual(hostHeader)
+      await expect(store.getUserAuthHeader()).resolves.toEqual(hostHeader)
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(hostHeader)
+      expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-host')
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it("loads the host account's workspaces when Desktop signs in", async () => {
+      const initialize = vi
+        .spyOn(useTeamWorkspaceStore(), 'initialize')
+        .mockResolvedValue()
+      const bridge = hostBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+      expect(initialize).not.toHaveBeenCalled()
+
+      bridge.push({
+        status: 'signed_in',
+        userId: 'host-user',
+        workspaceId: 'ws-host'
+      })
+
+      await vi.waitFor(() => expect(initialize).toHaveBeenCalledOnce())
+    })
+
+    it("loads the host account's workspaces when Desktop signed in before the store started", async () => {
+      store.$dispose()
+      const initialize = vi
+        .spyOn(useTeamWorkspaceStore(), 'initialize')
+        .mockResolvedValue()
+      await startDesktopHostSession(
+        hostBridge({
+          status: 'signed_in',
+          userId: 'host-user',
+          workspaceId: 'ws-host'
+        })
+      )
+      await nextTick()
+      expect(initialize).not.toHaveBeenCalled()
+
+      useAuthStore()
+
+      expect(initialize).toHaveBeenCalledOnce()
+    })
+
+    it('drops workspaces loaded for the Firebase account when Desktop signs in', async () => {
+      const teams = useTeamWorkspaceStore()
+      teams.initState = 'ready'
+      const reset = vi.spyOn(teams, 'resetForIdentityChange')
+      const clearWorkspace = vi.spyOn(
+        useWorkspaceAuthStore(),
+        'clearWorkspaceContext'
+      )
+      const initialize = vi.spyOn(teams, 'initialize').mockResolvedValue()
+      const bridge = hostBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+
+      bridge.push({
+        status: 'signed_in',
+        userId: 'host-user',
+        workspaceId: 'ws-host'
+      })
+      await nextTick()
+
+      expect(clearWorkspace).toHaveBeenCalled()
+      expect(reset).toHaveBeenCalledOnce()
+      expect(reset.mock.invocationCallOrder[0]).toBeLessThan(
+        initialize.mock.invocationCallOrder[0]
+      )
+    })
+
+    it('has no workspace credential when no workspace is known', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      await startDesktopHostSession(bridge)
+
+      await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      await expect(store.getAuthToken()).resolves.toBeUndefined()
+      await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
+      expect(bridge.getWorkspaceToken).not.toHaveBeenCalled()
+    })
+
+    it('keeps the existing sign-in while no Desktop account is signed in', async () => {
+      const bridge = hostBridge({ status: 'signed_out' })
+      await startDesktopHostSession(bridge)
+
+      expect(store.isAuthenticated).toBe(true)
+      expect(store.userId).toBe('local-user-id')
+      await expect(store.getAuthToken()).resolves.toBe('mock-id-token')
+      expect(bridge.getWorkspaceToken).not.toHaveBeenCalled()
+    })
+
+    it('drops a token fetched for a workspace the tab switched away from', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      let release: (token: string) => void = () => {}
+      bridge.getWorkspaceToken.mockReturnValueOnce(
+        new Promise((resolve) => {
+          release = resolve
+        })
+      )
+      await startDesktopHostSession(bridge)
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+
+      const fetching = store.getWorkspaceAuthToken()
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-b' })
+      release('token-for-a')
+
+      await expect(fetching).resolves.toBeUndefined()
+    })
+
+    it.for([
+      { name: 'matches', hostWorkspace: 'ws-a', expected: 'host-token' },
+      { name: 'differs', hostWorkspace: 'ws-b', expected: undefined }
+    ])(
+      'uses the Desktop token for this tab only when its workspace $name',
+      async ({ hostWorkspace, expected }) => {
+        const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+        bridge.getWorkspaceToken.mockImplementation(async (workspaceId) =>
+          workspaceId === hostWorkspace ? 'host-token' : null
+        )
+        await startDesktopHostSession(bridge)
+        Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+
+        await expect(store.getWorkspaceAuthToken()).resolves.toBe(expected)
+        await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(
+          expected ? { Authorization: `Bearer ${expected}` } : null
+        )
+        expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-a')
+      }
+    )
+
+    it('returns the workspace token or refuses, never another credential', async () => {
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      bridge.getWorkspaceToken.mockImplementation(async (workspaceId) =>
+        workspaceId === 'ws-a' ? 'host-token' : null
+      )
+      await startDesktopHostSession(bridge)
+
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+      await expect(store.getWorkspaceAuthTokenOrThrow()).resolves.toBe(
+        'host-token'
+      )
+
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-b' })
+      await expect(store.getWorkspaceAuthTokenOrThrow()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+    })
+
+    it('signs Desktop out on logout and drops an earlier stored API key', async () => {
+      const apiKeyStore = useApiKeyAuthStore()
+      let storedKey: string | null = 'stored-key'
+      vi.mocked(apiKeyStore.getApiKey).mockImplementation(() => storedKey)
+      vi.mocked(apiKeyStore.clearStoredApiKey).mockImplementation(async () => {
+        storedKey = null
+      })
+      const bridge = hostBridge({ status: 'signed_in', userId: 'host-user' })
+      await startDesktopHostSession(bridge)
+
+      await store.logout()
+
+      expect(bridge.signOut).toHaveBeenCalledOnce()
+      expect(store.userId).not.toBe('host-user')
+      expect(apiKeyStore.clearStoredApiKey).toHaveBeenCalledOnce()
+      expect(apiKeyStore.getApiKey()).toBeNull()
+    })
+
+    it('keeps the stored API key on a logout that was not a Desktop host one', async () => {
+      const apiKeyStore = useApiKeyAuthStore()
+      vi.mocked(apiKeyStore.getApiKey).mockReturnValue('stored-key')
+      await startDesktopHostSession(hostBridge({ status: 'signed_out' }))
+
+      await store.logout()
+
+      expect(apiKeyStore.clearStoredApiKey).not.toHaveBeenCalled()
+    })
+
+    it('reports a failed logout when Desktop keeps its session', async () => {
+      const signedIn: DesktopHostAuthState = {
+        status: 'signed_in',
+        userId: 'host-user'
+      }
+      const bridge = hostBridge(signedIn)
+      bridge.signOut.mockResolvedValue(signedIn)
+      await startDesktopHostSession(bridge)
+
+      await expect(store.logout()).rejects.toBeInstanceOf(AuthStoreError)
+      expect(store.isAuthenticated).toBe(true)
+    })
+
+    it('keeps the Firebase user when Desktop does not share its session', async () => {
+      await startDesktopHostSession(hostBridge({ status: 'disabled' }))
+
+      expect(store.userId).toBe('local-user-id')
+      await expect(store.getAuthToken()).resolves.toBe('mock-id-token')
+    })
+  })
 })
 
 describe('store construction order', () => {
@@ -2783,13 +1842,13 @@ describe('store construction order', () => {
   const tokenResponse = {
     token: 'construction-token',
     expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+    user_id: 'uid-1',
     workspace: { id: 'workspace-personal', name: 'Personal', type: 'personal' },
     role: 'owner',
     permissions: ['owner:*']
   }
 
   beforeEach(() => {
-    vi.stubGlobal('fetch', mockFetch)
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
       showErrorDialog: vi.fn()
     })
@@ -2797,18 +1856,8 @@ describe('store construction order', () => {
     vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(() => vi.fn())
     vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
-    mockFetch.mockImplementation((url: string) => {
-      if (url.endsWith('/customers')) {
-        return Promise.resolve(mockCreateCustomerResponse)
-      }
-      if (url.endsWith('/auth/token')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(tokenResponse)
-        })
-      }
-      return Promise.reject(new Error('Unexpected API call'))
-    })
+    respondToFetch(CUSTOMERS_URL, createCustomerResponse)
+    respondToFetch(/\/auth\/token$/, () => Response.json(tokenResponse))
   })
 
   it('building the workspace store first subscribes its port and mints once Firebase delivers on its microtask', async () => {

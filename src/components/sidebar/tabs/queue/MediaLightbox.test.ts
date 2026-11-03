@@ -163,10 +163,7 @@ describe('MediaLightbox', () => {
   })
 
   it('keeps failed text media actionable until the viewer closes', async () => {
-    const fetchMock = vi.fn(() =>
-      Promise.resolve(new Response(null, { status: 503 }))
-    )
-    vi.stubGlobal('fetch', fetchMock)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }))
 
     const { user } = renderGallery(
       {
@@ -183,7 +180,7 @@ describe('MediaLightbox', () => {
     )
 
     expect(await screen.findByText('Text failed to load')).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledWith('/api/view?filename=failed.txt')
+    expect(fetch).toHaveBeenCalledWith('/api/view?filename=failed.txt')
 
     await user.click(screen.getByLabelText('Close'))
 
@@ -254,18 +251,23 @@ describe('MediaLightbox', () => {
       id: `v${n}`
     })
 
-    const renderTeleported = (items: MockResultItem[]) => {
+    const renderTeleported = (
+      items: MockResultItem[],
+      extraProps: { autoplayVideo?: boolean } = {}
+    ) => {
       const { rerender } = render(MediaLightbox, {
         global: { plugins: [i18n] },
         props: {
           allGalleryItems: items,
-          activeIndex: 0
+          activeIndex: 0,
+          ...extraProps
         }
       })
       const show = async (activeIndex: number) => {
         await rerender({
           allGalleryItems: items,
-          activeIndex
+          activeIndex,
+          ...extraProps
         })
         await nextTick()
       }
@@ -321,6 +323,39 @@ describe('MediaLightbox', () => {
 
       await show(0)
       expect(video()).not.toBe(first)
+    })
+
+    it('PM-1895 starts an opt-in video on open and again on return', async () => {
+      const { show, video } = renderTeleported(
+        [videoItem(1), mockGalleryItems[0]],
+        { autoplayVideo: true }
+      )
+      await nextTick()
+
+      const first = video()
+      expect(first?.autoplay).toBe(true)
+      expect(first?.paused).toBe(false)
+
+      first?.pause()
+      await show(1)
+      await show(0)
+
+      expect(video()?.paused).toBe(false)
+    })
+
+    it('leaves playback alone for callers that do not opt in', async () => {
+      const { show, video } = renderTeleported([
+        videoItem(1),
+        mockGalleryItems[0]
+      ])
+      await nextTick()
+
+      expect(video()?.autoplay).toBe(false)
+
+      await show(1)
+      await show(0)
+
+      expect(video()?.paused).toBe(true)
     })
 
     it('drops retained videos when the lightbox closes', async () => {

@@ -8,7 +8,7 @@ import type {
   BillingPlansResponse,
   BillingStatusResponse,
   PreviewSubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
@@ -47,8 +47,10 @@ const ACTIVE_BILLING_STATUS: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   plan_slug: 'pro-monthly',
@@ -129,9 +131,6 @@ async function mockCloudBoot(page: Page): Promise<CloudBootRequests> {
     return r.fulfill(jsonRoute(ACTIVE_BILLING_STATUS))
   })
   await page.route('**/api/billing/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
-  )
-  await page.route('**/customers/balance', (r) =>
     r.fulfill(jsonRoute({ amount_micros: 6000, currency: 'usd' }))
   )
   await page.route('**/api/billing/plans', (r) =>
@@ -324,7 +323,8 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
   })
 
   test('tells the customer and mints no portal session when the hosted payment-methods tab is blocked', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(60_000)
     const { portalRequests } = await mockCloudBoot(page)
@@ -337,7 +337,7 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
     await expect(
-      page.getByText(
+      toast.withText(
         "Couldn't open the billing page. Allow pop-ups for this site and try again."
       )
     ).toBeVisible()
@@ -345,7 +345,8 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
   })
 
   test('tells the customer and mints no portal session when the provider portal tab is blocked', async ({
-    page
+    page,
+    toast
   }) => {
     test.setTimeout(60_000)
     const { portalRequests } = await mockCloudBoot(page)
@@ -355,7 +356,7 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
     await expect(
-      page.getByText(
+      toast.withText(
         "Couldn't open the billing page. Allow pop-ups for this site and try again."
       )
     ).toBeVisible()

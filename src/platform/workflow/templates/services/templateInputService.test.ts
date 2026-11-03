@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
 
 import { prepareTemplateInputs } from './templateInputService'
@@ -49,10 +49,7 @@ function prepare(
 }
 
 beforeEach(() => {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response('video bytes'))
-  )
+  vi.mocked(fetch).mockImplementation(async () => new Response('video bytes'))
   vi.spyOn(api, 'fetchApi').mockResolvedValue(
     Response.json({
       name: 'kitten_cop.mp4',

@@ -5,7 +5,7 @@ import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type {
   ISerialisedGraph,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 import floatingBranch from './assets/floatingBranch.json' with { type: 'json' }
 import floatingLink from './assets/floatingLink.json' with { type: 'json' }

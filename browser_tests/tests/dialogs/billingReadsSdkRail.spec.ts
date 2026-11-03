@@ -62,8 +62,10 @@ const ACTIVE_STATUS: BillingStatusResponse = {
   billing_status: 'paid',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 }
@@ -238,7 +240,6 @@ async function mockCloudBoot(
     eventPages.push(requested)
     return r.fulfill(jsonRoute(eventsPage(Number(requested ?? 1))))
   })
-  await page.route('**/customers/balance', (r) => r.fulfill(jsonRoute(BALANCE)))
 
   return { reads, eventPages }
 }
@@ -422,7 +423,7 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     const content = await openActivity(await openPlanAndCredits(page))
     await expect(content.getByText('node-on-page-1')).toBeVisible()
 
-    await content.getByRole('button', { name: 'Next Page' }).click()
+    await content.getByRole('button', { name: 'Next', exact: true }).click()
 
     // The reader is scoped and paged: page 2 must not be served page 1's
     // in-flight answer.

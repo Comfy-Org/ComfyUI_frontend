@@ -1,6 +1,10 @@
 import { until } from '@vueuse/core'
 
-import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  readsSignedInWebSession,
+  useCloudWebSessionStore
+} from '@/platform/auth/session/cloudWebSessionStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -10,11 +14,17 @@ const DIFFERENT_LOGIN_SIGN_OUT_TIMEOUT_MS = 5_000
 
 const boots = new WeakMap<object, Promise<void>>()
 
+/** With SSO on, a signed-in session outranks a stored key; the key stays the fallback. */
+async function storedApiKeyIsTheLogin(): Promise<boolean> {
+  if (useApiKeyAuthStore().getApiKey() === null) return false
+  const { flags } = useFeatureFlags()
+  if (!flags.ssoEnabled || !flags.unifiedWebSessionEnabled) return true
+  return !(await readsSignedInWebSession())
+}
+
 async function bootOnce(): Promise<void> {
   const auth = useAuthStore()
-  if (auth.currentUser === null && useApiKeyAuthStore().getApiKey() !== null) {
-    return
-  }
+  if (auth.currentUser === null && (await storedApiKeyIsTheLogin())) return
   const webSession = useCloudWebSessionStore()
   if (!webSession.start()) return
   await webSession.whenReady()
@@ -29,7 +39,12 @@ async function bootOnce(): Promise<void> {
 /** Starts the web session once Firebase has restored, so it sees the remembered login. */
 export function bootCloudIdentity(): Promise<void> {
   const webSession = useCloudWebSessionStore()
-  const boot = boots.get(webSession) ?? bootOnce()
+  const boot =
+    boots.get(webSession) ??
+    bootOnce().catch((error: unknown) => {
+      boots.delete(webSession)
+      throw error
+    })
   boots.set(webSession, boot)
   return boot
 }

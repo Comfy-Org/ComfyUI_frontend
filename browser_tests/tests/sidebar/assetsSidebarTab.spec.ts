@@ -1,5 +1,5 @@
 import { expect, mergeTests } from '@playwright/test'
-import type { Page, Response } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
@@ -17,10 +17,7 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
-import type {
-  JobDetail,
-  RawJobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
 
@@ -153,16 +150,6 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
 
     await route.fulfill({ json: [...files] })
   })
-}
-
-function isGeneratedAssetVerificationResponse(response: Response): boolean {
-  const url = new URL(response.url())
-  return (
-    response.request().method().toUpperCase() === 'GET' &&
-    response.status() === 200 &&
-    url.pathname.endsWith('/api/jobs') &&
-    url.searchParams.get('status')?.split(',').includes('completed') === true
-  )
 }
 
 const bulkInsertionTest = comfyPageFixture.extend({
@@ -386,7 +373,7 @@ bulkInsertionTest.describe(
 
     bulkInsertionTest.beforeEach(async ({ comfyPage }) => {
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
       await comfyPage.toast.closeToasts()
       const panel = new PropertiesPanelHelper(comfyPage.page)
       await panel.open(comfyPage.actionbar.propertiesButton)
@@ -413,9 +400,6 @@ bulkInsertionTest.describe(
         await comfyPage.page.keyboard.up('ControlOrMeta')
         await expect(tab.selectedCards).toHaveCount(2)
 
-        const generatedAssetVerificationResponse =
-          comfyPage.page.waitForResponse(isGeneratedAssetVerificationResponse)
-
         await tab.getAssetCardByName('alpha').dispatchEvent('contextmenu', {
           bubbles: true,
           cancelable: true,
@@ -426,11 +410,7 @@ bulkInsertionTest.describe(
 
         await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
 
-        await expectNoErrorUiAfterVerification(
-          comfyPage,
-          panel,
-          generatedAssetVerificationResponse
-        )
+        await expectNoErrorUiAfterVerification(comfyPage, panel)
       }
     )
   }

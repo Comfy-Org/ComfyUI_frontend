@@ -72,7 +72,7 @@ unsubscribedTest.describe(
           .getByTestId(TestIds.topbar.subscribeToRunButton)
           .click()
         await expect(
-          comfyPage.page.locator('[aria-labelledby="subscription-required"]')
+          comfyPage.page.locator('[data-dialog-key="subscription-required"]')
         ).toBeVisible()
       }
     )
@@ -104,7 +104,7 @@ unsubscribedTest.describe(
       async ({ comfyPage, subscriptionHelper }) => {
         await subscriptionHelper.clickPopoverSubscribe()
         await expect(
-          comfyPage.page.locator('[aria-labelledby="subscription-required"]')
+          comfyPage.page.locator('[data-dialog-key="subscription-required"]')
         ).toBeVisible()
       }
     )
@@ -116,13 +116,14 @@ unsubscribedTest.describe(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
         ).toBeVisible()
 
-        await subscriptionHelper.seedPendingCheckout('standard', 'monthly')
         subscriptionHelper.setStatus({
           is_active: true,
           subscription_tier: 'STANDARD',
           subscription_duration: 'MONTHLY'
         })
-        await subscriptionHelper.triggerSubscriptionRefetch()
+        await comfyPage.page.evaluate(() => {
+          window.dispatchEvent(new Event('focus'))
+        })
 
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
@@ -160,20 +161,21 @@ unsubscribedTest.describe(
       async ({ comfyPage, subscriptionHelper }) => {
         await subscriptionHelper.clickPopoverSubscribe()
         const dialog = comfyPage.page.locator(
-          '[aria-labelledby="subscription-required"]'
+          '[data-dialog-key="subscription-required"]'
         )
         await expect(dialog).toBeVisible()
 
         await dialog.getByRole('button', { name: /close/i }).first().click()
         await expect(dialog).toBeHidden()
 
-        await subscriptionHelper.seedPendingCheckout('standard', 'monthly')
         subscriptionHelper.setStatus({
           is_active: true,
           subscription_tier: 'STANDARD',
           subscription_duration: 'MONTHLY'
         })
-        await subscriptionHelper.triggerSubscriptionRefetch()
+        await comfyPage.page.evaluate(() => {
+          window.dispatchEvent(new Event('focus'))
+        })
 
         await expect(dialog).toBeHidden()
         await expect(

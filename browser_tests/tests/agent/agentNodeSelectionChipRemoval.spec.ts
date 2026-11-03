@@ -43,11 +43,10 @@ test.describe(
           y: y + height / 2
         })
 
-        await expect(
-          panel.getByRole('button', {
-            name: `Remove KSampler #${node.id} reference`
-          })
-        ).toBeVisible()
+        await expect(panel.getByTestId('node-reference-chip')).toBeVisible()
+        await expect
+          .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+          .toEqual([node.id])
       })
 
       const removeButton = panel.getByRole('button', {
@@ -55,8 +54,13 @@ test.describe(
       })
 
       await test.step('Remove the reference and clear its highlight', async () => {
+        await panel.getByTestId('node-reference-chip').hover()
+        await expect(removeButton).toBeVisible()
         await removeButton.click()
         await expect(removeButton).toHaveCount(0)
+        await expect
+          .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+          .toEqual([])
         await expect
           .poll(async () => {
             const canvas = await comfyPage.canvas.screenshot({

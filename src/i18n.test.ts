@@ -552,6 +552,12 @@ describe('i18n', () => {
     })
   })
 
+  it('reads the browser locale on first use rather than at import', () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['zh-CN'])
+
+    expect(i18n.global.locale.value).toBe('zh')
+  })
+
   describe('te', () => {
     it('checks only the active locale, never the fallback locale', async () => {
       expect(te('enOnly')).toBe(true)

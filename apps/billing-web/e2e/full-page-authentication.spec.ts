@@ -10,6 +10,7 @@ import type { BillingOpStatusResponse } from '@comfyorg/ingest-types'
 import type { MockCloud } from './fixtures/cloud'
 import { PORTAL_URL } from './fixtures/env'
 import {
+  PRO_MONTHLY_OP_PLAN,
   challengeRequiredOperation,
   pendingOperation,
   succeededOperation
@@ -233,7 +234,7 @@ test('a saved-method Pay keeps the tabs and the list inert through Phase A', asy
   await expect(backArrow(page)).toBeHidden()
 })
 
-test('314-10555: a challenge the bank refuses lands on capture with Payment not completed, the form still mounted and Pay live', async ({
+test('314-10555: a challenge the bank refuses lands on capture with Payment not verified, the form still mounted and Pay live', async ({
   page,
   cloud,
   signIn
@@ -249,8 +250,9 @@ test('314-10555: a challenge the bank refuses lands on capture with Payment not 
   await releaseChallenge(page, 'requires_action')
 
   const card = page.getByRole('alert')
-  await expect(card).toContainText('Payment not completed')
-  await expect(card).toContainText("you haven't been charged")
+  await expect(card).toContainText('Payment not verified')
+  await expect(card).toContainText("The payment wasn't verified")
+  await expect(card).not.toContainText("you haven't been charged")
   await expect(footnote(page)).toHaveText('')
   await expect(payButton(page)).toBeEnabled()
   await expect(backArrow(page)).toBeVisible()
@@ -462,7 +464,7 @@ test('447-6886: a redirect method shows the pre-money line, never Phase B, and l
   })
 })
 
-test('coming back from Alipay after its own payment went through is Success, naming the plan the server now lists', async ({
+test('coming back from Alipay after its own payment went through is Success, naming the plan the server reports for it', async ({
   page,
   cloud,
   signIn
@@ -479,7 +481,7 @@ test('coming back from Alipay after its own payment went through is Success, nam
   await payButton(page).click()
   await expect(page).toHaveURL(PORTAL_URL)
 
-  moveOperation(succeededOperation(OPERATION))
+  moveOperation({ ...succeededOperation(OPERATION), plan: PRO_MONTHLY_OP_PLAN })
   cloud.scenario.status = {
     ...cloud.scenario.status,
     plan_slug: 'pro_monthly',
@@ -679,7 +681,7 @@ test("closing Stripe's challenge window cancels the payment on the server before
 
   await releaseChallenge(page, 'requires_payment_method')
 
-  await expect(page.getByRole('alert')).toContainText('Payment not completed')
+  await expect(page.getByRole('alert')).toContainText('Payment not verified')
   await expect.poll(() => cancelRequests(cloud).length).toBe(1)
 
   await payButton(page).click()

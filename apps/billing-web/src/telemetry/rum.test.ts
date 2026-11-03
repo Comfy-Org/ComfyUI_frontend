@@ -206,8 +206,6 @@ describe('billingWebRumBeforeSend', () => {
 
 describe('reportBillingWebError', () => {
   it('reports the failure without the cause chain RUM cannot scrub', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-
     reportBillingWebError(
       new Error('Card declined', {
         cause: new Error('Declined for ada@example.com')
@@ -221,7 +219,6 @@ describe('reportBillingWebError', () => {
   })
 
   it('reports the failure to RUM under its type, tagged with the billing web surface', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const failure = new Error('Card declined')
 
     reportBillingWebError(failure, {
@@ -245,14 +242,12 @@ describe('reportBillingWebError', () => {
   })
 
   it('logs the failure once, and RUM drops that console copy', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     reportBillingWebError(new Error('Card declined'), {
       errorType: 'failure_confirming_checkout'
     })
 
-    expect(consoleError).toHaveBeenCalledOnce()
-    const logged = consoleError.mock.lastCall ?? []
+    expect(console.error).toHaveBeenCalledOnce()
+    const logged = vi.mocked(console.error).mock.lastCall ?? []
     const consoleEcho: ScrubbableRumEvent = {
       type: 'error',
       view: { url: 'https://billing.comfy.org/v1/checkout' },
@@ -262,8 +257,6 @@ describe('reportBillingWebError', () => {
   })
 
   it('logs only the redacted message, not the cause chain RUM would collect from the console', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     reportBillingWebError(
       new Error(
         'Confirm failed for ada@example.com at https://billing.comfy.org/v1/checkout?payment_intent_client_secret=pi_1_secret_2',
@@ -272,14 +265,13 @@ describe('reportBillingWebError', () => {
       { errorType: 'failure_confirming_checkout' }
     )
 
-    expect(consoleError.mock.lastCall).toEqual([
+    expect(vi.mocked(console.error).mock.lastCall).toEqual([
       '[Reported error]: failure_confirming_checkout',
       'Confirm failed for [email] at https://billing.comfy.org/v1/checkout'
     ])
   })
 
   it('never throws into the billing flow when RUM itself fails', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(datadogRum.addError).mockImplementation(() => {
       throw new Error('RUM unavailable')
     })

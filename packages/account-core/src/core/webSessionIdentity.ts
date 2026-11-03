@@ -11,13 +11,13 @@ import type {
   WebSessionCommandResult,
   WebSessionFailure,
   WebSessionResult
-} from './sessionContracts.js'
-import type { WebSessionOptions } from './webSession.js'
+} from './sessionContracts'
+import type { WebSessionOptions } from './webSession'
 import {
   createWebSession,
   deleteWebSession,
   readWebSession
-} from './webSession.js'
+} from './webSession'
 
 export interface RememberedLogin {
   /** The Comfy user id of the login this browser remembers, or null. */
@@ -445,7 +445,8 @@ const zSharedResult = z.discriminatedUnion('status', [
         email: z.string(),
         name: z.string().optional(),
         emailVerified: z.boolean(),
-        signInProvider: z.string().optional()
+        signInProvider: z.string().optional(),
+        hasPersonalWorkspace: z.boolean().optional()
       }),
       csrfToken: z.string(),
       expiresAt: z.number(),

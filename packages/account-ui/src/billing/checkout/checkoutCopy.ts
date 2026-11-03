@@ -1,6 +1,6 @@
 import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 
-import type { StripePaymentCopy } from '../stripe/stripePaymentPhase'
+import type { StripePaymentCopy } from '#/billing/stripe/stripePaymentPhase'
 
 /**
  * Host-translated strings for the checkout surfaces. Interpolated strings
@@ -65,6 +65,7 @@ export interface CheckoutCopy {
   readonly authenticationFailedDetail: string
   readonly pendingVerificationDetail: string
   readonly completeVerification: string
+  readonly cancelPaymentAndRetry: string
   readonly confirmPayment: string
   readonly startingToday: string
   readonly parkedCheckoutDetail: string

@@ -34,9 +34,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
     await comfyPage.page.keyboard.press('Escape')
     await expect(searchBoxV2.input).toBeHidden()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialCount)
+    await comfyPage.expectNodeCount(initialCount)
   })
 
   for (const closeKey of ['Enter', 'Escape'] as const) {
@@ -145,7 +143,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const refsAfter = await comfyPage.nodeOps.getNodeRefsByType(NODE_TYPE)
       const newNode = refsAfter.find((n) => !idsBefore.has(n.id))
       expect(newNode, 'expected a new CLIPTextEncode node').toBeDefined()
-      const clipInput = await newNode!.getInput(0)
+      const clipInput = await newNode!.getInputByName('clip')
       await clipInput.expectLinkCount(1)
     })
   })
@@ -298,7 +296,9 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
         await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
           name: blueprintName
         })
-        await expect(comfyPage.visibleToasts).toHaveCount(1, { timeout: 5000 })
+        await expect(comfyPage.toast.visibleToasts).toHaveCount(1, {
+          timeout: 5000
+        })
         await comfyPage.toast.closeToasts(1)
 
         const { searchBoxV2 } = comfyPage
@@ -400,9 +400,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await searchBoxV2.results.first().click()
       await expect(searchBoxV2.input).toBeHidden()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
+      await comfyPage.expectNodeCount(initialCount + 1)
 
       await expect(
         comfyPage.page.locator('[data-node-id][data-ghost]')

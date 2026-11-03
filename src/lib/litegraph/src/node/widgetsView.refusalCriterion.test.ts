@@ -2,11 +2,9 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
-
-vi.mock(import('@/platform/telemetry/reportError'))
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 function reportedTypes(): (string | undefined)[] {
   return vi.mocked(reportError).mock.calls.map((call) => call[1].errorType)

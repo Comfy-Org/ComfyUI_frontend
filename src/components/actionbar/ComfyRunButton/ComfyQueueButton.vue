@@ -1,36 +1,36 @@
 <template>
-  <ButtonGroup
-    class="queue-button-group h-8 rounded-lg bg-secondary-background"
-  >
+  <ButtonGroup class="queue-button-group h-8 rounded-lg bg-secondary">
     <BatchCountEdit />
     <Button
-      v-tooltip.bottom="{
-        value: queueButtonTooltip,
-        showDelay: 600
-      }"
+      :tooltip="queueButtonTooltip"
+      tooltip-side="bottom"
       :variant="queueButtonVariant"
       size="unset"
       :class="
         cn(
-          'h-full gap-1.5 rounded-lg px-4',
+          'h-full gap-1.5 rounded-l-lg rounded-r-none px-4',
           paymentRecoveryLock ? 'font-medium' : 'font-light'
         )
       "
       data-testid="queue-button"
-      :data-variant="queueButtonVariant"
       @click="queuePrompt"
     >
-      <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
+      <i :class="iconClass" data-testid="queue-button-icon" />
       {{ queueButtonLabel }}
     </Button>
 
     <Menu side="bottom" :side-offset="4" class="min-w-44">
       <template #trigger>
         <Button
-          variant="secondary"
+          :variant="queueMenuTriggerVariant"
           size="unset"
           :disabled="Boolean(paymentRecoveryLock)"
-          :class="queueMenuTriggerClass"
+          :class="
+            cn(
+              queueMenuTriggerClass,
+              queueMenuTriggerVariantClass[queueMenuTriggerVariant]
+            )
+          "
           :aria-label="t('menu.runOptions')"
           data-testid="queue-mode-menu-trigger"
         >
@@ -52,14 +52,14 @@ import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
-import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
-import Button from '@/components/ui/button/Button.vue'
-import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import MenuRadioGroup from '@/components/ui/menu/MenuRadioGroup.vue'
+import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
+import Button from '@comfyorg/design-system/button/Button'
+import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   isInstantMode,
@@ -182,8 +182,18 @@ const queueButtonVariant = computed<
         ? 'destructive'
         : 'primary'
 )
+const queueMenuTriggerVariant = computed(() =>
+  queueButtonVariant.value === 'subscribe'
+    ? 'secondary'
+    : queueButtonVariant.value
+)
+const queueMenuTriggerVariantClass = {
+  destructive: 'border-black/20 data-[state=open]:bg-destructive/90',
+  primary: 'data-[state=open]:bg-primary/90',
+  secondary: 'text-muted-foreground'
+} satisfies Record<typeof queueMenuTriggerVariant.value, string>
 const queueMenuTriggerClass =
-  'h-full w-6 rounded-l-none rounded-r-lg border-l border-border-subtle p-0 text-muted-foreground data-[state=open]:bg-secondary-background-hover'
+  'h-full w-6 rounded-l-none rounded-r-lg border-0 border-l border-solid border-current/25 p-0'
 
 const iconClass = computed(() => {
   if (paymentRecoveryLock) {

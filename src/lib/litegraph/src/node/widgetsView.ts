@@ -1,22 +1,22 @@
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import { shallowReactive } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-import type { RefusedWidget } from '@/types/widgetId'
+import type { RefusedWidget } from '@comfyorg/graph-model/widgetId'
 import {
   dropUnrenamableDuplicateWidgets,
   isWidgetNameUnreadable,
   widgetId
-} from '@/types/widgetId'
+} from '@comfyorg/graph-model/widgetId'
 
-import { createArrayMutationView } from '../infrastructure/createMutationView'
-import type { INodeInputSlot } from '../interfaces'
-import { isNodeBindable } from '../utils/type'
-import { getWidgetIds } from '../utils/widget'
-import { BaseWidget } from '../widgets/BaseWidget'
+import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 
 export type WidgetRefusalReport =
   | { kind: 'refusal'; finding: RefusedWidget<IBaseWidget> }
@@ -34,6 +34,14 @@ interface WidgetsViewState {
 }
 
 const reportedUnresolved = new WeakMap<LGraphNode, Set<IBaseWidget>>()
+const restorationSlots = new WeakMap<
+  LGraphNode,
+  {
+    slots: ReadonlyMap<IBaseWidget, number>
+    count: number
+    refusalChangedOrder: boolean
+  }
+>()
 
 const states = new WeakMap<LGraphNode, WidgetsViewState>()
 const widgetsViewGetters = new WeakSet<() => IBaseWidget[] | undefined>()
@@ -122,6 +130,10 @@ function refuseAmbiguousWidgets(
     releaseRefusedWidget(node, finding.widget, finding.name, report)
     report({ kind: 'refusal', finding })
   }
+  if (removed.size) {
+    const captured = restorationSlots.get(node)
+    if (captured) captured.refusalChangedOrder = true
+  }
   return removed
 }
 
@@ -135,6 +147,36 @@ export function wasWidgetRefused(
   widget: IBaseWidget
 ): boolean {
   return commitsThroughWidgetsView(node) && !node.widgets?.includes(widget)
+}
+
+export function captureWidgetRestorationSlots(node: LGraphNode): void {
+  const slots = new Map<IBaseWidget, number>()
+  let position = 0
+  for (const widget of node.widgets ?? []) {
+    if (widget.serialize === false) continue
+    slots.set(widget, position++)
+  }
+  restorationSlots.set(node, {
+    slots,
+    count: position,
+    refusalChangedOrder: false
+  })
+}
+
+export function getWidgetRestorationSlot(
+  node: LGraphNode,
+  widget: IBaseWidget,
+  fallback: number,
+  savedSlotCount: number
+): number {
+  const captured = restorationSlots.get(node)
+  if (!captured?.refusalChangedOrder || captured.count !== savedSlotCount)
+    return fallback
+  return captured.slots.get(widget) ?? fallback
+}
+
+export function clearWidgetRestorationSlots(node: LGraphNode): void {
+  restorationSlots.delete(node)
 }
 
 export function refuseAmbiguousNodeWidgets(

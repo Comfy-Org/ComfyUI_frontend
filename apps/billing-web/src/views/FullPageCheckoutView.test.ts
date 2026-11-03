@@ -513,8 +513,8 @@ describe('FullPageCheckoutView', () => {
     )
     expect(confirmButton('Confirm upgrade')).toBeDisabled()
     expect(
-      screen.getByText('Upgrade to Creator Plan · Acme Team')
-    ).toBeInTheDocument()
+      screen.queryByText('Upgrade to Creator Plan · Acme Team')
+    ).not.toBeInTheDocument()
   })
 
   it.for<{
@@ -632,6 +632,7 @@ describe('FullPageCheckoutView', () => {
           max_seats: 1,
           occupied_seats: 1,
           scheduled_change: scheduled,
+          ended_at: null,
           team_credit_stop: null
         }
       })
@@ -650,9 +651,9 @@ describe('FullPageCheckoutView', () => {
       href: 'https://testcloud.comfy.org/?workspace=ws-team'
     },
     {
-      name: "the workspace's Plan & Credits settings when this family has no destination for the target",
+      name: 'the platform it named, in the billed workspace',
       returnTo: 'platform_account',
-      href: 'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+      href: 'https://testplatform.comfy.org/?workspace=ws-team'
     }
   ])('the back arrow goes to $name', async ({ returnTo, href }) => {
     const assign = vi
@@ -1256,6 +1257,28 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
     expect(fake.subscribe).toHaveBeenCalledOnce()
   })
 
+  it("keeps the plan its own Pay quoted when the receipt's plan carries no tier or price", async () => {
+    await payReady({
+      subscribe: {
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          operation: {
+            ...succeededOperation('op_mine'),
+            phase: 'succeeded',
+            receipt: { plan: { slug: 'creator_monthly', duration: 'MONTHLY' } }
+          }
+        }
+      }
+    })
+
+    form.emit('confirm', 'ctoken_1')
+
+    expect(await screen.findByTestId('checkout-ending-plan')).toHaveTextContent(
+      'Creator$28.00 USD / mo'
+    )
+  })
+
   describe('Close', () => {
     const SETTLED: FakeBillingClientOptions = {
       subscribe: {
@@ -1299,7 +1322,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       ])
     })
 
-    it("goes to the workspace's Plan & Credits settings when this family has no destination for return_to", async () => {
+    it('goes back to the platform its return_to names, with the result', async () => {
       const assign = vi
         .spyOn(window.location, 'assign')
         .mockImplementation(() => {})
@@ -1318,7 +1341,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       )
 
       expect(assign).toHaveBeenCalledWith(
-        'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+        'https://testplatform.comfy.org/?workspace=ws-team&billing_result=success&billing_ref=op_mine'
       )
     })
 
@@ -1429,6 +1452,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
         max_seats: 1,
         occupied_seats: 1,
         scheduled_change: null,
+        ended_at: null,
         team_credit_stop: null,
         cancel_at: '2026-07-28T00:00:00.000Z'
       }
@@ -1625,8 +1649,8 @@ describe('FullPageCheckoutView mount reconciliation', () => {
       "This payment is already processing and can't be canceled."
     )
     expect(
-      screen.getByText('Subscribe to Creator Plan · Acme Team')
-    ).toBeInTheDocument()
+      screen.queryByText('Subscribe to Creator Plan · Acme Team')
+    ).not.toBeInTheDocument()
     await waitFor(() => expect(form.locked()).toBe(true))
     expect(payButton()).toBeDisabled()
 
@@ -1644,6 +1668,112 @@ describe('FullPageCheckoutView mount reconciliation', () => {
       'op_reloaded'
     )
     expect(screen.queryByTestId('checkout-ending-plan')).not.toBeInTheDocument()
+  })
+
+  const summaryColumn = () =>
+    screen.getByRole('region', { name: 'Order summary' })
+  const shownText = (element: HTMLElement) =>
+    element.textContent.replace(/\s+/g, ' ').trim()
+
+  type ServerPlan = NonNullable<BillingOperationReceipt['plan']>
+
+  /** Money in flight that this page did not send, on the plan the server reports for it. */
+  function recoveredOn(plan: ServerPlan, id: string) {
+    const recovered = { ...processingOperation(id), plan }
+    return recovered
+  }
+
+  it.for<{
+    name: string
+    plan: ServerPlan
+    summary: string
+  }>([
+    {
+      name: 'its own plan and monthly rate, never the link plan',
+      plan: {
+        slug: 'team_monthly',
+        duration: 'MONTHLY',
+        tier: 'TEAM',
+        price_cents: 66_500,
+        currency: 'usd'
+      },
+      summary: 'Team Monthly$665.00USD / mo'
+    },
+    {
+      name: 'the per-month figure the server gives an annual plan',
+      plan: {
+        slug: 'pro_annual',
+        duration: 'ANNUAL',
+        tier: 'PRO',
+        price_cents: 48_000,
+        monthly_price_cents: 4_000,
+        currency: 'usd'
+      },
+      summary: 'Pro Yearly$40.00USD / mo'
+    },
+    {
+      name: 'no name or price where the server describes neither',
+      plan: { slug: 'team_seats_legacy', duration: 'MONTHLY' },
+      summary: ''
+    }
+  ])('summarizes a recovered payment with $name', async ({ plan, summary }) => {
+    await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: recoveredOn(plan, 'op_recovered')
+      }
+    })
+
+    await waitingStatus()
+    expect(shownText(summaryColumn())).toBe(summary)
+  })
+
+  it("ends a recovered payment on the plan the server says it bought, not the link's", async () => {
+    const TEAM_MONTHLY = {
+      slug: 'team_monthly',
+      duration: 'MONTHLY',
+      tier: 'TEAM',
+      price_cents: 66_500,
+      currency: 'usd'
+    } as const
+    const fake = await renderCheckout({
+      recover: {
+        status: 'ok',
+        value: recoveredOn(TEAM_MONTHLY, 'op_team')
+      }
+    })
+    await waitingStatus()
+
+    fake.publishOperation({
+      ...succeededOperation('op_team'),
+      phase: 'succeeded',
+      receipt: { plan: TEAM_MONTHLY }
+    })
+
+    const plan = await screen.findByTestId('checkout-ending-plan')
+    expect(plan).toHaveTextContent('Team Monthly$665.00 USD / mo')
+    expect(plan).not.toHaveTextContent('Creator')
+  })
+
+  it('names no plan on the ending when the server cannot describe the one the payment bought', async () => {
+    const fake = await renderCheckout({
+      plans: { status: 'ok', value: { plans: [planOf()] } },
+      recover: { status: 'ok', value: processingOperation('op_legacy') }
+    })
+    await waitingStatus()
+
+    fake.publishOperation({
+      ...succeededOperation('op_legacy'),
+      phase: 'succeeded',
+      receipt: { plan: { slug: 'creator_monthly', duration: 'MONTHLY' } }
+    })
+
+    await screen.findByRole('heading', { name: 'Already completed' })
+    await capturePromisesFlushed()
+    expect(screen.queryByTestId('checkout-ending-plan')).not.toBeInTheDocument()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'op_legacy'
+    )
   })
 
   it.for<{
@@ -2026,26 +2156,19 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
     ...awaited(succeededOperation(id)),
     phase: 'reconciliation_needed'
   })
-  const ON_PRO: FakeBillingClientOptions = {
-    status: {
-      is_active: true,
-      has_funds: true,
-      max_seats: 1,
-      occupied_seats: 1,
-      plan_slug: 'pro_monthly',
-      scheduled_change: null,
-      team_credit_stop: null
-    },
-    plans: {
-      status: 'ok',
-      value: {
-        plans: [
-          planOf(),
-          planOf({ slug: 'pro_monthly', tier: 'PRO', price_cents: 5000n })
-        ]
-      }
-    }
-  }
+  const RECEIPT_PLAN = {
+    slug: 'pro_monthly',
+    duration: 'MONTHLY',
+    tier: 'PRO',
+    price_cents: 5000,
+    currency: 'usd'
+  } as const
+  const withReceipt = (
+    operation: BillingOperationState,
+    receipt: BillingOperationReceipt
+  ): BillingOperationState => ({ ...operation, phase: 'succeeded', receipt })
+  const mineOnPro = () =>
+    withReceipt(awaited(succeededOperation('op_mine')), { plan: RECEIPT_PLAN })
 
   it("asks the lifecycle for this tab's settled payment too", async () => {
     const fake = await renderCheckout()
@@ -2071,10 +2194,9 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
     expect(form.mounts).toBe(0)
   })
 
-  it('is Success, naming the plan the server now lists, for its own payment that went through while it was on a provider page', async () => {
+  it('is Success, naming the plan the server reports for it, for its own payment that went through while it was on a provider page', async () => {
     await renderCheckout({
-      ...ON_PRO,
-      recover: { status: 'ok', value: awaited(succeededOperation('op_mine')) },
+      recover: { status: 'ok', value: mineOnPro() },
       preview: { status: 'ok', value: previewOf({ allowed: false }) }
     })
 
@@ -2091,7 +2213,6 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
   it('keeps re-reading a payment it could not confirm, and resolves forward to Success when it settles', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
     const fake = await renderCheckout({
-      ...ON_PRO,
       recover: { status: 'ok', value: couldNotConfirm('op_mine') }
     })
     expect(
@@ -2108,8 +2229,8 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
     ).toBeInTheDocument()
 
     fake.recover.mockImplementationOnce(async () => {
-      fake.publishOperation(awaited(succeededOperation('op_mine')))
-      return { status: 'ok', value: awaited(succeededOperation('op_mine')) }
+      fake.publishOperation(mineOnPro())
+      return { status: 'ok', value: mineOnPro() }
     })
     vi.advanceTimersByTime(OPERATION_POLL_TIMING.parkedMs)
 
@@ -2122,15 +2243,8 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
     expect(fake.subscribe).not.toHaveBeenCalled()
   })
 
-  const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
-  const withReceipt = (
-    operation: BillingOperationState,
-    receipt: BillingOperationReceipt
-  ): BillingOperationState => ({ ...operation, phase: 'succeeded', receipt })
-
-  it('328-4444: Already completed names the plan and credits its receipt reports, from the catalog', async () => {
+  it('328-4444: Already completed names the plan and credits its receipt reports', async () => {
     await renderCheckout({
-      plans: ON_PRO.plans,
       recover: {
         status: 'ok',
         value: withReceipt(succeededOperation('op_done'), {
@@ -2145,7 +2259,9 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
       await screen.findByRole('heading', { name: 'Already completed' })
     ).toBeInTheDocument()
     const plan = await screen.findByTestId('checkout-ending-plan')
-    expect(plan).toHaveTextContent('Pro$50.00 USD / mo10,000 credits added')
+    expect(plan).toHaveTextContent(
+      'Pro Monthly$50.00 USD / mo10,000 credits added'
+    )
     expect(screen.queryByTestId('checkout-ending-code')).not.toBeInTheDocument()
   })
 
@@ -2156,7 +2272,6 @@ describe("FullPageCheckoutView over this tab's own payment", () => {
       plan: RECEIPT_PLAN
     })
     const fake = await renderCheckout({
-      ...ON_PRO,
       recover: { status: 'ok', value: landing },
       preview: { status: 'ok', value: previewOf({ allowed: false }) }
     })
@@ -2386,7 +2501,7 @@ describe('FullPageCheckoutView payment authentication', () => {
     )
   })
 
-  it('puts a challenge the bank refused on its card and frees Pay for the retry, on the same form', async () => {
+  it('puts a challenge the bank refused, still pending, on a not-verified card and frees Pay for the retry, on the same form', async () => {
     const fake = await payHeld()
     fake.publishOperation(challengedOperation('op_3ds', 'in_progress'))
     await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_A))
@@ -2397,9 +2512,9 @@ describe('FullPageCheckoutView payment authentication', () => {
       challenge: { clientSecret: 'cs', status: 'failed' }
     })
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Payment not completed'
-    )
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Payment not verified')
+    expect(alert).not.toHaveTextContent("you haven't been charged")
     await waitFor(() => expect(payButton()).toBeEnabled())
     expect(footnote()).toBeEmptyDOMElement()
     expect(form.locked()).toBe(false)
@@ -3214,6 +3329,7 @@ describe('FullPageCheckoutView promo codes', () => {
             max_seats: 1,
             occupied_seats: 1,
             scheduled_change: null,
+            ended_at: null,
             team_credit_stop: null,
             cancel_at: '2026-07-28T00:00:00.000Z'
           }

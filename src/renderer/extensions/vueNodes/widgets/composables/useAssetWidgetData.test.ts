@@ -92,9 +92,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     await nextTick()
     await vi.waitFor(() => !isLoading.value)
 
-    expect(
-      vi.mocked(useAssetsStore().updateModelsForNodeType)
-    ).toHaveBeenCalledWith('CheckpointLoaderSimple')
+    expect(useAssetsStore().updateModelsForNodeType).toHaveBeenCalledWith(
+      'CheckpointLoaderSimple'
+    )
     expect(category.value).toBe('checkpoints')
     expect(assets.value).toEqual(mockAssets)
     expect(assets.value).toHaveLength(2)
@@ -171,9 +171,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       await nextTick()
       await vi.waitFor(() => !isLoading.value)
 
-      expect(
-        vi.mocked(useAssetsStore().updateModelsForNodeType)
-      ).toHaveBeenCalledWith('CheckpointLoaderSimple')
+      expect(useAssetsStore().updateModelsForNodeType).toHaveBeenCalledWith(
+        'CheckpointLoaderSimple'
+      )
       expect(category.value).toBe('checkpoints')
       expect(assets.value).toEqual(mockAssets)
     })
@@ -202,9 +202,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       await nextTick()
       await vi.waitFor(() => !isLoading.value)
 
-      expect(
-        vi.mocked(useAssetsStore().updateModelsForNodeType)
-      ).toHaveBeenCalledWith('LoraLoader')
+      expect(useAssetsStore().updateModelsForNodeType).toHaveBeenCalledWith(
+        'LoraLoader'
+      )
       expect(category.value).toBe('loras')
       expect(assets.value).toEqual(mockAssets)
     })
@@ -231,9 +231,9 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       await nextTick()
       await vi.waitFor(() => !isLoading.value)
 
-      expect(
-        vi.mocked(useAssetsStore().updateModelsForNodeType)
-      ).toHaveBeenCalledWith('CheckpointLoaderSimple')
+      expect(useAssetsStore().updateModelsForNodeType).toHaveBeenCalledWith(
+        'CheckpointLoaderSimple'
+      )
       expect(category.value).toBe('checkpoints')
       expect(assets.value).toEqual(mockAssets)
     })
@@ -244,9 +244,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
 
       await nextTick()
 
-      expect(
-        vi.mocked(useAssetsStore().updateModelsForNodeType)
-      ).not.toHaveBeenCalled()
+      expect(useAssetsStore().updateModelsForNodeType).not.toHaveBeenCalled()
       expect(category.value).toBeUndefined()
       expect(assets.value).toEqual([])
       expect(isLoading.value).toBe(false)

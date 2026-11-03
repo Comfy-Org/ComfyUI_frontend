@@ -1,14 +1,13 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useUserStore } from '@/stores/userStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
@@ -39,7 +38,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
@@ -53,8 +52,7 @@ function renderToolbar(props: SideToolbarProps = {}) {
   return render(SideToolbar, {
     props,
     global: {
-      plugins: [PrimeVue, i18n],
-      directives: { tooltip: {} },
+      plugins: [i18n],
       stubs: {
         ComfyMenuButton: { template: '<div />' },
         SidebarTemplatesButton: { template: '<div />' },

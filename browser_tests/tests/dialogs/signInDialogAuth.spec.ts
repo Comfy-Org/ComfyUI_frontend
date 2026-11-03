@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { localSignedOutFixture as test } from '@e2e/fixtures/localSignedOutFixture'
@@ -50,7 +52,7 @@ test.describe('Sign In dialog — live auth', () => {
 
     await expect(dialog.root).toBeVisible()
     await expect(
-      comfyPage.page.getByText('Invalid login credentials')
+      comfyPage.toast.withText('Invalid login credentials')
     ).toBeVisible()
   })
 
@@ -156,11 +158,11 @@ test.describe('Sign In dialog — live auth', () => {
     await dialog.forgotPasswordLink.click()
 
     await expect(
-      comfyPage.page.getByText('Password reset email sent')
+      comfyPage.toast.withText('Password reset email sent')
     ).toBeVisible()
   })
 
-  test('warns instead of sending when the email field is empty', async ({
+  test('flags the empty email field instead of sending a reset', async ({
     comfyPage
   }) => {
     const dialog = new SignInDialog(comfyPage.page)
@@ -168,8 +170,12 @@ test.describe('Sign In dialog — live auth', () => {
 
     await dialog.forgotPasswordLink.click()
 
-    await expect(comfyPage.page.getByText('Enter your email')).toBeVisible()
+    await expect(dialog.emailInput).toHaveAttribute('aria-invalid', 'true')
+    await expect(
+      dialog.root.getByText(enMessages.validation.invalidEmail)
+    ).toBeVisible()
     await expect(dialog.emailInput).toBeFocused()
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
   })
 
   test('reports a real transport failure on password reset without claiming success', async ({
@@ -188,13 +194,13 @@ test.describe('Sign In dialog — live auth', () => {
     await resetFailed
 
     await expect(
-      comfyPage.page.getByText(
+      comfyPage.toast.withText(
         'Network error. Please check your connection and try again.'
       ),
       'a dropped connection must surface the network error, not a silent failure'
     ).toBeVisible()
     await expect(
-      comfyPage.page.getByText('Password reset email sent'),
+      comfyPage.toast.withText('Password reset email sent'),
       'a real transport failure must not show the success confirmation'
     ).toBeHidden()
   })

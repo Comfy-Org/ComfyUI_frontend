@@ -46,7 +46,6 @@ Common commands in this repository:
 pnpm typecheck
 pnpm typecheck:browser
 pnpm typecheck:scripts
-pnpm typecheck:website
 ```
 
 ### 4. Repair the contract

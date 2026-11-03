@@ -9,6 +9,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { MockCloud } from './fixtures/cloud'
 import { PORTAL_URL } from './fixtures/env'
 import {
+  PRO_MONTHLY_OP_PLAN,
   capabilitiesWith,
   challengeRequiredOperation,
   pendingOperation,
@@ -126,7 +127,7 @@ test('a scheduled change ends on the plan that starts, its date, and the plan ke
   ).toBeVisible()
   await expect(page.getByText(/successfully updated/)).toBeHidden()
   const card = page.getByTestId('checkout-ending-plan')
-  await expect(card.getByText('Pro', { exact: true })).toBeVisible()
+  await expect(card.getByText('Pro Monthly', { exact: true })).toBeVisible()
   await expect(card).toContainText('$50.00 USD / mo')
   await expect(page.getByText(/credits added/)).toBeHidden()
   await expect(page.getByTestId('checkout-ending-paid-today')).toBeHidden()
@@ -200,7 +201,7 @@ test("a coded quote refusal on a link nothing here paid is Checkout not availabl
   await expect(contactSupport(page)).toBeVisible()
 })
 
-const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
+const RECEIPT_PLAN = PRO_MONTHLY_OP_PLAN
 
 test('77-4068: a Pay that goes through counts the credits the server says it added', async ({
   page,
@@ -466,7 +467,7 @@ test('390-4947 / 328-4444: a charge whose credits are still landing reads Paymen
 
   await expect(heading(page, 'Already completed')).toBeVisible()
   await expect(page.getByTestId('checkout-ending-plan')).toContainText(
-    'Pro$50.00 USD / mo10,000 credits added'
+    'Pro Monthly$50.00 USD / mo10,000 credits added'
   )
   await expect(code(page)).toBeHidden()
   expect(subscribeRequests(cloud)).toHaveLength(1)
@@ -519,7 +520,10 @@ test("a reload on We couldn't confirm stays on it, never a live form, and lands 
   await expect(unconfirmed).toBeVisible()
   await expect(payButton(page)).toBeHidden()
 
-  cloud.scenario.operations.op_subscribe = succeededOperation('op_subscribe')
+  cloud.scenario.operations.op_subscribe = {
+    ...succeededOperation('op_subscribe'),
+    plan: RECEIPT_PLAN
+  }
   settleOnServer(cloud)
   await page.reload()
 

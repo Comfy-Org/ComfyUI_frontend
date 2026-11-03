@@ -48,7 +48,7 @@ function renderMenu({
   })
 
   const utils = render(TestHost, {
-    global: { plugins: [i18n], directives: { tooltip: {} } }
+    global: { plugins: [i18n] }
   })
   return {
     ...utils,

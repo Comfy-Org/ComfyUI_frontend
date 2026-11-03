@@ -1,10 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-
-beforeEach(() => {
-  vi.spyOn(console, 'warn').mockImplementation(() => {})
-})
 
 describe('parseJsonWithNonFinite', () => {
   it('parses standard JSON unchanged', () => {

@@ -1,0 +1,55 @@
+import type { BillingEventsResponse } from '@comfyorg/ingest-types'
+
+/** Badge text the Activity table renders for each mocked event. */
+export const AGENT_USAGE_EVENT_TYPE = 'Agent Usage'
+export const PARTNER_NODE_USAGE_EVENT_TYPE = 'Partner Node Usage'
+export const API_USAGE_EVENT_TYPE = 'API Usage'
+export const GPU_USAGE_EVENT_TYPE = 'GPU Usage'
+
+/** `/api/billing/events` page with whole, one-credit, sub-credit and non-numeric `charge_micro_usd`. */
+export const AGENT_USAGE_CUSTOMER_EVENTS = {
+  events: [
+    {
+      event_id: 'evt-agent-usage',
+      event_type: 'agent_usage',
+      createdAt: '2026-09-20T12:00:00Z',
+      params: {
+        charge_micro_usd: 33_044,
+        input_tokens: 12_480,
+        output_tokens: 1_536,
+        cached_input_tokens: 4_096
+      }
+    },
+    {
+      event_id: 'evt-api-usage-sub-credit',
+      event_type: 'api_usage_completed',
+      createdAt: '2026-09-20T11:30:00Z',
+      params: {
+        charge_micro_usd: 1_000,
+        input_tokens: 96
+      }
+    },
+    {
+      event_id: 'evt-gpu-usage-one-credit',
+      event_type: 'gpu_usage',
+      createdAt: '2026-09-20T11:15:00Z',
+      params: {
+        charge_micro_usd: 4_740,
+        gpu_seconds: 3
+      }
+    },
+    {
+      event_id: 'evt-partner-node-usage',
+      event_type: 'api_node_usage',
+      createdAt: '2026-09-20T11:00:00Z',
+      params: {
+        charge_micro_usd: 'pending',
+        input_tokens: 320
+      }
+    }
+  ],
+  page: 1,
+  limit: 7,
+  total: 4,
+  totalPages: 1
+} satisfies BillingEventsResponse

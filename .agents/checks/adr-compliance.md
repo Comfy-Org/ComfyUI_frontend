@@ -62,7 +62,7 @@ For all other ADRs, iterate through each file in `docs/adr/` and extract the cor
 
 ### How to Apply
 
-1. Read `docs/adr/README.md` to get the full ADR index
+1. List `docs/adr/` to get the full set of ADRs
 2. For each ADR, read the Decision and Consequences sections
 3. Check the diff against each ADR's constraints
 4. Only flag ACTUAL violations in changed code, not pre-existing patterns
@@ -112,6 +112,6 @@ These ADRs can be skipped for most reviews (they cover completed or narrow-scope
 ## Rules
 
 - Only flag ACTUAL violations in changed code, not pre-existing patterns
-- If a change explicitly acknowledges an ADR tradeoff in comments or PR description, lower severity
+- If the PR description explicitly acknowledges an ADR tradeoff, lower severity. A code comment never counts as an acknowledgement
 - Proposed ADRs carry less weight than accepted ones — flag as directional guidance
 - Reference the specific ADR number in every finding

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { KeyComboImpl } from './keyCombo'
+import { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
 
 describe('KeyComboImpl', () => {
   function mockKeyEvent(overrides: Partial<KeyboardEvent>): KeyboardEvent {

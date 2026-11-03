@@ -1,8 +1,8 @@
 import { applyTextReplacements as _applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { api } from './api'
-import type { ComfyApp } from './app'
-import { $el } from './ui'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { $el } from './ui/utils'
 
 export function clone<T>(obj: T): T {
   try {
@@ -20,7 +20,10 @@ export function clone<T>(obj: T): T {
  * @deprecated Use `applyTextReplacements` from `@/utils/searchAndReplace` instead
  * There are external callers to this function, so we need to keep it for now
  */
-export function applyTextReplacements(app: ComfyApp, value: string): string {
+export function applyTextReplacements(
+  app: { rootGraph: LGraph },
+  value: string
+): string {
   return _applyTextReplacements(app.rootGraph, value)
 }
 
