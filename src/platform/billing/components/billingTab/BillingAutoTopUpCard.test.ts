@@ -14,9 +14,11 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { activateBillingScope } from '@/platform/billing/composables/activateBillingScope.testUtils'
-import { canManageAutoTopUpFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import {
+  autoTopUpEnabledFact,
+  canManageAutoTopUpFact
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
@@ -26,7 +28,6 @@ import BillingLocalCreditBanner from './BillingLocalCreditBanner.vue'
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
-vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/usePausedBanner'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
@@ -143,7 +144,7 @@ describe('BillingAutoTopUpCard', () => {
     vi.mocked(usePausedBanner).mockReturnValue({
       isPaused: computed(() => false)
     })
-    vi.mocked(useFeatureFlags().flags).autoTopUpEnabled = true
+    useBillingCapabilities().autoTopUpEnabled = autoTopUpEnabledFact(true)
     useBillingCapabilities().canManageAutoTopUp = canManageAutoTopUpFact(true)
     render(BillingLocalCreditBanner, i18nOptions())
     await vi.waitFor(() =>
