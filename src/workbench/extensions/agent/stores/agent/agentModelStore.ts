@@ -76,15 +76,17 @@ export const useAgentModelStore = defineStore('agentModel', () => {
   }
 
   /**
-   * What the picker shows for a chat, and so what its next message is sent
-   * with: its own pick while that is still offered, else the host's default.
+   * What the picker shows for a chat, and so what its next message runs on:
+   * its own pick while that is still offered, else the host's default. The
+   * default is shown even when it can't be used (`available: false`, e.g. the
+   * cloud route refused this account): the host does not fall back quietly,
+   * so the picker shows why and the person picks another model.
    */
   function selectedFor(threadId: string | null): AgentModelChoice | undefined {
-    return (
-      findAvailable(pickFor(threadId)) ??
-      findAvailable(listing.value?.default) ??
-      available.value[0]
+    const fallback = listing.value?.models.find(
+      (model) => model.id === listing.value?.default
     )
+    return findAvailable(pickFor(threadId)) ?? fallback ?? available.value[0]
   }
 
   /**
