@@ -1075,17 +1075,20 @@ describe('BillingTab', () => {
           'link',
           { name: 'Choose a plan' }
         )
-        const links = screen.getAllByRole('link', { name: 'Choose a plan' })
-        expect(links).toHaveLength(2)
-        for (const link of links) {
-          expect(link).toHaveAttribute('data-variant', 'inverted')
-          expect(link).toHaveAttribute(
-            'href',
-            expect.stringMatching(
-              /^https:\/\/platform\.test\/profile\/billing\/plans\?workspace=ws_1&correlation_id=.+$/
-            )
+        const plansLink = {
+          variant: 'inverted',
+          href: expect.stringMatching(
+            /^https:\/\/platform\.test\/profile\/billing\/plans\?workspace=ws_1&correlation_id=.+$/
           )
         }
+        expect(
+          screen
+            .getAllByRole('link', { name: 'Choose a plan' })
+            .map((link) => ({
+              variant: link.dataset.variant,
+              href: link.getAttribute('href')
+            }))
+        ).toEqual([plansLink, plansLink])
         bannerLink.addEventListener('click', (event) => event.preventDefault())
 
         await userEvent.click(bannerLink)

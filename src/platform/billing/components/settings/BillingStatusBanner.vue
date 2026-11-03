@@ -133,6 +133,7 @@ const {
   hasResolvedCapabilities,
   canManageBilling,
   canOpenPlans,
+  planKind,
   runDeniedPaymentPastDue
 } = useBillingCapabilities()
 const {
@@ -261,7 +262,7 @@ function planEndedCopy(): {
 }
 
 function planEndedAction(): BannerAction | null {
-  if (audience.value !== 'personal' && isSalesManagedPlan.value)
+  if (planKind.value === 'sales_managed')
     return canManage.value ? 'contactSales' : null
   return canOpenPlans.value ? 'choosePlan' : null
 }

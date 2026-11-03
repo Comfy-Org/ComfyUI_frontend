@@ -76,7 +76,11 @@ const member: Partial<WorkspaceUIMockState> = {
 function story(
   billing: Partial<BillingContextMockState>,
   workspace: Partial<WorkspaceUIMockState>,
-  capabilities: { canTopUp?: boolean; canSubscribeSelfServe?: boolean } = {}
+  capabilities: {
+    canTopUp?: boolean
+    canSubscribeSelfServe?: boolean
+    canOpenPlans?: boolean
+  } = {}
 ): Story {
   return {
     beforeEach() {
@@ -86,7 +90,9 @@ function story(
       setBillingContextMock({ isTeamPlan: true, ...billing })
       setWorkspaceUIMock(workspace)
       setBillingCapabilitiesMock({
-        canManageSubscription: workspace.canManageSubscription ?? true
+        canManageSubscription: workspace.canManageSubscription ?? true,
+        canOpenPlans:
+          capabilities.canOpenPlans ?? workspace.canManageSubscription ?? true
       })
       setCanTopUpMock(capabilities.canTopUp ?? true)
       setCanSubscribeSelfServeMock(capabilities.canSubscribeSelfServe ?? false)

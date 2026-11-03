@@ -110,8 +110,8 @@ vi.mock(import('@/platform/billing/composables/useResubscribe'), () => ({
 
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
-vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string, correlationId?: string) =>
+vi.mock(import('@/platform/workspace/utils/platformLink'), () => ({
+  platformLink: (path: `/${string}`, correlationId?: string) =>
     `https://platform.test${path}?correlation_id=${correlationId}`
 }))
 
@@ -970,6 +970,9 @@ describe('BillingStatusBanner', () => {
     it('sends an Enterprise owner to sales', async () => {
       endedPlan('ENTERPRISE')
       state.isTeamPlan = false
+      useBillingCapabilities().planKind = computed(() =>
+        receiveServerFact('plan_kind', 'sales_managed')
+      )
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       renderBanner()
 
@@ -986,6 +989,25 @@ describe('BillingStatusBanner', () => {
       )
       open.mockRestore()
     })
+
+    it.for(['members', 'billing'] as const)(
+      'offers Contact sales instead of Choose a plan on the %s tab when the server serves plan_kind sales_managed',
+      (section) => {
+        endedPlan('PRO')
+        grantOpenPlans(true)
+        useBillingCapabilities().planKind = computed(() =>
+          receiveServerFact('plan_kind', 'sales_managed')
+        )
+        renderBanner(section)
+
+        expect(
+          screen.getByRole('button', { name: 'Contact sales' })
+        ).toBeInTheDocument()
+        expect(
+          screen.queryByRole('link', { name: 'Choose a plan' })
+        ).not.toBeInTheDocument()
+      }
+    )
 
     it('dismisses for the session', async () => {
       endedPlan()
