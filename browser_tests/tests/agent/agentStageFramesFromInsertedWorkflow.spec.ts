@@ -159,6 +159,15 @@ test.describe(
           geometry: Object.fromEntries(
             graph.groups.map((group) => [group.title, [...group._bounding]])
           ),
+          containsAllMembers: graph.groups.every((group) =>
+            group.nodes.every((node) => {
+              const [gx, gy, gw, gh] = group._bounding
+              const [nx, ny, nw, nh] = node.boundingRect
+              return (
+                gx <= nx && gy <= ny && nx + nw <= gx + gw && ny + nh <= gy + gh
+              )
+            })
+          ),
           overlapsExisting: graph.groups
             .filter((group) => {
               const [gx, gy, gw, gh] = group._bounding
@@ -169,6 +178,7 @@ test.describe(
             .map((group) => group.title)
         }
       })
+      expect(live.containsAllMembers).toBe(true)
       expect(live.overlapsExisting).toEqual([])
 
       const savedRequest = page.waitForRequest(
@@ -180,9 +190,8 @@ test.describe(
       )
       await new Topbar(page).saveWorkflowAs(STAGE_FRAMES_SAVED_NAME)
       const saved = zComfyWorkflow.parse((await savedRequest).postDataJSON())
-      if (!saved.groups) throw new Error('Saved workflow omitted groups')
       const savedGeometry = Object.fromEntries(
-        saved.groups.map((group) => [group.title, [...group.bounding]])
+        (saved.groups ?? []).map((group) => [group.title, [...group.bounding]])
       )
       expect(savedGeometry).toEqual(live.geometry)
     })
