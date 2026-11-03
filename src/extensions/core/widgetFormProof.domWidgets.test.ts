@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
@@ -121,16 +121,17 @@ describe('case 4 — DOM widgets', () => {
     })
   })
 
-  it('excludes the AUDIO_UI player, which is flagged on the widget itself', () => {
+  it('excludes the AUDIO_UI player, which is flagged on the widget itself', async () => {
     const node = registeredNode('LoadAudio')
     Object.defineProperty(node, 'constructor', {
       value: fromAny({ nodeData: { output_node: false } }),
       configurable: true
     })
     node.addWidget('combo', 'audio', 'a.mp3', () => {}, { values: ['a.mp3'] })
-    const audioWidgets = audioWidgetExtension.getCustomWidgets?.(fromAny({}))
-    if (typeof audioWidgets !== 'object' || audioWidgets instanceof Promise)
-      throw new TypeError('AUDIO_UI widget constructor unavailable')
+    const audioWidgets = await audioWidgetExtension.getCustomWidgets?.(
+      fromAny({})
+    )
+    assert.exists(audioWidgets)
     audioWidgets.AUDIO_UI(node, 'audioUI', ['AUDIO_UI', {}], fromAny({}))
     node.addWidget('button', 'upload', '', () => {}, { serialize: false })
 
@@ -152,11 +153,12 @@ describe('case 4 — DOM widgets', () => {
     })
   })
 
-  it('refuses AUDIO_RECORD, whose player and button share one name', () => {
+  it('refuses AUDIO_RECORD, whose player and button share one name', async () => {
     const node = registeredNode('RecordAudio')
-    const recordWidgets = recordAudioExtension.getCustomWidgets?.(fromAny({}))
-    if (typeof recordWidgets !== 'object' || recordWidgets instanceof Promise)
-      throw new TypeError('AUDIO_RECORD widget constructor unavailable')
+    const recordWidgets = await recordAudioExtension.getCustomWidgets?.(
+      fromAny({})
+    )
+    assert.exists(recordWidgets)
     recordWidgets.AUDIO_RECORD(node, 'audio', ['AUDIO_RECORD', {}], fromAny({}))
 
     expect(node.widgets?.map((widget) => widget.name)).toEqual([
