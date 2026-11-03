@@ -363,7 +363,7 @@ const browseOptions = computed<Array<SelectOption | SelectFolder>>(() => {
   const files: SelectOption[] = []
   for (const option of normalizedOptions.value) {
     const parts = isFilePath(option.value)
-      ? option.value.split(/[/\\]/)
+      ? option.value.split(/[/\\]/).filter(Boolean)
       : [option.value]
     if (!directory.value.every((part, index) => parts[index] === part)) continue
     const label = parts[directory.value.length]
@@ -494,7 +494,7 @@ function handleOpenChange(open: boolean) {
     const value = selectedOption.value?.value ?? ''
     directory.value =
       hasFolders.value && isFilePath(value)
-        ? value.split(/[/\\]/).slice(0, -1)
+        ? value.split(/[/\\]/).filter(Boolean).slice(0, -1)
         : []
   } else {
     searchQuery.value = ''

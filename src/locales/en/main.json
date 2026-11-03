@@ -4342,6 +4342,8 @@
     "node2only": "Node 2.0 only",
     "selectModel": "Select model",
     "precisionLimit": "Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)",
+    "selectFolder": "Folder: {name}",
+    "backFromFolder": "Back: {name}",
     "uploadSelect": {
       "placeholder": "Select...",
       "placeholderImage": "Select image...",
