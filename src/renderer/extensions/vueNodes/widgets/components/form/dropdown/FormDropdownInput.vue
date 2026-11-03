@@ -108,6 +108,7 @@ defineExpose({ focus, showPicker })
         "
       />
     </button>
+    <slot name="anchor" :element="buttonRef" />
     <label
       v-if="uploadable"
       :class="

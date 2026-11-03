@@ -38,7 +38,9 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
         const menuBox = await menu.boundingBox()
         expect(triggerBox).not.toBeNull()
         expect(menuBox).not.toBeNull()
-        expect(Math.abs(menuBox!.x - triggerBox!.x)).toBeLessThanOrEqual(1)
+        const triggerRight = triggerBox!.x + triggerBox!.width
+        const menuRight = menuBox!.x + menuBox!.width
+        expect(Math.abs(menuRight - triggerRight)).toBeLessThanOrEqual(1)
         const gap = menuBox!.y - (triggerBox!.y + triggerBox!.height)
         expect(gap).toBeGreaterThanOrEqual(0)
         expect(gap).toBeLessThanOrEqual(16)
