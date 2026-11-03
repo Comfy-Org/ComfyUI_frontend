@@ -6388,5 +6388,85 @@
     "failed": "Some custom nodes didn't start",
     "failedDetail": "Reload the page to turn on: {packs}",
     "reload": "Reload"
+  },
+  "addCreditsDialog": {
+    "title": "Add credits",
+    "customAmountLabel": "Or enter an amount",
+    "amountError": {
+      "below_min": "Minimum is {amount}.",
+      "above_max": "The largest top-up is {amount}. Add more with another top-up.",
+      "whole_dollars": "Whole dollars only."
+    },
+    "negativeBalance": "Your balance is −{credits} credits. This top-up covers that first.",
+    "planLine": {
+      "no_plan": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
+      "ended": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
+      "free_runs": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
+    },
+    "credits": "{credits} credits",
+    "creditsUnavailable": "— credits",
+    "paidAtCheckout": "{amount}, paid at checkout",
+    "continue": "Continue",
+    "opening": "Opening…",
+    "processing": {
+      "title": "A {amount} payment is still processing",
+      "titleNoAmount": "A payment is still processing",
+      "body": "No need to pay again."
+    },
+    "needsVerification": {
+      "title": "Your {amount} payment needs verification",
+      "titleNoAmount": "Your payment needs verification",
+      "body": "Your bank is waiting for you to confirm it. Verify it to finish this top-up.",
+      "footer": "{amount}, unverified",
+      "action": "Verify payment"
+    },
+    "notVerified": {
+      "title": "Your {amount} payment wasn't verified",
+      "titleNoAmount": "Your payment wasn't verified",
+      "body": "Your bank didn't confirm it. Try again later, or contact support.",
+      "footerTitle": "{amount} top-up",
+      "footer": "Not verified",
+      "action": "Contact support"
+    },
+    "checkoutFailed": {
+      "title": "Couldn't open checkout",
+      "body": "Nothing was charged. Try again."
+    },
+    "notAllowed": {
+      "title": "You can't add credits right now",
+      "body": "Check Billing settings to see why."
+    },
+    "rateLimited": {
+      "title": "You've hit the top-up limit for now",
+      "body": "Try again in {wait}, or {support}.",
+      "bodyNoWait": "Try again later, or {support}."
+    },
+    "purchasesPaused": {
+      "title": "Buying credits isn't available right now",
+      "body": "Try again later, or {support}."
+    },
+    "messageSupport": "message support",
+    "wait": {
+      "minute": "a minute",
+      "minutes": "{count} minutes",
+      "hour": "an hour",
+      "hours": "{count} hours",
+      "day": "a day",
+      "days": "{count} days"
+    },
+    "opened": {
+      "title": "Checkout opened in a new tab",
+      "titleBrowser": "Checkout opened in your browser",
+      "body": "Credits are added to this workspace as soon as your payment goes through.",
+      "credits": "Credits",
+      "amount": "Amount",
+      "reopen": "Reopen checkout"
+    },
+    "close": "Close",
+    "blocked": {
+      "title": "Checkout didn't open",
+      "body": "Your browser blocked the new tab. Open checkout to finish paying.",
+      "action": "Open checkout"
+    }
   }
 }

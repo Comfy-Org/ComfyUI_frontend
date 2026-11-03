@@ -115,6 +115,9 @@ export interface BalanceInfo {
   cloudCreditBalanceMicros?: number
   /** Server-suggested top-up that covers a negative balance; null otherwise. */
   suggestedTopupAmountCents?: number | null
+  /** Served `min_topup_cents` / `max_topup_cents`; absent until the backend sends them. */
+  minTopupCents?: number
+  maxTopupCents?: number
   /** Served `low_balance`. Absent when the balance response omits it. */
   lowBalance?: boolean
 }
