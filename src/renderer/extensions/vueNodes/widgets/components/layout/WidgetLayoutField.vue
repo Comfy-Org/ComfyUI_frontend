@@ -76,7 +76,7 @@ function activateControl(event: MouseEvent) {
     :class="
       cn(
         unifiedRows
-          ? 'relative flex min-w-0 items-center rounded-md bg-input pl-8 focus-within:ring focus-within:ring-ring [&_:focus-visible]:ring-0 [&_:focus-visible]:outline-none [&_[data-slot=number-field]:focus-within]:ring-0'
+          ? 'relative flex min-w-0 items-center rounded-md bg-input pl-8 focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none [&_[data-slot=number-field]:focus-within]:ring-0'
           : 'grid min-w-0 grid-cols-subgrid justify-between gap-2',
         fullWidthRow && 'py-2 pl-2',
         unifiedRows && !noBorder && widget.borderStyle,
