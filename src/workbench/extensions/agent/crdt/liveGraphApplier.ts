@@ -1404,35 +1404,33 @@ export class LiveGraphApplier {
       pending = unresolved
     }
     if (!Array.isArray(documentWidgets))
-      this.applyMountedRowCounts(node, controllers, widgets, documentWidgets)
+      this.applyMountedGroups(node, controllers, widgets, documentWidgets)
     this.unappliedRegrownRows.delete(node)
   }
 
-  /**
-   * A DynamicCombo switch mounts its nested DynamicGroup and restores the
-   * group's rows outside the remote row-count path, so a refused restore
-   * would leave the document count unmet without a report. Re-apply the
-   * document count for each controller the frame mounted but did not write.
-   */
-  private applyMountedRowCounts(
+  private applyMountedGroups(
     node: LGraphNode,
     before: ReadonlySet<IBaseWidget>,
     widgets: Record<string, unknown>,
     documentWidgets: Record<string, unknown>
   ): void {
-    const mounted = (node.widgets ?? [])
-      .filter(
-        (widget) =>
-          isDynamicGroupController(widget) &&
-          !before.has(widget) &&
-          !Object.hasOwn(widgets, widget.name)
-      )
+    const mounted = (node.widgets ?? []).filter(
+      (widget) => isDynamicGroupController(widget) && !before.has(widget)
+    )
+    const counts = mounted
+      .filter((widget) => !Object.hasOwn(widgets, widget.name))
       .map((widget): [string, unknown] => [
         widget.name,
         documentWidgets[widget.name]
       ])
       .filter(isWidgetEntry)
-    this.applyWidgetRound(node, mounted, documentWidgets)
+    this.applyWidgetRound(node, counts, documentWidgets)
+    const fields = Object.entries(documentWidgets)
+      .filter(([name]) =>
+        mounted.some((widget) => name.startsWith(`${widget.name}.`))
+      )
+      .filter(isWidgetEntry)
+    this.applyWidgetRound(node, fields, documentWidgets)
   }
 
   private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {

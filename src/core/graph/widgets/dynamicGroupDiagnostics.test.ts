@@ -456,6 +456,7 @@ describe('remote DynamicGroup counts outside a row-count write', () => {
     LiteGraph.registerNodeType('RefusedComboGroup', comboNodeType())
     LiteGraph.registerNodeType('RestoredComboGroup', comboNodeType())
     LiteGraph.registerNodeType('CountedComboGroup', comboNodeType())
+    LiteGraph.registerNodeType('GrownComboGroup', comboNodeType())
   })
 
   function followed(type: string, values: unknown[], order: string[]) {
@@ -586,5 +587,20 @@ describe('remote DynamicGroup counts outside a row-count write', () => {
     expect(vi.mocked(reportError).mock.calls).toEqual([
       mismatch('CountedComboGroup', 2, 0)
     ])
+  })
+  it('grows a remounted group to the document count with its row values', () => {
+    const { apply, write, widget } = followed(
+      'GrownComboGroup',
+      ['on', 2, 'a', 'b'],
+      comboOrder
+    )
+    apply()
+    write({ mode: 'off' })
+    write({ 'mode.rows': 3, 'mode.rows.2.text': 'c' })
+
+    expect(write({ mode: 'on' })).toBe(0)
+    expect(widget('mode.rows')?.value).toBe(3)
+    expect(widget('mode.rows.1.text')?.value).toBe('b')
+    expect(widget('mode.rows.2.text')?.value).toBe('c')
   })
 })
