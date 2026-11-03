@@ -101,6 +101,26 @@ export {
   createPaymentMethodsReader
 } from './paymentMethods'
 export type {
+  AutoReloadPreview,
+  AutoReloadSettings,
+  AutoTopUpCommandOptions,
+  AutoTopUpCommandResult,
+  AutoTopUpReadOptions,
+  AutoTopUpReader,
+  AutoTopUpReaderOptions,
+  AutoTopUpScope,
+  AutoTopUpSnapshot,
+  PreviewAutoTopUpQuery,
+  SaveAutoTopUpInput
+} from './autoTopUp'
+export {
+  AUTO_TOP_UP_PREVIEW_ROUTE,
+  AUTO_TOP_UP_ROUTE,
+  createAutoTopUpReader,
+  previewAutoTopUp,
+  saveAutoTopUp
+} from './autoTopUp'
+export type {
   BillingStatusData,
   BillingStatusReader,
   BillingStatusReaderOptions,
@@ -369,10 +389,13 @@ export {
 export type {
   AutoTopUpCardFacts,
   AutoTopUpCardState,
+  AutoTopUpOffView,
+  AutoTopUpOffViewFacts,
   AutoTopUpSection,
   AutoTopUpSectionFacts
 } from './billingTab/autoTopUpCard'
 export {
+  autoTopUpOffView,
   deriveAutoTopUpCard,
   deriveAutoTopUpSection
 } from './billingTab/autoTopUpCard'
@@ -384,3 +407,5 @@ export {
   addCreditsAvailability,
   isMemberTopUpDenial
 } from './billingTab/addCreditsAvailability'
+export type { TopUpBound } from './topUpBounds'
+export { servedTopUpBound } from './topUpBounds'

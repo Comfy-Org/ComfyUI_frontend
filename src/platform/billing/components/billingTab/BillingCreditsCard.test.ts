@@ -5,7 +5,10 @@ import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
-import { deriveCreditsCard } from '@comfyorg/account-core/billing'
+import {
+  addCreditsAvailability,
+  deriveCreditsCard
+} from '@comfyorg/account-core/billing'
 import type {
   AddCreditsAvailability,
   CreditsCardFacts
@@ -31,11 +34,10 @@ function balanceOf(cents: {
 const activeFacts: CreditsCardFacts = {
   balance: balanceOf({ effective: 700, plan: 400, topUp: 300 }),
   planKind: 'active',
-  servedPlanKind: 'self_serve',
   billingStatus: 'paid',
   periodCreditGrant: null,
   planPoolCredits: 1000,
-  renewalDate: null,
+  nextCreditRefillAt: null,
   endDate: null
 }
 
@@ -284,43 +286,49 @@ describe('BillingCreditsCard', () => {
     meter: string | null
   }>([
     {
-      case: 'an active plan refills on its renewal date',
-      facts: { renewalDate: '2026-10-01T00:00:00Z' },
+      case: 'an active plan refills on the served refill date',
+      facts: { nextCreditRefillAt: '2026-10-01T00:00:00Z' },
       amount: '844 of 1,000',
       date: 'Refills October 1, 2026',
       used: '16% used',
       meter: '16'
     },
     {
-      case: 'a sales-managed plan has no refill date',
+      case: 'an active plan without a served refill date',
+      facts: { nextCreditRefillAt: null },
+      amount: '844 of 1,000',
+      date: '',
+      used: '16% used',
+      meter: '16'
+    },
+    {
+      case: 'a sales-managed plan refills on the served refill date',
       facts: {
         planKind: 'salesManaged',
-        servedPlanKind: 'sales_managed',
-        renewalDate: '2026-10-01T00:00:00Z'
+        nextCreditRefillAt: '2026-10-01T00:00:00Z'
       },
       amount: '844 of 1,000',
-      date: '',
+      date: 'Refills October 1, 2026',
       used: '16% used',
       meter: '16'
     },
     {
-      case: 'a plan without a served plan kind has no refill date',
-      facts: { servedPlanKind: null, renewalDate: '2026-10-01T00:00:00Z' },
+      case: 'a sales-managed plan without a served refill date',
+      facts: { planKind: 'salesManaged', nextCreditRefillAt: null },
       amount: '844 of 1,000',
       date: '',
       used: '16% used',
       meter: '16'
     },
     {
-      case: 'a sales-managed plan the row cannot name has no refill date',
+      case: 'a paused plan the row cannot name refills after payment',
       facts: {
         planKind: 'unknown',
-        servedPlanKind: 'sales_managed',
         billingStatus: 'paused',
-        renewalDate: '2026-10-01T00:00:00Z'
+        nextCreditRefillAt: '2026-10-01T00:00:00Z'
       },
       amount: '0 of 1,000',
-      date: '',
+      date: 'Refills when the payment goes through',
       used: null,
       meter: null
     },
@@ -328,7 +336,7 @@ describe('BillingCreditsCard', () => {
       case: 'an ending plan is available until its end date',
       facts: {
         planKind: 'ending',
-        renewalDate: '2026-10-01T00:00:00Z',
+        nextCreditRefillAt: '2026-10-01T00:00:00Z',
         endDate: '2026-12-31T12:00:00Z'
       },
       amount: '844 of 1,000',
@@ -338,7 +346,10 @@ describe('BillingCreditsCard', () => {
     },
     {
       case: 'a plan with no known total shows no meter',
-      facts: { planPoolCredits: null, renewalDate: '2026-10-01T00:00:00Z' },
+      facts: {
+        planPoolCredits: null,
+        nextCreditRefillAt: '2026-10-01T00:00:00Z'
+      },
       amount: '844',
       date: 'Refills October 1, 2026',
       used: null,
@@ -349,7 +360,7 @@ describe('BillingCreditsCard', () => {
       facts: {
         billingStatus: 'paused',
         planKind: 'paused',
-        renewalDate: '2026-10-01T00:00:00Z'
+        nextCreditRefillAt: '2026-10-01T00:00:00Z'
       },
       amount: '0 of 1,000',
       date: 'Refills when the payment goes through',
@@ -436,6 +447,60 @@ describe('BillingCreditsCard', () => {
     expect(screen.getByRole('button', { name: 'Add credits' })).toBeVisible()
   })
 
+  it.for<{
+    case: string
+    display: number | undefined
+    plan: number
+    planLine: string
+    inUse: boolean
+  }>([
+    {
+      case: 'a served display balance below the raw plan balance',
+      display: 200,
+      plan: 400,
+      planLine: '422 of 1,000',
+      inUse: false
+    },
+    {
+      case: 'a served zero display balance over a raw plan balance',
+      display: 0,
+      plan: 400,
+      planLine: '0 of 1,000',
+      inUse: true
+    },
+    {
+      case: 'an omitted display balance keeps the raw plan balance',
+      display: undefined,
+      plan: 400,
+      planLine: '844 of 1,000',
+      inUse: false
+    },
+    {
+      case: 'an omitted display balance keeps a raw plan balance above the grant',
+      display: undefined,
+      plan: 600,
+      planLine: '1,266 of 1,000',
+      inUse: false
+    }
+  ])(
+    'shows the plan amount for $case',
+    ({ display, plan, planLine, inUse }) => {
+      renderCard({
+        ...activeFacts,
+        planPoolCredits: 1000,
+        balance: {
+          ...balanceOf({ effective: plan + 300, plan, topUp: 300 }),
+          cloudCreditDisplayBalanceCents: display
+        }
+      })
+
+      expect(
+        screen.getByTestId('billing-credits-plan').textContent.trim()
+      ).toBe(planLine)
+      expect(screen.queryByText('In use now') !== null).toBe(inUse)
+    }
+  )
+
   it('shows nothing under the amount without a date or a total', () => {
     renderCard({ ...activeFacts, planPoolCredits: null })
 
@@ -443,12 +508,12 @@ describe('BillingCreditsCard', () => {
     expect(screen.queryByRole('meter')).toBeNull()
   })
 
-  it('waits for the payment instead of a renewal date on a paused plan', () => {
+  it('waits for the payment instead of the served refill date on a paused plan', () => {
     renderCard({
       ...activeFacts,
       billingStatus: 'paused',
       planKind: 'paused',
-      renewalDate: '2026-11-23T00:00:00Z'
+      nextCreditRefillAt: '2026-11-23T00:00:00Z'
     })
 
     expect(
@@ -483,6 +548,43 @@ describe('BillingCreditsCard', () => {
 
     expect(emitted('retry')).toHaveLength(1)
   })
+
+  it.for<{
+    reason: 'topup_purchases_paused' | 'not_workspace_owner' | undefined
+    addCreditsDisabled: boolean[]
+    pausedNotes: number
+  }>([
+    {
+      reason: 'topup_purchases_paused',
+      addCreditsDisabled: [true],
+      pausedNotes: 1
+    },
+    { reason: 'not_workspace_owner', addCreditsDisabled: [], pausedNotes: 0 },
+    { reason: undefined, addCreditsDisabled: [false], pausedNotes: 0 }
+  ])(
+    'shows the top-up row for reason $reason with Add credits disabled $addCreditsDisabled',
+    ({ reason, addCreditsDisabled, pausedNotes }) => {
+      renderCard(
+        activeFacts,
+        addCreditsAvailability({
+          resolved: true,
+          canTopUp: reason === undefined,
+          denial: reason
+        })
+      )
+
+      expect(
+        screen
+          .queryAllByRole<HTMLButtonElement>('button', { name: 'Add credits' })
+          .map((addCredits) => addCredits.disabled)
+      ).toEqual(addCreditsDisabled)
+      expect(
+        screen.queryAllByText(
+          "Buying credits isn't available right now. Try again later, or message support."
+        )
+      ).toHaveLength(pausedNotes)
+    }
+  )
 
   it('opens the top-up flow from Add credits', async () => {
     const { emitted } = renderCard(activeFacts)

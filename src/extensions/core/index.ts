@@ -1,6 +1,7 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import type { ComfyExtension } from '@/types/comfy'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { clipspaceExtension } from './clipspace'
 import { contextMenuFilterExtension } from './contextMenuFilter'
@@ -74,6 +75,30 @@ function register(extension: ComfyExtension) {
   disposers.push(useExtensionService().registerExtension(extension))
 }
 
+async function loadAgentPanelExtension() {
+  const agentPanelModule: unknown = await import('./agentPanel')
+  const registerAgentPanelExtension =
+    typeof agentPanelModule === 'object' &&
+    agentPanelModule !== null &&
+    'registerAgentPanelExtension' in agentPanelModule
+      ? agentPanelModule.registerAgentPanelExtension
+      : undefined
+
+  if (typeof registerAgentPanelExtension !== 'function') {
+    const error = new TypeError(
+      'Agent panel extension module did not provide a registration function'
+    )
+    if (__DISTRIBUTION__ !== 'cloud') throw error
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'error_loading_agent_panel_extension'
+    })
+    return
+  }
+
+  registerAgentPanelExtension()
+}
+
 async function registerInOrder() {
   baseCoreExtensions.forEach(register)
 
@@ -89,8 +114,7 @@ async function registerInOrder() {
     register((await import('./cloudSessionCookie')).cloudSessionCookieExtension)
   }
 
-  const { registerAgentPanelExtension } = await import('./agentPanel')
-  registerAgentPanelExtension()
+  await loadAgentPanelExtension()
 
   if (isCloud || isNightly) {
     register(

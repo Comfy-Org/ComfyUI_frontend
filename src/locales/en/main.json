@@ -3086,6 +3086,7 @@
     "additionalInfo": "Additional Info",
     "charge": "Charge",
     "lessThanOne": "<1",
+    "creditUnit": "Credit | Credits",
     "model": "Model",
     "api": "API",
     "added": "Added",
@@ -3644,6 +3645,7 @@
     "billingTab": {
       "autoTopUp": {
         "actions": {
+          "addPaymentMethod": "Add payment method",
           "manage": "Manage",
           "turnOn": "Turn on",
           "updatePayment": "Update payment"
@@ -3654,6 +3656,8 @@
         "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
         "limitTooltipNoDate": "Counts only auto top-up charges.",
         "off": "Refills credits when your balance runs low",
+        "noPaymentMethod": "Auto top-up needs a payment method. Add one to turn it on.",
+        "noDefaultPaymentMethod": "Auto top-up needs a default payment method. Set one to turn it on.",
         "onHold": "No default payment method. Set one to resume auto top-up.",
         "paused": "Monthly limit reached. Resumes {date}.",
         "pausedNoDate": "Monthly limit reached.",
@@ -3785,6 +3789,10 @@
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "refusedBody": "Your team has used all its credits.",
         "refusedPersonalBody": "You've used all your credits.",
+        "pausedBody": "Your team has used all its credits. Buying credits isn't available right now. Credits refill on {date}.",
+        "pausedBodyNoDate": "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+        "pausedPersonalBody": "You've used all your credits. Buying credits isn't available right now. Credits refill on {date}.",
+        "pausedPersonalBodyNoDate": "You've used all your credits. Buying credits isn't available right now. Try again later.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
@@ -3801,7 +3809,8 @@
         "localBody": "You have {credits} credit left. Add credits to keep running Partner Nodes. | You have {credits} credits left. Add credits to keep running Partner Nodes.",
         "personalBody": "You have {credits} credit left. Add credits before you run out. | You have {credits} credits left. Add credits before you run out.",
         "ownerBody": "This workspace has {credits} credit left. Add credits before you run out. | This workspace has {credits} credits left. Add credits before you run out.",
-        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out."
+        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out.",
+        "pausedBody": "You have {credits} credit left. Buying credits isn't available right now. | You have {credits} credits left. Buying credits isn't available right now."
       },
       "ending": {
         "title": "Your Team plan ends on {date}",
@@ -6069,6 +6078,12 @@
       "answerSuperseded": "This was already answered somewhere else, so that answer was used instead of yours."
     },
     "askUnavailable": "The agent is waiting on a step this panel can't show.",
+    "extensionChange": {
+      "disabled": "Turned off the node pack {pack}",
+      "enabled": "Turned on the node pack {pack}",
+      "removed": "Removed the node pack {pack}",
+      "restartHint": "This takes effect after ComfyUI restarts. Reload this page after the restart."
+    },
     "askUser": {
       "card": "Question from the agent",
       "chooseUpTo": "Choose up to {max}",
@@ -6233,6 +6248,8 @@
     "worked": "Worked",
     "workedNotConfirmedOnCanvas": "Changes not confirmed on your canvas",
     "toolNotConfirmedOnCanvas": "{tool} — not confirmed on your canvas",
+    "toolOutcomeUnknown": "{tool} — outcome unknown",
+    "toolFailed": "{tool} failed",
     "workedForSeconds": "Worked for {seconds} seconds",
     "workedForMinutes": "Worked for {minutes}m {seconds}s",
     "copy": "Copy",
@@ -6273,6 +6290,10 @@
     "toolSavingPreference": "Saving a preference",
     "toolForgotPreference": "Forgot a preference",
     "toolForgettingPreference": "Forgetting a preference",
+    "toolRemovedNodePack": "Removed a node pack",
+    "toolRemovingNodePack": "Removing a node pack",
+    "toolSwitchedNodePack": "Switched a node pack",
+    "toolSwitchingNodePack": "Switching a node pack",
     "openWorkflowTab": "Open {name}",
     "unavailableWorkflowReference": "{name} (unavailable)",
     "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",

@@ -6,6 +6,7 @@ import {
   zAgentAttachmentRejected,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
+  zAgentExtensionChangedData as zGeneratedAgentExtensionChangedData,
   zAgentIdentity as zGeneratedAgentIdentity,
   zAgentMessage as zGeneratedAgentMessage,
   zAgentPendingAskBase,
@@ -214,6 +215,13 @@ export const zAttachmentRejection = zAgentAttachmentRejected.pick({
   type: true
 })
 
+export const zLoopbackOnlyRefusal = zGeneratedAgentError
+  .extend({
+    error: z.string().trim().min(1),
+    code: z.literal('agent_loopback_only')
+  })
+  .passthrough()
+
 /**
  * The 403 body the agent service returns when it will not serve the turn's
  * `workflow_id` to the caller's workspace, whether the row is gone or belongs
@@ -375,6 +383,17 @@ const zAgentAskResolvedEvent = z.object({
   data: zAgentAskResolvedData
 })
 
+const zAgentExtensionChangedEvent = z.object({
+  type: z.literal('agent_extension_changed'),
+  data: zGeneratedAgentExtensionChangedData
+    .extend({
+      pack: zGeneratedAgentExtensionChangedData.shape.pack
+        .max(256)
+        .refine((pack) => !/[\p{Cc}\p{Cf}]/u.test(pack))
+    })
+    .passthrough()
+})
+
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
@@ -384,7 +403,8 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,
-  zAgentAskResolvedEvent
+  zAgentAskResolvedEvent,
+  zAgentExtensionChangedEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 
