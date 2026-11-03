@@ -803,7 +803,9 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      expect(newNode.widgets!.map((widget) => widget.value)).toEqual([1.5])
+      expect(graph._nodes[0].widgets?.map((widget) => widget.value)).toEqual([
+        1.5
+      ])
     })
 
     it('lets the later mapping win when two mappings target one widget', () => {
