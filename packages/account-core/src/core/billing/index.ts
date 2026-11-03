@@ -328,3 +328,11 @@ export {
   deriveAutoTopUpCard,
   deriveAutoTopUpSection
 } from './billingTab/autoTopUpCard'
+export type {
+  AddCreditsAvailability,
+  BillingTopUpDenial
+} from './billingTab/addCreditsAvailability'
+export {
+  addCreditsAvailability,
+  isMemberTopUpDenial
+} from './billingTab/addCreditsAvailability'
