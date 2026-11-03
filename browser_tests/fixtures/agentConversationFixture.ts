@@ -952,6 +952,7 @@ export class AgentConversationHarness {
     await this.page.route(
       `**/api/agent/threads/${threadId}/messages`,
       async (route) => {
+        if (route.request().method() !== 'GET') return route.fallback()
         reached()
         await held
         return route.fallback()
