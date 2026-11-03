@@ -84,7 +84,8 @@ export function tagSentryNonFirstPartyOrigin(event: ErrorEvent): ErrorEvent {
       if (
         normalized &&
         normalized !== '<anonymous>' &&
-        normalized !== '[native code]'
+        normalized !== '[native code]' &&
+        normalized !== 'native'
       ) {
         path = normalized
         break

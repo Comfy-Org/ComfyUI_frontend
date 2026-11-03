@@ -220,6 +220,7 @@ describe('sentryBeforeSend', () => {
               frames: [
                 { filename: '/extensions/comfyui-foo/main.js' },
                 { filename: 'https://cloud.comfy.org/assets/app.js' },
+                { filename: 'native' },
                 { filename: '<anonymous>' }
               ]
             }
@@ -257,7 +258,7 @@ describe('sentryBeforeSend', () => {
     expect(result?.tags?.extension).toBeUndefined()
   })
 
-  it.for(['<anonymous>', '[native code]', '   '])(
+  it.for(['<anonymous>', '[native code]', 'native', '   '])(
     'leaves origin untagged for an unidentifiable top frame %s',
     (path) => {
       const event = {
