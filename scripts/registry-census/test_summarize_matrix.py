@@ -214,7 +214,7 @@ class HarnessGates(unittest.TestCase):
         self.assertIsNone(verdict.metrics)
 
     def test_a_telemetry_channel_that_stops_firing_is_withheld(self) -> None:
-        for key in ('formAgreement', 'formProof', 'registryForms'):
+        for key in ('formAgreement', 'formProof'):
             rows = population()
             for r in rows:
                 del r[key]
@@ -224,6 +224,18 @@ class HarnessGates(unittest.TestCase):
             self.assertIn('ROW SCHEMA DRIFT', report)
             self.assertIn(key, report)
             self.assertIsNone(verdict.metrics)
+
+    def test_registry_forms_is_required_only_for_an_opt_in_census(self) -> None:
+        rows = population()
+        for row in rows:
+            del row['registryForms']
+        self.assertEqual(sm.evaluate(rows, {}).code, 0)
+
+        verdict = sm.evaluate(rows, {}, expect_registry_forms=True)
+        report = '\n'.join(verdict.lines)
+        self.assertEqual(verdict.code, 2)
+        self.assertIn('ROW SCHEMA DRIFT', report)
+        self.assertIn('registryForms', report)
 
     def test_a_refused_form_verdict_does_not_move_the_population_verdict(
         self,
@@ -476,6 +488,19 @@ class MainIO(unittest.TestCase):
     def test_non_numeric_shard_expectation_is_withheld(self) -> None:
         code, _, _ = self.run_main(population(), MATRIX_EXPECT_SHARDS='four')
         self.assertEqual(code, 2)
+
+    def test_registry_forms_expectation_is_read_from_the_environment(
+        self,
+    ) -> None:
+        rows = population()
+        for row in rows:
+            del row['registryForms']
+        code, metrics, output = self.run_main(
+            rows, MATRIX_EXPECT_REGISTRY_FORMS='1'
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(metrics, '')
+        self.assertIn('registryForms', output)
 
     def test_renderer_is_read_from_the_environment(self) -> None:
         rows = population()
