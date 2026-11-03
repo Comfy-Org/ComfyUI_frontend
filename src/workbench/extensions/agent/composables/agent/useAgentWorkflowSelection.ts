@@ -363,7 +363,13 @@ export function useAgentWorkflowSelection({
     if (!isCurrent()) return false
     if (data === null) return null
     const name = listedNameFor(workflowId) ?? 'Unsaved Workflow'
-    const tab = workflowStore.createTemporary(`${name}.json`, data)
+    // The host's copy keeps another browser's camera, which can leave every
+    // node off screen here; without one the load fits the view.
+    const { ds: _camera, ...extra } = data.extra ?? {}
+    const tab = workflowStore.createTemporary(`${name}.json`, {
+      ...data,
+      extra
+    })
     const opened = await workflowService.openWorkflow(tab, { isCurrent })
     if (!isCurrent()) return false
     if (!opened) return null

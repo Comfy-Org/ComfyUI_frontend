@@ -383,6 +383,20 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
+  it('drops the host copy camera so the reopened tab fits its view', async () => {
+    const { selection, workflows, loadHostWorkflow } = setup()
+    loadHostWorkflow.mockResolvedValueOnce({
+      ...hostGraph(),
+      extra: { ds: { offset: [-9000, -9000], scale: 0.5 }, note: 'kept' }
+    })
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toBe(true)
+
+    const reopened = workflows.activeWorkflow
+    assert.exists(reopened)
+    expect(reopened.activeState?.extra).toEqual({ note: 'kept' })
+  })
+
   it.for([
     { host: 'has no copy', load: async () => null },
     {
