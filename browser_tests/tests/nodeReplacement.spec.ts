@@ -128,6 +128,10 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
         class_type: 'BatchImagesNode',
         inputs: { 'images.image0': ['1', 0], 'images.image1': ['6', 0] }
       })
+      expect(prompt['4']).toMatchObject({
+        class_type: 'SaveImage',
+        inputs: { images: ['2', 0] }
+      })
     })
   })
 

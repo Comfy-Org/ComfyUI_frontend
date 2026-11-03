@@ -240,6 +240,7 @@ function scanSingleNodeModelsAndTypes(
 
   if (node.isSubgraphNode()) return
 
+  useDeprecatedNodesStore().addNode(node, execId)
   const originalType = node.last_serialization?.type ?? node.type
   if (!(originalType in LiteGraph.registered_node_types)) {
     const nodeReplacementStore = useNodeReplacementStore()

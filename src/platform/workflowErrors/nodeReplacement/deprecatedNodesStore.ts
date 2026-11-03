@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   removePendingMissingNodeTypesByExecutionIdPrefix,
@@ -12,34 +12,44 @@ import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplaceme
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
-  collectAllNodes,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  isExecutionPathActive,
+  mapUniqueNodes
 } from '@/utils/graphTraversalUtil'
 
 /** Installed nodes whose definition is deprecated and whose registered replacement can be created. */
 export const useDeprecatedNodesStore = defineStore('deprecatedNodes', () => {
   const nodeTypes = ref<MissingNodeType[]>([])
 
+  function entryFor(
+    node: LGraphNode,
+    nodeId: string
+  ): MissingNodeType | undefined {
+    if (!node.type || !useNodeDefStore().nodeDefsByName[node.type]?.deprecated)
+      return undefined
+    const replacement = useNodeReplacementStore().getReplacementFor(node.type)
+    if (!replacement) return undefined
+    if (!(replacement.new_node_id in LiteGraph.registered_node_types))
+      return undefined
+    return { type: node.type, nodeId, isReplaceable: true, replacement }
+  }
+
   function rescan(rootGraph: LGraph): void {
-    const replacements = useNodeReplacementStore()
-    const { nodeDefsByName } = useNodeDefStore()
-    nodeTypes.value = collectAllNodes(rootGraph).flatMap(
-      (node): MissingNodeType[] => {
-        if (!node.type || !nodeDefsByName[node.type]?.deprecated) return []
-        const replacement = replacements.getReplacementFor(node.type)
-        if (!replacement) return []
-        if (!(replacement.new_node_id in LiteGraph.registered_node_types))
-          return []
-        return [
-          {
-            type: node.type,
-            nodeId: getExecutionIdByNode(rootGraph, node) ?? String(node.id),
-            isReplaceable: true,
-            replacement
-          }
-        ]
-      }
+    nodeTypes.value = mapUniqueNodes(rootGraph, (node) => {
+      const nodeId = getExecutionIdByNode(rootGraph, node)
+      if (!nodeId || !isExecutionPathActive(rootGraph, nodeId)) return undefined
+      return entryFor(node, nodeId)
+    })
+  }
+
+  function addNode(node: LGraphNode, executionId: string): void {
+    const entry = entryFor(node, executionId)
+    if (!entry) return
+    const listed = nodeTypes.value.some(
+      (nodeType) =>
+        typeof nodeType !== 'string' && nodeType.nodeId === executionId
     )
+    if (!listed) nodeTypes.value = [...nodeTypes.value, entry]
   }
 
   function removeByType(types: string[]): void {
@@ -49,7 +59,6 @@ export const useDeprecatedNodesStore = defineStore('deprecatedNodes', () => {
     )
   }
 
-  /** Removes the node with execution id `executionId` and every node inside it. */
   function removeByNodeId(executionId: string): void {
     nodeTypes.value = removePendingMissingNodeTypesByExecutionIdPrefix(
       removePendingMissingNodeTypesByNodeId(nodeTypes.value, executionId),
@@ -57,5 +66,5 @@ export const useDeprecatedNodesStore = defineStore('deprecatedNodes', () => {
     )
   }
 
-  return { nodeTypes, rescan, removeByType, removeByNodeId }
+  return { nodeTypes, rescan, addNode, removeByType, removeByNodeId }
 })

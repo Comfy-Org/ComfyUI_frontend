@@ -704,9 +704,14 @@ export function useErrorGroups(
     groupSwapNodes(missingNodesStore.visibleMissingNodesError?.nodeTypes ?? [])
   )
 
-  const deprecatedNodeGroups = computed(() =>
-    groupSwapNodes(deprecatedNodesStore.nodeTypes)
-  )
+  const deprecatedNodeGroups = computed(() => {
+    const query = toValue(searchQuery).trim().toLowerCase()
+    return groupSwapNodes(deprecatedNodesStore.nodeTypes).filter((group) =>
+      [group.type, group.newNodeId].some((name) =>
+        name?.toLowerCase().includes(query)
+      )
+    )
+  })
 
   /**
    * Builds ErrorGroups from missingNodesError. Returns [] when none present.
@@ -1001,8 +1006,16 @@ export function useErrorGroups(
    */
   const selectionMatchedAssetNodeIds = computed<Set<string>>(() => {
     if (!hasSelection.value) return new Set()
+    const deprecatedNodeIds = deprecatedNodesStore.nodeTypes.flatMap(
+      (nodeType) =>
+        typeof nodeType === 'string' || nodeType.nodeId == null
+          ? []
+          : [String(nodeType.nodeId)]
+    )
     const matched = new Set(
-      assetNodeIdsWithError.value.filter(isAssetCandidateInSelection)
+      [...assetNodeIdsWithError.value, ...deprecatedNodeIds].filter(
+        isAssetCandidateInSelection
+      )
     )
     for (const candidate of missingModelCandidatesForSelection.value) {
       if (candidate.nodeId != null) matched.add(String(candidate.nodeId))
