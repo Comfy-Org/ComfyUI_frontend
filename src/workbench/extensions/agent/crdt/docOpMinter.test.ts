@@ -303,6 +303,7 @@ describe('attachDocOpMinter', () => {
   let refusals: Array<[string, string]>
   let seededPromotedDocs: Set<ReturnType<typeof mint>>
   let dynamicComboDocs: Set<ReturnType<typeof mint>>
+  let unboundLocalIntents: number
 
   function registeredDynamicComboScenario() {
     const scenario = dynamicComboScenario(graph)
@@ -326,9 +327,11 @@ describe('attachDocOpMinter', () => {
     refusals = []
     seededPromotedDocs = new Set()
     dynamicComboDocs = new Set()
+    unboundLocalIntents = 0
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      onUnboundLocalIntent: () => unboundLocalIntents++,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => (graphAvailable ? graph : null),
       boundRootGraphId: () => (unbound ? null : rootGraphId),
@@ -571,6 +574,19 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
 
     expect(source.widgets![0].value).toBe(6)
+    expect(minted).toEqual([])
+    expect(unboundLocalIntents).toBe(1)
+  })
+
+  it('marks only edits to the bound workflow while its document is unconfirmed', async () => {
+    const { source } = seedGraph(graph)
+    bound = false
+    source.widgets![0].value = 5
+    unbound = true
+    source.widgets![0].value = 6
+    await afterFlush()
+
+    expect(unboundLocalIntents).toBe(1)
     expect(minted).toEqual([])
   })
 

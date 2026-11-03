@@ -10662,6 +10662,90 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   })
 
+  it('leaves a workflow unbound after a local edit made before its follower subscribe confirms', async () => {
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({ status: 'pending' }),
+      reset: vi.fn(),
+      stop: () => {}
+    })
+    makeTab('wf-42')
+    const target = addTab('workflows/target.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-target' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-target', target.path)
+    const messagesFor = (threadId: string, text: string): AgentMessages => [
+      {
+        id: `row-${threadId}`,
+        thread_id: threadId,
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: 'wf-target',
+        content: { text }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/th-first/messages'))
+        return json(200, messagesFor('th-first', 'First request'))
+      if (url.includes('/th-second/messages'))
+        return json(200, messagesFor('th-second', 'Second request'))
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [{ id: 'wf-target', name: 'target' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      return json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-first',
+            title: 'First chat',
+            last_message_at: '2026-09-01T00:00:00Z'
+          }),
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-08-01T00:00:00Z'
+          })
+        ])
+      )
+    })
+    renderWithSelectedTarget()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('First chat'))
+    await screen.findAllByText('First request')
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-first')
+    )
+    await vi.waitFor(() =>
+      expect(docOpMinterDeps.current?.boundRootGraphId()).not.toBeNull()
+    )
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+    docOpMinterDeps.current?.onUnboundLocalIntent?.()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Second chat'))
+    await screen.findAllByText('Second request')
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-second')
+    )
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+  })
+
   it('binds the session to the workflow a history thread restored, not only a reload', async () => {
     makeTab('wf-42')
     const old = addTab('workflows/old.json', {
