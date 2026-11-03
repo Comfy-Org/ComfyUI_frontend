@@ -19,6 +19,10 @@ export class TopUpCreditsDialog extends BaseDialog {
   readonly continueButton: Locator
   readonly reopenButton: Locator
   readonly openCheckoutLink: Locator
+  readonly openedSummary: Locator
+  readonly negativeBalance: Locator
+  readonly verifyPaymentLink: Locator
+  readonly contactSupportLink: Locator
 
   constructor(page: Page) {
     super(
@@ -51,6 +55,14 @@ export class TopUpCreditsDialog extends BaseDialog {
     this.continueButton = this.root.getByTestId('add-credits-continue')
     this.reopenButton = this.root.getByTestId('add-credits-reopen')
     this.openCheckoutLink = this.root.getByTestId('add-credits-open-checkout')
+    this.openedSummary = this.root.getByTestId('add-credits-opened-summary')
+    this.negativeBalance = this.root.getByTestId('add-credits-negative-balance')
+    this.verifyPaymentLink = this.root.getByRole('link', {
+      name: 'Verify payment'
+    })
+    this.contactSupportLink = this.root.getByRole('link', {
+      name: 'Contact support'
+    })
   }
 
   async open(options?: { isInsufficientCredits?: boolean }) {

@@ -39,14 +39,23 @@ test.describe('TopUpCredits dialog', { tag: '@ui' }, () => {
     await expect(dialog.summary).toContainText('$40.00, paid at checkout')
   })
 
-  test('an amount under the minimum is refused under the field', async () => {
-    await dialog.open()
+  for (const { amount, error } of [
+    { amount: '3', error: 'Minimum is $5.' },
+    {
+      amount: '10001',
+      error: 'The largest top-up is $10,000. Add more with another top-up.'
+    },
+    { amount: '12.5', error: 'Whole dollars only.' }
+  ]) {
+    test(`refuses $${amount} under the field`, async () => {
+      await dialog.open()
 
-    await dialog.amountInput.fill('3')
+      await dialog.amountInput.fill(amount)
 
-    await expect(dialog.amountError).toHaveText('Minimum is $5.')
-    await expect(dialog.continueButton).toBeDisabled()
-  })
+      await expect(dialog.amountError).toHaveText(error)
+      await expect(dialog.continueButton).toBeDisabled()
+    })
+  }
 
   test('close button dismisses dialog', async () => {
     await dialog.open()
