@@ -51,13 +51,27 @@ async function mountOpenPopover(
   scope.run(() => usePopoverViewportDismiss(open, anchor))
   open.value = true
   await nextTick()
-  return { open, stop: () => scope.stop() }
+  return { open, anchor, stop: () => scope.stop() }
 }
 
 function moveFocusToButton() {
   const button = document.createElement('button')
   document.body.append(button)
   button.focus()
+}
+
+function scrollerAround(anchor: Element) {
+  const scroller = document.createElement('section')
+  Object.defineProperty(scroller, 'scrollHeight', { value: 1000 })
+  Object.defineProperty(scroller, 'clientHeight', { value: 400 })
+  anchor.replaceWith(scroller)
+  scroller.append(anchor)
+  return {
+    scrollTo(position: 'end' | 'middle') {
+      scroller.scrollTop = position === 'end' ? 600 : 300
+      scroller.dispatchEvent(new Event('scroll'))
+    }
+  }
 }
 
 function resize(to: Resize) {
@@ -189,23 +203,62 @@ describe(usePopoverViewportDismiss, () => {
     expect(popover.open.value).toBe(false)
   })
 
-  it('stays open when a scroll lands in the same frame as the keyboard hiding', async () => {
+  it('stays open when the widget list clamps its scroll as the keyboard hides', async () => {
     const popover = await mountOpenPopover('touch', 'nothing', KEYBOARD_SHOWN)
     stop = popover.stop
+    const widgetList = scrollerAround(popover.anchor)
 
     resize(PORTRAIT)
-    document.dispatchEvent(new Event('scroll'))
+    widgetList.scrollTo('end')
 
     expect(popover.open.value).toBe(true)
   })
 
-  it('closes on a scroll in a later frame after the keyboard hid', async () => {
+  it('closes on a scroll short of the end after the keyboard hides', async () => {
     const popover = await mountOpenPopover('touch', 'nothing', KEYBOARD_SHOWN)
     stop = popover.stop
+    const widgetList = scrollerAround(popover.anchor)
 
     resize(PORTRAIT)
-    await new Promise((resolve) => requestAnimationFrame(resolve))
-    document.dispatchEvent(new Event('scroll'))
+    widgetList.scrollTo('middle')
+
+    expect(popover.open.value).toBe(false)
+  })
+
+  it('closes on the next scroll after the clamp', async () => {
+    const popover = await mountOpenPopover('touch', 'nothing', KEYBOARD_SHOWN)
+    stop = popover.stop
+    const widgetList = scrollerAround(popover.anchor)
+
+    resize(PORTRAIT)
+    widgetList.scrollTo('end')
+    widgetList.scrollTo('end')
+
+    expect(popover.open.value).toBe(false)
+  })
+
+  it('closes on a scroll at the end when the viewport did not grow', async () => {
+    const popover = await mountOpenPopover('touch', 'nothing')
+    stop = popover.stop
+    const widgetList = scrollerAround(popover.anchor)
+
+    resize('same-size resize event')
+    widgetList.scrollTo('end')
+
+    expect(popover.open.value).toBe(false)
+  })
+
+  it('forgets a pending clamp when the popover reopens', async () => {
+    const popover = await mountOpenPopover('touch', 'nothing', KEYBOARD_SHOWN)
+    stop = popover.stop
+    const widgetList = scrollerAround(popover.anchor)
+    resize(PORTRAIT)
+    popover.open.value = false
+    await nextTick()
+
+    popover.open.value = true
+    await nextTick()
+    widgetList.scrollTo('end')
 
     expect(popover.open.value).toBe(false)
   })

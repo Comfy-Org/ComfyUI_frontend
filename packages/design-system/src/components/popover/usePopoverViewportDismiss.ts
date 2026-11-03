@@ -27,6 +27,13 @@ function readViewportSize(): ViewportSize {
   return { width: window.innerWidth, height: window.innerHeight }
 }
 
+function isScrolledToEnd(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    Math.ceil(target.scrollTop + target.clientHeight) >= target.scrollHeight
+  )
+}
+
 function isOnScreenKeyboardResize(
   previous: ViewportSize,
   next: ViewportSize
@@ -44,11 +51,13 @@ export function usePopoverViewportDismiss(
   anchor: MaybeRefOrGetter<Element | null | undefined>
 ) {
   let viewportSize: ViewportSize | undefined
-  let isSettlingKeyboardResize = false
+  let mayClampScroll = false
   watch(
     open,
     (isOpen) => {
-      if (isOpen) viewportSize = readViewportSize()
+      if (!isOpen) return
+      viewportSize = readViewportSize()
+      mayClampScroll = false
     },
     { immediate: true }
   )
@@ -62,18 +71,17 @@ export function usePopoverViewportDismiss(
         open.value = false
         return
       }
+      mayClampScroll = next.height > viewportSize.height
       viewportSize = next
-      isSettlingKeyboardResize = true
-      requestAnimationFrame(() => {
-        isSettlingKeyboardResize = false
-      })
     }
   )
   useEventListener(
     () => (open.value ? window : undefined),
     'scroll',
     (event) => {
-      if (isSettlingKeyboardResize) return
+      const isClampAfterGrowth = mayClampScroll && isScrolledToEnd(event.target)
+      mayClampScroll = false
+      if (isClampAfterGrowth) return
       if (
         event.target === document ||
         event.target instanceof Window ||
