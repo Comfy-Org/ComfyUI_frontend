@@ -1729,19 +1729,13 @@ export const useAgentConversationStore = defineStore(
       return pendingAskIds.some((askId) => !answeringAskIds.value.has(askId))
     }
 
-    /**
-     * Whether this thread shows a run approval card the user has not answered
-     * yet. A send refused while one is open is waiting on that card, not on a
-     * running response, so the refusal points the user back at it.
-     */
-    const awaitsRunApproval = computed(() =>
-      messages.value.some((message) =>
-        message.parts.some(
+    const awaitsRunApproval = computed(
+      () =>
+        activeMessage.value?.parts.some(
           (part) =>
             part.type === 'runApproval' &&
             !answeringAskIds.value.has(part.askId)
-        )
-      )
+        ) ?? false
     )
 
     const activeTurnTabPath = computed(() => {
