@@ -138,14 +138,27 @@ interface Rendered {
   lines: string[]
   tooltips: string[]
   alert: string | null
-  control: { name: string; className: string; icon: string } | null
+  control: {
+    name: string
+    className: string
+    underlined: boolean
+    icon: string
+  } | null
+}
+
+function isUnderlined(element: HTMLElement): boolean {
+  if (element.classList.contains('no-underline')) return false
+  return element.tagName === 'A' || element.classList.contains('underline')
 }
 
 function controlOf(element: HTMLElement | undefined) {
   if (!element) return null
   return {
     name: element.textContent.trim(),
-    className: element.className,
+    className: [...element.classList]
+      .filter((token) => token !== 'underline')
+      .join(' '),
+    underlined: isUnderlined(element),
     icon: element.querySelector('i')?.className ?? ''
   }
 }

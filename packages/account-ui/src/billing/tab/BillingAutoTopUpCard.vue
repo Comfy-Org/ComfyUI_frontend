@@ -98,7 +98,7 @@
         <CheckoutButton
           :variant="actionVariant"
           size="md"
-          :class="cn('shrink-0', classes?.action)"
+          :class="cn('shrink-0 underline', classes?.action)"
           @click="emit('action', view.action)"
         >
           {{ copy.actions[view.actionLabel] }}
