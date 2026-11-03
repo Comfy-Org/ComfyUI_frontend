@@ -102,6 +102,7 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { isMemberTopUpDenial } from '@comfyorg/account-core/billing'
 import { pausedBannerCopy } from '@/platform/billing/composables/usePausedBanner'
 import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/billing/composables/useResubscribe'
@@ -129,6 +130,7 @@ const { permissions, canReactivatePlan, workspaceType } = useBillingUI()
 const {
   canTopUp,
   topUpDenial,
+  hasResolvedCapabilities,
   canManageBilling,
   canOpenPlans,
   runDeniedPaymentPastDue
@@ -182,12 +184,14 @@ const audienceCopy = {
   team: {
     outOfCreditsBody: `${bs}.outOfCredits.body`,
     outOfCreditsBodyNoDate: `${bs}.outOfCredits.bodyNoDate`,
+    outOfCreditsRefusedBody: `${bs}.outOfCredits.refusedBody`,
     endingTitle: `${bs}.ending.title`,
     endingBody: `${bs}.ending.body`
   },
   personal: {
     outOfCreditsBody: `${bs}.outOfCredits.personalBody`,
     outOfCreditsBodyNoDate: `${bs}.outOfCredits.personalBodyNoDate`,
+    outOfCreditsRefusedBody: `${bs}.outOfCredits.refusedPersonalBody`,
     endingTitle: `${bs}.ending.personalTitle`,
     endingBody: `${bs}.ending.personalBody`
   }
@@ -303,30 +307,41 @@ const pastDueView = (): BannerView => ({
   dismissible: true
 })
 
+function refusedOutOfCreditsBody(): string {
+  const denial = topUpDenial.value
+  if (isMemberTopUpDenial(denial)) {
+    return outOfCreditsBody(
+      `${bs}.outOfCredits.memberBody`,
+      `${bs}.outOfCredits.memberBodyNoDate`
+    )
+  }
+  if (denial === 'topup_purchases_paused') {
+    return t('credits.addCreditsRefusal.topupPurchasesPaused')
+  }
+  return t(copy.value.outOfCreditsRefusedBody)
+}
+
 const outOfCreditsView = (): BannerView | null => {
   if (runDeniedPaymentPastDue.value) return pastDueView()
   if (isTopUpDeniedPastDue(topUpDenial.value)) return pastDueView()
-  if (!canManage.value) {
+  if (canTopUp.value) {
     return {
       muted: false,
       title: t(`${bs}.outOfCredits.title`),
       body: outOfCreditsBody(
-        `${bs}.outOfCredits.memberBody`,
-        `${bs}.outOfCredits.memberBodyNoDate`
+        copy.value.outOfCreditsBody,
+        copy.value.outOfCreditsBodyNoDate
       ),
-      action: null,
+      action: 'addCredits',
       dismissible: true
     }
   }
-  if (!canTopUp.value) return null
+  if (!hasResolvedCapabilities.value) return null
   return {
     muted: false,
     title: t(`${bs}.outOfCredits.title`),
-    body: outOfCreditsBody(
-      copy.value.outOfCreditsBody,
-      copy.value.outOfCreditsBodyNoDate
-    ),
-    action: 'addCredits',
+    body: refusedOutOfCreditsBody(),
+    action: null,
     dismissible: true
   }
 }

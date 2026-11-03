@@ -5,7 +5,8 @@ import type {
 } from 'axios'
 import axios, { AxiosError } from 'axios'
 
-import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
 
 function requestHeaders({ headers }: InternalAxiosRequestConfig): Headers {
   const result = new Headers()
@@ -22,7 +23,7 @@ function requestSignal({
   const signals: AbortSignal[] = []
   if (signal instanceof AbortSignal) signals.push(signal)
   if (timeout) signals.push(AbortSignal.timeout(timeout))
-  return AbortSignal.any(signals)
+  return combineAbortSignals(signals)
 }
 
 function statusError(

@@ -8,6 +8,7 @@
   "ignorePatterns": [
     "oxlint-suppressions.json",
     "packages/registry-types/src/comfyRegistryTypes.ts",
+    "packages/comfyui-api-types/openapi.yaml",
     "public/materialdesignicons.min.css",
     "scripts/registry-census/corpus.pins.json",
     "scripts/registry-census/detection-proof/**",

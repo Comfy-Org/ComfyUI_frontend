@@ -80,6 +80,7 @@ import { useBillingDialogs } from '@/platform/billing/composables/useBillingDial
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { isMemberTopUpDenial } from '@comfyorg/account-core/billing'
 import { deriveLocalCreditBanner } from '@/platform/billing/composables/deriveLocalCreditBanner'
 import {
   isTopUpDeniedPastDue,
@@ -106,8 +107,9 @@ const { suppressed = false, addCreditsVariant = 'secondary' } = defineProps<{
 
 const billing = useBillingContext()
 const { flags } = useFeatureFlags()
-const { permissions, workspaceType } = useBillingUI()
-const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
+const { workspaceType } = useBillingUI()
+const { canTopUp, topUpDenial, hasResolvedCapabilities, canManageBilling } =
+  useBillingCapabilities()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
 const { t, locale } = useI18n()
@@ -201,32 +203,47 @@ function outOfCreditsView(): BannerView | null {
       dismissible: true
     }
   }
-  if (!permissions.value.canManageSubscription) {
+  if (canTopUp.value) {
+    const bodyKey =
+      audience.value === 'personal'
+        ? `${bs}.outOfCredits.personalBody`
+        : `${bs}.outOfCredits.body`
+    const noDateKey =
+      audience.value === 'personal'
+        ? `${bs}.outOfCredits.personalBodyNoDate`
+        : `${bs}.outOfCredits.bodyNoDate`
     return {
       title: t(`${bs}.outOfCredits.title`),
-      body: datedBody(
-        `${bs}.outOfCredits.memberBody`,
-        `${bs}.outOfCredits.memberBodyNoDate`
-      ),
-      action: null,
+      body: datedBody(bodyKey, noDateKey),
+      action: 'addCredits',
       dismissible: true
     }
   }
-  if (!canTopUp.value) return null
-  const bodyKey =
-    audience.value === 'personal'
-      ? `${bs}.outOfCredits.personalBody`
-      : `${bs}.outOfCredits.body`
-  const noDateKey =
-    audience.value === 'personal'
-      ? `${bs}.outOfCredits.personalBodyNoDate`
-      : `${bs}.outOfCredits.bodyNoDate`
+  if (!hasResolvedCapabilities.value) return null
   return {
     title: t(`${bs}.outOfCredits.title`),
-    body: datedBody(bodyKey, noDateKey),
-    action: 'addCredits',
+    body: refusedOutOfCreditsBody(),
+    action: null,
     dismissible: true
   }
+}
+
+function refusedOutOfCreditsBody(): string {
+  const denial = topUpDenial.value
+  if (isMemberTopUpDenial(denial)) {
+    return datedBody(
+      `${bs}.outOfCredits.memberBody`,
+      `${bs}.outOfCredits.memberBodyNoDate`
+    )
+  }
+  if (denial === 'topup_purchases_paused') {
+    return t('credits.addCreditsRefusal.topupPurchasesPaused')
+  }
+  return t(
+    audience.value === 'personal'
+      ? `${bs}.outOfCredits.refusedPersonalBody`
+      : `${bs}.outOfCredits.refusedBody`
+  )
 }
 
 function creditsLeft(): string {

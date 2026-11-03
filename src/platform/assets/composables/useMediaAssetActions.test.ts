@@ -26,6 +26,7 @@ import { scanNodeMediaCandidates } from '@/platform/workflowErrors/missingMedia/
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
 import { useLitegraphService } from '@/services/litegraphService'
+import { markGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { clearDeletedAssetWidgetValues } from '@/platform/assets/utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '@/platform/assets/utils/clearNodePreviewCacheForValues'
@@ -566,6 +567,77 @@ describe('useMediaAssetActions', () => {
         expect.objectContaining({ description: 'boom' })
       )
     })
+
+    it.for([
+      {
+        name: 'single',
+        open: (
+          actions: ReturnType<typeof useMediaAssetActions>,
+          asset: AssetItem
+        ) => actions.openWorkflow(asset)
+      },
+      {
+        name: 'bulk',
+        open: (
+          actions: ReturnType<typeof useMediaAssetActions>,
+          asset: AssetItem
+        ) => actions.openMultipleWorkflows([asset])
+      }
+    ])(
+      'does not show another toast for a handled $name API-prompt failure',
+      async ({ open }) => {
+        mockExtractWorkflowFromAsset.mockResolvedValue({
+          workflow: null,
+          filename: 'open.json'
+        })
+        mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
+        mockLoadApiJson.mockRejectedValueOnce(
+          markGraphLoadFailurePresented(new Error('boom'))
+        )
+        const actions = useMediaAssetActions()
+
+        await open(actions, createMockAsset())
+
+        expect(useToast().warning).not.toHaveBeenCalled()
+        expect(useToast().success).not.toHaveBeenCalled()
+        expect(mockReportError).toHaveBeenCalledOnce()
+      }
+    )
+
+    it.for([
+      {
+        name: 'single',
+        open: (
+          actions: ReturnType<typeof useMediaAssetActions>,
+          asset: AssetItem
+        ) => actions.openWorkflow(asset)
+      },
+      {
+        name: 'bulk',
+        open: (
+          actions: ReturnType<typeof useMediaAssetActions>,
+          asset: AssetItem
+        ) => actions.openMultipleWorkflows([asset])
+      }
+    ])(
+      'does not show another toast for a handled $name full-workflow failure',
+      async ({ open }) => {
+        mockExtractWorkflowFromAsset.mockResolvedValue({
+          workflow: { version: 0.4 },
+          filename: 'open.json'
+        })
+        mockOpenWorkflowAction.mockResolvedValue({
+          success: false,
+          errorPresentation: 'handled'
+        })
+        const actions = useMediaAssetActions()
+
+        await open(actions, createMockAsset())
+
+        expect(useToast().warning).not.toHaveBeenCalled()
+        expect(useToast().success).not.toHaveBeenCalled()
+      }
+    )
 
     it('warns when fetching the stored API graph fails', async () => {
       mockExtractWorkflowFromAsset.mockResolvedValue({

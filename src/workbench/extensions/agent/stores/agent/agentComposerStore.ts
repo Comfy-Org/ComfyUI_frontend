@@ -76,6 +76,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       item.kind === 'node' ? [item.node] : []
     )
   )
+  const selectionModeNodeKeys = ref<Set<string>>(new Set())
   const hasDraft = computed(
     () =>
       draft.value.trim() !== '' ||
@@ -330,9 +331,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({
       text: draft.value,
       references: [
-        ...references.map(
-          (item): ComposerReference => ({ ...item, kind: 'workflow' })
-        ),
+        ...references.map((item): ComposerReference => ({
+          ...item,
+          kind: 'workflow'
+        })),
         ...prompt.value.references.filter((item) => item.kind !== 'workflow')
       ].sort((a, b) => a.textOffset - b.textOffset)
     })
@@ -356,6 +358,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   function setNodeScope(scope: string | null): void {
     if (scope === nodeScope.value) return
     nodeScope.value = scope
+    selectionModeNodeKeys.value = new Set()
     if (nodes.value.length === 0) return
     resetPromptHistory()
     const references = prompt.value.references.filter(
@@ -419,6 +422,13 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       ...result,
       text: resetTextWhenReferencesCleared(result.text, result.references)
     })
+  }
+
+  function setSelectionModeNodeKeys(keys: ReadonlySet<string>): void {
+    const stagedKeys = new Set(nodes.value.map(selectedNodeKey))
+    selectionModeNodeKeys.value = new Set(
+      [...keys].filter((key) => stagedKeys.has(key))
+    )
   }
 
   function setSkillScope(scope: string | null): void {
@@ -586,6 +596,16 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     }
   }
 
+  function clearDraft(): void {
+    resetPromptHistory()
+    promptOrigin.value = 'typed'
+    starterPrompt.value = null
+    attachmentIds.value = []
+    updateDraft({ text: '', references: [] })
+    insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
+    releaseUnusedAssets()
+  }
+
   return {
     draftState,
     draft,
@@ -593,6 +613,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     workflowReferences,
     prompt,
     nodes,
+    selectionModeNodeKeys,
     hasDraft,
     nodeScope,
     promptEpoch,
@@ -617,6 +638,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     setNodeScope,
     setSkillScope,
     setNodes,
+    setSelectionModeNodeKeys,
     addAttachment,
     referenceAttachment,
     updateAttachment,
@@ -625,6 +647,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     startSubmission,
     settleSubmission,
     takeFailedSubmission,
-    invalidateSubmission
+    invalidateSubmission,
+    clearDraft
   }
 })

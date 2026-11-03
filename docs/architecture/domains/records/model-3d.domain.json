@@ -4,77 +4,61 @@
   "description": "Load3D, Preview3D, and Save mesh model viewing: model loading and format adapters, animation, gizmo, HDRI, recording, export, node configuration and serialization, viewer dialog, and node widget presentation. The shared three.js viewport (camera, controls, events, lighting, scene, view helper, render loop, context-menu guard, viewport sizing, shared interfaces), ViewportWidgetShell, menu bar styles, useViewportNodeWiring, and camera or light authoring nodes remain outside this capability.",
   "modules": [
     {
-      "path": "src/extensions/core/load3d/components/**",
-      "role": "presentation"
+      "path": "src/extensions/core/load3d/components/**"
     },
     {
-      "path": "src/extensions/core/load3d/components/modelThumbnail.ts",
-      "role": "application"
+      "path": "src/extensions/core/load3d/components/modelThumbnail.ts"
     },
     {
-      "path": "src/extensions/core/load3d/composables/useLoad3d.ts",
-      "role": "application"
+      "path": "src/extensions/core/load3d/composables/useLoad3d.ts"
     },
     {
-      "path": "src/extensions/core/load3d/composables/useLoad3dDrag.ts",
-      "role": "application"
+      "path": "src/extensions/core/load3d/composables/useLoad3dDrag.ts"
     },
     {
-      "path": "src/extensions/core/load3d/composables/useLoad3dViewer.ts",
-      "role": "application"
+      "path": "src/extensions/core/load3d/composables/useLoad3dViewer.ts"
     },
     {
-      "path": "src/extensions/core/load3d/load3d.ts",
-      "role": "integration"
+      "path": "src/extensions/core/load3d/load3d.ts"
     },
     {
-      "path": "src/extensions/core/load3d/Load3DConfiguration.ts",
-      "role": "integration"
+      "path": "src/extensions/core/load3d/Load3DConfiguration.ts"
     },
     {
-      "path": "src/extensions/core/load3d/Load3dUtils.ts",
-      "role": "infrastructure"
+      "path": "src/extensions/core/load3d/Load3dUtils.ts"
     },
     {
-      "path": "src/extensions/core/load3d/exportMenuHelper.ts",
-      "role": "integration"
+      "path": "src/extensions/core/load3d/exportMenuHelper.ts"
     },
     {
-      "path": "src/extensions/core/load3d/load3dSerialize.ts",
-      "role": "integration"
+      "path": "src/extensions/core/load3d/load3dSerialize.ts"
     },
     {
-      "path": "src/extensions/core/load3d/model3dOutput.ts",
-      "role": "domain"
+      "path": "src/extensions/core/load3d/model3dOutput.ts"
     },
     {
-      "path": "src/extensions/core/load3d/nodeTypes.ts",
-      "role": "domain"
+      "path": "src/extensions/core/load3d/nodeTypes.ts"
     },
     {
-      "path": "src/extensions/core/load3d/load3dAdvanced.ts",
-      "role": "integration"
+      "path": "src/extensions/core/load3d/load3dAdvanced.ts"
     },
     {
-      "path": "src/extensions/core/load3d/load3dLazy.ts",
-      "role": "integration"
+      "path": "src/extensions/core/load3d/load3dLazy.ts"
     },
     {
-      "path": "src/extensions/core/load3d/load3dPreviewExtensions.ts",
-      "role": "integration"
+      "path": "src/extensions/core/load3d/load3dPreviewExtensions.ts"
     },
     {
-      "path": "src/extensions/core/load3d/saveMesh.ts",
-      "role": "integration"
+      "path": "src/extensions/core/load3d/saveMesh.ts"
     },
     {
-      "path": "src/extensions/core/load3d/services/load3dService.ts",
-      "role": "application"
+      "path": "src/extensions/core/load3d/services/load3dService.ts"
+    },
+    {
+      "path": "packages/viewport3d/src/load3d/**"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Model loading, adapters, and export preserve supported formats and scene state",

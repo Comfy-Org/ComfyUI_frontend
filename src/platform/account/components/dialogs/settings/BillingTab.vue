@@ -24,7 +24,7 @@
     <BillingStatusBanner section="billing" />
     <BillingLocalCreditBanner
       :suppressed="suppressCreditBanner"
-      :add-credits-variant="addCreditsVariant"
+      :add-credits-variant="creditBannerAddCreditsVariant"
     />
     <section class="flex flex-col gap-3" data-testid="billing-plan-section">
       <h2 class="m-0 text-base font-medium text-foreground">
@@ -59,6 +59,7 @@
         :state="planRow"
         :action="action"
         :sales-variant="salesVariant"
+        :add-credits-variant="addCreditsVariant"
         :can-manage-subscription="capabilities.canManageSubscription.value"
       />
     </section>
@@ -70,17 +71,22 @@
     >
       <BillingCreditsCard
         :state="creditsCard"
-        :can-top-up="capabilities.canTopUp.value"
+        :add-credits="
+          addCreditsAvailability({
+            resolved: capabilities.hasResolvedCapabilities.value,
+            canTopUp: capabilities.canTopUp.value,
+            denial: capabilities.topUpDenial.value
+          })
+        "
         :add-credits-variant="addCreditsVariant"
         :plan-credit-note="planCreditNote"
         @retry="retryBalance"
         @add-credits="addCredits('credits_panel')"
       />
-      <template v-if="flags.autoTopUpEnabled">
-        <template v-if="capabilities.canManageAutoTopUp.value">
-          <BillingAutoTopUpCard v-if="capabilities.canTopUp.value" />
-        </template>
-      </template>
+      <BillingAutoTopUpCard v-if="autoTopUpSection.kind === 'card'" />
+      <BillingAutoTopUpMemberCard
+        v-else-if="autoTopUpSection.kind === 'memberBlock'"
+      />
     </section>
 
     <section class="flex flex-col gap-3" data-testid="billing-handoff">
@@ -159,7 +165,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -173,13 +179,16 @@ import BillingTopupCheckoutBanner from '@/platform/billing/components/billingTab
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
+import BillingAutoTopUpMemberCard from '@/platform/billing/components/billingTab/BillingAutoTopUpMemberCard.vue'
 import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/billing/components/billingTab/BillingPlanRow.vue'
-import { addCreditsEmphasis } from '@/platform/billing/components/billingTab/creditsCard'
 import {
+  addCreditsAvailability,
+  addCreditsEmphasis,
+  deriveAutoTopUpSection,
   deriveBillingTabLoad,
   planRowAction
-} from '@/platform/billing/components/billingTab/planRow'
+} from '@comfyorg/account-core/billing'
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
@@ -202,7 +211,6 @@ const suppressCreditBanner = computed(
     planCheckout.banner.value != null ||
     topupCheckout.banner.value != null
 )
-const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const planCreditNote = useTopUpPlanCreditCopy()
@@ -240,6 +248,14 @@ const action = computed(() =>
 )
 
 const { state: autoTopUp } = useBillingAutoTopUpCard()
+const autoTopUpSection = computed(() =>
+  deriveAutoTopUpSection({
+    autoTopUpEnabled: capabilities.autoTopUpEnabled.value,
+    canManageAutoTopUp: capabilities.canManageAutoTopUp.value,
+    canTopUp: capabilities.canTopUp.value,
+    manageAutoTopUpDenial: capabilities.manageAutoTopUpDenial.value
+  })
+)
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
     availableCents:
@@ -252,8 +268,12 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      action.value === 'subscribe' || action.value === 'choosePlan'
+      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
   })
+)
+
+const creditBannerAddCreditsVariant = computed(() =>
+  planRow.value.kind === 'ended' ? 'secondary' : addCreditsVariant.value
 )
 
 const salesVariant = computed(() =>

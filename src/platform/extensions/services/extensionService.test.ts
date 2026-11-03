@@ -2,13 +2,22 @@ import { describe, expect, it, vi } from 'vitest'
 import type { WatchHandle } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAboutPanelStore } from '@/stores/aboutPanelStore'
+import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
+import { useWidgetStore } from '@/stores/widgetStore'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { useExtensionService } from './extensionService'
+import { isGraphLoadHookOrigin, useExtensionService } from './extensionService'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('firebase/auth'))
@@ -157,7 +166,7 @@ describe('invokeExtensionsAsync', () => {
 
   type HookApp = ReturnType<typeof useApp>
 
-  it.for([
+  const nestedEntrypoints = [
     {
       entrypoint: 'loadGraphData',
       call: (app: HookApp) => app.loadGraphData()
@@ -165,13 +174,29 @@ describe('invokeExtensionsAsync', () => {
     {
       entrypoint: 'loadApiJson',
       call: (app: HookApp) => app.loadApiJson({}, 'nested.json')
-    },
-    {
-      entrypoint: 'handleFile',
-      call: (app: HookApp) => app.handleFile(new File([], 'nested.png'))
     }
-  ])(
-    'rejects $entrypoint started after an await in a graph-load hook',
+  ]
+
+  it.for(nestedEntrypoints)(
+    'refuses $entrypoint started directly in a graph-load hook',
+    async ({ call }) => {
+      let nested: Promise<unknown> | undefined
+      register({
+        name: 'nested-loader',
+        beforeLoadGraph: async (app: HookApp) => {
+          nested = call(app)
+          await nested
+        }
+      })
+
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+      await expect(nested).resolves.toBe(false)
+    }
+  )
+
+  it.for(nestedEntrypoints)(
+    'refuses $entrypoint started after an await in a graph-load hook',
     async ({ call }) => {
       let nested: Promise<unknown> | undefined
       register({
@@ -179,19 +204,134 @@ describe('invokeExtensionsAsync', () => {
         beforeLoadGraph: async (app: HookApp) => {
           await Promise.resolve()
           nested = call(app)
-          await nested.catch(() => {})
+          await nested
         }
       })
 
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-      await expect(nested).rejects.toThrow(
-        'A graph-load lifecycle hook cannot start a nested graph load'
+      await expect(nested).resolves.toBe(false)
+    }
+  )
+
+  it.for([
+    {
+      variant: 'directly',
+      wrap: (handleFile: HookApp['handleFile']) => handleFile
+    },
+    {
+      variant: 'through an async forwarding wrapper',
+      wrap:
+        (handleFile: HookApp['handleFile']) =>
+        async (...args: Parameters<HookApp['handleFile']>) => {
+          await Promise.resolve()
+          return handleFile(...args)
+        }
+    }
+  ])(
+    'marks a graph-bearing file started $variant through the hook app as hook-originated',
+    async ({ wrap }) => {
+      const file = new File(
+        [JSON.stringify({ version: 0.4, nodes: [], links: [] })],
+        'nested.json',
+        { type: 'application/json' }
       )
+      const app = useApp()
+      const handleFile = vi.fn(
+        async (
+          _handled: File,
+          _openSource?: unknown,
+          options?: unknown
+        ): Promise<false | undefined> =>
+          isGraphLoadHookOrigin(options) ? false : void 0
+      )
+      vi.spyOn(app, 'handleFile').mockImplementation(wrap(handleFile))
+      let nested: Promise<unknown> | undefined
+      register({
+        name: 'hook-file-loader',
+        beforeLoadGraph: async (hookApp: HookApp) => {
+          await Promise.resolve()
+          nested = hookApp.handleFile(file)
+          await nested
+        }
+      })
+
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+      await expect(nested).resolves.toBe(false)
+      expect(handleFile.mock.calls[0][0]).toBe(file)
+    }
+  )
+
+  it('keeps the options a hook passed to handleFile', async () => {
+    const file = new File([], 'hook.json', { type: 'application/json' })
+    const onNodeCreated = () => {}
+    const app = useApp()
+    const handleFile = vi.spyOn(app, 'handleFile').mockResolvedValue(undefined)
+    register({
+      name: 'options-passing-extension',
+      beforeLoadGraph: (hookApp: HookApp) =>
+        hookApp.handleFile(file, 'file_drop', {
+          deferWarnings: true,
+          onNodeCreated
+        })
+    })
+
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+    expect(handleFile.mock.calls[0][1]).toBe('file_drop')
+    expect(handleFile.mock.calls[0][2]).toMatchObject({
+      deferWarnings: true,
+      onNodeCreated
+    })
+  })
+
+  it.for([
+    { variant: 'a distinct file', shared: false },
+    { variant: 'the same file object', shared: true }
+  ])(
+    'gives each overlapping call its own origin for $variant',
+    async ({ shared }) => {
+      const hookFile = new File([], 'hook.json', { type: 'application/json' })
+      const independentFile = shared
+        ? hookFile
+        : new File([], 'independent.json', { type: 'application/json' })
+      const app = useApp()
+      let forward!: () => void
+      const heldForwarding = new Promise<void>((resolve) => {
+        forward = resolve
+      })
+      const origins: Record<string, boolean> = {}
+      const entry = (who: string, file: File, options?: unknown) => {
+        expect(file).toBeInstanceOf(File)
+        origins[who] = isGraphLoadHookOrigin(options)
+      }
+      vi.spyOn(app, 'handleFile').mockImplementation(
+        async (file: File, _openSource?: unknown, options?: unknown) => {
+          await heldForwarding
+          entry('hook', file, options)
+        }
+      )
+      register({
+        name: 'awaiting-extension',
+        beforeLoadGraph: (hookApp: HookApp) => hookApp.handleFile(hookFile)
+      })
+
+      const dispatch =
+        useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+      await Promise.resolve()
+      entry('independent', independentFile)
+      forward()
+      await dispatch
+
+      expect(origins).toEqual({ independent: false, hook: true })
     }
   )
 
   it('lets a retained hook app load once the hook dispatch has finished', async () => {
+    const handleFile = vi
+      .spyOn(useApp(), 'handleFile')
+      .mockResolvedValue(undefined)
     let retained: HookApp | undefined
     register({
       name: 'retaining-extension',
@@ -200,14 +340,33 @@ describe('invokeExtensionsAsync', () => {
       }
     })
     await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
-    const handleFile = vi
-      .spyOn(useApp(), 'handleFile')
-      .mockResolvedValue(undefined)
     const file = new File([], 'later.png')
 
     await retained?.handleFile(file)
 
     expect(handleFile).toHaveBeenCalledWith(file)
+  })
+
+  it('does not recurse when a hook wraps a retained entrypoint', async () => {
+    const app = useApp()
+    const loadGraphData = vi
+      .spyOn(app, 'loadGraphData')
+      .mockResolvedValue(undefined)
+    register({
+      name: 'wrapping-extension',
+      beforeLoadGraph: (hookApp: HookApp) => {
+        const retained = hookApp.loadGraphData
+        hookApp.loadGraphData = async function (...args) {
+          await retained.apply(this, args)
+          return false
+        }
+      }
+    })
+
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+
+    await expect(app.loadGraphData()).resolves.toBe(false)
+    expect(loadGraphData).toHaveBeenCalledOnce()
   })
 
   it('silently ignores a non-function property of the same name', async () => {
@@ -651,5 +810,161 @@ describe('registerExtension auth hooks', () => {
     expect(extension.onAuthTokenRefreshed).toHaveBeenCalledOnce()
     expect(extension.onAuthUserLogout).toHaveBeenCalledOnce()
     expect(useExtensionStore().isExtensionInstalled('auth-hooks')).toBe(true)
+  })
+})
+
+describe('a disabled extension', () => {
+  function extension(name: string) {
+    const getCustomWidgets = vi.fn(async () => ({}))
+    const onAuthUserResolved = vi.fn()
+    const tab: NonNullable<ComfyExtension['bottomPanelTabs']>[number] = {
+      id: `${name}.tab`,
+      type: 'custom',
+      render: () => {}
+    }
+    const topbarBadge = { text: `${name} topbar` }
+    const aboutBadge = { label: `${name} about`, url: 'https://x', icon: 'i' }
+    const ext: ComfyExtension = {
+      name,
+      commands: [{ id: `${name}.cmd`, function: vi.fn() }],
+      keybindings: [{ commandId: `${name}.cmd`, combo: { key: 'k' } }],
+      menuCommands: [{ path: ['Extensions'], commands: [`${name}.cmd`] }],
+      settings: [
+        {
+          id: 'Comfy.Validation.Workflows',
+          name: 'A setting',
+          type: 'boolean',
+          defaultValue: false
+        }
+      ],
+      bottomPanelTabs: [tab],
+      actionBarButtons: [{ icon: 'icon', onClick: vi.fn() }],
+      topbarBadges: [topbarBadge],
+      aboutPageBadges: [aboutBadge],
+      getCustomWidgets,
+      onAuthUserResolved
+    }
+    return { ext, tab, topbarBadge, aboutBadge, onAuthUserResolved }
+  }
+
+  function afterCore(disabled: string[]) {
+    useExtensionStore().captureCoreExtensions()
+    useExtensionStore().loadDisabledExtensionNames(disabled)
+  }
+
+  function resolveUser() {
+    const { onUserResolved } = vi.mocked(useCurrentUser())
+    for (const [callback] of onUserResolved.mock.calls) callback({ id: 'u' })
+  }
+
+  it('adds no commands, keybindings, menu entries, panels, buttons, badges or auth hooks when third-party', async () => {
+    afterCore(['off'])
+    const off = extension('off')
+
+    useExtensionService().registerExtension(off.ext)
+    await Promise.resolve()
+    resolveUser()
+
+    expect(useExtensionStore().isExtensionInstalled('off')).toBe(true)
+    expect(useCommandStore().isRegistered('off.cmd')).toBe(false)
+    expect(useKeybindingStore().getKeybindingByCommandId('off.cmd')).toBe(
+      undefined
+    )
+    expect(useMenuItemStore().menuItems).toEqual([])
+    expect(useBottomPanelStore().panels.terminal.tabs).toEqual([])
+    expect(useActionBarButtonStore().buttons).toEqual([])
+    expect(useTopbarBadgeStore().badges).not.toContainEqual(off.topbarBadge)
+    expect(useAboutPanelStore().badges).not.toContainEqual(off.aboutBadge)
+    expect(off.onAuthUserResolved).not.toHaveBeenCalled()
+  })
+
+  it('keeps its setting definitions and widget types, which saved workflows and core code read', async () => {
+    afterCore(['off'])
+    const widget = () => undefined
+
+    useExtensionService().registerExtension({
+      ...extension('off').ext,
+      getCustomWidgets: async () => ({ DISABLED_EXTENSION_WIDGET: widget })
+    })
+    await Promise.resolve()
+
+    expect(
+      useSettingStore().settingsById['Comfy.Validation.Workflows']
+    ).toBeDefined()
+    expect(useWidgetStore().widgets.get('DISABLED_EXTENSION_WIDGET')).toBe(
+      widget
+    )
+  })
+
+  it('keeps everything for a disabled core extension, whose commands core UI calls', async () => {
+    useExtensionStore().loadDisabledExtensionNames(['core.off'])
+    const core = extension('core.off')
+
+    useExtensionService().registerExtension(core.ext)
+    useExtensionStore().captureCoreExtensions()
+    await Promise.resolve()
+
+    expect(useCommandStore().isRegistered('core.off.cmd')).toBe(true)
+    expect(useActionBarButtonStore().buttons).toHaveLength(1)
+    expect(useTopbarBadgeStore().badges).toContainEqual(core.topbarBadge)
+    expect(useAboutPanelStore().badges).toContainEqual(core.aboutBadge)
+  })
+
+  it('keeps everything for an enabled third-party extension', async () => {
+    afterCore(['off'])
+    const on = extension('on')
+
+    useExtensionService().registerExtension(on.ext)
+    await Promise.resolve()
+    resolveUser()
+
+    expect(useCommandStore().isRegistered('on.cmd')).toBe(true)
+    expect(
+      useKeybindingStore().getKeybindingByCommandId('on.cmd')
+    ).toBeDefined()
+    expect(useMenuItemStore().menuItems).not.toEqual([])
+    expect(useBottomPanelStore().panels.terminal.tabs).toEqual([on.tab])
+    expect(useActionBarButtonStore().buttons).toHaveLength(1)
+    expect(useTopbarBadgeStore().badges).toContainEqual(on.topbarBadge)
+    expect(useAboutPanelStore().badges).toContainEqual(on.aboutBadge)
+    expect(on.onAuthUserResolved).toHaveBeenCalledOnce()
+  })
+
+  it('lets an enabled extension run its own command while its settings and widgets initialize', async () => {
+    afterCore(['off'])
+    const run = vi.fn()
+    const execute = () => useCommandStore().execute('on.cmd')
+
+    useExtensionService().registerExtension({
+      name: 'on',
+      commands: [{ id: 'on.cmd', function: run }],
+      settings: [
+        {
+          id: 'Comfy.Validation.Workflows',
+          name: 'A setting',
+          type: 'boolean',
+          defaultValue: false,
+          onChange: execute
+        }
+      ],
+      getCustomWidgets: async () => {
+        await execute()
+        return {}
+      }
+    })
+    await Promise.resolve()
+
+    expect(run).toHaveBeenCalledTimes(2)
+  })
+
+  it('unregisters on dispose like any other extension', () => {
+    afterCore(['off'])
+    const dispose = useExtensionService().registerExtension(
+      extension('off').ext
+    )
+
+    dispose()
+
+    expect(useExtensionStore().isExtensionInstalled('off')).toBe(false)
   })
 })

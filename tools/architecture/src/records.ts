@@ -11,6 +11,7 @@ import type { ArchitectureException, DomainRecord } from './schema'
 const DOMAINS_DIRECTORY = 'docs/architecture/domains'
 const RECORDS_DIRECTORY = `${DOMAINS_DIRECTORY}/records`
 const LEDGER_PATH = `${DOMAINS_DIRECTORY}/exceptions.json`
+const PACKAGES_DIRECTORY = 'packages'
 const SOURCE_FILE = /\.(ts|tsx|vue)$/
 
 export interface ArchitectureWarning {
@@ -27,19 +28,45 @@ export interface ArchitectureConfiguration {
   warnings: ArchitectureWarning[]
 }
 
-function listSourceFiles(repositoryRoot: string): Outcome<string[]> {
-  const entries = listDirectory(repositoryRoot, 'src', true)
-  if (!entries.ok) return entries
+function sourceRoots(repositoryRoot: string): Outcome<string[]> {
+  if (!existsSync(join(repositoryRoot, PACKAGES_DIRECTORY)))
+    return { ok: true, value: ['src'] }
+  const packages = listDirectory(repositoryRoot, PACKAGES_DIRECTORY, false)
+  if (!packages.ok) return packages
   return {
     ok: true,
-    value: entries.value
-      .map((filename) => `src/${filename}`)
+    value: [
+      'src',
+      ...packages.value
+        .map((name) => `${PACKAGES_DIRECTORY}/${name}/src`)
+        .filter((root) => existsSync(join(repositoryRoot, root)))
+    ]
+  }
+}
+
+function listSourceFiles(repositoryRoot: string): Outcome<string[]> {
+  const roots = sourceRoots(repositoryRoot)
+  if (!roots.ok) return roots
+  const listed = roots.value.map((root) => ({
+    root,
+    entries: listDirectory(repositoryRoot, root, true)
+  }))
+  const errors = listed.flatMap(({ entries }) =>
+    entries.ok ? [] : entries.errors
+  )
+  if (errors.length) return { ok: false, errors }
+  return {
+    ok: true,
+    value: listed
+      .flatMap(({ root, entries }) =>
+        entries.ok ? entries.value.map((filename) => `${root}/${filename}`) : []
+      )
       .filter((filename) => SOURCE_FILE.test(filename))
       .sort()
   }
 }
 
-export function matchesModulePath(filename: string, path: string): boolean {
+function matchesModulePath(filename: string, path: string): boolean {
   return path.endsWith('/**')
     ? filename.startsWith(path.slice(0, -2))
     : filename === path
@@ -116,7 +143,7 @@ function withSubjectTests(
     if (!subject) continue
     implied.set(subject.module, [
       ...(implied.get(subject.module) ?? []),
-      { path: test, role: subject.module.role }
+      { path: test }
     ])
   }
   return records.map((record) => ({
@@ -133,15 +160,12 @@ export const contains = (outer: string, inner: string) =>
   outer.endsWith('/**') &&
   inner.startsWith(outer.slice(0, -2))
 
-export const sameRole = (a: Claim, b: Claim) =>
-  a.record === b.record && a.module.role === b.module.role
-
 /**
  * Maps each file to the most specific module path that matches it, so a
  * directory can claim everything below it while nested paths override parts
  * of it.
  */
-export function claimFiles(
+function claimFiles(
   records: DomainRecord[],
   files: string[]
 ): Map<string, Claim> {
@@ -204,17 +228,9 @@ function duplicates(values: string[]): string[] {
 }
 
 function referenceErrors(records: DomainRecord[]): string[] {
-  const ids = new Set(records.map(({ id }) => id))
-  return [
-    ...duplicates(records.map(({ id }) => id)).map(
-      (id) => `Domain id ${id} is declared more than once`
-    ),
-    ...records.flatMap((record) =>
-      [...record.allowedDependencies, ...record.allowedConsumers]
-        .filter((id) => !ids.has(id))
-        .map((id) => `${record.id} references unknown domain ${id}`)
-    )
-  ]
+  return duplicates(records.map(({ id }) => id)).map(
+    (id) => `Domain id ${id} is declared more than once`
+  )
 }
 
 function stalePathWarnings(
@@ -235,10 +251,6 @@ function stalePathWarnings(
   )
 }
 
-/**
- * A path is redundant when the nearest path enclosing it has the same domain
- * and role: removing it hands its files to that path unchanged.
- */
 function redundantPathWarnings(
   records: { filename: string; record: DomainRecord }[],
   sourceFiles: string[],
@@ -268,10 +280,10 @@ function redundantPathWarnings(
       return outer &&
         !subject &&
         !prefixSubjects.has(module) &&
-        sameRole(outer, { record, module })
+        outer.record === record
         ? [
             {
-              message: `${record.id} path repeats the role of the enclosing ${outer.module.path}: ${module.path}. Remove it from ${filename}.`,
+              message: `${record.id} path repeats the domain of the enclosing ${outer.module.path}: ${module.path}. Remove it from ${filename}.`,
               file: filename
             }
           ]
@@ -292,10 +304,10 @@ function redundantTestWarnings(
       .filter(({ path }) => TEST_FILE.test(path))
       .flatMap((module) => {
         const subject = subjectOf(module.path, fileModules, sourceStems)
-        return subject && sameRole(subject, { record, module })
+        return subject?.record === record
           ? [
               {
-                message: `${record.id} path repeats the role of its subject ${subject.module.path}: ${module.path}. Remove it from ${filename}.`,
+                message: `${record.id} path repeats the domain of its subject ${subject.module.path}: ${module.path}. Remove it from ${filename}.`,
                 file: filename
               }
             ]

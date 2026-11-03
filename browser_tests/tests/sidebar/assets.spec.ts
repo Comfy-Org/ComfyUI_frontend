@@ -12,10 +12,7 @@ import {
   withOutputAssets,
   withPagination
 } from '@e2e/fixtures/helpers/AssetHelper'
-import type {
-  JobDetail,
-  RawJobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const test = mergeTests(comfyPageFixture, assetApiFixture)
 

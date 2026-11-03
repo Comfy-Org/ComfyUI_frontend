@@ -186,6 +186,41 @@ describe('every layer bounds allocation independently', () => {
     expect(versionDelta).toBe(0)
   })
 
+  it('throws on a direct over-bound write before any row is resized', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Group', 'BoundaryDirectUnbounded')
+    graph.add(node)
+    addGroup(node)
+    const rows = node.widgets?.find((widget) => widget.name === 'rows')
+    if (!rows) throw new Error('Missing DynamicGroup controller')
+    rows.value = 2
+    const widgetsBefore = [...(node.widgets ?? [])]
+
+    expect(() => {
+      rows.value = ALLOCATION_BOUND + 1
+    }).toThrow(RangeError)
+    expect(rows.value).toBe(2)
+    expect(node.widgets).toEqual(widgetsBefore)
+  })
+
+  it('accepts a direct write above max but inside the allocation bound', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Group', 'BoundaryDirectAboveMax')
+    graph.add(node)
+    addGroup(node)
+    const rows = node.widgets?.find((widget) => widget.name === 'rows')
+    if (!rows) throw new Error('Missing DynamicGroup controller')
+
+    rows.value = MAX + 2
+
+    expect(rows.value).toBe(MAX + 2)
+    expect(
+      node.widgets?.filter((widget) =>
+        /^rows\.\d+\.strength$/.test(widget.name)
+      )
+    ).toHaveLength(MAX + 2)
+  })
+
   it('pins the frontend row cap below the document package budget', () => {
     expect(ALLOCATION_BOUND).toBeLessThanOrEqual(
       Math.floor(MAX_OVERFLOW_WIDGETS / FIELDS_PER_ROW)

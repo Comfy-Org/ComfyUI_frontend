@@ -5,8 +5,11 @@ import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo } from '@/platform/billing/composables/types'
 import enMessages from '@/locales/en/main.json'
-import { deriveCreditsCard } from '@/platform/billing/components/billingTab/creditsCard'
-import type { CreditsCardFacts } from '@/platform/billing/components/billingTab/creditsCard'
+import { deriveCreditsCard } from '@comfyorg/account-core/billing'
+import type {
+  AddCreditsAvailability,
+  CreditsCardFacts
+} from '@comfyorg/account-core/billing'
 
 import BillingCreditsCard from './BillingCreditsCard.vue'
 
@@ -28,7 +31,9 @@ function balanceOf(cents: {
 const activeFacts: CreditsCardFacts = {
   balance: balanceOf({ effective: 700, plan: 400, topUp: 300 }),
   planKind: 'active',
+  servedPlanKind: 'self_serve',
   billingStatus: 'paid',
+  periodCreditGrant: null,
   planPoolCredits: 1000,
   renewalDate: null,
   endDate: null
@@ -43,13 +48,15 @@ const CARD_NOTES = [
   "Couldn't load your balance."
 ]
 
+const ENABLED: AddCreditsAvailability = { kind: 'enabled' }
+
 function renderCard(
   facts: CreditsCardFacts,
-  canTopUp = true,
+  addCredits: AddCreditsAvailability = ENABLED,
   planCreditNote: string | null = null
 ) {
   return render(BillingCreditsCard, {
-    props: { state: deriveCreditsCard(facts), canTopUp, planCreditNote },
+    props: { state: deriveCreditsCard(facts), addCredits, planCreditNote },
     global: {
       plugins: [
         createI18n({
@@ -66,7 +73,7 @@ describe('BillingCreditsCard', () => {
   it.for<{
     case: string
     facts: Partial<CreditsCardFacts>
-    canTopUp?: boolean
+    availability?: AddCreditsAvailability
     planCreditNote?: string
     available: string
     plan: string | null
@@ -164,9 +171,9 @@ describe('BillingCreditsCard', () => {
       notes: [SUBSCRIBE_NOTE]
     },
     {
-      case: 'a server that refuses top-up',
+      case: 'a server that refuses top-up to a member',
       facts: {},
-      canTopUp: false,
+      availability: { kind: 'hidden' },
       available: '1,477',
       plan: '844 of 1,000',
       topUp: '633',
@@ -202,7 +209,7 @@ describe('BillingCreditsCard', () => {
   ])('renders $case', (row) => {
     renderCard(
       { ...activeFacts, ...row.facts },
-      row.canTopUp ?? true,
+      row.availability ?? ENABLED,
       row.planCreditNote ?? null
     )
 
@@ -227,6 +234,50 @@ describe('BillingCreditsCard', () => {
   it.for<{
     case: string
     facts: Partial<CreditsCardFacts>
+    reasonKey: string
+    reason: string
+  }>([
+    {
+      case: 'paused top-up purchases on a plan',
+      facts: {},
+      reasonKey: 'credits.addCreditsRefusal.topupPurchasesPaused',
+      reason:
+        "Buying credits isn't available right now. Try again later, or message support."
+    },
+    {
+      case: 'a past-due payment on a plan',
+      facts: {},
+      reasonKey: 'credits.addCreditsRefusal.paymentPastDue',
+      reason: 'Update your payment method to add credits.'
+    },
+    {
+      case: 'another refusal without a plan',
+      facts: {
+        planKind: 'noPlan',
+        balance: balanceOf({ effective: 200, plan: 0, topUp: 200 })
+      },
+      reasonKey: 'credits.addCreditsRefusal.unavailable',
+      reason: "Adding credits isn't available for this workspace right now."
+    }
+  ])(
+    'shows Add credits disabled with the reason for $case',
+    async ({ facts, reasonKey, reason }) => {
+      const { emitted } = renderCard(
+        { ...activeFacts, ...facts },
+        { kind: 'disabled', reasonKey }
+      )
+
+      const addCredits = screen.getByRole('button', { name: 'Add credits' })
+      expect(addCredits).toBeDisabled()
+      expect(addCredits).toHaveAccessibleDescription(reason)
+      await userEvent.click(addCredits)
+      expect(emitted('addCredits')).toBeUndefined()
+    }
+  )
+
+  it.for<{
+    case: string
+    facts: Partial<CreditsCardFacts>
     amount: string
     date: string
     used: string | null
@@ -239,6 +290,39 @@ describe('BillingCreditsCard', () => {
       date: 'Refills October 1, 2026',
       used: '16% used',
       meter: '16'
+    },
+    {
+      case: 'a sales-managed plan has no refill date',
+      facts: {
+        planKind: 'salesManaged',
+        servedPlanKind: 'sales_managed',
+        renewalDate: '2026-10-01T00:00:00Z'
+      },
+      amount: '844 of 1,000',
+      date: '',
+      used: '16% used',
+      meter: '16'
+    },
+    {
+      case: 'a plan without a served plan kind has no refill date',
+      facts: { servedPlanKind: null, renewalDate: '2026-10-01T00:00:00Z' },
+      amount: '844 of 1,000',
+      date: '',
+      used: '16% used',
+      meter: '16'
+    },
+    {
+      case: 'a sales-managed plan the row cannot name has no refill date',
+      facts: {
+        planKind: 'unknown',
+        servedPlanKind: 'sales_managed',
+        billingStatus: 'paused',
+        renewalDate: '2026-10-01T00:00:00Z'
+      },
+      amount: '0 of 1,000',
+      date: '',
+      used: null,
+      meter: null
     },
     {
       case: 'an ending plan is available until its end date',
@@ -297,6 +381,59 @@ describe('BillingCreditsCard', () => {
     expect(
       screen.queryByRole('meter')?.getAttribute('aria-valuenow') ?? null
     ).toBe(row.meter)
+  })
+
+  it.for<{
+    case: string
+    grant: CreditsCardFacts['periodCreditGrant']
+    plan: string | null
+    topUp: string | null
+    meter: string | null
+  }>([
+    {
+      case: 'an amount grant as the plan total',
+      grant: { state: 'amount', credits: 2000, period: 'MONTHLY' },
+      plan: '844 of 2,000',
+      topUp: '633',
+      meter: '58'
+    },
+    {
+      case: 'an unknown grant without a total or meter',
+      grant: { state: 'unknown' },
+      plan: '844',
+      topUp: '633',
+      meter: null
+    },
+    {
+      case: 'a none grant as Available alone',
+      grant: { state: 'none' },
+      plan: null,
+      topUp: null,
+      meter: null
+    },
+    {
+      case: 'an absent grant with the plan pool fallback',
+      grant: null,
+      plan: '844 of 1,000',
+      topUp: '633',
+      meter: '16'
+    }
+  ])('renders $case', ({ grant, plan, topUp, meter }) => {
+    renderCard({ ...activeFacts, periodCreditGrant: grant })
+
+    expect(
+      screen.getByTestId('billing-credits-available').textContent.trim()
+    ).toBe('1,477')
+    expect(
+      screen.queryByTestId('billing-credits-plan')?.textContent.trim() ?? null
+    ).toBe(plan)
+    expect(
+      screen.queryByTestId('billing-credits-top-up')?.textContent.trim() ?? null
+    ).toBe(topUp)
+    expect(
+      screen.queryByRole('meter')?.getAttribute('aria-valuenow') ?? null
+    ).toBe(meter)
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeVisible()
   })
 
   it('shows nothing under the amount without a date or a total', () => {

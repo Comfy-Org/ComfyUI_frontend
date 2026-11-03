@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     "./fetch": {
+      "@comfyorg/test-utils": "./src/fetch.ts",
       "types": "./dist-types/fetch.d.ts",
       "default": "./src/fetch.ts"
     }

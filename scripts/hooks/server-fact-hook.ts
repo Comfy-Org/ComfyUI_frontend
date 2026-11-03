@@ -32,7 +32,8 @@ export type SnapshotReview =
   | { ok: false; detail: string }
 
 const AGENT_GUIDANCE = [
-  'Render each server fact as received: no &&, ||, ??, ternary, comparison or helper around it, and do not choose which fact answers the question.',
+  'Render each server fact as the API documents it: no &&, ||, ??, ternary, arithmetic, comparison or helper that joins it with another fact, and no field the API does not document as the answer.',
+  'This check still blocks tier and billing or subscription status literals even where the spec documents the value. Ask the backend for the fact, or change the lint rule in its own PR; do not disable it.',
   'Local UI state (loading, in-flight, validity) may only narrow it, as in canTopUp && !isLoading.',
   "If the UI needs a fact the API does not emit, open a backend ticket and wrap the interim expression in pendingServerFact('BE-xxxx', ...).",
   'Never substitute another field: can_change_seats is not member management.',

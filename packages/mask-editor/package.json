@@ -12,6 +12,7 @@
   },
   "exports": {
     "./*": {
+      "@comfyorg/mask-editor": "./src/*.ts",
       "types": "./dist/*.d.ts",
       "default": "./src/*.ts"
     }

@@ -43,6 +43,10 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   canManageAutoTopUp: computed(() =>
     receiveServerFact('can_manage_auto_top_up', false)
   ),
+  manageAutoTopUpDenial: manageAutoTopUpDenialFact(undefined),
+  autoTopUpEnabled: computed(() =>
+    receiveServerFact('auto_top_up_enabled', false)
+  ),
   autoTopUpSetup: computed(() => null),
   canRunWorkflows: computed(() => false),
   planKind: computed(() => receiveServerFact('plan_kind', null)),
@@ -71,6 +75,10 @@ export function canManageAutoTopUpFact(granted: boolean) {
   return computed(() => receiveServerFact('can_manage_auto_top_up', granted))
 }
 
+export function autoTopUpEnabledFact(enabled: boolean) {
+  return computed(() => receiveServerFact('auto_top_up_enabled', enabled))
+}
+
 export function paymentRecoveryAvailableFact(
   available: MaybeRefOrGetter<boolean>
 ) {
@@ -84,6 +92,12 @@ export function runWorkflowsDenialFact(
 ) {
   return computed(() =>
     receiveServerFact('denied_reasons.can_run_workflows', toValue(denial))
+  )
+}
+
+export function manageAutoTopUpDenialFact(denial: string | undefined) {
+  return computed(() =>
+    receiveServerFact('denied_reasons.can_manage_auto_top_up', denial)
   )
 }
 
