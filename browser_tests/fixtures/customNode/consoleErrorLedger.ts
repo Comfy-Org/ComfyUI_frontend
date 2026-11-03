@@ -143,7 +143,7 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
     {
       id: 'ltx-director-guide-syntax',
       pattern:
-        /\[vite:preloadError\].*Unexpected token '\}'\} \[http:\/\/localhost:8188\/assets\//,
+        /^\[Reported error\]: error_loading_extension \/extensions\/WhatDreamsCost-ComfyUI\/(?:.+\/)?ltx_director_guide\.js: .*Unexpected token '\}'/i,
       global: true,
       requiredStartupId: 'ltx-director-guide-syntax',
       reason:
@@ -164,7 +164,7 @@ const CONSOLE_ERROR_ALLOWLIST: Record<string, AllowlistRule[]> = {
     {
       id: 'duplicate-color-overlay',
       pattern:
-        /\[vite:preloadError\].*Extension named 'ColorOverlay' already registered\./,
+        /^\[Reported error\]: error_loading_extension \/extensions\/comfyui_layerstyle(?:_advance)?\/(?:.+\/)?dz_node_palette\.js: .*Extension named 'ColorOverlay' already registered\./i,
       global: true,
       requiredStartupId: 'duplicate-color-overlay',
       reason:
