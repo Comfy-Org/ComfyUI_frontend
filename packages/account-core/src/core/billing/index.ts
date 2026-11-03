@@ -320,6 +320,11 @@ export {
 } from './billingTab/topupCheckoutBanner'
 export type {
   AutoTopUpCardFacts,
-  AutoTopUpCardState
+  AutoTopUpCardState,
+  AutoTopUpSection,
+  AutoTopUpSectionFacts
 } from './billingTab/autoTopUpCard'
-export { deriveAutoTopUpCard } from './billingTab/autoTopUpCard'
+export {
+  deriveAutoTopUpCard,
+  deriveAutoTopUpSection
+} from './billingTab/autoTopUpCard'
