@@ -219,17 +219,6 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   ],
   ['legacy', { component: WidgetLegacy, aliases: [], essential: true }],
   [
-    'shim',
-    {
-      component: defineAsyncComponent(
-        () =>
-          import('@/renderer/extensions/vueNodes/widgets/components/WidgetShim.vue')
-      ),
-      aliases: [],
-      essential: true
-    }
-  ],
-  [
     'audiorecord',
     {
       component: WidgetRecordAudio,

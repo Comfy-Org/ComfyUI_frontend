@@ -94,7 +94,6 @@ import { computed, nextTick, useTemplateRef, watch } from 'vue'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import { AUTOGROW_GROUP_WIDGET_TYPE } from '@/core/graph/widgets/inputWidgetShim'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
@@ -140,13 +139,12 @@ const hoveredGroupName = computed(() => {
 })
 
 function revealedAutogrowGroup(widget: WidgetGridItem) {
-  const { type, name } = widget.simplified
   const slot = widget.slotMetadata
-  if (type !== AUTOGROW_GROUP_WIDGET_TYPE || !slot) return undefined
+  if (widget.inputRole !== 'autogrowGroup' || !slot) return undefined
   const dragType = autogrowIoInputDragType.value
   const accepts =
     dragType !== undefined && LiteGraph.isValidConnection(dragType, slot.type)
-  return slot.linked || accepts ? name : undefined
+  return slot.linked || accepts ? widget.simplified.name : undefined
 }
 
 function isInHoveredGroup(name: string) {
@@ -158,7 +156,7 @@ const renderedRows = computed(() =>
   processedWidgets.flatMap((widget) => {
     const autogrowGroup = revealedAutogrowGroup(widget)
     const isConverted = isConvertedWidgetType(widget.simplified.type)
-    const isSocketOnly = widget.simplified.type === 'shim'
+    const isSocketOnly = widget.inputRole === 'socket'
     const showsControl = !isConverted && !isSocketOnly && widget.visible
     const suppressedByConnection =
       !!widget.suppressedByConnection || !!autogrowGroup
