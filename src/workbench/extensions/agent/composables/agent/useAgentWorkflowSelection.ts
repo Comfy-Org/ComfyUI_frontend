@@ -341,11 +341,12 @@ export function useAgentWorkflowSelection({
   ): Promise<WorkflowRestoration> {
     try {
       if (target === null) {
-        await workflowStore.syncWorkflows()
+        const synced = await workflowStore.syncWorkflows()
         if (!isCurrent()) return RESTORE_ABANDONED
         target = storedWorkflowFor(workflowId)
+        if (target === null)
+          return restoreUnresolved(workflowId, listed, synced)
       }
-      if (target === null) return restoreUnresolved(workflowId, listed)
       const opened = await workflowService.openWorkflow(target, { isCurrent })
       if (!isCurrent()) return RESTORE_ABANDONED
       if (!opened)
@@ -364,9 +365,10 @@ export function useAgentWorkflowSelection({
 
   function restoreUnresolved(
     workflowId: string,
-    listed: boolean
+    listed: boolean,
+    synced: boolean
   ): WorkflowRestoration {
-    if (!listed || workflowStore.lastSyncFailed)
+    if (!listed || !synced)
       return abandonRestore(
         workflowId,
         'No saved workflow resolves to the chat target'

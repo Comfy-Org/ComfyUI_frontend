@@ -520,7 +520,7 @@ beforeEach(() => {
   vi.mocked(useWorkflowService()).saveWorkflow.mockClear()
   vi.mocked(useWorkflowService()).saveWorkflowAs.mockClear()
   vi.mocked(useWorkflowService()).openWorkflow.mockClear()
-  vi.mocked(workflowStore.syncWorkflows).mockResolvedValue(undefined)
+  vi.mocked(workflowStore.syncWorkflows).mockResolvedValue(true)
   focusNodeInstance.mockReset()
   socketSend.mockReset()
   vi.mocked(reportError).mockClear()

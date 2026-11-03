@@ -41,10 +41,9 @@ export interface WorkflowStore {
   persistedWorkflows: ComfyWorkflow[]
   modifiedWorkflows: ComfyWorkflow[]
   getWorkflowByPath: (path: string) => ComfyWorkflow | null
-  syncWorkflows: (dir?: string) => Promise<void>
+  /** Resolves `false` when this call's listing failed; it never rejects. */
+  syncWorkflows: (dir?: string) => Promise<boolean>
   isSyncLoading: boolean
-  /** `true` when the last `syncWorkflows` failed; it resolves either way. */
-  lastSyncFailed: boolean
   loadWorkflows: () => Promise<void>
   reorderWorkflows: (from: number, to: number) => void
 

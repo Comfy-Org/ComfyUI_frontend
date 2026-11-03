@@ -69,7 +69,7 @@ function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
   workflows.attachWorkflow(current)
   workflows.openWorkflowsInBackground({ right: [current.path] })
   workflows.activeWorkflow = current
-  vi.mocked(workflows.syncWorkflows).mockResolvedValue(undefined)
+  vi.mocked(workflows.syncWorkflows).mockResolvedValue(true)
   vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
     async (workflow) => {
       workflows.openWorkflowsInBackground({ right: [workflow.path] })
@@ -198,8 +198,8 @@ describe('historical workflow restoration', () => {
     let finishSync = () => {}
     vi.mocked(workflows.syncWorkflows).mockImplementationOnce(
       () =>
-        new Promise<void>((resolve) => {
-          finishSync = resolve
+        new Promise<boolean>((resolve) => {
+          finishSync = () => resolve(true)
         })
     )
     const restoration = selection.restoreTarget('wf-saved', () => true)
@@ -303,6 +303,7 @@ describe('historical workflow restoration', () => {
     saved.load = vi.fn(async () => saved)
     vi.mocked(workflows.syncWorkflows).mockImplementationOnce(async () => {
       workflows.attachWorkflow(saved)
+      return true
     })
 
     await selection.restoreTarget('wf-saved', () => true)
@@ -340,6 +341,7 @@ describe('historical workflow restoration', () => {
       markStarted()
       await pending
       workflows.attachWorkflow(saved)
+      return true
     })
     const restoration = selection.restoreTarget('wf-saved', () => true)
     await started
@@ -423,9 +425,7 @@ describe('historical workflow restoration', () => {
 
   it('fails and stays retryable when the sync for a listed workflow fails', async () => {
     const { selection, workflows, panel, warnRestoreFailed } = setup()
-    vi.mocked(workflows.syncWorkflows).mockImplementationOnce(async () => {
-      Object.assign(workflows, { lastSyncFailed: true })
-    })
+    vi.mocked(workflows.syncWorkflows).mockResolvedValueOnce(false)
 
     expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
       false

@@ -323,7 +323,7 @@ beforeEach(() => {
     })
   )
   workflowStore = useWorkflowStore()
-  vi.mocked(workflowStore.syncWorkflows).mockResolvedValue(undefined)
+  vi.mocked(workflowStore.syncWorkflows).mockResolvedValue(true)
   vi.mocked(useWorkflowService()).openWorkflow.mockImplementation(
     async (tab, options) => {
       workflowStore.activeWorkflow = await tab.load()
