@@ -1002,6 +1002,51 @@ export interface AgentFreeUseExposureMetadata extends Record<string, unknown> {
   placement: AgentFreeUseVariant
   '$feature/agent-free-use-message-placement': AgentFreeUseVariant
 }
+/**
+ * Which starter-prompt selection strategy produced the rendered set, for the
+ * PM-2334 personalization experiment. Deliberately the PostHog variant keys
+ * verbatim, as with the placement arms: the analysis joins this to
+ * `$feature/agent-starter-prompt-personalization`, and a translation layer
+ * between the two is one more place for the arms to drift apart.
+ */
+export type AgentStarterPromptStrategy =
+  | 'static'
+  | 'profile'
+  | 'canvas'
+  | 'profile_canvas'
+/**
+ * One rendered starter-prompt set, with the inputs that chose it. Fires in the
+ * static baseline too, so the denominator exists before any arm is served, and
+ * so a broken profile or canvas read is visible without a treatment.
+ *
+ * Carries no `$feature/` property while the flag is inactive: a resolution with
+ * `assignment_source: 'inactive'` or `'qa-override'` is not an assignment, and
+ * tagging it as one would enrol the baseline into the experiment.
+ */
+export interface AgentStarterPromptPersonalizationMetadata extends Record<
+  string,
+  unknown
+> {
+  strategy: AgentStarterPromptStrategy
+  /** `inactive` is the unassigned static baseline; `qa-override` is an employee override. */
+  assignment_source: 'inactive' | 'qa-override'
+  /**
+   * Whether the rendered set actually differs from the static baseline. A
+   * profile strategy with no readable survey still renders the baseline, so
+   * strategy alone cannot say whether anything was personalized.
+   */
+  personalization_applied: boolean
+  /** `unavailable` covers a missing, empty, unreadable, or unrecognized survey. */
+  profile_source: 'survey' | 'unavailable'
+  /** Whether the targeted graph held at least one node when the set was chosen. */
+  canvas_presence: 'empty' | 'present'
+  /** Copy-catalog version, so a rewritten catalog is not read as a better arm. */
+  catalog_version: string
+  /** Size of the rendered set, so a set that grew or shrank is visible. */
+  prompt_count: number
+  /** The locale the copy was resolved in; the V2 catalog is English-only. */
+  locale: string
+}
 export type AgentCreditUsageVariant = 'control' | 'treatment'
 export interface AgentCreditUsageExposureMetadata extends Record<
   string,
@@ -1692,6 +1737,9 @@ export interface TelemetryProvider {
   trackAgentStarterPromptClicked?(
     metadata: AgentStarterPromptClickedMetadata
   ): void
+  trackAgentStarterPromptPersonalization?(
+    metadata: AgentStarterPromptPersonalizationMetadata
+  ): void
   trackAgentFreeUseNotice?(metadata: AgentFreeUseNoticeMetadata): void
   trackAgentFreeUseExposure?(metadata: AgentFreeUseExposureMetadata): void
   trackAgentCreditUsageExposure?(
@@ -1885,6 +1933,8 @@ export const TelemetryEvents = {
   AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_STARTER_PROMPT_CLICKED: 'app:agent_starter_prompt_clicked',
+  AGENT_STARTER_PROMPT_PERSONALIZATION:
+    'app:agent_starter_prompt_personalization',
   AGENT_FREE_USE_NOTICE: 'app:agent_free_use_notice',
   AGENT_FREE_USE_EXPOSURE: 'app:agent_free_use_exposure',
   AGENT_CREDIT_USAGE_EXPOSURE: 'app:agent_credit_usage_exposure',

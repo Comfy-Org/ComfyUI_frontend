@@ -60,6 +60,7 @@ import type {
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
   AgentStarterPromptClickedMetadata,
+  AgentStarterPromptPersonalizationMetadata,
   AgentStopClickedMetadata,
   AgentThreadStartedMetadata,
   AgentWorkflowBoundMetadata,
@@ -895,6 +896,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     metadata: AgentStarterPromptClickedMetadata
   ): void {
     this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentStarterPromptPersonalization(
+    metadata: AgentStarterPromptPersonalizationMetadata
+  ): void {
+    this.trackEvent(
+      TelemetryEvents.AGENT_STARTER_PROMPT_PERSONALIZATION,
+      metadata
+    )
   }
 
   trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {

@@ -459,6 +459,7 @@
     "keybindings",
     "workbench-shell",
     "remote-config",
+    "telemetry",
     "workflow-management"
   ],
   "allowedConsumers": [],
