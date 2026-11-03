@@ -432,7 +432,7 @@ describe('markAskParts', () => {
 
   it('reopens only the matching dismissed cards, and leaves the parts alone when none match', () => {
     const question = toAskPart(askUser({ ask_id: 'q' }))
-    assert(question)
+    assert(question?.type === 'askUser')
     const other: MessagePart = { ...question, askId: 'o', dismissed: true }
     const parts = [{ ...question, dismissed: true }, other]
 
@@ -447,7 +447,7 @@ describe('markAskParts', () => {
 
 describe('retireAskParts', () => {
   const question = toAskPart(askUser({ ask_id: 'q' }))
-  assert(question)
+  assert(question?.type === 'askUser')
   const parts: MessagePart[] = [
     { type: 'text', text: 'before', state: 'done' },
     { type: 'runApproval', askId: 'run' },
