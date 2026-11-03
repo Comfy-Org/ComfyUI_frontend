@@ -12,10 +12,14 @@ export function timedSignal(
   if (timeoutMs === undefined) return { signal, release: () => undefined }
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const onAbort = () => controller.abort(signal?.reason)
+  if (signal?.aborted) onAbort()
+  else signal?.addEventListener('abort', onAbort, { once: true })
   return {
-    signal: signal
-      ? AbortSignal.any([signal, controller.signal])
-      : controller.signal,
-    release: () => clearTimeout(timer)
+    signal: controller.signal,
+    release: () => {
+      clearTimeout(timer)
+      signal?.removeEventListener('abort', onAbort)
+    }
   }
 }

@@ -31,9 +31,9 @@ function fakeBridge(initial: DesktopHostAuthState) {
       async (_workspaceId: string): Promise<string | null> => 'host-token'
     ),
     requestSignIn: vi.fn(async (): Promise<DesktopHostAuthState> => SIGNED_IN),
-    signOut: vi.fn(
-      async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
-    ),
+    signOut: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+      status: 'signed_out'
+    })),
     switchWorkspace: vi.fn(
       async (workspaceId: string): Promise<DesktopHostAuthState> => ({
         status: 'signed_in',
@@ -163,6 +163,44 @@ describe('desktopHostSession', () => {
       token.resolve('stale-token')
 
       await expect(fetching).resolves.toBeUndefined()
+    })
+
+    it.for([
+      {
+        name: 'keeps it across the same session announced again',
+        next: { ...SIGNED_IN },
+        expected: 'host-token'
+      },
+      {
+        name: 'keeps it when a renewed token adds profile details',
+        next: { ...SIGNED_IN, name: 'Ada', email: 'ada@example.com' },
+        expected: 'host-token'
+      },
+      {
+        name: 'drops it when the session moves to another workspace',
+        next: { ...SIGNED_IN, workspaceId: 'ws-2' },
+        expected: undefined
+      },
+      {
+        name: 'drops it when another account signs in to the same workspace',
+        next: { ...SIGNED_IN, userId: 'user-2' },
+        expected: undefined
+      }
+    ] satisfies {
+      name: string
+      next: DesktopHostAuthState
+      expected: string | undefined
+    }[])('a token fetch $name', async ({ next, expected }) => {
+      const { bridge, push } = fakeBridge(SIGNED_IN)
+      await startDesktopHostSession(bridge)
+      const token = deferred<string | null>()
+      bridge.getWorkspaceToken.mockReturnValue(token.promise)
+
+      const fetching = desktopHostWorkspaceToken('ws-1')
+      push(next)
+      token.resolve('host-token')
+
+      await expect(fetching).resolves.toBe(expected)
     })
 
     it('ignores a sign-in result that a newer change overtook', async () => {

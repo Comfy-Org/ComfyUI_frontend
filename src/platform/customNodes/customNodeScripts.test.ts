@@ -5,7 +5,6 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { CustomNodeLoadFailure } from './customNodeScripts'
 import {
-  isSafeExtensionBoot,
   reportCustomNodeLoadFailures,
   shouldLoadCustomNodeScript
 } from './customNodeScripts'
@@ -83,16 +82,26 @@ describe('shouldLoadCustomNodeScript', () => {
   })
 })
 
-describe('isSafeExtensionBoot', () => {
-  it.for([
-    { search: '?safe', expected: true },
-    { search: '?safe=1', expected: true },
-    { search: '?safe=true', expected: true },
-    { search: '?safe=0', expected: false },
-    { search: '?safe=false', expected: false },
-    { search: '', expected: false }
-  ])('reads $search as $expected', ({ search, expected }) => {
-    expect(isSafeExtensionBoot(search)).toBe(expected)
+describe('loadCustomNodeScripts', () => {
+  it('keeps disabled scripts inert on the CPU-reading import path', async () => {
+    const { loadCustomNodeScripts } = await import('./customNodeScripts')
+    const { api } = await import('@/scripts/api')
+    const executed: string[] = []
+    vi.stubGlobal('recordGateScript', (script: string) => executed.push(script))
+    const attempt = crypto.randomUUID()
+    vi.spyOn(api, 'fileURL').mockImplementation(
+      (script) =>
+        `data:text/javascript,globalThis.recordGateScript(${JSON.stringify(script)})#${attempt}`
+    )
+
+    await loadCustomNodeScripts(
+      ['/extensions/blocked/main.js', '/extensions/enabled/main.js'],
+      new AbortController().signal,
+      Promise.resolve({ answer: 'none' }),
+      { disabledExtensionPaths: ['/extensions/blocked/'] }
+    )
+
+    expect(executed).toEqual(['/extensions/enabled/main.js'])
   })
 })
 
