@@ -32,7 +32,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const ossTest = mergeTests(test, jobsRouteFixture)

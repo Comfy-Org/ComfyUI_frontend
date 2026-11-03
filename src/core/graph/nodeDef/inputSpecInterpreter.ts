@@ -1,6 +1,6 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { createInputSpecInterpreter } from '@/schemas/nodeDef/inputSpecInterpreter'
-import type { InputSpecDiagnosticSink } from '@/schemas/nodeDef/inputSpecInterpreter'
+import { createInputSpecInterpreter } from '@comfyorg/object-info-parser/inputSpecInterpreter'
+import type { InputSpecDiagnosticSink } from '@comfyorg/object-info-parser/inputSpecInterpreter'
 
 const MAX_SPEC_DRIFT_REPORTS = 10
 const reportedSpecDrift = new Set<string>()
@@ -34,10 +34,11 @@ const warnSpecDrift: InputSpecDiagnosticSink = (spec, error, optionIndex) => {
 }
 
 export const {
-  splitSlotTypes,
   inputSpecTree,
   ownSlotTypes,
   dynamicComboOptionKeys,
   dynamicComboOptionTypes,
-  matchTypeTemplate
+  flattenInputSpecs,
+  collectSearchableInputTypes,
+  collectSearchableOutputTypes
 } = createInputSpecInterpreter(warnSpecDrift)

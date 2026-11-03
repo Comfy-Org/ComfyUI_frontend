@@ -8,8 +8,8 @@ import {
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   MissingMediaCandidate,
