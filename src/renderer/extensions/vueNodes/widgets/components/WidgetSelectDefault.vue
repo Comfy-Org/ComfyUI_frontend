@@ -181,6 +181,7 @@
 </template>
 
 <script setup lang="ts">
+import { countBy } from 'es-toolkit'
 import {
   ComboboxPortal,
   ComboboxAnchor,
@@ -390,6 +391,7 @@ const browseOptions = computed<Array<SelectOption | SelectFolder>>(() => {
       })
     }
   }
+  const labelCounts = countBy(files, (option) => option.label)
   return [
     ...(directory.value.length
       ? [
@@ -402,7 +404,11 @@ const browseOptions = computed<Array<SelectOption | SelectFolder>>(() => {
         ]
       : []),
     ...folders.values(),
-    ...files
+    ...files.map((option) =>
+      labelCounts[option.label] > 1
+        ? { ...option, label: option.value }
+        : option
+    )
   ]
 })
 
