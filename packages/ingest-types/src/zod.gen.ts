@@ -2991,6 +2991,20 @@ export const zCurrentWorkspaceResponse = z.object({
   type: z.enum(['personal', 'team'])
 })
 
+export const zCreditValidityFact = z.object({
+  expires_at: z.iso.datetime().optional(),
+  rollover: z.enum(['none', 'allowed', 'unknown']).optional(),
+  state: z.enum(['expiring', 'mixed', 'unknown'])
+})
+
+/**
+ * Display-only validity of the current shared wallet, including old-contract value and custom grants. Not a new-purchase quote or a spend decision. Missing facts on an older server mean unknown. No default year is inferred.
+ */
+export const zCreditValidity = z.object({
+  plan: zCreditValidityFact,
+  top_up: zCreditValidityFact
+})
+
 /**
  * Request body for creating a new workspace.
  */
@@ -3176,6 +3190,34 @@ export const zContentCatalogProjection = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     })
+})
+
+/**
+ * A model file and the ComfyUI model folder it is read from.
+ */
+export const zCompatibilityModel = z.object({
+  folder: z.string(),
+  name: z.string()
+})
+
+export const zCloudWorkflowCompatibility = z.object({
+  missing_models: z.array(zCompatibilityModel).optional(),
+  missing_node_types: z.array(z.string())
+})
+
+/**
+ * The node types and models of a workflow.
+ */
+export const zCloudCompatibilityRequest = z.object({
+  models: z.array(zCompatibilityModel).optional(),
+  node_types: z.array(z.string())
+})
+
+/**
+ * Which of the posted node types and models Comfy Cloud does not have.
+ */
+export const zCloudCompatibility = z.object({
+  cloud: zCloudWorkflowCompatibility
 })
 
 /**
@@ -4155,6 +4197,7 @@ export const zBillingBalanceResponse = z.object({
   cloud_credit_balance_cents: z.number().optional(),
   cloud_credit_balance_micros: z.number().optional(),
   cloud_credit_display_balance_cents: z.number().optional(),
+  credit_validity: zCreditValidity.optional(),
   currency: z.string(),
   effective_balance_authoritative: z.boolean().optional(),
   effective_balance_cents: z.number().optional(),
@@ -4542,6 +4585,10 @@ export const zAgentViewableAttachmentExtension = z.enum([
   '.heic',
   '.heif'
 ])
+
+export const zAgentUsageStatusResponse = z.object({
+  has_used_agent: z.boolean()
+})
 
 /**
  * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
@@ -5480,6 +5527,11 @@ export const zAgentCancelMessagePath = z.object({
  */
 export const zAgentCancelMessageResponse = zAgentCancelAccepted
 
+/**
+ * Message usage for the authenticated user and workspace.
+ */
+export const zAgentGetUsageStatusResponse = zAgentUsageStatusResponse
+
 export const zListAssetsQuery = z.object({
   include_tags: z.array(z.string()).optional(),
   exclude_tags: z.array(z.string()).optional(),
@@ -6084,6 +6136,13 @@ export const zGetBillingUsageTimeSeriesQuery = z.object({
  * Workspace usage
  */
 export const zGetBillingUsageTimeSeriesResponse = zUsageTimeSeries
+
+export const zCheckCloudCompatibilityBody = zCloudCompatibilityRequest
+
+/**
+ * The posted node types and models Comfy Cloud is missing
+ */
+export const zCheckCloudCompatibilityResponse = zCloudCompatibility
 
 /**
  * Default workflow JSON
@@ -7317,9 +7376,12 @@ export const zGetCccPublicCacheAuthorityResponse = z.object({
 })
 
 export const zGetCccRevisionItemPath = z.object({
-  rev: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
-    error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-  }),
+  rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
   uid: z.uuid()
 })
 

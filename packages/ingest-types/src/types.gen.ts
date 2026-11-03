@@ -4892,6 +4892,29 @@ export type CurrentWorkspaceResponse = {
   type: 'personal' | 'team'
 }
 
+export type CreditValidityFact = {
+  /**
+   * Exclusive expiry of all current bucket value; only present for expiring.
+   */
+  expires_at?: string
+  /**
+   * Plan only: whether all positive plan contributors are proved to have current recurring grant validity spanning later grant periods. None means one grant period; allowed means more than one. An annual grant period is annual, not monthly. Unknown when lineage or terms are unavailable. Independent of contract-transition rollover.
+   */
+  rollover?: 'none' | 'allowed' | 'unknown'
+  /**
+   * Expiring means every positive contributor has the same authoritative expiry. Mixed means distinct known expiries across positive grants. Unknown includes unavailable or ambiguous terms, no positive value, and historical no-expiry sentinels; missing dates never mean forever.
+   */
+  state: 'expiring' | 'mixed' | 'unknown'
+}
+
+/**
+ * Display-only validity of the current shared wallet, including old-contract value and custom grants. Not a new-purchase quote or a spend decision. Missing facts on an older server mean unknown. No default year is inferred.
+ */
+export type CreditValidity = {
+  plan: CreditValidityFact
+  top_up: CreditValidityFact
+}
+
 /**
  * Request body for creating a new workspace.
  */
@@ -5205,6 +5228,52 @@ export type ContentCatalogProjection = {
   generation: number
   items: Array<ContentCatalogRecord>
   revision_id: number
+}
+
+/**
+ * A model file and the ComfyUI model folder it is read from.
+ */
+export type CompatibilityModel = {
+  /**
+   * The model folder, such as `checkpoints` or `loras`.
+   */
+  folder: string
+  /**
+   * The file name, such as `sd_xl_base_1.0.safetensors`.
+   */
+  name: string
+}
+
+export type CloudWorkflowCompatibility = {
+  /**
+   * The posted models Comfy Cloud's model list does not have in the posted folder and, for a signed-in caller, whose upload a run would pick (the newest with that name among the caller's own uploads and the public model catalog) is not in the posted folder either, in the order they were posted. Absent when the request has no `models`.
+   */
+  missing_models?: Array<CompatibilityModel>
+  /**
+   * The posted node types a browser on Comfy Cloud (no pick) is not served, hidden ones included, in the order they were posted.
+   */
+  missing_node_types: Array<string>
+}
+
+/**
+ * The node types and models of a workflow.
+ */
+export type CloudCompatibilityRequest = {
+  /**
+   * The workflow's models, each with the model folder its loader reads. Duplicates are dropped before counting; more than 500 distinct models is a 400. Leave it out to check node types only.
+   */
+  models?: Array<CompatibilityModel>
+  /**
+   * The workflow's node types (class_type), subgraphs included. Duplicates are dropped before counting; more than 2,000 distinct types is a 400.
+   */
+  node_types: Array<string>
+}
+
+/**
+ * Which of the posted node types and models Comfy Cloud does not have.
+ */
+export type CloudCompatibility = {
+  cloud: CloudWorkflowCompatibility
 }
 
 /**
@@ -7158,6 +7227,7 @@ export type BillingBalanceResponse = {
    * Display-only subscription remainder in cents of currency, capped at the known configured period_credit_grant converted at USD1 = 211 credits. Preserves fractional cents and negative balances. A proven zero allowance caps at zero. Omitted when the allowance is unknown, unavailable, or the workspace is unprovisioned. When omitted, display cloud_credit_balance_cents unchanged, without a client-side cap or zero substitution. The cap may show less than spendable credit after a downgrade or on a known-zero plan. Does not change actual cloud_credit_balance_cents, totals, prepaid credit, pending charges or spend authorization.
    */
   cloud_credit_display_balance_cents?: number
+  credit_validity?: CreditValidity
   /**
    * Currency code
    */
@@ -7628,6 +7698,13 @@ export type AgentViewableAttachmentExtension =
   | '.tiff'
   | '.heic'
   | '.heif'
+
+export type AgentUsageStatusResponse = {
+  /**
+   * Whether a persisted user-role message exists in a thread owned by this user in the current workspace. Does not imply a successful Agent reply, experiment eligibility or permanent retention of historical usage after server-side deletion.
+   */
+  has_used_agent: boolean
+}
 
 /**
  * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
@@ -9833,6 +9910,57 @@ export type AgentCancelMessageResponses = {
 
 export type AgentCancelMessageResponse =
   AgentCancelMessageResponses[keyof AgentCancelMessageResponses]
+
+export type AgentGetUsageStatusData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/agent/usage-status'
+}
+
+export type AgentGetUsageStatusErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Missing or invalid identity; no usage status is returned.
+   */
+  401: ErrorResponse | AgentError
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Agent feature is unavailable for this caller.
+   */
+  404: unknown
+  /**
+   * Usage could not be determined; never interpret this as unused.
+   */
+  500: ErrorResponse | AgentError
+  /**
+   * Agent service unavailable.
+   */
+  502: ErrorResponse
+  /**
+   * Agent proxy is not configured.
+   */
+  503: ErrorResponse
+}
+
+export type AgentGetUsageStatusError =
+  AgentGetUsageStatusErrors[keyof AgentGetUsageStatusErrors]
+
+export type AgentGetUsageStatusResponses = {
+  /**
+   * Message usage for the authenticated user and workspace.
+   */
+  200: AgentUsageStatusResponse
+}
+
+export type AgentGetUsageStatusResponse =
+  AgentGetUsageStatusResponses[keyof AgentGetUsageStatusResponses]
 
 export type ListAssetsData = {
   body?: never
@@ -13107,6 +13235,49 @@ export type GetBillingUsageTimeSeriesResponses = {
 
 export type GetBillingUsageTimeSeriesResponse =
   GetBillingUsageTimeSeriesResponses[keyof GetBillingUsageTimeSeriesResponses]
+
+export type CheckCloudCompatibilityData = {
+  body: CloudCompatibilityRequest
+  path?: never
+  query?: never
+  url: '/api/cloud/compatibility'
+}
+
+export type CheckCloudCompatibilityErrors = {
+  /**
+   * No body, no `node_types` or a null `node_types` (an empty list is answered 200), more than 2,000 distinct node types, more than 500 distinct models, or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid): the `X-Comfy-Workspace-ID` value is malformed or conflicts with the workspace the credential resolves to.
+   */
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
+  /**
+   * The cloud_compatibility_check_enabled switch is off
+   */
+  404: ErrorResponse
+  /**
+   * Comfy Cloud's model list, or the signed-in caller's uploads and the public model catalog, could not be read
+   */
+  500: ErrorResponse
+  /**
+   * Comfy Cloud's node list is not loaded yet
+   */
+  503: ErrorResponse
+}
+
+export type CheckCloudCompatibilityError =
+  CheckCloudCompatibilityErrors[keyof CheckCloudCompatibilityErrors]
+
+export type CheckCloudCompatibilityResponses = {
+  /**
+   * The posted node types and models Comfy Cloud is missing
+   */
+  200: CloudCompatibility
+}
+
+export type CheckCloudCompatibilityResponse =
+  CheckCloudCompatibilityResponses[keyof CheckCloudCompatibilityResponses]
 
 export type GetDefaultWorkflowData = {
   body?: never
