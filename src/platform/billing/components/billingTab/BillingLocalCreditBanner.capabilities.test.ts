@@ -164,7 +164,7 @@ describe('BillingLocalCreditBanner from a served capabilities read', () => {
 
     const banner = await screen.findByTestId('billing-local-credit-banner')
     expect(banner).toHaveTextContent(
-      "Your team has used all its credits. Buying credits isn't available right now. Try again later."
+      "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support."
     )
     expect(
       screen.queryByRole('button', { name: 'Add credits' })
