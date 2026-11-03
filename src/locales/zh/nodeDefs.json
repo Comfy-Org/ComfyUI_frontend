@@ -4529,6 +4529,10 @@
         "name": "bit_depth",
         "tooltip": "自动模式对 sRGB 使用 8 位，对 HDR 使用 10 位。明确选择 8 位或 10 位时不受色彩空间影响。"
       },
+      "chroma_subsampling": {
+        "name": "色度子采样",
+        "tooltip": "444 保持完整的颜色分辨率，422 将水平方向的颜色分辨率减半，420 则将两个轴向的颜色分辨率都减半。自动使用编解码器默认值。不受支持的选项会使用最接近的受支持模式，并在控制台打印警告。"
+      },
       "codec": {
         "name": "codec",
         "tooltip": "可选立即编码视频。无会将图像保留为张量形式；自动使用 H.264。"
@@ -15434,8 +15438,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "从图像开始生成视频，并将摄像机移动到主体周围的新角度和距离。",
+    "display_name": "MiniMax H3 Max 摄像机控制",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的模型。"
+      },
+      "model_azimuth": {
+        "name": "方位角"
+      },
+      "model_distance": {
+        "name": "距离"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_elevation": {
+        "name": "仰角"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "提示词扩展模式"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "根据提示词和可选的音频参考，通过新片段延续视频。",
+    "display_name": "MiniMax H3 Max 延长视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_output": {
+        "name": "输出"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_prompt_expansion": {
+        "name": "提示词扩展"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "根据提示词以及可选的参考图像和视频，用新生成的场景替换视频中开始时间与恢复时间之间的部分。",
+    "display_name": "MiniMax H3 Max 插入视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于生成视频的模型。"
+      },
+      "model_color_match": {
+        "name": "颜色匹配"
+      },
+      "model_duration": {
+        "name": "时长"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_prompt_expansion": {
+        "name": "提示词扩展"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_resume_time": {
+        "name": "恢复时间"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_start_time": {
+        "name": "开始时间"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "让图像动起来，使其嘴部动作跟随音频。视频时长与音频相同。",
+    "display_name": "MiniMax H3 Max 口型同步",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      },
+      "model_transcription": {
+        "name": "转录文本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "将视频中的人物替换为参考照片中的人物，同时保留源视频的动作、镜头、剪辑和声音。",
+    "display_name": "MiniMax H3 Max 角色替换",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_enhance_realism": {
+        "name": "增强真实感"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "通过将视频适配到新画布并生成周围区域，使视频适应新的宽高比。保留源视频的时序和声音。",
+    "display_name": "MiniMax H3 Max 视频重构画幅",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_prompt": {
+        "name": "提示词"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "model_seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "使用 MiniMax H3 模型，根据参考图像、视频和音频进行条件控制以生成视频。在提示词中按顺序引用参考内容：“图像 1”、“图像 2”、“视频 1”、“音频 1”，依此类推。",
+    "description": "使用 MiniMax H3 模型，根据参考图像、视频和音频生成视频。在提示词中按参考资料的顺序引用它们：{'@'}Image1、{'@'}Image2、{'@'}Video1、{'@'}Audio1，依此类推。",
     "display_name": "MiniMax H3 参考生成视频",
     "inputs": {
       "control_after_generate": {
@@ -20266,6 +20480,33 @@
       }
     }
   },
+  "PrunaPVideoUpscaleNode": {
+    "description": "使用 Pruna P-Video Upscale 将视频放大至 720p、1080p、2K 或 4K，同时保持其宽高比和音频。",
+    "display_name": "Pruna P-Video 视频放大",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "输出帧率。'source' 会保留视频的帧率，最高为 60。更高的帧率将通过插帧生成。输出超过 30 fps 的视频费用翻倍。"
+      },
+      "target": {
+        "name": "目标",
+        "tooltip": "输出像素面积：720p 约为 0.9 百万像素，1080p 为 2.1，2K 为 3.7，4K 为 8.3。已达到此尺寸的视频将保持原尺寸，仅进行增强。最大长度：分别为 2400、1200、600 或 300 帧；在 24 fps 下约为 100、50、25 或 12.5 秒。"
+      },
+      "turbo": {
+        "name": "极速",
+        "tooltip": "以相同价格更快地放大，但细节更柔和。"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "要放大的视频，最大 512 MiB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaTextToVideoNode": {
     "description": "使用 Pruna 视频模型根据文本提示词生成视频，可选择生成音频或使用音轨驱动视频。",
     "display_name": "Pruna P-Video-2 文本转视频",
@@ -24122,7 +24363,7 @@
       },
       "format": {
         "name": "格式",
-        "tooltip": "输出容器。Auto 对 Auto/H.264 使用 MP4，对 AV1 使用 WebM。MP4、MKV 和 WebM 可选择特定容器。"
+        "tooltip": "自动模式对 ProRes 使用 MOV，对 AV1 使用 WebM，其他情况使用 MP4。"
       },
       "format_codec": {
         "name": "编解码器"
@@ -26166,7 +26407,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "生成文本（已弃用）",
     "inputs": {
       "audio": {
         "name": "音频"
@@ -26305,6 +26546,79 @@
     "outputs": {
       "0": {
         "name": "生成文本",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "生成文本",
+    "inputs": {
+      "audios": {
+        "name": "音频"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "图像"
+      },
+      "max_length": {
+        "name": "最大长度"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "使用检查点的多词元预测头进行推测解码。没有 MTP 权重时无效。auto 会根据观察到的词元匹配和执行成本调整草稿深度与广度；2-5 会固定草稿深度；树模式会同时固定广度和深度。采样输出仍保持正确的分布，但对于相同的种子，其结果会与非 MTP 输出不同。"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "sampling_mode": {
+        "name": "采样模式"
+      },
+      "sampling_mode_min_p": {
+        "name": "最小概率"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "存在惩罚"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "重复惩罚"
+      },
+      "sampling_mode_seed": {
+        "name": "种子"
+      },
+      "sampling_mode_temperature": {
+        "name": "温度"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "系统提示词",
+        "tooltip": "替换模型聊天模板中的系统提示词。未使用默认模板时将被忽略。"
+      },
+      "thinking": {
+        "name": "思考",
+        "tooltip": "如果模型支持，则以思考模式运行。"
+      },
+      "use_default_template": {
+        "name": "使用默认模板",
+        "tooltip": "如果模型提供内置系统提示词/模板，则使用它。"
+      },
+      "videos": {
+        "name": "视频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "生成的文本",
         "tooltip": null
       },
       "1": {
@@ -26473,7 +26787,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "业界标准的放大与图像增强。",
+    "description": "行业标准的放大和图像增强。最大输出：179 百万像素。",
     "display_name": "Topaz 图像增强",
     "inputs": {
       "image": {
@@ -26511,11 +26825,11 @@
       },
       "output_height": {
         "name": "output_height",
-        "tooltip": "为 0 时输出与原始高度相同，或按 output_width 比例缩放。Wonder 3.5 仅支持 1x 到 6x 放大。Bloom 2 和 Wonder 3.5 保持输入宽高比，并将请求尺寸作为目标。"
+        "tooltip": "零值表示以与原图相同的高度输出，或者在指定 output_width 时按比例缩放。Wonder 3.5 和 Wonder 4 支持从 1x 到 6x 的放大倍率，Bloom 2 支持从 1x 到 12x。Bloom 2、Wonder 3.5 和 Wonder 4 始终保持输入宽高比：如果同时设置两个尺寸且它们的比例不同，则采用较大的缩放倍率，输出尺寸（和价格）将大于请求的尺寸。"
       },
       "output_width": {
         "name": "output_width",
-        "tooltip": "为 0 时自动计算（通常为原始尺寸，或按 output_height 比例缩放）。Wonder 3.5 仅支持 1x 到 6x 放大。Bloom 2 和 Wonder 3.5 保持输入宽高比，并将请求尺寸作为目标。"
+        "tooltip": "零值表示自动计算（通常为原始尺寸，或者在指定 output_height 时按比例缩放）。Wonder 3.5 和 Wonder 4 支持从 1x 到 6x 的放大倍率，Bloom 2 支持从 1x 到 12x。Bloom 2、Wonder 3.5 和 Wonder 4 始终保持输入宽高比：如果同时设置两个尺寸且它们的比例不同，则采用较大的缩放倍率，输出尺寸（和价格）将大于请求的尺寸。"
       }
     },
     "outputs": {
@@ -28445,6 +28759,24 @@
     "inputs": {
       "model_name": {
         "name": "模型名称"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "设置 VAE 编码和解码的计算数据类型，不影响其他分支。",
+    "display_name": "VAE 计算数据类型",
+    "inputs": {
+      "dtype": {
+        "name": "数据类型",
+        "tooltip": "默认值会保留输入 VAE 的计算数据类型。"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {

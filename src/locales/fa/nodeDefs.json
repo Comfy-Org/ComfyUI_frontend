@@ -4529,6 +4529,10 @@
         "name": "bit_depth",
         "tooltip": "خودکار برای sRGB از ۸-bit و برای HDR از ۱۰-bit استفاده می‌کند. انتخاب‌های صریح ۸-bit و ۱۰-bit مستقل از فضای رنگ هستند."
       },
+      "chroma_subsampling": {
+        "name": "زیرنمونه‌برداری رنگی",
+        "tooltip": "۴۴۴ وضوح کامل رنگ را حفظ می‌کند، ۴۲۲ وضوح افقی رنگ را نصف می‌کند و ۴۲۰ وضوح رنگ را در هر دو محور نصف می‌کند. خودکار از پیش‌فرض codec استفاده می‌کند. گزینه‌های پشتیبانی‌نشده از نزدیک‌ترین حالت پشتیبانی‌شده استفاده می‌کنند و یک هشدار در کنسول چاپ می‌شود."
+      },
       "codec": {
         "name": "codec",
         "tooltip": "در صورت تمایل، ویدیو را بلافاصله رمزگذاری می‌کند. None تصاویر را به‌شکل تنسور نگه می‌دارد؛ Auto از H.264 استفاده می‌کند."
@@ -15434,8 +15438,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "ویدیویی تولید می‌کند که از تصویر آغاز می‌شود و دوربین را به زاویه و فاصله‌ای جدید پیرامون سوژه حرکت می‌دهد.",
+    "display_name": "کنترل دوربین MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_azimuth": {
+        "name": "سمت‌زاویه"
+      },
+      "model_distance": {
+        "name": "فاصله"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_elevation": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "حالت گسترش پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "ادامه دادن یک ویدیو با فیلم جدید، با راهنمایی یک پرامپت و ارجاع‌های صوتی اختیاری.",
+    "display_name": "گسترش ویدیو MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_output": {
+        "name": "خروجی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_prompt_expansion": {
+        "name": "گسترش پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "بخش یک ویدیو میان زمان‌های شروع و ادامه را با صحنه‌ای تازه‌تولیدشده جایگزین می‌کند که با یک پرامپت و تصاویر و ویدیوهای مرجع اختیاری هدایت می‌شود.",
+    "display_name": "درج ویدیو MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_color_match": {
+        "name": "تطبیق رنگ"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_prompt_expansion": {
+        "name": "گسترش پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_resume_time": {
+        "name": "زمان ادامه"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_start_time": {
+        "name": "زمان شروع"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "تصویر را طوری متحرک می‌کند که حرکات دهان آن با صدا هماهنگ باشد. طول ویدیو برابر با طول صدا است.",
+    "display_name": "MiniMax H3 Max همگام‌سازی لب",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_transcription": {
+        "name": "رونویسی"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "افراد در یک ویدیو را با افرادِ عکس‌های مرجع جایگزین می‌کند، در حالی که حرکت، دوربین، برش‌ها و صدای ویدیوی مبدأ حفظ می‌شوند.",
+    "display_name": "MiniMax H3 Max بازبازیگری",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_enhance_realism": {
+        "name": "model_enhance_realism"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "با قراردادن ویدیو روی بوم جدید و تولید نواحی پیرامون آن، ویدیو را با نسبت تصویر جدید سازگار می‌کند. زمان‌بندی و صدای ویدیوی مبدأ حفظ می‌شوند.",
+    "display_name": "MiniMax H3 Max قاب‌بندی مجدد ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "با استفاده از مدل‌های MiniMax H3، ویدئویی شرطی‌شده بر تصاویر، ویدئوها و صوت مرجع تولید کنید. در prompt به‌ترتیب به مراجع اشاره کنید: 'Image 1'، 'Image 2'، 'Video 1'، 'Audio 1' و غیره.",
+    "description": "با استفاده از مدل‌های MiniMax H3، ویدیو را با شرط‌گذاری بر تصاویر مرجع، ویدیوها و صدا تولید می‌کند. در پرامپت، بر اساس ترتیبشان به مراجع اشاره کنید: {'@'}Image1، {'@'}Image2، {'@'}Video1، {'@'}Audio1 و غیره.",
     "display_name": "تبدیل مرجع MiniMax H3 به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -20266,6 +20480,33 @@
       }
     }
   },
+  "PrunaPVideoUpscaleNode": {
+    "description": "با استفاده از Pruna P-Video Upscale، یک ویدیو را با حفظ نسبت تصویر و صدای آن به ۷۲۰p، ۱۰۸۰p، ۲K یا ۴K ارتقا می‌دهد.",
+    "display_name": "Pruna P-Video ارتقادهی",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "نرخ فریم خروجی. «source» نرخ ویدیو را تا سقف ۶۰ حفظ می‌کند. نرخ بالاتر درون‌یابی می‌شود. خروجی بالاتر از ۳۰ fps دو برابر هزینه دارد."
+      },
+      "target": {
+        "name": "هدف",
+        "tooltip": "مساحت پیکسلی خروجی: ۷۲۰p حدود ۰٫۹ مگاپیکسل، ۱۰۸۰p برابر با ۲٫۱، ۲K برابر با ۳٫۷ و ۴K برابر با ۸٫۳. ویدیویی که از پیش به این اندازه بزرگ باشد، اندازه‌اش حفظ می‌شود و فقط بهبود می‌یابد. حداکثر طول: ۲۴۰۰، ۱۲۰۰، ۶۰۰ یا ۳۰۰ فریم؛ حدود ۱۰۰، ۵۰، ۲۵ یا ۱۲٫۵ ثانیه با ۲۴ fps."
+      },
+      "turbo": {
+        "name": "توربو",
+        "tooltip": "ارتقای سریع‌تر با جزئیات نرم‌تر و با همان قیمت."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیویی برای ارتقا، تا سقف ۵۱۲ MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaTextToVideoNode": {
     "description": "با استفاده از مدل‌های ویدئویی Pruna، از یک prompt ویدئو تولید می‌کند؛ با صدای تولیدشدهٔ اختیاری یا یک ترک صوتی برای هدایت آن.",
     "display_name": "Pruna P-Video-2 تبدیل متن به ویدئو",
@@ -24122,7 +24363,7 @@
       },
       "format": {
         "name": "فرمت",
-        "tooltip": "محفظهٔ خروجی. Auto برای Auto/H.264 از MP4 و برای AV1 از WebM استفاده می‌کند. MP4، MKV و WebM یک محفظهٔ مشخص را انتخاب می‌کنند."
+        "tooltip": "Auto برای ProRes از MOV، برای AV1 از WebM و در غیر این صورت از MP4 استفاده می‌کند."
       },
       "format_codec": {
         "name": "کدک"
@@ -26166,7 +26407,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "تولید متن",
+    "display_name": "تولید متن (منسوخ)",
     "inputs": {
       "audio": {
         "name": "صدا"
@@ -26305,6 +26546,79 @@
     "outputs": {
       "0": {
         "name": "متن تولید شده",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تفکر",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "تولید متن",
+    "inputs": {
+      "audios": {
+        "name": "فایل‌های صوتی"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "رمزگشایی گمانه‌زن با هد پیش‌بینی چندتوکنیِ checkpoint. بدون وزن‌های MTP اثری ندارد. auto عمق و گسترهٔ پیش‌نویس را با تطابق‌های مشاهده‌شدهٔ توکن و هزینهٔ اجرا تطبیق می‌دهد؛ ۲-۵ یک عمق ثابت برای پیش‌نویس تعیین می‌کند؛ حالت‌های tree هم گستره و هم عمق را ثابت می‌کنند. خروجی نمونه‌گیری‌شده همچنان توزیع صحیحی دارد، اما برای seed یکسان با خروجی غیر-MTP تفاوت دارد."
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "پرامپت سیستم را در قالب گفت‌وگوی مدل جایگزین می‌کند. هنگامی که از قالب پیش‌فرض استفاده نمی‌شود، نادیده گرفته می‌شود."
+      },
+      "thinking": {
+        "name": "تفکر",
+        "tooltip": "اگر مدل از آن پشتیبانی می‌کند، در حالت تفکر عمل کنید."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "اگر مدل دارای پرامپت/قالب سیستم داخلی است، از آن استفاده کنید."
+      },
+      "videos": {
+        "name": "ویدئوها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       },
       "1": {
@@ -26473,7 +26787,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "استاندارد صنعتی برای بزرگ‌نمایی و بهبود تصویر.",
+    "description": "بزرگ‌نمایی و بهبود تصویر مطابق استاندارد صنعتی. حداکثر خروجی: ۱۷۹ مگاپیکسل.",
     "display_name": "افزایش کیفیت تصویر Topaz",
     "inputs": {
       "image": {
@@ -26511,11 +26825,11 @@
       },
       "output_height": {
         "name": "ارتفاع خروجی",
-        "tooltip": "مقدار صفر به معنی خروجی با همان ارتفاع اصلی یا متناسب با output_width در صورت تعیین است. Wonder 3.5 فقط بزرگ‌نمایی از ۱x تا ۶x را پشتیبانی می‌کند. Bloom 2 و Wonder 3.5 نسبت تصویر ورودی را حفظ کرده و اندازه درخواست‌شده را به عنوان هدف در نظر می‌گیرند."
+        "tooltip": "مقدار صفر یعنی ارتفاع خروجی برابر با ارتفاع اصلی باشد یا در صورت مشخص‌بودن output_width، متناسب با آن مقیاس شود. Wonder 3.5 و Wonder 4 از ضرایب بزرگ‌نمایی 1x تا 6x و Bloom 2 از 1x تا 12x پشتیبانی می‌کنند. Bloom 2، Wonder 3.5 و Wonder 4 همیشه نسبت ابعاد ورودی را حفظ می‌کنند: اگر هر دو اندازه تنظیم شده باشند و نسبت آن‌ها متفاوت باشد، مقیاس بزرگ‌تر اعمال می‌شود و خروجی (و قیمت) از اندازهٔ درخواستی بزرگ‌تر خواهد بود."
       },
       "output_width": {
         "name": "عرض خروجی",
-        "tooltip": "مقدار صفر به معنی محاسبه خودکار است (معمولاً اندازه اصلی یا متناسب با output_height در صورت تعیین). Wonder 3.5 فقط بزرگ‌نمایی از ۱x تا ۶x را پشتیبانی می‌کند. Bloom 2 و Wonder 3.5 نسبت تصویر ورودی را حفظ کرده و اندازه درخواست‌شده را به عنوان هدف در نظر می‌گیرند."
+        "tooltip": "مقدار صفر یعنی به‌طور خودکار محاسبه شود (معمولاً اندازهٔ اصلی خواهد بود یا در صورت مشخص‌بودن output_height، متناسب با آن مقیاس می‌شود). Wonder 3.5 و Wonder 4 از ضرایب بزرگ‌نمایی 1x تا 6x و Bloom 2 از 1x تا 12x پشتیبانی می‌کنند. Bloom 2، Wonder 3.5 و Wonder 4 همیشه نسبت ابعاد ورودی را حفظ می‌کنند: اگر هر دو اندازه تنظیم شده باشند و نسبت آن‌ها متفاوت باشد، مقیاس بزرگ‌تر اعمال می‌شود و خروجی (و قیمت) از اندازهٔ درخواستی بزرگ‌تر خواهد بود."
       }
     },
     "outputs": {
@@ -28445,6 +28759,24 @@
     "inputs": {
       "model_name": {
         "name": "نام مدل"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "نوع دادهٔ محاسباتی را برای کدگذاری و کدگشایی VAE، بدون تأثیر بر شاخه‌های دیگر، تنظیم می‌کند.",
+    "display_name": "نوع دادهٔ محاسباتی VAE",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Default نوع دادهٔ محاسباتی VAE ورودی را حفظ می‌کند."
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
