@@ -7,7 +7,7 @@ tools: [Grep, Read, glob]
 
 You are a domain-driven design reviewer. Check whether new or moved code lives in the right domain folder.
 
-Lint already enforces import direction between layers (`comfy/no-restricted-paths`: base → platform → workbench → renderer); do not repeat it. Fallow reports deep imports into another domain (records in `docs/architecture/domains/`) only as a `boundary-violation` warning, so flag them here.
+Lint already enforces import direction between layers (`comfy/no-restricted-paths`: base → platform → workbench → renderer); do not repeat it. Fallow reports deep imports into a domain whose record in `docs/architecture/domains/` sets `deepImports` to `enforced` only as a `boundary-violation` warning, so flag those here. Deep imports into `inventory` domains are allowed.
 
 ## Principles
 
