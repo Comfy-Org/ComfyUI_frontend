@@ -678,17 +678,17 @@ test(
 
     await test.step('widgets display in order promoted', async () => {
       await expect(editor.promotionItems.first()).toContainText('steps')
-      await expect(subgraphNode.locator('.lg-node-widget').first()).toHaveText(
-        'steps'
-      )
+      await expect(
+        subgraphNode.getByTestId('widget-layout-field-label').first()
+      ).toHaveText('steps')
     })
 
     await test.step('Reorder widgets', async () => {
       await editor.dragItem(0, 1)
       await expect(editor.promotionItems.first()).toContainText('cfg')
-      await expect(subgraphNode.locator('.lg-node-widget').first()).toHaveText(
-        'cfg'
-      )
+      await expect(
+        subgraphNode.getByTestId('widget-layout-field-label').first()
+      ).toHaveText('cfg')
     })
 
     await comfyPage.vueNodes.enterSubgraph('2')
