@@ -1080,7 +1080,7 @@ export const useWorkflowService = () => {
       wf.pendingWarnings ?? {}
 
     const rootGraph = useApp().rootGraphOrUndefined
-    if (rootGraph) useDeprecatedNodesStore().rescan(rootGraph)
+    useDeprecatedNodesStore().rescan(rootGraph)
     if (nodeTypesMayStillArrive()) {
       if (rootGraph) showPlaceholdersAsWaiting(rootGraph)
     } else if (

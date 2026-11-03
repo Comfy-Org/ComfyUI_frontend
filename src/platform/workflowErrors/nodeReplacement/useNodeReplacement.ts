@@ -464,6 +464,33 @@ function removeReplacedMissingNodeTypes(types: string[]): void {
   })
 }
 
+function replacePlaceholder(
+  node: LGraphNode,
+  replacement: NodeReplacement
+): boolean {
+  const nodeGraph = node.graph
+  if (!nodeGraph) return false
+
+  const idx = nodeGraph._nodes.indexOf(node)
+  if (idx === -1) return false
+
+  const newNode = LiteGraph.createNode(replacement.new_node_id)
+  if (!newNode) return false
+
+  const hasMapping =
+    replacement.input_mapping != null || replacement.output_mapping != null
+  const effectiveReplacement = hasMapping
+    ? replacement
+    : {
+        ...replacement,
+        ...generateDefaultMapping(
+          node.last_serialization ?? node.serialize(),
+          newNode
+        )
+      }
+  return replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
+}
+
 export function useNodeReplacement() {
   const toast = useToast()
 
@@ -505,46 +532,7 @@ export function useNodeReplacement() {
         const match = findMatchingType(node, selectedTypes)
         if (!match?.replacement) continue
 
-        const replacement = match.replacement
-        const nodeGraph = node.graph
-        if (!nodeGraph) {
-          recordReplacementFailure(match.type)
-          continue
-        }
-
-        const idx = nodeGraph._nodes.indexOf(node)
-        if (idx === -1) {
-          recordReplacementFailure(match.type)
-          continue
-        }
-
-        const newNode = LiteGraph.createNode(replacement.new_node_id)
-        if (!newNode) {
-          recordReplacementFailure(match.type)
-          continue
-        }
-
-        const hasMapping =
-          replacement.input_mapping != null ||
-          replacement.output_mapping != null
-
-        const effectiveReplacement = hasMapping
-          ? replacement
-          : {
-              ...replacement,
-              ...generateDefaultMapping(
-                node.last_serialization ?? node.serialize(),
-                newNode
-              )
-            }
-        const replaced = replaceWithMapping(
-          node,
-          newNode,
-          effectiveReplacement,
-          nodeGraph,
-          idx
-        )
-        if (!replaced) {
+        if (!replacePlaceholder(node, match.replacement)) {
           recordReplacementFailure(match.type)
           continue
         }
@@ -556,11 +544,6 @@ export function useNodeReplacement() {
         ) {
           replacedTypes.push(match.type)
         }
-      }
-
-      if (anyNodeReplaced) {
-        graph.updateExecutionOrder()
-        graph.setDirtyCanvas(true, true)
       }
 
       if (replacedTypes.length > 0) {
@@ -578,15 +561,14 @@ export function useNodeReplacement() {
       }
     } catch (error) {
       console.error('Failed to replace nodes:', error)
+      toast.error(t('g.error'), {
+        description: t('nodeReplacement.replaceFailed')
+      })
+    } finally {
       if (anyNodeReplaced) {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
       }
-      toast.error(t('g.error'), {
-        description: t('nodeReplacement.replaceFailed')
-      })
-      return replacedTypes
-    } finally {
       changeTracker?.afterChange()
     }
 

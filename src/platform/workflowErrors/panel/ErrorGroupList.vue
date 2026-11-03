@@ -16,7 +16,7 @@
 
     <div class="min-w-0 flex-1 overflow-y-auto bg-background p-3">
       <div
-        v-if="filteredGroups.length === 0 && deprecatedNodeGroups.length === 0"
+        v-if="hasNoResults"
         role="status"
         class="px-1 pt-5 pb-15 text-center text-sm text-muted-foreground"
       >
@@ -394,39 +394,13 @@
         </TransitionGroup>
       </div>
 
-      <div
-        v-if="deprecatedNodeGroups.length > 0"
-        class="overflow-hidden rounded-lg border border-secondary not-first:mt-3"
-      >
-        <ErrorCardSection
-          data-testid="deprecated-nodes-group"
-          :title="t('nodeReplacement.deprecatedNodesTitle')"
-          :count="deprecatedNodeGroups.length"
-          severity="notice"
-          :collapse="isSectionCollapsed(DEPRECATED_NODES_KEY)"
-          @update:collapse="setSectionCollapsed(DEPRECATED_NODES_KEY, $event)"
-        >
-          <div class="flex flex-col items-start gap-2 px-3 pb-2">
-            <p class="m-0 text-xs/relaxed text-muted-foreground">
-              {{ t('nodeReplacement.deprecatedNodesMessage') }}
-            </p>
-            <Button
-              :tooltip="t('nodeReplacement.replaceAllWarning')"
-              variant="secondary"
-              size="sm"
-              @click="replaceAllGroups(deprecatedNodeGroups)"
-            >
-              {{ t('nodeReplacement.replaceAll') }}
-            </Button>
-          </div>
-          <SwapNodesCard
-            :swap-node-groups="deprecatedNodeGroups"
-            :highlighted-node-ids="selectionMatchedAssetNodeIds"
-            @locate-node="handleLocateAssetNode"
-            @replace="replaceGroup"
-          />
-        </ErrorCardSection>
-      </div>
+      <DeprecatedNodesSection
+        :groups="deprecatedNodeGroups"
+        :highlighted-node-ids="selectionMatchedAssetNodeIds"
+        :collapse="isSectionCollapsed(DEPRECATED_NODES_KEY)"
+        @update:collapse="setSectionCollapsed(DEPRECATED_NODES_KEY, $event)"
+        @locate-node="handleLocateAssetNode"
+      />
     </div>
   </div>
 </template>
@@ -457,6 +431,7 @@ import ErrorNodeCard from './ErrorNodeCard.vue'
 import LocateNodeButton from './LocateNodeButton.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/workflowErrors/nodeReplacement/components/SwapNodesCard.vue'
+import DeprecatedNodesSection from '@/platform/workflowErrors/nodeReplacement/components/DeprecatedNodesSection.vue'
 import MissingModelCard from '@/platform/workflowErrors/missingModel/components/MissingModelCard.vue'
 import MissingMediaCard from '@/platform/workflowErrors/missingMedia/components/MissingMediaCard.vue'
 import { isCloud } from '@/platform/distribution/types'
@@ -616,6 +591,11 @@ const {
   selectionErrorCount,
   errorNodeCount
 } = useErrorGroups(searchQuery, () => selectedItems)
+
+const hasNoResults = computed(
+  () =>
+    filteredGroups.value.length === 0 && deprecatedNodeGroups.value.length === 0
+)
 
 const errorCount = computed(() =>
   filteredGroups.value

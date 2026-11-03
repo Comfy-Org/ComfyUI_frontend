@@ -32,7 +32,11 @@ export const useDeprecatedNodesStore = defineStore('deprecatedNodes', () => {
     return { type: node.type, nodeId, isReplaceable: true, replacement }
   }
 
-  function rescan(rootGraph: LGraph): void {
+  function rescan(rootGraph: LGraph | undefined): void {
+    if (!rootGraph) {
+      nodeTypes.value = []
+      return
+    }
     nodeTypes.value = mapUniqueNodes(rootGraph, (node) => {
       const nodeId = getExecutionIdByNode(rootGraph, node)
       if (!nodeId || !isExecutionPathActive(rootGraph, nodeId)) return undefined
