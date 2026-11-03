@@ -651,7 +651,7 @@ describe('useDeploymentCompatibility', () => {
     setup()
 
     await vi.waitFor(() =>
-      expect(workspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
+      expect(workspaceApi.listDeployments).toHaveBeenCalledWith('ws-1', [])
     )
     await vi.waitFor(() =>
       expect(workspaceApi.checkDeploymentCompatibility).toHaveBeenCalledOnce()
