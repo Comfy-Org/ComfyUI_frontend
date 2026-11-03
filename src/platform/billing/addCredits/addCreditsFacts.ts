@@ -38,13 +38,13 @@ export function addCreditsPendingTopup(
 export function topupCheckoutFailure(
   error: unknown
 ): HostedTopupCheckoutFailure {
-  if (!(error instanceof WorkspaceApiError) || error.code === undefined) {
+  if (!(error instanceof WorkspaceApiError)) {
     return { status: 'error', code: 'REQUEST_FAILED' }
   }
-  const serverCode = readBillingErrorCode({
-    code: error.code,
-    message: error.message
-  })
+  const serverCode =
+    error.code === undefined
+      ? undefined
+      : readBillingErrorCode({ code: error.code, message: error.message })
   return {
     status: 'error',
     code: error.status === 403 ? 'ACCESS_DENIED' : 'REQUEST_FAILED',

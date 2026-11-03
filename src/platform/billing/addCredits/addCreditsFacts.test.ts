@@ -121,6 +121,11 @@ describe('topupCheckoutFailure', () => {
       refusal: { kind: 'not_allowed' }
     },
     {
+      name: 'a 403 with no body code',
+      error: new WorkspaceApiError('denied', 403),
+      refusal: { kind: 'not_allowed' }
+    },
+    {
       name: 'a network failure',
       error: new TypeError('Failed to fetch'),
       refusal: { kind: 'checkout_failed' }
