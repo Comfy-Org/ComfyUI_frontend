@@ -4,24 +4,19 @@
   "description": "PreviewAny and SaveText execution-output display, preview widget construction and updates, and plain-text or Markdown presentation. Transient execution-progress widgets and shared Markdown rendering remain outside this capability.",
   "modules": [
     {
-      "path": "src/extensions/core/previewAny.ts",
-      "role": "integration"
+      "path": "src/extensions/core/previewAny.ts"
     },
     {
-      "path": "src/extensions/core/saveText.ts",
-      "role": "integration"
+      "path": "src/extensions/core/saveText.ts"
     },
     {
-      "path": "src/extensions/core/textPreviewWidgets.ts",
-      "role": "integration"
+      "path": "src/extensions/core/textPreviewWidgets.ts"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue",
-      "role": "presentation"
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue"
     },
     {
-      "path": "src/utils/htmlEscape.ts",
-      "role": "domain"
+      "path": "src/utils/htmlEscape.ts"
     }
   ],
   "publicEntryPoints": [],
