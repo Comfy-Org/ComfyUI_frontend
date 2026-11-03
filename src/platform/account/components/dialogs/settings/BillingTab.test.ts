@@ -1068,17 +1068,74 @@ describe('BillingTab', () => {
         arrange(scenario)
       }
 
-      it('shows Plan ending with the plan row keeping the actions', () => {
+      it('shows Plan ending with Resume plan on both the banner and the plan row', () => {
         arrangeOnCloud(ending)
 
         const banner = screen.getByRole('status')
         expect(banner).toHaveTextContent(
           'Your Pro plan ends on October 28, 2026'
         )
-        expect(within(banner).queryAllByRole('button')).toEqual([])
         expect(
-          screen.getByRole('button', { name: 'Resume plan' })
-        ).toBeInTheDocument()
+          within(banner)
+            .queryAllByRole('button')
+            .map((button) => button.textContent.trim())
+        ).toEqual(['Resume plan'])
+        expect(
+          screen.getAllByRole('button', { name: 'Resume plan' })
+        ).toHaveLength(2)
+      })
+
+      const ended: Scenario = {
+        subscription: {
+          ...activeSubscription,
+          isActive: false,
+          endDate: '2026-09-01T00:00:00Z'
+        },
+        subscriptionStatus: 'ended'
+      }
+
+      it('shows Plan ended with Choose a plan as the white button on both the banner and the plan row', async () => {
+        arrangeOnCloud(ended)
+
+        const bannerLink = within(screen.getByRole('status')).getByRole(
+          'link',
+          { name: 'Choose a plan' }
+        )
+        const plansLink = {
+          variant: 'inverted',
+          href: expect.stringMatching(
+            /^https:\/\/platform\.test\/profile\/billing\/plans\?workspace=ws_1&correlation_id=.+$/
+          )
+        }
+        expect(
+          screen
+            .getAllByRole('link', { name: 'Choose a plan' })
+            .map((link) => ({
+              variant: link.dataset.variant,
+              href: link.getAttribute('href')
+            }))
+        ).toEqual([plansLink, plansLink])
+        bannerLink.addEventListener('click', (event) => event.preventDefault())
+
+        await userEvent.click(bannerLink)
+
+        expect(
+          vi.mocked(useTelemetry)()?.trackBillingEvent
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            operation: 'platform_handoff',
+            target: 'plans'
+          })
+        )
+      })
+
+      it('shows Plan ended without Choose a plan when the server withholds can_open_plans', () => {
+        arrangeOnCloud({ ...ended, canOpenPlans: false })
+
+        expect(screen.getByRole('status')).toBeInTheDocument()
+        expect(
+          screen.queryByRole('link', { name: 'Choose a plan' })
+        ).not.toBeInTheDocument()
       })
 
       it('shows no lifecycle banner on an active plan', () => {
@@ -1465,18 +1522,29 @@ describe('BillingTab', () => {
         isCloud: true,
         choosePlan: 'inverted',
         addCredits: 'secondary',
-        planEndedBanners: 1
+        planEndedBanners: 1,
+        choosePlanLinks: 2,
+        whiteActions: 2
       },
       {
         surface: 'local ComfyUI',
         isCloud: false,
         choosePlan: 'secondary',
         addCredits: 'inverted',
-        planEndedBanners: 0
+        planEndedBanners: 0,
+        choosePlanLinks: 1,
+        whiteActions: 1
       }
     ])(
-      'keeps one white button on $surface when an ended plan is out of credits',
-      async ({ isCloud, choosePlan, addCredits, planEndedBanners }) => {
+      'keeps one white action on $surface when an ended plan is out of credits',
+      async ({
+        isCloud,
+        choosePlan,
+        addCredits,
+        planEndedBanners,
+        choosePlanLinks,
+        whiteActions
+      }) => {
         distribution.isCloud = isCloud
         onTestFinished(() => {
           distribution.isCloud = false
@@ -1488,9 +1556,12 @@ describe('BillingTab', () => {
         })
 
         await screen.findByTestId('billing-auto-top-up-status')
-        expect(
-          screen.getByRole('link', { name: 'Choose a plan' })
-        ).toHaveAttribute('data-variant', choosePlan)
+        const choosePlanVariants = screen
+          .getAllByRole('link', { name: 'Choose a plan' })
+          .map((link) => link.dataset.variant)
+        expect(choosePlanVariants).toEqual(
+          Array(choosePlanLinks).fill(choosePlan)
+        )
         expect(addCreditsVariants()).toEqual([addCredits])
         expect(screen.queryAllByText(/^Your .*plan has ended$/)).toHaveLength(
           planEndedBanners
@@ -1500,7 +1571,7 @@ describe('BillingTab', () => {
             ...screen.queryAllByRole('button'),
             ...screen.queryAllByRole('link')
           ].filter((el) => el.dataset.variant === 'inverted')
-        ).toHaveLength(1)
+        ).toHaveLength(whiteActions)
       }
     )
 
