@@ -2251,6 +2251,10 @@ start({
     (agentPanelStore.view.selection.status === 'idle' &&
       threadId.value === agentPanelStore.view.previousThreadId)
 })
+watch(threadId, composerStore.trackDraftThread, {
+  immediate: true,
+  flush: 'sync'
+})
 
 watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
   flush: 'sync'

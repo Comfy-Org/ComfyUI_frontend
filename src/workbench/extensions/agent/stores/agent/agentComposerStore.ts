@@ -1,6 +1,19 @@
+import { StorageSerializers, useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, onScopeDispose, ref, shallowReactive, shallowRef } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  ref,
+  shallowReactive,
+  shallowRef,
+  watch
+} from 'vue'
+import { z } from 'zod'
 
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { AgentInputMethod } from '@comfyorg/telemetry/types'
@@ -44,6 +57,19 @@ function resetTextWhenReferencesCleared(
 function composerReferencePosition(reference: ComposerReference): string {
   return `${composerReferenceKey(reference)}@${reference.textOffset}`
 }
+
+const zSavedDraft = z.object({
+  threadId: z.string().nullable(),
+  text: z.string(),
+  workflowReferences: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      unavailable: z.boolean().optional(),
+      textOffset: z.number()
+    })
+  )
+})
 
 interface SubmittedDraft {
   attachments: ComposerAttachment[]
@@ -605,6 +631,36 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     releaseUnusedAssets()
   }
 
+  const savedDraft = useLocalStorage<unknown>(
+    StorageKeys.agentComposerDraft(getWorkspaceId()),
+    null,
+    { serializer: StorageSerializers.object }
+  )
+  const draftThreadId = ref<string | null>()
+
+  watch([draftState, draftThreadId], ([state, threadId]) => {
+    if (threadId === undefined) return
+    const references = workflowReferences.value
+    savedDraft.value =
+      state.text.trim() !== '' || references.length > 0
+        ? { threadId, text: state.text, workflowReferences: references }
+        : null
+  })
+
+  function trackDraftThread(threadId: string | null): void {
+    if (draftThreadId.value === undefined) {
+      const saved = zSavedDraft.nullable().safeParse(savedDraft.value)
+      if (!saved.success) savedDraft.value = null
+      else if (saved.data?.threadId === threadId && !hasDraft.value)
+        replaceDraft({
+          text: saved.data.text,
+          workflowReferences: saved.data.workflowReferences,
+          attachments: []
+        })
+    }
+    draftThreadId.value = threadId
+  }
+
   return {
     draftState,
     draft,
@@ -647,6 +703,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     settleSubmission,
     takeFailedSubmission,
     invalidateSubmission,
-    clearDraft
+    clearDraft,
+    trackDraftThread
   }
 })
