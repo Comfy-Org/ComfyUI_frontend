@@ -63,6 +63,7 @@ import {
   createTestDragAndScale,
   setCanvasVisible
 } from '@/utils/__tests__/canvasTestUtils'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
 import type { NodeReplacement } from '@/platform/workflowErrors/nodeReplacement/types'
@@ -4429,6 +4430,48 @@ describe('ComfyApp', () => {
       expect(useJobModelDownloadStore().downloadFor('job-1')?.progress).toBe(
         0.5
       )
+    })
+
+    it('lists deprecated nodes when replacements arrive after the workflow loaded', async () => {
+      useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
+      LiteGraph.registerNodeType(
+        'BatchImagesNode',
+        class BatchImagesNode extends LGraphNode {}
+      )
+      class ImageBatch extends LGraphNode {
+        static override nodeData = { name: 'ImageBatch', deprecated: true }
+      }
+      const graph = new LGraph()
+      graph.add(new ImageBatch('ImageBatch', 'ImageBatch'))
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const replacementStore = useNodeReplacementStore()
+      vi.spyOn(replacementStore, 'load').mockImplementation(async () => {
+        replacementStore.replacements = {
+          ImageBatch: [
+            {
+              new_node_id: 'BatchImagesNode',
+              old_node_id: 'ImageBatch',
+              old_widget_ids: null,
+              input_mapping: null,
+              output_mapping: null
+            }
+          ]
+        }
+      })
+      vi.spyOn(api, 'init').mockResolvedValue()
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const featureFlagsHandler = addEventListener.mock.calls.find(
+        ([event]) => event === 'feature_flags'
+      )?.[1] as EventListener | undefined
+
+      await featureFlagsHandler?.(new CustomEvent('feature_flags'))
+
+      expect(
+        useDeprecatedNodesStore().nodeTypes.map((nodeType) =>
+          typeof nodeType === 'string' ? nodeType : nodeType.type
+        )
+      ).toEqual(['ImageBatch'])
     })
   })
 
