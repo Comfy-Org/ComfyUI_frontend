@@ -588,7 +588,8 @@ export function clearAllWorkspaceStorage(): void {
       StorageKeys.prefixes.agentThread,
       StorageKeys.prefixes.agentWorkflowTabBindings,
       StorageKeys.prefixes.agentChatTitles,
-      StorageKeys.prefixes.agentDeletedThreads
+      StorageKeys.prefixes.agentDeletedThreads,
+      StorageKeys.prefixes.agentComposerDraft
     ]
   )
 }
