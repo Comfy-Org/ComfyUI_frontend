@@ -49,4 +49,5 @@ export {
   reserveBrowserTab,
   useAddCreditsDialog
 } from './addCredits/useAddCreditsDialog'
+export type { AddCreditsUi } from './addCredits/addCreditsPresentation'
 export { default as AddCreditsDialog } from './addCredits/AddCreditsDialog.vue'

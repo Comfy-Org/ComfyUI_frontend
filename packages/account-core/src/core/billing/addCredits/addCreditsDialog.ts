@@ -56,77 +56,104 @@ export function startAddCredits(amount: AddCreditsAmount): AddCreditsState {
   return { step: 'amount', amount }
 }
 
+type EventOf<T extends AddCreditsEvent['type']> = Extract<
+  AddCreditsEvent,
+  { readonly type: T }
+>
+
+type Transition<T extends AddCreditsEvent['type']> = (
+  state: AddCreditsState,
+  event: EventOf<T>
+) => AddCreditsState
+
+type Opening = Extract<AddCreditsState, { readonly step: 'opening' }>
+
+function backToOrigin(
+  state: Opening,
+  refusal: AddCreditsRefusal | undefined
+): AddCreditsState {
+  const withRefusal = refusal === undefined ? {} : { refusal }
+  return state.origin === 'checkout_opened'
+    ? {
+        step: 'checkout_opened',
+        amount: state.amount,
+        amountCents: state.amountCents,
+        ...withRefusal
+      }
+    : { step: 'amount', amount: state.amount, ...withRefusal }
+}
+
+const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
+  {
+    preset_picked: (state, event) =>
+      state.step === 'amount'
+        ? { step: 'amount', amount: { kind: 'preset', cents: event.cents } }
+        : state,
+    amount_typed: (state, event) =>
+      state.step === 'amount'
+        ? { step: 'amount', amount: { kind: 'custom', input: event.input } }
+        : state,
+    checkout_requested: (state, event) =>
+      state.step === 'amount' || state.step === 'checkout_opened'
+        ? {
+            step: 'opening',
+            amount: state.amount,
+            amountCents: event.amountCents,
+            origin: state.step,
+            tabReserved: event.tabReserved
+          }
+        : state,
+    checkout_created: (state, event) => {
+      if (state.step !== 'opening') return state
+      const { amount, amountCents } = state
+      return state.tabReserved
+        ? { step: 'checkout_opened', amount, amountCents }
+        : {
+            step: 'checkout_blocked',
+            amount,
+            amountCents,
+            checkoutUrl: event.checkoutUrl
+          }
+    },
+    checkout_refused: (state, event) =>
+      state.step === 'opening' ? backToOrigin(state, event.refusal) : state,
+    checkout_abandoned: (state) =>
+      state.step === 'opening' ? backToOrigin(state, undefined) : state,
+    blocked_link_followed: (state) =>
+      state.step === 'checkout_blocked'
+        ? {
+            step: 'checkout_opened',
+            amount: state.amount,
+            amountCents: state.amountCents
+          }
+        : state,
+    payment_landed: (state) =>
+      state.step === 'amount' || state.step === 'landed'
+        ? state
+        : { step: 'landed' }
+  }
+
 export function reduceAddCredits(
   state: AddCreditsState,
   event: AddCreditsEvent
 ): AddCreditsState {
   switch (event.type) {
     case 'preset_picked':
-      return state.step === 'amount'
-        ? { step: 'amount', amount: { kind: 'preset', cents: event.cents } }
-        : state
+      return TRANSITIONS.preset_picked(state, event)
     case 'amount_typed':
-      return state.step === 'amount'
-        ? { step: 'amount', amount: { kind: 'custom', input: event.input } }
-        : state
+      return TRANSITIONS.amount_typed(state, event)
     case 'checkout_requested':
-      if (state.step !== 'amount' && state.step !== 'checkout_opened') {
-        return state
-      }
-      return {
-        step: 'opening',
-        amount: state.amount,
-        amountCents: event.amountCents,
-        origin: state.step,
-        tabReserved: event.tabReserved
-      }
+      return TRANSITIONS.checkout_requested(state, event)
     case 'checkout_created':
-      if (state.step !== 'opening') return state
-      return state.tabReserved
-        ? {
-            step: 'checkout_opened',
-            amount: state.amount,
-            amountCents: state.amountCents
-          }
-        : {
-            step: 'checkout_blocked',
-            amount: state.amount,
-            amountCents: state.amountCents,
-            checkoutUrl: event.checkoutUrl
-          }
+      return TRANSITIONS.checkout_created(state, event)
     case 'checkout_refused':
-      if (state.step !== 'opening') return state
-      return state.origin === 'checkout_opened'
-        ? {
-            step: 'checkout_opened',
-            amount: state.amount,
-            amountCents: state.amountCents,
-            refusal: event.refusal
-          }
-        : { step: 'amount', amount: state.amount, refusal: event.refusal }
+      return TRANSITIONS.checkout_refused(state, event)
     case 'checkout_abandoned':
-      if (state.step !== 'opening') return state
-      return state.origin === 'checkout_opened'
-        ? {
-            step: 'checkout_opened',
-            amount: state.amount,
-            amountCents: state.amountCents
-          }
-        : { step: 'amount', amount: state.amount }
+      return TRANSITIONS.checkout_abandoned(state, event)
     case 'blocked_link_followed':
-      return state.step === 'checkout_blocked'
-        ? {
-            step: 'checkout_opened',
-            amount: state.amount,
-            amountCents: state.amountCents
-          }
-        : state
+      return TRANSITIONS.blocked_link_followed(state, event)
     case 'payment_landed':
-      return state.step === 'checkout_opened' ||
-        state.step === 'checkout_blocked' ||
-        state.step === 'opening'
-        ? { step: 'landed' }
-        : state
+      return TRANSITIONS.payment_landed(state, event)
   }
 }
 
