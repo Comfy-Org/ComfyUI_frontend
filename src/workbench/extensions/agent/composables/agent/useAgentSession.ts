@@ -1190,10 +1190,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
-  function recordUnavailableTarget(
+  function recordRefusedSend(
     text: string,
     clientMessageId: string | undefined,
-    noticeKey = 'agent.targetNavigationUnavailable'
+    noticeKey: string
   ): void {
     trackSendRefused('target_unavailable', clientMessageId)
     conversationStore.recordFailedSend(
@@ -1211,15 +1211,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId: string | undefined
   ): boolean {
     if (workflowTargetChanged(originContext, wfContext)) {
-      recordUnavailableTarget(text, clientMessageId)
+      recordRefusedSend(
+        text,
+        clientMessageId,
+        'agent.targetNavigationUnavailable'
+      )
       return true
     }
     if (!lacksCanvasForRemint(wfContext, draft)) return false
-    recordUnavailableTarget(
-      text,
-      clientMessageId,
-      'agent.canvasNotReadyForSend'
-    )
+    recordRefusedSend(text, clientMessageId, 'agent.canvasNotReadyForSend')
     return true
   }
 
