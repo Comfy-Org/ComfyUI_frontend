@@ -1,15 +1,10 @@
 <template>
-  <div class="flex flex-1 flex-col gap-2 border-r border-card px-5 py-4">
+  <div class="flex flex-1 flex-col gap-2 border-r border-border px-5 py-4">
     <span class="flex items-center gap-1 text-sm text-muted-foreground">
       {{ $t('workspacePanel.billingTab.credits.plan') }}
-      <Button
-        :tooltip="$t('workspacePanel.billingTab.credits.planTooltip')"
-        :aria-label="$t('workspacePanel.billingTab.credits.planTooltip')"
-        variant="muted-textonly"
-        size="icon-sm"
-      >
-        <i class="icon-[lucide--info] size-3.5" aria-hidden="true" />
-      </Button>
+      <BillingInfoTip
+        :text="$t('workspacePanel.billingTab.credits.planTooltip')"
+      />
     </span>
     <i18n-t
       v-if="planTotal"
@@ -81,7 +76,7 @@ import {
   formatCredits,
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
-import Button from '@comfyorg/design-system/button/Button'
+import BillingInfoTip from '@/platform/billing/components/billingTab/BillingInfoTip.vue'
 import type { PlanCreditsState } from '@/platform/billing/components/billingTab/creditsCard'
 import { useLongDate } from '@/platform/billing/composables/useLongDate'
 
