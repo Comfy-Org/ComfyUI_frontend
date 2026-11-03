@@ -198,8 +198,10 @@ import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpP
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const billing = useBillingContext()
+const workspaceStore = useTeamWorkspaceStore()
 const capabilities = useBillingCapabilities()
 const { isPaused } = usePausedBanner()
 const planCheckout = usePlanCheckoutBanner()
@@ -234,6 +236,7 @@ const handoffAudience = computed(() =>
 
 const load = computed(() =>
   deriveBillingTabLoad({
+    workspaceLoadFailed: workspaceStore.initState === 'error',
     billingError: billing.error.value,
     billingInitialized: billing.isInitialized.value,
     capabilitiesReady: capabilities.isReady.value,
@@ -296,6 +299,9 @@ function addCredits(source: 'credits_panel' | 'settings_billing_panel') {
 }
 
 async function retry() {
+  if (workspaceStore.initState === 'error') {
+    await workspaceStore.initialize().catch(() => undefined)
+  }
   await Promise.allSettled([billing.initialize(), capabilities.refresh()])
 }
 
