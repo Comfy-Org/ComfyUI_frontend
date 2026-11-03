@@ -46,16 +46,26 @@ describe('deriveSessionTitle', () => {
   })
 
   it('falls back to code points when Intl.Segmenter is unavailable', async () => {
-    vi.stubGlobal('Intl', { ...Intl, Segmenter: undefined })
-    vi.resetModules()
+    const originalIntl = Intl
+    vi.stubGlobal(
+      'Intl',
+      Object.create(originalIntl, {
+        Segmenter: { value: undefined, configurable: true }
+      })
+    )
 
-    const sessionTitle = await import('./sessionTitle')
+    try {
+      vi.resetModules()
+      const sessionTitle = await import('./sessionTitle')
 
-    expect(
-      sessionTitle.deriveSessionTitle([
-        userEntry(`${'a'.repeat(59)}🙂trailing`)
-      ])
-    ).toBe(`${'a'.repeat(59)}🙂`)
+      expect(
+        sessionTitle.deriveSessionTitle([
+          userEntry(`${'a'.repeat(59)}🙂trailing`)
+        ])
+      ).toBe(`${'a'.repeat(59)}🙂`)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
 
