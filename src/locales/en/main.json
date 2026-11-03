@@ -3790,9 +3790,9 @@
         "refusedBody": "Your team has used all its credits.",
         "refusedPersonalBody": "You've used all your credits.",
         "pausedBody": "Your team has used all its credits. Buying credits isn't available right now. Credits refill on {date}.",
-        "pausedBodyNoDate": "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+        "pausedBodyNoDate": "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support.",
         "pausedPersonalBody": "You've used all your credits. Buying credits isn't available right now. Credits refill on {date}.",
-        "pausedPersonalBodyNoDate": "You've used all your credits. Buying credits isn't available right now. Try again later.",
+        "pausedPersonalBodyNoDate": "You've used all your credits. Buying credits isn't available right now. Try again later, or message support.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
