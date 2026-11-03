@@ -371,15 +371,10 @@ describe('ownedWidgetNameKey', () => {
   })
 
   it('collides names that differ as values but coincide as id strings', () => {
-    // `widgetId` keys on `encodeURIComponent(String(name))`, so these two mint
-    // one id. Comparing raw values would hand both an identity and let the
-    // clash land in the store, which is the registration this gate exists to
-    // refuse.
-    const numeric = { name: 1 as unknown as string }
+    const numeric = { name: 1 }
     const textual = { name: '1' }
     const widgets = [numeric, textual]
 
-    // And the key is the coerced one, which is what the id is built from.
     expect(ownedWidgetNameKey(widgets, numeric)).toBe('1')
     expect(ownedWidgetNameKey(widgets, textual)).toBeUndefined()
   })
