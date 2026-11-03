@@ -3,7 +3,7 @@
     ref="root"
     :class="
       cn(
-        'flex w-[min(400px,95vw)] flex-col rounded-2xl border bg-card text-sm text-foreground shadow-md',
+        'flex w-[min(400px,95vw)] flex-col rounded-2xl border bg-background text-sm text-foreground shadow-md',
         ui.root
       )
     "
@@ -175,7 +175,7 @@
       <div
         :class="
           cn(
-            'flex items-center justify-between gap-4 border-t border-solid px-4 py-4',
+            'flex items-center justify-between gap-4 border-x-0 border-t border-b-0 border-solid px-4 py-4',
             ui.footer
           )
         "
@@ -271,7 +271,7 @@
       <div
         :class="
           cn(
-            'flex items-center justify-end gap-2 border-t border-solid px-4 py-4',
+            'flex items-center justify-end gap-2 border-x-0 border-t border-b-0 border-solid px-4 py-4',
             ui.footer
           )
         "
@@ -313,7 +313,7 @@
       <div
         :class="
           cn(
-            'flex items-center justify-end border-t border-solid px-4 py-4',
+            'flex items-center justify-end border-x-0 border-t border-b-0 border-solid px-4 py-4',
             ui.footer
           )
         "
@@ -567,6 +567,9 @@ const footer = computed(() => {
             }),
       detail: cents === undefined ? '' : translate('notVerified.footer')
     }
+  }
+  if (notice?.kind === 'needs_verification' && cents === undefined) {
+    return { credits: '', detail: '' }
   }
   const amount = formatMoney(cents ?? 0)
   return {

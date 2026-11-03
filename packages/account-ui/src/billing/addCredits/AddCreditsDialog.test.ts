@@ -435,6 +435,19 @@ describe('AddCreditsDialog pending bank check', () => {
     expect(ports.quotes).toEqual([2500])
   })
 
+  it('needs verification without a served amount shows no amount', () => {
+    renderDialog({
+      pendingTopup: {
+        kind: 'needs_verification',
+        verifyUrl: 'https://bank.example/3ds'
+      }
+    })
+
+    expect(notice()).toHaveTextContent('Your payment needs verification')
+    expect(summary()).not.toHaveTextContent('$0.00')
+    expect(summary()).not.toHaveTextContent('0 credits')
+  })
+
   it("wasn't verified offers only Contact support and never says nothing was charged", () => {
     renderDialog({ pendingTopup: { kind: 'not_verified', amountCents: 2500 } })
 
