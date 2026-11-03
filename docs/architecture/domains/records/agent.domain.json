@@ -1,337 +1,467 @@
 {
   "id": "agent",
   "capability": "In-App Agent",
-  "description": "The In-App Agent right-dock panel and its host registration: consent and first-use tour, panel visibility and workflow-target state, composer prompt and attachment state, the agent REST client and the /api/agent/events source, chat sessions, transcripts and history, reply rendering and feedback, topbar entry and target indicator, and the CRDT document follower that projects agent graph edits onto the live LiteGraph graph and sends human doc_ops back. Reply rendering reads keybindings so a shortcut named in a reply is the key that user is bound to rather than the default the model remembers. The agent consent setting id (classified by settings) and the agent-panel telemetry helper are not claimed here; workflow, auth, workspace, billing, assets, skills, onboarding, and LiteGraph remain external.",
+  "description": "The In-App Agent right-dock panel and its host registration: consent and first-use tour, panel visibility and workflow-target state, composer prompt and attachment state, the agent REST client and the /api/agent/events source, chat sessions, transcripts and history, reply rendering and feedback, topbar entry and target indicator, and the CRDT document follower that projects agent graph edits onto the live LiteGraph graph and sends human doc_ops back. The agent consent setting id (classified by settings) and the agent-panel telemetry helper are not claimed here; workflow, auth, workspace, billing, assets, skills, onboarding, and LiteGraph remain external.",
   "modules": [
     {
-      "path": "src/components/graph/agentPanelMount.test.ts"
+      "path": "src/components/graph/agentPanelMount.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/components/topbar/AgentEntryButton.stories.ts"
+      "path": "src/components/topbar/AgentEntryButton.stories.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/components/topbar/AgentEntryButton.vue"
+      "path": "src/components/topbar/AgentEntryButton.vue",
+      "role": "presentation"
     },
     {
-      "path": "src/components/topbar/WorkflowAgentTargetIndicator.vue"
+      "path": "src/components/topbar/WorkflowAgentTargetIndicator.vue",
+      "role": "presentation"
     },
     {
-      "path": "src/extensions/core/agentPanel.ts"
+      "path": "src/extensions/core/agentPanel.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/AgentPanelRoot.vue"
+      "path": "src/workbench/extensions/agent/AgentPanelRoot.vue",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/agentDocs.ts"
+      "path": "src/workbench/extensions/agent/agentDocs.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/workbench/extensions/agent/components/**"
+      "path": "src/workbench/extensions/agent/components/**",
+      "role": "presentation"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/mentionPickerState.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/mentionPickerState.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useAgentConsent.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useAgentConsent.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useAgentDraftSubmission.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useAgentDraftSubmission.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useAgentMentionPicker.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useAgentMentionPicker.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useAgentSession.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useAgentSession.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useAgentTargetNavigation.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useAgentTargetNavigation.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useAgentWorkflowResolver.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useAgentWorkflowResolver.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useAgentWorkflowSelection.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useAgentWorkflowSelection.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useAttachment.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useAttachment.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useCanvasSelection.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useCanvasSelection.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useComposer.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useComposer.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useOnboarding.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useOnboarding.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useSkillMenuDescription.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useSkillMenuDescription.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/agent/useWorkflowReferencePicker.ts"
+      "path": "src/workbench/extensions/agent/composables/agent/useWorkflowReferencePicker.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/useAgentDockMount.ts"
+      "path": "src/workbench/extensions/agent/composables/useAgentDockMount.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/composables/useBillingIdentity.ts"
+      "path": "src/workbench/extensions/agent/composables/useBillingIdentity.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/CrdtDevPanel.vue"
+      "path": "src/workbench/extensions/agent/crdt/CrdtDevPanel.vue",
+      "role": "presentation"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/__fixtures__/**"
+      "path": "src/workbench/extensions/agent/crdt/__fixtures__/**",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentCrdtDocLifecycle.ts"
+      "path": "src/workbench/extensions/agent/crdt/__fixtures__/docFrameClient.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentCrdtProjection.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentCrdtDocLifecycle.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentCrdtTransport.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentCrdtProjection.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentDeleteTabSwitchRace.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentCrdtTransport.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentGrownDynamicSlot.regression.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentDeleteTabSwitchRace.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflow.linkTopology.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentGrownDynamicSlot.regression.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflow.subgraphs.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflow.linkTopology.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflow.templates.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflow.subgraphs.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflow.widgetTypes.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflow.templates.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflowLinks.regression.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflow.widgetTypes.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflowWidgets.regression.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflowLinks.regression.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentSubgraphDefinitions.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentInsertWorkflowWidgets.regression.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentSubgraphFollower.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentSubgraphDefinitions.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentSubgraphInsertWorkflow.regression.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentSubgraphFollower.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/applierConformance.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/agentSubgraphInsertWorkflow.regression.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/batchPlacement.ts"
+      "path": "src/workbench/extensions/agent/crdt/applierConformance.test.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/crdtDebugGate.ts"
+      "path": "src/workbench/extensions/agent/crdt/batchPlacement.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/crdtDebugReport.ts"
+      "path": "src/workbench/extensions/agent/crdt/crdtDebugGate.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/crdtLog.ts"
+      "path": "src/workbench/extensions/agent/crdt/crdtDebugReport.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/crdtSnapshot.ts"
+      "path": "src/workbench/extensions/agent/crdt/crdtLog.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/crossWorkflowPending.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/crdtSnapshot.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/devPanelLog.ts"
+      "path": "src/workbench/extensions/agent/crdt/crossWorkflowPending.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/docChangeCollector.ts"
+      "path": "src/workbench/extensions/agent/crdt/devPanelLog.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/docFrameClient.ts"
+      "path": "src/workbench/extensions/agent/crdt/docChangeCollector.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/docFrameCodes.ts"
+      "path": "src/workbench/extensions/agent/crdt/docFrameClient.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/docFrameWireContract.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/docFrameCodes.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/docOpMinter.ts"
+      "path": "src/workbench/extensions/agent/crdt/docFrameWireContract.test.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/followerDoc.ts"
+      "path": "src/workbench/extensions/agent/crdt/docOpMinter.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/followerProductGate.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/followerDoc.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/followerSubscription.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/followerProductGate.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/graphOperations.ts"
+      "path": "src/workbench/extensions/agent/crdt/followerSubscription.test.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/layoutFollowerBridge.ts"
+      "path": "src/workbench/extensions/agent/crdt/graphOperations.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/linkMintOutboundPositionCorruption.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/layoutFollowerBridge.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/liveGraphApplier.ts"
+      "path": "src/workbench/extensions/agent/crdt/linkMintOutboundPositionCorruption.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/loadImageLivePreview.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/liveGraphApplier.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/localWidgetWrites.ts"
+      "path": "src/workbench/extensions/agent/crdt/loadImageLivePreview.test.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/mediaUiDiagnostics.ts"
+      "path": "src/workbench/extensions/agent/crdt/localWidgetWrites.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/mergeScenarios.ts"
+      "path": "src/workbench/extensions/agent/crdt/mediaUiDiagnostics.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/mergeTrace.ts"
+      "path": "src/workbench/extensions/agent/crdt/mergeScenarios.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/opCoalescer.ts"
+      "path": "src/workbench/extensions/agent/crdt/mergeTrace.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/opEnvelope.ts"
+      "path": "src/workbench/extensions/agent/crdt/opCoalescer.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/opSender.ts"
+      "path": "src/workbench/extensions/agent/crdt/opEnvelope.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/rejectedOpChanges.ts"
+      "path": "src/workbench/extensions/agent/crdt/opSender.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/rejectedOpNotice.ts"
+      "path": "src/workbench/extensions/agent/crdt/rejectedOpChanges.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/restoreOpMinter.ts"
+      "path": "src/workbench/extensions/agent/crdt/rejectedOpNotice.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/schemaGuard.ts"
+      "path": "src/workbench/extensions/agent/crdt/restoreOpMinter.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/schemaGuard.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts"
+      "path": "src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/workflowSyncErrorDetail.ts"
+      "path": "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/writeLegInvariants.property.test.ts"
+      "path": "src/workbench/extensions/agent/crdt/workflowSyncErrorDetail.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/experiments/**"
+      "path": "src/workbench/extensions/agent/crdt/writeLegInvariants.property.test.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/feedback.ts"
+      "path": "src/workbench/extensions/agent/experiments/**",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/schemas/**"
+      "path": "src/workbench/extensions/agent/feedback.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/agentActivityRows.ts"
+      "path": "src/workbench/extensions/agent/schemas/**",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/agentEventSource.ts"
+      "path": "src/workbench/extensions/agent/services/agent/agentActivityRows.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/agentEventTransport.ts"
+      "path": "src/workbench/extensions/agent/services/agent/agentEventSource.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/agentMessageParts.ts"
+      "path": "src/workbench/extensions/agent/services/agent/agentEventTransport.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/agentPaywallPresentation.ts"
+      "path": "src/workbench/extensions/agent/services/agent/agentMessageParts.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/agentRestClient.ts"
+      "path": "src/workbench/extensions/agent/services/agent/agentPaywallPresentation.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/agentToolGlyph.ts"
+      "path": "src/workbench/extensions/agent/services/agent/agentRestClient.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/agentTranscript.ts"
+      "path": "src/workbench/extensions/agent/services/agent/agentToolGlyph.ts",
+      "role": "presentation"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/targetAwareAgentNavigation.ts"
+      "path": "src/workbench/extensions/agent/services/agent/agentTranscript.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/undeliverableAskReporter.ts"
+      "path": "src/workbench/extensions/agent/services/agent/targetAwareAgentNavigation.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/workflowTabActivityTracker.ts"
+      "path": "src/workbench/extensions/agent/services/agent/undeliverableAskReporter.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/stores/**"
+      "path": "src/workbench/extensions/agent/services/agent/workflowTabActivityTracker.ts",
+      "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/types/**"
+      "path": "src/workbench/extensions/agent/stores/**",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/agentMessageText.ts"
+      "path": "src/workbench/extensions/agent/types/**",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/attachableFiles.ts"
+      "path": "src/workbench/extensions/agent/utils/agentMessageText.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/composerPrompt.ts"
+      "path": "src/workbench/extensions/agent/utils/attachableFiles.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/getPageVisibilityMetadata.ts"
+      "path": "src/workbench/extensions/agent/utils/composerPrompt.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/promptReferenceParts.ts"
+      "path": "src/workbench/extensions/agent/utils/getPageVisibilityMetadata.ts",
+      "role": "application"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/replyAssets.ts"
+      "path": "src/workbench/extensions/agent/utils/promptReferenceParts.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/resolveReplyAssetDownload.ts"
+      "path": "src/workbench/extensions/agent/utils/replyAssets.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/sessionTitle.ts"
+      "path": "src/workbench/extensions/agent/utils/resolveReplyAssetDownload.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/skillReferenceText.ts"
+      "path": "src/workbench/extensions/agent/utils/sessionTitle.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/starterPrompts.ts"
+      "path": "src/workbench/extensions/agent/utils/skillReferenceText.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/videoThumbnail.ts"
+      "path": "src/workbench/extensions/agent/utils/starterPrompts.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/workflowReferenceParts.ts"
+      "path": "src/workbench/extensions/agent/utils/videoThumbnail.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/utils/workflowReferenceText.ts"
+      "path": "src/workbench/extensions/agent/utils/workflowReferenceParts.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/agentAuth.ts"
+      "path": "src/workbench/extensions/agent/utils/workflowReferenceText.ts",
+      "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/__mocks__/agentAuth.ts"
+      "path": "src/workbench/extensions/agent/services/agent/agentAuth.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/agentIdentity.ts"
+      "path": "src/workbench/extensions/agent/services/agent/__mocks__/agentAuth.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/agentDocFrameTransport.ts"
+      "path": "src/workbench/extensions/agent/services/agent/agentIdentity.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/workbench/extensions/agent/crdt/agentDocFrameTransport.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/agent/crdt/__fixtures__/agentSocket.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
+  "allowedDependencies": [
+    "app-host",
+    "authentication",
+    "design-system",
+    "dialog-host",
+    "error-reporting",
+    "extension-runtime",
+    "keybindings",
+    "workbench-shell",
+    "remote-config",
+    "workflow-management"
+  ],
+  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Host registration gates the dock on feature flag, open intent, and per-user and per-workspace consent",
@@ -438,7 +568,7 @@
     "registerAgentPanelExtension in src/extensions/core/agentPanel.ts remains the host seam that registers the dock, wires the workflow-tab activity tracker and restore-op minter notifications, and keeps consent ahead of any restored open intent.",
     "GraphCanvas and LinearView mount the dock through useAgentDockMount, and topbar, splitter, viewport, and GraphView callers read agentPanelStore, useAgentConsent, and getPageVisibilityMetadata directly until a public entry point exists.",
     "The CRDT follower keeps the doc_update, doc_subscribe, and doc_ops wire contract with the cloud doc host, and agent graph edits reach the live graph through LiteGraph graph operations.",
-    "Presentation components that call scripts/app, scripts/api, LiteGraph, or workflowService, domain types that import composables, and application stores that call the global settings API or session fetch remain untracked coupling debt; classification does not grant dependency exceptions."
+    "Presentation components that call scripts/app, scripts/api, LiteGraph, or workflowService, domain types that import composables, and application stores that call the global settings API or session fetch remain visible as role-boundary debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

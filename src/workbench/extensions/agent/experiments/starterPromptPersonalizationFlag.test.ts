@@ -10,6 +10,17 @@ import {
   resolveStarterPromptStrategy
 } from './starterPromptPersonalizationFlag'
 
+// Spelled out rather than imported from the implementation: an expected value
+// taken from the constant under test moves with it, and iterating the exported
+// strategy list would silently drop a case when a strategy is removed.
+const EXPECTED_STRATEGIES = [
+  'static',
+  'profile',
+  'canvas',
+  'profile_canvas'
+] as const
+const EXPECTED_INACTIVE_STRATEGY = 'static'
+
 vi.mock(import('@/utils/devFeatureFlagOverride'))
 vi.mock(import('@/utils/sessionFeatureFlagOverride'))
 
@@ -17,6 +28,11 @@ const devOverride = vi.mocked(getDevOverride)
 const sessionOverride = vi.mocked(getSessionOverride)
 
 describe('resolveStarterPromptStrategy', () => {
+  it('still ships exactly the strategies these tests cover', () => {
+    expect([...STARTER_PROMPT_STRATEGIES]).toEqual([...EXPECTED_STRATEGIES])
+    expect(INACTIVE_STARTER_PROMPT_STRATEGY).toBe(EXPECTED_INACTIVE_STRATEGY)
+  })
+
   beforeEach(() => {
     devOverride.mockReturnValue(undefined)
     sessionOverride.mockReturnValue(undefined)
@@ -24,13 +40,13 @@ describe('resolveStarterPromptStrategy', () => {
 
   it('resolves to the inactive static baseline with no override set', () => {
     expect(resolveStarterPromptStrategy()).toEqual({
-      strategy: INACTIVE_STARTER_PROMPT_STRATEGY,
+      strategy: EXPECTED_INACTIVE_STRATEGY,
       source: 'inactive',
       reportsExposure: false
     })
   })
 
-  it.for(STARTER_PROMPT_STRATEGIES)(
+  it.for(EXPECTED_STRATEGIES)(
     'resolves the %s employee session override without reporting exposure',
     (strategy) => {
       sessionOverride.mockReturnValue(strategy)
@@ -69,7 +85,7 @@ describe('resolveStarterPromptStrategy', () => {
     sessionOverride.mockReturnValue(value)
 
     expect(resolveStarterPromptStrategy()).toEqual({
-      strategy: INACTIVE_STARTER_PROMPT_STRATEGY,
+      strategy: EXPECTED_INACTIVE_STRATEGY,
       source: 'inactive',
       reportsExposure: false
     })
