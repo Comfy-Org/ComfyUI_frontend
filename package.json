@@ -53,7 +53,6 @@
     "lint:fix": "pnpm oxlint --fix && pnpm lint:eslint --fix --cache-strategy content && pnpm lint:packages",
     "lint:packages": "pnpm --filter './packages/*' -r --if-present run lint",
     "lint:server-facts": "tsx scripts/server-fact-gate.ts",
-    "lint:null-types": "tsx scripts/null-type-gate.ts",
     "lint:unstaged:fix": "tsx scripts/lint-unstaged.ts --fix",
     "lint": "pnpm run --parallel --workspace-root '/^(stylelint|oxlint|architecture:check|lint:eslint)$/' && pnpm lint:packages",
     "locale": "tsx scripts/i18n/update-locales.ts",

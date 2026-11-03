@@ -198,7 +198,7 @@ describe('lintSnapshot', () => {
   })
 })
 
-describe('changed-line lint gates on a real diff', () => {
+describe('server-fact gate on a real diff', () => {
   const repoRoot = path.resolve(import.meta.dirname, '..')
   const gatedFile = 'src/useInvite.ts'
   let workDir: string | undefined
@@ -213,10 +213,8 @@ describe('changed-line lint gates on a real diff', () => {
     workDir = dir
     const git = (...args: string[]) =>
       execFileSync('git', args, { cwd: dir, stdio: 'ignore' })
-    const write = (file: string, lines: string[]) => {
-      mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
+    const write = (file: string, lines: string[]) =>
       writeFileSync(path.join(dir, file), lines.join('\n'))
-    }
     git('init', '-q', '-b', 'main')
     git('config', 'user.email', 'gate@test.invalid')
     git('config', 'user.name', 'gate')
@@ -258,168 +256,6 @@ describe('changed-line lint gates on a real diff', () => {
     ''
   ]
   const clean = ['export const ready = true', '']
-
-  it.for([
-    {
-      name: 'rejects a new nullable alias',
-      file: 'src/nullable.ts',
-      before: [''],
-      after: ['type Value = string | null', ''],
-      args: ['--base', 'HEAD'],
-      status: 1
-    },
-    {
-      name: 'rejects a staged nullable parameter',
-      file: 'packages/example/src/nullable.ts',
-      before: [''],
-      after: ['function read(value: string | null) {}', ''],
-      args: ['--staged'],
-      status: 1
-    },
-    {
-      name: 'rejects a nullable Vue prop',
-      file: 'src/Nullable.vue',
-      before: [''],
-      after: [
-        '<script setup lang="ts">',
-        'defineProps<{ value: string | null }>()',
-        '</script>',
-        ''
-      ],
-      args: ['--base', 'HEAD'],
-      status: 1
-    },
-    {
-      name: 'allows an unchanged legacy alias',
-      file: 'src/nullable.ts',
-      before: ['type Legacy = string | null', '', 'const ready = false', ''],
-      after: ['type Legacy = string | null', '', 'const ready = true', ''],
-      args: ['--base', 'HEAD'],
-      status: 0
-    },
-    {
-      name: 'allows deleting a line adjacent to a legacy alias',
-      file: 'src/nullable.ts',
-      before: ['const unused = true', 'type Legacy = string | null', ''],
-      after: ['type Legacy = string | null', ''],
-      args: ['--base', 'HEAD'],
-      status: 0
-    },
-    {
-      name: 'allows null values and derived contracts',
-      file: 'src/nullable.ts',
-      before: [''],
-      after: [
-        'type Value = Legacy["value"]',
-        'new ContextMenu(["A", null, "B"])',
-        'const missing = value == null',
-        ''
-      ],
-      args: ['--base', 'HEAD'],
-      status: 0
-    },
-    {
-      name: 'does not lint generated API contracts',
-      file: 'packages/ingest-types/src/types.gen.ts',
-      before: [''],
-      after: ['type Value = string | null', ''],
-      args: ['--base', 'HEAD'],
-      status: 0
-    }
-  ])('$name', ({ file, before, after, args, status }) => {
-    const { dir, git, write } = createRepo({ [file]: before })
-    write(file, after)
-    git('add', file)
-
-    const result = spawnSync(
-      process.execPath,
-      [
-        '--import',
-        'tsx',
-        path.join(repoRoot, 'scripts/null-type-gate.ts'),
-        ...args
-      ],
-      { cwd: dir, encoding: 'utf8' }
-    )
-
-    expect(result.status).toBe(status)
-  })
-
-  it.for([
-    {
-      name: 'rejects a staged null type despite an unstaged removal',
-      staged: 'type Value = string | null',
-      unstaged: 'type Value = string',
-      status: 1
-    },
-    {
-      name: 'allows a staged undefined type despite an unstaged null type',
-      staged: 'type Value = string | undefined',
-      unstaged: 'type Value = string | null',
-      status: 0
-    }
-  ])('$name', ({ staged, unstaged, status }) => {
-    const file = 'src/nullable.ts'
-    const { dir, git, write } = createRepo({ [file]: [''] })
-    write(file, [staged, ''])
-    git('add', file)
-    write(file, [unstaged, ''])
-
-    const result = spawnSync(
-      process.execPath,
-      [
-        '--import',
-        'tsx',
-        path.join(repoRoot, 'scripts/null-type-gate.ts'),
-        '--staged'
-      ],
-      { cwd: dir, encoding: 'utf8' }
-    )
-
-    expect(result.status).toBe(status)
-  })
-
-  it('rejects a nullable declaration changed by pre-commit formatting', () => {
-    const file = 'src/legacy.ts'
-    const before = [
-      'export interface Legacy {',
-      'value: string | null',
-      '}',
-      ''
-    ]
-    const { dir, git, write } = createRepo({ [file]: before })
-    write(file, [
-      'export interface Legacy {',
-      'value: string | null',
-      'other: string',
-      '}',
-      ''
-    ])
-    write('package.json', [
-      JSON.stringify({
-        scripts: {
-          'lint:server-facts': `tsx ${path.join(repoRoot, 'scripts/server-fact-gate.ts')}`,
-          'lint:null-types': `tsx ${path.join(repoRoot, 'scripts/null-type-gate.ts')}`
-        },
-        'lint-staged': { '*.ts': 'oxfmt --write' }
-      })
-    ])
-    git('add', file)
-
-    const result = spawnSync(
-      'bash',
-      [path.join(repoRoot, '.husky/pre-commit')],
-      {
-        cwd: dir,
-        encoding: 'utf8'
-      }
-    )
-
-    expect(result.status).toBe(1)
-    expect(result.stderr).toContain(
-      'Use undefined instead of null in new type signatures.'
-    )
-  })
 
   it.for([
     {

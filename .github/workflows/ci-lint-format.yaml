@@ -78,11 +78,6 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: pnpm lint:server-facts --base "$BASE_SHA"
 
-      - name: Check null types on changed lines
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: pnpm lint:null-types --base "$BASE_SHA"
-
       - name: Check for changes
         id: verify-changed-files
         run: |

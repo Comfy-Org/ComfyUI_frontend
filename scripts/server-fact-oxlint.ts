@@ -18,7 +18,7 @@ export type LintOutcome =
   | { ok: true; diagnostics: OxlintDiagnostic[] }
   | { ok: false; detail: string }
 
-function lintFiles(
+export function lintServerFacts(
   files: readonly string[],
   { cwd, config }: { cwd: string; config: string }
 ): LintOutcome {
@@ -37,11 +37,7 @@ function lintFiles(
       }
 }
 
-/**
- * Lints file contents at their repo-relative paths without touching the checkout.
- * Returns failure for paths outside the snapshot or invalid oxlint reports;
- * filesystem errors propagate.
- */
+/** Lints file contents at their repo-relative paths without touching the checkout. */
 export function lintSnapshot(
   contents: ReadonlyMap<string, string>,
   config: string = SERVER_FACT_CONFIG
@@ -59,7 +55,7 @@ export function lintSnapshot(
       mkdirSync(path.dirname(target), { recursive: true })
       writeFileSync(target, text)
     }
-    return lintFiles([...contents.keys()], { cwd: mirror, config })
+    return lintServerFacts([...contents.keys()], { cwd: mirror, config })
   } finally {
     rmSync(mirror, { recursive: true, force: true })
   }

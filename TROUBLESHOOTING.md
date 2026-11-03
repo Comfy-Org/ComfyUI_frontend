@@ -220,24 +220,15 @@ Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-p
 
 #### Q: lint rejects a new nullable type signature
 
-The changed-line null-type check rejects explicit `null` types on added or
-modified lines. Prefer `undefined` for new contracts. When an existing API
-requires null, derive its type with indexed access, `Parameters`, or
-`ReturnType` instead of declaring the nullable signature again.
+`comfy/no-null-type` rejects explicit `null` types. Prefer `undefined` for
+new contracts. When an existing API requires null, derive its type with
+indexed access, `Parameters`, or `ReturnType` instead of declaring the
+nullable signature again. Null checks and null values remain allowed.
 
-Null checks and null values passed to legacy APIs remain allowed. Unchanged
-legacy declarations remain allowed, without a suppression budget. The check
-is syntactic, so inferred types and `typeof` derivations remain allowed too.
-Generated contracts follow the existing oxlint exclusions.
-
-Run the same check as CI against your base branch:
-
-```bash
-pnpm lint:null-types --base origin/main
-```
-
-Pre-commit also checks staged changes. Plain `pnpm oxlint` does not run this
-diff-aware policy.
+Existing violations use the normal oxlint suppression budgets. A file's
+violation count cannot increase. When migrating a legacy contract to
+`undefined`, update its callers and prune the stale suppressions. Preserve
+null where an external contract requires it.
 
 ---
 

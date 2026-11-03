@@ -15,10 +15,6 @@ function repoWide(command: string) {
   return [command]
 }
 
-/**
- * Selects commands for staged files, returning each repo-wide typecheck at most
- * once per process. Returns a failing command for files under tests-ui/.
- */
 export default function lintStaged(stagedFiles: string[]) {
   const relativePaths = stagedFiles.map(toRelativePath)
 
@@ -47,6 +43,9 @@ export default function lintStaged(stagedFiles: string[]) {
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
     ...lintCommands(codeFiles, styleFiles),
+    ...(codeFiles.length > 0
+      ? repoWide('pnpm lint:server-facts --staged')
+      : []),
     ...typecheckCommands(typecheckFiles)
   ]
 }

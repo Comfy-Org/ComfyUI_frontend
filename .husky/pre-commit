@@ -2,7 +2,5 @@
 set -e
 
 pnpm exec lint-staged
-pnpm lint:server-facts --staged
-pnpm lint:null-types --staged
 pnpm exec tsx scripts/check-unused-i18n-keys.ts
 pnpm exec tsx scripts/check-frozen-dirs.ts
