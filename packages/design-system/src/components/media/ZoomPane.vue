@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { clamp } from 'es-toolkit'
 import { computed, ref, useTemplateRef } from 'vue'
 
 type Point = { x: number; y: number }
+
+const MIN_ZOOM = -500
+const MAX_ZOOM = 1200
 
 const zoomPane = useTemplateRef('zoomPane')
 
@@ -13,14 +17,15 @@ const activePointers = new Map<number, Point>()
 
 function zoomAt(zoomDelta: number, clientX: number, clientY: number) {
   const zoomPaneEl = zoomPane.value
-  if (!zoomPaneEl || (zoomDelta > 0 ? zoom.value > 1200 : zoom.value < -500))
-    return
+  if (!zoomPaneEl) return
 
-  zoom.value += zoomDelta
+  const nextZoom = clamp(zoom.value + zoomDelta, MIN_ZOOM, MAX_ZOOM)
+  const appliedDelta = nextZoom - zoom.value
+  zoom.value = nextZoom
   const { x, y, width, height } = zoomPaneEl.getBoundingClientRect()
   const offsetX = clientX - x - width / 2
   const offsetY = clientY - y - height / 2
-  const scaler = 1.1 ** (zoomDelta / 30)
+  const scaler = 1.1 ** (appliedDelta / 30)
 
   panY.value = panY.value * scaler - offsetY * (scaler - 1)
   panX.value = panX.value * scaler - offsetX * (scaler - 1)

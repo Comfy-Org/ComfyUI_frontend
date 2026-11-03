@@ -9,6 +9,7 @@ export class MobileAppHelper {
   readonly contentPanel: Locator
   readonly navigation: Locator
   readonly navigationTabs: Locator
+  readonly outputPreview: Locator
   readonly view: Locator
   readonly workflows: Locator
 
@@ -19,6 +20,13 @@ export class MobileAppHelper {
     this.navigation = this.page.getByRole('tablist').filter({ hasText: 'Run' })
     this.navigationTabs = this.navigation.getByRole('tab')
     this.workflows = this.view.getByTestId(TestIds.linear.mobileWorkflows)
+    this.outputPreview = this.view.getByTestId(TestIds.linear.imagePreview)
+  }
+
+  async outputPreviewWidth() {
+    const box = await this.outputPreview.boundingBox()
+    if (!box) throw new Error('Output preview has no layout box')
+    return box.width
   }
 
   async switchWorkflow(workflowName: string) {

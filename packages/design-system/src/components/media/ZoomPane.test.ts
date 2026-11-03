@@ -66,6 +66,21 @@ describe(ZoomPane, () => {
     expect(readTransform(image).scale).toBeLessThan(before.scale)
   })
 
+  it('keeps responding to pinches after both touches meet', async () => {
+    const image = renderPane()
+    await touch(image, 'pointerDown', 1, -50)
+    await touch(image, 'pointerDown', 2, 50)
+    await touch(image, 'pointerMove', 1, 50)
+    await touch(image, 'pointerUp', 1, 50)
+    await touch(image, 'pointerUp', 2, 50)
+    const collapsed = readTransform(image)
+
+    await pinch(image, 50, 100)
+
+    expect(collapsed.scale).toBeGreaterThan(0)
+    expect(readTransform(image).scale).toBeGreaterThan(collapsed.scale)
+  })
+
   it('pans with the remaining touch after one finger lifts mid-pinch', async () => {
     const image = renderPane()
     await pinch(image, 50, 100)
