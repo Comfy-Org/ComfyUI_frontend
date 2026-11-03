@@ -94,6 +94,7 @@ interface Scenario {
   balance?: BalanceInfo | null
   autoTopUpEnabled?: boolean
   canManageAutoTopUp?: boolean
+  manageAutoTopUpDenial?: string
   canTopUp?: boolean
   topUpDenial?: BillingTopUpDenial
   isPaused?: boolean
@@ -208,6 +209,12 @@ function arrange(scenario: Scenario = {}) {
         receiveServerFact(
           'auto_top_up_enabled',
           scenario.autoTopUpEnabled ?? true
+        )
+      ),
+      manageAutoTopUpDenial: computed(() =>
+        receiveServerFact(
+          'denied_reasons.can_manage_auto_top_up',
+          scenario.manageAutoTopUpDenial
         )
       ),
       autoTopUpSetup: computed(() => null),
@@ -1850,6 +1857,60 @@ describe('BillingTab', () => {
         screen.queryByTestId('billing-auto-top-up-card')
       ).not.toBeInTheDocument()
       expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(reads)
+    })
+
+    describe('member block', () => {
+      const member: Scenario = {
+        canManageAutoTopUp: false,
+        manageAutoTopUpDenial: 'not_workspace_owner',
+        canTopUp: false
+      }
+
+      it('tells a member who manages auto top-up, without status, action or a settings read', () => {
+        arrange(member)
+
+        const block = screen.getByTestId('billing-auto-top-up-member-card')
+        expect(
+          within(block).getByRole('heading', { name: 'Auto top-up' })
+        ).toBeInTheDocument()
+        expect(block).toHaveTextContent(
+          'Credits can top up automatically when they run low. Contact a workspace owner to manage this.'
+        )
+        expect(within(block).queryByRole('button')).not.toBeInTheDocument()
+        expect(within(block).queryByRole('link')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('billing-auto-top-up-status')
+        ).not.toBeInTheDocument()
+        expect(
+          within(screen.getByTestId('billing-credits-section')).queryByRole(
+            'button',
+            { name: 'Add credits' }
+          )
+        ).not.toBeInTheDocument()
+        expect(billingApi.getBillingAutoReload).not.toHaveBeenCalled()
+      })
+
+      it.for<{ case: string; scenario: Scenario }>([
+        {
+          case: 'the flag is off',
+          scenario: { ...member, autoTopUpEnabled: false }
+        },
+        {
+          case: 'the denial is not not_workspace_owner',
+          scenario: { ...member, manageAutoTopUpDenial: 'not_a_member' }
+        },
+        {
+          case: 'the server sends no denial',
+          scenario: { ...member, manageAutoTopUpDenial: undefined }
+        },
+        { case: 'the actor is an owner', scenario: {} }
+      ])('hides the member block when $case', ({ scenario }) => {
+        arrange(scenario)
+
+        expect(
+          screen.queryByTestId('billing-auto-top-up-member-card')
+        ).not.toBeInTheDocument()
+      })
     })
 
     it('reads the auto top-up settings once for the card and the banner', async () => {

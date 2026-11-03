@@ -124,6 +124,7 @@ interface Run {
   mergeCommit?: string
   targetHead?: string
   failed?: string
+  alreadyApplied?: string
   forceRerun?: boolean
   commentsRead?: 'ok' | 'error'
   login?: string
@@ -137,6 +138,7 @@ function reportConflict(
     mergeCommit = firstMergeCommit,
     targetHead = firstTargetHead,
     failed = coreConflict,
+    alreadyApplied = '',
     forceRerun = false,
     commentsRead = 'ok',
     login = botLogin,
@@ -161,12 +163,12 @@ function reportConflict(
   const script = commentRun
     .replaceAll('${{ github.event_name }}', event)
     .replaceAll('${{ inputs.pr_number }}', '21078')
-    .replaceAll('${{ steps.backport.outputs.failed }}', failed)
 
   const result = spawnSync('bash', ['-e', '-c', script], {
     encoding: 'utf8',
     env: {
       ...process.env,
+      ALREADY_APPLIED_TARGETS: alreadyApplied,
       BACKPORT_AGENT_PROMPT_TEMPLATE: commentEnv.BACKPORT_AGENT_PROMPT_TEMPLATE,
       COMMENT_BODY_TEMPLATE: commentEnv.COMMENT_BODY_TEMPLATE,
       FAKE_DIR: sandbox,
@@ -176,6 +178,7 @@ function reportConflict(
       FAKE_PR_LOCKED: String(prLocked),
       FAKE_READ: commentsRead,
       FAKE_TARGET_HEAD: targetHead,
+      FAILED_TARGETS: failed,
       FORCE_RERUN: evaluateForceRerun(event, forceRerun),
       GITHUB_EVENT_PATH: eventPath,
       GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
@@ -203,6 +206,46 @@ const postedReports = (sandbox: string) =>
     .filter((body) => body.includes('Backport to `'))
 
 describe('backport conflict comment', () => {
+  it('titles the tracking issue as not needed when a locked PR already has the changes on its target', () => {
+    const sandbox = createSandbox()
+
+    reportConflict(sandbox, {
+      failed: '',
+      alreadyApplied: 'core/1.56 ',
+      prLocked: true
+    })
+
+    expect(
+      readFileSync(join(sandbox, 'issues.jsonl'), 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => (JSON.parse(line) as { title: string }).title)
+    ).toEqual(['Backport of #21078 to core/1.56 not needed'])
+  })
+
+  it('reads the target lists from the backport step outputs', () => {
+    expect(commentEnv).toMatchObject({
+      FAILED_TARGETS: '${{ steps.backport.outputs.failed }}',
+      ALREADY_APPLIED_TARGETS: '${{ steps.backport.outputs.already-applied }}'
+    })
+  })
+
+  it('tells the author when a target already has the changes, without a conflict report', () => {
+    const sandbox = createSandbox()
+
+    reportConflict(sandbox, { failed: '', alreadyApplied: 'core/1.56 ' })
+
+    const bodies = readRecords(sandbox, 'comments.jsonl').map(
+      ({ body }) => body
+    )
+    expect(postedReports(sandbox)).toHaveLength(0)
+    expect(bodies).toEqual([
+      expect.stringContaining(
+        `\`core/1.56\` already has the changes from \`${firstMergeCommit}\`, so no backport PR was opened.`
+      )
+    ])
+  })
+
   it('marks the conflict comment with its target, merge commit and target head', () => {
     const sandbox = createSandbox()
 

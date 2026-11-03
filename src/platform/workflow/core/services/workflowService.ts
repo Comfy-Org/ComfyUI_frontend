@@ -27,6 +27,11 @@ import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useApp } from '@/scripts/appInstance'
+import {
+  bindCanvasTracker,
+  invalidateCanvasTracker,
+  isCanvasOwner
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph } from '@/scripts/defaultGraph'
@@ -572,6 +577,8 @@ export const useWorkflowService = () => {
     if (
       pendingWorkflowLoads === 0 &&
       workflowStore.isActive(workflow) &&
+      workflow.changeTracker !== null &&
+      isCanvasOwner(workflow.changeTracker) &&
       !options.force
     ) {
       return Promise.resolve(true)
@@ -867,6 +874,7 @@ export const useWorkflowService = () => {
       // Save subgraph viewport before the canvas gets overwritten
       useSubgraphNavigationStore().saveCurrentViewport(suppressWorkflowReset)
     }
+    return invalidateCanvasTracker
   }
 
   /**
@@ -917,16 +925,20 @@ export const useWorkflowService = () => {
   ) => {
     const graphState = useApp().rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
-    const openTab = (workflow: ComfyWorkflow) => {
-      onOpen?.(workflow)
-      return workflowStore.openWorkflow(workflow)
-    }
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
     const rootGraphId = adoptRootGraphId(workflowData)
 
     function activateRunErrors(workflow: ComfyWorkflow) {
       useExecutionErrorStore().setActiveGraph(rootGraphId, workflow.path)
+    }
+
+    async function bindToCanvas(workflow: ComfyWorkflow) {
+      onOpen?.(workflow)
+      const loadedWorkflow = await workflowStore.openWorkflow(workflow)
+      if (graphState !== useApp().rootGraphOrUndefined?.state) return null
+      bindCanvasTracker(loadedWorkflow.changeTracker)
+      return loadedWorkflow
     }
 
     // Determine the initial app mode for fresh loads from serialized state.
@@ -968,8 +980,8 @@ export const useWorkflowService = () => {
           ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
             isSameActiveWorkflowLoad)
         ) {
-          const loadedWorkflow = await openTab(existingWorkflow)
-          if (graphState !== useApp().rootGraphOrUndefined?.state) return
+          const loadedWorkflow = await bindToCanvas(existingWorkflow)
+          if (!loadedWorkflow) return
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
@@ -1011,14 +1023,14 @@ export const useWorkflowService = () => {
         tempWorkflow.shareId = shareId
       }
       trackIfEnteringApp(tempWorkflow)
-      const loadedWorkflow = await openTab(tempWorkflow)
-      if (graphState !== useApp().rootGraphOrUndefined?.state) return
+      const loadedWorkflow = await bindToCanvas(tempWorkflow)
+      if (!loadedWorkflow) return
       activateRunErrors(loadedWorkflow)
       return
     }
 
-    const loadedWorkflow = await openTab(value)
-    if (graphState !== useApp().rootGraphOrUndefined?.state) return
+    const loadedWorkflow = await bindToCanvas(value)
+    if (!loadedWorkflow) return
     activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
