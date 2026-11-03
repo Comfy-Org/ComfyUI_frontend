@@ -104,7 +104,7 @@ describe('BillingBanner', () => {
     },
     {
       case: 'a plan status',
-      view: { kind: 'planStatus', ...text },
+      view: { kind: 'planStatus', ...text, action: null, href: null },
       controls: [],
       icon: 'text-muted-foreground',
       shell: ['rounded-2xl', 'p-4']
@@ -168,9 +168,24 @@ describe('BillingBanner', () => {
       },
       role: 'link',
       name: 'Contact support'
+    },
+    {
+      view: { kind: 'planStatus', ...text, action: 'resumePlan', href: null },
+      role: 'button',
+      name: 'Resume plan'
+    },
+    {
+      view: {
+        kind: 'planStatus',
+        ...text,
+        action: 'choosePlan',
+        href: 'https://platform.test/profile/billing/plans'
+      },
+      role: 'link',
+      name: 'Choose a plan'
     }
   ])(
-    'emits the $view.kind action instead of performing it',
+    'emits the $view.kind $view.action action instead of performing it',
     async ({ view, role, name }) => {
       const { onAction } = renderBanner(view)
       const control = screen.getByRole(role, { name })
@@ -209,7 +224,10 @@ describe('BillingBanner', () => {
       },
       row: 'sm:flex-row'
     },
-    { view: { kind: 'planStatus', ...text }, row: '@2xl:flex-row' },
+    {
+      view: { kind: 'planStatus', ...text, action: null, href: null },
+      row: '@2xl:flex-row'
+    },
     {
       view: {
         kind: 'topupCheckout',

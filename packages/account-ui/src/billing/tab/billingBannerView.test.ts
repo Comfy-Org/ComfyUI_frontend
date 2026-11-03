@@ -37,7 +37,7 @@ const views: Record<BillingBannerKind, BillingBannerView> = {
     action: 'contactSupport',
     href: 'https://comfy.org/contact/'
   },
-  planStatus: { kind: 'planStatus', ...text },
+  planStatus: { kind: 'planStatus', ...text, action: null, href: null },
   autoTopUp: {
     kind: 'autoTopUp',
     ...text,

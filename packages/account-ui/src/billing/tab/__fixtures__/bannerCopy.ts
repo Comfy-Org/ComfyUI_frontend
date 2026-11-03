@@ -6,7 +6,10 @@ export const billingBannerCopy: BillingBannerCopy = {
     addCredits: 'Add credits',
     updatePayment: 'Update payment',
     verifyPayment: 'Complete verification',
-    contactSupport: 'Contact support'
+    contactSupport: 'Contact support',
+    resumePlan: 'Resume plan',
+    choosePlan: 'Choose a plan',
+    contactSales: 'Contact sales'
   },
   planCheckout: {
     verifyPayment: {

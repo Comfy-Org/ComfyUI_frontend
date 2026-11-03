@@ -97,7 +97,7 @@
       "path": "src/platform/billing/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts"
     },
     {
-      "path": "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue"
+      "path": "src/platform/billing/components/AddCreditsDialogContent.vue"
     },
     {
       "path": "src/platform/billing/components/UnifiedPricingTable.stories.ts"
@@ -268,8 +268,7 @@
         "src/platform/billing/stores/billingOperationStore.test.ts",
         "src/platform/billing/composables/useTopupOperation.test.ts",
         "src/platform/billing/composables/usePendingTopup.test.ts",
-        "src/platform/billing/composables/topupBalanceRefresh.test.ts",
-        "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.test.ts"
+        "src/platform/billing/composables/topupBalanceRefresh.test.ts"
       ]
     },
     {
