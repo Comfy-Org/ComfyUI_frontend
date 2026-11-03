@@ -5,6 +5,7 @@
 @import './_deprecated-aliases.css';
 @import './_legacy-palette.css';
 @import 'tailwindcss/theme' layer(theme);
+@import 'tailwindcss/preflight' layer(base);
 @import 'tailwindcss/utilities' layer(utilities);
 @import 'tw-animate-css';
 
@@ -16,21 +17,7 @@
   *,
   ::before,
   ::after {
-    box-sizing: border-box;
     border-color: var(--border);
-  }
-
-  button,
-  input,
-  select,
-  optgroup,
-  textarea,
-  ::file-selector-button {
-    font: inherit;
-    font-feature-settings: inherit;
-    font-variation-settings: inherit;
-    letter-spacing: inherit;
-    color: inherit;
   }
 }
 
@@ -196,7 +183,6 @@
 body {
   width: 100vw;
   height: 100vh;
-  margin: 0;
   overflow: hidden;
   min-height: -webkit-fill-available;
   max-height: -webkit-fill-available;
@@ -215,9 +201,9 @@ body {
   padding: 2px;
   resize: none;
   border: none;
-  box-sizing: border-box;
   font-family: var(--font-mono);
   font-size: var(--comfy-textarea-font-size);
+  line-height: normal;
 }
 
 @import './_markdown.css';

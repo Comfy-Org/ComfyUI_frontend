@@ -291,6 +291,8 @@
 
 .litegraph .dialog .dialog-content h3 {
   margin: 10px;
+  font-size: revert;
+  font-weight: revert;
 }
 
 .litegraph .dialog .dialog-content .connections {
