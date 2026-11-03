@@ -34,6 +34,7 @@
   ],
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts", "eslint-plugin-regexp"],
   "rules": {
+    "comfy/no-agent-ingest-passthrough": "error",
     "comfy/no-duplicate-ingest-type": "error",
     "regexp/no-dupe-characters-character-class": "error",
     "regexp/no-dupe-disjunctions": "error",

@@ -1,3 +1,5 @@
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+
 import type {
   AgentMessages,
   TurnId
@@ -129,7 +131,10 @@ function parseUserAttachments(
   for (const entry of refs) {
     if (!resolved.has(entry.key)) resolved.set(entry.key, entry)
   }
-  const rawAttachments: unknown = content?.attachments
+  const rawAttachments: unknown = pendingServerFact(
+    'BE-20403',
+    content?.attachments
+  )
   let postedNames: string[] | undefined
   if (Array.isArray(rawAttachments)) {
     const entries: unknown[] = rawAttachments
@@ -207,25 +212,12 @@ function toolCallPartState(
   return inProgress && isLive ? 'streaming' : 'done'
 }
 
-/**
- * `undefined` while the call is still genuinely in progress (matching the
- * live path, which omits `ok` until a terminal status arrives); once the
- * part is in a `done` state, `success` and the older `ok` success alias
- * both count as success. `'ok'` is a reload-only legacy alias, not something
- * the live path ever produces or recognizes: `zAgentToolCallData.status` in
- * `agentApiSchema.ts` is `z.enum(['running', 'success', 'error'])`, and the
- * live resolver (`resolveToolCallState` in `agentEventTransport.ts`) only
- * checks `status === 'success'` — it only ever appears on rows persisted
- * before that alias was retired. Everything else, including a restored
- * `pending`/`running` call that had no live transport to finish it, reads as
- * failure rather than being rendered as if it succeeded.
- */
 function toolCallOk(
   status: unknown,
   state: ToolPart['state']
 ): boolean | undefined {
   if (state === 'streaming') return undefined
-  return status === 'success' || status === 'ok'
+  return status === 'success'
 }
 
 /** A parsed tool-call entry, carrying the raw persisted `status` alongside
@@ -298,9 +290,9 @@ function parseToolCallEntry(
     tool_call_id: toolCallId,
     tool_name: toolName,
     status,
-    skill,
     duration_ms: rawDuration
   } = parsed.data
+  const { skill } = pendingServerFact('BE-20138', parsed.data)
   if (isLiveEntryMissingToolCallId(isLive, toolCallId)) return undefined
   const state = toolCallPartState(status, isLive)
   const ok = toolCallOk(status, state)
@@ -320,17 +312,11 @@ function parseToolCallEntry(
   }
 }
 
-/**
- * A persisted assistant row's `tool_calls` entries are parsed through
- * `parseToolCallEntry`. A repeated `id` within the list is deduped, keeping
- * the last entry's data at the first entry's position, matching how the
- * live path updates a part in place rather than appending.
- */
 function parseToolCalls(
   content: Record<string, unknown> | undefined,
   isLive: boolean
 ): ParsedToolCall[] | undefined {
-  const raw = content?.tool_calls
+  const raw = pendingServerFact('BE-20138', content?.tool_calls)
   if (!Array.isArray(raw)) return undefined
   const parsedByCallId = new Map<string, ParsedToolCall>()
   for (const entry of raw as unknown[]) {
@@ -478,7 +464,7 @@ interface UserRowUpdate {
 function applyUserRow(row: AgentMessages[number], text: string): UserRowUpdate {
   const referenceUpdate = parseUserWorkflowReferences(
     text,
-    row.content?.workflow_references
+    pendingServerFact('BE-20403', row.content?.workflow_references)
   )
   const prompt = parseSkillReferenceText(
     referenceUpdate?.text ?? text,
@@ -626,7 +612,8 @@ export function normalizeAgentTranscript(
     const turnId = row.turn_id as TurnId
     rowIds.add(row.id)
     recordTurnOrder(turnId, seenTurns, turnOrder)
-    const text = typeof row.content?.text === 'string' ? row.content.text : ''
+    const rawText = pendingServerFact('BE-20403', row.content?.text)
+    const text = typeof rawText === 'string' ? rawText : ''
     if (row.role === 'user') {
       const workflowId = recordUserRow(
         row,

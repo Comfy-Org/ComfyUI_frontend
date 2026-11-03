@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 
 import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import type { OpBase } from '@comfyorg/comfy-multi-player'
+import { omit } from 'es-toolkit'
 import { z } from 'zod'
 
 import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -35,7 +36,13 @@ export const zRecordedWsEvent = z.discriminatedUnion('type', [
   thinkingDraft.extend({ data: thinkingDraft.shape.data.omit(mintedIds) }),
   messageDone.extend({ data: messageDone.shape.data.omit(mintedIds) }),
   activeTab.extend({ data: activeTab.shape.data.omit(mintedIds) }),
-  ask.extend({ data: ask.shape.data.omit(mintedIds) }),
+  ask.extend({
+    data: z
+      .record(z.string(), z.unknown())
+      .transform((data) => ({ ...data, thread_id: '', message_id: '' }))
+      .pipe(ask.shape.data)
+      .transform((data) => omit(data, ['thread_id', 'message_id']))
+  }),
   askResolved.extend({ data: askResolved.shape.data.omit(mintedIds) })
 ])
 export type RecordedWsEvent = z.infer<typeof zRecordedWsEvent>

@@ -126,10 +126,15 @@ describe('normalizeAgentTranscript', () => {
 
   it('keeps user-only turns while ignoring non-text transcript content', () => {
     const userOnly = row(1, 'user', 'turn-a', 'Prompt', 'row-1')
-    const toolRow = row(2, 'tool', 'turn-a', '', 'row-2')
-    toolRow.content = { result: { nodeCount: 2 } }
+    const messages = zAgentMessages.parse([
+      {
+        ...row(2, 'tool', 'turn-a', '', 'row-2'),
+        content: { result: { nodeCount: 2 } }
+      },
+      userOnly
+    ])
 
-    const transcript = normalizeAgentTranscript([toolRow, userOnly])
+    const transcript = normalizeAgentTranscript(messages)
 
     expect(transcript.messages).toEqual([
       {
@@ -268,23 +273,6 @@ describe('normalizeAgentTranscript', () => {
         { name: 'first.png', ref: 'first.png' },
         { name: 'second.mp4', ref: 'second.mp4' }
       ]
-    },
-    {
-      content: {
-        attachments: null,
-        attachment_refs: [
-          null,
-          false,
-          {},
-          { name: 17 },
-          { name: 'fallback.jpg' }
-        ]
-      },
-      expected: [{ name: 'fallback.jpg', ref: 'fallback.jpg' }]
-    },
-    {
-      content: { attachment_refs: { name: 'not-an-array.png' } },
-      expected: undefined
     }
   ])(
     'ignores malformed attachment metadata: $content',
@@ -297,6 +285,23 @@ describe('normalizeAgentTranscript', () => {
       expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual(
         expected
       )
+    }
+  )
+
+  it.for([
+    [null, false, {}, { name: 17 }, { name: 'fallback.jpg' }],
+    { name: 'not-an-array.png' }
+  ])(
+    'rejects malformed generated attachment_refs at the API boundary: %j',
+    (attachmentRefs) => {
+      expect(
+        zAgentMessages.safeParse([
+          {
+            ...row(1, 'user', 'turn-a', '', 'row-1'),
+            content: { attachment_refs: attachmentRefs }
+          }
+        ]).success
+      ).toBe(false)
     }
   )
 
@@ -430,12 +435,28 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it('skips malformed persisted thinking and keeps an entry whose call is missing after the calls', () => {
+  it.for([
+    ['non-string text', { text: 42 }],
+    ['a null tool_call_id', { text: 'Final round.', tool_call_id: null }]
+  ] as const)(
+    'rejects persisted thinking with %s at the API boundary',
+    ([, thinking]) => {
+      const input: unknown = [
+        {
+          ...row(1, 'assistant', 'turn-a', 'Done', 'row-1'),
+          content: { text: 'Done', thinking: [thinking] }
+        }
+      ]
+
+      expect(zAgentMessages.safeParse(input).success).toBe(false)
+    }
+  )
+
+  it('skips blank persisted thinking and keeps an entry whose call is missing after the calls', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
       text: 'Done',
       thinking: [
-        { text: 42 },
         { text: '   ' },
         { text: 'Looking it up.', tool_call_id: 'call-1' },
         { text: 'The audit row is gone.', tool_call_id: 'call-missing' }
@@ -462,21 +483,6 @@ describe('normalizeAgentTranscript', () => {
         ok: true
       },
       { type: 'thinking', text: 'The audit row is gone.', state: 'done' },
-      { type: 'text', text: 'Done', state: 'done' }
-    ])
-  })
-
-  it('restores persisted thinking whose tool_call_id is an explicit null', () => {
-    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
-    message.content = {
-      text: 'Done',
-      thinking: [{ text: 'Final round.', tool_call_id: null }]
-    }
-
-    const transcript = normalizeAgentTranscript([message])
-
-    expect(transcript.messages[0].parts).toEqual([
-      { type: 'thinking', text: 'Final round.', state: 'done' },
       { type: 'text', text: 'Done', state: 'done' }
     ])
   })
@@ -586,7 +592,7 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it('falls back to id for callId when a row was recorded before tool_call_id existed', () => {
+  it('drops a tool call without its generated tool_call_id while preserving text', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
       text: 'Done',
@@ -597,9 +603,9 @@ describe('normalizeAgentTranscript', () => {
 
     const transcript = normalizeAgentTranscript([message])
 
-    expect(transcript.messages[0].parts).toContainEqual(
-      expect.objectContaining({ callId: 'audit-row-uuid-1' })
-    )
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
   })
 
   it('omits tool parts entirely when a message carries no tool_calls', () => {
@@ -653,7 +659,7 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it('clamps a restored pending/running tool call to done+ok:false with no live transport', () => {
+  it('drops a non-terminal tool call from a restored message', () => {
     const message = row(1, 'assistant', 'turn-a', '', 'row-1')
     message.content = {
       tool_calls: [
@@ -668,18 +674,10 @@ describe('normalizeAgentTranscript', () => {
 
     const transcript = normalizeAgentTranscript([message])
 
-    expect(transcript.messages[0].parts).toEqual([
-      {
-        type: 'tool',
-        callId: 'call-1',
-        name: 'search_nodes',
-        state: 'done',
-        ok: false
-      }
-    ])
+    expect(transcript.messages[0].parts).toEqual([])
   })
 
-  it('keeps a pending/running tool call streaming when its row is the live run_approval ask', () => {
+  it('keeps a live approval while dropping a non-terminal persisted tool call', () => {
     const message = row(1, 'assistant', 'turn-a', '', 'row-1')
     message.status = 'streaming'
     message.content = {
@@ -696,6 +694,7 @@ describe('normalizeAgentTranscript', () => {
       message_id: 'row-1',
       ask_id: 'ask-1',
       kind: 'run_approval',
+      context: { workflow_id: 'workflow-1' },
       prompt: 'Run it?',
       options: [],
       min_selections: 1,
@@ -705,12 +704,14 @@ describe('normalizeAgentTranscript', () => {
 
     const transcript = normalizeAgentTranscript([message])
 
-    expect(transcript.messages[0].parts).toContainEqual({
-      type: 'tool',
-      callId: 'call-1',
-      name: 'search_nodes',
-      state: 'streaming'
-    })
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'runApproval',
+        askId: 'ask-1',
+        workflowId: 'workflow-1',
+        workflowName: undefined
+      }
+    ])
     expect(transcript.pending?.messageId).toBe('row-1')
   })
 
@@ -879,6 +880,7 @@ describe('normalizeAgentTranscript', () => {
       message_id: 'row-1',
       ask_id: 'ask-1',
       kind: 'run_approval',
+      context: { workflow_id: 'workflow-1' },
       prompt: 'Run it?',
       options: [],
       min_selections: 1,
@@ -924,8 +926,8 @@ describe('normalizeAgentTranscript', () => {
     }
   )
 
-  it.for([Infinity, -Infinity, -1])(
-    'omits durationMs for a non-finite or negative duration_ms (%s) without dropping the entry',
+  it.for([-1])(
+    'omits a negative duration_ms (%s) from an otherwise valid entry',
     (durationMs) => {
       const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
       message.content = {
@@ -953,29 +955,32 @@ describe('normalizeAgentTranscript', () => {
     }
   )
 
-  it('drops the whole tool-call entry when duration_ms is NaN, matching the live schema (z.number()) rejecting it', () => {
-    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
-    message.content = {
-      text: 'Done',
-      tool_calls: [
-        {
-          id: 'audit-1',
-          tool_call_id: 'call-1',
-          tool_name: 'search_nodes',
-          status: 'success',
-          duration_ms: NaN
-        }
-      ]
+  it.for([NaN, Infinity, -Infinity, 420.5, null])(
+    'drops an invalid generated duration %s without losing the reply',
+    (duration) => {
+      const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+      message.content = {
+        text: 'Done',
+        tool_calls: [
+          {
+            id: 'audit-1',
+            tool_call_id: 'call-1',
+            tool_name: 'search_nodes',
+            status: 'success',
+            duration_ms: duration
+          }
+        ]
+      }
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.messages[0].parts).toEqual([
+        { type: 'text', text: 'Done', state: 'done' }
+      ])
     }
+  )
 
-    const transcript = normalizeAgentTranscript([message])
-
-    expect(transcript.messages[0].parts).toEqual([
-      { type: 'text', text: 'Done', state: 'done' }
-    ])
-  })
-
-  it('accepts a non-integer duration_ms, matching the live path leniency', () => {
+  it('accepts an integer duration_ms from the generated contract', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
       text: 'Done',
@@ -985,7 +990,7 @@ describe('normalizeAgentTranscript', () => {
           tool_call_id: 'call-1',
           tool_name: 'search_nodes',
           status: 'success',
-          duration_ms: 420.5
+          duration_ms: 421
         }
       ]
     }
@@ -998,11 +1003,11 @@ describe('normalizeAgentTranscript', () => {
       name: 'search_nodes',
       state: 'done',
       ok: true,
-      durationMs: 420.5
+      durationMs: 421
     })
   })
 
-  it('treats the older ok status alias the same as success', () => {
+  it('drops the audit-only ok status instead of treating it as a wire success', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
       text: 'Done',
@@ -1018,13 +1023,9 @@ describe('normalizeAgentTranscript', () => {
 
     const transcript = normalizeAgentTranscript([message])
 
-    expect(transcript.messages[0].parts).toContainEqual({
-      type: 'tool',
-      callId: 'call-1',
-      name: 'search_nodes',
-      state: 'done',
-      ok: true
-    })
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
   })
 
   it('dedupes a repeated callId within one row, keeping the last entry at the first position', () => {
@@ -1286,20 +1287,25 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.messages[0].parts).toEqual([])
   })
 
-  it('still falls back to id on a non-live (restored) row, since nothing will ever seed the real tool_call_id later', () => {
+  it('drops a null tool_call_id without losing a restored reply', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
       text: 'Done',
       tool_calls: [
-        { id: 'audit-row-uuid-1', tool_name: 'search_nodes', status: 'success' }
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: null,
+          tool_name: 'search_nodes',
+          status: 'success'
+        }
       ]
     }
 
     const transcript = normalizeAgentTranscript([message])
 
-    expect(transcript.messages[0].parts).toContainEqual(
-      expect.objectContaining({ callId: 'audit-row-uuid-1' })
-    )
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
   })
 
   it.for([
@@ -1311,7 +1317,7 @@ describe('normalizeAgentTranscript', () => {
       status: null
     }
   ])(
-    'still produces a ToolPart for a persisted tool call entry missing status or carrying status: null: $status',
+    'drops a persisted tool call with missing or null status: $status',
     (toolCall) => {
       const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
       message.content = {
@@ -1321,14 +1327,9 @@ describe('normalizeAgentTranscript', () => {
 
       const transcript = normalizeAgentTranscript([message])
 
-      expect(transcript.messages[0].parts).toContainEqual(
-        expect.objectContaining({
-          type: 'tool',
-          callId: 'call-1',
-          name: 'search_nodes',
-          state: 'done'
-        })
-      )
+      expect(transcript.messages[0].parts).toEqual([
+        { type: 'text', text: 'Done', state: 'done' }
+      ])
     }
   )
 

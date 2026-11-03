@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { RuleTester } from 'oxlint/plugins-dev'
 
 const GENERATED_PACKAGE = '@comfyorg/ingest-types'
 const GENERATED_TYPES_PATH = fileURLToPath(
@@ -377,3 +378,94 @@ export const noDuplicateIngestType = {
     }
   }
 }
+
+type Rule = Parameters<RuleTester['run']>[1]
+type Context = Parameters<Extract<Rule, { create: unknown }>['create']>[0]
+type Node = Parameters<Context['sourceCode']['getScope']>[0]
+
+function isIngestBinding(
+  context: Context,
+  node: Extract<Node, { type: 'Identifier' }>,
+  seen: Set<Node>
+): boolean {
+  let scope: ReturnType<Context['sourceCode']['getScope']> | null =
+    context.sourceCode.getScope(node)
+  while (scope) {
+    const variable = scope.set.get(node.name)
+    if (variable) {
+      return variable.defs.some((definition) => {
+        if (definition.type === 'ImportBinding')
+          return (
+            definition.parent?.type === 'ImportDeclaration' &&
+            definition.parent.source.value === `${GENERATED_PACKAGE}/zod`
+          )
+        return (
+          definition.node.type === 'VariableDeclarator' &&
+          definition.node.init !== null &&
+          derivesFromIngest(context, definition.node.init, seen)
+        )
+      })
+    }
+    scope = scope.upper
+  }
+  return false
+}
+
+function derivesFromIngest(
+  context: Context,
+  node: Node,
+  seen = new Set<Node>()
+): boolean {
+  if (seen.has(node)) return false
+  seen.add(node)
+  if (node.type === 'MemberExpression')
+    return derivesFromIngest(context, node.object, seen)
+  if (node.type === 'CallExpression')
+    return [node.callee, ...node.arguments].some((input) =>
+      derivesFromIngest(context, input, seen)
+    )
+  if (node.type === 'ObjectExpression')
+    return node.properties.some((property) =>
+      derivesFromIngest(context, property, seen)
+    )
+  if (node.type === 'Property')
+    return derivesFromIngest(context, node.value, seen)
+  if (node.type === 'SpreadElement')
+    return derivesFromIngest(context, node.argument, seen)
+  if (node.type === 'ArrayExpression')
+    return node.elements.some(
+      (element) => element && derivesFromIngest(context, element, seen)
+    )
+  if (node.type === 'Identifier') return isIngestBinding(context, node, seen)
+  return false
+}
+
+export const noAgentIngestPassthrough = {
+  create(context: Context) {
+    if (
+      !context.filename
+        .replaceAll('\\', '/')
+        .includes('/src/workbench/extensions/agent/')
+    )
+      return {}
+    return {
+      CallExpression(node: Node) {
+        if (node.type !== 'CallExpression') return
+        const { callee } = node
+        if (callee.type !== 'MemberExpression') return
+        const method = callee.computed
+          ? callee.property.type === 'Literal' && callee.property.value
+          : callee.property.type === 'Identifier' && callee.property.name
+        if (
+          method === 'passthrough' &&
+          derivesFromIngest(context, callee.object)
+        )
+          context.report({
+            node,
+            message:
+              'Use the generated ingest schema without .passthrough(); track missing server fields in a backend ticket.'
+          })
+      }
+    }
+  }
+} satisfies Rule

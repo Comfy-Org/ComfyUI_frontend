@@ -225,7 +225,7 @@ describe('agentRestClient route + method', () => {
   })
 
   it('answerAsk POSTs the selected option to the encoded ask path', async () => {
-    respond(jsonResponse(202, { status: 'answered' }))
+    respond(jsonResponse(202, { status: 'answered', selected: ['run'] }))
     await makeClient().answerAsk('t7/x', 'turn-1:call/1', { selected: ['run'] })
 
     const { route, init } = lastCall()
@@ -234,8 +234,25 @@ describe('agentRestClient route + method', () => {
     expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
   })
 
-  it('answerAsk sends free text as other_text alongside the chosen ids', async () => {
+  it('answerAsk rejects a receipt without the committed answer', async () => {
     respond(jsonResponse(202, { status: 'answered' }))
+
+    await expect(
+      makeClient().answerAsk('t7', 'ask-1', { selected: ['run'] })
+    ).rejects.toThrow()
+  })
+
+  it('answerAsk returns the committed answer rather than the requested one', async () => {
+    const body = { status: 'answered', selected: ['cancel'] }
+    respond(jsonResponse(202, body))
+
+    await expect(
+      makeClient().answerAsk('t7', 'ask-1', { selected: ['run'] })
+    ).resolves.toEqual(body)
+  })
+
+  it('answerAsk sends free text as other_text alongside the chosen ids', async () => {
+    respond(jsonResponse(202, { status: 'answered', selected: ['a'] }))
     await makeClient().answerAsk('t7', 'ask-1', {
       selected: ['a'],
       other_text: 'something else'
@@ -245,23 +262,6 @@ describe('agentRestClient route + method', () => {
       selected: ['a'],
       other_text: 'something else'
     })
-  })
-
-  it.for([
-    {
-      name: 'a status-only 202 from an older backend',
-      body: { status: 'answered' }
-    },
-    {
-      name: 'a 202 that reports the committed answer',
-      body: { status: 'answered', selected: ['run'] }
-    }
-  ])('answerAsk accepts $name', async ({ body }) => {
-    respond(jsonResponse(202, body))
-
-    await expect(
-      makeClient().answerAsk('t7', 'ask-1', { selected: ['run'] })
-    ).resolves.toEqual(body)
   })
 
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
