@@ -12,6 +12,7 @@
   --color-card: oklch(0.23 0.008 285);
   --color-popover: oklch(0.23 0.008 285);
   --color-primary: #0b8ce9;
+  --color-primary-foreground: var(--color-foreground);
   --color-secondary: oklch(1 0 0 / 0.06);
   --color-muted: oklch(1 0 0 / 0.06);
   --color-muted-foreground: oklch(0.76 0.006 285);
