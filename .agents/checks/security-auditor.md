@@ -29,6 +29,6 @@ Rules:
 ## Repo-Specific Patterns
 
 - HTML sanitization must use `DOMPurify.sanitize()`. Lint rejects `v-html` in `src/`; flag `innerHTML`, `outerHTML`, `insertAdjacentHTML`, and `document.write` with unsanitized input.
-- API calls go through `api.fetchApi(route)` or `api.apiURL(route)`, not raw `fetch('/api/...')`; direct URL construction can bypass auth.
+- API requests go through `api.fetchApi(route)`, which attaches auth; flag raw `fetch('/api/...')` and `fetch(api.apiURL(...))`. `api.apiURL(route)` only builds a URL string.
 - Firebase, Sentry, and Datadog credentials come from the environment. Flag hardcoded config objects, tokens, API keys, and private keys in source, tests, fixtures, and workflows.
 - Never log secrets or tokens, including in `reportError` context.
