@@ -1,6 +1,6 @@
 <template>
   <div :class="cn('h-full p-8', props.class)">
-    <div class="flex flex-col items-center bg-(--surface-ground) text-center">
+    <div class="flex flex-col items-center text-center">
       <i v-if="icon" :class="cn(icon, 'mb-4 size-12 text-5xl')" />
       <slot name="title">
         <h3 v-if="title" class="mb-2 text-foreground">{{ title }}</h3>

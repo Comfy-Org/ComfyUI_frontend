@@ -1,0 +1,102 @@
+@import '../component-support.css';
+
+@source '../../../dist';
+
+@theme static {
+  --font-inter: 'Inter', system-ui, sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'PP Formula', 'Inter', system-ui, sans-serif;
+
+  --color-background: oklch(0.19 0.003 285);
+  --color-foreground: oklch(0.955 0.002 285);
+  --color-card: oklch(0.23 0.008 285);
+  --color-popover: oklch(0.23 0.008 285);
+  --color-primary: #0b8ce9;
+  --color-secondary: oklch(1 0 0 / 0.06);
+  --color-muted: oklch(1 0 0 / 0.06);
+  --color-muted-foreground: oklch(0.76 0.006 285);
+  --color-accent: oklch(1 0 0 / 0.1);
+  --color-input: oklch(1 0 0 / 0.06);
+  --color-border: oklch(1 0 0 / 0.08);
+  --color-ring: oklch(1 0 0 / 0.45);
+  --color-destructive: oklch(0.62 0.19 25);
+  --color-warning: oklch(0.82 0.14 85);
+  --color-success: oklch(0.78 0.15 155);
+
+  --color-content-background: oklch(0.14 0.005 285);
+  --color-card-hover: oklch(0.265 0.009 285);
+  --color-subtle-foreground: oklch(0.6 0.008 285);
+  --color-border-strong: oklch(1 0 0 / 0.14);
+  --color-media-overlay: oklch(0 0 0 / 0.55);
+
+  --text-ui: 13px;
+  --text-ui--line-height: 20px;
+  --text-heading: 16px;
+  --text-heading--line-height: 24px;
+  --text-title: 22px;
+  --text-title--line-height: 28px;
+  --text-display: 34px;
+  --text-display--line-height: 40px;
+
+  --radius-panel: 16px;
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --radius-min: 4px;
+
+  --shadow-elev:
+    inset 0 1px 0 oklch(1 0 0 / 0.07), 0 1px 2px oklch(0 0 0 / 0.35),
+    0 6px 18px oklch(0 0 0 / 0.28);
+  --shadow-elev-hover:
+    inset 0 1px 0 oklch(1 0 0 / 0.09), 0 2px 4px oklch(0 0 0 / 0.35),
+    0 10px 26px oklch(0 0 0 / 0.34);
+  --shadow-popover:
+    inset 0 1px 0 oklch(1 0 0 / 0.07), 0 12px 32px oklch(0 0 0 / 0.45);
+  --shadow-highlight: inset 0 1px 0 oklch(1 0 0 / 0.06);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-pop-in: pop-in 160ms var(--ease-out-expo);
+  --animate-fade-in: fade-in 160ms ease-out;
+  --animate-status-pulse: status-pulse 2s ease-out infinite;
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.98);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes status-pulse {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in oklch, currentColor 55%, transparent);
+    }
+    70%,
+    100% {
+      box-shadow: 0 0 0 5px transparent;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+}
+
+:root {
+  --muted: var(--color-muted);
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+}

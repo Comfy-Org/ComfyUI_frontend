@@ -34,6 +34,23 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 @import '@comfyorg/design-system/css/base.css';
 ```
 
+## Void theme
+
+Void is the near-black look used by Comfy Desktop. An app with its own Tailwind
+build and global styles imports it instead of `style.css`, which carries
+ComfyUI's colors and app-wide rules:
+
+```css
+@import 'tailwindcss';
+@import '@comfyorg/design-system/css/themes/void.css';
+```
+
+The theme gives the components their colors, registers the compiled component
+sources for Tailwind, and adds Void's type, radius, shadow and motion tokens.
+ComfyUI does not import it, so changing Void cannot change ComfyUI. It does not
+declare fonts: the host provides `Inter` and `PP Formula`. Published consumers
+still import `components.css`, as described under [Vue components](#vue-components).
+
 ## Exports
 
 | Path                            | Contents                                                                         |
@@ -41,6 +58,8 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 | `./css/style.css`               | Full theme — palette, fonts, Tailwind layers, icon plugins                       |
 | `./css/theme.css`               | Full theme without automatic component source registration                       |
 | `./css/base.css`                | Palette and fonts only                                                           |
+| `./css/component-support.css`   | Palette, icon plugins, animations, layers and utilities the components need      |
+| `./css/themes/void.css`         | Void theme for apps other than ComfyUI, including component support              |
 | `./css/_palette.css`            | Color variables                                                                  |
 | `./css/fonts.css`               | Font faces                                                                       |
 | `./css/_deprecated-aliases.css` | Deprecated variable names kept for extensions; scheduled for removal             |
