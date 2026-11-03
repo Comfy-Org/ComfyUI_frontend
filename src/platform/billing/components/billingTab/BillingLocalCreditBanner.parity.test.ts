@@ -67,7 +67,10 @@ const copy: Pick<BillingBannerCopy, 'dismiss' | 'actions'> = {
     addCredits: t(`${bs}.outOfCredits.addCredits`),
     updatePayment: t(`${bs}.updatePayment`),
     verifyPayment: t(`${bs}.planCheckout.verifyPayment.action`),
-    contactSupport: t(`${bs}.parked.contactSupport`)
+    contactSupport: t(`${bs}.parked.contactSupport`),
+    resumePlan: t(`${bs}.ending.reactivate`),
+    choosePlan: t('workspacePanel.billingTab.plan.actions.choosePlan'),
+    contactSales: t(`${bs}.ending.contactSales`)
   }
 }
 
