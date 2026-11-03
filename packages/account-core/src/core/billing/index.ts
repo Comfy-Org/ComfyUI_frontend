@@ -101,6 +101,26 @@ export {
   createPaymentMethodsReader
 } from './paymentMethods'
 export type {
+  AutoReloadPreview,
+  AutoReloadSettings,
+  AutoTopUpCommandOptions,
+  AutoTopUpCommandResult,
+  AutoTopUpReadOptions,
+  AutoTopUpReader,
+  AutoTopUpReaderOptions,
+  AutoTopUpScope,
+  AutoTopUpSnapshot,
+  PreviewAutoTopUpQuery,
+  SaveAutoTopUpInput
+} from './autoTopUp'
+export {
+  AUTO_TOP_UP_PREVIEW_ROUTE,
+  AUTO_TOP_UP_ROUTE,
+  createAutoTopUpReader,
+  previewAutoTopUp,
+  saveAutoTopUp
+} from './autoTopUp'
+export type {
   BillingStatusData,
   BillingStatusReader,
   BillingStatusReaderOptions,
