@@ -421,6 +421,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const {
     isReady: isSyncReady,
     isLoading: isSyncLoading,
+    error: syncError,
     execute: executeSyncWorkflows
   } = useAsyncState(
     async (dir: string = '') => {
@@ -792,6 +793,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     getWorkflowByPath,
     syncWorkflows,
     isSyncLoading,
+    lastSyncFailed: computed(() => syncError.value !== undefined),
     loadWorkflows,
 
     tabsRestored: computed(() => tabsRestored.value),

@@ -93,7 +93,7 @@ export function useAgentWorkflowSelection({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
-    cloudListingIncludes,
+    completeCloudListingIncludes,
     cloudListingOmits,
     cloudWorkflowLifecycle
   } = resolver
@@ -279,7 +279,7 @@ export function useAgentWorkflowSelection({
       return {
         outcome: 'open',
         target,
-        listed: listed && cloudListingIncludes(workflowId)
+        listed: listed && completeCloudListingIncludes(workflowId)
       }
     if (target === null) return { outcome: 'deleted' }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
@@ -333,12 +333,6 @@ export function useAgentWorkflowSelection({
     )
   }
 
-  /**
-   * `listed` says the workflow listing names this workflow. One that is still
-   * not found after a fresh sync then has no saved copy this browser can open
-   * (an unsaved tab in another browser, or a name shared by two saved
-   * workflows), so retrying cannot help: the chat opens without it.
-   */
   async function openRestoredWorkflow(
     target: ComfyWorkflow | null,
     workflowId: string,
@@ -372,7 +366,7 @@ export function useAgentWorkflowSelection({
     workflowId: string,
     listed: boolean
   ): WorkflowRestoration {
-    if (!listed)
+    if (!listed || workflowStore.lastSyncFailed)
       return abandonRestore(
         workflowId,
         'No saved workflow resolves to the chat target'

@@ -161,8 +161,8 @@ export function useAgentWorkflowResolver({
       : null
   }
 
-  function cloudListingIncludes(workflowId: string): boolean {
-    return listedCloudIds.value.has(workflowId)
+  function completeCloudListingIncludes(workflowId: string): boolean {
+    return listingComplete.value && listedCloudIds.value.has(workflowId)
   }
 
   function cloudListingOmits(workflowId: string): boolean {
@@ -262,7 +262,7 @@ export function useAgentWorkflowResolver({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
-    cloudListingIncludes,
+    completeCloudListingIncludes,
     cloudListingOmits,
     cloudWorkflowLifecycle,
     openWorkflowFor,

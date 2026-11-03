@@ -407,6 +407,34 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
+  it('fails and stays retryable when an incomplete listing names a workflow with no saved file', async () => {
+    const { selection, panel, listCloudWorkflows, warnRestoreFailed } = setup()
+    listCloudWorkflows.mockImplementationOnce(async () =>
+      listing([{ id: 'wf-saved', name: 'saved' }], false)
+    )
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      false
+    )
+
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+  })
+
+  it('fails and stays retryable when the sync for a listed workflow fails', async () => {
+    const { selection, workflows, panel, warnRestoreFailed } = setup()
+    vi.mocked(workflows.syncWorkflows).mockImplementationOnce(async () => {
+      Object.assign(workflows, { lastSyncFailed: true })
+    })
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      false
+    )
+
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+  })
+
   it.for([
     {
       listing: 'omits the workflow',
