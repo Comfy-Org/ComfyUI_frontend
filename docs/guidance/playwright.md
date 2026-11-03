@@ -171,9 +171,9 @@ skips tests tagged `@mobile`, `@perf`, `@audit`, `@cloud`, `@desktop`,
 | ---------------- | -------------------------------------------------------- |
 | `@mobile`        | Runs in the mobile-chrome (Pixel 5) project              |
 | `@mobile-ios`    | Runs in the mobile-safari (iPhone 15 / WebKit) project   |
-| `@2x`            | Also runs in the 2x-scale project                        |
-| `@0.5x`          | Also runs in the 0.5x-scale project                      |
-| `@perf`          | Runs in the perf project                                 |
+| `@2x`            | Also runs in the chromium-2x project                     |
+| `@0.5x`          | Also runs in the chromium-0.5x project                   |
+| `@perf`          | Runs in the performance project                          |
 | `@audit`         | Runs in the audit project                                |
 | `@cloud`         | Runs in the cloud project                                |
 | `@desktop`       | Runs against the desktop build                           |
@@ -309,7 +309,8 @@ baseline workflow.
   `toHaveCount`, `toHaveClass`).
 - One async value: `await expect.poll(() => fn()).toBe(expected)`.
 - Several assertions that must settle together:
-  `await expect(async () => { … }).toPass()`.
+  `await expect(async () => { … }).toPass({ timeout: 5000 })`; `toPass()`
+  has no timeout of its own.
 - Never assert immediately after an async UI mutation, settings write,
   clipboard write, or graph update.
 - Never use `waitForTimeout()`. Keep the default poll timeout (5000 ms); never
