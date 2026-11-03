@@ -233,6 +233,14 @@ Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-p
 pnpm oxlint --prune-suppressions
 ```
 
+The account packages also have package-local suppression files. If you fixed a
+violation there, prune that package's file as well:
+
+```bash
+pnpm --dir packages/account-core exec oxlint src --type-aware --prune-suppressions
+pnpm --dir packages/account-ui exec oxlint src --type-aware --prune-suppressions
+```
+
 Never run `--suppress-all` to silence new violations in your own code.
 
 ---
