@@ -872,6 +872,29 @@ describe('useWorkflowStore', () => {
       expect(store.isOpen(workflow)).toBe(false)
       expect(store.getWorkflowByPath(workflow.path)).toBeNull()
     })
+    it('marks a closed saved workflow unmodified even when releasing its graph throws', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockResolvedValue(
+        new Response(defaultGraphJSON, { status: 200 })
+      )
+      await store.openWorkflow(workflow)
+      workflow.isModified = true
+      const graph = new LGraph()
+      const node = new LGraphNode('throws on removal')
+      node.onRemoved = () => {
+        throw new Error('onRemoved failed')
+      }
+      graph.add(node)
+      workflow.adoptGraph(graph)
+
+      await expect(store.closeWorkflow(workflow)).rejects.toThrow(
+        'onRemoved failed'
+      )
+
+      expect(store.isOpen(workflow)).toBe(false)
+      expect(workflow.isModified).toBe(false)
+    })
     it('detaches the graph before a node removal hook can throw during release', async () => {
       const workflow = store.createTemporary('test.json')
       await store.openWorkflow(workflow)

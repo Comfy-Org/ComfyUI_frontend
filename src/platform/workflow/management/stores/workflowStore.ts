@@ -351,8 +351,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       delete workflowLookup.value[workflow.path]
       workflow.releaseGraph()
     } else {
-      workflow.unload()
       workflow.isModified = false
+      workflow.unload()
     }
   }
 
