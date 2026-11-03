@@ -32,9 +32,6 @@ export function getGridThumbnailUrl(url: string): string {
     : `${parsed.pathname}${parsed.search}`
 }
 
-/**
- * Parses an image widget value like "subfolder/filename [type]" into its parts.
- */
 export function extractWidgetStringValue(value: unknown): string | undefined {
   if (typeof value === 'string') return value
   if (
