@@ -1,15 +1,13 @@
 {
   "id": "workflow-file-identity",
   "capability": "Saved workflow file identity",
-  "description": "Received userdata UUIDs bound to an authenticated owner and workspace. Pure identity comparison, validation and refusal classification live in the domain leaf; mutable observation of the current authenticated scope is an application API. Workflow documents and draft persistence consume this shared contract without importing remote API internals.",
+  "description": "Received userdata UUIDs bound to an authenticated owner and workspace. Pure identity comparison, validation and refusal classification live in the pure identity leaf; mutable observation of the current authenticated scope has a separate API. Workflow documents and draft persistence consume this shared contract without importing remote API internals.",
   "modules": [
     {
-      "path": "src/platform/workflow/core/utils/userFileIdentity.ts",
-      "role": "domain"
+      "path": "src/platform/workflow/core/utils/userFileIdentity.ts"
     },
     {
-      "path": "src/platform/workflow/core/services/userFileContext.ts",
-      "role": "application"
+      "path": "src/platform/workflow/core/services/userFileContext.ts"
     }
   ],
   "publicEntryPoints": [
@@ -26,7 +24,7 @@
       "checks": ["src/platform/workflow/core/services/userFileContext.test.ts"]
     },
     {
-      "name": "Management and persistence consume only the role-correct public identity contract without granting access to unrelated internals",
+      "name": "Management and persistence consume only the public identity contract without granting access to unrelated internals",
       "checks": ["tools/architecture/src/boundaries.test.ts"]
     }
   ],
@@ -35,7 +33,7 @@
   ],
   "compatibilityPromises": [
     "No server identity is inferred from a path or graph UUID; missing userdata identity keeps ordinary local workflows unbound.",
-    "Domain consumers can import only the pure identity API; mutable scope observation remains restricted to application-compatible roles."
+    "Consumers import the public identity APIs; unrelated internals remain subject to enforced-domain deep-import boundaries."
   ],
   "deepImports": "enforced"
 }

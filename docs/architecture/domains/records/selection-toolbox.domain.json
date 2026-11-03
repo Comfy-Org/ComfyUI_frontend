@@ -4,116 +4,79 @@
   "description": "Canvas selection actions and their context menus: toolbox state and placement, node and group actions, arrangement, framing, deletion, and subgraph conversion. The selection store and graph mutations remain separate.",
   "modules": [
     {
-      "path": "src/components/graph/NodeContextMenu.vue",
-      "role": "presentation"
+      "path": "src/components/graph/NodeContextMenu.vue"
     },
     {
-      "path": "src/components/graph/SelectionToolbox.vue",
-      "role": "integration"
+      "path": "src/components/graph/SelectionToolbox.vue"
     },
     {
-      "path": "src/components/graph/selectionToolbox/ArrangeButton.vue",
-      "role": "presentation"
+      "path": "src/components/graph/selectionToolbox/**"
     },
     {
-      "path": "src/components/graph/selectionToolbox/ColorPickerButton.vue",
-      "role": "presentation"
+      "path": "src/composables/canvas/**"
     },
     {
-      "path": "src/components/graph/selectionToolbox/ExecuteButton.vue",
-      "role": "presentation"
+      "path": "src/composables/graph/contextMenuConverter.ts"
     },
     {
-      "path": "src/components/graph/selectionToolbox/ToolboxButton.vue",
-      "role": "presentation"
+      "path": "src/composables/graph/useArrangeNodes.ts"
     },
     {
-      "path": "src/composables/canvas/**",
-      "role": "integration"
+      "path": "src/composables/graph/useArrangeSession.ts"
     },
     {
-      "path": "src/composables/graph/contextMenuConverter.ts",
-      "role": "domain"
+      "path": "src/composables/graph/useCanvasRefresh.ts"
     },
     {
-      "path": "src/composables/graph/useArrangeNodes.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useFrameNodes.ts"
     },
     {
-      "path": "src/composables/graph/useArrangeSession.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useGroupContextMenu.ts"
     },
     {
-      "path": "src/composables/graph/useCanvasRefresh.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useGroupMenuOptions.ts"
     },
     {
-      "path": "src/composables/graph/useFrameNodes.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useImageMenuOptions.ts"
     },
     {
-      "path": "src/composables/graph/useGroupContextMenu.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useMoreOptionsMenu.ts"
     },
     {
-      "path": "src/composables/graph/useGroupMenuOptions.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useNodeArrangement.ts"
     },
     {
-      "path": "src/composables/graph/useImageMenuOptions.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useNodeCustomization.ts"
     },
     {
-      "path": "src/composables/graph/useMoreOptionsMenu.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useNodeMenuOptions.ts"
     },
     {
-      "path": "src/composables/graph/useNodeArrangement.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useSelectedNodeActions.ts"
     },
     {
-      "path": "src/composables/graph/useNodeCustomization.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useSelectionMenuOptions.ts"
     },
     {
-      "path": "src/composables/graph/useNodeMenuOptions.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useSelectionOperations.ts"
     },
     {
-      "path": "src/composables/graph/useSelectedNodeActions.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useSelectionState.ts"
     },
     {
-      "path": "src/composables/graph/useSelectionMenuOptions.ts",
-      "role": "integration"
+      "path": "src/composables/graph/useSubgraphOperations.ts"
     },
     {
-      "path": "src/composables/graph/useSelectionOperations.ts",
-      "role": "integration"
+      "path": "src/composables/useContextMenuTranslation.ts"
     },
     {
-      "path": "src/composables/graph/useSelectionState.ts",
-      "role": "integration"
+      "path": "src/composables/useRefreshableSelection.ts"
     },
     {
-      "path": "src/composables/graph/useSubgraphOperations.ts",
-      "role": "integration"
+      "path": "src/utils/coreMediaMenuActionUtils.ts"
     },
     {
-      "path": "src/composables/useContextMenuTranslation.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/useRefreshableSelection.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/utils/coreMediaMenuActionUtils.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/nodeFilterUtil.ts",
-      "role": "domain"
+      "path": "src/utils/nodeFilterUtil.ts"
     }
   ],
   "publicEntryPoints": [],

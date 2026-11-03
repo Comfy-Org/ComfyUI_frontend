@@ -703,15 +703,12 @@ describe('collectCrdtDebugReport', () => {
         {
           ...createAssistantMessage(toTurnId('turn-older')),
           parts: [
-            ...Array.from(
-              { length: 500 },
-              (): MessagePart => ({
-                type: 'thinking',
-                text: '',
-                state: 'done',
-                durationMs: 1
-              })
-            ),
+            ...Array.from({ length: 500 }, (): MessagePart => ({
+              type: 'thinking',
+              text: '',
+              state: 'done',
+              durationMs: 1
+            })),
             ...toolCalls('older', 1)
           ]
         },
@@ -743,15 +740,12 @@ describe('collectCrdtDebugReport', () => {
         {
           ...createAssistantMessage(toTurnId('turn-latest')),
           parts: [
-            ...Array.from(
-              { length: 20_000 },
-              (_, index): MessagePart => ({
-                type: 'thinking',
-                text: '',
-                state: 'done',
-                durationMs: index + 1
-              })
-            ),
+            ...Array.from({ length: 20_000 }, (_, index): MessagePart => ({
+              type: 'thinking',
+              text: '',
+              state: 'done',
+              durationMs: index + 1
+            })),
             ...toolCalls('latest', 1)
           ]
         }

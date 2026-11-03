@@ -1,8 +1,7 @@
 # Frontend domain catalog
 
 This directory records which `src` and workspace package paths belong to
-which domain, the role each path plays, and which parts of each domain other
-domains may import. Fallow enforces the boundaries; `tools/architecture` generates its
+which domain, and which parts of each domain other domains may import. Fallow enforces the boundaries; `tools/architecture` generates its
 config from the records and tracks architecture suppressions.
 
 ## Commands
@@ -32,15 +31,15 @@ under a workspace package's `packages/<name>/src/`. Prefer directories: a file
 added under a claimed directory joins its domain without a record change.
 Paths may nest. Each file belongs to the most specific path that matches it: a
 file path beats any directory, and a deeper directory beats a shallower one.
-Claim a directory for its main domain and role, then claim the exceptions
-inside it. A test that no module names belongs with the file path
+Claim a directory for its main domain, then claim the paths inside it that
+belong to another domain. A test that no module names belongs with the file path
 it checks: `foo.ts` claims `foo.test.ts` and `foo.cloud.test.ts`, and the
 longest matching file path wins. A source file with the test's own name, such
-as `foo.cloud.vue`, is always the subject, so a test never inherits a role past
-it. List a test only when its domain or role differs from its subject's. Two
+as `foo.cloud.vue`, is always the subject, so a test never inherits a domain past
+it. List a test only when its domain differs from its subject's. Two
 modules may not name the same path, and
 `architecture:check` warns about a path whose nearest enclosing path, or whose
-subject, has the same domain and role.
+subject, has the same domain.
 
 `architecture:catalog` also reports classification coverage: each domain's
 `sourceFileCount`, and a top-level `coverage` object with `total`,
@@ -53,25 +52,18 @@ package `src` code file belongs to a domain.
 
 ## Boundaries
 
-Each record role becomes a Fallow zone (`<domain>/<role>`), and each public
-entry point becomes a `<domain>/<role>/public` zone. Inventory domains share
-one `_inventory/<role>` zone per role, because any domain may import them and
-Fallow rules must name every zone they allow. Fallow puts a file in the first
-zone that matches it, so a path that contains another domain's or role's path
-moves to a later `outer-<n>` zone with the same rules.
+Each record becomes a Fallow zone named after its id, and its public entry
+points become a `<domain>/public` zone. Inventory domains share one
+`_inventory` zone, because any domain may import them and Fallow rules must
+name every zone they allow. Fallow puts a file in the first zone that matches
+it, so a path that contains another domain's path moves to a later
+`outer-<n>` zone with the same rules.
 Every other `src` or package `src` file falls into the `unclassified` zone.
 The generated rules allow:
 
-- imports within a domain that follow role direction:
-  - `domain`: `domain`
-  - `application` and `infrastructure`: `application`, `infrastructure`,
-    `domain`
-  - `presentation`: `presentation`, `application`, `domain`
-  - `integration`: every role
-- imports from another domain into a public entry point, or into any zone of
-  a domain whose `deepImports` is `"inventory"`, when role direction allows
-  it;
-- the same imports from unclassified code, in any role direction;
+- any import within a domain;
+- imports from another domain or from unclassified code into a public entry
+  point, or into any file of a domain whose `deepImports` is `"inventory"`;
 - imports from any zone into unclassified code.
 
 `deepImports: "enforced"` limits outside callers to public entry points.

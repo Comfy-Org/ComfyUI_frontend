@@ -102,22 +102,24 @@ The `workflow-file-identity` domain owns two exact public leaf APIs. The
 workspace types, canonical UUID validation, comparisons, and typed scope/draft
 refusals. `core/services/userFileContext.ts` owns the mutable scope provider,
 current-scope observation and the compatibility wrapper that uses that scope
-when receiving an identity. Domain code cannot import the mutable context.
+when receiving an identity. The identity utility remains a pure leaf by
+implementation. The catalog records public APIs and domain ownership; it
+does not enforce architectural role direction.
 The domain exports `UserFileScope`, `UserFileIdentity`, `SavedFileIdentityError`,
 `bindReceivedUserFileIdentity`, `sameUserFileScope`, `sameUserFileIdentity` and
 `SavedFilePathUnavailableError` (confirmed bound GET404/412 only).
 The context exports `registerUserFileScopeProvider`, `currentUserFileScope`,
 `receivedUserFileIdentity` and `isUserFileIdentityCurrent`.
-Only workflow management and workflow persistence are declared consumers;
-unclassified application adapters continue using the public entries under the
-catalog's existing rules. Existing domains retain their access modes.
+Workflow management, workflow persistence and application adapters consume
+the public entries under the catalog's existing rules. Existing domains retain
+their access modes.
 
 Placing this contract under the ComfyUI transport domain creates a reverse
-layer dependency from document persistence. Adding persistence as a consumer
-of the existing inventory-mode workflow-management domain would authorize
-unrelated internals; changing that whole domain to enforced would alter
-legacy policy outside this feature. A small enforced identity domain instead
-makes the two supported leaves explicit without widening either legacy domain.
+layer dependency from document persistence. Placing these APIs in the existing inventory-mode workflow-management
+domain would not isolate the identity contract from unrelated internals;
+changing that whole domain to enforced would alter legacy policy outside this
+feature. A small enforced identity domain instead makes the two supported
+leaves explicit without changing either legacy domain's access mode.
 
 A matching identified draft restored from saved tabs uses the existing UUID
 snapshot loader before opening a path from a potentially stale listing. An
@@ -133,9 +135,10 @@ Workspace package classification exposes the already published
 `workspace-link` domain. Only its existing pure source leaf is public; package
 exports and parser bytes are unchanged. Workspace and account retain the shared
 contract, navigation reuses its validator, and classified billing contract tests
-retain their existing public imports. This avoids granting navigation access to
-the inventory-mode workspace domain or copying its identifier regular expression.
-All other workspace ownership and access modes stay unchanged.
+retain their existing public imports. The shared leaf avoids copying its
+identifier regular expression. Inventory-mode workspace imports remain allowed
+by the landed catalog policy; all other workspace ownership and access modes
+stay unchanged.
 
 The shared API-client extraction keeps guarded userdata operations in
 `packages/api-client/src/ComfyApi.ts`, alongside the normal authentication,

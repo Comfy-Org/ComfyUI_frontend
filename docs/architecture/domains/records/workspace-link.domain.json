@@ -4,8 +4,7 @@
   "description": "The existing published account-core/workspaceLink package subpath: framework-free workspace URL parameter validation, parsing and construction shared by account, workspace, billing and navigation consumers. This domain exposes only that pure published leaf, not workspace services or package internals.",
   "modules": [
     {
-      "path": "packages/account-core/src/workspaceLink.ts",
-      "role": "domain"
+      "path": "packages/account-core/src/workspaceLink.ts"
     }
   ],
   "publicEntryPoints": ["packages/account-core/src/workspaceLink.ts"],
@@ -19,7 +18,7 @@
       "checks": ["src/platform/navigation/savedWorkflowLink.test.ts"]
     },
     {
-      "name": "Consumers import the exact published leaf while role direction and enforced-domain deep imports stay guarded",
+      "name": "Consumers import the exact published leaf while enforced-domain deep imports stay guarded",
       "checks": ["tools/architecture/src/boundaries.test.ts"]
     }
   ],
