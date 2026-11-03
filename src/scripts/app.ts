@@ -137,6 +137,13 @@ import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplaceme
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { markAppReady, notifyWorkflowLoaded } from '@/platform/nodeApi/appReady'
+import {
+  deliverPreview,
+  notifyDefsRefreshed
+} from '@/platform/nodeApi/defsRegistry'
+import { mayRun } from '@/platform/nodeApi/queueGuard'
+import { installUnplacedLinkBridge } from '@/renderer/core/canvas/unplacedLinkBridge'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -248,6 +255,11 @@ export function sanitizeNodeName(string: string) {
   return string.replace(/[&<>"'`=]/g, function fromEntityMap(s) {
     return entityMap[s as keyof typeof entityMap]
   })
+}
+
+async function finishWorkflowLoad(): Promise<void> {
+  await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+  notifyWorkflowLoaded()
 }
 
 function createNodeOutputsMutationView(
@@ -456,6 +468,7 @@ export class ComfyApp implements IComfyApp {
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
     | undefined
+  private disposeUnplacedLinkBridge?: () => void
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -828,6 +841,14 @@ export class ComfyApp implements IComfyApp {
       )) {
         setNodePreviewsByExecutionId(executionId, [blobUrl])
       }
+      const node = getNodeByExecutionId(this.rootGraph, displayNodeExecutionId)
+      if (node?.type) {
+        deliverPreview(
+          String(node.id),
+          node.type,
+          Object.freeze({ blob, url: blobUrl })
+        )
+      }
       releaseSharedObjectUrl(blobUrl)
     })
 
@@ -917,6 +938,8 @@ export class ComfyApp implements IComfyApp {
     const interactionMode = createCanvasInteractionMode()
     this.canvas = new LGraphCanvas(canvasEl, graph, { interactionMode })
     useCommandStore().setInteractionMode(interactionMode)
+    this.disposeUnplacedLinkBridge?.()
+    this.disposeUnplacedLinkBridge = installUnplacedLinkBridge(this.canvas)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 
@@ -992,6 +1015,7 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
       useExtensionService().invokeExtensionsAsync('setup')
     )
+    markAppReady()
 
     await defaultWorkflowReady
 
@@ -1602,6 +1626,11 @@ export class ComfyApp implements IComfyApp {
         return undefined
       }
       ChangeTracker.isLoadingGraph = false
+      notifyWorkflowLoaded()
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
+        return undefined
+      }
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -1731,10 +1760,6 @@ export class ComfyApp implements IComfyApp {
       requestId,
       workflowQueueIntent: intent
     })
-    api.dispatchCustomEvent('promptQueueing', {
-      requestId,
-      batchCount
-    })
 
     if (this.processingQueue) {
       return false
@@ -1746,6 +1771,7 @@ export class ComfyApp implements IComfyApp {
     const telemetry = useTelemetry()
     executionErrorStore.clearRunErrors()
     let queueResultOverride: boolean | null = null
+    let finishActiveAttempt: (() => void) | undefined
 
     const teamWorkspaceStore = useTeamWorkspaceStore()
     try {
@@ -1811,6 +1837,29 @@ export class ComfyApp implements IComfyApp {
           workflowQueueIntent
         } = this.queueItems.pop()!
         let queuedCount = 0
+        let rejectedCount = 0
+        const promptIds: string[] = []
+        const submissions: { promptId: string; nodeCount: number }[] = []
+        const finishAttempt = () => {
+          api.dispatchCustomEvent('promptQueueAttemptEnded', {
+            requestId,
+            queued: queuedCount,
+            rejected: rejectedCount
+          })
+          finishActiveAttempt = undefined
+        }
+        finishActiveAttempt = finishAttempt
+        api.dispatchCustomEvent('promptQueueing', {
+          requestId,
+          batchCount,
+          number
+        })
+
+        if (!(await mayRun())) {
+          queueResultOverride = false
+          finishAttempt()
+          continue
+        }
         const workflowExecutionIntent: WorkflowExecutionIntent = {
           trigger_source: normalizeExecutionTriggerSource(
             workflowQueueIntent?.trigger_source
@@ -1894,6 +1943,15 @@ export class ComfyApp implements IComfyApp {
             delete api.authToken
             delete api.apiKey
             if (!res.prompt_id) {
+              rejectedCount++
+              api.dispatchCustomEvent('promptRejected', {
+                response: {
+                  error: 'Prompt rejected',
+                  ...(res.node_errors === undefined
+                    ? {}
+                    : { node_errors: res.node_errors })
+                }
+              })
               telemetry?.trackExecutionOutcome({
                 startTime,
                 endTime: responseReceivedAt,
@@ -1907,25 +1965,32 @@ export class ComfyApp implements IComfyApp {
               res.node_errors ?? null,
               queuedRunErrorKey
             )
+            if (!res.prompt_id) {
+              queueResultOverride = false
+              break
+            }
+            const promptId = res.prompt_id
             queueResultOverride = null
             try {
-              if (res.prompt_id) {
-                executionStore.storeJob({
-                  id: res.prompt_id,
-                  nodes: Object.keys(p.output),
-                  promptOutput: p.output,
-                  startTime,
-                  submissionAcceptedAt: responseReceivedAt,
-                  workflow: queuedWorkflow,
-                  mode: queuedMode,
-                  workflowContext,
-                  workflowExecutionIntent
-                })
-              }
+              executionStore.storeJob({
+                id: promptId,
+                nodes: Object.keys(p.output),
+                promptOutput: p.output,
+                startTime,
+                submissionAcceptedAt: responseReceivedAt,
+                workflow: queuedWorkflow,
+                mode: queuedMode,
+                workflowContext,
+                workflowExecutionIntent
+              })
             } catch (error) {
               console.warn('Failed to store queued job metadata', {
-                promptId: res.prompt_id,
+                promptId,
                 error
+              })
+              reportError(error, {
+                surface: 'graph',
+                errorType: 'queue_job_metadata_store_failed'
               })
             }
             if (executionErrorStore.hasNodeError) {
@@ -1934,7 +1999,19 @@ export class ComfyApp implements IComfyApp {
               }
               this.canvas.draw(true, true)
             }
+            promptIds.push(promptId)
+            submissions.push({
+              promptId,
+              nodeCount: Object.keys(p.output).length
+            })
           } catch (error: unknown) {
+            if (error instanceof PromptExecutionError) {
+              rejectedCount++
+              api.dispatchCustomEvent('promptRejected', {
+                response: error.response,
+                status: error.status
+              })
+            }
             telemetry?.trackExecutionOutcome({
               startTime,
               endTime: performance.now(),
@@ -2067,11 +2144,16 @@ export class ComfyApp implements IComfyApp {
           api.dispatchCustomEvent('promptQueued', {
             number,
             batchCount: queuedCount,
-            requestId
+            requestId,
+            promptIds,
+            submissions,
+            rejectedCount
           })
         }
+        finishAttempt()
       }
     } finally {
+      finishActiveAttempt?.()
       this.processingQueue = false
     }
     return queueResultOverride ?? !executionErrorStore.lastNodeErrors
@@ -2286,9 +2368,12 @@ export class ComfyApp implements IComfyApp {
               break
             default: {
               const unexpectedOutcome: never = outcome
-              throw new Error(
-                `Unhandled A1111 import outcome: ${unexpectedOutcome}`
-              )
+              reportError(new Error('Unhandled A1111 import outcome'), {
+                surface: 'graph',
+                errorType: 'a1111_import_unhandled_outcome',
+                context: { outcome: unexpectedOutcome }
+              })
+              return
             }
           }
           await withGraphIntentSource('load', () =>
@@ -2301,7 +2386,7 @@ export class ComfyApp implements IComfyApp {
             fileName,
             this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
           )
-          await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+          await finishWorkflowLoad()
           return
         } catch (error) {
           if (!lifecycle.started) throw error
@@ -2661,7 +2746,7 @@ export class ComfyApp implements IComfyApp {
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
-      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      await finishWorkflowLoad()
       lifecycleCompleted = true
       if (missingNodeTypes.length) {
         this.showMissingNodesError(missingNodeTypes, options)
@@ -2771,6 +2856,7 @@ export class ComfyApp implements IComfyApp {
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }
+    notifyDefsRefreshed()
     return true
   }
 
@@ -2851,14 +2937,24 @@ export class ComfyApp implements IComfyApp {
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {
     if (!this.positionConversion) {
-      throw new Error('clientPosToCanvasPos called before setup')
+      reportError(new Error('Canvas position conversion unavailable'), {
+        surface: 'graph',
+        errorType: 'canvas_position_conversion_unavailable',
+        context: { direction: 'client_to_canvas' }
+      })
+      return pos
     }
     return this.positionConversion.clientPosToCanvasPos(pos)
   }
 
   canvasPosToClientPos(pos: Vector2): Vector2 {
     if (!this.positionConversion) {
-      throw new Error('canvasPosToClientPos called before setup')
+      reportError(new Error('Canvas position conversion unavailable'), {
+        surface: 'graph',
+        errorType: 'canvas_position_conversion_unavailable',
+        context: { direction: 'canvas_to_client' }
+      })
+      return pos
     }
     return this.positionConversion.canvasPosToClientPos(pos)
   }
