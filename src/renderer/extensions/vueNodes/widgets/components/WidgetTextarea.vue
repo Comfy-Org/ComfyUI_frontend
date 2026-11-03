@@ -78,6 +78,10 @@
         @pointermove.capture.stop
         @pointerup.capture.stop
         @contextmenu.capture="handleContextMenu"
+        @input="dispatchInput"
+        @select="dispatchSelection"
+        @wheel="dispatchWheel"
+        @keydown="dispatchKeydown"
         @update:model-value="(value) => (modelValue = String(value))"
       />
     </div>
@@ -87,7 +91,14 @@
 <script setup lang="ts">
 import { refAutoReset } from '@vueuse/core'
 import { omit } from 'es-toolkit'
-import { computed, onBeforeUnmount, ref, useId, useTemplateRef } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  ref,
+  toRaw,
+  useId,
+  useTemplateRef
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -95,6 +106,7 @@ import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
+import { dispatchWidgetTextInteraction } from '@/platform/nodeApi/widgetTextInteraction'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -180,4 +192,57 @@ function openTextEditor() {
 }
 
 onBeforeUnmount(() => closeTextEditor?.())
+
+function textArea(event: Event): HTMLTextAreaElement | undefined {
+  const element = event.currentTarget ?? event.target
+  return element instanceof HTMLTextAreaElement ? element : undefined
+}
+
+function dispatchInput(event: Event) {
+  const element = textArea(event)
+  if (widget.sourceWidget && element) {
+    dispatchWidgetTextInteraction(
+      toRaw(widget.sourceWidget),
+      element,
+      'input',
+      event
+    )
+  }
+}
+
+function dispatchSelection(event: Event) {
+  const element = textArea(event)
+  if (widget.sourceWidget && element) {
+    dispatchWidgetTextInteraction(
+      toRaw(widget.sourceWidget),
+      element,
+      'selection',
+      event
+    )
+  }
+}
+
+function dispatchWheel(event: WheelEvent) {
+  const element = textArea(event)
+  if (widget.sourceWidget && element) {
+    dispatchWidgetTextInteraction(
+      toRaw(widget.sourceWidget),
+      element,
+      'wheel',
+      event
+    )
+  }
+}
+
+function dispatchKeydown(event: KeyboardEvent) {
+  const element = textArea(event)
+  if (widget.sourceWidget && element) {
+    dispatchWidgetTextInteraction(
+      toRaw(widget.sourceWidget),
+      element,
+      'keydown',
+      event
+    )
+  }
+}
 </script>
