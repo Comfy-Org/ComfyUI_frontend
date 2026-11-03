@@ -140,6 +140,31 @@ describe('ActivityTrace', () => {
     expect(screen.getByText('Opening a new tab')).toBeInTheDocument()
   })
 
+  it('distinguishes unknown, successful, and failed tool outcomes', () => {
+    render(ActivityTrace, {
+      props: {
+        parts: [
+          tool('c1', 'remember', 'done'),
+          tool('c2', 'new_tab', 'done', true),
+          tool('c3', 'switch_tab', 'done', false),
+          tool('c4', 'run', 'done'),
+          tool('c5', 'list_slots', 'done', true),
+          tool('c6', 'set_widget', 'done', false)
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Saving a preference — outcome unknown')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Opened a new tab')).toBeInTheDocument()
+    expect(screen.getByText('Switching tabs failed')).toBeInTheDocument()
+    expect(screen.getByText('Run — outcome unknown')).toBeInTheDocument()
+    expect(screen.getByText('List slots')).toBeInTheDocument()
+    expect(screen.getByText('Set widget failed')).toBeInTheDocument()
+  })
+
   it('names the skill while it loads and after it finishes', async () => {
     const { rerender } = render(ActivityTrace, {
       props: {
@@ -184,7 +209,7 @@ describe('ActivityTrace', () => {
     expect(screen.queryByText('Loaded broken-skill')).not.toBeInTheDocument()
   })
 
-  it('does not report a missing outcome as a failure', () => {
+  it('renders a missing skill outcome neutrally', () => {
     render(ActivityTrace, {
       props: {
         parts: [
@@ -197,7 +222,10 @@ describe('ActivityTrace', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByText('Loaded comfy-director')).toBeInTheDocument()
+    expect(
+      screen.getByText('Loading comfy-director — outcome unknown')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Loaded comfy-director')).not.toBeInTheDocument()
     expect(
       screen.queryByText('Failed to load comfy-director')
     ).not.toBeInTheDocument()

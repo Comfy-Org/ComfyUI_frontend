@@ -6235,6 +6235,8 @@
     "worked": "Worked",
     "workedNotConfirmedOnCanvas": "Changes not confirmed on your canvas",
     "toolNotConfirmedOnCanvas": "{tool} — not confirmed on your canvas",
+    "toolOutcomeUnknown": "{tool} — outcome unknown",
+    "toolFailed": "{tool} failed",
     "workedForSeconds": "Worked for {seconds} seconds",
     "workedForMinutes": "Worked for {minutes}m {seconds}s",
     "copy": "Copy",

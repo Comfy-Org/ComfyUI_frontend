@@ -12,7 +12,8 @@ import {
   THINKING_EVENT,
   agentTest,
   pushAgentEvent,
-  thinkingEvent
+  thinkingEvent,
+  toolCallEvent
 } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
@@ -89,6 +90,47 @@ test.describe(
       await expect(runRow).toHaveCount(1)
       await expect(runRow.locator('.animate-spin')).toHaveCount(0)
       await expect(runRow.locator('i')).not.toHaveClass(/lucide--circle-x/)
+    })
+
+    test('distinguishes unknown, successful, and failed tool outcomes', async ({
+      agentPanel,
+      getAgentSocket,
+      postedMessages
+    }) => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+
+      const ws = await getAgentSocket()
+      await agentPanel.sendMessage('Remember this and prepare another tab')
+      await expect.poll(() => postedMessages.length).toBe(1)
+
+      pushAgentEvent(ws, toolCallEvent('call-remember', 'remember', 'running'))
+      pushAgentEvent(ws, toolCallEvent('call-new-tab', 'new_tab', 'success'))
+      pushAgentEvent(
+        ws,
+        toolCallEvent('call-load-skill', 'load_skill', 'error', 'broken-skill')
+      )
+      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+
+      await expect(agentPanel.sendButton).toBeVisible()
+      await agentPanel.openWorkSummary()
+
+      const unknownRow = agentPanel.activityRows.filter({
+        hasText: 'Saving a preference — outcome unknown'
+      })
+      const successRow = agentPanel.activityRows.filter({
+        hasText: enMessages.agent.toolOpenedNewTab
+      })
+      const failureRow = agentPanel.activityRows.filter({
+        hasText: 'Failed to load broken-skill'
+      })
+
+      await expect(unknownRow).toHaveCount(1)
+      await expect(successRow).toHaveCount(1)
+      await expect(failureRow).toHaveCount(1)
+      await expect(unknownRow.locator('i')).not.toHaveClass(/lucide--circle-x/)
+      await expect(successRow.locator('i')).not.toHaveClass(/lucide--circle-x/)
+      await expect(failureRow.locator('i')).toHaveClass(/lucide--circle-x/)
     })
 
     test('renders a multi-sentence thinking update in full instead of cutting it off', async ({

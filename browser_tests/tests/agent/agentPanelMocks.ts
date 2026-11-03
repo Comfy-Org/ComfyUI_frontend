@@ -55,6 +55,25 @@ export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
 
+export function toolCallEvent(
+  toolCallId: string,
+  toolName: string,
+  status: 'running' | 'success' | 'error',
+  skill?: string
+): AgentWsEvent {
+  return {
+    type: 'agent_tool_call',
+    data: {
+      tool_call_id: toolCallId,
+      tool_name: toolName,
+      status,
+      message_id: TURN_ID,
+      thread_id: THREAD_ID,
+      ...(skill === undefined ? {} : { skill })
+    }
+  }
+}
+
 export function pushHostFrames(
   ws: WebSocketRoute,
   frames: readonly HostFrame[]
