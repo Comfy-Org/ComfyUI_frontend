@@ -4529,6 +4529,10 @@
         "name": "bit_depth",
         "tooltip": "Auto usa 8 bits para sRGB y 10 bits para HDR. Las opciones explícitas de 8 y 10 bits son independientes del espacio de color."
       },
+      "chroma_subsampling": {
+        "name": "submuestreo_cromático",
+        "tooltip": "444 mantiene la resolución de color completa, 422 reduce a la mitad la resolución horizontal del color y 420 reduce a la mitad ambos ejes. Auto usa el valor predeterminado del códec. Las opciones no compatibles usan el modo compatible más cercano y muestran una advertencia en la consola."
+      },
       "codec": {
         "name": "codec",
         "tooltip": "Opcionalmente codifica el vídeo de inmediato. None mantiene las imágenes en forma de tensor; Auto usa H.264."
@@ -15434,8 +15438,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "Genera un vídeo que comienza con la imagen y mueve la cámara a un nuevo ángulo y distancia alrededor del sujeto.",
+    "display_name": "Control de cámara MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará para la generación de vídeo."
+      },
+      "model_azimuth": {
+        "name": "acimut"
+      },
+      "model_distance": {
+        "name": "distancia"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_elevation": {
+        "name": "elevación"
+      },
+      "model_prompt": {
+        "name": "indicación"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "modo_de_expansión_de_indicación"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "Continúa un vídeo con nuevo metraje guiado por una indicación y referencias de audio opcionales.",
+    "display_name": "MiniMax H3 Max Extender vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará para la generación de vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_output": {
+        "name": "salida"
+      },
+      "model_prompt": {
+        "name": "indicación"
+      },
+      "model_prompt_expansion": {
+        "name": "expansión_de_indicación"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "Sustituye la parte de un vídeo entre los tiempos de inicio y reanudación por una escena recién generada, guiada por una indicación e imágenes y vídeos de referencia opcionales.",
+    "display_name": "MiniMax H3 Max Insertar vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará para la generación de vídeo."
+      },
+      "model_color_match": {
+        "name": "coincidencia_de_color"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_prompt": {
+        "name": "indicación"
+      },
+      "model_prompt_expansion": {
+        "name": "expansión_de_indicación"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_resume_time": {
+        "name": "tiempo_de_reanudación"
+      },
+      "model_seed": {
+        "name": "semilla"
+      },
+      "model_start_time": {
+        "name": "tiempo_de_inicio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "Anima una imagen para que los movimientos de su boca sigan el audio. El video dura lo mismo que el audio.",
+    "display_name": "Sincronización labial MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará para la generación de video."
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      },
+      "model_transcription": {
+        "name": "transcripción"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "Reemplaza a las personas de un video por las personas de fotos de referencia, conservando el movimiento, la cámara, los cortes y el sonido del video de origen.",
+    "display_name": "Reemplazo de reparto MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará para la generación de video."
+      },
+      "model_enhance_realism": {
+        "name": "mejorar_realismo"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "Adapta un video a una nueva relación de aspecto ajustándolo en un nuevo lienzo y generando las áreas circundantes. Se conservan la sincronización y el sonido del video de origen.",
+    "display_name": "Reencuadrar video MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará para la generación de video."
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "Genera vídeo condicionado por imágenes, vídeos y audio de referencia mediante los modelos MiniMax H3. Haz referencia a los elementos de referencia en el prompt según su orden: «Imagen 1», «Imagen 2», «Vídeo 1», «Audio 1», etc.",
+    "description": "Genera video condicionado por imágenes, videos y audio de referencia mediante los modelos MiniMax H3. Haz referencia a los elementos de referencia en el prompt según su orden: {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1, etc.",
     "display_name": "MiniMax H3 Referencia a Video",
     "inputs": {
       "control_after_generate": {
@@ -20266,6 +20480,33 @@
       }
     }
   },
+  "PrunaPVideoUpscaleNode": {
+    "description": "Mejora la resolución de un video a 720p, 1080p, 2K o 4K mediante Pruna P-Video Upscale, conservando su relación de aspecto y audio.",
+    "display_name": "Mejora de resolución Pruna P-Video",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "Velocidad de fotogramas de salida. «source» conserva la velocidad del video, hasta 60. Una velocidad mayor se interpola. La salida por encima de 30 fps cuesta el doble."
+      },
+      "target": {
+        "name": "destino",
+        "tooltip": "Área de píxeles de salida: 720p, aproximadamente 0,9 megapíxeles; 1080p, 2,1; 2K, 3,7; 4K, 8,3. Un video que ya tenga este tamaño conserva su tamaño y solo se mejora. Longitud máxima: 2400, 1200, 600 o 300 fotogramas; aproximadamente 100, 50, 25 o 12,5 segundos a 24 fps."
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Mejora de resolución más rápida con detalles más suaves, al mismo precio."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Video cuya resolución se mejorará, de hasta 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaTextToVideoNode": {
     "description": "Genera un vídeo a partir de un prompt de texto mediante modelos de vídeo de Pruna, con sonido generado opcional o una pista de audio para controlarlo.",
     "display_name": "Pruna P-Video-2 de texto a vídeo",
@@ -24122,7 +24363,7 @@
       },
       "format": {
         "name": "formato",
-        "tooltip": "El contenedor de salida. Auto usa MP4 para Auto/H.264 y WebM para AV1. MP4, MKV y WebM seleccionan un contenedor específico."
+        "tooltip": "Auto usa MOV para ProRes, WebM para AV1 y MP4 en los demás casos."
       },
       "format_codec": {
         "name": "códec"
@@ -26166,7 +26407,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "Generar texto",
+    "display_name": "Generar texto (OBSOLETO)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -26305,6 +26546,79 @@
     "outputs": {
       "0": {
         "name": "texto_generado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "razonamiento",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "Generar texto",
+    "inputs": {
+      "audios": {
+        "name": "audios"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "imágenes"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Decodificación especulativa con el encabezado de predicción de múltiples tokens del checkpoint. No tiene efecto sin pesos de MTP. auto adapta la profundidad y la amplitud del borrador a las coincidencias de tokens observadas y al coste de ejecución; 2-5 fija una profundidad de borrador constante; los modos de árbol fijan tanto la amplitud como la profundidad. La salida muestreada mantiene la distribución correcta, pero difiere de la salida sin MTP para la misma semilla."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Reemplaza el prompt del sistema en la plantilla de chat del modelo. Se ignora cuando no se usa la plantilla predeterminada."
+      },
+      "thinking": {
+        "name": "razonamiento",
+        "tooltip": "Opera en modo de razonamiento si el modelo lo admite."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Usa el prompt/la plantilla de sistema integrada si el modelo dispone de uno."
+      },
+      "videos": {
+        "name": "vídeos"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       },
       "1": {
@@ -26473,7 +26787,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "Mejoramiento y escalado de imagen estándar de la industria.",
+    "description": "Reescalado y mejora de imágenes estándar del sector. Salida máxima: 179 megapíxeles.",
     "display_name": "Mejora de Imagen Topaz",
     "inputs": {
       "image": {
@@ -26511,11 +26825,11 @@
       },
       "output_height": {
         "name": "output_height",
-        "tooltip": "Un valor de cero significa que la salida tendrá la misma altura que el original o se escalará proporcionalmente a output_width si se especifica. Wonder 3.5 solo admite factores de escalado de 1x a 6x. Bloom 2 y Wonder 3.5 preservan la relación de aspecto de entrada y tratan el tamaño solicitado como un objetivo."
+        "tooltip": "Un valor de cero significa generar con la misma altura que la original o escalar proporcionalmente a output_width si se especifica. Wonder 3.5 y Wonder 4 admiten factores de reescalado de 1x a 6x, Bloom 2 de 1x a 12x. Bloom 2, Wonder 3.5 y Wonder 4 siempre conservan la relación de aspecto de entrada: si se establecen ambos tamaños y su relación difiere, prevalece la escala mayor y la salida (y el precio) es mayor que el tamaño solicitado."
       },
       "output_width": {
         "name": "output_width",
-        "tooltip": "Un valor de cero significa calcular automáticamente (usualmente será el tamaño original o escalado proporcionalmente a output_height si se especifica). Wonder 3.5 solo admite factores de escalado de 1x a 6x. Bloom 2 y Wonder 3.5 preservan la relación de aspecto de entrada y tratan el tamaño solicitado como un objetivo."
+        "tooltip": "Un valor de cero significa calcular automáticamente (normalmente será el tamaño original o se escalará proporcionalmente a output_height si se especifica). Wonder 3.5 y Wonder 4 admiten factores de reescalado de 1x a 6x, Bloom 2 de 1x a 12x. Bloom 2, Wonder 3.5 y Wonder 4 siempre conservan la relación de aspecto de entrada: si se establecen ambos tamaños y su relación difiere, prevalece la escala mayor y la salida (y el precio) es mayor que el tamaño solicitado."
       }
     },
     "outputs": {
@@ -28445,6 +28759,24 @@
     "inputs": {
       "model_name": {
         "name": "nombre_del_modelo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "Establece el dtype de cálculo para la codificación y decodificación de VAE sin afectar a otras ramas.",
+    "display_name": "Tipo de datos de cálculo de VAE",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Predeterminado conserva el dtype de cálculo del VAE de entrada."
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
