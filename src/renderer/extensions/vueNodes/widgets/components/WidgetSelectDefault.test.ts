@@ -11,6 +11,7 @@ import WidgetSelectDefault from './WidgetSelectDefault.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
+  escapeParameter: true,
   messages: {
     en: {
       g: {
@@ -20,7 +21,10 @@ const i18n = createI18n({
         previous: 'Previous',
         next: 'Next'
       },
-      icon: { folder: 'Folder' }
+      widgets: {
+        selectFolder: 'Folder: {name}',
+        backFromFolder: 'Back: {name}'
+      }
     }
   }
 })
@@ -215,7 +219,9 @@ describe('WidgetSelectDefault', () => {
 
   it.for([
     { path: 'studio/models/portrait.safetensors' },
-    { path: 'studio\\models\\portrait.safetensors' }
+    { path: 'studio\\models\\portrait.safetensors' },
+    { path: '/studio//models/portrait.safetensors' },
+    { path: '\\\\studio\\models\\portrait.safetensors' }
   ])(
     'browses nested folders without changing $path until a file is selected',
     async ({ path }) => {
@@ -254,7 +260,9 @@ describe('WidgetSelectDefault', () => {
 
   it.for([
     'studio/models/portrait.safetensors',
-    'studio\\models\\portrait.safetensors'
+    'studio\\models\\portrait.safetensors',
+    '/studio//models/portrait.safetensors',
+    '\\\\studio\\models\\portrait.safetensors'
   ])('opens the directory containing the selected %s', async (path) => {
     const { user, onUpdate } = renderComponent(
       createWidget(['None', path, 'archive/portrait.safetensors']),
