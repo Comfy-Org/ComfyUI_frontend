@@ -359,13 +359,7 @@ function finishWithPersistedParts(
     message.parts = message.parts.filter((part) => !isOpenAskPart(part))
     for (const part of message.parts) {
       if (!('state' in part) || part.state !== 'streaming') continue
-      if (part.type === 'tool') {
-        // A successful tool can still be waiting for canvas catch-up. Keep
-        // that transport-owned state live; only clamp calls that never
-        // received an outcome.
-        if (part.ok !== undefined) continue
-        part.ok = false
-      }
+      if (part.type === 'tool' && part.ok !== undefined) continue
       part.state = 'done'
     }
     return

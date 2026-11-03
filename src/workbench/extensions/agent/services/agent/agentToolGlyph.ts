@@ -41,6 +41,10 @@ function knownTool(name: string): KnownTool | undefined {
   return Object.hasOwn(KNOWN_TOOLS, name) ? KNOWN_TOOLS[name] : undefined
 }
 
+export function toolUsesOutcomeCopy(name: string): boolean {
+  return knownTool(name) !== undefined
+}
+
 export function toolLabel(
   name: string,
   state: PartState,

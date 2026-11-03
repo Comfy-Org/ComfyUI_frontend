@@ -2138,6 +2138,49 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     vi.advanceTimersByTime(STALE_AFTER_MS)
     expect(emit.mock.calls.length).toBe(callsAfterDispose)
   })
+
+  it('settles a never-resolved tool call without inventing an outcome', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(toolCall('run', 'running'))
+    transport.settle()
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+    expect(toolParts(message)[0].ok).toBeUndefined()
+  })
+
+  it('does not mutate a detached tool part during settlement or disposal', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(toolCall('run', 'running'))
+    const detached = toolParts(message)[0]
+    message.parts = []
+    transport.settle()
+    transport.dispose()
+
+    expect(detached).toMatchObject({ state: 'streaming' })
+    expect(detached.ok).toBeUndefined()
+    expect(emit.mock.calls.at(-1)?.[0].parts).toEqual([])
+  })
+
+  it('ignores terminal frames after disposal', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(toolCall('run', 'running'))
+    transport.dispose()
+    const callsAfterDispose = emit.mock.calls.length
+    transport.ingest(toolCall('run', 'success'))
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+    expect(toolParts(message)[0].ok).toBeUndefined()
+    expect(emit).toHaveBeenCalledTimes(callsAfterDispose)
+  })
 })
 
 describe('agentEventTransport canvas confirmation is positive, not assumed (PM-1343)', () => {
