@@ -86,7 +86,8 @@ const {
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
   syncRetryAvailable = false,
-  greeting
+  greeting,
+  blocked = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -132,6 +133,7 @@ const {
   freeUsePlacement?: FreeUseVariant
   syncRetryAvailable?: boolean
   greeting?: AgentGreeting
+  blocked?: boolean
 }>()
 const emit = defineEmits<{
   send: [
@@ -152,7 +154,7 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
   standingPaywallShown: []
-  newChat: []
+  newChat: [source: 'new_chat_button' | 'history_back']
   startTour: []
   toggleSize: []
   close: []
@@ -221,9 +223,11 @@ watch(
   { immediate: true }
 )
 
-function onNewChat(): void {
+function onNewChat(
+  source: 'new_chat_button' | 'history_back' = 'new_chat_button'
+): void {
   view.value = { screen: 'chat' }
-  emit('newChat')
+  emit('newChat', source)
 }
 function onOpenHistory(): void {
   view.value = {
@@ -267,7 +271,7 @@ function onBackFromHistory(): void {
     (view.value.selection.status === 'idle' || currentChatReady)
   )
     view.value = { screen: 'chat' }
-  else if (view.value.previousThreadId === null) onNewChat()
+  else if (view.value.previousThreadId === null) onNewChat('history_back')
   else void openHistoryChat(view.value.previousThreadId, 'leave')
 }
 
@@ -430,14 +434,18 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       @close="onClose"
     />
 
+    <slot name="panelNotice" />
+
     <FreeUseNotice
       v-if="!showHistory && freeUsePlacement === 'top-banner'"
+      :inert="blocked"
       placement="top-banner"
       @notice="emit('freeUseNotice', $event)"
     />
 
     <template v-if="showHistory">
       <ChatHistoryScreen
+        :inert="blocked"
         :groups="historyGroups"
         :loading-id="loadingHistoryId"
         :failed-id="failedHistoryId"
@@ -451,7 +459,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     </template>
 
     <template v-else>
-      <div class="flex h-10 shrink-0 items-center px-2">
+      <div
+        data-testid="agent-panel-chat-controls"
+        :inert="blocked"
+        class="flex h-10 shrink-0 items-center px-2"
+      >
         <Button
           id="agent-chat-history"
           :tooltip="t('agent.showChatHistory')"
@@ -519,7 +531,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         </div>
       </div>
 
-      <div class="relative min-h-0 flex-1">
+      <div :inert="blocked" class="relative min-h-0 flex-1">
         <EmptyState
           v-if="!entries.length"
           :aria-busy="openingChat"
@@ -590,7 +602,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer
         data-testid="agent-panel-footer"
-        :inert="openingChat"
+        :inert="openingChat || blocked"
         class="shrink-0 py-3 inert:opacity-50"
       >
         <div

@@ -66,7 +66,8 @@
     "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
     "src/platform/account/composables/useCreateWorkspaceUrlLoader.ts",
     "src/platform/account/composables/useInviteUrlLoader.ts",
-    "src/platform/account/composables/useWorkspaceDialogs.ts"
+    "src/platform/account/composables/useWorkspaceDialogs.ts",
+    "src/platform/account/composables/__mocks__/useWorkspaceDialogs.ts"
   ],
   "characterizationScenarios": [
     {

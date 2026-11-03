@@ -198,6 +198,12 @@ function useBillingCapabilitiesInternal() {
       capabilities.value?.can_manage_auto_top_up ?? false
     )
   )
+  const manageAutoTopUpDenial = computed(() =>
+    receiveServerFact(
+      'denied_reasons.can_manage_auto_top_up',
+      resolvedResponse.value?.denied_reasons?.can_manage_auto_top_up
+    )
+  )
   const autoTopUpEnabled = computed(() =>
     receiveServerFact(
       'auto_top_up_enabled',
@@ -577,6 +583,7 @@ function useBillingCapabilitiesInternal() {
     canManageSubscription,
     canDowngradeToPersonal,
     canManageAutoTopUp,
+    manageAutoTopUpDenial,
     autoTopUpEnabled,
     autoTopUpSetup,
     canRunWorkflows,

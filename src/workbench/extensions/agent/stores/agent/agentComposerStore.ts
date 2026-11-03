@@ -610,6 +610,16 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     }
   }
 
+  function clearDraft(): void {
+    resetPromptHistory()
+    promptOrigin.value = 'typed'
+    starterPrompt.value = null
+    attachmentIds.value = []
+    updateDraft({ text: '', references: [] })
+    insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
+    releaseUnusedAssets()
+  }
+
   return {
     draftState,
     draft,
@@ -652,6 +662,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     startSubmission,
     settleSubmission,
     takeFailedSubmission,
-    invalidateSubmission
+    invalidateSubmission,
+    clearDraft
   }
 })

@@ -1190,15 +1190,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
-  function recordUnavailableTarget(
+  function recordRefusedSend(
     text: string,
-    clientMessageId: string | undefined
+    clientMessageId: string | undefined,
+    noticeKey: string
   ): void {
     trackSendRefused('target_unavailable', clientMessageId)
     conversationStore.recordFailedSend(
       nextLocalErrorId(),
       text,
-      i18n.global.t('agent.targetNavigationUnavailable')
+      i18n.global.t(noticeKey)
     )
   }
 
@@ -1209,11 +1210,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     draft: DraftSnapshot | undefined,
     clientMessageId: string | undefined
   ): boolean {
-    const refused =
-      workflowTargetChanged(originContext, wfContext) ||
-      lacksCanvasForRemint(wfContext, draft)
-    if (refused) recordUnavailableTarget(text, clientMessageId)
-    return refused
+    if (workflowTargetChanged(originContext, wfContext)) {
+      recordRefusedSend(
+        text,
+        clientMessageId,
+        'agent.targetNavigationUnavailable'
+      )
+      return true
+    }
+    if (!lacksCanvasForRemint(wfContext, draft)) return false
+    recordRefusedSend(text, clientMessageId, 'agent.canvasNotReadyForSend')
+    return true
   }
 
   function postTurn(

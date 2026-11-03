@@ -6945,6 +6945,16 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(sent).toBe(false)
     expect(postMessage).toHaveBeenCalledTimes(1)
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: "This tab's canvas isn't ready yet, so your message wasn't sent. Try again in a moment."
+        }
+      ]
+    })
     expect(telemetry.trackAgentSendGated).toHaveBeenCalledWith({
       gate: 'composer',
       outcome: 'dropped',
@@ -6952,6 +6962,57 @@ describe('useAgentSession (v1 composition root)', () => {
       client_message_id: 'cm-refused',
       held_ms: null,
       thread_id: expect.any(String),
+      client_session_id: expect.any(String)
+    })
+  })
+
+  it('(h10b2) a workflow changed during preparation is refused with the target notice', async () => {
+    let context: WorkflowTurnContext = {
+      id: 'wf-a',
+      tabPath: 'workflows/a.json'
+    }
+    const postMessage = vi.fn<AgentRestClient['postMessage']>()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => context,
+        adopted: vi.fn(),
+        prepare: async () => {
+          context = { id: 'wf-b', tabPath: 'workflows/a.json' }
+        }
+      }
+    })
+    session.start()
+
+    const sent = await session.sendMessage(
+      'continue on this workflow',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-target-changed'
+    )
+
+    expect(sent).toBe(false)
+    expect(postMessage).not.toHaveBeenCalled()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This workflow target is no longer available.'
+        }
+      ]
+    })
+    expect(telemetry.trackAgentSendGated).toHaveBeenCalledExactlyOnceWith({
+      gate: 'composer',
+      outcome: 'dropped',
+      reason: 'target_unavailable',
+      client_message_id: 'cm-target-changed',
+      held_ms: null,
+      thread_id: null,
       client_session_id: expect.any(String)
     })
   })
