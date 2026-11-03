@@ -289,6 +289,10 @@ export function useAgentWorkflowSelection({
     const resolved = await resolveRestorationTarget(workflowId, isCurrent)
     if (resolved.outcome === 'superseded') return false
     if (resolved.outcome === 'deleted') {
+      // The listing leaves out workflows a local host has not named yet, so
+      // its copy is the last word on whether the workflow still exists.
+      const reopened = await reopenFromHost(workflowId, isCurrent)
+      if (reopened !== null) return reopened
       panelStore.markWorkflowTargetUnavailable()
       return true
     }

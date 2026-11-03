@@ -394,8 +394,7 @@ describe('historical workflow restoration', () => {
   ])(
     'opens the chat with its workflow unavailable when the host $host',
     async ({ load }) => {
-      const { selection, workflows, panel, current, loadHostWorkflow } =
-        setup()
+      const { selection, workflows, panel, current, loadHostWorkflow } = setup()
       loadHostWorkflow.mockImplementationOnce(load)
 
       expect(await selection.restoreTarget('wf-saved', () => true)).toBe(true)
@@ -404,6 +403,20 @@ describe('historical workflow restoration', () => {
       expect(panel.targetUnavailable).toBe(true)
     }
   )
+
+  it('reopens a workflow the listing omits from the host copy', async () => {
+    const { selection, workflows, bindings, panel, loadHostWorkflow } = setup()
+    loadHostWorkflow.mockResolvedValueOnce(hostGraph())
+
+    expect(await selection.restoreTarget('wf-unnamed', () => true)).toBe(true)
+
+    const reopened = workflows.activeWorkflow
+    assert.exists(reopened)
+    expect(reopened.isTemporary).toBe(true)
+    expect(reopened.filename).toBe('Unsaved Workflow')
+    expect(bindings.tabPathFor('wf-unnamed')).toBe(reopened.path)
+    expect(panel.targetUnavailable).toBe(false)
+  })
 
   it('does not reopen the host copy for a superseded restoration', async () => {
     const { selection, workflows, panel, current, loadHostWorkflow } = setup()
