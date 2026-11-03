@@ -82,20 +82,24 @@ function story(
     canOpenPlans?: boolean
   } = {}
 ): Story {
+  const canManageSubscription = workspace.canManageSubscription ?? true
+  const served = {
+    canTopUp: true,
+    canSubscribeSelfServe: false,
+    canOpenPlans: canManageSubscription,
+    ...capabilities
+  }
   return {
     beforeEach() {
-      // Dates in the copy go through vue-i18n's `d()`, so pin the locale rather
-      // than inherit the developer's.
       i18n.global.locale.value = 'en'
       setBillingContextMock({ isTeamPlan: true, ...billing })
       setWorkspaceUIMock(workspace)
       setBillingCapabilitiesMock({
-        canManageSubscription: workspace.canManageSubscription ?? true,
-        canOpenPlans:
-          capabilities.canOpenPlans ?? workspace.canManageSubscription ?? true
+        canManageSubscription,
+        canOpenPlans: served.canOpenPlans
       })
-      setCanTopUpMock(capabilities.canTopUp ?? true)
-      setCanSubscribeSelfServeMock(capabilities.canSubscribeSelfServe ?? false)
+      setCanTopUpMock(served.canTopUp)
+      setCanSubscribeSelfServeMock(served.canSubscribeSelfServe)
     }
   }
 }
