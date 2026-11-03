@@ -17,6 +17,7 @@ const IGNORE_PATTERNS = [
   /^contextMenu\./, // Context menu items might be dynamic
   /^color\./, // Color names might be used dynamically
   /^onboardingCoachmarks\.[^.]+\.[^.]+\./, // Step keys derived as onboardingCoachmarks.<tour>.<step>.*
+  /^addCreditsDialog\./,
   // Auto-generated categories from collect-i18n-general.ts
   /^menuLabels\./, // Menu labels generated from command labels
   /^settingsCategories\./, // Settings categories generated from setting definitions

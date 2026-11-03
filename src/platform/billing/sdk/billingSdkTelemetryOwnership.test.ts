@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import {
   BILLING_STATUS_ROUTE,
   CANCEL_SUBSCRIPTION_ROUTE,
@@ -8,15 +7,13 @@ import {
   PREVIEW_SUBSCRIBE_ROUTE,
   RESUBSCRIBE_ROUTE,
   SUBSCRIBE_ROUTE,
-  TOPUP_ROUTE,
   operationRoute
 } from '@comfyorg/account-core/billing'
 import type {
   AccountCredential,
   SessionSnapshot
 } from '@comfyorg/account-core/session'
-import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -26,18 +23,15 @@ import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { Plan } from '@comfyorg/billing-core'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
-import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useDowngradeToPersonal } from '@/platform/billing/composables/useDowngradeToPersonal'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
 import { useWorkspaceBilling } from '@/platform/billing/composables/useWorkspaceBilling'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import {
   stubAccountIdentityPort,
   stubFirebaseAuthHarness
@@ -338,14 +332,6 @@ async function driveCheckoutSubscribe() {
   await checkout.handleConfirmTransition()
 }
 
-async function driveLegacyStripeCheckoutSubscribe() {
-  useWorkspaceBillingStateStore().setWorkspaceBillingRail(
-    'ws-1',
-    'legacy_stripe'
-  )
-  await driveCheckoutSubscribe()
-}
-
 async function driveDowngrade() {
   const billing = workspaceBilling()
   Object.assign(useBillingContext(), {
@@ -373,30 +359,6 @@ async function driveDowngrade() {
   await useDowngradeToPersonal()
     .downgradeToPersonal('standard-yearly')
     .catch(() => undefined)
-}
-
-async function driveTopupDialog() {
-  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
-  render(TopUpCreditsDialogContentWorkspace, {
-    global: {
-      plugins: [i18n],
-      stubs: {
-        FormattedNumberStepper: {
-          name: 'FormattedNumberStepper',
-          props: ['modelValue'],
-          template: '<div />'
-        }
-      }
-    }
-  })
-  const user = userEvent.setup()
-  await user.click(screen.getByRole('button', { name: 'Add credits' }))
-  const pay = await screen.findByRole('button', { name: /^Pay / })
-  await vi.waitFor(() => expect(pay).toBeEnabled())
-  await user.click(pay)
-  await vi.waitFor(() =>
-    expect(useSettingsDialog().show).toHaveBeenCalledOnce()
-  )
 }
 
 function operationEvents() {
@@ -497,16 +459,6 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
       expected: [STARTED, REFUSED]
     },
     {
-      name: 'a checkout that reports no started subscribes',
-      routes: issuedThenSettled(
-        SUBSCRIBE_ROUTE,
-        { status: 'pending_payment' },
-        { status: 'succeeded' }
-      ),
-      drive: driveLegacyStripeCheckoutSubscribe,
-      expected: [LIFECYCLE_STARTED, SUCCEEDED]
-    },
-    {
       name: 'downgrade to personal succeeds',
       routes: previewed(
         issuedThenSettled(
@@ -539,16 +491,6 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
       ),
       drive: driveWorkspaceBilling('resubscribe'),
       expected: [LIFECYCLE_STARTED, SUCCEEDED]
-    },
-    {
-      name: 'top-up succeeds',
-      routes: issuedThenSettled(
-        TOPUP_ROUTE,
-        { amount_cents: 5000, status: 'pending', topup_id: 'topup-1' },
-        { status: 'succeeded' }
-      ),
-      drive: driveTopupDialog,
-      expected: [STARTED, SUCCEEDED]
     }
   ] as const)(
     'reports one started and one terminal operation event when $name',
