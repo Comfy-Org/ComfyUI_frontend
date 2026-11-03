@@ -1,6 +1,6 @@
-import { slotId } from '@/types/slotId'
-import type { NodeId } from '@/types/nodeId'
-import type { SlotId, SlotIndex } from '@/types/slotId'
+import { slotId } from '@comfyorg/graph-model/slotId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { SlotId, SlotIndex } from '@comfyorg/graph-model/slotId'
 
 export function getSlotKey(
   nodeId: NodeId,

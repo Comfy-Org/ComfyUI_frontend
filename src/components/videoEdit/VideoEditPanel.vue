@@ -82,17 +82,11 @@
       data-testid="video-playback-controls"
       class="flex h-8 items-center gap-2 px-1"
     >
-      <button
-        type="button"
+      <Button
+        variant="textonly"
+        size="icon-sm"
         data-testid="playback-toggle"
-        :class="
-          cn(
-            'flex size-6 shrink-0 items-center justify-center rounded-md border-none bg-transparent text-foreground',
-            loading
-              ? 'cursor-default opacity-50'
-              : 'cursor-pointer hover:bg-muted'
-          )
-        "
+        class="size-6 shrink-0"
         :disabled="loading"
         :aria-label="isPlaying ? t('videoEdit.pause') : t('videoEdit.play')"
         @click="isPlaying = !isPlaying"
@@ -100,7 +94,7 @@
         <i
           :class="isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'"
         />
-      </button>
+      </Button>
       <span
         data-testid="playback-timecode"
         class="shrink-0 text-muted-foreground tabular-nums"
@@ -117,19 +111,21 @@
         :aria-label="t('videoEdit.seekVideo')"
         @update:model-value="handleSliderSeek"
       />
-      <button
-        type="button"
+      <Button
+        variant="muted-textonly"
+        size="icon-sm"
         data-testid="playback-fullscreen"
-        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-muted-foreground hover:bg-muted"
+        class="size-6 shrink-0"
         :aria-label="t('videoEdit.fullscreen')"
         @click="enterFullscreen"
       >
         <i class="icon-[lucide--maximize]" />
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        variant="muted-textonly"
+        size="icon-sm"
         data-testid="playback-mute"
-        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-muted-foreground hover:bg-muted"
+        class="size-6 shrink-0"
         :aria-label="isMuted ? t('videoEdit.unmute') : t('videoEdit.mute')"
         @click="isMuted = !isMuted"
       >
@@ -138,7 +134,7 @@
             isMuted ? 'icon-[lucide--volume-x]' : 'icon-[lucide--volume-2]'
           "
         />
-      </button>
+      </Button>
       <slot name="history" />
     </div>
 
@@ -243,6 +239,8 @@
 </template>
 
 <script setup lang="ts">
+import type { Size2D, Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { useEventListener } from '@vueuse/core'
 import { computed, ref, toRef, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -265,8 +263,7 @@ import { useTrimPlayback } from '@/composables/video/useTrimPlayback'
 import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
 import { DEFAULT_VIDEO_FPS } from '@/composables/video/useVideoFilmstrip'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
-import type { VideoEditFeature } from '@/lib/litegraph/src/types/widgets'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { VideoEditFeature } from '@comfyorg/graph-model/widgets'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
@@ -285,20 +282,20 @@ const {
   height,
   loading = false,
   error = null
-} = defineProps<{
-  features: VideoEditFeature[]
-  videoUrl?: string
-  hasSource?: boolean
-  thumbnail: string
-  totalFrames: number
-  duration: number
-  fps: number
-  fileSize?: number
-  width: number
-  height: number
-  loading?: boolean
-  error?: FilmstripError | null
-}>()
+} = defineProps<
+  Size2D & {
+    features: VideoEditFeature[]
+    videoUrl?: string
+    hasSource?: boolean
+    thumbnail: string
+    totalFrames: number
+    duration: number
+    fps: number
+    fileSize?: number
+    loading?: boolean
+    error?: FilmstripError | null
+  }
+>()
 
 const emit = defineEmits<{
   retry: []
@@ -317,7 +314,7 @@ const { t } = useI18n()
 const { formatDuration, formatFileSize, formatTimecode } = useVideoEditFormats()
 
 const videoRef = useTemplateRef<HTMLVideoElement>('videoRef')
-const videoIntrinsicSize = ref<{ width: number; height: number } | null>(null)
+const videoIntrinsicSize = ref<Size2D | null>(null)
 const isMuted = ref(false)
 const isFullscreen = ref(false)
 
@@ -372,39 +369,35 @@ const { lockedRatio, ratioKeys, selectedRatio, isLockEnabled, canLockRatio } =
     onEditEnd: () => emit('editEnd')
   })
 
-const startFrameWidget = computed(
-  (): SimplifiedWidget<number> => ({
-    name: 'start_frame',
-    label: t('videoEdit.startFrame'),
-    type: 'number',
-    value: startFrame.value,
-    options: {
-      min: 0,
-      max: Math.max(endFrame.value - 1, 0),
-      step: 1,
-      step2: 1,
-      precision: 0,
-      disabled: !hasSource || loading
-    }
-  })
-)
+const startFrameWidget = computed((): SimplifiedWidget<number> => ({
+  name: 'start_frame',
+  label: t('videoEdit.startFrame'),
+  type: 'number',
+  value: startFrame.value,
+  options: {
+    min: 0,
+    max: Math.max(endFrame.value - 1, 0),
+    step: 1,
+    step2: 1,
+    precision: 0,
+    disabled: !hasSource || loading
+  }
+}))
 
-const endFrameWidget = computed(
-  (): SimplifiedWidget<number> => ({
-    name: 'end_frame',
-    label: t('videoEdit.endFrame'),
-    type: 'number',
-    value: endFrame.value,
-    options: {
-      min: Math.min(startFrame.value + 1, effectiveTotalFrames.value - 1),
-      max: Math.max(effectiveTotalFrames.value - 1, 0),
-      step: 1,
-      step2: 1,
-      precision: 0,
-      disabled: !hasSource || loading
-    }
-  })
-)
+const endFrameWidget = computed((): SimplifiedWidget<number> => ({
+  name: 'end_frame',
+  label: t('videoEdit.endFrame'),
+  type: 'number',
+  value: endFrame.value,
+  options: {
+    min: Math.min(startFrame.value + 1, effectiveTotalFrames.value - 1),
+    max: Math.max(effectiveTotalFrames.value - 1, 0),
+    step: 1,
+    step2: 1,
+    precision: 0,
+    disabled: !hasSource || loading
+  }
+}))
 
 const videoAspectRatioStyle = computed(() => {
   const intrinsic = videoIntrinsicSize.value

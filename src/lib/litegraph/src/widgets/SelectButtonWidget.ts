@@ -1,4 +1,4 @@
-import type { ISelectButtonWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ISelectButtonWidget } from '@comfyorg/graph-model/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

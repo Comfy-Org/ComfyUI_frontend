@@ -30,6 +30,7 @@
             />
             <UserAvatar
               v-else
+              :label="$t('auth.login.userAvatar')"
               :photo-url="photoURL"
               :class="compact && 'h-full w-auto'"
             />
@@ -64,9 +65,9 @@ import { storeToRefs } from 'pinia'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { unrefElement } from '@vueuse/core'
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, ref } from 'vue'
 
-import UserAvatar from '@/components/common/UserAvatar.vue'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@comfyorg/design-system/button/Button'
@@ -77,11 +78,8 @@ import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspa
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
-
-const CurrentUserPopoverWorkspace = defineAsyncComponent(
-  () => import('@/platform/account/components/CurrentUserPopoverWorkspace.vue')
-)
 
 const { showArrow = true, compact = false } = defineProps<{
   showArrow?: boolean

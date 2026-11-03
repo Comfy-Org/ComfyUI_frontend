@@ -11,18 +11,13 @@ import { effectScope, nextTick, computed } from 'vue'
 import type { Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import type {
-  BillingRail,
-  BillingStatusResponse,
-  Plan
-} from '@comfyorg/billing-core'
+import type { BillingStatusResponse, Plan } from '@comfyorg/billing-core'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
@@ -33,9 +28,10 @@ import { useBillingContext as useSharedBillingContext } from '@/platform/billing
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useErrorHandling'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
+  ended_at: null,
   is_active: true,
   max_seats: 73,
   occupied_seats: 72,
@@ -71,7 +67,6 @@ const {
 })
 
 let mockIsPersonal: Ref<boolean>
-let mockBillingRail: Ref<BillingRail | null | undefined>
 
 vi.mock(import('@/platform/distribution/types'), () => {
   return {
@@ -136,9 +131,6 @@ describe('useAgentDockMount with the real billing context', () => {
     const workspaceStore = useTeamWorkspaceStore()
     const refs = storeToRefs(workspaceStore)
     mockIsPersonal = refs.isInPersonalWorkspace
-    mockBillingRail = storeToRefs(
-      useWorkspaceBillingStateStore()
-    ).activeWorkspaceBillingRail
     Object.assign(workspaceStore, {
       activeWorkspace: computed(() =>
         fromPartial<NonNullable<typeof workspaceStore.activeWorkspace>>({
@@ -147,23 +139,16 @@ describe('useAgentDockMount with the real billing context', () => {
         })
       )
     })
-    const authStore = useAuthStore()
-    authStore.balance = { currency: 'usd', amount_micros: 5000000 }
-    vi.mocked(authStore.fetchBalance).mockResolvedValue(authStore.balance)
+    useAuthStore()
     vi.mocked(workspaceStore.updateActiveWorkspace).mockImplementation(() => {})
     remoteConfig.value = {}
     remoteConfigState.value = 'unloaded'
     authenticatedRemoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
-    mockBillingRail.value = undefined
-    vi.mocked(
-      useWorkspaceBillingStateStore().setWorkspaceBillingRail
-    ).mockImplementation((_workspaceId: string, billingRail: BillingRail) => {
-      mockBillingRail.value = billingRail
-    })
     mockPlans.value = []
     const subscription = useSubscription()
     subscription.subscriptionStatus.value = {
+      ended_at: null,
       is_active: true,
       has_funds: true,
       max_seats: 0,
@@ -182,7 +167,6 @@ describe('useAgentDockMount with the real billing context', () => {
 
   it('re-arms the exhaustion impression after workspace-scoped Agent funds recover while the dock is closed', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
-    mockBillingRail.value = 'stripe'
     mockBillingStatus.value = {
       ...DEFAULT_BILLING_STATUS,
       has_funds: false,

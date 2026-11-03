@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 

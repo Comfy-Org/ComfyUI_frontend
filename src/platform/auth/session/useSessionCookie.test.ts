@@ -9,7 +9,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/scripts/api'))
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

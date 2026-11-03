@@ -17,7 +17,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {

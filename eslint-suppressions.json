@@ -1,0 +1,112 @@
+{
+  "apps/billing-web/src/components/CheckoutToast.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 1
+    }
+  },
+  "apps/billing-web/src/components/PaymentMethodsPanel.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 1
+    }
+  },
+  "apps/billing-web/src/components/SubscriptionActions.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 4
+    }
+  },
+  "apps/billing-web/src/components/auth/SignInEmailForm.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 1
+    }
+  },
+  "apps/billing-web/src/components/fullPage/PaymentMethodTabs.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 1
+    }
+  },
+  "apps/billing-web/src/views/InvoicesView.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 1
+    }
+  },
+  "src/components/builder/BuilderToolbar.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 2
+    }
+  },
+  "src/components/palette/PaletteSwatchRow.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 1
+    }
+  },
+  "src/components/rightSidePanel/settings/SetNodeColor.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 2
+    }
+  },
+  "src/components/videoEdit/VideoEditPanel.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 1
+    }
+  },
+  "src/components/videoEdit/VideoFilmstripTrim.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 2
+    }
+  },
+  "src/platform/account/components/CurrentUserPopoverWorkspace.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 2
+    }
+  },
+  "src/platform/keybindings/components/KeybindingPresetToolbar.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 1
+    }
+  },
+  "src/platform/workflow/templates/components/thumbnails/LogoOverlay.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 2
+    }
+  },
+  "src/renderer/extensions/maskEditor/components/BrushSettingsPanel.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 4
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/components/ValueControlButton.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 3
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/components/form/FormSelectButton.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 2
+    }
+  },
+  "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuFilter.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 2
+    }
+  },
+  "src/workbench/extensions/agent/components/agent/composer/AssetHoverPreview.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 1
+    }
+  },
+  "src/workbench/extensions/agent/components/agent/message/ReplyVisualAsset.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 1
+    }
+  },
+  "src/workbench/extensions/agent/crdt/CrdtDevPanel.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 3
+    }
+  }
+}

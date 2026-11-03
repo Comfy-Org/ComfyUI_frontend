@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import type { Rect } from '@/lib/litegraph/src/interfaces'
-import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
-import type { NodeId } from '@/types/nodeId'
+import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SerialisableLLink } from '@comfyorg/graph-model/serialisation'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -404,6 +404,13 @@ export class NodeReference {
       },
       [this.id, prop] as const
     )
+  }
+  /** Source of the node's first preview image once decoded, otherwise null. */
+  async getDecodedPreviewImageSrc(): Promise<string | null> {
+    return await this.comfyPage.page.evaluate((id) => {
+      const img = window.app!.canvas.graph!.getNodeById(id)?.imgs?.[0]
+      return img?.complete && img.naturalWidth > 0 ? img.src : null
+    }, this.id)
   }
   async getOutput(index: number) {
     return new NodeSlotReference('output', index, this)

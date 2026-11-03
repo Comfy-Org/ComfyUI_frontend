@@ -1,8 +1,11 @@
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
-import type { LinkId } from '@/renderer/core/layout/types'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import {
   linkedWidgetedInputs,
   nonWidgetedInputs

@@ -248,7 +248,14 @@
 
 <script setup lang="ts">
 import { useElementSize, useTimeoutFn } from '@vueuse/core'
-import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -256,12 +263,12 @@ import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { getHdrPreviewUrl, isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
@@ -366,6 +373,11 @@ watch(
   { immediate: true }
 )
 
+let isUnmounted = false
+onBeforeUnmount(() => {
+  isUnmounted = true
+})
+
 function handleImageLoad(event: Event) {
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
@@ -376,7 +388,7 @@ function handleImageLoad(event: Event) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
 
-  if (nodeId) {
+  if (nodeId && !isUnmounted) {
     nodeOutputStore.syncLegacyNodeImgs(nodeId, img, currentIndex.value)
   }
 }

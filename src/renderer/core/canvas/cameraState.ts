@@ -1,4 +1,4 @@
-import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
+import type { PanZoom as DragAndScaleState } from '@comfyorg/shared-frontend-utils/geometry'
 import { clamp } from 'es-toolkit'
 
 interface CameraScaleRange {

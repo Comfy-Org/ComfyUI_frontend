@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { RectEdges } from '@/utils/mathUtil'
+import type { ReadOnlyRectEdges as RectEdges } from '@comfyorg/shared-frontend-utils/geometry'
 
 import type { MarqueeCard } from './marqueeSelectionUtil'
 import { normalizeMarqueeRect, selectMarqueeIds } from './marqueeSelectionUtil'

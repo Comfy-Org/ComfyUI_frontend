@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { useTopUpUrlLoader } from './useTopUpUrlLoader'
 
@@ -26,7 +26,7 @@ vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 function setRouteQuery(value: LocationQueryRaw) {
   const query = useRoute().query

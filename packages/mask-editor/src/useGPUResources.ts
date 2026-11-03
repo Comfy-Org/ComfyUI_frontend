@@ -3,11 +3,13 @@ import { onUnmounted, ref, watch } from 'vue'
 import { tgpu } from 'typegpu'
 
 import { BrushShape } from './types'
-import type { Point } from './types'
+import type {
+  Point2D as Point,
+  Extents as DirtyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { useMaskEditorStore } from './maskEditorStore'
 import { parseToRgb } from './color'
 
-import type { DirtyRect } from './brushDrawingUtils'
 import {
   premultiplyData,
   resetDirtyRect,

@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "הפעלה מחדש"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "פתח מציג תלת־ממד (בטא) עבור הצומת הנבחר"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "ניסיוני: עיון בנכסי מודלים"
   },
@@ -103,6 +106,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "כיווץ/הרחבה של הצמתים הנבחרים"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "הסתר/הצג קישורים בצמתים הנבחרים"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "השתקה/ביטול השתקה של הצמתים הנבחרים"

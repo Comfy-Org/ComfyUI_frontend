@@ -10,8 +10,8 @@ import type { ComfyApp } from '@/scripts/app'
 import { app } from '@/scripts/app'
 import type { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import * as graphTraversal from '@/utils/graphTraversalUtil'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   load3dExtension,
   preview3DAdvancedExtension,

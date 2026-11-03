@@ -6,7 +6,7 @@
     data-testid="current-user-indicator"
   >
     <template #icon>
-      <i class="pi pi-user" />
+      <i class="icon-[lucide--user]" />
     </template>
     <div class="flex items-center justify-between">
       <div class="tabular-nums">
@@ -19,7 +19,7 @@
         :aria-label="$t('menuLabels.Sign Out')"
         @click="logout"
       >
-        <i class="pi pi-sign-out" />
+        <i class="icon-[lucide--log-out]" />
       </Button>
     </div>
   </Message>

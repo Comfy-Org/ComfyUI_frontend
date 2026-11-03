@@ -12,11 +12,11 @@ import {
   LGraphCanvas,
   LGraphGroup
 } from '@/lib/litegraph/src/litegraph'
-import type { CanvasEventDetail } from '@/lib/litegraph/src/types/events'
+import type { CanvasEventDetail } from '@comfyorg/graph-model/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSelectionStore } from '@/core/selection/selectionStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toGroupId } from '@/types/groupId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
   createMockCanvasRenderingContext2D,

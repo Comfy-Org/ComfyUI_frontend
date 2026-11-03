@@ -8,7 +8,7 @@ import type {
   ExportedSubgraph,
   ISerialisedNode,
   SerialisableLLink
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 import {
   readSubgraphDefinitionIds,

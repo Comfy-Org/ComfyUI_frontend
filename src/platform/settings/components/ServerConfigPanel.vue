@@ -30,7 +30,7 @@
           :aria-label="$t('g.copyToClipboard')"
           @click="copyCommandLineArgs"
         >
-          <i class="pi pi-clipboard" />
+          <i class="icon-[lucide--clipboard]" />
         </Button>
       </div>
     </Message>
@@ -68,7 +68,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   FormItem as FormItemType,
   ServerConfigValue
-} from '@/platform/settings/types'
+} from '@comfyorg/settings-core/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { electronAPI } from '@/utils/envUtil'

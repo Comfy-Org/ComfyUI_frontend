@@ -62,6 +62,7 @@
                     :widget="row.widget.simplified"
                     :node-id
                     :node-type
+                    :node-title
                     :invalid="row.widget.hasError"
                     :aria-invalid="row.widget.hasError || undefined"
                     :class="
@@ -96,7 +97,7 @@ import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
@@ -111,12 +112,14 @@ const {
   nodeType,
   canSelectInputs = false,
   nodeId,
+  nodeTitle,
   syncLayout = true
 } = defineProps<{
   processedWidgets: WidgetGridItem[]
   nodeType: string
   canSelectInputs?: boolean
   nodeId?: NodeId
+  nodeTitle?: string
   syncLayout?: boolean
 }>()
 

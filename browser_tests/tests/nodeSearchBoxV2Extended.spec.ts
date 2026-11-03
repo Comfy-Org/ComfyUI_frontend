@@ -34,9 +34,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
 
     await comfyPage.page.keyboard.press('Escape')
     await expect(searchBoxV2.input).toBeHidden()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialCount)
+    await comfyPage.expectNodeCount(initialCount)
   })
 
   for (const closeKey of ['Enter', 'Escape'] as const) {
@@ -402,9 +400,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       await searchBoxV2.results.first().click()
       await expect(searchBoxV2.input).toBeHidden()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
+      await comfyPage.expectNodeCount(initialCount + 1)
 
       await expect(
         comfyPage.page.locator('[data-node-id][data-ghost]')

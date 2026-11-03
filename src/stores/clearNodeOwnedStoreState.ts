@@ -1,7 +1,7 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { parseNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { usePreviewExposureStore } from './previewExposureStore'
 import { useWidgetValueStore } from './widgetValueStore'

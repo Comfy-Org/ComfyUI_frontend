@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/account-core",
-  "version": "1.0.0-alpha.4",
+  "version": "1.0.0-alpha.5",
   "description": "Shared account layer: a framework-free session core that exchanges a signed-in identity for the workspace-scoped Cloud JWT with valid-on-read freshness, plus the package-owned Firebase identity entry. It has no view layer and no Vue dependency; the composables and unstyled components ship from @comfyorg/account-ui",
   "keywords": [],
   "homepage": "https://comfy.org",
@@ -30,98 +30,122 @@
   },
   "exports": {
     "./boundedOperation": {
+      "@comfyorg/account-core": "./src/core/boundedOperation.ts",
       "types": "./dist-types/core/boundedOperation.d.ts",
       "default": "./src/core/boundedOperation.ts"
     },
     "./lazyIdentity": {
+      "@comfyorg/account-core": "./src/core/lazyIdentity.ts",
       "types": "./dist-types/core/lazyIdentity.d.ts",
       "default": "./src/core/lazyIdentity.ts"
     },
     "./session": {
+      "@comfyorg/account-core": "./src/core/session.ts",
       "types": "./dist-types/core/session.d.ts",
       "default": "./src/core/session.ts"
     },
     "./webSession": {
+      "@comfyorg/account-core": "./src/core/webSession.ts",
       "types": "./dist-types/core/webSession.d.ts",
       "default": "./src/core/webSession.ts"
     },
     "./webSessionFlag": {
+      "@comfyorg/account-core": "./src/core/webSessionFlag.ts",
       "types": "./dist-types/core/webSessionFlag.d.ts",
       "default": "./src/core/webSessionFlag.ts"
     },
     "./requestAuth": {
+      "@comfyorg/account-core": "./src/core/requestAuth.ts",
       "types": "./dist-types/core/requestAuth.d.ts",
       "default": "./src/core/requestAuth.ts"
     },
     "./sessionTokenMint": {
+      "@comfyorg/account-core": "./src/core/sessionTokenMint.ts",
       "types": "./dist-types/core/sessionTokenMint.d.ts",
       "default": "./src/core/sessionTokenMint.ts"
     },
     "./webSessionIdentity": {
+      "@comfyorg/account-core": "./src/core/webSessionIdentity.ts",
       "types": "./dist-types/core/webSessionIdentity.d.ts",
       "default": "./src/core/webSessionIdentity.ts"
     },
     "./billing": {
+      "@comfyorg/account-core": "./src/core/billing/index.ts",
       "types": "./dist-types/core/billing/index.d.ts",
       "default": "./src/core/billing/index.ts"
     },
     "./firebase": {
+      "@comfyorg/account-core": "./src/firebase/index.ts",
       "types": "./dist-types/firebase/index.d.ts",
       "default": "./src/firebase/index.ts"
     },
     "./web": {
+      "@comfyorg/account-core": "./src/web/crossTabRefresh.ts",
       "types": "./dist-types/web/crossTabRefresh.d.ts",
       "default": "./src/web/crossTabRefresh.ts"
     },
     "./testing": {
+      "@comfyorg/account-core": "./src/testing.ts",
       "types": "./dist-types/testing.d.ts",
       "default": "./src/testing.ts"
     },
     "./customerRecovery": {
+      "@comfyorg/account-core": "./src/core/customerRecovery.ts",
       "types": "./dist-types/core/customerRecovery.d.ts",
       "default": "./src/core/customerRecovery.ts"
     },
     "./signInSchemas": {
+      "@comfyorg/account-core": "./src/signInSchemas.ts",
       "types": "./dist-types/signInSchemas.d.ts",
       "default": "./src/signInSchemas.ts"
     },
     "./turnstile": {
+      "@comfyorg/account-core": "./src/turnstile.ts",
       "types": "./dist-types/turnstile.d.ts",
       "default": "./src/turnstile.ts"
     },
     "./turnstileScript": {
+      "@comfyorg/account-core": "./src/turnstileScript.ts",
       "types": "./dist-types/turnstileScript.d.ts",
       "default": "./src/turnstileScript.ts"
     },
     "./firebaseAuthError": {
+      "@comfyorg/account-core": "./src/firebaseAuthError.ts",
       "types": "./dist-types/firebaseAuthError.d.ts",
       "default": "./src/firebaseAuthError.ts"
     },
     "./provisioning": {
+      "@comfyorg/account-core": "./src/provisioning.ts",
       "types": "./dist-types/provisioning.d.ts",
       "default": "./src/provisioning.ts"
     },
     "./redirect": {
+      "@comfyorg/account-core": "./src/redirect.ts",
       "types": "./dist-types/redirect.d.ts",
       "default": "./src/redirect.ts"
     },
     "./sso": {
+      "@comfyorg/account-core": "./src/sso.ts",
       "types": "./dist-types/sso.d.ts",
       "default": "./src/sso.ts"
     },
     "./workspaceLink": {
+      "@comfyorg/account-core": "./src/workspaceLink.ts",
       "types": "./dist-types/workspaceLink.d.ts",
       "default": "./src/workspaceLink.ts"
     },
     "./telemetry": {
+      "@comfyorg/account-core": "./src/telemetry.ts",
       "types": "./dist-types/telemetry.d.ts",
       "default": "./src/telemetry.ts"
     },
     "./webviewDetection": {
+      "@comfyorg/account-core": "./src/webviewDetection.ts",
       "types": "./dist-types/webviewDetection.d.ts",
       "default": "./src/webviewDetection.ts"
     },
     "./oauthPkce": {
+      "@comfyorg/account-core": "./src/oauthPkce.ts",
       "types": "./dist-types/oauthPkce.d.ts",
       "default": "./src/oauthPkce.ts"
     },

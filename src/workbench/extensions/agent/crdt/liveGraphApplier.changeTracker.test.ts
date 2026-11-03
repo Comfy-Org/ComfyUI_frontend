@@ -31,15 +31,15 @@ import {
 import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { toNodeId } from '@/types/nodeId'
-import { toRootGraphId } from '@/types/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { useLitegraphService } from '@/services/litegraphService'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { DocChangeCollector } from '@/workbench/extensions/agent/crdt/docChangeCollector'
 
 import { followedDoc } from './__fixtures__/followedDoc'
@@ -495,8 +495,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
           op: 'set_widget',
           node_id: '1',
           widget: 'after',
-          value: 'human tail',
-          old: 'remote tail'
+          value: 'human tail'
         }
       ])
     )

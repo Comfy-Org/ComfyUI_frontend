@@ -2,7 +2,7 @@ import { render } from '@testing-library/vue'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
@@ -55,6 +55,12 @@ it('surfaces a human add_node the doc host rejected instead of swallowing the re
     })
   )
   onTestFinished(unmount)
+  agentSocket.receive('doc_subscribed', {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    ok: true,
+    seq: 0
+  })
   expect(JSON.parse(send.mock.calls[0][0])).toMatchObject({
     type: 'doc_subscribe'
   })
