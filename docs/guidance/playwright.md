@@ -163,21 +163,23 @@ Vue node state is a CSS class: `await expect(node).toHaveClass(/before:bg-bypass
 ## Test tags
 
 `playwright.config.ts` selects projects by tag. The default `chromium` project
-skips tests tagged `@mobile`, `@perf`, `@audit`, `@cloud`, or `@desktop`, so
-those run only in their own project; `@2x` and `@0.5x` add a project and the
-test still runs in `chromium`:
+skips tests tagged `@mobile`, `@perf`, `@audit`, `@cloud`, `@desktop`,
+`@custom-nodes`, or `@agent-harness`, so those run only in their own project;
+`@2x` and `@0.5x` add a project and the test still runs in `chromium`:
 
-| Tag           | Effect                                                 |
-| ------------- | ------------------------------------------------------ |
-| `@mobile`     | Runs in the mobile-chrome (Pixel 5) project            |
-| `@mobile-ios` | Runs in the mobile-safari (iPhone 15 / WebKit) project |
-| `@2x`         | Also runs in the 2x-scale project                      |
-| `@0.5x`       | Also runs in the 0.5x-scale project                    |
-| `@perf`       | Runs in the perf project                               |
-| `@audit`      | Runs in the audit project                              |
-| `@cloud`      | Runs in the cloud project                              |
-| `@desktop`    | Runs against the desktop build                         |
-| `@oss`        | Excluded from the cloud project                        |
+| Tag              | Effect                                                   |
+| ---------------- | -------------------------------------------------------- |
+| `@mobile`        | Runs in the mobile-chrome (Pixel 5) project              |
+| `@mobile-ios`    | Runs in the mobile-safari (iPhone 15 / WebKit) project   |
+| `@2x`            | Also runs in the 2x-scale project                        |
+| `@0.5x`          | Also runs in the 0.5x-scale project                      |
+| `@perf`          | Runs in the perf project                                 |
+| `@audit`         | Runs in the audit project                                |
+| `@cloud`         | Runs in the cloud project                                |
+| `@desktop`       | Runs against the desktop build                           |
+| `@custom-nodes`  | Runs serially in the custom-nodes project                |
+| `@agent-harness` | Runs in the agent-harness project; no CI project runs it |
+| `@oss`           | Excluded from the cloud project                          |
 
 - Use `@mobile-ios` only for regressions that reproduce under iOS conditions.
   WebKit does not expose embedded-WKWebView globals such as
@@ -305,8 +307,9 @@ baseline workflow.
 
 - Locator state: retrying assertions (`toBeVisible`, `toHaveText`,
   `toHaveCount`, `toHaveClass`).
-- One async value: `expect.poll(() => fn()).toBe(expected)`.
-- Several assertions that must settle together: `expect(async () => { … }).toPass()`.
+- One async value: `await expect.poll(() => fn()).toBe(expected)`.
+- Several assertions that must settle together:
+  `await expect(async () => { … }).toPass()`.
 - Never assert immediately after an async UI mutation, settings write,
   clipboard write, or graph update.
 - Never use `waitForTimeout()`. Keep the default poll timeout (5000 ms); never
