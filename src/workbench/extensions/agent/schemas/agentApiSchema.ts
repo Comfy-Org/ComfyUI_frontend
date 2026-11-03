@@ -6,6 +6,7 @@ import {
   zAgentAttachmentRejected,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
+  zAgentExtensionChangedData as zGeneratedAgentExtensionChangedData,
   zAgentIdentity as zGeneratedAgentIdentity,
   zAgentMessage as zGeneratedAgentMessage,
   zAgentPendingAskBase,
@@ -382,6 +383,17 @@ const zAgentAskResolvedEvent = z.object({
   data: zAgentAskResolvedData
 })
 
+const zAgentExtensionChangedEvent = z.object({
+  type: z.literal('agent_extension_changed'),
+  data: zGeneratedAgentExtensionChangedData
+    .extend({
+      pack: zGeneratedAgentExtensionChangedData.shape.pack
+        .max(256)
+        .refine((pack) => !/[\p{Cc}\p{Cf}]/u.test(pack))
+    })
+    .passthrough()
+})
+
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
@@ -391,7 +403,8 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,
-  zAgentAskResolvedEvent
+  zAgentAskResolvedEvent,
+  zAgentExtensionChangedEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 

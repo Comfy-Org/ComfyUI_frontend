@@ -1030,10 +1030,21 @@ async function onWorkflowRestoredAndBound(
     isCurrent
   )
   if (committedWorkflowId === null || !isCurrent()) return ready
-  if (hasUnsyncedHumanOps(committedWorkflowId)) return ready
-  if (boundWorkflowId.value !== committedWorkflowId)
-    bindWorkflow(committedWorkflowId)
+  bindRestoredWorkflow(committedWorkflowId)
   return ready
+}
+
+function bindRestoredWorkflow(workflowId: string): void {
+  if (hasUnsyncedHumanOps(workflowId)) return
+  if (boundWorkflowId.value !== workflowId) bindWorkflow(workflowId)
+}
+
+function adoptFollowedWorkflow(
+  workflow: ComfyWorkflow,
+  workflowId: string
+): void {
+  adoptWorkflowTarget(workflow, workflowId)
+  bindRestoredWorkflow(workflowId)
 }
 
 function warnWorkflowUnavailable(): void {
@@ -1187,6 +1198,7 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
+  noteUnboundLocalIntent,
   retrySubscription,
   docInputNames,
   docWidgetValue,
@@ -1259,9 +1271,18 @@ function boundRootGraphId(): RootGraphId | null {
 function followerCanDeliver(): boolean {
   return isFollowerActive.value && subscriptionSent()
 }
+function noteUnboundVisibleIntent(): void {
+  const visible = workflowStore.activeWorkflow
+  const workflowId = visible
+    ? bindingStore.workflowIdFor(visible.path)
+    : undefined
+  if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
+}
 const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
+  onUnboundLocalIntent: noteUnboundLocalIntent,
+  onUnboundVisibleIntent: noteUnboundVisibleIntent,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
@@ -1930,7 +1951,7 @@ const workflowChatFollow = useAgentWorkflowChatFollow({
   trackThreadStarted: () =>
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' }),
   restoreThreadWorkflow,
-  adoptWorkflowTarget,
+  adoptWorkflowTarget: adoptFollowedWorkflow,
   adoptRestoredWorkflowTab
 })
 
@@ -2209,17 +2230,25 @@ function onDeleteHistory(id: string): void {
   if (isCurrent) onNewChat('history_delete')
 }
 
-function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
+function onNewChat(
+  source: 'new_chat_button' | 'history_back' | 'history_delete'
+): void {
   retireFollow()
+  if (source === 'history_back') {
+    newChat()
+    agentPanelStore.startFollowingVisibleWorkflow()
+    return
+  }
   provisionalTitle.value = undefined
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
-  composerStore.setWorkflowReferences([])
-  composerStore.resetPromptHistory()
+  attachment.cancelAllUploads()
+  replaceSelectionTags([])
+  dismissedSelectionSignature.value = null
+  composerStore.clearDraft()
   newChat(source)
-  if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()
-  else agentPanelStore.startFollowingVisibleWorkflow()
+  agentPanelStore.startFollowingVisibleWorkflow()
 }
 
 const fileInput = ref<HTMLInputElement>()
@@ -2608,7 +2637,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @paywall-action="onPaywallAction"
       @standing-paywall-shown="onStandingPaywallShown"
       @retry-sync="retrySubscription"
-      @new-chat="onNewChat('new_chat_button')"
+      @new-chat="onNewChat"
       @start-tour="restartCoach"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
