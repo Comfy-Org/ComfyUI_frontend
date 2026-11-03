@@ -9,8 +9,8 @@
         'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
         'group gap-2 select-none',
         selected
-          ? 'ring-3 ring-modal-card-border-highlighted ring-inset'
-          : 'hover:bg-modal-card-background-hovered/20'
+          ? 'ring-3 ring-muted-foreground ring-inset'
+          : 'hover:bg-accent/20'
       )
     "
     :data-selected="selected"
@@ -22,15 +22,12 @@
   >
     <!-- Top Area: Media Preview -->
     <div
-      class="relative aspect-square overflow-hidden p-0"
+      class="relative aspect-square overflow-hidden"
       @click.stop="handlePreviewClick"
-      @dblclick.stop="fileKind === 'image' && handleZoomClick()"
+      @dblclick.stop="(fileKind === 'image' || isHdr) && handleZoomClick()"
     >
       <!-- Loading State -->
-      <div
-        v-if="loading"
-        class="size-full animate-pulse rounded-lg bg-modal-card-placeholder-background"
-      />
+      <div v-if="loading" class="size-full animate-pulse rounded-lg bg-muted" />
 
       <!-- Content based on asset type -->
       <component
@@ -74,9 +71,7 @@
       >
         <i
           aria-hidden="true"
-          :class="
-            cn('icon-[lucide--check] size-4 shrink-0', !selected && 'opacity-0')
-          "
+          :class="cn('icon-[lucide--check]', !selected && 'opacity-0')"
         />
       </Button>
 
@@ -100,7 +95,7 @@
             :aria-label="$t('mediaAsset.actions.download')"
             @click.stop="handleDownload"
           >
-            <i class="icon-[lucide--download] size-4" />
+            <i class="icon-[lucide--download]" />
           </Button>
           <Button
             variant="overlay-white"
@@ -108,7 +103,7 @@
             :aria-label="$t('mediaAsset.actions.moreOptions')"
             @click.stop="handleContextMenu"
           >
-            <i class="icon-[lucide--ellipsis] size-4" />
+            <i class="icon-[lucide--ellipsis]" />
           </Button>
         </IconGroup>
       </div>
@@ -119,16 +114,10 @@
       <!-- Loading State -->
       <div v-if="loading" class="flex items-start justify-between">
         <div class="flex flex-col gap-1">
-          <div
-            class="h-4 w-24 animate-pulse rounded-sm bg-modal-card-background"
-          />
-          <div
-            class="h-3 w-20 animate-pulse rounded-sm bg-modal-card-background"
-          />
+          <div class="h-4 w-24 animate-pulse rounded-sm bg-secondary" />
+          <div class="h-3 w-20 animate-pulse rounded-sm bg-secondary" />
         </div>
-        <div
-          class="h-6 w-12 animate-pulse rounded-sm bg-modal-card-background"
-        />
+        <div class="h-6 w-12 animate-pulse rounded-sm bg-secondary" />
       </div>
 
       <!-- Content -->
@@ -151,7 +140,7 @@
             variant="secondary"
             @click.stop="handleOutputCountClick"
           >
-            <i class="icon-[lucide--layers] size-4" />
+            <i class="icon-[lucide--layers]" />
             <span>{{ outputCount }}</span>
           </Button>
         </div>
@@ -161,12 +150,14 @@
 </template>
 
 <script setup lang="ts">
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
-import IconGroup from '@/components/button/IconGroup.vue'
-import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
-import Button from '@/components/ui/button/Button.vue'
+import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
+import Button from '@comfyorg/design-system/button/Button'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -175,19 +166,24 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
-import { getAssetType } from '../composables/media/assetMappers'
-import { startAssetDrag } from '../utils/assetDragUtil'
-import { getAssetFileUrl, getAssetUrl } from '../utils/assetUrlUtil'
-import { useMediaAssetActions } from '../composables/useMediaAssetActions'
-import type { AssetItem } from '../schemas/assetSchema'
+import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
+import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
+import {
+  getAssetInlineMediaUrl,
+  getAssetUrl,
+  resolveMediaSrc
+} from '@/platform/assets/utils/assetUrlUtil'
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetDisplayName,
   resolveDisplayImageDimensions
-} from '../utils/assetMetadataUtils'
-import type { MediaKind } from '../schemas/mediaAssetSchema'
-import { MediaAssetKey } from '../schemas/mediaAssetSchema'
-import MediaTitle from './MediaTitle.vue'
+} from '@/platform/assets/utils/assetMetadataUtils'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
+import MediaTitle from '@comfyorg/design-system/media/MediaTitle'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
 
@@ -240,7 +236,7 @@ const emit = defineEmits<{
 }>()
 
 // Store actual image dimensions
-const imageDimensions = ref<{ width: number; height: number } | undefined>()
+const imageDimensions = ref<Size2D | undefined>()
 
 const actions = useMediaAssetActions()
 
@@ -254,11 +250,16 @@ const fileKind = computed((): MediaKind => {
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
+const isHdr = computed(() => isHdrImageFilename(asset?.name))
+
 const previewKind = computed((): PreviewKind => {
+  if (asset?.preview_url && isHdr.value) return 'image'
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
-const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
+const canInspect = computed(
+  () => isPreviewableMediaType(fileKind.value) || isHdr.value
+)
 
 // Get filename without extension
 const fileName = computed(() => {
@@ -276,10 +277,9 @@ const adaptedAsset = computed(() => {
     src:
       fileKind.value === '3D'
         ? getAssetUrl(asset)
-        : asset.thumbnail_url ||
-          asset.preview_url ||
+        : resolveMediaSrc(asset.thumbnail_url || asset.preview_url) ||
           (fileKind.value === 'video' || fileKind.value === 'audio'
-            ? getAssetFileUrl(asset, { disposition: 'inline' })
+            ? getAssetInlineMediaUrl(asset)
             : ''),
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,

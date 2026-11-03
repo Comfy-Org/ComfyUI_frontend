@@ -6,9 +6,9 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 
-import type { AgentMessages } from '../../../schemas/agentApiSchema'
-import { toTurnId } from '../../../schemas/agentApiSchema'
-import { normalizeAgentTranscript } from '../../../services/agent/agentTranscript'
+import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { normalizeAgentTranscript } from '@/workbench/extensions/agent/services/agent/agentTranscript'
 
 import UserMessage from './UserMessage.vue'
 
@@ -163,22 +163,65 @@ describe('UserMessage', () => {
       text: 'use these',
       attachments: [
         { name: 'a.png', previewUrl: 'blob:a' },
-        { name: 'clip.mp4', ref: 'upload_clip.mp4' }
+        { name: 'song.mp3', ref: 'upload_song.mp3', mediaUrl: 'blob:song' },
+        {
+          name: 'clip.mp4',
+          ref: 'upload_clip.mp4',
+          previewUrl: 'blob:poster',
+          mediaUrl: 'blob:video'
+        }
       ]
     })
 
     expect(stubbedAssets()).toEqual([
       { url: 'blob:a', filename: 'a.png', kind: 'image' },
       {
-        url: expect.stringContaining(
-          '/view?filename=upload_clip.mp4&type=input'
-        ),
+        url: 'blob:song',
+        filename: 'upload_song.mp3',
+        kind: 'audio',
+        label: 'song.mp3'
+      },
+      {
+        url: 'blob:video',
         filename: 'upload_clip.mp4',
         kind: 'video',
         label: 'clip.mp4'
       }
     ])
     expect(screen.getByText('use these')).toBeInTheDocument()
+  })
+
+  it("keeps a sent EXR's stored preview in the grid", () => {
+    renderMessage({
+      text: '',
+      attachments: [
+        {
+          name: 'plate.exr',
+          ref: 'a1b2c3',
+          kind: 'image',
+          previewUrl: '/api/assets/p-1/content'
+        }
+      ]
+    })
+
+    expect(stubbedAssets()).toEqual([
+      {
+        url: '/api/assets/p-1/content',
+        filename: 'a1b2c3',
+        kind: 'image',
+        label: 'plate.exr'
+      }
+    ])
+  })
+
+  it('never points a sent EXR without a stored preview at its raw file', () => {
+    renderMessage({
+      text: '',
+      attachments: [{ name: 'plate.exr', ref: 'a1b2c3', kind: 'image' }]
+    })
+
+    expect(screen.queryByTestId('reply-asset-group')).not.toBeInTheDocument()
+    expect(screen.getByText('plate.exr')).toBeInTheDocument()
   })
 
   // Dragging a non-first batch output (e.g. "layer 2" of a multi-output job)
@@ -293,7 +336,7 @@ describe('UserMessage', () => {
     await user.hover(screen.getByText('make it cinematic'))
     const copyButton = screen.getByRole('button', { name: t('agent.copy') })
     await user.hover(copyButton)
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
       t('agent.copy')
     )
     await user.click(copyButton)
@@ -350,7 +393,9 @@ describe('UserMessage', () => {
 
     const editButton = screen.getByRole('button', { name: t('g.edit') })
     await user.hover(editButton)
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(t('g.edit'))
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      t('g.edit')
+    )
     await user.click(editButton)
 
     expect(emitted().edit).toEqual([[{ text: prompt, workflowReferences: [] }]])

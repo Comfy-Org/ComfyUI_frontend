@@ -1,9 +1,8 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingParams, Settings } from '@/platform/settings/types'
+import type { SettingParams, Settings } from '@comfyorg/settings-core/types'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { ComfyApp } from '@/types/comfy'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 import { ComfyDialog } from './dialog'
 
@@ -21,13 +20,6 @@ function saveSetting<K extends keyof Settings>(id: K, value: Settings[K]) {
 }
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
-  app: ComfyApp
-
-  constructor(app: ComfyApp) {
-    super()
-    this.app = app
-  }
-
   dispatchChange<T>(id: string, value: T, oldValue?: T) {
     this.dispatchEvent(
       new CustomEvent(id + '.change', {

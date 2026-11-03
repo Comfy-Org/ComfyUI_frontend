@@ -36,11 +36,11 @@ vi.mock(
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import LayerEditorContent from '@/renderer/extensions/layerEditor/components/LayerEditorContent.vue'
 import type { useLayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toNodeId } from '@/types/nodeId'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 let pathCounter = 0
 
@@ -127,7 +127,7 @@ describe('LayerEditorContent with a real ChangeTracker', () => {
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
     Object.defineProperty(app, 'rootGraph', {
       configurable: true,
-      value: { serialize: () => edited }
+      value: { serialize: () => edited, nodes: [], subgraphs: new Map() }
     })
 
     // what beforeLoadNewGraph does, while the workflow is still active

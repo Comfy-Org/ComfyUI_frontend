@@ -1,8 +1,8 @@
 <template>
   <div class="setting-group">
-    <div v-if="divider" class="my-8 border-t border-border-default" />
+    <div v-if="divider" class="my-8 border-t" />
     <h3 class="text-base">
-      <span v-if="group.category" class="text-muted">
+      <span v-if="group.category" class="text-muted-foreground">
         {{
           $t(
             `settingsCategories.${normalizeI18nKey(group.category)}`,
@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 defineProps<{

@@ -14,7 +14,7 @@
  * the customer, carried so a host can show it the way the legacy client does;
  * nothing in the core branches on it.
  */
-import type { SessionClient } from '../session.js'
+import type { SessionClient } from '#/core/session'
 
 /**
  * The session members the billing core reaches for. A host's client is typed
@@ -88,6 +88,8 @@ export type BillingFailure = {
    * client shows the same string.
    */
   readonly serverMessage?: string
+  /** The response's `Retry-After`, when it was a whole number of seconds. */
+  readonly retryAfterSeconds?: number
 }
 
 /** Whether a failure carries the server code a command names. */
@@ -96,6 +98,21 @@ export function matchesServerCode(
   code: string
 ): boolean {
   return failure.serverCode === code
+}
+
+/** Server codes for a purchase the server refuses for now; its `serverMessage` is the copy to show. */
+export const PURCHASE_REFUSAL_SERVER_CODES: readonly string[] = [
+  'TOPUP_RATE_LIMITED',
+  'TOPUP_PURCHASES_PAUSED'
+]
+
+/** Whether the server refused this purchase for now, with a sentence written for the customer. */
+export function isPurchaseRefusal(
+  failure: Pick<BillingFailure, 'serverCode'>
+): boolean {
+  return PURCHASE_REFUSAL_SERVER_CODES.some((code) =>
+    matchesServerCode(failure, code)
+  )
 }
 
 /**

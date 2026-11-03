@@ -2,8 +2,8 @@
 import { useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
-import CanvasBanner from '@/components/graph/CanvasBanner.vue'
-import Button from '@/components/ui/button/Button.vue'
+import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -32,7 +32,7 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
       <CanvasBanner
         v-if="canvasStore.isPickingNodes"
         data-testid="node-selection-mode-banner"
-        accent="border-l-primary-background"
+        accent="border-l-primary"
         class="max-w-lg"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >

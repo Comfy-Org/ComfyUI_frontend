@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ISerialisedNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
+vi.mock(import('@/platform/workflowErrors/nodeReplacement/cnrIdUtil'), () => ({
   getCnrIdFromNode: () => undefined
 }))
 

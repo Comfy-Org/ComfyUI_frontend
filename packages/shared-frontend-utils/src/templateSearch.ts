@@ -66,7 +66,7 @@ export function tokenize(text: string): string[] {
     for (const part of word.split(/[-_]/)) {
       if (part) tokens.add(part)
     }
-    const version = word.match(/^([a-z][a-z.]*?)(\d+(?:\.\d+)*)$/)
+    const version = word.match(/^([a-z][a-z.]*)(\d+(?:\.\d+)*)$/)
     if (version) {
       tokens.add(version[1].replace(/\.$/, ''))
       tokens.add(version[2])

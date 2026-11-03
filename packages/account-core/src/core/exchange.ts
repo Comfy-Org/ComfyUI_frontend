@@ -9,17 +9,14 @@
  */
 import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 
-import {
-  isSsoRequiredRefusal,
-  ssoRequiredOrganizationId
-} from './ssoRequired.js'
+import { isSsoRequiredRefusal, ssoRequiredOrganizationId } from './ssoRequired'
 import type {
   AccountCredential,
   AccountUser,
   SessionErrorCode,
   SessionFailure,
   SessionResult
-} from './sessionContracts.js'
+} from './sessionContracts'
 
 export const CredentialResponseSchema = zExchangeTokenResponse
 

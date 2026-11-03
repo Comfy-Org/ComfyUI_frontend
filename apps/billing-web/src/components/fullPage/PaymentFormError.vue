@@ -19,24 +19,22 @@ const { t } = useI18n()
   <div class="flex flex-col gap-6">
     <div
       role="alert"
-      class="flex flex-col gap-2 rounded-lg bg-tertiary-background p-4"
+      class="flex flex-col gap-2 rounded-lg bg-muted p-4 text-sm/5"
     >
-      <p
-        class="m-0 flex items-center gap-2 text-sm/5 font-medium text-base-foreground"
-      >
+      <p class="m-0 flex items-center gap-2 font-medium text-foreground">
         <i
-          class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
+          class="icon-[lucide--circle-alert] text-warning"
           aria-hidden="true"
         />
         {{ t(`checkout.fullPage.railFailed.${rail}.title`) }}
       </p>
-      <p class="m-0 text-sm/5 text-muted-foreground">
+      <p class="m-0 text-muted-foreground">
         {{ t(`checkout.fullPage.railFailed.${rail}.body`) }}
       </p>
     </div>
     <button
       type="button"
-      class="h-10 w-full cursor-pointer rounded-lg bg-base-foreground px-4 text-sm font-semibold text-base-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-secondary-background focus-visible:outline-none"
+      class="h-10 w-full cursor-pointer rounded-lg bg-foreground px-4 text-sm font-semibold text-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-secondary focus-visible:outline-none"
       @click="emit('retry')"
     >
       {{ t('checkout.fullPage.railFailed.retry') }}

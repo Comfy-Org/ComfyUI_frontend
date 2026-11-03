@@ -1,4 +1,4 @@
-import type { IMultiSelectWidget } from '../types/widgets'
+import type { IMultiSelectWidget } from '@comfyorg/graph-model/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

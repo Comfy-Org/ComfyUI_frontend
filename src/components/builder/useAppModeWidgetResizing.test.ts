@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAppModeWidgetResizing } from './useAppModeWidgetResizing'

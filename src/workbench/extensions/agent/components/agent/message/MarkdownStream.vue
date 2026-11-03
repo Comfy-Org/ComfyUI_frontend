@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { marked } from 'marked'
 import type { Token, Tokens } from 'marked'
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
+import { useCanvasActionShortcutKeys } from '@/platform/keybindings/canvasActionShortcuts'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
@@ -13,12 +15,14 @@ import {
   resolveMarkdownUrl
 } from '@/utils/markdownRendererUtil'
 
-import type { ReplyAsset } from '../../../utils/replyAssets'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import {
   classifyAssetUrl,
   replyAssetResultItem,
+  rewriteAgentAssetHtml,
   tokenReplyAssets
-} from '../../../utils/replyAssets'
+} from '@/workbench/extensions/agent/utils/replyAssets'
+import { renderShortcutKeycaps } from '@/workbench/extensions/agent/utils/shortcutKeycaps'
 import CodeBlock from './CodeBlock.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
@@ -27,6 +31,8 @@ const { text } = defineProps<{
 }>()
 const apiBaseUrl = new URL(api.apiURL(''), window.location.origin).href
 const normalizedBase = apiBaseUrl.replace(/\/+$/, '')
+
+const resolveShortcutKeys = useCanvasActionShortcutKeys()
 
 interface ProseSegment {
   type: 'prose'
@@ -68,7 +74,10 @@ const segments = computed<Segment[]>(() => {
     }
     out.push({
       type: 'prose',
-      html: renderMarkdownToHtml(prose, apiBaseUrl)
+      html: renderShortcutKeycaps(
+        rewriteAgentAssetHtml(renderMarkdownToHtml(prose, apiBaseUrl)),
+        resolveShortcutKeys
+      )
     })
     prose = ''
   }
@@ -98,10 +107,6 @@ const segments = computed<Segment[]>(() => {
   return out
 })
 
-const MediaLightbox = defineAsyncComponent(
-  () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
-)
-
 const proseItems = ref<AugmentedResultItem[]>([])
 const proseIndex = ref(-1)
 
@@ -118,19 +123,20 @@ function onProseClick(event: MouseEvent): void {
 }
 
 const proseClass = cn(
-  'text-sm wrap-break-word text-base-foreground',
+  'text-sm wrap-break-word text-foreground',
   '[&_img]:mt-2 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:cursor-pointer [&_img]:object-contain',
-  '[&_a]:cursor-pointer [&_a]:text-primary-background [&_a]:underline',
+  '[&_a]:cursor-pointer [&_a]:text-primary [&_a]:underline',
   '[&_p]:my-0 [&_p]:pt-4 [&_p:first-child]:pt-0 [&_strong]:font-semibold',
   '[&_h1]:mt-0 [&_h1]:pt-4 [&_h1]:pb-2 [&_h1]:text-2xl [&_h1]:font-semibold',
   '[&_h2]:pt-3.5 [&_h2]:pb-1.5 [&_h2]:text-base [&_h2]:font-semibold [&_h3]:pt-2 [&_h3]:font-semibold',
   '[&_ol]:my-0 [&_ol]:list-decimal [&_ol]:pt-1 [&_ol]:pb-2 [&_ol]:pl-5',
   '[&_ul]:my-0 [&_ul]:list-disc [&_ul]:pt-1 [&_ul]:pb-2 [&_ul]:pl-5',
-  '[&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border-default [&_:not(pre)>code]:bg-secondary-background-hover [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-[0.875em]',
-  '[&_blockquote]:my-2 [&_blockquote]:border-l-[3px] [&_blockquote]:border-border-default [&_blockquote]:py-1.5 [&_blockquote]:pl-3.5 [&_blockquote]:text-muted-foreground',
-  '[&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_table]:overflow-hidden [&_table]:rounded-lg [&_table]:bg-secondary-background',
-  '[&_th]:border-b [&_th]:border-border-default [&_th]:bg-secondary-background-hover [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:font-semibold',
-  '[&_td]:border-b [&_td]:border-border-default [&_td]:px-4 [&_td]:py-2.5'
+  '[&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border [&_:not(pre)>code]:bg-accent [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:text-[0.875em]',
+  '[&_kbd]:rounded-sm [&_kbd]:border [&_kbd]:border-border [&_kbd]:bg-accent [&_kbd]:px-1.5 [&_kbd]:py-0.5 [&_kbd]:font-mono [&_kbd]:text-[0.875em] [&_kbd]:font-medium [&_kbd]:whitespace-nowrap',
+  '[&_blockquote]:my-2 [&_blockquote]:border-l-[3px] [&_blockquote]:border-border [&_blockquote]:py-1.5 [&_blockquote]:pl-3.5 [&_blockquote]:text-muted-foreground',
+  '[&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_table]:overflow-hidden [&_table]:rounded-lg [&_table]:bg-secondary',
+  '[&_th]:border-b [&_th]:border-border [&_th]:bg-accent [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:font-semibold',
+  '[&_td]:border-b [&_td]:border-border [&_td]:px-4 [&_td]:py-2.5'
 )
 </script>
 

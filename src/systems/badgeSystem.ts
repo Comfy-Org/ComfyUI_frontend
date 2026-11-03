@@ -1,3 +1,4 @@
+import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
@@ -11,16 +12,15 @@ import type {
 import { registerBadgeRowsProvider } from '@/lib/litegraph/src/nodeBadgeDraw'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { CORE_PART_ORDER } from '@/types/badgeData'
 import type { BadgeData, CoreBadgePart } from '@/types/badgeData'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { widgetId } from '@/types/widgetId'
-import { adjustColor } from '@/utils/colorUtil'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { mapUniqueNodes } from '@/utils/graphTraversalUtil'
 import type { UUID } from '@/utils/uuid'
 
@@ -209,7 +209,8 @@ function gatherPricing(node: LGraphNode): PricingBadgeSources {
 
 function gatherSources(node: LGraphNode): BadgeSources {
   const settingStore = useSettingStore()
-  const palette = useColorPaletteStore().completedActivePalette
+  const colorPaletteStore = useColorPaletteStore()
+  const palette = colorPaletteStore.completedActivePalette
   const def = useNodeDefStore().fromLGraphNode(node)
   const showApiPricing = settingStore.get('Comfy.NodeBadge.ShowApiPricing')
 
@@ -230,9 +231,10 @@ function gatherSources(node: LGraphNode): BadgeSources {
     colors: {
       fgColor: palette.colors.litegraph_base.BADGE_FG_COLOR,
       bgColor: palette.colors.litegraph_base.BADGE_BG_COLOR,
-      creditsBgColor: palette.light_theme
-        ? adjustColor(CREDITS_BASE_BG_COLOR, { lightness: 0.5 })
-        : CREDITS_BASE_BG_COLOR
+      creditsBgColor:
+        colorPaletteStore.colorScheme === 'light'
+          ? toLightThemeNodeColor(CREDITS_BASE_BG_COLOR)
+          : CREDITS_BASE_BG_COLOR
     },
     pricing: showApiPricing ? gatherPricing(node) : { kind: 'none' }
   }

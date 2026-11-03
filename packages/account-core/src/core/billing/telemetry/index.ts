@@ -3,42 +3,41 @@ export type {
   BillingTelemetryErrorCode,
   BillingTelemetryFailure,
   BillingTelemetryFailureCategory
-} from './stages.js'
+} from './stages'
 export type {
   BillingClient,
   BillingSurface,
   BillingTelemetryEvent,
   BillingTelemetryEventName
-} from './billingTelemetryEvent.js'
-export { getBillingTelemetryEventName } from './billingTelemetryEvent.js'
+} from './billingTelemetryEvent'
+export { getBillingTelemetryEventName } from './billingTelemetryEvent'
 export {
   getBillingTelemetryEventPayload,
   getBillingWebTelemetryEventPayload,
   getCloudAppBillingTelemetryEventPayload
-} from './payload.js'
-export { BILLING_TELEMETRY_EVENTS } from './eventNames.js'
-export { toBillingTelemetryEvent } from './operationLifecycleEvent.js'
+} from './payload'
+export { BILLING_TELEMETRY_EVENTS } from './eventNames'
+export { toBillingTelemetryEvent } from './operationLifecycleEvent'
 export type {
   CheckoutHostedStep,
   CheckoutRedirectNavigation
-} from './checkoutRedirectEvent.js'
-export type { BillingPortalTarget } from './portalEvent.js'
-export type { SubscriptionCheckoutUi } from './subscriptionCheckoutEvent.js'
+} from './checkoutRedirectEvent'
+export type { AutoTopUpCardStatus } from './autoTopUpCardEvent'
+export type {
+  AutoTopUpCardAction,
+  PlatformHandoffDestination
+} from './platformHandoffEvent'
+export type { BillingPortalTarget } from './portalEvent'
+export type { SubscriptionCheckoutUi } from './subscriptionCheckoutEvent'
 export type {
   WebEntryBillingEvent,
   WebEntryBounceReason,
   WebEntryBounceTarget,
   WebEntryErrorCode,
   WebEntryProduct
-} from './webEntryEvent.js'
-export type {
-  WebReturnBillingEvent,
-  WebReturnControl
-} from './webReturnEvent.js'
-export type {
-  WebSessionBillingEvent,
-  WebSessionMode
-} from './webSessionEvent.js'
+} from './webEntryEvent'
+export type { WebReturnBillingEvent, WebReturnControl } from './webReturnEvent'
+export type { WebSessionBillingEvent, WebSessionMode } from './webSessionEvent'
 export type {
   CheckoutAssignmentStatus,
   CheckoutEndingAttribution,
@@ -55,16 +54,16 @@ export type {
   CheckoutJourneyTelemetryEventPayload,
   CheckoutMethodKind,
   CheckoutUiMode
-} from './checkoutJourney.js'
+} from './checkoutJourney'
 export {
   CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   CHECKOUT_JOURNEY_SCHEMA_VERSION,
   getCheckoutJourneyTelemetryEventName,
   getCheckoutJourneyTelemetryEventPayload,
   getCloudAppCheckoutJourneyTelemetryEventPayload
-} from './checkoutJourney.js'
-export type { TopupAmountPreset } from './topupEvent.js'
-export { getTopupAmountPreset, TOPUP_AMOUNT_PRESETS_USD } from './topupEvent.js'
+} from './checkoutJourney'
+export type { TopupAmountPreset } from './topupEvent'
+export { getTopupAmountPreset, TOPUP_AMOUNT_PRESETS_USD } from './topupEvent'
 export type {
   BillingCycle,
   BillingTierKey,
@@ -73,4 +72,4 @@ export type {
   ResubscribeSource,
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
-} from './vocabulary.js'
+} from './vocabulary'

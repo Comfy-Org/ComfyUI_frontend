@@ -3,7 +3,7 @@ import { expect, mergeTests } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 
@@ -347,7 +347,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     await enterNestedSubgraphs(comfyPage)
 
     await test.step('All items visible at default width', async () => {
-      await expect(panel.root).not.toHaveClass(/subgraph-breadcrumb-collapse/)
+      await expect(panel.root).not.toHaveAttribute('data-collapsed')
       await expect(rootItem).toBeVisible()
       await expect(subgraph2Item).toBeVisible()
       await expect(subgraph3Item).toBeVisible()
@@ -359,7 +359,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
         height: originalViewport!.height
       })
 
-      await expect(panel.root).toHaveClass(/subgraph-breadcrumb-collapse/)
+      await expect(panel.root).toHaveAttribute('data-collapsed')
       await expect(rootItem).toBeHidden()
       await expect(subgraph2Item).toBeVisible()
       await expect(subgraph3Item).toBeVisible()
@@ -368,7 +368,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
     await test.step('Restoring the viewport expands the breadcrumb again', async () => {
       await comfyPage.page.setViewportSize(originalViewport!)
 
-      await expect(panel.root).not.toHaveClass(/subgraph-breadcrumb-collapse/)
+      await expect(panel.root).not.toHaveAttribute('data-collapsed')
       await expect(rootItem).toBeVisible()
       await expect(subgraph2Item).toBeVisible()
       await expect(subgraph3Item).toBeVisible()

@@ -13,7 +13,7 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 
-import { test as baseTest } from '../../__fixtures__/testExtensions'
+import { test as baseTest } from '@/lib/litegraph/src/__fixtures__/testExtensions'
 
 const test = baseTest.extend({
   subgraphState: [

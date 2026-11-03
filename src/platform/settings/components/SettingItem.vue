@@ -6,11 +6,9 @@
     @update:form-value="updateSettingValue"
   >
     <template #name-prefix>
-      <Badge
-        v-if="setting.id === 'Comfy.Locale'"
-        severity="primary"
-        class="pi pi-language"
-      />
+      <Badge v-if="setting.id === 'Comfy.Locale'" severity="primary">
+        <i class="icon-[lucide--languages]" />
+      </Badge>
       <Tooltip v-if="setting.experimental">
         <TooltipTrigger as-child>
           <Badge severity="primary">
@@ -30,17 +28,17 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   SettingOption,
   SettingParams,
   Settings
-} from '@/platform/settings/types'
+} from '@comfyorg/settings-core/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const props = defineProps<{

@@ -1,0 +1,136 @@
+{
+  "id": "extension-runtime",
+  "capability": "Extension runtime",
+  "description": "Shared technical module for the extension-facing ComfyApp and ComfyApi runtime, HTTP and websocket transport, extension loading and lifecycle registration, global accessors, public extension types, legacy DOM UI, and compatibility utilities.",
+  "modules": [
+    {
+      "path": "src/composables/functional/**"
+    },
+    {
+      "path": "src/composables/useReconnectingNotification.ts"
+    },
+    {
+      "path": "src/extensions/core/index.ts"
+    },
+    {
+      "path": "src/scripts/__mocks__/**"
+    },
+    {
+      "path": "src/scripts/api.ts"
+    },
+    {
+      "path": "src/scripts/app.ts"
+    },
+    {
+      "path": "src/scripts/appInstance.ts"
+    },
+    {
+      "path": "src/scripts/appRegistry.ts"
+    },
+    {
+      "path": "src/scripts/ui.ts"
+    },
+    {
+      "path": "src/scripts/ui/**"
+    },
+    {
+      "path": "src/scripts/utils.ts"
+    },
+    {
+      "path": "src/platform/extensions/components/**"
+    },
+    {
+      "path": "src/platform/customNodes/customNodeScripts.ts"
+    },
+    {
+      "path": "src/platform/extensions/services/extensionLoader.ts"
+    },
+    {
+      "path": "src/platform/extensions/services/extensionService.ts"
+    },
+    {
+      "path": "src/platform/extensions/stores/extensionStore.ts"
+    },
+    {
+      "path": "src/types/comfy.ts"
+    },
+    {
+      "path": "src/types/extensionTypes.ts"
+    },
+    {
+      "path": "packages/api-client/src/ComfyApi.ts"
+    },
+    {
+      "path": "packages/api-client/src/apiTimeouts.ts"
+    }
+  ],
+  "publicEntryPoints": [],
+  "characterizationScenarios": [
+    {
+      "name": "Extension loader fetches, filters, imports, and reports failing extensions",
+      "checks": [
+        "src/platform/extensions/services/extensionLoader.test.ts",
+        "src/platform/customNodes/customNodeScripts.test.ts"
+      ]
+    },
+    {
+      "name": "Extension store registers extensions and honors disabled settings and always-on core extensions",
+      "checks": ["src/platform/extensions/stores/extensionStore.test.ts"]
+    },
+    {
+      "name": "Extension service registers extension contributions and invokes lifecycle hooks",
+      "checks": [
+        "src/platform/extensions/services/extensionService.test.ts",
+        "browser_tests/tests/extensionAPI.spec.ts"
+      ]
+    },
+    {
+      "name": "ComfyApp registers itself, loads graph data, registers node definitions, and exposes graph readiness",
+      "checks": [
+        "src/scripts/appRegistry.test.ts",
+        "src/scripts/app.test.ts",
+        "src/scripts/app.getNodeDefs.test.ts",
+        "src/scripts/app.graphReadiness.test.ts"
+      ]
+    },
+    {
+      "name": "ComfyApi fetches with auth headers, parses response boundaries, negotiates feature flags, and isolates listener errors",
+      "checks": [
+        "src/scripts/api.fetchApi.test.ts",
+        "src/scripts/api.responses.test.ts",
+        "src/scripts/api.featureFlags.test.ts",
+        "src/scripts/api.sessionOverride.test.ts",
+        "packages/api-client/src/ComfyApi.eventListeners.test.ts"
+      ]
+    },
+    {
+      "name": "ComfyApi resource endpoints and realtime socket reset keep their request and reconnect contracts",
+      "checks": [
+        "src/scripts/api.cancel.test.ts",
+        "src/scripts/api.folderPaths.test.ts",
+        "src/scripts/api.getEmbeddings.test.ts",
+        "src/scripts/api.getExtensions.test.ts",
+        "src/scripts/api.getSettings.test.ts",
+        "src/scripts/api.getShareableAssets.test.ts",
+        "src/scripts/api.logs.test.ts",
+        "src/scripts/api.socketReset.test.ts"
+      ]
+    },
+    {
+      "name": "Legacy app.ui keeps status, file input, menu position restore, and toggle switch behavior",
+      "checks": [
+        "src/scripts/ui.test.ts",
+        "src/scripts/ui.setStatus.test.ts",
+        "src/scripts/ui.storageResilience.test.ts",
+        "src/scripts/ui/toggleSwitch.test.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/EXTENSIONS-PUBLIC-API-0005-bundle-vue-dependencies-in-extensions.md"
+  ],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points."
+  ],
+  "deepImports": "inventory"
+}

@@ -19,7 +19,7 @@ import {
   registerTour
 } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -56,22 +56,25 @@ const mocks = await vi.hoisted(async () => {
   }
 })
 
-vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
-  useFirstRunTourController: () => ({
-    nudgeArmed: mocks.nudgeArmed,
-    tourWasCompleted: mocks.tourWasCompleted,
-    dismissNudge: mocks.dismissNudge
+vi.mock<unknown>(
+  import('@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'),
+  () => ({
+    useFirstRunTourController: () => ({
+      nudgeArmed: mocks.nudgeArmed,
+      tourWasCompleted: mocks.tourWasCompleted,
+      dismissNudge: mocks.dismissNudge
+    })
   })
-}))
+)
 
 vi.mock<unknown>(
-  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  import('@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'),
   () => ({
     useWorkflowTemplateSelectorDialog: () => ({ show: mocks.showTemplates })
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
