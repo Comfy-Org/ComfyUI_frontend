@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { createEmptyIndex, getEntryByPath, upsertEntry } from './draftCacheV2'
 
-describe('R-78 draft cache collision aliasing', () => {
-  it('characterizes R-78 draft cache aliasing for known colliding paths', () => {
+describe('draft cache hash collisions', () => {
+  it('keeps known colliding paths as separate drafts', () => {
     let index = createEmptyIndex()
     index = upsertEntry(index, 'workflows/ewip.json', {
       name: 'draft-a',
@@ -16,12 +16,13 @@ describe('R-78 draft cache collision aliasing', () => {
       updatedAt: 2
     }).index
 
-    // R-78 current-risk characterization: these paths share the same 32-bit draft key.
-    // This is a fixed-input regression, not a property, so it is colocated here
-    // rather than in draftCacheV2.property.test.ts.
-    expect(index.order).toEqual(['684dbc71'])
-    expect(Object.keys(index.entries)).toHaveLength(1)
+    expect(index.order).toEqual(['684dbc71', '684dbc71:workflows/4hbab.json'])
+    expect(Object.keys(index.entries)).toHaveLength(2)
     expect(getEntryByPath(index, 'workflows/ewip.json')).toMatchObject({
+      name: 'draft-a',
+      path: 'workflows/ewip.json'
+    })
+    expect(getEntryByPath(index, 'workflows/4hbab.json')).toMatchObject({
       name: 'draft-b',
       path: 'workflows/4hbab.json'
     })

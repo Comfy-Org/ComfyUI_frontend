@@ -9,6 +9,21 @@ import type { DraftEntryMeta, DraftIndexV2 } from './draftTypes'
 import { MAX_DRAFTS } from './draftTypes'
 import { hashPath } from './hashUtil'
 
+export function resolveDraftKey(index: DraftIndexV2, path: string): string {
+  const existing = Object.entries(
+    index.entries as Record<string, unknown>
+  ).find(
+    ([, entry]) =>
+      typeof entry === 'object' &&
+      entry !== null &&
+      'path' in entry &&
+      entry.path === path
+  )?.[0]
+  if (existing !== undefined) return existing
+  const hash = hashPath(path)
+  return Object.hasOwn(index.entries, hash) ? `${hash}:${path}` : hash
+}
+
 /**
  * Creates an empty draft index.
  */
@@ -41,7 +56,7 @@ export function upsertEntry(
   meta: Omit<DraftEntryMeta, 'path'>,
   limit: number = MAX_DRAFTS
 ): { index: DraftIndexV2; evicted: string[] } {
-  const draftKey = hashPath(path)
+  const draftKey = resolveDraftKey(index, path)
   const effectiveLimit = Math.max(1, limit)
 
   const entries = {
@@ -84,7 +99,7 @@ export function removeEntry(
   index: DraftIndexV2,
   path: string
 ): { index: DraftIndexV2; removedKey: string | null } {
-  const draftKey = hashPath(path)
+  const draftKey = resolveDraftKey(index, path)
 
   if (!(draftKey in index.entries)) {
     return { index, removedKey: null }
@@ -116,13 +131,17 @@ export function moveEntry(
   newPath: string,
   newName: string
 ): { index: DraftIndexV2; oldKey: string; newKey: string } | null {
-  const oldKey = hashPath(oldPath)
-  const newKey = hashPath(newPath)
+  const oldKey = resolveDraftKey(index, oldPath)
+  const newKey = resolveDraftKey(index, newPath)
 
   const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
   const oldEntry = entriesByKey[oldKey]
   if (!oldEntry) return null
-  if (oldKey !== newKey && entriesByKey[newKey]) return null
+  if (
+    oldKey !== newKey &&
+    Object.values(index.entries).some((entry) => entry.path === newPath)
+  )
+    return null
 
   const entries = { ...index.entries }
   delete entries[oldKey]
@@ -164,7 +183,7 @@ export function getEntryByPath(
   index: DraftIndexV2,
   path: string
 ): DraftEntryMeta | null {
-  const draftKey = hashPath(path)
+  const draftKey = resolveDraftKey(index, path)
   return index.entries[draftKey] ?? null
 }
 
