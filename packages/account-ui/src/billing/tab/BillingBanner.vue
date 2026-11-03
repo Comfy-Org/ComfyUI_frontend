@@ -78,31 +78,14 @@
           :label="copy.actions[look.action]"
           :variant="actionVariant"
         >
-          <a
-            v-if="look.href"
+          <BillingBannerActionButton
             :href="look.href"
-            target="_blank"
-            rel="noopener"
-            :class="
-              cn(
-                buttonVariants({ variant: actionVariant, size }),
-                'shrink-0 no-underline'
-              )
-            "
-            @click="emit('action', look.action)"
-          >
-            {{ copy.actions[look.action] }}
-          </a>
-          <CheckoutButton
-            v-else
+            :label="copy.actions[look.action]"
             :variant="actionVariant"
             :size
             :loading
-            class="shrink-0"
             @click="emit('action', look.action)"
-          >
-            {{ copy.actions[look.action] }}
-          </CheckoutButton>
+          />
         </slot>
       </div>
     </div>
@@ -110,16 +93,13 @@
 </template>
 
 <script setup lang="ts">
-/**
- * One Billing tab banner for a host-resolved view. Actions and dismissal are
- * emitted; the host opens dialogs, links and records the dismissal.
- */
 import { computed } from 'vue'
 
-import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CheckoutButton from '#/billing/checkout/CheckoutButton.vue'
+
+import BillingBannerActionButton from './BillingBannerActionButton.vue'
 import { billingBannerLook } from './billingBannerView'
 import type {
   BillingBannerAction,
