@@ -18,7 +18,7 @@ export const buttonVariants = cva({
         'border border-solid bg-transparent text-foreground hover:bg-accent/50',
       link: 'bg-transparent text-muted-foreground hover:text-foreground',
       'overlay-white': 'bg-white text-gray-600 hover:bg-white/90',
-      base: 'bg-background text-foreground hover:bg-accent',
+      base: 'bg-background text-foreground hover:bg-background/80',
       tertiary: 'bg-muted text-foreground hover:bg-muted/80',
       subscribe:
         'border-transparent bg-credit text-charcoal-900 hover:opacity-80',
