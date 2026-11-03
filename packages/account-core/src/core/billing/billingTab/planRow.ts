@@ -1,13 +1,14 @@
 import type {
   BillingCapabilitiesResponse,
+  BillingStatus,
+  BillingStatusResponse,
+  SubscriptionDuration,
   SubscriptionState
 } from '@comfyorg/ingest-types'
 
-import type {
-  BillingStatus,
-  BillingSubscriptionStatus,
-  SubscriptionDuration
-} from '@comfyorg/billing-core'
+type BillingSubscriptionStatus = NonNullable<
+  BillingStatusResponse['subscription_status']
+>
 
 type BillingCadence = 'monthly' | 'yearly'
 

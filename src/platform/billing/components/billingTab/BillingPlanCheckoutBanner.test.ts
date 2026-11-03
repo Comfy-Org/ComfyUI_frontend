@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import type { PlanCheckoutBanner } from '@/platform/billing/components/billingTab/planCheckoutBanner'
+import type { PlanCheckoutBanner } from '@comfyorg/account-core/billing'
 
 import BillingPlanCheckoutBanner from './BillingPlanCheckoutBanner.vue'
 

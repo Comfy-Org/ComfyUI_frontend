@@ -71,17 +71,22 @@
     >
       <BillingCreditsCard
         :state="creditsCard"
-        :can-top-up="capabilities.canTopUp.value"
+        :add-credits="
+          addCreditsAvailability({
+            resolved: capabilities.hasResolvedCapabilities.value,
+            canTopUp: capabilities.canTopUp.value,
+            denial: capabilities.topUpDenial.value
+          })
+        "
         :add-credits-variant="addCreditsVariant"
         :plan-credit-note="planCreditNote"
         @retry="retryBalance"
         @add-credits="addCredits('credits_panel')"
       />
-      <template v-if="capabilities.autoTopUpEnabled.value">
-        <template v-if="capabilities.canManageAutoTopUp.value">
-          <BillingAutoTopUpCard v-if="capabilities.canTopUp.value" />
-        </template>
-      </template>
+      <BillingAutoTopUpCard v-if="autoTopUpSection.kind === 'card'" />
+      <BillingAutoTopUpMemberCard
+        v-else-if="autoTopUpSection.kind === 'memberBlock'"
+      />
     </section>
 
     <section class="flex flex-col gap-3" data-testid="billing-handoff">
@@ -174,13 +179,16 @@ import BillingTopupCheckoutBanner from '@/platform/billing/components/billingTab
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 import { usePlanCheckoutBanner } from '@/platform/billing/composables/usePlanCheckoutBanner'
 import BillingAutoTopUpCard from '@/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
+import BillingAutoTopUpMemberCard from '@/platform/billing/components/billingTab/BillingAutoTopUpMemberCard.vue'
 import BillingCreditsCard from '@/platform/billing/components/billingTab/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/billing/components/billingTab/BillingPlanRow.vue'
-import { addCreditsEmphasis } from '@/platform/billing/components/billingTab/creditsCard'
 import {
+  addCreditsAvailability,
+  addCreditsEmphasis,
+  deriveAutoTopUpSection,
   deriveBillingTabLoad,
   planRowAction
-} from '@/platform/billing/components/billingTab/planRow'
+} from '@comfyorg/account-core/billing'
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
@@ -240,6 +248,14 @@ const action = computed(() =>
 )
 
 const { state: autoTopUp } = useBillingAutoTopUpCard()
+const autoTopUpSection = computed(() =>
+  deriveAutoTopUpSection({
+    autoTopUpEnabled: capabilities.autoTopUpEnabled.value,
+    canManageAutoTopUp: capabilities.canManageAutoTopUp.value,
+    canTopUp: capabilities.canTopUp.value,
+    manageAutoTopUpDenial: capabilities.manageAutoTopUpDenial.value
+  })
+)
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
     availableCents:

@@ -82,7 +82,7 @@ import {
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
-import type { PlanCreditsState } from '@/platform/billing/components/billingTab/creditsCard'
+import type { PlanCreditsState } from '@comfyorg/account-core/billing'
 import { useLongDate } from '@/platform/billing/composables/useLongDate'
 
 const { plan } = defineProps<{ plan: PlanCreditsState }>()

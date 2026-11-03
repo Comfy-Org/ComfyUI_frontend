@@ -55,6 +55,7 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
       previous.count += 1
       if (part.state === 'streaming') previous.state = 'streaming'
       if (part.ok !== undefined) previous.ok = part.ok
+      else if (part.state === 'done') previous.ok = undefined
       previous.canvasConfirmed = foldCanvasConfirmed(
         previous.canvasConfirmed,
         part.canvasConfirmed
