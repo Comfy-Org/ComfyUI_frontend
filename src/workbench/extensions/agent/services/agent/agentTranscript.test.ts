@@ -1020,8 +1020,7 @@ describe('normalizeAgentTranscript', () => {
         callId: 'call-2',
         name: 'add_node',
         state: 'done',
-        ok: true,
-        canvasConfirmed: false
+        ok: true
       },
       { type: 'text', text: 'Done', state: 'done' }
     ])
