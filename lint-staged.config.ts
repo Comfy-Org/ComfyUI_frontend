@@ -1,5 +1,7 @@
 import path from 'node:path'
 
+import { isEslintFile } from './scripts/eslintScope.ts'
+
 // lint-staged calls this config once per concurrent chunk in one process.
 // Claim each fixed-scope command once so only its first matching chunk runs it.
 const claimed = new Set<string>()
@@ -31,12 +33,8 @@ export default function lintStaged(stagedFiles: string[]) {
   const styleFiles = relativePaths.filter((fileName) =>
     /\.(css|vue)$/.test(fileName)
   )
-  const astroFiles = relativePaths.filter(
-    (fileName) =>
-      fileName.startsWith('apps/website/src/') && fileName.endsWith('.astro')
-  )
   const typecheckFiles = relativePaths.filter((fileName) =>
-    /\.(astro|ts|tsx|vue|mts)$/.test(fileName)
+    /\.(ts|tsx|vue|mts)$/.test(fileName)
   )
 
   return [
@@ -44,20 +42,15 @@ export default function lintStaged(stagedFiles: string[]) {
       formattableFiles,
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
-    ...lintCommands(codeFiles, styleFiles, astroFiles),
-    ...commandsWithFiles(
-      astroFiles.map((fileName) => fileName.slice('apps/website/'.length)),
-      'pnpm --dir apps/website exec prettier --write'
-    ),
+    ...lintCommands(codeFiles, styleFiles),
+    ...(codeFiles.length > 0
+      ? repoWide('pnpm lint:server-facts --staged')
+      : []),
     ...typecheckCommands(typecheckFiles)
   ]
 }
 
-function lintCommands(
-  codeFiles: string[],
-  styleFiles: string[],
-  astroFiles: string[]
-) {
+function lintCommands(codeFiles: string[], styleFiles: string[]) {
   return [
     ...commandsWithFiles(
       styleFiles,
@@ -68,18 +61,26 @@ function lintCommands(
       'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
     ),
     ...commandsWithFiles(
-      [...codeFiles, ...astroFiles],
-      'pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored'
+      codeFiles.filter(isEslintFile),
+      `pnpm exec eslint --cache --concurrency auto --fix --no-warn-ignored ${skipCanonicalClasses}`
     )
   ]
 }
+
+// enforce-canonical-classes pays a ~4.5 s Tailwind warm-up in every ESLint
+// process; the CI lint job runs it with --fix and commits the result instead.
+// Reporting unused directives must stay off, or --fix would strip the
+// directives that silence the rule in the full run.
+const skipCanonicalClasses = [
+  "--rule 'better-tailwindcss/enforce-canonical-classes: off'",
+  '--report-unused-disable-directives-severity off'
+].join(' ')
 
 // Directories outside the root program, each with its own tsconfig.
 const standaloneTypecheckScripts = {
   'browser_tests/': 'typecheck:browser',
   'scripts/': 'typecheck:scripts',
   'tools/': 'typecheck:tools',
-  'apps/website/': 'typecheck:website',
   'apps/billing-web/': 'typecheck:billing-web'
 }
 

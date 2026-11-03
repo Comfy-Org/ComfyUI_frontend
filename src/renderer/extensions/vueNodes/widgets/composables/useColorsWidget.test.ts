@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 import { useColorsWidget } from './useColorsWidget'
 
@@ -18,14 +17,22 @@ describe('useColorsWidget', () => {
       type: 'COLORS',
       name: 'palette',
       default: ['#fff']
-    } as InputSpec)
-    expect(addWidget).toHaveBeenCalledWith('colors', 'palette', ['#fff'], null)
+    })
+    expect(addWidget).toHaveBeenCalledWith(
+      'colors',
+      'palette',
+      ['#fff'],
+      null,
+      { hideInPanel: true }
+    )
   })
 
   it('defaults to an empty palette', () => {
     const { node, addWidget } = mockNode()
-    useColorsWidget()(node, { type: 'COLORS', name: 'palette' } as InputSpec)
-    expect(addWidget).toHaveBeenCalledWith('colors', 'palette', [], null)
+    useColorsWidget()(node, { type: 'COLORS', name: 'palette' })
+    expect(addWidget).toHaveBeenCalledWith('colors', 'palette', [], null, {
+      hideInPanel: true
+    })
   })
 
   it('copies the spec default so widgets never share its reference', () => {
@@ -35,7 +42,7 @@ describe('useColorsWidget', () => {
       type: 'COLORS',
       name: 'palette',
       default: shared
-    } as InputSpec)
+    })
     expect(addWidget.mock.calls[0][2]).not.toBe(shared)
   })
 })

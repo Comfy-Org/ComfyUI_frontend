@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { clampPercentInt, formatPercent0, formatUsdCents } from './numberUtil'
+import {
+  clampPercentInt,
+  formatCurrencyCents,
+  formatPercent0,
+  formatUsdCents
+} from './numberUtil'
 
 describe('clampPercentInt', () => {
   it('clamps undefined to 0', () => {
@@ -67,5 +72,12 @@ describe('formatUsdCents', () => {
 
   it('groups thousands', () => {
     expect(formatUsdCents('en-US', 200000)).toBe('$2,000')
+  })
+})
+
+describe('formatCurrencyCents', () => {
+  it('formats the given currency from a lowercase Stripe code', () => {
+    expect(formatCurrencyCents('en-US', 7000, 'eur')).toBe('€70')
+    expect(formatCurrencyCents('en-US', 6999, 'eur')).toBe('€69.99')
   })
 })

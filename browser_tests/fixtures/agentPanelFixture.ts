@@ -2,40 +2,63 @@ import type { Page, Route } from '@playwright/test'
 
 import type {
   AgentRunMode,
-  AgentThreadListResponse,
+  BillingStatusResponse,
   GlobalSetting,
   ListAssetsResponse,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
+import {
+  AGENT_CONSENT_SETTING_ID,
+  AGENT_ONBOARDED_SCOPES_SETTING_ID
+} from '@/platform/settings/constants/agent'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import {
+  AGENT_COMPOSER_THREAD_ID,
+  agentComposerRunMode,
+  createAgentComposerConversation,
+  createAgentComposerThreadList
+} from '@e2e/fixtures/data/agent/agentComposerPerformance'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
+const onboardedScopesByPage = new WeakMap<Page, string[]>()
+
+export const AGENT_ONBOARDING_SCOPE_KEY =
+  'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+
+export function storedOnboardedScopes(page: Page): readonly string[] {
+  return onboardedScopesByPage.get(page) ?? []
+}
+
 function agentFeatures(agentFlag: boolean): RemoteConfig {
   return {
+    'agent-in-app-experience': agentFlag,
     posthog_project_token: 'phc_e2e_agent_panel',
-    posthog_config: {
-      advanced_disable_flags: true,
-      bootstrap: {
-        featureFlags: { 'agent-in-app-experience': agentFlag }
-      }
-    }
+    posthog_config: { advanced_disable_flags: true }
   }
 }
 
 interface BootAgentAppOptions {
   /** Extra `/api/settings` entries layered over the panel defaults. */
   settings?: Record<string, unknown>
+  /** Extra authenticated `/api/features` values layered over panel defaults. */
+  features?: Partial<RemoteConfig>
   vueNodes?: boolean
   /** Server definitions, optionally augmented with deterministic test entries. */
   objectInfo?: 'server' | Record<string, ComfyNodeDef>
@@ -48,6 +71,8 @@ interface BootAgentAppOptions {
    * boot and relying on route-precedence order.
    */
   assets?: ListAssetsResponse
+  /** Replaces `mockBilling`'s default billing status. */
+  billingStatus?: BillingStatusResponse
   beforeNavigate?: (page: Page) => Promise<void>
 }
 
@@ -56,16 +81,21 @@ async function mockAgentBoot(
   {
     agentFlag,
     settings,
+    features,
     vueNodes,
     objectInfo,
-    assets
+    assets,
+    billingStatus
   }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
+  const onboardedScopes: string[] = []
+  onboardedScopesByPage.set(page, onboardedScopes)
   await mockCloudBoot(page, {
-    features: agentFeatures(agentFlag),
+    features: { ...agentFeatures(agentFlag), ...features },
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
+      [AGENT_ONBOARDED_SCOPES_SETTING_ID]: onboardedScopes,
       ...settings,
       ...((vueNodes || cloudAppFixture.info().tags.includes('@vue-nodes')) && {
         'Comfy.VueNodes.Enabled': true
@@ -73,7 +103,8 @@ async function mockAgentBoot(
     },
     objectInfo
   })
-  await mockBilling(page)
+  await mockBilling(page, { billingStatus })
+  await mockAgentIdentity(page)
   const storedConsent: GlobalSetting = {
     key: AGENT_CONSENT_SETTING_ID,
     value: true,
@@ -82,6 +113,20 @@ async function mockAgentBoot(
   await page.route(
     `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
     (route) => route.fulfill(jsonRoute(storedConsent))
+  )
+  await page.route(
+    `**/api/settings/${AGENT_ONBOARDED_SCOPES_SETTING_ID}`,
+    (route) => {
+      const request = route.request()
+      if (request.method() === 'POST') {
+        const posted: unknown = request.postDataJSON()
+        const scopes = Array.isArray(posted)
+          ? posted.filter((scope): scope is string => typeof scope === 'string')
+          : []
+        onboardedScopes.splice(0, onboardedScopes.length, ...scopes)
+      }
+      return route.fulfill(jsonRoute(onboardedScopes))
+    }
   )
   const listedAssets: ListAssetsResponse = assets ?? {
     assets: [],
@@ -104,25 +149,24 @@ async function mockAgentBoot(
 
 export async function mockAgentTurnApi(
   page: Page,
-  turnAccepted: AgentTurnAccepted
+  turnAccepted: AgentTurnAccepted,
+  beforeAccept?: () => Promise<void>
 ): Promise<void> {
-  const threads: AgentThreadListResponse = {
-    threads: [],
-    pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
-  }
+  const threads = emptyAgentThreadList()
   const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
   await page.route('**/api/experiment/models', (route) =>
     route.fulfill(jsonRoute([]))
   )
-  await page.route('**/api/agent/threads', (route) =>
+  await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(jsonRoute(threads))
   )
   await page.route('**/api/agent/run-mode', (route) =>
     route.fulfill(jsonRoute(runMode))
   )
-  await page.route('**/api/agent/threads/*/messages', (route) =>
-    route.fulfill(jsonRoute(turnAccepted))
-  )
+  await page.route('**/api/agent/threads/*/messages', async (route) => {
+    await beforeAccept?.()
+    await route.fulfill(jsonRoute(turnAccepted))
+  })
 }
 
 export async function mockWorkflowPersistence(
@@ -175,6 +219,7 @@ export async function mockWorkflowPersistence(
 
 type AgentFixtures = {
   agentFlagEnabled: boolean
+  crdtDebugEnabled: boolean
 }
 
 /**
@@ -184,8 +229,61 @@ type AgentFixtures = {
  * signed-in `bootCloud`, navigate, wait for the app.
  */
 export const agentTest = cloudAppFixture.extend<AgentFixtures>({
-  agentFlagEnabled: [true, { option: true }]
+  agentFlagEnabled: [true, { option: true }],
+  crdtDebugEnabled: [false, { option: true }],
+  page: async ({ crdtDebugEnabled, page }, use) => {
+    if (crdtDebugEnabled) {
+      await page.addInitScript(() => {
+        localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+        localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
+      })
+    }
+    await use(page)
+  }
 })
+
+type RestoredTargetlessAgentThreadFixtures = {
+  agentComposerTurnCount: number
+  agentComposerPanel: AgentPanel
+}
+
+export const restoredTargetlessAgentThreadTest =
+  agentTest.extend<RestoredTargetlessAgentThreadFixtures>({
+    agentComposerTurnCount: [0, { option: true }],
+    agentComposerPanel: async (
+      { page, agentFlagEnabled, agentComposerTurnCount },
+      use
+    ) => {
+      const messages = createAgentComposerConversation(agentComposerTurnCount)
+      const threads = createAgentComposerThreadList(messages)
+
+      await page.route('**/api/experiment/models', (route) =>
+        route.fulfill(jsonRoute([]))
+      )
+      await page.route('**/api/agent/threads?*', (route) =>
+        route.fulfill(jsonRoute(threads))
+      )
+      await page.route('**/api/agent/run-mode', (route) =>
+        route.fulfill(jsonRoute(agentComposerRunMode))
+      )
+      await page.route('**/api/agent/threads/*/messages', (route) => {
+        if (route.request().method() !== 'GET') return route.fallback()
+        return route.fulfill(jsonRoute(messages))
+      })
+      await page.addInitScript(
+        ({ key, threadId }) => localStorage.setItem(key, threadId),
+        {
+          key: StorageKeys.agentThread('personal'),
+          threadId: AGENT_COMPOSER_THREAD_ID
+        }
+      )
+      await bootAgentApp(page, agentFlagEnabled)
+
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      await use(agentPanel)
+    }
+  })
 
 export async function bootAgentApp(
   page: Page,
@@ -203,4 +301,42 @@ export async function bootAgentApp(
   await bootCloud(page)
   await page.goto(APP_URL)
   await waitForCloudApp(page)
+}
+
+/**
+ * Replaces the boot tab's graph in place, so `AgentPanel.selectWorkflow()`
+ * still finds it as "Unsaved Workflow". Boot's own default-workflow load is
+ * not awaited by {@link bootAgentApp}, so the active workflow is awaited
+ * first. The follower merges a subscribe's catch-up into whatever the canvas
+ * already shows; a fake host doc must therefore start from the same graph
+ * the canvas holds.
+ *
+ * Reloading the active tab restores that tab's saved viewport, which is the
+ * boot graph's, not one framing `json`; the CI boot graph parks it at the
+ * origin, so the view is fitted afterwards to keep node headers clickable.
+ */
+export async function loadIntoBootWorkflow(
+  page: Page,
+  json: ComfyWorkflowJSON
+): Promise<void> {
+  await page.waitForFunction(() => {
+    const workspace = window.app?.extensionManager as WorkspaceStore | undefined
+    return workspace?.workflow.activeWorkflow != null
+  })
+  await page.evaluate(async (json) => {
+    const activeWorkflow = (window.app!.extensionManager as WorkspaceStore)
+      .workflow.activeWorkflow!
+    await window.app!.loadGraphData(json, true, true, activeWorkflow)
+    if (json.nodes.length > 0)
+      await window.app!.extensionManager.command.execute('Comfy.Canvas.FitView')
+  }, json)
+  await nextFrame(page)
+}
+
+export const BLANK_WORKFLOW: ComfyWorkflowJSON = {
+  last_node_id: 0,
+  last_link_id: 0,
+  nodes: [],
+  links: [],
+  version: 0.4
 }

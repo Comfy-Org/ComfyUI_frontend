@@ -2,12 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { useTelemetry } from '..'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { installNodeAddedTelemetry } from './installNodeAddedTelemetry'
 import { withNodeAddSource } from './nodeAddSource'
 
-vi.mock(import('..'))
+vi.mock(import('@comfyorg/telemetry'))
 
 function fakeGraph(): LGraph {
   return new LGraph()

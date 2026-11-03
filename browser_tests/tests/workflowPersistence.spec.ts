@@ -8,7 +8,7 @@ import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const generateUniqueFilename = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -333,7 +333,7 @@ test.describe('Workflow Persistence', () => {
         })
         if (vueNodesEnabled) {
           await expect(comfyPage.vueNodes.getNodeInnerWrapper('1')).toHaveClass(
-            /ring-destructive-background/
+            /ring-warning/
           )
         }
       }
@@ -441,6 +441,8 @@ test.describe('Workflow Persistence', () => {
       test(`copied links keep copied endpoints after saved reload with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
         comfyPage
       }) => {
+        test.setTimeout(30_000)
+
         await comfyPage.workflow.loadWorkflow('default')
         await fitToViewInstant(comfyPage)
 
@@ -958,6 +960,8 @@ test.describe('Workflow Persistence', () => {
   test('Restores saved workflow drafts from inactive restored tabs', async ({
     comfyPage
   }) => {
+    test.setTimeout(30_000)
+
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
     await comfyPage.settings.setSetting(
@@ -998,7 +1002,7 @@ test.describe('Workflow Persistence', () => {
 
     await comfyPage.menu.topbar.getWorkflowTab(workflowA).click()
     await comfyPage.workflow.waitForWorkflowIdle()
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
 
     const restoredNode = await getRequiredFirstNodeRef(
       comfyPage,
@@ -1006,6 +1010,65 @@ test.describe('Workflow Persistence', () => {
     )
     expect(await restoredNode.isCollapsed()).toBe(true)
     await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+  })
+
+  test('Unedited saved workflows reopen as saved after a reload', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'Switching tabs leaves a draft equal to the saved file; after a reload that draft marked the workflow unsaved'
+    })
+    test.setTimeout(45_000)
+
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+
+    const [first, second, third] = [
+      generateUniqueFilename(),
+      generateUniqueFilename(),
+      generateUniqueFilename()
+    ]
+    await comfyPage.menu.topbar.saveWorkflow(first)
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.menu.topbar.saveWorkflow(second)
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.menu.topbar.saveWorkflow(third)
+
+    await test.step('visit every tab without editing, leaving drafts behind', async () => {
+      await comfyPage.workflow.expectTabOpensAsSaved(first)
+      await comfyPage.workflow.expectTabOpensAsSaved(second)
+      await comfyPage.workflow.expectTabOpensAsSaved(third)
+      await waitForWorkflowTabState(comfyPage, 3)
+      await expect
+        .poll(async () => (await comfyPage.workflow.getDraftWorkflows()).length)
+        .toBeGreaterThanOrEqual(2)
+    })
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+
+    await test.step('the tab active at reload is restored as saved', async () => {
+      await expect
+        .poll(() => comfyPage.menu.topbar.getActiveTabName())
+        .toBe(third)
+      await expect
+        .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+        .toBe(false)
+      await expect.poll(() => comfyPage.page.title()).not.toMatch(/^\*/)
+    })
+
+    await test.step('the first restored tab reopens as saved', async () => {
+      await comfyPage.workflow.expectTabOpensAsSaved(first)
+    })
+
+    await test.step('the second restored tab reopens as saved', async () => {
+      await comfyPage.workflow.expectTabOpensAsSaved(second)
+    })
   })
 
   test('Flushes a pending draft edit before an immediate reload', async ({

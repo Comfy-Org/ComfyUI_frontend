@@ -14,7 +14,6 @@ const STORAGE_KEY = 'Comfy.PreservedQuery.settings'
 let testRouter: Router
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
-const mockShowSettings = vi.mocked(useSettingsDialog().show)
 
 function createAppLikeRouter(): Router {
   const router = createRouter({
@@ -59,7 +58,9 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
     const { loadSettingsFromUrl } = mountSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(mockShowSettings).toHaveBeenCalledExactlyOnceWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
+      'workspace'
+    )
     await vi.waitFor(() =>
       expect(testRouter.currentRoute.value.fullPath).toBe('/?keep=1')
     )
@@ -78,7 +79,9 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
     const { loadSettingsFromUrl } = mountSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(mockShowSettings).toHaveBeenCalledExactlyOnceWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
+      'workspace'
+    )
     await vi.waitFor(() =>
       expect(testRouter.currentRoute.value.fullPath).toBe('/')
     )
@@ -94,12 +97,12 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
       expect(testRouter.currentRoute.value.fullPath).toBe('/')
     )
     firstMount.unmount()
-    mockShowSettings.mockClear()
+    vi.mocked(useSettingsDialog().show).mockClear()
 
     await testRouter.push('/')
     await mountSettingsUrlLoader().loadSettingsFromUrl()
 
-    expect(mockShowSettings).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
   })
 
   it('strips an unrecognized value without opening or leaving a stash behind', async () => {
@@ -108,7 +111,7 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
     const { loadSettingsFromUrl } = mountSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(mockShowSettings).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
     await vi.waitFor(() =>
       expect(testRouter.currentRoute.value.fullPath).toBe('/')
     )

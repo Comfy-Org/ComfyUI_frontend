@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
-import type { Document } from './engine/document'
-import { registerBuiltinKinds } from './engine/kinds'
-import { defaultMode } from './engine/mode'
-import type { GroupData, SceneNode } from './engine/node'
+import type { Document } from '@comfyorg/layer-editor/document'
+import { registerBuiltinKinds } from '@comfyorg/layer-editor/kinds'
+import { defaultMode } from '@comfyorg/layer-editor/mode'
+import type { GroupData, SceneNode } from '@comfyorg/layer-editor/node'
 import {
   buildPsd,
   leafPlacedBounds,
@@ -267,7 +267,7 @@ describe('placed leaf rasterization', () => {
     ) {
       if (kind !== '2d') return null
       const noop = () => {}
-      return createMockCanvas2DContext({
+      return createMockCanvasRenderingContext2D({
         canvas: this,
         translate: noop,
         rotate: noop,

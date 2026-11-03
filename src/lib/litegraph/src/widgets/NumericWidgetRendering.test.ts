@@ -1,11 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type {
-  IBaseWidget,
-  TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { GradientSliderWidget } from '@/lib/litegraph/src/widgets/GradientSliderWidget'
 import { KnobWidget } from '@/lib/litegraph/src/widgets/KnobWidget'
 import { SliderWidget } from '@/lib/litegraph/src/widgets/SliderWidget'
@@ -13,7 +10,7 @@ import {
   createMockCanvas,
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 function createKnob(node: LGraphNode) {
   return new KnobWidget(

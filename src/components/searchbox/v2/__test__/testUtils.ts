@@ -1,8 +1,5 @@
-import { createI18n } from 'vue-i18n'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { setHappyDomViewport } from '@/utils/__tests__/happyDomTestUtils'
 
 export function createMockNodeDef(
@@ -24,13 +21,6 @@ export function createMockNodeDef(
     ...overrides
   })
 }
-
-export const testI18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  escapeParameter: true,
-  messages: { en: enMessages }
-})
 
 export function setViewport(viewport: { width: number; height: number }) {
   setHappyDomViewport(viewport)

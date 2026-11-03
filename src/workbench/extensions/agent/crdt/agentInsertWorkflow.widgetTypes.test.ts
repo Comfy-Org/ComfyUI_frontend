@@ -6,8 +6,8 @@
  * plus the two-way same-graph id-collision case).
  *
  * This file exercises the same pipeline (comfy-multi-player's
- * `insert_workflow` applier -> `AgentCrdtProjection` -> `graphMutations` ->
- * `agentNodeMaterializer`) across the widget TYPES a real node can carry
+ * `insert_workflow` applier -> `AgentCrdtProjection` -> `LiveGraphApplier`)
+ * across the widget TYPES a real node can carry
  * (combo, number, text, toggle, multiline) and a few id-collision shapes the
  * regression file does not: cross-graph collisions and a three-way
  * same-graph collision.
@@ -17,7 +17,7 @@ import type {
   InsertWorkflowOp,
   WidgetCatalog
 } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -25,12 +25,9 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { FollowerDoc } from './followerDoc'
-import { createGraphMutations } from './graphMutations'
 
 class TestComboNode extends LGraphNode {
   static override title = 'Test Combo'
@@ -141,15 +138,7 @@ function insertOp(
 
 function bindProjection(workflowId: string, graph: LGraph) {
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(
-    createGraphMutations({
-      getScope: () => graphScopeOf(graph),
-      layout: { createNode: () => {}, deleteNodes: () => {} },
-      placement: inertPlacementPort
-    }),
-    () => graph,
-    () => follower.doc
-  )
+  const projection = new AgentCrdtProjection(() => graph)
   projection.bind(workflowId, follower)
   onTestFinished(() => {
     projection.destroy()
@@ -165,8 +154,7 @@ function bindProjection(workflowId: string, graph: LGraph) {
       update,
       actor: 'agent:test',
       opIds
-    })
-    projection.reconcileLiveGraph(workflowId)
+    }).applied
     return committed
   }
   return deliver
@@ -214,7 +202,7 @@ function insertSingleNode(
 }
 
 describe('insert_workflow materializes every widget type with the correct value', () => {
-  registerAll()
+  beforeEach(registerAll)
 
   it('renders a combo widget with its selected value', () => {
     const graph = new LGraph()
@@ -298,9 +286,8 @@ describe('insert_workflow materializes every widget type with the correct value'
     ])
   })
 
-  it('renders only the widgets a partial widgets_values array actually supplies', () => {
+  it('a partial widgets_values array sets the supplied widgets and leaves the rest at their defaults', () => {
     const graph = new LGraph()
-    // Only the first two of five widget values are supplied.
     const node = insertSingleNode(
       graph,
       'wf-partial',
@@ -311,7 +298,10 @@ describe('insert_workflow materializes every widget type with the correct value'
     const rendered = renderedWidgets(graph.rootGraph.id, String(node.id))
     expect(rendered).toEqual([
       { name: 'seed', value: 999 },
-      { name: 'steps', value: 15 }
+      { name: 'steps', value: 15 },
+      { name: 'cfg', value: 8 },
+      { name: 'sampler_name', value: 'euler' },
+      { name: 'add_noise', value: true }
     ])
   })
 

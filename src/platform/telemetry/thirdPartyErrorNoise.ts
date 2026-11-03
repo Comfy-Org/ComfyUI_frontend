@@ -1,7 +1,10 @@
 import type { ErrorEvent, EventHint } from '@sentry/vue'
 
-const EXTENSION_TAB_NOT_FOUND_MESSAGE =
-  'Invalid call to runtime.sendMessage(). Tab not found.'
+import { isThirdPartyErrorNoise } from '@comfyorg/shared-frontend-utils/telemetry'
+
+import { isAbortError } from '@/utils/typeGuardUtil'
+
+import { classifyTelemetryErrorOrigin } from './errorOrigin'
 
 function messageFrom(value: unknown): string | undefined {
   try {
@@ -29,20 +32,32 @@ function exceptionValueFrom(value: unknown): string[] {
   }
 }
 
-export function isThirdPartyErrorNoise(message?: string): boolean {
-  if (!message) return false
-  const index = message.indexOf(EXTENSION_TAB_NOT_FOUND_MESSAGE)
-  if (index < 0) return false
-  const prefix = message.slice(0, index)
-  return /^(?:Unhandled promise rejection:\s*)?(?:Error:\s*)?$/.test(prefix)
+function exceptionTypeFrom(value: unknown): unknown {
+  try {
+    return typeof value === 'object' && value !== null && 'type' in value
+      ? value.type
+      : undefined
+  } catch {
+    return undefined
+  }
 }
 
-/** Drops a browser-extension messaging failure that the app never emits. */
+/**
+ * Drops a browser-extension messaging failure that the app never emits, and
+ * events whose thrown error is an AbortError. That also drops timeouts
+ * implemented as a bare `controller.abort()`; the noise reduction is worth it.
+ * Chained causes are ignored so a first-party error wrapping one is kept.
+ */
 export function sentryThirdPartyErrorFilter(
   event: ErrorEvent,
   hint: EventHint
 ): ErrorEvent | null {
   try {
+    if (
+      isAbortError(hint.originalException) ||
+      exceptionTypeFrom(event.exception?.values?.at(-1)) === 'AbortError'
+    )
+      return null
     if (
       isThirdPartyErrorNoise(messageFrom(hint.originalException)) ||
       isThirdPartyErrorNoise(event.message)
@@ -54,6 +69,36 @@ export function sentryThirdPartyErrorFilter(
       exceptionMessages.every(isThirdPartyErrorNoise)
       ? null
       : event
+  } catch {
+    return event
+  }
+}
+
+export function tagSentryNonFirstPartyOrigin(event: ErrorEvent): ErrorEvent {
+  try {
+    const frame = event.exception?.values?.at(-1)?.stacktrace?.frames?.at(-1)
+    const path = frame?.abs_path ?? frame?.filename
+    if (
+      !path ||
+      path.trim() === '' ||
+      path === '<anonymous>' ||
+      path === '[native code]'
+    )
+      return event
+
+    const origin = classifyTelemetryErrorOrigin(path)
+    if (origin.origin === 'first_party') return event
+
+    return {
+      ...event,
+      tags: {
+        ...event.tags,
+        error_origin: origin.origin,
+        ...(origin.origin === 'extension' && {
+          extension: origin.extension
+        })
+      }
+    }
   } catch {
     return event
   }

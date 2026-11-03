@@ -38,10 +38,6 @@ vi.mock(
   }
 )
 
-vi.mock(import('@/composables/useStablePrimeVueSplitterSizer'), () => ({
-  useStablePrimeVueSplitterSizer: () => ({ onResizeEnd: vi.fn() })
-}))
-
 function setViewport(width: number) {
   setHappyDomViewport({ width, height: 800 })
 }
@@ -49,15 +45,11 @@ function setViewport(width: number) {
 const DESKTOP_WIDTH = 1280
 const MOBILE_WIDTH = 640
 
-const passthroughStub = { template: '<div><slot /></div>' }
-
 function leafStub(testId: string) {
   return { template: `<div data-testid="${testId}" />` }
 }
 
 const baseStubs = {
-  Splitter: passthroughStub,
-  SplitterPanel: passthroughStub,
   DockedAgentPanel: {
     props: { hasOpaqueNeighbor: Boolean },
     template:

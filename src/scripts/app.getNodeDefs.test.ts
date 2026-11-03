@@ -1,20 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { mergeCustomNodesI18n, resolveNodeDefText } from '@/i18n'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
+import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 
-const getNodeDefs = vi.hoisted(() => vi.fn<() => Promise<unknown>>())
-
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getNodeDefs,
-    apiURL: vi.fn((path: string) => path),
-    addEventListener: vi.fn(),
-    getUserData: vi.fn(),
-    storeUserData: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 function nodeDef(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {
   return {
@@ -32,12 +23,13 @@ function nodeDef(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {
 
 function mockDefs(...defs: ComfyNodeDefV1[]) {
   const record = Object.fromEntries(defs.map((def) => [def.name, def]))
-  getNodeDefs.mockResolvedValue(record)
+  vi.mocked(api.getNodeDefs).mockResolvedValue(record)
   return record
 }
 
 describe('ComfyApp.getNodeDefs', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((path) => path)
     mergeCustomNodesI18n({})
   })
 
@@ -95,7 +87,9 @@ describe('ComfyApp.getNodeDefs', () => {
   test.for([[null], [undefined], ['a string'], [['x']], [42], [true]])(
     'tolerates a node-def response of %j',
     async ([response]) => {
-      getNodeDefs.mockResolvedValue(response)
+      vi.mocked<() => Promise<unknown>>(api.getNodeDefs).mockResolvedValue(
+        response
+      )
 
       await expect(comfyApp.getNodeDefs()).resolves.toEqual({})
     }
@@ -125,7 +119,7 @@ describe('ComfyApp.getNodeDefs', () => {
   })
 
   test('discards malformed entries inside an otherwise valid response', async () => {
-    getNodeDefs.mockResolvedValue({
+    vi.mocked<() => Promise<unknown>>(api.getNodeDefs).mockResolvedValue({
       TestNode: nodeDef({ display_name: 'Good Node' }),
       NullEntry: null,
       NumericCategory: { name: 'NumericCategory', category: 1 },

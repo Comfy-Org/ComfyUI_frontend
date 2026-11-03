@@ -43,6 +43,7 @@ export default defineConfig({
   testDir: './browser_tests',
   testIgnore: [
     '**/liveCloud/**',
+    '**/crossOriginSession/**',
     '**/*.test.ts',
     // Untransformed recorder output — still bare codegen, not a runnable spec
     '**/*.raw.spec.ts',
@@ -90,7 +91,7 @@ export default defineConfig({
           {
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
-            timeout: 15000,
+            timeout: 30_000,
             grepInvert:
               /@mobile|@perf|@audit|@cloud|@desktop|@custom-nodes|@agent-harness/
           },

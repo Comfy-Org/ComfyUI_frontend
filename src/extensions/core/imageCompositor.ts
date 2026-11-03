@@ -1,3 +1,4 @@
+import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
 import type { CompositorBBox } from '@/renderer/extensions/compositor/composables/compositorLayerState'
 import type { ImageFileRef } from '@/renderer/extensions/compositor/composables/compositorPaths'
 import { resetCompositorStateWidgets } from '@/renderer/extensions/compositor/composables/compositorWidgets'
@@ -7,18 +8,18 @@ import {
   setCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeOutputWith } from '@/platform/remote/comfyui/execution/types'
-import { useExtensionService } from '@/services/extensionService'
+import type { NodeOutputWith } from '@comfyorg/api-client/executionTypes'
+import type { ComfyExtension } from '@/types/comfy'
 
 type ImageCompositorOutput = NodeOutputWith<{
   compositor_layers?: Partial<ImageFileRef>[]
   compositor_inputs?: string[]
   compositor_bboxes?: (CompositorBBox | null)[]
-  compositor_canvas?: { w: number; h: number }[]
+  compositor_canvas?: CompactSize[]
   compositor_state_stale?: boolean[]
 }>
 
-useExtensionService().registerExtension({
+export const imageCompositorExtension: ComfyExtension = {
   name: 'Comfy.ImageCompositor',
 
   nodeCreated(node: LGraphNode) {
@@ -64,4 +65,4 @@ useExtensionService().registerExtension({
       clearCompositorLayers(node)
     }
   }
-})
+}

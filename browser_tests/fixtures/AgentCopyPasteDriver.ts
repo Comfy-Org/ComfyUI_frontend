@@ -86,7 +86,7 @@ export class AgentCopyPasteDriver {
       })
       .toBe(true)
     await this.conversation.vueNodes.selectNode(nodeId)
-    await expect(node).toHaveClass(/outline-node-component-outline/)
+    await expect(node).toHaveClass(/outline-foreground/)
   }
 
   async nodeOfType(type: string): Promise<LiveGraphNode> {

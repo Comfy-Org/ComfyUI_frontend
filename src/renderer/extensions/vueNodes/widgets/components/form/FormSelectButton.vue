@@ -13,16 +13,14 @@
           'border-none bg-transparent',
           'text-center text-xs font-normal',
           {
-            'bg-interface-menu-component-surface-selected':
-              isSelected(index) && !disabled,
-            'hover:bg-interface-menu-component-surface-selected/50':
-              !isSelected(index) && !disabled,
+            'bg-muted': isSelected(index) && !disabled,
+            'hover:bg-muted/50': !isSelected(index) && !disabled,
             'cursor-not-allowed opacity-50': disabled,
             'cursor-pointer': !disabled
           },
           isSelected(index) && !disabled
-            ? 'text-text-primary'
-            : 'text-text-secondary'
+            ? 'text-foreground'
+            : 'text-muted-foreground'
         )
       "
       :disabled="disabled"
@@ -40,7 +38,7 @@
 >
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { WidgetInputBaseClass } from '../layout'
+import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
 
 type ModelValue = T extends { value: infer V extends PropertyKey }
   ? V
@@ -51,9 +49,9 @@ type ModelValue = T extends { value: infer V extends PropertyKey }
 interface Props {
   modelValue: ModelValue | null | undefined
   options: T[]
-  optionLabel?: string // PrimeVue compatible prop
-  optionValue?: string // PrimeVue compatible prop
   disabled?: boolean
+  optionLabel?: string
+  optionValue?: string
 }
 
 interface Emits {
@@ -70,7 +68,6 @@ const {
 
 const emit = defineEmits<Emits>()
 
-// handle both string/number arrays and object arrays with PrimeVue compatibility
 const getOptionValue = (option: T, index: number): ModelValue => {
   if (typeof option !== 'object') {
     return option as ModelValue
@@ -87,7 +84,6 @@ const getOptionValue = (option: T, index: number): ModelValue => {
     : (String(value) as ModelValue)
 }
 
-// for display with PrimeVue compatibility
 const getOptionLabel = (option: T): string => {
   if (typeof option === 'object' && option !== null) {
     const labelField = optionLabel

@@ -82,7 +82,6 @@ describe('compatibility with comfyui servers that predate the override keys', ()
   const originalConfig = remoteConfig.value
 
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn())
     remoteConfig.value = {}
   })
 

@@ -3,27 +3,16 @@ import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationF
 import type { ListSavedPaymentMethodsResponse } from '@comfyorg/ingest-types'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { EMPTY_BILLING_PLANS } from '@e2e/fixtures/data/cloudWorkspace'
 import {
   createSubscriptionHelper,
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
-import type { SubscriptionOperator } from '@e2e/fixtures/helpers/SubscriptionHelper'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
-
-// The subscription fixture pins billing_rail to legacy_stripe, which routes
-// local billing through the legacy rail and its Local exemption from the
-// subscription gate. The 1.51 QA finding #11 (no way to add credits without
-// an active subscription) only reproduces on the workspace rail, so this
-// fixture overrides the rail; localAuthFixture keeps the legacy-rail
-// coverage.
-const onWorkspaceRail: SubscriptionOperator = (config) => ({
-  ...config,
-  status: { ...config.status, billing_rail: 'stripe' }
-})
 
 /**
  * Boots the local (non-Cloud) build as a logged-in unsubscribed workspace
@@ -41,7 +30,11 @@ export const workspaceRailAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
     await comfyPage.setupSettings({ userId })
 
     await comfyPage.cloudAuth.mockAuth()
-    await mockWorkspace(page, workspace('personal', 'owner'), [])
+    const personalWorkspace = workspace('personal', 'owner')
+    await mockWorkspace(page, personalWorkspace, [])
+    await page.route('**/api/billing/capabilities', (route) =>
+      route.fulfill({ json: createBillingCapabilities(personalWorkspace.id) })
+    )
     await page.route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
       route.fulfill({ json: [] })
     )
@@ -64,8 +57,7 @@ export const workspaceRailAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
     )
     const subscriptionHelper = createSubscriptionHelper(
       page,
-      withUnsubscribed(),
-      onWorkspaceRail
+      withUnsubscribed()
     )
     await subscriptionHelper.mock()
 

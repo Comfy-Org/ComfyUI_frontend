@@ -13,13 +13,13 @@
 
       <template #footer-start>
         <a
-          class="flex items-center gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-base-foreground"
+          class="flex items-center gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-foreground"
           :href="changelogUrl"
           target="_blank"
           rel="noopener noreferrer"
           @click="handleLearnMore"
         >
-          <i class="icon-[lucide--external-link] size-4"></i>
+          <i class="icon-[lucide--external-link]"></i>
           {{ $t('releaseToast.whatsNew') }}
         </a>
       </template>
@@ -28,7 +28,7 @@
         <Button
           variant="link"
           size="unset"
-          class="h-6 px-0 text-sm font-normal"
+          class="h-6 px-0 font-normal"
           @click="handleSkip"
         >
           {{ $t('releaseToast.skip') }}
@@ -51,28 +51,27 @@ import { default as DOMPurify } from 'dompurify'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NotificationPopup from '@/components/common/NotificationPopup.vue'
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
-import Button from '@/components/ui/button/Button.vue'
+import NotificationPopup from '@comfyorg/design-system/common/NotificationPopup'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import Button from '@comfyorg/design-system/button/Button'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { isDesktop } from '@/platform/distribution/types'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-import type { ReleaseNote } from '../common/releaseService'
-import { useReleaseStore } from '../common/releaseStore'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 
-const { position = 'bottom-left' } = defineProps<{
+const { position = 'bottom-left', isVisible = true } = defineProps<{
   position?: 'bottom-left' | 'bottom-right'
+  isVisible?: boolean
 }>()
 
 const { buildDocsUrl } = useExternalLink()
 const { toastErrorHandler } = useErrorHandling()
 const releaseStore = useReleaseStore()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const { t } = useI18n()
 
 // Local state for dismissed status
@@ -84,13 +83,8 @@ const latestRelease = computed<ReleaseNote | null>(() => {
 })
 
 // Show toast when new version available and not dismissed
-// Node selection mode keeps the canvas clear of everything but the graph and
-// its own banner, so this popup steps aside for the duration and returns after.
 const shouldShow = computed(
-  () =>
-    releaseStore.shouldShowToast &&
-    !isDismissed.value &&
-    !agentNodeSelectionStore.isActive
+  () => releaseStore.shouldShowToast && !isDismissed.value && isVisible
 )
 
 // Generate changelog URL with version anchor (language-aware)

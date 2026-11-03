@@ -6,7 +6,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 
-import type { MenuOption } from './useMoreOptionsMenu'
+import type { MenuOption } from './menuOption'
 import {
   buildStructuredMenu,
   convertContextMenuToOptions

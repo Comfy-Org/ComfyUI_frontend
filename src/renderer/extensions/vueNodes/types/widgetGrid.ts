@@ -1,9 +1,8 @@
-import type { TooltipOptions } from 'primevue'
 import type { Component } from 'vue'
 
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 export interface WidgetSlotMetadata {
   index: number
@@ -20,20 +19,20 @@ export interface WidgetSlotMetadata {
  * the store-backed {@link ProcessedWidget} superset.
  */
 export interface WidgetGridItem {
+  renderKey: string
   simplified: SimplifiedWidget
-  vueComponent: Component
   visible: boolean
+  vueComponent: Component
+  handleContextMenu?: (e: PointerEvent) => void
+  hasError?: boolean
+  hasLayoutSize?: boolean
+  slotMetadata?: WidgetSlotMetadata
   /**
    * The widget's input is satisfied by an upstream link; the row renders
    * socket-only (no control) instead of disappearing entirely.
    */
   suppressedByConnection?: boolean
-  renderKey: string
-  hasLayoutSize?: boolean
-  hasError?: boolean
-  widgetId?: WidgetId
-  slotMetadata?: WidgetSlotMetadata
-  tooltipConfig?: TooltipOptions
+  tooltipText?: string
   updateHandler?: (value: WidgetValue) => void
-  handleContextMenu?: (e: PointerEvent) => void
+  widgetId?: WidgetId
 }

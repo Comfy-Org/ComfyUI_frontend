@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 
 import FormSelectButton from './FormSelectButton.vue'
@@ -15,9 +14,6 @@ describe('FormSelectButton Core Component', () => {
     props: Record<string, unknown> = {}
   ) => {
     return render(FormSelectButton, {
-      global: {
-        plugins: [PrimeVue]
-      },
       props: {
         modelValue,
         options,
@@ -46,7 +42,7 @@ describe('FormSelectButton Core Component', () => {
       const options = ['option1', 'option2']
       const { container } = renderComponent(null, options)
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const div = container.querySelector('div')
       const buttons = screen.getAllByRole('button')
 
@@ -111,7 +107,6 @@ describe('FormSelectButton Core Component', () => {
       const options = ['first', 'second', 'third']
       const onUpdateModelValue = vi.fn()
       render(FormSelectButton, {
-        global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'first',
           options,
@@ -129,16 +124,10 @@ describe('FormSelectButton Core Component', () => {
       renderComponent('option2', options)
 
       const buttons = screen.getAllByRole('button')
-      expect(buttons[1]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
-      expect(buttons[1]).toHaveClass('text-text-primary')
-      expect(buttons[0]).not.toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
-      expect(buttons[2]).not.toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
+      expect(buttons[1]).toHaveClass('bg-muted')
+      expect(buttons[1]).toHaveClass('text-foreground')
+      expect(buttons[0]).not.toHaveClass('bg-muted')
+      expect(buttons[2]).not.toHaveClass('bg-muted')
     })
   })
 
@@ -158,7 +147,6 @@ describe('FormSelectButton Core Component', () => {
       const options = [10, 20, 30]
       const onUpdateModelValue = vi.fn()
       render(FormSelectButton, {
-        global: { plugins: [PrimeVue] },
         props: {
           modelValue: '10',
           options,
@@ -176,10 +164,8 @@ describe('FormSelectButton Core Component', () => {
       renderComponent('200', options)
 
       const buttons = screen.getAllByRole('button')
-      expect(buttons[1]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
-      expect(buttons[1]).toHaveClass('text-text-primary')
+      expect(buttons[1]).toHaveClass('bg-muted')
+      expect(buttons[1]).toHaveClass('text-foreground')
     })
   })
 
@@ -204,7 +190,6 @@ describe('FormSelectButton Core Component', () => {
       ]
       const onUpdateModelValue = vi.fn()
       render(FormSelectButton, {
-        global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'apple_val',
           options,
@@ -226,15 +211,9 @@ describe('FormSelectButton Core Component', () => {
       renderComponent('md', options)
 
       const buttons = screen.getAllByRole('button')
-      expect(buttons[1]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      ) // Medium
-      expect(buttons[0]).not.toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
-      expect(buttons[2]).not.toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
+      expect(buttons[1]).toHaveClass('bg-muted') // Medium
+      expect(buttons[0]).not.toHaveClass('bg-muted')
+      expect(buttons[2]).not.toHaveClass('bg-muted')
     })
 
     it('handles objects without value field', () => {
@@ -247,9 +226,7 @@ describe('FormSelectButton Core Component', () => {
       const buttons = screen.getAllByRole('button')
       expect(buttons[0].textContent).toBe('First')
       expect(buttons[1].textContent).toBe('Second')
-      expect(buttons[0]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
+      expect(buttons[0]).toHaveClass('bg-muted')
     })
 
     it('handles objects without label field', () => {
@@ -265,7 +242,7 @@ describe('FormSelectButton Core Component', () => {
     })
   })
 
-  describe('PrimeVue Compatibility', () => {
+  describe('object options', () => {
     it('uses custom optionLabel prop', () => {
       const options = [
         { title: 'First Item', value: 'first' },
@@ -286,12 +263,8 @@ describe('FormSelectButton Core Component', () => {
       renderComponent('first_id', options, { optionValue: 'id' })
 
       const buttons = screen.getAllByRole('button')
-      expect(buttons[0]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
-      expect(buttons[1]).not.toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
+      expect(buttons[0]).toHaveClass('bg-muted')
+      expect(buttons[1]).not.toHaveClass('bg-muted')
     })
 
     it('emits custom optionValue when clicked', async () => {
@@ -301,7 +274,6 @@ describe('FormSelectButton Core Component', () => {
       ]
       const onUpdateModelValue = vi.fn()
       render(FormSelectButton, {
-        global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'first_id',
           options,
@@ -333,7 +305,6 @@ describe('FormSelectButton Core Component', () => {
       const options = ['option1', 'option2']
       const onUpdateModelValue = vi.fn()
       render(FormSelectButton, {
-        global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'option1',
           options,
@@ -353,9 +324,7 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = screen.getAllByRole('button')
       buttons.forEach((button) => {
-        expect(button).not.toHaveClass(
-          'hover:bg-interface-menu-component-surface-hovered'
-        )
+        expect(button).not.toHaveClass('hover:bg-accent')
         expect(button).not.toHaveClass('cursor-pointer')
       })
     })
@@ -365,11 +334,9 @@ describe('FormSelectButton Core Component', () => {
       renderComponent('option1', options, { disabled: true })
 
       const buttons = screen.getAllByRole('button')
-      expect(buttons[0]).not.toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      ) // Selected styling disabled
+      expect(buttons[0]).not.toHaveClass('bg-muted') // Selected styling disabled
       expect(buttons[0]).toHaveClass('opacity-50')
-      expect(buttons[0]).toHaveClass('text-text-secondary')
+      expect(buttons[0]).toHaveClass('text-muted-foreground')
     })
   })
 
@@ -380,9 +347,7 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = screen.getAllByRole('button')
       buttons.forEach((button) => {
-        expect(button).not.toHaveClass(
-          'bg-interface-menu-component-surface-selected'
-        )
+        expect(button).not.toHaveClass('bg-muted')
       })
     })
 
@@ -392,9 +357,7 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = screen.getAllByRole('button')
       buttons.forEach((button) => {
-        expect(button).not.toHaveClass(
-          'bg-interface-menu-component-surface-selected'
-        )
+        expect(button).not.toHaveClass('bg-muted')
       })
     })
 
@@ -403,12 +366,8 @@ describe('FormSelectButton Core Component', () => {
       renderComponent('', options)
 
       const buttons = screen.getAllByRole('button')
-      expect(buttons[0]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      ) // Empty string is selected
-      expect(buttons[1]).not.toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
+      expect(buttons[0]).toHaveClass('bg-muted') // Empty string is selected
+      expect(buttons[1]).not.toHaveClass('bg-muted')
     })
 
     it('compares values as strings', () => {
@@ -416,9 +375,7 @@ describe('FormSelectButton Core Component', () => {
       renderComponent('1', options)
 
       const buttons = screen.getAllByRole('button')
-      expect(buttons[0]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      ) // '1' matches number 1 as string
+      expect(buttons[0]).toHaveClass('bg-muted') // '1' matches number 1 as string
     })
   })
 
@@ -428,10 +385,8 @@ describe('FormSelectButton Core Component', () => {
       renderComponent('option1', options)
 
       const selectedButton = screen.getAllByRole('button')[0]
-      expect(selectedButton).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
-      expect(selectedButton).toHaveClass('text-text-primary')
+      expect(selectedButton).toHaveClass('bg-muted')
+      expect(selectedButton).toHaveClass('text-foreground')
     })
 
     it('applies unselected styling to inactive options', () => {
@@ -440,7 +395,7 @@ describe('FormSelectButton Core Component', () => {
 
       const unselectedButton = screen.getAllByRole('button')[1]
       expect(unselectedButton).toHaveClass('bg-transparent')
-      expect(unselectedButton).toHaveClass('text-text-secondary')
+      expect(unselectedButton).toHaveClass('text-muted-foreground')
     })
 
     it('applies hover effects to enabled unselected buttons', () => {
@@ -448,9 +403,7 @@ describe('FormSelectButton Core Component', () => {
       renderComponent('option1', options, { disabled: false })
 
       const unselectedButton = screen.getAllByRole('button')[1]
-      expect(unselectedButton).toHaveClass(
-        'hover:bg-interface-menu-component-surface-selected/50'
-      )
+      expect(unselectedButton).toHaveClass('hover:bg-muted/50')
       expect(unselectedButton).toHaveClass('cursor-pointer')
     })
   })
@@ -473,9 +426,7 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = screen.getAllByRole('button')
       expect(buttons[0].textContent).toBe('@#$%^&*()')
-      expect(buttons[0]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
+      expect(buttons[0]).toHaveClass('bg-muted')
     })
 
     it('handles unicode characters in options', () => {
@@ -484,9 +435,7 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = screen.getAllByRole('button')
       expect(buttons[0].textContent).toBe('🎨 Art')
-      expect(buttons[0]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
+      expect(buttons[0]).toHaveClass('bg-muted')
     })
 
     it('handles duplicate option values', () => {
@@ -494,15 +443,9 @@ describe('FormSelectButton Core Component', () => {
       renderComponent('duplicate', duplicateOptions)
 
       const buttons = screen.getAllByRole('button')
-      expect(buttons[0]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
-      expect(buttons[2]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      ) // Both duplicates selected
-      expect(buttons[1]).not.toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
+      expect(buttons[0]).toHaveClass('bg-muted')
+      expect(buttons[2]).toHaveClass('bg-muted') // Both duplicates selected
+      expect(buttons[1]).not.toHaveClass('bg-muted')
     })
 
     it('handles mixed type options safely', () => {
@@ -515,9 +458,7 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = screen.getAllByRole('button')
       expect(buttons).toHaveLength(3)
-      expect(buttons[1]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      ) // Number 123 as string
+      expect(buttons[1]).toHaveClass('bg-muted') // Number 123 as string
     })
 
     it('handles objects with missing properties gracefully', () => {
@@ -531,9 +472,7 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = screen.getAllByRole('button')
       expect(buttons).toHaveLength(4)
-      expect(buttons[2]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      )
+      expect(buttons[2]).toHaveClass('bg-muted')
     })
 
     it('handles large number of options', () => {
@@ -545,9 +484,7 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = screen.getAllByRole('button')
       expect(buttons).toHaveLength(50)
-      expect(buttons[24]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      ) // Option 25 at index 24
+      expect(buttons[24]).toHaveClass('bg-muted') // Option 25 at index 24
     })
 
     it('fallback to index when all object properties are missing', () => {
@@ -559,9 +496,7 @@ describe('FormSelectButton Core Component', () => {
 
       const buttons = screen.getAllByRole('button')
       expect(buttons).toHaveLength(2)
-      expect(buttons[0]).toHaveClass(
-        'bg-interface-menu-component-surface-selected'
-      ) // Falls back to index 0
+      expect(buttons[0]).toHaveClass('bg-muted') // Falls back to index 0
     })
   })
 
@@ -573,7 +508,7 @@ describe('FormSelectButton Core Component', () => {
       })
 
       const clickHandler = vi.fn()
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       container.firstElementChild!.addEventListener('click', clickHandler)
 
       await clickButton('option2')
@@ -585,7 +520,6 @@ describe('FormSelectButton Core Component', () => {
       const options = ['option1', 'option2']
       const onUpdateModelValue = vi.fn()
       render(FormSelectButton, {
-        global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'option1',
           options,

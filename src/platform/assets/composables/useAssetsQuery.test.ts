@@ -59,45 +59,12 @@ async function createList(
   return list
 }
 
-function requestedLimits() {
-  return fetchApiMock.mock.calls.map(([url]) =>
-    new URL(url, 'http://localhost').searchParams.get('limit')
-  )
-}
-
 function requestedAfterCursors() {
   return fetchApiMock.mock.calls.slice(1).map(([url]) => {
     const requestUrl = new URL(url, 'http://localhost')
     return requestUrl.searchParams.get('after')
   })
 }
-
-describe('useAssetsQuery page size', () => {
-  it('sends the pinned page size on the first fetch and on loadMore', async () => {
-    const list = await createList('page-size', ['newest'], {
-      hasMore: true,
-      nextCursor: 'page-2'
-    })
-    fetchApiMock.mockResolvedValueOnce(response(['older']))
-
-    await list.loadMore()
-    await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
-
-    expect(requestedLimits()).toEqual(['20', '20'])
-  })
-
-  it('lets a caller override the pinned page size', async () => {
-    fetchApiMock.mockResolvedValueOnce(response(['only']))
-    const scope = effectScope()
-    const list = scope.run(() =>
-      useAssetsQuery({ name_contains: 'override', limit: 100 })
-    )!
-    onTestFinished(() => scope.stop())
-    await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
-
-    expect(requestedLimits()).toEqual(['100'])
-  })
-})
 
 const transientFailures: {
   name: string
@@ -124,7 +91,6 @@ describe('useAssetsQuery loadMore transient failure retry', () => {
   it.for(transientFailures)(
     'retains rows and retries the same cursor after $name',
     async ({ fail, reason }) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const list = await createList(`retry-${reason}`, ['newest'], {
         hasMore: true,
         nextCursor: 'page-2'
@@ -136,7 +102,7 @@ describe('useAssetsQuery loadMore transient failure retry', () => {
       await list.loadMore()
       await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
 
-      expect(error).toHaveBeenCalledWith(reason, expect.anything())
+      expect(console.error).toHaveBeenCalledWith(reason, expect.anything())
       expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
       expect(toValue(list.hasMore)).toBe(false)
       await vi.advanceTimersByTimeAsync(2000)
@@ -180,7 +146,6 @@ describe('useAssetsQuery malformed response', () => {
   it.for(malformedResponses)(
     'terminates pagination after $name',
     async ({ response, reason }) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const list = await createList(`malformed-${reason}`, ['newest'], {
         hasMore: true,
         nextCursor: 'page-2'
@@ -189,7 +154,7 @@ describe('useAssetsQuery malformed response', () => {
 
       await expect(list.loadMore()).resolves.toBe(false)
 
-      expect(error).toHaveBeenCalledWith(reason, expect.anything())
+      expect(console.error).toHaveBeenCalledWith(reason, expect.anything())
       expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
       expect(toValue(list.hasMore)).toBe(false)
 

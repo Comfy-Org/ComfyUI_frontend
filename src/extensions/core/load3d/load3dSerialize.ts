@@ -1,11 +1,12 @@
 import { toRaw } from 'vue'
+
 import type {
   CameraConfig,
   CameraState,
   CameraType,
   Model3DTransform,
   Model3DInfo
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 type Load3dSerializedBase = {

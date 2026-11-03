@@ -1,5 +1,7 @@
 import { mergeTests } from '@playwright/test'
 import type { Locator, WebSocketRoute } from '@playwright/test'
+import type { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import {
   comfyExpect as expect,
@@ -8,6 +10,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 /**
  * PM-1303 / PM-1310: Guard the Flux2ImageNode prompt and layout across
@@ -22,6 +25,8 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 const NODE_TITLE = 'Flux.2 Image'
 const PROMPT = 'a glorious spooky duck in a cathedral'
 const RUNNING_STATUS = 'Status: Running\nTime elapsed: 3s (~117s remaining)'
+
+type WidgetValueStore = ReturnType<typeof useWidgetValueStore>
 
 /** Binary WS frame type 3 (`progress_text`): [u32 type][u32 idLen][id][text]. */
 function progressTextFrame(nodeId: string, text: string): Buffer {
@@ -43,9 +48,7 @@ function getPromptBox(comfyPage: ComfyPage): Locator {
   return getNode(comfyPage).getByRole('textbox', { name: 'prompt' })
 }
 
-/** One full generation of the node the way an API node runs it. */
-async function runGeneration(
-  comfyPage: ComfyPage,
+async function startGeneration(
   exec: ExecutionHelper,
   ws: WebSocketRoute,
   nodeId: string
@@ -55,6 +58,15 @@ async function runGeneration(
   exec.executing(jobId, nodeId)
   exec.nodeRunning(jobId, nodeId, 0, 1)
   ws.send(progressTextFrame(nodeId, RUNNING_STATUS))
+  return jobId
+}
+
+async function finishGeneration(
+  comfyPage: ComfyPage,
+  exec: ExecutionHelper,
+  jobId: string,
+  nodeId: string
+) {
   exec.executed(jobId, nodeId, {
     images: [{ filename: 'example.png', subfolder: '', type: 'input' }]
   })
@@ -66,48 +78,61 @@ async function runGeneration(
   ).toBeVisible()
 }
 
+/** One full generation of the node the way an API node runs it. */
+async function runGeneration(
+  comfyPage: ComfyPage,
+  exec: ExecutionHelper,
+  ws: WebSocketRoute,
+  nodeId: string
+) {
+  const jobId = await startGeneration(exec, ws, nodeId)
+  await finishGeneration(comfyPage, exec, jobId, nodeId)
+}
+
 /** Prompt widget identity as the widget store and litegraph see it. */
-function readPromptWidget(comfyPage: ComfyPage) {
-  return comfyPage.page.evaluate(() => {
+async function readPromptWidget(comfyPage: ComfyPage) {
+  const { graphId, nodeId } = await comfyPage.page.evaluate(() => {
     const node = window.app!.graph.nodes.find(
       (n) => n.type === 'Flux2ImageNode'
     )
     if (!node) throw new Error('Flux2ImageNode is not on the graph')
-    const root = document.getElementById('vue-app')
-    if (!root) throw new Error('Vue app root is not mounted')
-    const vueApp = (
-      root as HTMLElement & {
-        __vue_app__: {
-          config: {
-            globalProperties: { $pinia: { _s: Map<string, unknown> } }
-          }
-        }
-      }
-    ).__vue_app__
-    const store = vueApp.config.globalProperties.$pinia._s.get(
-      'widgetValue'
-    ) as {
-      getNodeWidgetIds: (graphId: string, nodeId: number | string) => string[]
-      getWidget: (id: string) => { type: string; value: unknown } | undefined
-    }
-    const graphId = window.app!.rootGraph.id
-    const promptId = `${graphId}:${node.id}:prompt`
-    const progressTextId = `${graphId}:${node.id}:$$node-text-preview`
-    return {
-      nodeId: String(node.id),
-      liteWidgetNames: (node.widgets ?? []).map((w) => w.name),
-      liteWidgetType: node.widgets?.find((w) => w.name === 'prompt')?.type,
-      storeOrderHasPrompt: store
-        .getNodeWidgetIds(graphId, node.id)
-        .includes(promptId),
-      storeType: store.getWidget(promptId)?.type,
-      storeValue: store.getWidget(promptId)?.value,
-      storeHasProgressText: store.getWidget(progressTextId) !== undefined,
-      autogrowInputs: node.inputs
-        .map((input) => input.name)
-        .filter((name) => name.startsWith('model.images.'))
-    }
+    return { graphId: window.app!.rootGraph.id, nodeId: node.id }
   })
+  return comfyPage.page.evaluate(
+    ({ promptId, progressTextId }) => {
+      const node = window.app!.graph.nodes.find(
+        (n) => n.type === 'Flux2ImageNode'
+      )
+      if (!node) throw new Error('Flux2ImageNode is not on the graph')
+      const root = document.getElementById('vue-app')
+      if (!root) throw new Error('Vue app root is not mounted')
+      const vueApp = root.__vue_app__
+      if (!vueApp) throw new Error('Vue app is not mounted')
+      const store = vueApp.config.globalProperties.$pinia._s.get(
+        'widgetValue'
+      ) as WidgetValueStore | undefined
+      if (!store) throw new Error('Widget value store is not initialized')
+      const graphId = window.app!.rootGraph.id
+      return {
+        nodeId: String(node.id),
+        liteWidgetNames: (node.widgets ?? []).map((w) => w.name),
+        liteWidgetType: node.widgets?.find((w) => w.name === 'prompt')?.type,
+        storeOrderHasPrompt: store
+          .getNodeWidgetIds(graphId, node.id)
+          .includes(promptId),
+        storeType: store.getWidget(promptId)?.type,
+        storeValue: store.getWidget(promptId)?.value,
+        storeHasProgressText: store.getWidget(progressTextId) !== undefined,
+        autogrowInputs: node.inputs
+          .map((input) => input.name)
+          .filter((name) => name.startsWith('model.images.'))
+      }
+    },
+    {
+      promptId: widgetId(graphId, nodeId, 'prompt'),
+      progressTextId: widgetId(graphId, nodeId, '$$node-text-preview')
+    }
+  )
 }
 
 test.describe(
@@ -156,16 +181,21 @@ test.describe(
       expect(after.autogrowInputs).toEqual(before.autogrowInputs)
     })
 
-    test('completed generations remove progress text from the node and widget store', async ({
+    test('progress text shows while the node runs and is removed when the generation completes', async ({
       comfyPage,
       getWebSocket
     }) => {
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
       const { nodeId } = await readPromptWidget(comfyPage)
+      const progressText = getNode(comfyPage).getByText('Time elapsed: 3s')
 
-      await runGeneration(comfyPage, exec, ws, nodeId)
+      const jobId = await startGeneration(exec, ws, nodeId)
+      await expect(progressText).toBeVisible()
 
+      await finishGeneration(comfyPage, exec, jobId, nodeId)
+
+      await expect(progressText).toBeHidden()
       expect(await readPromptWidget(comfyPage)).toMatchObject({
         liteWidgetNames: expect.not.arrayContaining(['$$node-text-preview']),
         storeHasProgressText: false
@@ -183,20 +213,20 @@ test.describe(
         const node = getNode(comfyPage)
         const promptBox = getPromptBox(comfyPage)
         await expect(promptBox).toBeVisible()
-        await expect(node).toHaveScreenshot('flux2-prompt-before-runs.png', {
+        await expectElementScreenshot(node, 'flux2-prompt-before-runs.png', {
           maxDiffPixels: 10
         })
 
         await runGeneration(comfyPage, exec, ws, nodeId)
         await expect(promptBox).toBeVisible()
-        await expect(node).toHaveScreenshot('flux2-prompt-after-run-1.png', {
+        await expectElementScreenshot(node, 'flux2-prompt-after-run-1.png', {
           maxDiffPixels: 10
         })
 
         await runGeneration(comfyPage, exec, ws, nodeId)
         await expect(promptBox).toBeVisible()
         await expect(promptBox).toHaveValue(PROMPT)
-        await expect(node).toHaveScreenshot('flux2-prompt-after-run-2.png', {
+        await expectElementScreenshot(node, 'flux2-prompt-after-run-2.png', {
           maxDiffPixels: 10
         })
       }

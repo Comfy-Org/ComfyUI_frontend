@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   clearCompositorLayers,
@@ -17,13 +18,11 @@ import {
 const layerRef = { filename: 'a.png', subfolder: '', type: 'temp' }
 const bbox = { x: 10, y: 20, width: 30, height: 40, name: 'Subject' }
 const node = { id: toNodeId(1), graph: null }
-const subgraphNode = {
-  id: toNodeId(1),
-  graph: { isRootGraph: false, id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' }
-}
+let subgraphNode: Parameters<typeof setCompositorLayers>[0]
 
 describe('useCompositorLayers', () => {
   beforeEach(() => {
+    subgraphNode = { id: toNodeId(1), graph: createTestSubgraph() }
     clearCompositorLayers(node)
     clearCompositorLayers(subgraphNode)
   })

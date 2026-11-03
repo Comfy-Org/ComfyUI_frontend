@@ -4,16 +4,17 @@ import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   OnboardingTourStepStage,
   OnboardingTourStepMetadata
-} from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+} from '@comfyorg/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import type { AppMode } from '@/utils/appMode'
 import { setHappyDomViewport } from '@/utils/__tests__/happyDomTestUtils'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 
 import {
   clearCoachmarks,
@@ -24,7 +25,7 @@ import { TOUR_SEEN_SETTING, tourDefinition } from './onboardingTours'
 import type { CoachId, CoachStep } from './onboardingTours'
 import { useOnboardingTourStore } from './onboardingTourStore'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const dispatcher = useTelemetry()
 assert.exists(dispatcher)
@@ -96,7 +97,6 @@ describe('onboardingTourStore', () => {
     appendedTargets.forEach((el) => el.remove())
     appendedTargets.length = 0
     setViewport({ width: 1024, height: 768 })
-    trackOnboardingTour.mockClear()
   })
 
   /** Register one laid-out element for a coach id, so its step resolves at once. */
@@ -354,10 +354,10 @@ describe('onboardingTourStore', () => {
       skip_reason: 'target_timeout'
     })
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        detail: 'Something went wrong showing this tour'
+        kind: 'error',
+        description: 'Something went wrong showing this tour'
       })
     )
   })
@@ -387,7 +387,7 @@ describe('onboardingTourStore', () => {
     store.next()
     await vi.advanceTimersByTimeAsync(3000)
 
-    expect(useToastStore().messagesToAdd).toHaveLength(1)
+    expect(useToast().toasts).toHaveLength(1)
   })
 
   it('does not toast or double-report when the user skips during a deferred wait', async () => {
@@ -405,7 +405,7 @@ describe('onboardingTourStore', () => {
     )
     expect(skipped).toHaveLength(1)
     expect(skipped[0]?.[1]).toMatchObject({ skip_reason: 'user' })
-    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useToast().toasts).toHaveLength(0)
   })
 
   it('ends an active tour without the seen-flag when its trigger stops holding', async () => {
@@ -440,7 +440,7 @@ describe('onboardingTourStore', () => {
     enterApp('graph', true)
     await vi.advanceTimersByTimeAsync(8000)
 
-    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useToast().toasts).toHaveLength(0)
     const skipReasons = trackOnboardingTour.mock.calls
       .filter(([stage]) => stage === 'skipped')
       .map(([, meta]) => meta.skip_reason)
@@ -667,7 +667,7 @@ describe('onboardingTourStore', () => {
 
     expect(store.activeTour).toBeNull()
     expect(
-      useToastStore().messagesToAdd,
+      useToast().toasts,
       'leaving app mode is an ordinary thing to do, so it must not read as an error'
     ).toEqual([])
     const skipped = trackOnboardingTour.mock.calls.findLast(
@@ -772,7 +772,6 @@ describe('onboardingTourStore', () => {
         target.onEnter = original
       })
       target.onEnter = () => Promise.reject(new Error('framing blew up'))
-      vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const store = mountStore()
       store.replayTour('appMode')
@@ -790,7 +789,7 @@ describe('onboardingTourStore', () => {
         seenTours(),
         'a tour cut short by a failure must be offered again'
       ).not.toContain('appMode')
-      expect(useToastStore().messagesToAdd).toHaveLength(1)
+      expect(useToast().toasts).toHaveLength(1)
     })
 
     it('reports no step_shown until onEnter settles', async () => {
@@ -838,7 +837,6 @@ describe('onboardingTourStore', () => {
       registerAppModeTargets()
       const { entered, attempts } = suspendOnEnter('inputs')
       const store = mountStore()
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       store.replayTour('appMode')
       await nextTick()
       store.next()
@@ -855,7 +853,7 @@ describe('onboardingTourStore', () => {
         store.step,
         'a superseded attempt must not end the tour that replaced it'
       ).not.toBeNull()
-      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(useToast().toasts).toHaveLength(0)
       attempts.forEach((attempt) => attempt.settle())
       await nextTick()
     })
@@ -884,7 +882,7 @@ describe('onboardingTourStore', () => {
         store.step,
         'Back is a plain navigation, not a reason to end the tour'
       ).not.toBeNull()
-      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(useToast().toasts).toHaveLength(0)
       expect(
         trackOnboardingTour.mock.calls.filter(([stage]) => stage === 'skipped')
       ).toHaveLength(0)

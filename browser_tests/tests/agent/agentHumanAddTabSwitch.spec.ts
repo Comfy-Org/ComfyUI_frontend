@@ -13,6 +13,8 @@ const CASE = 'agent-rec-text-only-answer'
 // readiness boundary for "the frames pending on the follower have landed".
 const PROMPT_NODE_ID = '6'
 const PROMPT_WIDGET = 'text'
+const BARRIER_NODE_ID = '9'
+const BARRIER_WIDGET = 'filename_prefix'
 const ADD_POSITION: [number, number] = [400, 400]
 
 interface AddCase {
@@ -75,9 +77,81 @@ test.describe(
   () => {
     test.use({ conversationCase: CASE, humanOpsHost: 'apply' })
 
+    test.describe('while an earlier human edit is in flight', () => {
+      test.use({ humanOpsHost: 'hold' })
+
+      test('keeps a queued node visible across the tab switch and eventually delivers it', async ({
+        agentConversation
+      }, testInfo) => {
+        test.setTimeout(90_000)
+
+        await agentConversation.runTurns()
+        await agentConversation.installTabSwitchObserver()
+
+        const prompt = agentConversation.vueNodes
+          .getNodeLocator(PROMPT_NODE_ID)
+          .getByLabel(PROMPT_WIDGET, { exact: true })
+        await prompt.press('End')
+        await prompt.press('!')
+        await expect.poll(() => agentConversation.heldHumanOpCount()).toBe(1)
+
+        const nodeId = await agentConversation.addNoteThroughSearchBox({
+          x: ADD_POSITION[0],
+          y: ADD_POSITION[1]
+        })
+        await expect(
+          agentConversation.vueNodes.getNodeLocator(nodeId)
+        ).toBeVisible()
+        expect(agentConversation.heldHumanOpCount()).toBe(1)
+        expect(
+          agentConversation
+            .clientDocFrames()
+            .filter((frame) => frame.type === 'doc_ops')
+        ).toHaveLength(1)
+
+        await agentConversation.switchAwayAndBack(
+          BARRIER_NODE_ID,
+          BARRIER_WIDGET
+        )
+
+        const afterReturn = await agentConversation.attachEvidence(
+          testInfo,
+          'after-return-before-ack'
+        )
+        await expect(
+          agentConversation.vueNodes.getNodeLocator(nodeId)
+        ).toBeVisible()
+        expect(afterReturn.live).toContain(nodeId)
+        expect(afterReturn.serialized).toContain(nodeId)
+        expect(agentConversation.hostNodeIds()).not.toContain(nodeId)
+
+        expect(agentConversation.releaseHeldHumanOps()).toBe(1)
+        await expect.poll(() => agentConversation.heldHumanOpCount()).toBe(1)
+        expect(
+          agentConversation
+            .clientDocFrames()
+            .filter((frame) => frame.type === 'doc_ops')
+        ).toHaveLength(2)
+        expect(agentConversation.releaseHeldHumanOps()).toBe(1)
+        await agentConversation.waitForPendingFrames(
+          PROMPT_NODE_ID,
+          PROMPT_WIDGET,
+          'queued node echo landed'
+        )
+
+        await expect(
+          agentConversation.vueNodes.getNodeLocator(nodeId)
+        ).toBeVisible()
+        expect(agentConversation.hostNodeIds()).toContain(nodeId)
+        const afterDelivery = await agentConversation.readNodeLens()
+        expect(afterDelivery.live).toContain(nodeId)
+        expect(afterDelivery.serialized).toContain(nodeId)
+      })
+    })
+
     // Both halves of the mechanism: the host takes the page's add_node op
     // (the host-only contract itself is pinned at the unit level, against the
-    // real applier, in mintPortWiring.test.ts), then the tab return whose
+    // real applier, in docOpMinter.test.ts), then the tab return whose
     // first frame reconciles the stores against the doc. A node the doc holds
     // survives it.
     for (const { name, add } of [

@@ -6,8 +6,8 @@ import { computed, markRaw, ref } from 'vue'
 import type { Raw } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import type { PositionConfig } from '@/composables/element/useAbsolutePosition'
-import type { BaseDOMWidget } from '@/scripts/domWidget'
+import type { PositionConfig } from '@comfyorg/shared-frontend-utils/geometry'
+import type { BaseDOMWidget } from '@/types/domWidget'
 
 export interface DomWidgetState extends PositionConfig {
   // Raw widget instance

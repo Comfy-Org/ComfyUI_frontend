@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, ref } from 'vue'
@@ -7,14 +7,11 @@ import { createI18n } from 'vue-i18n'
 
 import type { Psd } from 'ag-psd'
 
-import type { Document } from '@/renderer/extensions/layerEditor/engine/document'
-import { registerBuiltinKinds } from '@/renderer/extensions/layerEditor/engine/kinds'
-import { defaultMode } from '@/renderer/extensions/layerEditor/engine/mode'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
-import type {
-  GroupData,
-  RasterData
-} from '@/renderer/extensions/layerEditor/engine/node'
+import type { Document } from '@comfyorg/layer-editor/document'
+import { registerBuiltinKinds } from '@comfyorg/layer-editor/kinds'
+import { defaultMode } from '@comfyorg/layer-editor/mode'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import type { GroupData, RasterData } from '@comfyorg/layer-editor/node'
 
 import { useLayerEditorExport } from './useLayerEditorExport'
 import type { LayerEditorSession } from './useLayerEditorSession'
@@ -26,7 +23,6 @@ const { writePsd, downloadBlob } = vi.hoisted(() => ({
 
 vi.mock(import('ag-psd'), () => ({ writePsd }))
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -172,10 +168,6 @@ function makeSession(nodes: RasterData[], glOk = true): LayerEditorSession {
   })
 }
 
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
-})
-
 describe('useLayerEditorExport', () => {
   it('writes a psd matching the layer tree and triggers a download', async () => {
     const session = makeSession([
@@ -209,7 +201,7 @@ describe('useLayerEditorExport', () => {
     expect(blob).toBeInstanceOf(Blob)
     expect(exporting.value).toBe(false)
     expect(session.requestRender).toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('shows an error toast when writing fails', async () => {
@@ -222,12 +214,12 @@ describe('useLayerEditorExport', () => {
     await exportPsd()
 
     expect(downloadBlob).not.toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: 'layerEditor.exportPsdFailed'
+        description: 'layerEditor.exportPsdFailed',
+        kind: 'error'
       })
-    )
+    ])
     expect(exporting.value).toBe(false)
     expect(session.requestRender).toHaveBeenCalled()
   })

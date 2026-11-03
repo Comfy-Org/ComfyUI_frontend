@@ -1,52 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
-
-// Mock dependencies
-vi.mock(import('@/composables/bottomPanelTabs/useShortcutsTab'), () => ({
-  useShortcutsTab: () => [
-    {
-      id: 'shortcuts-essentials',
-      title: 'Essentials',
-      component: {},
-      type: 'vue',
-      targetPanel: 'shortcuts'
-    },
-    {
-      id: 'shortcuts-view-controls',
-      title: 'View Controls',
-      component: {},
-      type: 'vue',
-      targetPanel: 'shortcuts'
-    }
-  ]
-}))
-
-vi.mock(import('@/composables/bottomPanelTabs/useTerminalTabs'), () => ({
-  useLogsTerminalTab: () => ({
-    id: 'logs',
-    title: 'Logs',
-    component: {},
-    type: 'vue',
-    targetPanel: 'terminal'
-  }),
-  useCommandTerminalTab: () => ({
-    id: 'command',
-    title: 'Command',
-    component: {},
-    type: 'vue',
-    targetPanel: 'terminal'
-  })
-}))
-
-const mockData = vi.hoisted(() => ({ isDesktop: false }))
-
-vi.mock(import('@/platform/distribution/types'), () => ({
-  get isDesktop() {
-    return mockData.isDesktop
-  }
-}))
 
 describe('useBottomPanelStore', () => {
   it('should initialize with empty panels', () => {

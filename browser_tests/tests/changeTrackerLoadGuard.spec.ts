@@ -1,7 +1,4 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.describe(
@@ -16,7 +13,7 @@ test.describe(
       comfyPage
     }) => {
       // Tab 0: default workflow (7 nodes)
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
+      await comfyPage.expectNodeCount(7)
 
       // Save tab 0 so it has a unique name for tab switching
       await comfyPage.menu.topbar.saveWorkflow('workflow-a')
@@ -42,21 +39,21 @@ test.describe(
 
       // Create tab 1: blank workflow (0 nodes)
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
 
       // Switch back to tab 0 (workflow-a).
       const tab0 = comfyPage.menu.topbar.getWorkflowTab('workflow-a')
       await tab0.click()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
+      await comfyPage.expectNodeCount(7)
 
       // switch to blank tab and back to verify no corruption
       const tab1 = comfyPage.menu.topbar.getWorkflowTab('Unsaved Workflow')
       await tab1.click()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
 
       // switch again and verify no corruption
       await tab0.click()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
+      await comfyPage.expectNodeCount(7)
     })
   }
 )

@@ -46,13 +46,20 @@ export class PerformanceHelper {
   }
 
   async dispose(): Promise<void> {
+    const measurementInProgress = this.snapshot !== null
     this.snapshot = null
-    if (this.cdp) {
-      try {
-        await this.cdp.send('Performance.disable')
-      } finally {
-        await this.cdp.detach()
-        this.cdp = null
+    try {
+      if (measurementInProgress && !this.page.isClosed()) {
+        await this.stopFrameMeasurement()
+      }
+    } finally {
+      if (this.cdp) {
+        try {
+          await this.cdp.send('Performance.disable')
+        } finally {
+          await this.cdp.detach()
+          this.cdp = null
+        }
       }
     }
   }
@@ -97,37 +104,68 @@ export class PerformanceHelper {
     })
   }
 
-  /**
-   * Measure individual frame durations via rAF timing over a sample window.
-   * Returns all per-frame durations so callers can compute avg, p95, etc.
-   */
-  private async measureFrameDurations(sampleFrames = 30): Promise<number[]> {
-    return this.page.evaluate((frames) => {
-      return new Promise<number[]>((resolve) => {
-        const timeout = setTimeout(() => resolve([]), 5000)
-        const timestamps: number[] = []
-        let count = 0
-        function tick(ts: number) {
-          timestamps.push(ts)
-          count++
-          if (count <= frames) {
-            requestAnimationFrame(tick)
-          } else {
-            clearTimeout(timeout)
-            if (timestamps.length < 2) {
-              resolve([])
-              return
-            }
-            const durations: number[] = []
-            for (let i = 1; i < timestamps.length; i++) {
-              durations.push(timestamps[i] - timestamps[i - 1])
-            }
-            resolve(durations)
-          }
+  private async startFrameMeasurement(): Promise<void> {
+    await this.page.evaluate(async () => {
+      const state: NonNullable<Window['__perfFrameState']> = {
+        frameRequestId: 0,
+        lastTimestamp: null,
+        durationsMs: []
+      }
+
+      function tick(timestamp: number) {
+        if (state.lastTimestamp !== null) {
+          state.durationsMs.push(timestamp - state.lastTimestamp)
         }
-        requestAnimationFrame(tick)
+        state.lastTimestamp = timestamp
+        state.frameRequestId = requestAnimationFrame(tick)
+      }
+
+      window.__perfFrameState = state
+      await new Promise<void>((resolve, reject) => {
+        const timeoutId = window.setTimeout(() => {
+          cancelAnimationFrame(state.frameRequestId)
+          delete window.__perfFrameState
+          reject(new Error('Timed out waiting for the initial animation frame'))
+        }, 1_000)
+        state.frameRequestId = requestAnimationFrame((timestamp) => {
+          window.clearTimeout(timeoutId)
+          state.lastTimestamp = timestamp
+          state.frameRequestId = requestAnimationFrame(tick)
+          resolve()
+        })
       })
-    }, sampleFrames)
+    })
+  }
+
+  private async stopFrameMeasurement(): Promise<number[]> {
+    if (this.page.isClosed()) return []
+    try {
+      return await this.page.evaluate(async () => {
+        const state = window.__perfFrameState
+        if (!state) return []
+
+        cancelAnimationFrame(state.frameRequestId)
+        return new Promise<number[]>((resolve) => {
+          let finished = false
+          const finish = (timestamp?: number) => {
+            if (finished) return
+            finished = true
+            window.clearTimeout(timeoutId)
+            cancelAnimationFrame(state.frameRequestId)
+            if (timestamp !== undefined && state.lastTimestamp !== null) {
+              state.durationsMs.push(timestamp - state.lastTimestamp)
+            }
+            delete window.__perfFrameState
+            resolve(state.durationsMs)
+          }
+          const timeoutId = window.setTimeout(() => finish(), 1_000)
+          state.frameRequestId = requestAnimationFrame(finish)
+        })
+      })
+    } catch (error) {
+      if (this.page.isClosed()) return []
+      throw error
+    }
   }
 
   async startMeasuring(): Promise<void> {
@@ -139,9 +177,8 @@ export class PerformanceHelper {
     // Install longtask observer if not already present, then reset the
     // accumulator so old longtasks don't bleed into the new measurement window.
     await this.page.evaluate(() => {
-      const win = window
-      if (!win.__perfLongtaskState) {
-        const state: { observer: PerformanceObserver; tbtMs: number } = {
+      if (!window.__perfLongtaskState) {
+        const state: NonNullable<Window['__perfLongtaskState']> = {
           observer: new PerformanceObserver((list) => {
             const self = window.__perfLongtaskState
             if (!self) return
@@ -152,18 +189,27 @@ export class PerformanceHelper {
           tbtMs: 0
         }
         state.observer.observe({ type: 'longtask', buffered: true })
-        win.__perfLongtaskState = state
+        window.__perfLongtaskState = state
       }
-      const state = win.__perfLongtaskState
+      const state = window.__perfLongtaskState
       state.tbtMs = 0
       state.observer.takeRecords()
     })
     this.snapshot = await this.getSnapshot()
+    try {
+      await this.startFrameMeasurement()
+    } catch (error) {
+      this.snapshot = null
+      throw error
+    }
   }
 
   async stopMeasuring(name: string): Promise<PerfMeasurement> {
     if (!this.snapshot) throw new Error('Call startMeasuring() first')
-    const after = await this.getSnapshot()
+    const [after, allFrameDurationsMs] = await Promise.all([
+      this.getSnapshot(),
+      this.stopFrameMeasurement()
+    ])
     const before = this.snapshot
     this.snapshot = null
 
@@ -171,10 +217,7 @@ export class PerformanceHelper {
       return after[key] - before[key]
     }
 
-    const [totalBlockingTimeMs, allFrameDurationsMs] = await Promise.all([
-      this.collectTBT(),
-      this.measureFrameDurations()
-    ])
+    const totalBlockingTimeMs = await this.collectTBT()
 
     const frameDurationMs =
       allFrameDurationsMs.length > 0

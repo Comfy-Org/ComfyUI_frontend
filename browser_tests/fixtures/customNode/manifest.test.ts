@@ -256,7 +256,7 @@ describe('customNode manifest', () => {
     const expectedCase = {
       pack: 'ComfyUI-Impact-Pack',
       extensionName: 'Comfy.Impack',
-      extensionPathPack: 'comfyui-impact-pack',
+      customNodePathPack: 'comfyui-impact-pack',
       consumerType: 'ImpactMakeImageList',
       producerType: 'EmptyImage',
       producerSlot: 'IMAGE'

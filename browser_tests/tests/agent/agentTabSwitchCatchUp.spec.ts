@@ -4,7 +4,7 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 // Five wired nodes, one renamed, whose recorded turn sets widget values on
 // existing nodes. Returning to the tab re-subscribes the follower, which
@@ -26,12 +26,8 @@ test.describe(
       test.setTimeout(90_000)
       const panel = page.getByTestId('docked-agent-panel')
       const topbar = new Topbar(page)
-      const canvas = new CanvasHelper(
-        page,
-        page.locator('#graph-canvas'),
-        page.getByRole('button', { name: 'Reset View' })
-      )
-      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
+      const canvas = new CanvasHelper(page, page.locator('#graph-canvas'))
+      const tabs = topbar.tabs
       const lastTurn = agentConversation.conversation.turns.length - 1
 
       const widgetRows =
@@ -56,13 +52,13 @@ test.describe(
         await topbar.newWorkflowButton.click()
         await expect(tabs).toHaveCount(2)
         await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
-        await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+        await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
         await expect(panel).toBeVisible()
       })
 
       await test.step('user returns to the edited workflow', async () => {
         await topbar.getTab(0).click()
-        await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+        await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
         await agentConversation.expectCanvasReplayed(lastTurn)
         await expect
           .poll(() => agentConversation.renderedWidgetRows())
@@ -142,12 +138,8 @@ test.describe(
       const panel = agentConversation.panel
       const nodes = agentConversation.vueNodes
       const topbar = new Topbar(page)
-      const canvas = new CanvasHelper(
-        page,
-        page.locator('#graph-canvas'),
-        page.getByRole('button', { name: 'Reset View' })
-      )
-      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
+      const canvas = new CanvasHelper(page, page.locator('#graph-canvas'))
+      const tabs = topbar.tabs
       const lastTurn = agentConversation.conversation.turns.length - 1
 
       const expectViewport = async (viewport: {
@@ -186,7 +178,7 @@ test.describe(
       const returnToTabA = async () => {
         const before = agentConversation.subscribeCount()
         await topbar.getTab(0).click()
-        await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+        await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
         await expect
           .poll(() => agentConversation.subscribeCount())
           .toBe(before + 1)
@@ -245,6 +237,7 @@ test.describe(
       const customTitle = 'My Custom Sampler'
       const topbar = new Topbar(page)
       await agentConversation.runTurns()
+      await agentConversation.fitCanvasToGraph()
       const sampler =
         await agentConversation.vueNodes.getFixtureByTitle('KSampler')
       await sampler.setTitle(customTitle)
@@ -254,14 +247,13 @@ test.describe(
       await expect(topbar.getTab(1)).toHaveCount(0)
       await topbar.newWorkflowButton.click()
       await expect(topbar.getTab(1)).toHaveCount(1)
-      await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+      await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
       await topbar.getTab(0).click()
-      await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+      await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
       await expect
         .poll(() => agentConversation.subscribeCount())
         .toBe(subscribeCount + 1)
 
-      test.fail()
       await expect(sampler.title).toHaveText(customTitle)
     })
 
@@ -275,12 +267,14 @@ test.describe(
       const wrapper = nodes.getNodeInnerWrapper(nodeId)
       const topbar = new Topbar(page)
       await agentConversation.runTurns()
+      await agentConversation.fitCanvasToGraph()
       await nodes.selectNode(nodeId)
       const originalBackground = await wrapper.evaluate(
         (element) => getComputedStyle(element).backgroundColor
       )
       await page
-        .getByTestId(TestIds.selectionToolbox.colorPickerButton)
+        .getByTestId(TestIds.selectionToolbox.root)
+        .getByRole('button', { name: 'Color', exact: true })
         .dispatchEvent('click')
       await page
         .getByTestId(TestIds.selectionToolbox.colorRed)
@@ -300,9 +294,9 @@ test.describe(
       await expect(topbar.getTab(1)).toHaveCount(0)
       await topbar.newWorkflowButton.click()
       await expect(topbar.getTab(1)).toHaveCount(1)
-      await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+      await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
       await topbar.getTab(0).click()
-      await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+      await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
       await expect
         .poll(() => agentConversation.subscribeCount())
         .toBe(subscribeCount + 1)

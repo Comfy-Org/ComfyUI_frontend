@@ -5,14 +5,14 @@
  */
 import { vi } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../../session.js'
-import type { AccountCredential } from '../../sessionContracts.js'
+import type { SessionClient, SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
-} from '../billingContracts.js'
+} from '#/core/billing/billingContracts'
 
 export function credential(
   overrides: Partial<AccountCredential> = {}

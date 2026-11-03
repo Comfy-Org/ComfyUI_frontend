@@ -1,41 +1,39 @@
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import { SlotShape } from '@/lib/litegraph/src/draw'
+import type {
+  LGraphNode,
+  LLink,
+  SubgraphInput,
+  SubgraphInputNode,
+  SubgraphOutput,
+  SubgraphOutputNode
+} from '@comfyorg/graph-model/entityRegistry'
+import { canvasClass } from '@/lib/litegraph/src/canvas/canvasClassAccess'
+
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedSize'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type { DefaultConnectionColors } from '@comfyorg/graph-model/interfaces'
 import type {
-  DefaultConnectionColors,
-  Hoverable,
-  INodeInputSlot,
-  INodeOutputSlot,
-  Point,
+  PointTuple as Point,
   ReadOnlyRect,
-  Size
-} from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
+import type {
+  CanvasPointerEvent,
+  Hoverable
+} from '@comfyorg/graph-model/events'
 import type {
   Serialisable,
   SubgraphIO
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import type { UUID } from '@/utils/uuid'
-
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphInputNode } from './SubgraphInputNode'
-import type { SubgraphOutput } from './SubgraphOutput'
-import type { SubgraphOutputNode } from './SubgraphOutputNode'
-
-const slotShapes = new Map<RenderShape, SlotShape>([
-  [RenderShape.BOX, SlotShape.Box],
-  [RenderShape.ARROW, SlotShape.Arrow],
-  [RenderShape.GRID, SlotShape.Grid],
-  [RenderShape.CIRCLE, SlotShape.Circle],
-  [RenderShape.HollowCircle, SlotShape.HollowCircle]
-])
 
 interface SubgraphSlotDrawOptions {
   ctx: CanvasRenderingContext2D
@@ -141,7 +139,7 @@ export abstract class SubgraphSlot
   }
 
   measure(): Readonly<Size> {
-    const width = LGraphCanvas._measureText?.(this.displayName) ?? 0
+    const width = canvasClass._measureText?.(this.displayName) ?? 0
 
     const { defaultHeight } = SubgraphSlot
     this.measurement.setValues(width + defaultHeight, defaultHeight)
@@ -186,8 +184,6 @@ export abstract class SubgraphSlot
     fromSlot,
     editorAlpha = 1
   }: SubgraphSlotDrawOptions): void {
-    const shape =
-      slotShapes.get(this.shape ?? RenderShape.CIRCLE) ?? SlotShape.Circle
     const {
       isPointerOver,
       pos: [x, y]
@@ -215,7 +211,7 @@ export abstract class SubgraphSlot
 
       ctx.rect(x - 4, y - 4, 8, 8)
       ctx.fill()
-    } else if (shape === SlotShape.HollowCircle) {
+    } else if (this.shape === RenderShape.HollowCircle) {
       ctx.lineWidth = 3
       ctx.strokeStyle = color
 

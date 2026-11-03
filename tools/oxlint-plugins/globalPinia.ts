@@ -11,7 +11,7 @@ const PINIA_MODULES = new Set(['pinia', '@pinia/testing'])
 const PINIA_FACTORIES = new Set(['createPinia', 'createTestingPinia'])
 const VITEST_MOCK_METHODS = new Set(['mock', 'doMock', 'spyOn', 'mocked'])
 const MAY_EXPORT_STORE =
-  /\bdefineStore\b|^\s*export\s*(?:\*|\{[^}]*\})\s*from\b/m
+  /\bdefineStore\b|^\s*export\s*(?:\*(?:\s+as\s+[\w$]+)?|\{[^}]*\})\s*from\b/m
 const compilerOptions: ts.CompilerOptions = {
   moduleResolution: ts.ModuleResolutionKind.Bundler,
   paths: { '@/*': [resolve(import.meta.dirname, '../../src/*')] }
@@ -21,7 +21,12 @@ const resolutionCache = ts.createModuleResolutionCache(
   (fileName) => fileName,
   compilerOptions
 )
-const piniaModules = new Map<string, { mtimeMs: number; result: boolean }>()
+type PiniaModuleCacheEntry = {
+  mtimeMs: number
+  result: boolean
+  dependencies: Map<string, number>
+}
+const piniaModules = new Map<string, PiniaModuleCacheEntry>()
 
 function literal(node: Node | undefined): string | undefined {
   if (node?.type === 'Literal' && typeof node.value === 'string') {
@@ -192,27 +197,87 @@ function valueReexportSpecifiers(source: ts.SourceFile): string[] {
   )
 }
 
-function exportsPiniaStore(resolved: string, text: string): boolean {
+function exportsPiniaStore(
+  resolved: string,
+  text: string,
+  dependencies: Map<string, number>
+): boolean | undefined {
   if (!MAY_EXPORT_STORE.test(text)) return false
   const source = ts.createSourceFile(resolved, text, ts.ScriptTarget.Latest)
-  return (
-    definesStore(source) ||
-    valueReexportSpecifiers(source).some((specifier) =>
-      isPiniaModule(specifier, resolved)
-    )
-  )
+  if (definesStore(source)) return true
+
+  let hasUnresolvedReexport = false
+  for (const specifier of valueReexportSpecifiers(source)) {
+    const result = isPiniaModule(specifier, resolved, dependencies)
+    if (result) return true
+    if (result === undefined) hasUnresolvedReexport = true
+  }
+  return hasUnresolvedReexport ? undefined : false
 }
 
-function isPiniaModule(specifier: string, importer: string): boolean {
-  if (PINIA_MODULES.has(specifier)) return true
+function addDependencies(
+  target: Map<string, number> | undefined,
+  source: Map<string, number>
+) {
+  if (!target) return
+  for (const [file, mtimeMs] of source) target.set(file, mtimeMs)
+}
+
+function dependenciesAreFresh(dependencies: Map<string, number>): boolean {
+  for (const [file, mtimeMs] of dependencies) {
+    if (statSync(file, { throwIfNoEntry: false })?.mtimeMs !== mtimeMs)
+      return false
+  }
+  return true
+}
+
+function resolveExistingLocalModule(specifier: string, importer: string) {
+  const cached = resolveLocalModule(specifier, importer)
+  if (cached) {
+    const stat = statSync(cached, { throwIfNoEntry: false })
+    if (stat) return { resolved: cached, mtimeMs: stat.mtimeMs }
+    piniaModules.delete(cached)
+  }
+
+  resolutionCache.clear()
   const resolved = resolveLocalModule(specifier, importer)
-  if (!resolved) return false
-  const mtimeMs = statSync(resolved).mtimeMs
+  if (!resolved) return
+  const stat = statSync(resolved, { throwIfNoEntry: false })
+  if (stat) return { resolved, mtimeMs: stat.mtimeMs }
+}
+
+function isPiniaModule(
+  specifier: string,
+  importer: string,
+  parentDependencies?: Map<string, number>
+): boolean | undefined {
+  if (PINIA_MODULES.has(specifier)) return true
+  const module = resolveExistingLocalModule(specifier, importer)
+  if (!module) {
+    return specifier.startsWith('.') || specifier.startsWith('@/')
+      ? undefined
+      : false
+  }
+  const { resolved, mtimeMs } = module
+  parentDependencies?.set(resolved, mtimeMs)
   const cached = piniaModules.get(resolved)
-  if (cached?.mtimeMs === mtimeMs) return cached.result
-  piniaModules.set(resolved, { mtimeMs, result: false })
-  const result = exportsPiniaStore(resolved, readFileSync(resolved, 'utf8'))
-  piniaModules.set(resolved, { mtimeMs, result })
+  if (
+    cached?.mtimeMs === mtimeMs &&
+    dependenciesAreFresh(cached.dependencies)
+  ) {
+    addDependencies(parentDependencies, cached.dependencies)
+    return cached.result
+  }
+  const dependencies = new Map<string, number>()
+  piniaModules.set(resolved, { mtimeMs, result: false, dependencies })
+  const result = exportsPiniaStore(
+    resolved,
+    readFileSync(resolved, 'utf8'),
+    dependencies
+  )
+  if (result === undefined) piniaModules.delete(resolved)
+  else piniaModules.set(resolved, { mtimeMs, result, dependencies })
+  addDependencies(parentDependencies, dependencies)
   return result
 }
 
@@ -243,7 +308,7 @@ function mocksPiniaModule(argument: Node, importer: string): boolean {
   const source = literal(
     argument.type === 'ImportExpression' ? argument.source : argument
   )
-  return source !== undefined && isPiniaModule(source, importer)
+  return source !== undefined && isPiniaModule(source, importer) === true
 }
 
 function spiesOnPiniaStore(
@@ -253,7 +318,8 @@ function spiesOnPiniaStore(
   argument: Node
 ): boolean {
   const target = importedReference(context, argument)
-  if (!target || !isPiniaModule(target.source, context.filename)) return false
+  if (!target || isPiniaModule(target.source, context.filename) !== true)
+    return false
   if (PINIA_MODULES.has(target.source)) return true
   const name =
     method === 'spyOn' ? literal(node.arguments[1]) : target.path.at(-1)

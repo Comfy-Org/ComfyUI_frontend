@@ -1,7 +1,7 @@
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -49,7 +49,7 @@ const mockShowConfirmDialog = vi.mocked(showConfirmDialog)
 
 function capturedOptions() {
   const options = mockShowConfirmDialog.mock.calls[0]?.[0]
-  if (!options) throw new Error('showConfirmDialog was not called')
+  assert.exists(options, 'showConfirmDialog was not called')
   return options
 }
 
@@ -78,7 +78,6 @@ function renderPanel() {
     global: {
       plugins: [i18n],
       stubs: {
-        TabPanel: { template: '<div><slot /></div>' },
         Divider: true,
         SecretListItem: {
           template:

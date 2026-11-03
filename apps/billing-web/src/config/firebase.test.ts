@@ -28,10 +28,6 @@ const testIdentity = fromAny<FirebaseIdentity, unknown>(
   })
 )
 
-beforeEach(() => {
-  h.resolveFirebaseIdentity.mockReset()
-})
-
 async function freshFirebase() {
   vi.resetModules()
   return import('@/config/firebase')

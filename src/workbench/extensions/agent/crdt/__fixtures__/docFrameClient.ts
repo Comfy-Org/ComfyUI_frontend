@@ -1,3 +1,5 @@
+import type { DocResetData } from '@comfyorg/ingest-types'
+
 type ServerFrameType =
   | 'doc_update'
   | 'doc_subscribed'
@@ -12,6 +14,7 @@ interface CommonWireData {
 
 interface DocUpdateWireData extends CommonWireData {
   seq?: unknown
+  lineage_seq?: unknown
   update_b64?: unknown
   actor?: unknown
   op_ids?: unknown
@@ -30,11 +33,6 @@ interface DocOpsResultWireData extends DocSubscribedWireData {
   failed?: unknown
 }
 
-interface DocResetWireData extends CommonWireData {
-  seq?: unknown
-  actor?: unknown
-}
-
 interface AwarenessWireData extends CommonWireData {
   actor?: unknown
   state?: unknown
@@ -49,7 +47,12 @@ function serverFrame<T extends ServerFrameType>(type: T, data: CommonWireData) {
 }
 
 export function docUpdateFrame(data: DocUpdateWireData = {}) {
-  return serverFrame('doc_update', { seq: 1, update_b64: 'AQ==', ...data })
+  return serverFrame('doc_update', {
+    seq: 1,
+    lineage_seq: 1,
+    update_b64: 'AQ==',
+    ...data
+  })
 }
 
 export function docSubscribedFrame(data: DocSubscribedWireData = {}) {
@@ -60,8 +63,19 @@ export function docOpsResultFrame(data: DocOpsResultWireData = {}) {
   return serverFrame('doc_ops_result', { ok: true, ...data })
 }
 
-export function docResetFrame(data: DocResetWireData = {}) {
-  return serverFrame('doc_reset', { seq: 1, actor: 'system:mint', ...data })
+export function docResetFrame(
+  data: Partial<Record<keyof DocResetData, unknown>> = {}
+) {
+  return serverFrame('doc_reset', {
+    ...({
+      v: 1,
+      workflow_id: 'wf-1',
+      seq: 1,
+      lineage_seq: 1,
+      actor: 'system:mint'
+    } satisfies DocResetData),
+    ...data
+  })
 }
 
 export function awarenessFrame(data: AwarenessWireData = {}) {

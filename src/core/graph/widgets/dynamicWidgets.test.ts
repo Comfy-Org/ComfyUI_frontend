@@ -15,12 +15,12 @@ import {
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const originalNamedValuesRestore = LiteGraph.namedValuesRestore
 afterEach(() => {
@@ -534,7 +534,6 @@ describe('Autogrow', () => {
         ok: false,
         error: { code: 'occupied-target', message: 'Target is occupied' }
       })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     node.disconnectInput(1)
     const inputNames = node.inputs.map(({ name }) => name)
@@ -546,7 +545,6 @@ describe('Autogrow', () => {
     expect(node.inputs.map(({ name }) => name)).toEqual(inputNames)
     expect(node.widgets.map(({ name }) => name)).toEqual(widgetNames)
     expect(onConnectionsChange).not.toHaveBeenCalled()
-    consoleError.mockRestore()
   })
   test('Removing a connection ignores stale autogrow callbacks after group removal', () => {
     const graph = new LGraph()

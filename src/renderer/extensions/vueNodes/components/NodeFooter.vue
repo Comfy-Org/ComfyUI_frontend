@@ -9,7 +9,8 @@
       :class="
         cn(
           tabStyles,
-          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
+          'z-10 box-border w-1/2 rounded-none pt-9 pb-3',
+          errorColorClass,
           errorRadiusClass
         )
       "
@@ -17,8 +18,8 @@
       @click.stop="emitIfNotDragged('openErrors')"
     >
       <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.error') }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
+        <span class="truncate">{{ errorLabel }}</span>
+        <i class="icon-[lucide--info]" />
       </div>
     </Button>
 
@@ -28,7 +29,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-header pt-9 pb-3 pl-5 text-inherit',
           enterRadiusClass
         )
       "
@@ -38,7 +39,7 @@
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enter') }}</span>
-        <i class="icon-[comfy--workflow] size-4 shrink-0" />
+        <i class="icon-[comfy--workflow]" />
       </div>
     </Button>
   </div>
@@ -58,7 +59,8 @@
       :class="
         cn(
           tabStyles,
-          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
+          'z-10 box-border w-1/2 rounded-none pt-9 pb-3',
+          errorColorClass,
           errorRadiusClass
         )
       "
@@ -66,8 +68,8 @@
       @click.stop="emitIfNotDragged('openErrors')"
     >
       <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.error') }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
+        <span class="truncate">{{ errorLabel }}</span>
+        <i class="icon-[lucide--info]" />
       </div>
     </Button>
 
@@ -77,7 +79,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-header pt-9 pb-3 pl-5 text-inherit',
           enterRadiusClass
         )
       "
@@ -94,8 +96,8 @@
         <i
           :class="
             showAdvancedState
-              ? 'icon-[lucide--chevron-up] size-4 shrink-0'
-              : 'icon-[lucide--settings-2] size-4 shrink-0'
+              ? 'icon-[lucide--chevron-up]'
+              : 'icon-[lucide--settings-2]'
           "
         />
       </div>
@@ -112,7 +114,8 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
+          'box-border w-full rounded-none pt-9 pb-3',
+          errorColorClass,
           footerRadiusClass
         )
       "
@@ -120,8 +123,8 @@
       @click.stop="emitIfNotDragged('openErrors')"
     >
       <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.error') }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
+        <span class="truncate">{{ errorLabel }}</span>
+        <i class="icon-[lucide--info]" />
       </div>
     </Button>
   </div>
@@ -142,7 +145,7 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
+          'box-border w-full rounded-none bg-node-header text-inherit',
           hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
           footerRadiusClass
         )
@@ -153,7 +156,7 @@
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enterSubgraph') }}</span>
-        <i class="icon-[comfy--workflow] size-4 shrink-0" />
+        <i class="icon-[comfy--workflow]" />
       </div>
     </Button>
   </div>
@@ -174,7 +177,7 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
+          'box-border w-full rounded-none bg-node-header text-inherit',
           hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
           footerRadiusClass
         )
@@ -188,13 +191,13 @@
           <span class="truncate">{{
             t('rightSidePanel.hideAdvancedInputsButton')
           }}</span>
-          <i class="icon-[lucide--chevron-up] size-4 shrink-0" />
+          <i class="icon-[lucide--chevron-up]" />
         </template>
         <template v-else>
           <span class="truncate">{{
             t('rightSidePanel.showAdvancedInputsButton')
           }}</span>
-          <i class="icon-[lucide--settings-2] size-4 shrink-0" />
+          <i class="icon-[lucide--settings-2]" />
         </template>
       </div>
     </Button>
@@ -204,7 +207,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -213,7 +216,7 @@ const { t } = useI18n()
 
 interface Props {
   isSubgraph: boolean
-  hasAnyError: boolean
+  errorSeverity: 'none' | 'missing' | 'error'
   showErrorsTabEnabled: boolean
   showAdvancedInputsButton?: boolean
   showAdvancedState?: boolean
@@ -223,7 +226,7 @@ interface Props {
 
 const {
   isSubgraph,
-  hasAnyError,
+  errorSeverity,
   showErrorsTabEnabled,
   showAdvancedInputsButton,
   showAdvancedState,
@@ -236,6 +239,16 @@ const emit = defineEmits<{
   openErrors: []
   toggleAdvanced: []
 }>()
+
+const hasAnyError = computed(() => errorSeverity !== 'none')
+const errorLabel = computed(() =>
+  t(errorSeverity === 'missing' ? 'rightSidePanel.errors' : 'g.error')
+)
+const errorColorClass = computed(() =>
+  errorSeverity === 'missing'
+    ? 'bg-warning text-warning-foreground hover:bg-warning/90'
+    : 'bg-destructive text-white hover:bg-destructive/90'
+)
 
 let suppressNextClick = false
 

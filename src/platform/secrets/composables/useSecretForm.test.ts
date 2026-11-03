@@ -9,13 +9,13 @@ import type {
   FirstClassSecretProvider,
   SecretProviderInfo,
   SecretErrorCode
-} from '../types'
+} from '@/platform/secrets/types'
 import { useSecretForm as useSecretFormComposable } from './useSecretForm'
 
 const mockCreate = vi.fn()
 const mockUpdate = vi.fn()
 
-vi.mock(import('../api/secretsApi'), () => ({
+vi.mock(import('@/platform/secrets/api/secretsApi'), () => ({
   createSecret: (payload: unknown) => mockCreate(payload),
   updateSecret: (id: string, payload: unknown) => mockUpdate(id, payload),
   SecretsApiError: class SecretsApiError extends Error {
@@ -1011,7 +1011,8 @@ describe('useSecretForm', () => {
     })
 
     it('sets apiError on API failure', async () => {
-      const { SecretsApiError } = await import('../api/secretsApi')
+      const { SecretsApiError } =
+        await import('@/platform/secrets/api/secretsApi')
       const visible = ref(true)
       mockCreate.mockRejectedValue(
         new SecretsApiError('Duplicate', 400, 'DUPLICATE_NAME')

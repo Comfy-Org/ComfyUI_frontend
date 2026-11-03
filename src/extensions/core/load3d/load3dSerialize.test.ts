@@ -1,4 +1,3 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, toRaw, watch } from 'vue'
@@ -8,9 +7,8 @@ import type {
   CameraState,
   CameraType,
   Model3DTransform
-} from '@/extensions/core/load3d/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeProperty } from '@/types/nodeState'
+} from '@comfyorg/viewport3d/load3d/interfaces'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeState'
 
 function makeNode(props: Record<string, NodeProperty | undefined> = {}) {
   return { properties: { ...props } }
@@ -102,10 +100,10 @@ describe('snapshotLoad3dState', () => {
 
   describe('with reactive node.properties (node data store proxy)', () => {
     it('records the camera state without notifying Camera Config watchers', async () => {
-      const props = reactive<Record<string, unknown>>({
+      const props = reactive<Record<string, NodeProperty | undefined>>({
         'Camera Config': { cameraType: 'perspective', fov: 75, state: null }
       })
-      const node = fromAny<LGraphNode, unknown>({ properties: props })
+      const node = { properties: props }
       let triggers = 0
       watch(
         () => props['Camera Config'],
@@ -126,8 +124,8 @@ describe('snapshotLoad3dState', () => {
     })
 
     it('creates Camera Config without notifying watchers when it is absent', async () => {
-      const props = reactive<Record<string, unknown>>({})
-      const node = fromAny<LGraphNode, unknown>({ properties: props })
+      const props = reactive<Record<string, NodeProperty | undefined>>({})
+      const node = { properties: props }
       let triggers = 0
       watch(
         () => props['Camera Config'],
