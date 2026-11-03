@@ -22,7 +22,7 @@ gh run download <run-id> -p 'playwright-report-*'
 - Search each `report.json` for `"status": "flaky"`. A test that passed on
   retry still needs fixing; a green check is not evidence.
 - Read `error-context.md`, the trace (`pnpm dlx playwright show-trace
-trace.zip`), and page snapshots before editing code.
+  trace.zip`), and page snapshots before editing code.
 - Pull the newest run after each push; the flaky set changes.
 
 ## 2. Classify the flake
