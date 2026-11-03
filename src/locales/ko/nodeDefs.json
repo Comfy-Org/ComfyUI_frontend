@@ -4529,6 +4529,10 @@
         "name": "bit_depth",
         "tooltip": "자동은 sRGB에 8비트, HDR에 10비트를 사용합니다. 명시적인 8비트 및 10비트 선택은 색상 공간과 무관합니다."
       },
+      "chroma_subsampling": {
+        "name": "chroma_subsampling",
+        "tooltip": "444는 전체 색상 해상도를 유지하고, 422는 가로 색상 해상도를 절반으로 줄이며, 420은 양쪽 축을 모두 절반으로 줄입니다. 자동은 코덱 기본값을 사용합니다. 지원되지 않는 선택 항목은 가장 가까운 지원 모드를 사용하고 콘솔 경고를 출력합니다."
+      },
       "codec": {
         "name": "codec",
         "tooltip": "선택적으로 비디오를 즉시 인코딩합니다. None은 이미지를 텐서 형식으로 유지하고, Auto는 H.264를 사용합니다."
@@ -6750,11 +6754,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "FLUX 슈퍼 해상도로 비디오를 1.5~3배 업스케일하며, 원본을 정밀하게 유지하거나 디테일을 창의적으로 향상합니다.",
-    "display_name": "Flux 비디오 업스케일",
+    "display_name": "Flux 비디오 업스케일 (레거시)",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "입력 제한에 맞도록 면적이 3840x2160픽셀보다 큰 소스를 자동으로 축소합니다. 종횡비는 유지되며, 더 작은 비디오는 변경되지 않습니다."
+        "tooltip": "입력 제한에 맞도록 면적이 2560x1440픽셀보다 큰 소스를 자동으로 다운스케일합니다. 화면비는 유지되며, 더 작은 비디오는 그대로 유지됩니다."
       },
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -6782,6 +6786,48 @@
       "video": {
         "name": "video",
         "tooltip": "종횡비가 1:4~4:1인 1~20초 길이의 원본 clip입니다. 출력은 24fps로 렌더링되며 프레임당 약 1,440만 화소로 제한됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "FLUX 초해상도를 사용하여 비디오를 1080p, 2K 또는 4K로, 또는 1.5~3배로 업스케일하며, 소스를 정밀하게 보존하거나 세부 사항을 창의적으로 향상합니다.",
+    "display_name": "Flux 비디오 업스케일",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "너무 큰 소스를 거부하는 대신 다운스케일합니다. 면적이 2560x1440픽셀을 초과하거나 대상 해상도의 3분의 2를 초과하는 경우(최소 배율은 1.5배) 적용됩니다. 화면비는 유지됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "'creative'는 미세한 세부 사항을 복원하고 새로 만들어 내며, 생성된 영상, 텍스처 및 풍경에 가장 적합합니다. 'precise'는 소스를 변경하지 않고 선명하게 하며, 얼굴, 제품 및 실제 영상에 적합합니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "향상된 세부 사항을 유도하는 선택적 클립 설명입니다. 중립적인 업스케일을 위해 비워 두세요."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "검토 허용 수준입니다. 0이 가장 엄격합니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. FLUX는 자체 시드를 선택하므로 이 값과 관계없이 실제 결과는 비결정적입니다."
+      },
+      "target_resolution": {
+        "name": "target_resolution",
+        "tooltip": "2K, 4K 및 1080p는 출력을 각각 2560x1440, 3840x2160 또는 1920x1080 내부에 맞춥니다(세로 클립의 경우 회전됨). 최대 3배에서 이를 채우기에는 소스가 너무 작으면 3배 업스케일되어 더 작은 크기로 출력됩니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "화면비가 1:4~4:1인 1~20초 길이의 소스 클립입니다. 출력은 24fps로 렌더링되며 프레임당 약 14.4메가픽셀로 제한됩니다."
       }
     },
     "outputs": {
@@ -9039,7 +9085,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Ideogram 4.5 정밀 편집을 사용하여 텍스트 프롬프트의 안내에 따라 이미지를 편집합니다. 프롬프트에서 요청한 부분만 변경되고, 수정하지 않은 픽셀은 동일하게 유지되며 출력은 이미지 1의 크기를 유지합니다(약 4MP를 초과하는 이미지는 먼저 축소됨). 최대 4개의 참조 이미지를 허용합니다.",
+    "description": "Ideogram 4.5 정밀 편집을 사용하여 텍스트 프롬프트에 따라 이미지를 편집합니다. 프롬프트가 요청한 부분만 변경되고, 변경하지 않은 픽셀은 동일하게 유지되며, 출력은 이미지 1의 크기를 유지합니다(약 4MP를 초과하는 이미지는 먼저 축소됨). mask 또는 경계 상자로 지정한 단일 영역도 편집할 수 있으며, 이미지를 전체 크기로 반환할 수 있습니다. 최대 4개의 참조 이미지를 허용합니다(context_window_mask 사용 시 3개).",
     "display_name": "Ideogram 4.5 정밀 편집",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9094,9 @@
       "model": {
         "name": "모델",
         "tooltip": "사용할 모델입니다."
+      },
+      "model_context_window": {
+        "name": "context_window"
       },
       "model_prompt": {
         "name": "프롬프트"
@@ -10250,6 +10299,128 @@
       },
       "steps": {
         "name": "스텝 수"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4EditVideoNode": {
+    "description": "텍스트 프롬프트와 선택적 참조 이미지 및 비디오를 사용하여 비디오를 편집합니다. 결과는 입력 비디오와 길이가 같습니다.",
+    "display_name": "Kling 4.0 비디오 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageToVideoNode": {
+    "description": "최대 10개의 키프레임을 통해 오디오가 포함된 비디오를 생성합니다. 중간 프레임은 균등하게 배치되며, 비디오는 첫 번째 키프레임의 화면비를 따릅니다.",
+    "display_name": "Kling 4.0 이미지-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_duration": {
+        "name": "지속 시간"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ReferenceToVideoNode": {
+    "description": "참조 이미지와 비디오로 오디오가 포함된 비디오를 생성하며, 지정한 프레임에서 시작하거나 끝나도록 선택할 수 있습니다.",
+    "display_name": "Kling 4.0 참조-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "재생 시간"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4TextToVideoNode": {
+    "description": "텍스트 프롬프트로 오디오가 포함된 비디오를 생성합니다.",
+    "display_name": "Kling 4.0 텍스트-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "재생 시간"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
       }
     },
     "outputs": {
@@ -14940,6 +15111,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "MiniMax H3의 컨텍스트 창을 설정합니다. 비디오와 오디오의 동기화를 유지하기 위해 창은 모델의 17프레임 청크에서 시작합니다.",
+    "display_name": "MiniMax H3 컨텍스트 창",
+    "inputs": {
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "실제 프레임 기준 컨텍스트 창의 길이입니다. 17*n + 5여야 합니다."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "실제 프레임 기준 컨텍스트 창의 겹침 길이입니다. 17*n + 5여야 합니다."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "FreeNoise 노이즈 셔플링 적용 여부입니다. 창 블렌딩을 개선합니다."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "컨텍스트 창을 융합하는 데 사용할 방법입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "샘플링 중 컨텍스트 창을 적용할 모델입니다."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "여러 컨디셔닝(ConditionCombine으로 생성됨)을 영역 인덱스에 따라 각 창으로 분할할지 여부입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "샘플링 중 컨텍스트 창이 적용된 모델입니다."
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "MiniMax H3 Fun ControlNet을 모델 패치로 텍스트-투-비디오 모델에 적용합니다.",
     "display_name": "MiniMax H3 Fun ControlNet 적용",
@@ -15015,6 +15221,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "latent 업스케일 모델로 MiniMax H3 latent의 비디오 크기를 조정하며, 오디오는 변경 없이 통과합니다.",
+    "display_name": "MiniMax H3 모델 사용 latent 업스케일",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "samples": {
+        "name": "샘플"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15209,8 +15438,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "이미지에서 시작하여 피사체 주변의 새 각도와 거리로 카메라를 이동하는 비디오를 생성합니다.",
+    "display_name": "MiniMax H3 Max 카메라 제어",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "동영상 생성에 사용할 모델입니다."
+      },
+      "model_azimuth": {
+        "name": "방위각"
+      },
+      "model_distance": {
+        "name": "거리"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_elevation": {
+        "name": "고도각"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "프롬프트 확장 모드"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "프롬프트와 선택적 오디오 참조를 바탕으로 새 영상을 이어서 생성합니다.",
+    "display_name": "MiniMax H3 Max 동영상 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "동영상 생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_output": {
+        "name": "출력"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_prompt_expansion": {
+        "name": "프롬프트 확장"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "프롬프트와 선택적 참조 이미지 및 동영상을 바탕으로 시작 시간과 재개 시간 사이의 동영상 부분을 새로 생성된 장면으로 교체합니다.",
+    "display_name": "MiniMax H3 Max 동영상 삽입",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "동영상 생성에 사용할 모델입니다."
+      },
+      "model_color_match": {
+        "name": "색상 일치"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_prompt_expansion": {
+        "name": "프롬프트 확장"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_resume_time": {
+        "name": "재개 시간"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_start_time": {
+        "name": "시작 시간"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "입 움직임이 오디오를 따르도록 이미지를 애니메이션화합니다. 동영상 길이는 오디오 길이와 같습니다.",
+    "display_name": "MiniMax H3 Max 립싱크",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "동영상 생성에 사용할 모델입니다."
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_transcription": {
+        "name": "전사"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "소스 비디오의 움직임, 카메라, 컷 및 사운드를 유지하면서 비디오 속 인물을 참조 사진 속 인물로 교체합니다.",
+    "display_name": "MiniMax H3 Max 리캐스트",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_enhance_realism": {
+        "name": "사실감 향상"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "비디오를 새 캔버스에 맞추고 주변 영역을 생성하여 새 종횡비에 맞게 조정합니다. 소스 비디오의 타이밍과 사운드는 유지됩니다.",
+    "display_name": "MiniMax H3 Max 비디오 리프레임",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "MiniMax H3 모델을 사용하여 참조 이미지, 비디오 및 오디오를 조건으로 비디오를 생성합니다. 프롬프트에서 참조 항목을 순서대로 '이미지 1', '이미지 2', '비디오 1', '오디오 1' 등으로 지칭하세요.",
+    "description": "MiniMax H3 모델을 사용하여 참조 이미지, 비디오 및 오디오를 조건으로 비디오를 생성합니다. 프롬프트에서 참조 항목을 순서대로 {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1 등으로 지정하세요.",
     "display_name": "MiniMax H3 참조 기반 비디오",
     "inputs": {
       "control_after_generate": {
@@ -18824,6 +19263,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "프롬프트를 바탕으로 입력 이미지의 영역에서 이음새 없이 타일링되는 PBR 머티리얼(텍스처 이미지 + PBR 맵)을 추출합니다.",
+    "display_name": "Patina 머티리얼 추출",
+    "inputs": {
+      "basecolor": {
+        "name": "기본 색상",
+        "tooltip": "기본 색상(albedo) 맵을 생성합니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "height": {
+        "name": "높이",
+        "tooltip": "높이/변위 맵을 생성합니다."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "텍스처를 추출할 이미지입니다."
+      },
+      "image_size": {
+        "name": "이미지 크기",
+        "tooltip": "출력 텍스처 크기입니다. 512~2048 사이의 너비/높이를 지정하려면 'custom'을 선택하세요(8K 결과는 맵을 4배 업스케일링하여 생성됩니다)."
+      },
+      "metalness": {
+        "name": "메탈릭",
+        "tooltip": "메탈릭 맵을 생성합니다."
+      },
+      "normal": {
+        "name": "노멀",
+        "tooltip": "노멀 맵을 생성합니다."
+      },
+      "num_inference_steps": {
+        "name": "추론 단계 수",
+        "tooltip": "텍스처 생성을 위한 노이즈 제거 단계입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지에서 추출할 텍스처를 설명하세요(예: \"벽\")."
+      },
+      "prompt_expansion": {
+        "name": "프롬프트 확장",
+        "tooltip": "더 풍부한 텍스처 디테일을 위해 LLM으로 프롬프트를 확장합니다. 기본적으로 꺼져 있습니다. 확장은 프롬프트를 사진으로 재구성하며 메탈니스 맵이 흐려지는 경향이 있습니다."
+      },
+      "roughness": {
+        "name": "거칠기",
+        "tooltip": "거칠기 맵을 생성합니다."
+      },
+      "safety_checker": {
+        "name": "안전성 검사기"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "재현 가능한 생성을 위한 시드입니다."
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "입력 이미지를 변환하는 정도입니다."
+      },
+      "tile_size": {
+        "name": "타일 크기",
+        "tooltip": "latent 공간의 타일 크기(64 = 512px, 128 = 1024px)입니다."
+      },
+      "tile_stride": {
+        "name": "타일 스트라이드",
+        "tooltip": "latent 공간의 타일 스트라이드입니다."
+      },
+      "tiling_mode": {
+        "name": "타일링 모드",
+        "tooltip": "타일링 방향: 전방향, 가로 또는 세로."
+      },
+      "upscale_factor": {
+        "name": "업스케일 비율",
+        "tooltip": "PBR 맵을 Seamless SeedVR로 업스케일링합니다(기본 텍스처는 업스케일링되지 않음)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "텍스처",
+        "tooltip": null
+      },
+      "1": {
+        "name": "기본 색상",
+        "tooltip": null
+      },
+      "2": {
+        "name": "노멀",
+        "tooltip": null
+      },
+      "3": {
+        "name": "거칠기",
+        "tooltip": null
+      },
+      "4": {
+        "name": "메탈니스",
+        "tooltip": null
+      },
+      "5": {
+        "name": "높이",
+        "tooltip": null
+      },
+      "6": {
+        "name": "확장된 프롬프트",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "텍스트 프롬프트에서 최대 8K의 완전한 심리스 타일링 PBR 머티리얼(텍스처 이미지 + PBR 맵)을 생성합니다. 선택적으로 입력 이미지(img2img) 또는 이미지 + mask(inpaint)로 구동할 수 있습니다.",
+    "display_name": "파티나 머티리얼",
+    "inputs": {
+      "basecolor": {
+        "name": "기본 색상",
+        "tooltip": "기본 색상(albedo) 맵을 생성합니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "height": {
+        "name": "높이",
+        "tooltip": "높이/변위 맵을 생성합니다."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "선택 사항인 소스 이미지입니다. 이미지만 제공 = img2img, mask와 함께 제공 = inpaint."
+      },
+      "image_size": {
+        "name": "이미지 크기",
+        "tooltip": "출력 텍스처 크기입니다. 512~2048 사이의 너비/높이를 지정하려면 'custom'을 선택하세요(8K 결과는 맵을 4배 업스케일링하여 얻습니다)."
+      },
+      "mask": {
+        "name": "마스크",
+        "tooltip": "선택 사항인 인페인트 마스크입니다(이미지 필요). 흰색 = 다시 생성, 검은색 = 유지."
+      },
+      "metalness": {
+        "name": "메탈니스",
+        "tooltip": "메탈니스 맵을 생성합니다."
+      },
+      "normal": {
+        "name": "노멀",
+        "tooltip": "노멀 맵을 생성합니다."
+      },
+      "num_inference_steps": {
+        "name": "추론 단계 수",
+        "tooltip": "텍스처 생성을 위한 노이즈 제거 단계입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "생성할 머티리얼/텍스처를 설명합니다."
+      },
+      "prompt_expansion": {
+        "name": "프롬프트 확장",
+        "tooltip": "더 풍부한 텍스처 디테일을 위해 LLM으로 프롬프트를 확장합니다. 기본적으로 꺼져 있습니다. 확장은 프롬프트를 사진으로 재구성하며 금속성 맵을 흐리게 하는 경향이 있습니다."
+      },
+      "roughness": {
+        "name": "거칠기",
+        "tooltip": "거칠기 맵을 생성합니다."
+      },
+      "safety_checker": {
+        "name": "안전성 검사기"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "재현 가능한 생성을 위한 시드입니다."
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "입력 이미지를 변환하는 정도입니다. 이미지가 제공된 경우에만 사용됩니다."
+      },
+      "tile_size": {
+        "name": "타일 크기",
+        "tooltip": "잠재 공간의 타일 크기(64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "타일 스트라이드",
+        "tooltip": "잠재 공간의 타일 스트라이드입니다."
+      },
+      "tiling_mode": {
+        "name": "타일링 모드",
+        "tooltip": "타일링 방향: 모든 방향, 가로 또는 세로."
+      },
+      "upscale_factor": {
+        "name": "업스케일 배율",
+        "tooltip": "PBR 맵을 이음새 없이 SeedVR 업스케일링합니다(기본 텍스처는 업스케일링되지 않음)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "텍스처",
+        "tooltip": null
+      },
+      "1": {
+        "name": "기본 색상",
+        "tooltip": null
+      },
+      "2": {
+        "name": "노멀",
+        "tooltip": null
+      },
+      "3": {
+        "name": "거칠기",
+        "tooltip": null
+      },
+      "4": {
+        "name": "금속성",
+        "tooltip": null
+      },
+      "5": {
+        "name": "높이",
+        "tooltip": null
+      },
+      "6": {
+        "name": "확장된 프롬프트",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "텍스처 이미지에서 PBR 재질 맵(기본 색상, 노멀, 거칠기, 금속성, 높이)을 생성합니다.",
+    "display_name": "Patina PBR 재질 맵",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "가장 긴 변이 2048px(모델의 입력 제한)를 초과하는 입력 이미지를 종횡비를 유지하면서 자동으로 다운스케일합니다. 더 작은 이미지는 그대로 유지됩니다. 대신 크기가 큰 이미지에서 오류를 발생시키려면 비활성화하세요."
+      },
+      "basecolor": {
+        "name": "기본 색상",
+        "tooltip": "기본 색상(알베도) 맵을 생성합니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "height": {
+        "name": "높이",
+        "tooltip": "높이/변위 맵을 생성합니다."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "PBR 맵을 추출할 입력 사진 또는 렌더입니다."
+      },
+      "metalness": {
+        "name": "금속성",
+        "tooltip": "금속성 맵을 생성합니다."
+      },
+      "normal": {
+        "name": "노멀",
+        "tooltip": "노멀 맵을 생성합니다."
+      },
+      "roughness": {
+        "name": "거칠기",
+        "tooltip": "거칠기 맵을 생성합니다."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "재현 가능한 디노이징을 위한 시드입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "기본 색상",
+        "tooltip": null
+      },
+      "1": {
+        "name": "노멀",
+        "tooltip": null
+      },
+      "2": {
+        "name": "거칠기",
+        "tooltip": null
+      },
+      "3": {
+        "name": "금속성",
+        "tooltip": null
+      },
+      "4": {
+        "name": "높이",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg (PerpNegGuider에 의해 지원 중단됨)",
     "inputs": {
@@ -19765,6 +20486,33 @@
       },
       "model_seed": {
         "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaPVideoUpscaleNode": {
+    "description": "Pruna P-Video Upscale을 사용하여 비디오의 종횡비와 오디오를 유지하면서 720p, 1080p, 2K 또는 4K로 업스케일합니다.",
+    "display_name": "Pruna P-Video 업스케일",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "출력 프레임 레이트입니다. 'source'는 비디오의 프레임 레이트를 최대 60까지 유지합니다. 더 높은 레이트는 보간됩니다. 30 fps를 초과하는 출력은 비용이 두 배입니다."
+      },
+      "target": {
+        "name": "대상",
+        "tooltip": "출력 픽셀 영역: 720p는 약 0.9메가픽셀, 1080p는 2.1, 2K는 3.7, 4K는 8.3입니다. 이미 이 크기인 비디오는 크기를 유지하며 향상만 적용됩니다. 최대 길이: 2400, 1200, 600 또는 300프레임이며, 24 fps에서 약 100, 50, 25 또는 12.5초입니다."
+      },
+      "turbo": {
+        "name": "터보",
+        "tooltip": "같은 비용으로 더 빠르게 업스케일하지만 세부 묘사는 더 부드러워집니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "업스케일할 비디오입니다. 최대 512 MiB."
       }
     },
     "outputs": {
@@ -23629,7 +24377,7 @@
       },
       "format": {
         "name": "포맷",
-        "tooltip": "출력 컨테이너입니다. 자동은 Auto/H.264에 MP4를, AV1에 WebM을 사용합니다. MP4, MKV 및 WebM은 특정 컨테이너를 선택합니다."
+        "tooltip": "자동은 ProRes에 MOV를, AV1에 WebM을 사용하며, 그 외에는 MP4를 사용합니다."
       },
       "format_codec": {
         "name": "코덱"
@@ -25673,7 +26421,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "텍스트 생성",
+    "display_name": "텍스트 생성(사용 중단됨)",
     "inputs": {
       "audio": {
         "name": "오디오"
@@ -25816,6 +26564,79 @@
       },
       "1": {
         "name": "사고 과정",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "텍스트 생성",
+    "inputs": {
+      "audios": {
+        "name": "오디오"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "이미지"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "체크포인트의 멀티 토큰 예측 헤드를 사용한 추측 디코딩입니다. MTP 가중치가 없으면 효과가 없습니다. auto는 관찰된 토큰 일치 및 실행 비용에 맞춰 초안 깊이와 폭을 조정합니다. 2-5는 일정한 초안 깊이로 고정합니다. tree 모드는 폭과 깊이를 모두 고정합니다. 샘플링된 출력은 올바른 분포를 유지하지만, 동일한 시드에서도 비 MTP 출력과는 다릅니다."
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에 있는 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않으면 무시됩니다."
+      },
+      "thinking": {
+        "name": "사고 모드",
+        "tooltip": "모델이 지원하는 경우 사고 모드로 작동합니다."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "모델에 기본 제공 시스템 프롬프트/템플릿이 있으면 사용합니다."
+      },
+      "videos": {
+        "name": "비디오"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
         "tooltip": null
       }
     }
@@ -25980,7 +26801,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "업계 표준 업스케일 및 이미지 향상.",
+    "description": "업계 표준 업스케일링 및 이미지 향상입니다. 최대 출력: 1억 7,900만 메가픽셀.",
     "display_name": "Topaz 이미지 향상",
     "inputs": {
       "image": {
@@ -26018,11 +26839,11 @@
       },
       "output_height": {
         "name": "output_height",
-        "tooltip": "0으로 설정하면 원본과 동일한 높이 또는 output_width가 지정된 경우 비율에 맞게 조정. Wonder 3.5는 1x~6x 업스케일만 지원합니다. Bloom 2와 Wonder 3.5는 입력 종횡비를 유지하며 요청된 크기를 목표로 처리합니다."
+        "tooltip": "값이 0이면 원본과 동일한 높이로 출력하거나, output_width가 지정된 경우 이에 비례하여 조정합니다. Wonder 3.5 및 Wonder 4는 1x~6x 업스케일 배율을 지원하며, Bloom 2는 1x~12x를 지원합니다. Bloom 2, Wonder 3.5 및 Wonder 4는 항상 입력 종횡비를 유지합니다. 두 크기를 모두 설정했는데 비율이 다르면 더 큰 배율이 적용되며, 출력(및 가격)이 요청한 크기보다 커집니다."
       },
       "output_width": {
         "name": "output_width",
-        "tooltip": "0으로 설정하면 자동 계산(보통 원본 크기이거나 output_height가 지정된 경우 비율에 맞게 조정). Wonder 3.5는 1x~6x 업스케일만 지원합니다. Bloom 2와 Wonder 3.5는 입력 종횡비를 유지하며 요청된 크기를 목표로 처리합니다."
+        "tooltip": "값이 0이면 자동으로 계산합니다(보통 원본 크기이거나, output_height가 지정된 경우 이에 비례하여 조정됩니다). Wonder 3.5 및 Wonder 4는 1x~6x 업스케일 배율을 지원하며, Bloom 2는 1x~12x를 지원합니다. Bloom 2, Wonder 3.5 및 Wonder 4는 항상 입력 종횡비를 유지합니다. 두 크기를 모두 설정했는데 비율이 다르면 더 큰 배율이 적용되며, 출력(및 가격)이 요청한 크기보다 커집니다."
       }
     },
     "outputs": {
@@ -27960,6 +28781,24 @@
       }
     }
   },
+  "VAEComputeDtype": {
+    "description": "다른 분기에 영향을 주지 않고 VAE 인코딩 및 디코딩의 연산 dtype을 설정합니다.",
+    "display_name": "VAE 연산 dtype",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Default는 입력 VAE의 연산 dtype을 유지합니다."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VAEDecode": {
     "description": "잠재 데이터를 픽셀 공간 이미지로 디코딩합니다.",
     "display_name": "VAE 디코드",
@@ -28429,6 +29268,33 @@
       "video": {
         "name": "비디오",
         "tooltip": "30분보다 짧은 음성 사운드트랙이 포함된 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "VEED를 사용하여 동영상의 음성을 다른 언어로 번역합니다. 각 화자의 음성을 복제하고 입 모양을 번역에 맞춰 동기화합니다.",
+    "display_name": "VEED 더빙",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "standard: 더 저렴한 가격, 모노 오디오; 스페인어는 라틴 아메리카식이고 포르투갈어는 브라질식입니다. pro: 지역 억양 및 스테레오 오디오."
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_source_language": {
+        "name": "source_language"
+      },
+      "model_target_language": {
+        "name": "target_language"
       }
     },
     "outputs": {

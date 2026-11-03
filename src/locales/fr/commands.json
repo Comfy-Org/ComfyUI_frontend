@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Redémarrer"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Ouvrir le visualiseur 3D (bêta) pour le nœud sélectionné"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "Expérimental : Parcourir les ressources de modèles"
   },
@@ -105,7 +108,7 @@
     "label": "Réduire/Étendre les nœuds sélectionnés"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Links": {
-    "label": "Masquer/afficher les liens des nœuds sélectionnés"
+    "label": "Masquer/Afficher les liens sur les nœuds sélectionnés"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Mettre en sourdine/Activer le son des nœuds sélectionnés"
