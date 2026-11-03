@@ -30,6 +30,7 @@ export type CapabilityDenialReason =
   | 'not_original_owner'
   | 'creator_only_provisioning'
   | 'payment_past_due'
+  | 'topup_purchases_paused'
   | 'free_plan'
   | 'no_subscription'
   | 'subscription_ended'
@@ -80,6 +81,7 @@ const KNOWN_REASONS: Readonly<
   not_original_owner: true,
   creator_only_provisioning: true,
   payment_past_due: true,
+  topup_purchases_paused: true,
   free_plan: true,
   no_subscription: true,
   subscription_ended: true,

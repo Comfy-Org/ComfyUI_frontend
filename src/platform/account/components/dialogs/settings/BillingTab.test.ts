@@ -102,6 +102,7 @@ interface Scenario {
   billingStatus?: 'paid' | 'paused'
   hasParkedBillingOperation?: boolean
   renewalDate?: string | null
+  nextCreditRefillAt?: string | null
 }
 
 function correlationIdOf(link: HTMLElement) {
@@ -154,6 +155,7 @@ function arrange(scenario: Scenario = {}) {
       renewalDate: computed(() => scenario.renewalDate ?? null),
       currentTeamCreditStop: computed(() => null),
       periodCreditGrant: computed(() => null),
+      nextCreditRefillAt: computed(() => scenario.nextCreditRefillAt ?? null),
       initialize,
       fetchStatus,
       resubscribe
@@ -1150,18 +1152,45 @@ describe('BillingTab', () => {
   })
 
   it.for([
-    { planKind: 'self_serve', date: 'Refills November 15, 2026' },
-    { planKind: 'sales_managed', date: null },
-    { planKind: 'none', date: null },
-    { planKind: null, date: null }
+    {
+      planKind: 'self_serve',
+      billingStatus: 'paid',
+      nextCreditRefillAt: '2026-12-01T00:00:00Z',
+      date: 'Refills December 1, 2026'
+    },
+    {
+      planKind: 'sales_managed',
+      billingStatus: 'paid',
+      nextCreditRefillAt: '2026-12-01T00:00:00Z',
+      date: 'Refills December 1, 2026'
+    },
+    {
+      planKind: 'self_serve',
+      billingStatus: 'paid',
+      nextCreditRefillAt: null,
+      date: null
+    },
+    {
+      planKind: 'sales_managed',
+      billingStatus: 'paid',
+      nextCreditRefillAt: null,
+      date: null
+    },
+    {
+      planKind: 'sales_managed',
+      billingStatus: 'paused',
+      nextCreditRefillAt: '2026-12-01T00:00:00Z',
+      date: 'Refills when the payment goes through'
+    }
   ] as const)(
-    'shows a $planKind paused-plan refill date only when self-serve',
-    ({ planKind, date }) => {
+    'shows the refill line for a $billingStatus $planKind plan (served: $nextCreditRefillAt), never the renewal date',
+    ({ planKind, billingStatus, nextCreditRefillAt, date }) => {
       arrange({
         planKind,
-        billingStatus: 'paused',
+        billingStatus,
         subscription: { ...activeSubscription, tier: 'ENTERPRISE' },
         renewalDate: '2026-11-15T00:00:00Z',
+        nextCreditRefillAt,
         balance: {
           amountMicros: 1000,
           currency: 'usd',
@@ -1483,6 +1512,30 @@ describe('BillingTab', () => {
       expect(
         within(banner).queryByRole('button', { name: 'Add credits' })
       ).not.toBeInTheDocument()
+    })
+
+    it('disables the top-up row Add credits while the server pauses purchases', async () => {
+      arrange({
+        planKind: 'self_serve',
+        canTopUp: false,
+        topUpDenial: 'topup_purchases_paused',
+        balance: {
+          amountMicros: 0,
+          currency: 'usd',
+          effectiveBalanceMicros: 0,
+          effectiveBalanceAuthoritative: true,
+          prepaidBalanceMicros: 0,
+          cloudCreditBalanceMicros: 0
+        }
+      })
+
+      const card = await screen.findByTestId('billing-credits-card')
+      expect(
+        within(card).getByRole('button', { name: 'Add credits' })
+      ).toBeDisabled()
+      expect(card).toHaveTextContent(
+        "Buying credits isn't available right now. Try again later, or message support."
+      )
     })
 
     it('reveals the processing payment once the failed top-up is dismissed', async () => {

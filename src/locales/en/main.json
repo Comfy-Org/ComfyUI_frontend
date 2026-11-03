@@ -3785,6 +3785,10 @@
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "refusedBody": "Your team has used all its credits.",
         "refusedPersonalBody": "You've used all your credits.",
+        "pausedBody": "Your team has used all its credits. Buying credits isn't available right now. Credits refill on {date}.",
+        "pausedBodyNoDate": "Your team has used all its credits. Buying credits isn't available right now. Try again later.",
+        "pausedPersonalBody": "You've used all your credits. Buying credits isn't available right now. Credits refill on {date}.",
+        "pausedPersonalBodyNoDate": "You've used all your credits. Buying credits isn't available right now. Try again later.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
@@ -3801,7 +3805,8 @@
         "localBody": "You have {credits} credit left. Add credits to keep running Partner Nodes. | You have {credits} credits left. Add credits to keep running Partner Nodes.",
         "personalBody": "You have {credits} credit left. Add credits before you run out. | You have {credits} credits left. Add credits before you run out.",
         "ownerBody": "This workspace has {credits} credit left. Add credits before you run out. | This workspace has {credits} credits left. Add credits before you run out.",
-        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out."
+        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out.",
+        "pausedBody": "You have {credits} credit left. Buying credits isn't available right now. | You have {credits} credits left. Buying credits isn't available right now."
       },
       "ending": {
         "title": "Your Team plan ends on {date}",
@@ -4115,7 +4120,7 @@
     "roleOwner": "Owner",
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
-    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
+    "maxWorkspacesReached": "You can only own {max} workspace. Delete it to create a new one. | You can only own {max} workspaces. Delete one to create a new one.",
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
     "failedToSwitch": "Failed to switch workspace"
