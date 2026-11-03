@@ -8,6 +8,7 @@ import { agentTest, sentTurn } from '@e2e/tests/agent/agentPanelMocks'
 const test = mergeTests(agentTest, webSocketFixture)
 
 const PROMPT = 'Make the image warmer'
+const REFERENCE_MENU_ID = 'agent-reference-menu'
 
 interface ShortcutProbe {
   entersAtPage: string[]
@@ -73,7 +74,7 @@ test.describe(
       })
     })
 
-    test('sends the message without reaching page shortcuts, while canvas Ctrl+Enter still queues', async ({
+    test('keeps composer Enter chords away from page shortcuts, while canvas Ctrl+Enter still queues', async ({
       agentPanel,
       comfyPage,
       postedMessages,
@@ -93,6 +94,27 @@ test.describe(
         await pressCtrlEnterOnCanvas()
         expect(await entersAtPage(page)).toEqual(['Control+Enter on canvas'])
         await expect.poll(() => runRequests(page)).toBe(1)
+      })
+
+      await test.step('Ctrl+Enter with the reference menu open stays in the composer', async () => {
+        await agentPanel.composer.fill('@')
+        await expect(
+          agentPanel.root.getByTestId(REFERENCE_MENU_ID)
+        ).toBeVisible()
+        await clearEntersAtPage(page)
+        await agentPanel.composer.press('Control+Enter')
+        expect(await entersAtPage(page)).toEqual([])
+        await agentPanel.composer.press('Escape')
+        await expect(
+          agentPanel.root.getByTestId(REFERENCE_MENU_ID)
+        ).toBeHidden()
+      })
+
+      await test.step('Ctrl+Shift+Enter stays in the composer', async () => {
+        await agentPanel.composer.fill(PROMPT)
+        await clearEntersAtPage(page)
+        await agentPanel.composer.press('Control+Shift+Enter')
+        expect(await entersAtPage(page)).toEqual([])
       })
 
       await test.step('Ctrl+Enter in the composer sends the prompt and stays in the composer', async () => {
