@@ -2428,3 +2428,80 @@ describe('agentEventTransport CANVAS_MUTATING_TOOLS pinning (PM-1575)', () => {
     )
   })
 })
+
+describe('agent_extension_changed', () => {
+  function extensionChanged(data: Record<string, unknown>): AgentChatEvent {
+    return zAgentWsEvent.parse({
+      type: 'agent_extension_changed',
+      data: { message_id: 'm', thread_id: 't', ...data }
+    })
+  }
+
+  it.for([
+    {
+      data: {
+        action: 'disabled',
+        pack: 'pack-a',
+        agent_created: false,
+        restart_required: true
+      },
+      expected: {
+        type: 'extensionChange',
+        action: 'disabled',
+        pack: 'pack-a',
+        agentCreated: false,
+        restartRequired: true
+      }
+    },
+    {
+      data: {
+        action: 'removed',
+        pack: 'pack-b',
+        agent_created: true,
+        restart_required: false
+      },
+      expected: {
+        type: 'extensionChange',
+        action: 'removed',
+        pack: 'pack-b',
+        agentCreated: true,
+        restartRequired: false
+      }
+    }
+  ])(
+    'shows $data.pack in place with its server flags',
+    ({ data, expected }) => {
+      const message = drive([
+        delta('Changing it.'),
+        extensionChanged(data),
+        delta('Done.')
+      ])
+
+      expect(message.parts.map((part) => part.type)).toEqual([
+        'text',
+        'extensionChange',
+        'text'
+      ])
+      expect(message.parts[1]).toEqual(expected)
+    }
+  )
+
+  it('stops showing the agent as thinking once the card arrives', () => {
+    const message = drive([
+      thinking('Finding the pack.'),
+      extensionChanged({
+        action: 'enabled',
+        pack: 'comfy-cushions',
+        agent_created: false,
+        restart_required: true
+      })
+    ])
+
+    expect(message.thinking).toBe(false)
+    expect(message.thinkingText).toBeUndefined()
+    expect(message.parts).toMatchObject([
+      { type: 'thinking', text: 'Finding the pack.', state: 'done' },
+      { type: 'extensionChange', action: 'enabled' }
+    ])
+  })
+})
