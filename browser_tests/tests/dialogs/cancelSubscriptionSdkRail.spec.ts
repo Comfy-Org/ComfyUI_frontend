@@ -37,6 +37,7 @@ const SUBSCRIPTION_STATUS: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 }
@@ -99,9 +100,6 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
     r.fulfill(
       jsonRoute(createBillingCapabilities('ws-personal', { can_cancel: true }))
     )
-  )
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 0, currency: 'usd' }))
   )
 
   await page.route('**/api/billing/subscription/cancel', async (r) => {

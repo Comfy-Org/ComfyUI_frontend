@@ -30,11 +30,6 @@ export function getExtensionPath(script: string): string | undefined {
   }
 }
 
-export function isSafeExtensionBoot(search: string): boolean {
-  const value = new URLSearchParams(search).get('safe')
-  return value === '' || value === '1' || value === 'true'
-}
-
 export function shouldLoadCustomNodeScript(
   script: string,
   {

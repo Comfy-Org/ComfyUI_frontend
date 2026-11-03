@@ -18,7 +18,16 @@ import type {
 import type { User } from 'firebase/auth'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mocked } from 'vitest'
 import {
   computed,
@@ -272,7 +281,7 @@ const paywallCapabilities = reactive({
 })
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null,
-  type: 'workspace' as 'workspace' | 'legacy',
+  type: 'workspace' as 'workspace' | 'unknown',
   status: 'paid' as BillingStatus | null,
   isActive: true,
   fetchStatus: vi.fn<() => Promise<void>>()
@@ -516,6 +525,7 @@ beforeEach(() => {
   socketSend.mockReset()
   vi.mocked(reportError).mockClear()
   paywallWorkspace.role = 'owner'
+  vi.spyOn(useTeamWorkspaceStore(), 'initialize').mockResolvedValue()
   vi.spyOn(
     useTeamWorkspaceStore(),
     'activeWorkspace',
@@ -691,6 +701,7 @@ function addTab(
     suffix,
     isTemporary: false,
     isModified: false,
+    isLoaded: true,
     activeState: null,
     ...overrides
   })
@@ -1026,9 +1037,9 @@ describe('AgentPanelRoot onboarding', () => {
           'Describe your ideas, ask it to build and run workflows. It sees your canvas and files.'
       },
       {
-        title: 'Each chat works on one workflow',
+        title: 'The agent edits one workflow at a time',
         description:
-          "The workflow it's editing is named above the message box. Switching tabs brings up that workflow's latest chat, if it has one."
+          'That workflow is named at the top of the message box. Click the name to pick another. Clicking a workflow tab can open its latest chat, unless the message box has a draft.'
       },
       {
         title: 'Pick up where you left off',
@@ -2288,9 +2299,9 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
-  it('stays hidden on the legacy rail whose unloaded balance reads as false', async () => {
+  it('stays hidden while the billing type is unknown and the balance reads as false', async () => {
     paywallHasFunds.value = false
-    paywallBilling.type = 'legacy'
+    paywallBilling.type = 'unknown'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     activateThread()
     await screen.findByRole('textbox')
@@ -2586,13 +2597,13 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     )
   })
 
-  it('does not refresh workspace status for a legacy billing turn', async () => {
+  it('does not refresh workspace status while the billing type is unknown', async () => {
     paywallHasFunds.value = true
-    paywallBilling.type = 'legacy'
+    paywallBilling.type = 'unknown'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     activateThread()
     const conversation = useAgentConversationStore()
-    const turnId = toTurnId('legacy-billing-refresh')
+    const turnId = toTurnId('unknown-billing-refresh')
 
     conversation.startTurn(turnId)
     paywallBilling.fetchStatus.mockClear()
@@ -2868,6 +2879,7 @@ function setupOwnedSelectionCanvas() {
   const canvas = new LGraphCanvas(canvasElement, rootGraph, {
     skip_render: true
   })
+  onTestFinished(() => canvas.unbindEvents())
   canvas.onSelectionChange = () => syncFakeSelection()
 
   appMock.graph.nodes = rootGraph.nodes
@@ -8773,7 +8785,7 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  it.for(['workspace', 'legacy'] as const)(
+  it.for(['workspace', 'unknown'] as const)(
     'leaves the $ post-consent billing refresh to the dock host on first send',
     async (billingType) => {
       makeTab('wf-42')
@@ -9199,7 +9211,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await user.click(
         within(
           await screen.findByRole('dialog', {
-            name: 'Each chat works on one workflow'
+            name: 'The agent edits one workflow at a time'
           })
         ).getByRole('button', { name: 'Next' })
       )
@@ -15411,6 +15423,32 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByTestId('node-reference-chip')).toHaveTextContent(
       'KSampler'
     )
+  })
+
+  it('reveals the selected-node prompt only after a node-selection-mode addition', async () => {
+    distribution.isCloud = false
+    makeTab('wf-42')
+    const state = setupNodeSelectionCanvas()
+    const view = renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+    const prompt = i18n.global.t('agent.suggestedPrompts.local.2')
+
+    expect(screen.queryByRole('button', { name: prompt })).toBeNull()
+    await enterNodeSelectionMode()
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+    expect(canvasStore.isPickingNodes).toBe(true)
+    expect(screen.queryByRole('button', { name: prompt })).toBeNull()
+
+    state.selectedItems.add(state.nodes[0])
+    syncFakeSelection()
+
+    expect(await screen.findByRole('button', { name: prompt })).toBeVisible()
+
+    view.unmount()
+    renderWithSelectedTarget()
+    await nextTick()
+    expect(screen.getByRole('button', { name: prompt })).toBeVisible()
   })
 
   it('excludes referenced nodes from the mention picker', async () => {
