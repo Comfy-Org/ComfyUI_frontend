@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { fn } from 'storybook/test'
 
 import BillingBanner from './BillingBanner.vue'
 import { billingBannerCopy } from './__fixtures__/bannerCopy'
@@ -7,7 +8,10 @@ const meta: Meta<typeof BillingBanner> = {
   title: 'Account UI/Billing/BillingBanner',
   component: BillingBanner,
   tags: ['autodocs'],
-  args: { copy: billingBannerCopy },
+  argTypes: {
+    addCreditsVariant: { control: 'select', options: ['secondary', 'inverted'] }
+  },
+  args: { copy: billingBannerCopy, onAction: fn(), onDismiss: fn() },
   decorators: [
     (story) => ({
       components: { story },
