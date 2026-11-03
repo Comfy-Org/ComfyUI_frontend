@@ -181,8 +181,9 @@
       v-if="addCredits.kind !== 'hidden' || paymentRecoveryAvailable"
       class="flex flex-col gap-3"
     >
-      <Button
-        v-if="addCredits.kind !== 'hidden'"
+      <AddCreditsButton
+        :availability="addCredits"
+        :reason-id="refusalReasonId"
         :variant="isOutOfCredits ? 'inverted' : 'secondary'"
         size="lg"
         :class="
@@ -191,20 +192,16 @@
             !isOutOfCredits && 'bg-muted text-foreground'
           )
         "
-        :disabled="addCredits.kind === 'disabled'"
-        :aria-describedby="refusalReason ? refusalReasonId : undefined"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsTile"
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
-      </Button>
-      <p
-        v-if="refusalReason"
-        :id="refusalReasonId"
+      </AddCreditsButton>
+      <AddCreditsRefusalReason
+        :availability="addCredits"
+        :reason-id="refusalReasonId"
         class="m-0 text-sm text-muted-foreground"
-      >
-        {{ refusalReason }}
-      </p>
+      />
       <Button
         v-if="paymentRecoveryAvailable"
         variant="secondary"
@@ -215,11 +212,8 @@
       >
         {{ $t('workspacePanel.billingStatus.updatePayment') }}
       </Button>
-      <span
-        v-if="creditsUseNote && addCredits.kind === 'enabled'"
-        class="text-sm text-muted-foreground"
-      >
-        {{ creditsUseNote }}
+      <span v-if="topUpCreditsUseNote" class="text-sm text-muted-foreground">
+        {{ topUpCreditsUseNote }}
       </span>
     </div>
   </div>
@@ -259,6 +253,8 @@ import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdenti
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { addCreditsAvailability } from '@/platform/billing/addCreditsAvailability'
+import AddCreditsButton from '@/platform/billing/components/AddCreditsButton.vue'
+import AddCreditsRefusalReason from '@/platform/billing/components/AddCreditsRefusalReason.vue'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 const { zeroState = false, inactivePlan } = defineProps<{
@@ -293,9 +289,6 @@ const addCredits = computed(() =>
   })
 )
 const refusalReasonId = useId()
-const refusalReason = computed(() =>
-  addCredits.value.kind === 'disabled' ? t(addCredits.value.reasonKey) : null
-)
 const {
   prepaidCredits,
   totalCredits,
@@ -470,8 +463,9 @@ const showBar = computed(
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
 )
-const creditsUseNote = computed(() => {
+const topUpCreditsUseNote = computed(() => {
   if (
+    addCredits.value.kind !== 'enabled' ||
     !isCloud ||
     canAccessSubscriptionFeatures.value ||
     zeroState ||
