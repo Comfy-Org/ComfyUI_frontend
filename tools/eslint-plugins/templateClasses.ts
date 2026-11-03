@@ -756,7 +756,7 @@ const iconElement: Rule.RuleModule = {
   }
 }
 
-const BUTTON_FILL = /(^|:)bg-(?!(transparent|none|inherit)$)/
+const BUTTON_FILL = /(^|:)!?bg-(?!((transparent|none|inherit)!?)?$)/
 
 const preferDesignSystemButton: Rule.RuleModule = {
   meta: {
