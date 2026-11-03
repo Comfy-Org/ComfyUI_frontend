@@ -33,10 +33,11 @@
         >
           <span>{{ $t('cloudOnboarding.authTimeout.technicalDetails') }}</span>
           <i
-            :class="[
-              'pi',
-              showTechnicalDetails ? 'pi-chevron-up' : 'pi-chevron-down'
-            ]"
+            :class="
+              showTechnicalDetails
+                ? 'icon-[lucide--chevron-up]'
+                : 'icon-[lucide--chevron-down]'
+            "
           ></i>
         </button>
         <div
@@ -73,7 +74,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 
 interface Props {

@@ -1,9 +1,9 @@
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
-import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/slots'
+import type { SubgraphIO } from '@comfyorg/graph-model/serialisation'
 
 export interface NodeLike {
   id: SerializedNodeId

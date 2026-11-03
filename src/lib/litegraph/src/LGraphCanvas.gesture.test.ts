@@ -17,7 +17,7 @@ import {
   pointerEvent,
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   LGraphCanvas,
   LGraphGroup,
@@ -30,7 +30,8 @@ import {
   LiteGraph,
   Reroute
 } from '@/lib/litegraph/src/litegraph'
-import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
@@ -531,7 +532,7 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(log).toContain('canvas.onNodeMoved')
     })
 
-    it.fails('releases a hovered node with the pointerup event', () => {
+    it('releases a hovered node with the pointerup event', () => {
       canvas.visible_nodes = [...graph.nodes]
       gesture.move(A_BODY)
       gesture.press(A_BODY)
@@ -543,6 +544,29 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(callbackArgs.get('node.onMouseUp')?.[0]?.[0]).toMatchObject({
         type: 'pointerup'
       })
+    })
+
+    it('releases a hovered node that also captures input once', () => {
+      canvas.visible_nodes = [...graph.nodes]
+      canvas.node_capturing_input = a
+      gesture.move(A_BODY)
+      gesture.press(A_BODY)
+      gesture.release(A_BODY)
+
+      expect(callbackArgs.get('node.onMouseUp')).toHaveLength(1)
+    })
+
+    it('does not release a node when the pointerup ends a link gesture from its slot', () => {
+      a.addOutput('value', 'number')
+      a.updateArea()
+      canvas.visible_nodes = [...graph.nodes]
+      const outputPosition = a.getOutputPos(0)
+      const slot: Point = [outputPosition[0], outputPosition[1]]
+      gesture.move(slot)
+      gesture.press(slot)
+      gesture.release(slot)
+
+      expect(callbackArgs.get('node.onMouseUp')).toBeUndefined()
     })
 
     it('starts a link drag from an output slot', () => {
@@ -773,6 +797,92 @@ describe('LGraphCanvas pointer gestures', () => {
       gesture.release(shifted(G_RESIZE, [4, 3]))
 
       expect([...group.size]).toEqual([500, 300])
+    })
+  })
+
+  describe('slot click', () => {
+    function connectTwoOutputLinks() {
+      const c = addNode(graph, 'C', 300, 200)
+      a.addOutput('out', '*')
+      b.addInput('in', '*')
+      c.addInput('in', '*')
+      const links = [a.connect(0, b, 0), a.connect(0, c, 0)]
+      for (const node of [a, b, c]) {
+        node._setConcreteSlots()
+        node.arrange()
+        node.updateArea()
+      }
+      return links.map((link) => {
+        assert(link)
+        return link.id
+      })
+    }
+
+    it.for([
+      { slot: 'output', point: () => a.getOutputPos(0), expected: [0, 1] },
+      { slot: 'input', point: () => b.getInputPos(0), expected: [0] }
+    ])(
+      'clicking an $slot selects its links and clears the canvas selection',
+      ({ point, expected }) => {
+        const linkIds = connectTwoOutputLinks()
+        canvas.selectItems([b])
+
+        gesture.click(point())
+
+        expect(getSelectedLinkIds(graph)).toEqual(
+          expected.map((index) => linkIds[index])
+        )
+        expect(selectedTitles(canvas)).toEqual([])
+      }
+    )
+
+    it.for([
+      {
+        name: 'Shift-click on an input',
+        point: () => b.getInputPos(0),
+        modifiers: { shiftKey: true }
+      },
+      {
+        name: 'Ctrl-click on an output',
+        point: () => a.getOutputPos(0),
+        modifiers: { ctrlKey: true }
+      },
+      {
+        name: 'Meta-click on an output',
+        point: () => a.getOutputPos(0),
+        modifiers: { metaKey: true }
+      }
+    ])(
+      'a $name keeps the canvas selection and selects no links',
+      ({ point, modifiers }) => {
+        LiteGraph.leftMouseClickBehavior = 'select'
+        connectTwoOutputLinks()
+        canvas.selectItems([b])
+
+        gesture.click(point(), modifiers)
+
+        expect(getSelectedLinkIds(graph)).toEqual([])
+        expect(selectedTitles(canvas)).toEqual(['B'])
+      }
+    )
+
+    it('dragging from an output selects no links', () => {
+      connectTwoOutputLinks()
+
+      gesture.drag(a.getOutputPos(0), FAR)
+
+      expect(getSelectedLinkIds(graph)).toEqual([])
+    })
+
+    it('clicking a slot without links keeps the canvas selection', () => {
+      a.addOutput('out', '*')
+      a.updateArea()
+      canvas.selectItems([b])
+
+      gesture.click(a.getOutputPos(0))
+
+      expect(getSelectedLinkIds(graph)).toEqual([])
+      expect(selectedTitles(canvas)).toEqual(['B'])
     })
   })
 

@@ -8,9 +8,9 @@ import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConc
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
@@ -135,6 +135,15 @@ export interface NodeDefFilter {
    * @returns true if the node should be visible, false to hide it
    */
   predicate: (nodeDef: ComfyNodeDefImpl) => boolean
+}
+
+/**
+ * The selector widget a dynamic-combo child input hangs off, and the widget's
+ * value that selected it.
+ */
+export interface DynamicComboSelection {
+  widget: string
+  value: unknown
 }
 
 const TOP_NODE_DEF_LIMIT = 64
@@ -281,6 +290,23 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     )
   }
 
+  function getDynamicComboSelectionForInput(
+    node: LGraphNode,
+    inputName: string
+  ): DynamicComboSelection | undefined {
+    const separator = inputName.indexOf('.')
+    if (separator <= 0 || inputName.indexOf('.', separator + 1) !== -1)
+      return undefined
+    const widget = inputName.slice(0, separator)
+    const nodeDef = fromLGraphNode(node)
+    if (!nodeDef || Object.hasOwn(nodeDef.inputs, inputName)) return undefined
+    const getValue = (name: string) =>
+      node.widgets?.find((candidate) => candidate.name === name)?.value
+    if (!resolveDynamicInputSpec(nodeDef.input, inputName, getValue))
+      return undefined
+    return { widget, value: getValue(widget) }
+  }
+
   /**
    * Registers a node definition filter.
    * @param filter - The filter to register
@@ -378,6 +404,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     getNodeDefByName,
     fromLGraphNode,
     getInputSpecForWidget,
+    getDynamicComboSelectionForInput,
     registerNodeDefFilter,
     unregisterNodeDefFilter,
     topNodeDefs

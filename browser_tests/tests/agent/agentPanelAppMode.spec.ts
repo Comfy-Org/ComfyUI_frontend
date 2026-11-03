@@ -8,6 +8,8 @@ import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
+  test.use({ agentPanelInitiallyOpen: false })
+
   test('T-16 / PM-653 / FE-1298 keeps a single docked panel root and active workflow in app mode', async ({
     agentPanel,
     comfyPage

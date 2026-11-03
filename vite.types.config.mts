@@ -23,7 +23,8 @@ export default defineConfig({
       processor: 'vue',
       tsconfigPath: 'tsconfig.types.json',
       beforeWriteFile: createLitegraphDeclarationTransform(
-        resolve(__dirname, 'src/lib/litegraph/src')
+        resolve(__dirname, 'src/lib/litegraph/src'),
+        resolve(__dirname, 'packages/graph-model/src')
       )
     })
   ]

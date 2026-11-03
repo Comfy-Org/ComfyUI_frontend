@@ -5,8 +5,8 @@ import type {
   BillingHttpResponse,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import { readValidatedBillingResponse } from './sharedRead.js'
+} from './billingContracts'
+import { readValidatedBillingResponse } from './sharedRead'
 
 const REQUEST = { method: 'GET', route: '/billing/topup' } as const
 const Body = z.object({ ok: z.literal(true) })

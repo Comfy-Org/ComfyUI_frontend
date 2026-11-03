@@ -20,24 +20,28 @@ import { SYNCED_NODE_FIELDS } from './liveGraphApplier'
 export class DocChangeCollector {
   private readonly nodes = new Map<string, NodeChange>()
   private readonly widgets = new Map<string, Set<string> | 'all'>()
-  private readonly resyncNodes = new Set<string>()
+  private readonly resyncNodes = new Map<string, Set<string>>()
   private readonly links = new Set<string>()
   private readonly interiors = new Map<
     string,
     Map<string, Set<string> | 'all'>
   >()
   private readonly interiorDefinitions = new Set<string>()
+  private readonly removedGroups = new Set<string>()
   private readonly nodesMap: Y.Map<Y.Map<unknown>>
   private readonly linksMap: Y.Map<unknown>
   private readonly definitionsMap: Y.Map<unknown>
+  private readonly metaMap: Y.Map<unknown>
 
   constructor(doc: Y.Doc) {
     this.nodesMap = nodesMap(doc)
     this.linksMap = linksMap(doc)
     this.definitionsMap = definitionsObserverRoot(doc)
+    this.metaMap = doc.getMap('meta')
     this.nodesMap.observeDeep(this.onNodesChanged)
     this.linksMap.observe(this.onLinksChanged)
     this.definitionsMap.observeDeep(this.onDefinitionsChanged)
+    this.metaMap.observe(this.onMetaChanged)
   }
 
   /** Returns everything collected so far without clearing it. */
@@ -45,7 +49,9 @@ export class DocChangeCollector {
     return {
       nodes: new Map(this.nodes),
       widgets: new Map(this.widgets),
-      resyncNodes: new Set(this.resyncNodes),
+      resyncNodes: new Map(
+        [...this.resyncNodes].map(([id, keys]) => [id, new Set(keys)])
+      ),
       links: new Set(this.links),
       interiors: new Map(
         [...this.interiors].map(([definitionId, nodes]) => [
@@ -53,7 +59,8 @@ export class DocChangeCollector {
           new Map(nodes)
         ])
       ),
-      interiorDefinitions: new Set(this.interiorDefinitions)
+      interiorDefinitions: new Set(this.interiorDefinitions),
+      removedGroups: new Set(this.removedGroups)
     }
   }
 
@@ -71,12 +78,14 @@ export class DocChangeCollector {
     this.links.clear()
     this.interiors.clear()
     this.interiorDefinitions.clear()
+    this.removedGroups.clear()
   }
 
   destroy(): void {
     this.nodesMap.unobserveDeep(this.onNodesChanged)
     this.linksMap.unobserve(this.onLinksChanged)
     this.definitionsMap.unobserveDeep(this.onDefinitionsChanged)
+    this.metaMap.unobserve(this.onMetaChanged)
     this.discard()
   }
 
@@ -162,7 +171,10 @@ export class DocChangeCollector {
     else if (event.path.length === 1) this.onNodeFieldsChanged(event)
     else if (event.path[1] === 'widgets') this.onNamedWidgetsChanged(event)
     else if (event.path[1] === 'flags')
-      this.resyncNodes.add(String(event.path[0]))
+      this.markFields(
+        String(event.path[0]),
+        [...event.keysChanged].map((key) => `flags.${key}`)
+      )
   }
 
   private onOpaqueWidgetsChanged(event: Y.YArrayEvent<unknown>): void {
@@ -191,11 +203,42 @@ export class DocChangeCollector {
       event.keysChanged.has(OPAQUE_WIDGETS_KEY)
     )
       this.widgets.set(id, 'all')
-    if ([...event.keysChanged].some((key) => SYNCED_NODE_FIELDS.has(key)))
-      this.resyncNodes.add(id)
+    this.markFields(id, event.keysChanged)
+  }
+
+  private markFields(id: string, keys: Iterable<string>): void {
+    const synced = [...keys].filter(
+      (key) => SYNCED_NODE_FIELDS.has(key) || key.startsWith('flags.')
+    )
+    if (synced.length === 0) return
+    const current = this.resyncNodes.get(id) ?? new Set<string>()
+    for (const key of synced) current.add(key)
+    this.resyncNodes.set(id, current)
   }
 
   private readonly onLinksChanged = (event: Y.YMapEvent<unknown>): void => {
     for (const id of event.keysChanged) this.links.add(id)
   }
+
+  private readonly onMetaChanged = (event: Y.YMapEvent<unknown>): void => {
+    const change = event.changes.keys.get('groups')
+    if (!change) return
+    const current = groupIds(this.metaMap.get('groups'))
+    for (const id of groupIds(change.oldValue))
+      if (!current.has(id)) this.removedGroups.add(id)
+    for (const id of current) this.removedGroups.delete(id)
+  }
+}
+
+export function groupIds(groups: unknown): Set<string> {
+  const ids = new Set<string>()
+  if (!Array.isArray(groups)) return ids
+  for (const group of groups) {
+    const id: unknown =
+      typeof group === 'object' && group !== null
+        ? (group as { id?: unknown }).id
+        : undefined
+    if (typeof id === 'number' || typeof id === 'string') ids.add(String(id))
+  }
+  return ids
 }

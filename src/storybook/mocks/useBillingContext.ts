@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 
-import type { BillingContext } from '@/composables/billing/types'
+import type { BillingContext } from '@/platform/billing/composables/types'
 
 type Subscription = BillingContext['subscription']['value']
 
@@ -11,6 +11,7 @@ export interface BillingContextMockState {
   isTeamPlan: boolean
   billingStatus: BillingContext['billingStatus']['value']
   subscriptionStatus: BillingContext['subscriptionStatus']['value']
+  subscriptionState: BillingContext['subscriptionState']['value']
   renewalDate: string | null
   maxSeats: number | null
   occupiedSeats: number | null
@@ -22,6 +23,7 @@ const defaultState: BillingContextMockState = {
   isTeamPlan: false,
   billingStatus: null,
   subscriptionStatus: null,
+  subscriptionState: null,
   renewalDate: null,
   maxSeats: null,
   occupiedSeats: null
@@ -49,7 +51,7 @@ export function setBillingContextMock(next: Partial<BillingContextMockState>) {
  */
 export function useBillingContext(): BillingContext {
   return {
-    type: computed(() => 'legacy' as const),
+    type: computed(() => 'workspace' as const),
     isInitialized: ref(true),
     subscription: computed(() => state.value.subscription),
     balance: computed(() => null),
@@ -73,9 +75,11 @@ export function useBillingContext(): BillingContext {
     isTeamPlan: computed(() => state.value.isTeamPlan),
     billingStatus: computed(() => state.value.billingStatus),
     subscriptionStatus: computed(() => state.value.subscriptionStatus),
+    subscriptionState: computed(() => state.value.subscriptionState),
     tier: computed(() => null),
     renewalDate: computed(() => state.value.renewalDate),
     renewalInvoice: computed(() => null),
+    periodCreditGrant: computed(() => null),
     getMaxSeats: (tierKey: string) => ({ creator: 5, pro: 20 })[tierKey] ?? 1,
     initialize: async () => {},
     fetchStatus: async () => {},
@@ -84,7 +88,7 @@ export function useBillingContext(): BillingContext {
     subscribe: async () => {},
     previewSubscribe: async () => null,
     manageSubscription: async () => ({ ok: true }),
-    cancelSubscription: async () => 'legacy' as const,
+    cancelSubscription: async () => undefined,
     resubscribe: async () => {},
     topup: async () => {},
     fetchPlans: async () => {},

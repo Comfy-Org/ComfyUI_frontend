@@ -14,7 +14,7 @@
         {{ $t('skillPacks.yourPacks') }}
       </h3>
       <Button @click="openCreateDialog">
-        <i class="mr-1 icon-[lucide--plus] size-4" />
+        <i class="mr-1 icon-[lucide--plus]" />
         {{ $t('skillPacks.addPack') }}
       </Button>
     </div>
@@ -58,11 +58,11 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { useSkillPacks } from '../composables/useSkillPacks'
-import type { SkillPack } from '../types'
+import { useSkillPacks } from '@/platform/skills/composables/useSkillPacks'
+import type { SkillPack } from '@/platform/skills/types'
 import SkillPackFormDialog from './SkillPackFormDialog.vue'
 import SkillPackListItem from './SkillPackListItem.vue'
 
@@ -112,6 +112,7 @@ function confirmDelete(pack: SkillPack) {
       promptText: t('skillPacks.deleteConfirmMessage', { name: pack.name })
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
       confirmVariant: 'destructive',
       onCancel: () => dialogStore.closeDialog(dialog),

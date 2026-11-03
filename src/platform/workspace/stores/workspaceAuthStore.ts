@@ -13,19 +13,22 @@ import {
   isPermanentSessionError
 } from '@comfyorg/account-core/session'
 
-import { zCurrentWorkspaceResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zCurrentWorkspaceResponse,
+  zWorkspaceWithRole
+} from '@comfyorg/ingest-types/zod'
 
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import {
   signedInOnWebSession,
   webSessionRequests
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { UnifiedAuthRefreshOutcome } from '@comfyorg/telemetry/types'
 import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
 import {
   MAX_SCHEDULED_REFRESH_RETRIES,
@@ -41,11 +44,11 @@ import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess
 import { provideUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 
 export { WorkspaceAuthError }
 // The e2e fixtures import this type from the store path.
@@ -93,6 +96,21 @@ function sessionErrorMessageKey(
 }
 
 // Workspace auth has no Firebase fallback, so surface permanent failures.
+function readTabWorkspaceId(): string | null {
+  try {
+    const stored = sessionStorage.getItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
+    )
+    if (!stored) return null
+    const parsed = zWorkspaceWithRole
+      .pick({ id: true })
+      .safeParse(JSON.parse(stored))
+    return parsed.success ? parsed.data.id : null
+  } catch {
+    return null
+  }
+}
+
 function surfacePermanentAuthError(err: WorkspaceAuthError): void {
   if (
     err.code === 'SSO_REQUIRED' &&
@@ -117,6 +135,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // Read fresh after an await: the reactive flag can flip mid-mint, and a
   // captured read is narrowed to the value at the function's opening guard.
   const unifiedRailEnabled = () => flags.unifiedCloudAuthEnabled
+  // Read before the unified snapshot subscriber below can persist a boot-time
+  // personal mint over the workspace this tab was on.
+  const bootTabWorkspaceId = readTabWorkspaceId()
 
   // State
   const currentWorkspace = shallowRef<WorkspaceIdentity | null>(null)
@@ -250,7 +271,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (currentWorkspace.value?.id !== workspaceId)
       currentWorkspace.value = null
     const response = await requests.send(
-      workspaceApiUrl('/workspaces/current'),
+      ingestApiUrl('/workspaces/current'),
       { method: 'GET', cache: 'no-store' },
       { ...scope, workspaceId }
     )
@@ -419,7 +440,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   const unifiedSessionClient = createSessionClient<User>(
     {
-      exchangeUrl: workspaceApiUrl('/auth/token'),
+      exchangeUrl: ingestApiUrl('/auth/token'),
       autoMint: false,
       // In-memory only: a persisted JWT can outlive its server expiry, so a
       // reload re-mints instead of rehydrating.
@@ -724,6 +745,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   return {
     // State
+    bootTabWorkspaceId,
     currentWorkspace,
     deniedWorkspaceId,
     workspaceToken,

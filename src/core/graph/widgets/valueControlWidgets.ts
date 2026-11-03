@@ -5,9 +5,9 @@ import type {
   IBaseWidget,
   IComboWidget,
   IStringWidget
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'

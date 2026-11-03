@@ -7,7 +7,7 @@ import type {
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 
-import type { CapabilityDenialReason } from '../capabilityDenials.js'
+import type { CapabilityDenialReason } from '#/core/billing/capabilityDenials'
 
 type CapabilitiesResponseBody = z.input<typeof zBillingCapabilitiesResponse>
 type CapabilitiesResponse = z.infer<typeof zBillingCapabilitiesResponse>
@@ -27,6 +27,7 @@ function capabilities(): Capabilities {
     can_manage_auto_top_up: true,
     can_manage_members: true,
     can_manage_subscription: true,
+    can_open_plans: true,
     can_delete_workspace: false,
     can_leave_workspace: false,
     can_manage_billing: false,
@@ -46,6 +47,7 @@ function capabilitiesBody(
   overrides: Partial<CapabilitiesResponseBody> = {}
 ): CapabilitiesResponseBody {
   return {
+    auto_top_up_enabled: false,
     capabilities: capabilities(),
     expires_at: '2024-06-15T12:01:00.000Z',
     resolved_for: { user_id: 'uid-1', workspace_id: 'ws-1' },
@@ -60,11 +62,13 @@ function capabilitiesBody(
 }
 
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
+  | 'auto_top_up_enabled'
   | 'auto_top_up_setup'
   | 'capabilities'
   | 'denied_reason_params'
   | 'denied_reasons'
   | 'expires_at'
+  | 'has_parked_billing_operation'
   | 'payment_recovery_available'
   | 'plan_kind'
   | 'recovery_route'
@@ -86,6 +90,7 @@ expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_manage_members: boolean
   can_manage_partner_node_access: boolean
   can_manage_subscription: boolean
+  can_open_plans: boolean
   can_reactivate: boolean
   can_revert_scheduled_change: boolean
   can_run_workflows: boolean
@@ -97,7 +102,7 @@ expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_view_team_usage: boolean
 }>()
 expectTypeOf<ServerDenialReason>().toEqualTypeOf<
-  Exclude<CapabilityDenialReason, 'unspecified'>
+  Exclude<CapabilityDenialReason, 'unspecified'> | 'topup_purchases_paused'
 >()
 expectTypeOf<CapabilityScope>().toEqualTypeOf<{
   user_id: string

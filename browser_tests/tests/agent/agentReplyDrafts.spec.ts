@@ -6,7 +6,7 @@ import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import { zAgentAnswerRequest } from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
@@ -17,8 +17,19 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import {
+  askIdFor,
+  askResolved,
+  askUserQuestionFrame
+} from '@e2e/fixtures/data/agent/agentAskFrames'
+import {
+  thinkingDraftFrame,
+  thinkingFrame
+} from '@e2e/fixtures/data/agent/agentThinkingFrames'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const WORKFLOW_ID = 'b4d7e1f2-8a3c-4d5e-9f60-7a1b2c3d4e5f'
 const THREAD_ID = 'd8c7b6a5-9e1f-4a2b-8c3d-4e5f6a7b8c9d'
@@ -54,9 +65,6 @@ interface Turn {
   send: (frame: AgentWsEvent | HostFrame) => void
 }
 
-// Boots the agent panel on a fresh canvas and sends one user message, answering
-// the document subscription the way the host does, so every frame after it is
-// the agent's.
 async function startTurn(page: Page, prompt: string): Promise<Turn> {
   const hostSocket = new AgentFollowerHostSocket(
     page,
@@ -65,8 +73,8 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
   )
   const send = (frame: AgentWsEvent | HostFrame): void => hostSocket.send(frame)
 
-  await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
+  await page.route('**/api/agent/threads?*', (route) =>
+    route.fulfill(jsonRoute(emptyAgentThreadList()))
   )
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() === 'POST') {
@@ -151,6 +159,96 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
 }
 
 test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
+  test('thinking appears while the model writes it, and is shown once when the round ends', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { panel, send } = await startTurn(page, 'Think about a fox video.')
+
+    send(thinkingDraftFrame(ids, 'The user wants'))
+    await expect(
+      panel.getByText('The user wants', { exact: true })
+    ).toBeVisible()
+
+    send(thinkingDraftFrame(ids, 'The user wants a fox video'))
+    await expect(
+      panel.getByText('The user wants a fox video', { exact: true })
+    ).toBeVisible()
+    await expect(
+      panel.getByText('The user wants', { exact: true })
+    ).toHaveCount(0)
+
+    send(
+      thinkingFrame(ids, 'The user wants a fox video, so I will render one.')
+    )
+    await expect(
+      panel.getByText('The user wants a fox video, so I will render one.', {
+        exact: true
+      })
+    ).toHaveCount(1)
+    await expect(
+      panel.getByText('The user wants a fox video', { exact: true })
+    ).toHaveCount(0)
+  })
+
+  test(
+    'the answer stays above the card while a remember call waits on its approval',
+    { tag: '@screenshot' },
+    async ({ page }) => {
+      test.setTimeout(60_000)
+      await page.setViewportSize({ width: 1280, height: 1000 })
+      const { panel, send } = await startTurn(page, 'Set my usual strength.')
+      const answer = 'ControlNet strength works best around 0.7 for your style.'
+      const askId = askIdFor('call-remember')
+
+      send(draft(answer))
+      await expect(panel.getByText(answer, { exact: true })).toBeVisible()
+
+      send(toolCall('remember', 'running'))
+      send(
+        askUserQuestionFrame(askId, {
+          prompt: 'Keep this note for every chat?',
+          options: [
+            { id: 'allow', label: 'Allow' },
+            { id: 'deny', label: 'Deny' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        })
+      )
+      await expect(
+        panel.getByText('Keep this note for every chat?')
+      ).toBeVisible()
+      await expect(panel.getByText(answer, { exact: true })).toBeVisible()
+      await expectElementScreenshot(
+        panel,
+        'agent-answer-above-memory-approval-card.png'
+      )
+
+      send(askResolved(['deny'], askId))
+      send(toolCall('remember', 'success'))
+      await expect(panel.getByText(answer, { exact: true })).toBeVisible()
+    }
+  )
+
+  test('a retried round takes back what the failed attempt was thinking', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { panel, send } = await startTurn(page, 'Think about a fox video.')
+
+    send(thinkingDraftFrame(ids, 'half a thought'))
+    await expect(
+      panel.getByText('half a thought', { exact: true })
+    ).toBeVisible()
+
+    send(thinkingDraftFrame(ids, ''))
+    await expect(
+      panel.getByText('half a thought', { exact: true })
+    ).toHaveCount(0)
+  })
+
   test('the answer appears while the model writes it, and the final answer replaces it', async ({
     page
   }) => {
@@ -247,12 +345,20 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       test.setTimeout(60_000)
       const askId = `${MESSAGE_ID}:call-${selection}`
       const answeredRequests: Array<{ url: string; selected: string[] }> = []
+      let releaseAnswer = (): void => {}
+      const answerCanFinish = new Promise<void>((resolve) => {
+        releaseAnswer = resolve
+      })
       await page.route(
         '**/api/agent/threads/*/asks/*/answer',
         async (route) => {
           const request = route.request()
           const body = zAgentAnswerRequest.parse(request.postDataJSON())
-          answeredRequests.push({ url: request.url(), selected: body.selected })
+          answeredRequests.push({
+            url: request.url(),
+            selected: body.selected
+          })
+          await answerCanFinish
           await route.fulfill({
             ...jsonRoute({ status: 'answered' }),
             status: 202
@@ -294,10 +400,6 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       await expect(action).toBeVisible()
       await action.click()
 
-      test.fail(
-        true,
-        'The approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint.'
-      )
       await expect
         .poll(() => answeredRequests)
         .toEqual([
@@ -309,15 +411,7 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
           }
         ])
       await expect(action).toHaveAttribute('aria-busy', 'true')
-      send({
-        type: 'agent_ask_resolved',
-        data: {
-          ...ids,
-          ask_id: askId,
-          status: 'answered',
-          selected: [selection]
-        }
-      })
+      releaseAnswer()
       await expect(action).toHaveCount(0)
     })
   }

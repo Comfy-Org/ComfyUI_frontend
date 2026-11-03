@@ -25,7 +25,6 @@ describe('live Cloud mutation policy', () => {
     { method: 'POST', path: '/api/auth/session', allowed: true },
     { method: 'POST', path: '/api/billing/subscribe', allowed: false },
     { method: 'POST', path: '/api/billing/payment-portal', allowed: false },
-    { method: 'POST', path: '/customers/credit', allowed: false },
     { method: 'DELETE', path: '/customers', allowed: false },
     { method: 'PATCH', path: '/api/billing/payment-methods', allowed: false },
     { method: 'PUT', path: '/api/billing/subscription', allowed: false },

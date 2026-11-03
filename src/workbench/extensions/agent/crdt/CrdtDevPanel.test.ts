@@ -6,8 +6,11 @@ import { nextTick } from 'vue'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 
-import { toTurnId, zAgentWsEvent } from '../schemas/agentApiSchema'
-import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
+import {
+  toTurnId,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 
 vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -15,7 +18,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError
+}))
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
@@ -26,6 +31,7 @@ import type { AgentCrdtStatus } from './agentCrdtStatus'
 const STATUS: AgentCrdtStatus = {
   enabled: true,
   connected: true,
+  canvasMayBeStale: false,
   terminal: null,
   workflowId: 'doc-1',
   updatesApplied: 4,
@@ -42,9 +48,9 @@ const STATUS: AgentCrdtStatus = {
   }
 }
 
-function renderPanel() {
+function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
   return render(CrdtDevPanel, {
-    props: { status: STATUS },
+    props: { status: { ...STATUS, ...overrides } },
     global: { plugins: [i18n] }
   })
 }
@@ -101,6 +107,21 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toHaveTextContent('node-1')
     expect(sheet()).toHaveTextContent('last seq')
     expect(sheet()).toHaveTextContent('7')
+  })
+
+  it('renders disconnected status fallbacks', async () => {
+    const user = userEvent.setup()
+    renderPanel({
+      connected: false,
+      workflowId: null,
+      lastFrameType: null
+    })
+
+    await user.click(screen.getByTestId('crdt-dev-panel-chip'))
+
+    expect(screen.getByRole('row', { name: 'doc id —' })).toBeVisible()
+    expect(screen.getByRole('row', { name: 'connected no' })).toBeVisible()
+    expect(screen.getByRole('row', { name: 'last frame —' })).toBeVisible()
   })
 
   it('moves focus into the panel and restores it after Escape closes', async () => {

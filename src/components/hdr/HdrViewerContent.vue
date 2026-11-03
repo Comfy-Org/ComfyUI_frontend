@@ -206,7 +206,7 @@ import { computed, onMounted, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { ChannelMode } from '@/composables/useHdrViewer'
 import { CHANNEL_MODES, useHdrViewer } from '@/composables/useHdrViewer'
 import { GAMUT_NAMES } from '@/renderer/hdr/colorGamut'

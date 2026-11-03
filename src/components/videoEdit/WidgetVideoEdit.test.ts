@@ -3,20 +3,27 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PropType, Ref } from 'vue'
 import { defineComponent, h, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import type { MediaSrcStatus } from '@/composables/media/useRetryableMediaSrc'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import type {
   VideoEditFeature,
   VideoEditValue
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { Bounds } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import WidgetVideoEdit from './WidgetVideoEdit.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: { widgetHistory: { undo: 'Undo', redo: 'Redo' } } }
+})
 
 const hostNode = { id: 'host' }
 
@@ -44,7 +51,7 @@ const mocks = vi.hoisted(() => {
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: {},
-    canvas: { graph: { getNodeById: () => hostNode } }
+    canvas: { graph: { id: 'graph', getNodeById: () => hostNode } }
   }
 }))
 
@@ -110,11 +117,20 @@ const PanelStub = defineComponent({
     'update:endFrame',
     'update:cropBounds',
     'retry',
-    'loadError'
+    'loadError',
+    'editEnd'
   ],
-  setup(props, { emit }) {
+  setup(props, { emit, slots }) {
     recorded.props = props
     return () => [
+      h('button', {
+        'data-testid': 'emit-trim-start-edit',
+        onClick: () => {
+          emit('update:startFrame', props.startFrame + 10)
+          emit('editEnd', 'trim:start')
+        }
+      }),
+      slots.history?.(),
       h('button', {
         'data-testid': 'emit-start-frame',
         onClick: () => emit('update:startFrame', 10)
@@ -144,8 +160,8 @@ function createWidget(
   }
 }
 
-function renderWidget(widget = createWidget()) {
-  const modelValue = ref<VideoEditValue>({})
+function renderWidget(widget = createWidget(), initial: VideoEditValue = {}) {
+  const modelValue = ref<VideoEditValue>(initial)
   const Host = defineComponent({
     setup() {
       return () =>
@@ -161,11 +177,68 @@ function renderWidget(widget = createWidget()) {
   })
   render(Host, {
     global: {
+      plugins: [i18n],
       stubs: { VideoEditPanel: PanelStub }
     }
   })
   return { modelValue }
 }
+
+describe('WidgetVideoEdit node history', () => {
+  beforeEach(() => {
+    mocks.sourceStatus.value = 'loading'
+    mocks.filmstripLoading.value = false
+    mocks.filmstripError.value = null
+  })
+
+  async function settle() {
+    await nextTick()
+    await nextTick()
+  }
+
+  it('undoes and redoes a panel edit', async () => {
+    const { modelValue } = renderWidget()
+    await settle()
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('emit-trim-start-edit'))
+    const edited = modelValue.value
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(modelValue.value).toEqual({})
+
+    await user.click(screen.getByRole('button', { name: 'Redo' }))
+    expect(modelValue.value).toEqual(edited)
+  })
+
+  it('undoes consecutive edits to one field as a single step', async () => {
+    const { modelValue } = renderWidget()
+    await settle()
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('emit-trim-start-edit'))
+    await user.click(screen.getByTestId('emit-trim-start-edit'))
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+
+    expect(modelValue.value).toEqual({})
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+  })
+
+  it('does not record the sanitizing write made on mount', async () => {
+    const { modelValue } = renderWidget(createWidget(), {
+      trim: { start_time: -5, duration: 0 }
+    })
+    await settle()
+    const sanitized = modelValue.value
+    expect(sanitized).toEqual({ trim: { start_time: 0, duration: 0 } })
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('emit-trim-start-edit'))
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+
+    expect(modelValue.value).toEqual(sanitized)
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+  })
+})
 
 describe('WidgetVideoEdit', () => {
   beforeEach(() => {

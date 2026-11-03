@@ -6,10 +6,7 @@
     <div class="flex items-center gap-2 border-b px-3 py-2">
       <i
         :class="
-          cn(
-            'size-4 shrink-0',
-            isLayerContext ? 'icon-[lucide--image]' : 'icon-[lucide--grid-2x2]'
-          )
+          isLayerContext ? 'icon-[lucide--image]' : 'icon-[lucide--grid-2x2]'
         "
       />
       <span class="truncate text-xs font-semibold text-foreground">
@@ -67,7 +64,7 @@
             :aria-label="item.label"
             @click="onAlign(item.op)"
           >
-            <i :class="cn('size-4', item.icon)" />
+            <i :class="item.icon" />
           </Button>
         </div>
       </div>
@@ -95,7 +92,7 @@
                 :aria-label="t('layerEditor.flipHorizontal')"
                 @click="onFlip('h')"
               >
-                <i class="icon-[lucide--flip-horizontal-2] size-4" />
+                <i class="icon-[lucide--flip-horizontal-2]" />
               </Button>
               <Button
                 variant="textonly"
@@ -105,7 +102,7 @@
                 :aria-label="t('layerEditor.flipVertical')"
                 @click="onFlip('v')"
               >
-                <i class="icon-[lucide--flip-vertical-2] size-4" />
+                <i class="icon-[lucide--flip-vertical-2]" />
               </Button>
             </div>
           </div>
@@ -183,7 +180,7 @@
       <div v-if="backgroundLayer" :class="sectionClass">
         <span :class="sectionLabelClass">{{ t('layerEditor.fill') }}</span>
         <div data-testid="background-color-swatch">
-          <ColorPicker v-model="backgroundColorModel" class="h-7" />
+          <AppColorPicker v-model="backgroundColorModel" class="h-7" />
         </div>
       </div>
     </template>
@@ -191,18 +188,18 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { AcceptableValue } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PropertyNumberField from '@/renderer/extensions/layerEditor/components/PropertyNumberField.vue'
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
+import PropertyNumberField from '@comfyorg/design-system/number-field/PropertyNumberField'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import type {
   LayerEditorAlignOp,
   LayerEditorSession
@@ -212,9 +209,8 @@ import {
   CANVAS_SIZE_MIN,
   DEFAULT_BACKGROUND_COLOR
 } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
-import { LAYER_MODES } from '@/renderer/extensions/layerEditor/engine/mode'
-import { cn } from '@comfyorg/tailwind-utils'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
 

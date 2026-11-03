@@ -1,13 +1,11 @@
-import type { operations } from '@comfyorg/registry-types'
-
-type CustomerEventsResponse =
-  operations['GetCustomerEvents']['responses']['200']['content']['application/json']
+import type { BillingEventsResponse } from '@comfyorg/ingest-types'
 
 /** Badge text the Activity table renders for each mocked event. */
-export const AGENT_USAGE_EVENT_TYPE = 'agent_usage'
+export const AGENT_USAGE_EVENT_TYPE = 'Agent Usage'
 export const PARTNER_NODE_USAGE_EVENT_TYPE = 'Partner Node Usage'
+export const API_USAGE_EVENT_TYPE = 'API Usage'
 
-/** `/customers/events` page with a numeric and a non-numeric `charge_micro_usd`. */
+/** `/api/billing/events` page with whole, sub-credit and non-numeric `charge_micro_usd`. */
 export const AGENT_USAGE_CUSTOMER_EVENTS = {
   events: [
     {
@@ -22,6 +20,15 @@ export const AGENT_USAGE_CUSTOMER_EVENTS = {
       }
     },
     {
+      event_id: 'evt-api-usage-sub-credit',
+      event_type: 'api_usage_completed',
+      createdAt: '2026-09-20T11:30:00Z',
+      params: {
+        charge_micro_usd: 1_000,
+        input_tokens: 96
+      }
+    },
+    {
       event_id: 'evt-partner-node-usage',
       event_type: 'api_node_usage',
       createdAt: '2026-09-20T11:00:00Z',
@@ -33,6 +40,6 @@ export const AGENT_USAGE_CUSTOMER_EVENTS = {
   ],
   page: 1,
   limit: 7,
-  total: 2,
+  total: 3,
   totalPages: 1
-} satisfies CustomerEventsResponse
+} satisfies BillingEventsResponse

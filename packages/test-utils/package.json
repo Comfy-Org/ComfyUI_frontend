@@ -5,11 +5,17 @@
   "description": "Shared Vitest helpers for ComfyUI Frontend tests",
   "type": "module",
   "exports": {
-    "./fetch": "./src/fetch.ts"
+    "./fetch": {
+      "@comfyorg/test-utils": "./src/fetch.ts",
+      "types": "./dist-types/fetch.d.ts",
+      "default": "./src/fetch.ts"
+    }
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit",
+    "build": "tsc -b tsconfig.declarations.json",
+    "prepack": "pnpm build"
   },
   "devDependencies": {
     "typescript": "catalog:",

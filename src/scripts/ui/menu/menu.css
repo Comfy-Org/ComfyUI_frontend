@@ -43,7 +43,7 @@
   right: var(--right);
   bottom: var(--bottom);
   left: var(--left);
-  z-index: 2000;
+  z-index: var(--z-index-overlay);
   max-height: calc(100vh - var(--limit) - 10px);
   box-shadow: var(--shadow-md);
 }

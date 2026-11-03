@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 
-import { buildCatalog, parseCodeowners } from './catalog'
+import { buildCatalog, importEdges, parseCodeowners } from './catalog'
 import { formatReport, main, runArchitecture } from './cli'
 import { loadArchitectureConfiguration } from './records'
 
@@ -22,13 +22,8 @@ const record = {
   id: 'images',
   capability: 'Images',
   description: 'Image fixture',
-  modules: [
-    { path: 'src/images/**', role: 'domain' },
-    { path: 'src/imageView.vue', role: 'presentation' }
-  ],
+  modules: [{ path: 'src/images/**' }, { path: 'src/imageView.vue' }],
   publicEntryPoints: ['src/images/index.ts'],
-  allowedDependencies: [],
-  allowedConsumers: [],
   characterizationScenarios: [
     { name: 'keeps its contract', checks: ['src/images/index.test.ts'] }
   ],
@@ -73,21 +68,25 @@ describe('loadArchitectureConfiguration', () => {
     },
     {
       name: 'a glob other than a trailing /**',
-      overrides: { modules: [{ path: 'src/images/*.ts', role: 'domain' }] },
-      error: 'must be a src/ file or a src/ directory ending in /**'
+      overrides: { modules: [{ path: 'src/images/*.ts' }] },
+      error: 'must be a file or a directory ending in /** under src/'
     },
     {
-      name: 'an unknown domain reference',
-      overrides: { allowedDependencies: ['media'] },
-      error: 'images references unknown domain media'
+      name: 'a claim on all of src',
+      overrides: { modules: [{ path: 'src/**' }] },
+      error: 'must be a file or a directory ending in /** under src/'
+    },
+    {
+      name: 'a package path outside the package src directory',
+      overrides: {
+        modules: [{ path: 'packages/widgets/vite.config.ts' }]
+      },
+      error: 'must be a file or a directory ending in /** under src/'
     },
     {
       name: 'a module path claimed twice',
       overrides: {
-        modules: [
-          ...record.modules,
-          { path: 'src/images/**', role: 'application' }
-        ]
+        modules: [...record.modules, { path: 'src/images/**' }]
       },
       error: 'src/images/** is claimed by more than one module'
     },
@@ -108,6 +107,43 @@ describe('loadArchitectureConfiguration', () => {
     expect(loadArchitectureConfiguration(root)).toEqual({
       ok: false,
       errors: [expect.stringContaining(error)]
+    })
+  })
+
+  it('gives each unlisted test the domain of its sibling source file, or else of the longest file path its name extends', () => {
+    const root = createRepository(
+      {},
+      {
+        'src/imageView.test.ts': '',
+        'src/imageView.compact.vue': '<template />',
+        'src/imageView.compact.test.ts': '',
+        'src/imageView.compact.cloud.test.ts': '',
+        'src/imageView.unlisted.ts': '',
+        'src/imageView.unlisted.test.ts': '',
+        'src/imageViewer.test.ts': '',
+        'docs/architecture/domains/records/compact.domain.json': JSON.stringify(
+          {
+            ...record,
+            id: 'compact',
+            modules: [{ path: 'src/imageView.compact.vue' }],
+            publicEntryPoints: []
+          }
+        )
+      }
+    )
+    const config = loadValidConfiguration(root)
+    expect(
+      Object.fromEntries(
+        [...config.claims].map(([file, claim]) => [file, claim.record.id])
+      )
+    ).toEqual({
+      'src/images/index.ts': 'images',
+      'src/images/index.test.ts': 'images',
+      'src/imageView.vue': 'images',
+      'src/imageView.test.ts': 'images',
+      'src/imageView.compact.vue': 'compact',
+      'src/imageView.compact.test.ts': 'compact',
+      'src/imageView.compact.cloud.test.ts': 'compact'
     })
   })
 
@@ -154,22 +190,43 @@ describe('runArchitecture', () => {
         join(root, 'docs/architecture/domains/boundaries.json'),
         'utf8'
       )
-    ).toContain('"patterns": ["src/images/**"]')
+    ).toContain('"patterns": ["src/images/**", "src/imageView.vue"]')
   })
 
   it('warns about unclassified files and stale or redundant module paths without failing', () => {
-    const file = 'docs/architecture/domains/records/images.domain.json'
+    const images = 'docs/architecture/domains/records/images.domain.json'
+    const viewer = 'docs/architecture/domains/records/viewer.domain.json'
     const root = createRepository(
       {
         modules: [
           ...record.modules,
-          { path: 'src/gone/**', role: 'domain' },
-          { path: 'src/images/index.ts', role: 'application' },
-          { path: 'src/images/index.test.ts', role: 'application' },
-          { path: 'src/images/extra/**', role: 'domain' }
+          { path: 'src/gone/**' },
+          { path: 'src/images/extra/**' },
+          { path: 'src/images/hidden/a.ts' },
+          { path: 'src/images/view.wide.ts' },
+          { path: 'src/images/view.cloud.test.ts' }
         ]
       },
-      { 'src/brandNew.ts': '', 'src/images/extra/a.ts': '' }
+      {
+        'src/images/view.ts': '',
+        'src/images/view.test.ts': '',
+        'src/images/view.cloud.test.ts': '',
+        'src/images/view.wide.ts': '',
+        'src/images/view.wide.cloud.test.ts': '',
+        'src/brandNew.ts': '',
+        'src/images/extra/a.ts': '',
+        'src/images/hidden/a.ts': '',
+        [viewer]: JSON.stringify({
+          ...record,
+          id: 'viewer',
+          modules: [
+            { path: 'src/images/hidden/**' },
+            { path: 'src/images/view.ts' },
+            { path: 'src/images/view.test.ts' }
+          ],
+          publicEntryPoints: []
+        })
+      }
     )
     runArchitecture(root, 'update')
     expect(runArchitecture(root, 'check')).toEqual({
@@ -177,21 +234,27 @@ describe('runArchitecture', () => {
       warnings: [
         {
           message: expect.stringContaining(
-            'images path claims no source files because more specific paths claim all of them: src/images/**'
-          ),
-          file
-        },
-        {
-          message: expect.stringContaining(
             'images path matches no source files: src/gone/**'
           ),
-          file
+          file: images
         },
         {
           message: expect.stringContaining(
-            'images path repeats the role of the enclosing src/images/**: src/images/extra/**'
+            'viewer path claims no source files because more specific paths claim all of them: src/images/hidden/**'
           ),
-          file
+          file: viewer
+        },
+        {
+          message: expect.stringContaining(
+            'images path repeats the domain of the enclosing src/images/**: src/images/extra/**'
+          ),
+          file: images
+        },
+        {
+          message: expect.stringContaining(
+            'viewer path repeats the domain of its subject src/images/view.ts: src/images/view.test.ts'
+          ),
+          file: viewer
         },
         {
           message: expect.stringContaining(
@@ -204,9 +267,11 @@ describe('runArchitecture', () => {
   })
 
   it('reports invalid records as errors instead of throwing', () => {
-    const root = createRepository({ allowedDependencies: ['media'] })
+    const root = createRepository({
+      characterizationScenarios: [{ name: 'x', checks: ['src/gone.test.ts'] }]
+    })
     expect(runArchitecture(root, 'check')).toEqual({
-      errors: ['images references unknown domain media'],
+      errors: ['images references missing file src/gone.test.ts'],
       warnings: []
     })
   })
@@ -243,10 +308,13 @@ describe('runArchitecture', () => {
 describe('main', () => {
   function runMain(args: string[], root: string) {
     const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
     const exitCode = main(args, root)
     const output = stderr.mock.calls.map(([text]) => String(text)).join('')
+    const summary = stdout.mock.calls.map(([text]) => String(text)).join('')
     stderr.mockRestore()
-    return { exitCode, output }
+    stdout.mockRestore()
+    return { exitCode, output, summary }
   }
 
   it.for([
@@ -260,6 +328,11 @@ describe('main', () => {
       name: 'an unknown option',
       args: ['--chek'],
       error: "Could not parse arguments: Unknown option '--chek'"
+    },
+    {
+      name: 'an empty --report path',
+      args: ['--check', '--report='],
+      error: '--report requires a file path'
     }
   ])('reports $name as an error', ({ args, error }) => {
     const { exitCode, output } = runMain(args, createRepository())
@@ -275,6 +348,48 @@ describe('main', () => {
     expect(output).toContain('Could not list docs/architecture/domains/records')
     expect(output).toContain('Could not list src')
   })
+
+  it('writes the Markdown report to an absolute --report path and still passes on warnings', () => {
+    const root = createRepository({}, { 'src/brandNew.ts': '' })
+    runArchitecture(root, 'update')
+    const reportDirectory = mkdtempSync(join(tmpdir(), 'architecture-report-'))
+    roots.push(reportDirectory)
+    const reportFile = join(reportDirectory, 'report.md')
+    const { exitCode, summary } = runMain(
+      ['--check', '--report', reportFile],
+      root
+    )
+    expect(exitCode).toBe(0)
+    expect(summary).toBe('Architecture check passed with 1 warning(s)\n')
+    expect(readFileSync(reportFile, 'utf8')).toContain(
+      '- src/brandNew.ts is not claimed by any domain'
+    )
+  })
+
+  it('writes the errors to --report when the check fails', () => {
+    const root = createRepository({
+      characterizationScenarios: [{ name: 'x', checks: ['src/gone.test.ts'] }]
+    })
+    const reportDirectory = mkdtempSync(join(tmpdir(), 'architecture-report-'))
+    roots.push(reportDirectory)
+    const reportFile = join(reportDirectory, 'report.md')
+    const { exitCode } = runMain(['--check', '--report', reportFile], root)
+    expect(exitCode).toBe(1)
+    expect(readFileSync(reportFile, 'utf8')).toBe(
+      '### Errors (1)\n\n- images references missing file src/gone.test.ts\n'
+    )
+  })
+
+  it('fails when --report cannot be written, even if the check passes', () => {
+    const root = createRepository()
+    runArchitecture(root, 'update')
+    const { exitCode, output } = runMain(
+      ['--check', '--report', join(root, 'missing/report.md')],
+      root
+    )
+    expect(exitCode).toBe(1)
+    expect(output).toContain('Could not write')
+  })
 })
 
 describe('formatReport', () => {
@@ -284,7 +399,7 @@ describe('formatReport', () => {
   }
 
   it('lists warnings and errors as plain text', () => {
-    expect(formatReport(report, false)).toBe(
+    expect(formatReport(report, 'text')).toBe(
       'Warnings (1):\n- src/new.ts is unclaimed\nErrors (1):\n- records/a.json is invalid:\n  id: 100% wrong\n'
     )
   })
@@ -296,16 +411,69 @@ describe('formatReport', () => {
           errors: [],
           warnings: [{ message: 'unclaimed', file: 'src/a,b:c%.ts' }]
         },
-        true
+        'github'
       )
     ).toBe('::warning file=src/a%2Cb%3Ac%25.ts,title=Architecture::unclaimed\n')
   })
 
   it('emits one escaped GitHub Actions annotation per finding', () => {
-    expect(formatReport(report, true)).toBe(
+    expect(formatReport(report, 'github')).toBe(
       '::warning file=src/new.ts,title=Architecture::src/new.ts is unclaimed\n' +
         '::error title=Architecture::records/a.json is invalid:%0A  id: 100%25 wrong\n'
     )
+  })
+
+  it('renders errors and warnings as Markdown lists', () => {
+    expect(formatReport(report, 'markdown')).toBe(
+      '### Errors (1)\n\n- records/a.json is invalid:\n    id: 100% wrong\n\n' +
+        '### Warnings (1)\n\n- src/new.ts is unclaimed\n'
+    )
+  })
+
+  it.for([
+    { count: 50, lastLine: '- src/file49.ts is unclaimed' },
+    { count: 51, lastLine: '- …and 1 more' }
+  ])('lists at most 50 of $count findings', ({ count, lastLine }) => {
+    const warnings = Array.from({ length: count }, (_, i) => ({
+      message: `src/file${i}.ts is unclaimed`,
+      file: `src/file${i}.ts`
+    }))
+    const lines = formatReport({ errors: [], warnings }, 'markdown')
+      .trimEnd()
+      .split('\n')
+    expect(lines[0]).toBe(`### Warnings (${count})`)
+    expect(lines.at(-1)).toBe(lastLine)
+    expect(lines).not.toContain('- src/file50.ts is unclaimed')
+  })
+
+  it.for([
+    {
+      name: 'an HTML comment that could close the PR report section',
+      message: 'src/<!-- section:architecture:end -->&.ts is unclaimed',
+      rendered:
+        '- src/&lt;!-- section:architecture:end --&gt;&amp;.ts is unclaimed'
+    },
+    {
+      name: 'underscores in a __mocks__ directory',
+      message: 'src/composables/__mocks__/useAppMode.ts is unclaimed',
+      rendered: '- src/composables/\\_\\_mocks\\_\\_/useAppMode.ts is unclaimed'
+    },
+    {
+      name: 'a ** glob in a stale module path',
+      message: 'minimap path matches no source files: src/minimap/**',
+      rendered: '- minimap path matches no source files: src/minimap/\\*\\*'
+    }
+  ])('escapes $name', ({ message, rendered }) => {
+    expect(
+      formatReport(
+        { errors: [], warnings: [{ message, file: 'src/x.ts' }] },
+        'markdown'
+      )
+    ).toContain(rendered)
+  })
+
+  it('renders nothing for a clean report', () => {
+    expect(formatReport({ errors: [], warnings: [] }, 'markdown')).toBe('')
   })
 })
 
@@ -320,11 +488,12 @@ describe('buildCatalog', () => {
     const root = createRepository()
     const catalog = buildCatalog(
       loadValidConfiguration(root),
-      parseCodeowners('/src/ @fallback\n/src/images/ @images-team\n')
+      parseCodeowners('/src/ @fallback\n/src/images/ @images-team\n'),
+      []
     )
     expect(catalog.domains[0].modules).toEqual([
-      { path: 'src/images/**', role: 'domain', owners: ['@images-team'] },
-      { path: 'src/imageView.vue', role: 'presentation', owners: ['@fallback'] }
+      { path: 'src/images/**', owners: ['@images-team'] },
+      { path: 'src/imageView.vue', owners: ['@fallback'] }
     ])
   })
 
@@ -336,7 +505,7 @@ describe('buildCatalog', () => {
         'docs/architecture/domains/records/viewer.domain.json': JSON.stringify({
           ...record,
           id: 'viewer',
-          modules: [{ path: 'src/images/viewer/**', role: 'presentation' }],
+          modules: [{ path: 'src/images/viewer/**' }],
           publicEntryPoints: []
         })
       }
@@ -345,7 +514,8 @@ describe('buildCatalog', () => {
       loadValidConfiguration(root),
       parseCodeowners(
         '/src/images/ @images-team\n/src/images/viewer/ @viewer-team\n'
-      )
+      ),
+      []
     )
     expect(
       catalog.domains.map(({ id, sourceFileCount, modules }) => ({
@@ -359,24 +529,74 @@ describe('buildCatalog', () => {
     ])
   })
 
-  it('reports source coverage from directory and exact module paths', () => {
+  it('reports the imports each domain makes into other domains from the Fallow module graph', () => {
     const root = createRepository(
       {},
       {
-        'src/zeta.tsx': '',
-        'src/imageView.test.ts': '',
-        'src/images/nested/deep.vue': '<template />',
-        'src/README.md': '',
-        'apps/desktop/main.ts': ''
+        'src/images/viewer/Viewer.vue': '<template />',
+        'src/zeta.ts': '',
+        'docs/architecture/domains/records/viewer.domain.json': JSON.stringify({
+          ...record,
+          id: 'viewer',
+          modules: [{ path: 'src/images/viewer/**' }],
+          publicEntryPoints: []
+        })
       }
     )
-    const catalog = buildCatalog(loadValidConfiguration(root), [])
-    expect(catalog.domains[0].sourceFileCount).toBe(4)
+    const dot = [
+      'digraph fallow {',
+      '  n0 [label="src/images/viewer/Viewer.vue", fillcolor="#30a46c"];',
+      '  n1 [label="src/images/index.ts", fillcolor="#30a46c"];',
+      '  n2 [label="src/imageView.vue", fillcolor="#30a46c"];',
+      '  n3 [label="src/zeta.ts", fillcolor="#30a46c"];',
+      '  n4 [label="src/images/index.test.ts", fillcolor="#30a46c"];',
+      '  n0 -> n1;',
+      '  n0 -> n2;',
+      '  n0 -> n3;',
+      '  n4 -> n1;',
+      '  n1 -> n0;',
+      '}'
+    ].join('\n')
+    const catalog = buildCatalog(
+      loadValidConfiguration(root),
+      [],
+      importEdges(dot)
+    )
+    expect(
+      catalog.domains.map(({ id, dependencies }) => ({ id, dependencies }))
+    ).toEqual([
+      { id: 'images', dependencies: [{ domain: 'viewer', imports: 1 }] },
+      { id: 'viewer', dependencies: [{ domain: 'images', imports: 2 }] }
+    ])
+  })
+
+  it('reports coverage of src and package src code from directory and exact module paths', () => {
+    const root = createRepository(
+      {
+        modules: [...record.modules, { path: 'packages/widgets/src/index.ts' }]
+      },
+      {
+        'src/zeta.tsx': '',
+        'src/imageViewer.test.ts': '',
+        'src/images/nested/deep.vue': '<template />',
+        'src/README.md': '',
+        'apps/desktop/main.ts': '',
+        'packages/widgets/src/index.ts': '',
+        'packages/widgets/src/legacy.ts': '',
+        'packages/widgets/vite.config.ts': ''
+      }
+    )
+    const catalog = buildCatalog(loadValidConfiguration(root), [], [])
+    expect(catalog.domains[0].sourceFileCount).toBe(5)
     expect(catalog.coverage).toEqual({
-      total: 6,
-      classified: 4,
-      unclassified: 2,
-      unclassifiedFiles: ['src/imageView.test.ts', 'src/zeta.tsx']
+      total: 8,
+      classified: 5,
+      unclassified: 3,
+      unclassifiedFiles: [
+        'packages/widgets/src/legacy.ts',
+        'src/imageViewer.test.ts',
+        'src/zeta.tsx'
+      ]
     })
   })
 })

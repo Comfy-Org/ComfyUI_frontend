@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type { ToolPart } from '../../../services/agent/agentMessageParts'
+import type { ToolPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import ActivityTrace from './ActivityTrace.vue'
 import WorkSummary from './WorkSummary.vue'
@@ -298,6 +298,32 @@ describe('WorkSummary', () => {
 
     expect(
       screen.getByRole('button', { name: /^worked$/i })
+    ).toBeInTheDocument()
+  })
+
+  it('does not claim completed work while a successful canvas write awaits observation', () => {
+    render(WorkSummary, {
+      props: { parts: [tool('c1', 'add_node', 'streaming', true)] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: /not confirmed on your canvas/i })
+    ).toBeInTheDocument()
+  })
+
+  it('warns when a successful canvas write settled without observation', () => {
+    render(WorkSummary, {
+      props: {
+        parts: [
+          { ...tool('c1', 'add_node', 'done', true), canvasConfirmed: false }
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: /not confirmed on your canvas/i })
     ).toBeInTheDocument()
   })
 })

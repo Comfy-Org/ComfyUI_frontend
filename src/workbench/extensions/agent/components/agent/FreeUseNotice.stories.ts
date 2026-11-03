@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { fn } from 'storybook/test'
 
-import '../../agentPanel.css'
+import '@/workbench/extensions/agent/agentPanel.css'
 
-import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
+import { AGENT_FREE_USE_PLACEMENTS } from '@comfyorg/telemetry/types'
 
 import FreeUseNotice from './FreeUseNotice.vue'
 import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'

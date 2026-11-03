@@ -11,27 +11,9 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
 
-import { expect, it, onTestFinished } from 'vitest'
-import { isMap, isSeq, parseDocument } from 'yaml'
+import { assert, expect, it, onTestFinished } from 'vitest'
 
-const WORKFLOW = join(
-  import.meta.dirname,
-  '../../../.github/workflows/snapshot-update-commit.yaml'
-)
-
-function mergeScript() {
-  const steps = parseDocument(readFileSync(WORKFLOW, 'utf8')).getIn([
-    'jobs',
-    'commit',
-    'steps'
-  ])
-  const step = isSeq(steps)
-    ? steps.items.find(
-        (item) => isMap(item) && item.get('name') === 'Merge snapshot updates'
-      )
-    : undefined
-  return String(isMap(step) ? step.get('run') : '')
-}
+import { workflowStepRun } from './workflowStepRun'
 
 function writeFiles(root: string, files: Record<string, string>) {
   for (const [file, content] of Object.entries(files)) {
@@ -65,7 +47,14 @@ it('merges only snapshot PNGs, replacing goldens of the same size and mtime', ()
   utimesSync(join(download, golden), 1_000_000, 1_000_000)
   utimesSync(join(checkout, golden), 1_000_000, 1_000_000)
 
-  spawnSync('bash', ['-c', mergeScript()], {
+  const script = workflowStepRun(
+    'snapshot-update-commit.yaml',
+    'commit',
+    'Merge snapshot updates'
+  )
+  assert.exists(script)
+
+  spawnSync('bash', ['-c', script], {
     env: { ...process.env, CONFIG_DIR: checkout, DOWNLOAD_DIR: download }
   })
 

@@ -13,8 +13,8 @@ import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import { parseSkillReferenceText } from '../../utils/skillReferenceText'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 import UserMessage from './message/UserMessage.vue'
@@ -23,9 +23,8 @@ import { userMessageClipboard } from './message/userMessageClipboard'
 setupInlinePromptEditorDom()
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const PORTRAIT = 'Compose a portrait\nKeep the subject recognizable'
 const PORTRAIT_LINK =

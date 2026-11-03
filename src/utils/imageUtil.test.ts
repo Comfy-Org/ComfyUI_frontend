@@ -82,4 +82,66 @@ describe('parseImageWidgetValue', () => {
       type: 'input'
     })
   })
+
+  it.for([
+    {
+      raw: 'scenes\\sky.png [output]',
+      filename: 'sky.png',
+      subfolder: 'scenes',
+      type: 'output'
+    },
+    {
+      raw: 'a\\b/sky.png',
+      filename: 'sky.png',
+      subfolder: 'a/b',
+      type: 'input'
+    },
+    {
+      raw: 'pasted/12:30.png',
+      filename: '12:30.png',
+      subfolder: 'pasted',
+      type: 'input'
+    },
+    {
+      raw: '12:30/out.png [output]',
+      filename: 'out.png',
+      subfolder: '12:30',
+      type: 'output'
+    },
+    {
+      raw: 'scenes//sky.png [output]',
+      filename: 'sky.png',
+      subfolder: 'scenes/',
+      type: 'output'
+    },
+    {
+      raw: '/sky.png [output]',
+      filename: 'sky.png',
+      subfolder: '',
+      type: 'output'
+    },
+    {
+      raw: 'scenes/sky.png/ [output]',
+      filename: '',
+      subfolder: 'scenes/sky.png',
+      type: 'output'
+    },
+    {
+      raw: 'scenes/../sky.png [temp]',
+      filename: 'sky.png',
+      subfolder: 'scenes/..',
+      type: 'temp'
+    },
+    {
+      raw: 'D:\\sky.png [output]',
+      filename: 'sky.png',
+      subfolder: 'D:',
+      type: 'output'
+    }
+  ])(
+    'splits $raw into subfolder "$subfolder" and filename "$filename"',
+    ({ raw, ...expected }) => {
+      expect(parseImageWidgetValue(raw)).toEqual(expected)
+    }
+  )
 })

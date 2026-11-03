@@ -39,7 +39,7 @@
               {{ t('auth.login.forgotPassword') }}
             </Button>
           </div>
-          <PasswordInput
+          <AppPasswordInput
             v-bind="componentField"
             id="comfy-org-sign-in-password"
             autocomplete="current-password"
@@ -51,7 +51,7 @@
       </VeeField>
     </FieldGroup>
 
-    <Spinner v-if="loading" class="mx-auto size-8" />
+    <AppSpinner v-if="loading" class="mx-auto size-8" />
     <Button v-else type="submit" class="h-10" :disabled="!meta.valid">
       {{ t('auth.login.loginButton') }}
     </Button>
@@ -66,19 +66,18 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
-import Field from '@/components/ui/field/Field.vue'
-import FieldError from '@/components/ui/field/FieldError.vue'
-import FieldGroup from '@/components/ui/field/FieldGroup.vue'
-import FieldLabel from '@/components/ui/field/FieldLabel.vue'
-import Input from '@/components/ui/input/Input.vue'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldError from '@comfyorg/design-system/field/FieldError'
+import FieldGroup from '@comfyorg/design-system/field/FieldGroup'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
+import Input from '@comfyorg/design-system/input/Input'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
-import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 const authStore = useAuthStore()
 const authActions = useAuthActions()
@@ -93,7 +92,7 @@ const emit = defineEmits<{
 const emailInputId = 'comfy-org-sign-in-email'
 
 const { handleSubmit, meta, validateField, values } = useForm({
-  validationSchema: toTypedSchema(signInSchema),
+  validationSchema: signInSchema,
   initialValues: { email: '', password: '' }
 })
 const isEmailValid = useIsFieldValid('email')

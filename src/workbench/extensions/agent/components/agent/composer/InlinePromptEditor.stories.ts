@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { ComposerPrompt } from '../../../types/composerPrompt'
-import '../../../agentPanel.css'
+import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
+import '@/workbench/extensions/agent/agentPanel.css'
 
 import InlinePromptEditor from './InlinePromptEditor.vue'
 

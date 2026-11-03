@@ -4,61 +4,25 @@
   "description": "Multi-box region editing: box geometry and hit testing, editor state, upstream image sources, widget presentation, extension registration, and LiteGraph widget integration. The singular bounding-box and crop widgets remain outside this capability.",
   "modules": [
     {
-      "path": "src/components/boundingBoxes/**",
-      "role": "presentation"
+      "path": "src/components/boundingBoxes/**"
     },
     {
-      "path": "src/composables/boundingBoxes/**",
-      "role": "application"
+      "path": "src/composables/boundingBoxes/**"
     },
     {
-      "path": "src/composables/boundingBoxes/boundingBoxesUtil.test.ts",
-      "role": "domain"
+      "path": "src/extensions/core/createBoundingBoxes.ts"
     },
     {
-      "path": "src/composables/boundingBoxes/boundingBoxesUtil.ts",
-      "role": "domain"
+      "path": "src/lib/litegraph/src/widgets/BoundingBoxesWidget.ts"
     },
     {
-      "path": "src/extensions/core/createBoundingBoxes.test.ts",
-      "role": "integration"
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources.ts"
     },
     {
-      "path": "src/extensions/core/createBoundingBoxes.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/widgets/BoundingBoxesWidget.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/widgets/BoundingBoxesWidget.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/types/boundingBoxes.ts",
-      "role": "domain"
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesWidget.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Box geometry, hit testing, and editor state preserve region editing",

@@ -144,6 +144,15 @@ describe('endingOf', () => {
       screen: { kind: 'refused', code: 'SALES_MANAGED', copy: 'sales_managed' }
     },
     {
+      name: 'a sales-managed plan',
+      page: { kind: 'refused', reason: 'sales_managed_plan' },
+      screen: {
+        kind: 'refused',
+        code: 'SALES_MANAGED_PLAN',
+        copy: 'sales_managed'
+      }
+    },
+    {
       name: 'a checkout that could not load',
       page: { kind: 'unavailable', cause: 'quote', code: 'REQUEST_FAILED' },
       screen: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' }

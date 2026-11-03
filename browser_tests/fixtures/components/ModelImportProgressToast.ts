@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -7,6 +8,7 @@ export class ModelImportProgressToast {
   public readonly expandButton: Locator
   public readonly filterButton: Locator
   public readonly filterOptions: Locator
+  private readonly dock: Locator
 
   constructor(page: Page) {
     this.root = page
@@ -17,6 +19,7 @@ export class ModelImportProgressToast {
       name: /^(All|Completed|Failed)$/
     })
     this.filterOptions = page.getByRole('dialog')
+    this.dock = page.locator('[data-toast-dock]')
   }
 
   async expand() {
@@ -24,6 +27,19 @@ export class ModelImportProgressToast {
   }
 
   async filterBy(status: 'All' | 'Completed' | 'Failed') {
+    await expect
+      .poll(
+        () =>
+          this.dock.evaluate(
+            (dock) =>
+              dock
+                .getAnimations({ subtree: true })
+                .filter((animation) => animation instanceof CSSTransition)
+                .length
+          ),
+        { message: 'Toast panels never finished resizing' }
+      )
+      .toBe(0)
     await this.filterButton.click()
     await this.filterOptions
       .getByRole('button', { name: status, exact: true })

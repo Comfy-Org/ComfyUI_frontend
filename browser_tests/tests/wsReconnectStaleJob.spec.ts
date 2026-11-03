@@ -12,7 +12,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 import type {
   RawJobListItem,
   zJobsListResponse
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+} from '@comfyorg/api-client/jobTypes'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
 

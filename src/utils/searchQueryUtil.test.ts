@@ -84,6 +84,12 @@ describe('toRepoName', () => {
     { query: 'kijai/comfyui-kjnodes//', expected: 'comfyui-kjnodes' },
     { query: 'kijai/comfyui-kjnodes.git/', expected: 'comfyui-kjnodes' },
     { query: 'kijai/comfyui-kjnodes.git//', expected: 'comfyui-kjnodes' },
+    { query: 'kijai/comfyui-kjnodes /', expected: 'comfyui-kjnodes' },
+    { query: 'kijai/comfyui-kjnodes / /', expected: 'comfyui-kjnodes' },
+    {
+      query: 'ltdrdata/ComfyUI-Manager.git /',
+      expected: 'ComfyUI-Manager'
+    },
     { query: 'Comfy-Org/ComfyUI-Manager', expected: 'ComfyUI-Manager' },
     { query: 'ZHO-ZHO-ZHO/ComfyUI-Gemini', expected: 'ComfyUI-Gemini' },
     {
@@ -93,6 +99,23 @@ describe('toRepoName', () => {
   ])('strips "$query" to "$expected"', ({ query, expected }) => {
     expect(toRepoName(query)).toBe(expected)
   })
+
+  it('strips the tail after a long run of inner spaces', () => {
+    const spaces = ' '.repeat(50_000)
+
+    expect(toRepoName(`a${spaces}b /`)).toBe(`a${spaces}b`)
+  })
+
+  it(
+    'strips the owner from a long pasted compound slug in linear time',
+    { timeout: 250 },
+    () => {
+      const slug = 'a-a'.repeat(50_000)
+
+      expect(toRepoName(`a/${slug}`)).toBe(slug)
+      expect(toRepoName(`a/${slug}!`)).toBe(`a/${slug}!`)
+    }
+  )
 
   it.for([
     { query: 'ComfyUI-KJNodes.git', expected: 'ComfyUI-KJNodes' },
@@ -156,6 +179,15 @@ describe('buildPackSearchFallbacks', () => {
       expected: ['ComfyUI-KJNodes', 'ComfyUI KJNodes']
     },
     {
+      query: 'kijai/comfyui-kjnodes /',
+      expected: ['comfyui-kjnodes', 'comfyui kjnodes']
+    },
+    {
+      query: 'kijai/comfyui-kjnodes / /',
+      expected: ['comfyui-kjnodes', 'comfyui kjnodes']
+    },
+    { query: 'comfyui-kjnodes /', expected: ['comfyui kjnodes'] },
+    {
       query: 'euler-discrete-scheduler',
       expected: ['euler discrete scheduler']
     },
@@ -174,6 +206,7 @@ describe('buildPackSearchFallbacks', () => {
     'image/upscaling',
     'image/upscaling/',
     'image/upscaling//',
+    'image/upscaling / /',
     'https://github.com/kijai/',
     'kijai/kjnodes/',
     'kijai/c',
@@ -184,5 +217,9 @@ describe('buildPackSearchFallbacks', () => {
     ' euler \t discrete '
   ])('yields nothing for %j', (query) => {
     expect(buildPackSearchFallbacks(query)).toEqual([])
+  })
+
+  it('yields nothing for a long run of inner spaces', () => {
+    expect(buildPackSearchFallbacks(`a${' '.repeat(50_000)}b /`)).toEqual([])
   })
 })

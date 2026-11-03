@@ -1,6 +1,6 @@
 import { computed, onScopeDispose, ref, watch } from 'vue'
 
-import type { SkillReferenceMetadata } from '../../types/skillReference'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 
 const SHOW_DELAY_MS = 250
 const HOVER_CLOSE_DELAY_MS = 150

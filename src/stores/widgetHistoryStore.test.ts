@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import {
   WIDGET_HISTORY_LIMIT,
+  asHistoryReference,
   ownsNodeHistory,
   useWidgetHistoryStore
 } from './widgetHistoryStore'
@@ -43,7 +44,15 @@ function undoAll(store: Store): unknown[] {
 
 describe(ownsNodeHistory, () => {
   it.for([
+    { type: 'boundingbox', owns: true },
     { type: 'boundingboxes', owns: true },
+    { type: 'colors', owns: true },
+    { type: 'curve', owns: true },
+    { type: 'imagecrop', owns: true },
+    { type: 'lightinfo', owns: true },
+    { type: 'painter', owns: true },
+    { type: 'range', owns: true },
+    { type: 'videoedit', owns: true },
     { type: 'number', owns: false },
     { type: undefined, owns: false }
   ])('returns $owns for widget type $type', ({ type, owns }) => {
@@ -60,6 +69,67 @@ describe(useWidgetHistoryStore, () => {
     expect(store.canUndo(scope)).toBe(false)
     expect(store.redo(scope, 'before')).toEqual({ value: 'after' })
     expect(store.canRedo(scope)).toBe(false)
+    expect(store.canUndo(scope)).toBe(true)
+  })
+
+  it('keeps the shared baseline across steps until the widget is forgotten', () => {
+    const store = useWidgetHistoryStore()
+    store.setBaseline(scope, 'shown')
+    store.record(scope, 'before')
+    store.undo(scope, 'after')
+
+    expect(store.baselineOf(scope)).toEqual({ value: 'shown' })
+    store.forget(scope)
+    expect(store.baselineOf(scope)).toBeUndefined()
+  })
+
+  it.for([
+    {
+      case: 'a value marked as a history reference by reference',
+      mark: asHistoryReference,
+      same: true
+    },
+    { case: 'a frozen value as a copy', mark: Object.freeze, same: false },
+    {
+      case: 'a plain value as a copy',
+      mark: <T>(value: T) => value,
+      same: false
+    }
+  ])('stores $case', ({ mark, same }) => {
+    const store = useWidgetHistoryStore()
+    const value = mark({ pixels: [1, 2, 3] })
+    store.record(scope, value)
+
+    const step = store.undo(scope, 'after')
+
+    expect(step?.value === value).toBe(same)
+    expect(step?.value).toEqual(value)
+  })
+
+  it('lists the steps it keeps and drops one of them', () => {
+    const store = useWidgetHistoryStore()
+    const other = scopeOf('root-a', 2)
+    store.record(scope, 'first')
+    store.record(scope, 'second')
+    store.undo(scope, 'redone')
+    store.record(other, 'elsewhere')
+
+    store.dropStep(scope, 'first')
+
+    expect(store.storedSteps()).toEqual([
+      { scope, value: 'redone' },
+      { scope: other, value: 'elsewhere' }
+    ])
+  })
+
+  it('peeks at the next step in each direction without taking it', () => {
+    const store = useWidgetHistoryStore()
+    store.record(scope, 'before')
+    store.undo(scope, 'after')
+    store.record(scope, 'other')
+
+    expect(store.peek(scope, 'undo')).toEqual({ value: 'other' })
+    expect(store.peek(scope, 'redo')).toBeUndefined()
     expect(store.canUndo(scope)).toBe(true)
   })
 
@@ -178,6 +248,29 @@ describe(useWidgetHistoryStore, () => {
     store.record(scopeOf('root-a', 3), 'b')
 
     expect(store.canUndo(scope)).toBe(false)
+    expect(store.canUndo(scopeOf('root-a', 3))).toBe(true)
+  })
+
+  it('forgets the history of one widget only', () => {
+    const store = useWidgetHistoryStore()
+    const sibling = scopeOf('root-a', 2)
+    store.record(scope, 'a')
+    store.record(sibling, 'a')
+
+    store.forget(scope)
+
+    expect(store.canUndo(scope)).toBe(false)
+    expect(store.canUndo(sibling)).toBe(true)
+  })
+
+  it('forgets a workflow once its last widget history is forgotten', () => {
+    const store = useWidgetHistoryStore()
+    store.record(scope, 'a')
+
+    store.forget(scope)
+    store.forget(scope)
+    store.record(scopeOf('root-a', 3), 'b')
+
     expect(store.canUndo(scopeOf('root-a', 3))).toBe(true)
   })
 

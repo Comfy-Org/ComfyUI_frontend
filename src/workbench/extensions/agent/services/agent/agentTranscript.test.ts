@@ -1,7 +1,10 @@
 import { assert, describe, expect, it } from 'vitest'
 
-import type { AgentMessages } from '../../schemas/agentApiSchema'
-import { toTurnId, zAgentMessages } from '../../schemas/agentApiSchema'
+import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  toTurnId,
+  zAgentMessages
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
 
 const row = (
@@ -427,6 +430,85 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('skips malformed persisted thinking and keeps an entry whose call is missing after the calls', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      thinking: [
+        { text: 42 },
+        { text: '   ' },
+        { text: 'Looking it up.', tool_call_id: 'call-1' },
+        { text: 'The audit row is gone.', tool_call_id: 'call-missing' }
+      ],
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'success'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'thinking', text: 'Looking it up.', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true
+      },
+      { type: 'thinking', text: 'The audit row is gone.', state: 'done' },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('restores persisted thinking whose tool_call_id is an explicit null', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      thinking: [{ text: 'Final round.', tool_call_id: null }]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'thinking', text: 'Final round.', state: 'done' },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('keeps persisted thinking in order when an earlier entry names a call the transcript lacks', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      thinking: [
+        { text: 'Round one.', tool_call_id: 'call-missing' },
+        { text: 'Round two.', tool_call_id: 'call-2' },
+        { text: 'Final round.' }
+      ],
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-2',
+          tool_call_id: 'call-2',
+          tool_name: 'add_node',
+          status: 'success'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(
+      transcript.messages[0].parts.map((part) =>
+        part.type === 'thinking' ? part.text : part.type
+      )
+    ).toEqual(['Round one.', 'Round two.', 'tool', 'Final round.', 'text'])
+  })
+
   it('restores a persisted skill name', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
@@ -752,6 +834,41 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('keeps an older available approval when the newest streaming row has none', () => {
+    const first = row(1, 'assistant', 'turn-a', '', 'row-1')
+    first.status = 'streaming'
+    first.pending_ask = {
+      message_id: 'row-1',
+      ask_id: 'ask-available',
+      kind: 'run_approval',
+      prompt: 'Run it?',
+      options: [],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+    const second = row(2, 'assistant', 'turn-a', '', 'row-2')
+    second.status = 'streaming'
+    second.pending_ask = {
+      ...first.pending_ask,
+      message_id: 'row-2',
+      ask_id: 'ask-retired'
+    }
+    const latest = row(3, 'assistant', 'turn-a', '', 'row-3')
+    latest.status = 'streaming'
+
+    const transcript = normalizeAgentTranscript(
+      [first, second, latest],
+      (askId) => askId === 'ask-retired',
+      (askId) => askId === 'ask-retired'
+    )
+
+    expect(transcript.pending?.message.streaming).toBe(true)
+    expect(transcript.messages[0].parts).toContainEqual(
+      expect.objectContaining({ askId: 'ask-available' })
+    )
+  })
+
   // Only a transport can resolve an ask, and a demoted row is not getting one.
   // Kept, the card renders enabled and answering it posts against a turn that
   // is no longer active -- a button that silently does nothing.
@@ -953,7 +1070,8 @@ describe('normalizeAgentTranscript', () => {
         callId: 'call-2',
         name: 'add_node',
         state: 'done',
-        ok: true
+        ok: true,
+        canvasConfirmed: false
       },
       { type: 'text', text: 'Done', state: 'done' }
     ])
