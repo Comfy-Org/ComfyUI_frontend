@@ -4,24 +4,16 @@
   "description": "Painter presentation, drawing behavior, Vue-node adaptation, extension registration, and LiteGraph widget integration.",
   "modules": [
     {
-      "path": "src/renderer/extensions/painter/components/**",
-      "role": "presentation"
+      "path": "src/renderer/extensions/painter/**"
     },
     {
-      "path": "src/renderer/extensions/painter/composables/**",
-      "role": "application"
+      "path": "src/extensions/core/painter.ts"
     },
     {
-      "path": "src/extensions/core/painter.ts",
-      "role": "integration"
+      "path": "src/lib/litegraph/src/widgets/PainterWidget.ts"
     },
     {
-      "path": "src/lib/litegraph/src/widgets/PainterWidget.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts",
-      "role": "integration"
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/usePainterWidget.ts"
     }
   ],
   "publicEntryPoints": [],
