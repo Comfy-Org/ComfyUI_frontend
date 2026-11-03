@@ -10,6 +10,11 @@ import type {
   HostedTopupCheckout,
   SubscriptionState
 } from '@comfyorg/ingest-types'
+import { selectBillingBanners } from '@comfyorg/account-ui/billing'
+import type {
+  BillingBannerKind,
+  BillingBannerView
+} from '@comfyorg/account-ui/billing'
 
 import { i18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json'
@@ -1997,4 +2002,133 @@ describe('BillingTab', () => {
       expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(1)
     })
   })
+})
+
+describe('BillingTab banner stack parity with selectBillingBanners', () => {
+  const BANNER_KINDS: Record<string, BillingBannerKind> = {
+    'billing-paused-banner': 'paused',
+    'billing-plan-checkout-banner': 'planCheckout',
+    'billing-topup-checkout-banner': 'topupCheckout',
+    'billing-parked-banner': 'parked',
+    'billing-auto-top-up-banner': 'autoTopUp',
+    'billing-local-credit-banner': 'credit'
+  }
+
+  const text = { title: '', body: '' }
+  const VIEWS: Record<BillingBannerKind, BillingBannerView> = {
+    paused: { kind: 'paused', ...text, muted: false, action: null },
+    planCheckout: {
+      kind: 'planCheckout',
+      ...text,
+      muted: true,
+      action: null,
+      href: null,
+      dismissKey: null
+    },
+    topupCheckout: {
+      kind: 'topupCheckout',
+      ...text,
+      action: null,
+      dismissKey: 'cs_processing:processing'
+    },
+    parked: {
+      kind: 'parked',
+      ...text,
+      action: 'contactSupport',
+      href: 'https://comfy.org/contact/'
+    },
+    planStatus: { kind: 'planStatus', ...text },
+    autoTopUp: {
+      kind: 'autoTopUp',
+      ...text,
+      action: 'updatePayment',
+      href: 'https://platform.test/profile/billing'
+    },
+    credit: {
+      kind: 'credit',
+      ...text,
+      action: null,
+      dismissKey: 'outOfCredits'
+    }
+  }
+
+  function shownStack() {
+    return screen
+      .queryAllByTestId(
+        new RegExp(`^(${Object.keys(BANNER_KINDS).join('|')})$`)
+      )
+      .map((banner) => BANNER_KINDS[banner.dataset.testid ?? ''])
+  }
+
+  function serveProcessingTopup() {
+    vi.mocked(billingApi.listTopupCheckouts).mockResolvedValue({
+      checkouts: [
+        {
+          session_id: 'cs_processing',
+          amount_cents: 2500,
+          created_at: '2026-10-20T00:00:00Z'
+        }
+      ],
+      next_cursor: null
+    })
+    vi.mocked(billingApi.getTopupCheckout).mockResolvedValue({
+      session_id: 'cs_processing',
+      amount_cents: 2500,
+      payment_amount_cents: 2500,
+      state: 'payment_processing'
+    })
+  }
+
+  it.for<{
+    case: string
+    scenario: Scenario
+    topupProcessing?: boolean
+    candidates: BillingBannerKind[]
+  }>([
+    {
+      case: 'out of credits alone',
+      scenario: {},
+      candidates: ['credit']
+    },
+    {
+      case: 'paused while out of credits',
+      scenario: { isPaused: true },
+      candidates: ['paused', 'credit']
+    },
+    {
+      case: 'parked while out of credits',
+      scenario: { hasParkedBillingOperation: true },
+      candidates: ['parked', 'credit']
+    },
+    {
+      case: 'a processing top-up while out of credits',
+      scenario: {},
+      topupProcessing: true,
+      candidates: ['topupCheckout', 'credit']
+    },
+    {
+      case: 'paused and parked while out of credits',
+      scenario: { isPaused: true, hasParkedBillingOperation: true },
+      candidates: ['paused', 'parked', 'credit']
+    }
+  ])(
+    'stacks $case like the tab',
+    async ({ scenario, topupProcessing, candidates }) => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      if (topupProcessing) serveProcessingTopup()
+      arrange({
+        ...scenario,
+        subscription: { ...activeSubscription, hasFunds: false }
+      })
+      if (topupProcessing) {
+        await screen.findByTestId('billing-topup-checkout-banner')
+      }
+
+      expect(shownStack()).toEqual(
+        selectBillingBanners(candidates.map((kind) => VIEWS[kind])).map(
+          ({ kind }) => kind
+        )
+      )
+    }
+  )
 })
