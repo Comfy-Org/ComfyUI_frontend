@@ -144,6 +144,10 @@ describe('agentModelStore', () => {
       reason: 'not_available_for_account'
     })
     expect(store.available.map((model) => model.id)).toEqual(['local'])
+    expect(store.listed.map((model) => model.id)).toEqual([
+      'cloud:claude-opus-4-8',
+      'local'
+    ])
     expect(store.modelForSend('t1')).toBeUndefined()
 
     store.select('t1', 'local')

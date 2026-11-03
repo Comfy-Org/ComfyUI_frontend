@@ -64,6 +64,18 @@ export const useAgentModelStore = defineStore('agentModel', () => {
   const available = computed<AgentModelChoice[]>(
     () => listing.value?.models.filter((model) => model.available) ?? []
   )
+  /**
+   * What the menu lists: the usable models, plus those the signed-in account
+   * may not use (shown greyed with the reason, OBL-204-Q-2). Models that need
+   * a sign-in or a key this computer lacks stay hidden.
+   */
+  const listed = computed<AgentModelChoice[]>(
+    () =>
+      listing.value?.models.filter(
+        (model) =>
+          model.available || model.reason === 'not_available_for_account'
+      ) ?? []
+  )
 
   function findAvailable(id: string | null | undefined) {
     if (!id) return undefined
@@ -174,6 +186,7 @@ export const useAgentModelStore = defineStore('agentModel', () => {
   return {
     supported,
     available,
+    listed,
     selectedFor,
     modelForSend,
     select,

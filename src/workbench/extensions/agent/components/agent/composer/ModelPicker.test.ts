@@ -138,6 +138,11 @@ describe('ModelPicker', () => {
     ).toHaveTextContent(
       'Claude Opus 4.8 (Comfy Cloud): not available for your Comfy account. Pick another model.'
     )
+    const cloud = screen.getByRole('menuitemradio', {
+      name: /Claude Opus 4\.8 \(Comfy Cloud\)/
+    })
+    expect(cloud).toHaveAttribute('data-disabled')
+    expect(cloud).toHaveTextContent('not available for your Comfy account')
     await userEvent.click(
       screen.getByRole('menuitemradio', { name: /qwen \(this computer\)/ })
     )

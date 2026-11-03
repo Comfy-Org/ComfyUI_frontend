@@ -50,14 +50,18 @@ const REASON_KEYS: Record<string, string> = {
   setting_off: 'agent.modelReasonSettingOff'
 }
 
+function reasonText(reason: string | null | undefined): string {
+  const key = reason ? REASON_KEYS[reason] : undefined
+  return key ? t(key) : t('agent.modelReasonUnknown')
+}
+
 /** Why the shown default can't be used, when it can't. */
 const unavailableNote = computed(() => {
   const model = selected.value
   if (!model || model.available) return null
-  const key = model.reason ? REASON_KEYS[model.reason] : undefined
   return t('agent.modelUnavailableNote', {
     model: model.label,
-    reason: key ? t(key) : t('agent.modelReasonUnknown')
+    reason: reasonText(model.reason)
   })
 })
 
@@ -140,9 +144,10 @@ function onSelect(value: unknown): void {
           @update:model-value="onSelect"
         >
           <DropdownMenuRadioItem
-            v-for="model in store.available"
+            v-for="model in store.listed"
             :key="model.id"
             :value="model.id"
+            :disabled="!model.available"
             as-child
             @select.prevent
           >
@@ -152,7 +157,7 @@ function onSelect(value: unknown): void {
                 selected.id === model.id ? 'tertiary' : 'muted-textonly'
               "
               size="unset"
-              class="w-full items-center gap-3 px-2.5 py-2 text-left whitespace-normal"
+              class="w-full items-center gap-3 px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none data-disabled:opacity-50"
             >
               <span
                 :class="
@@ -162,9 +167,17 @@ function onSelect(value: unknown): void {
                   )
                 "
               />
-              <span class="min-w-0 flex-1 text-sm/5 text-foreground">{{
-                model.label
-              }}</span>
+              <span class="min-w-0 flex-1">
+                <span class="block text-sm/5 text-foreground">{{
+                  model.label
+                }}</span>
+                <span
+                  v-if="!model.available"
+                  class="mt-0.5 block text-xs/4 text-muted-foreground"
+                >
+                  {{ reasonText(model.reason) }}
+                </span>
+              </span>
               <span
                 aria-hidden="true"
                 :class="
