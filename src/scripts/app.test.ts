@@ -4445,27 +4445,38 @@ describe('ComfyApp', () => {
       graph.add(new ImageBatch('ImageBatch', 'ImageBatch'))
       Reflect.set(app, 'rootGraphInternal', graph)
       const replacementStore = useNodeReplacementStore()
-      vi.spyOn(replacementStore, 'load').mockImplementation(async () => {
-        replacementStore.replacements = {
-          ImageBatch: [
-            {
-              new_node_id: 'BatchImagesNode',
-              old_node_id: 'ImageBatch',
-              old_widget_ids: null,
-              input_mapping: null,
-              output_mapping: null
-            }
-          ]
-        }
-      })
+      let finishLoading = () => {}
+      vi.spyOn(replacementStore, 'load').mockReturnValue(
+        new Promise<void>((resolve) => {
+          finishLoading = resolve
+        })
+      )
       vi.spyOn(api, 'init').mockResolvedValue()
       const addEventListener = vi.spyOn(api, 'addEventListener')
       Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
-      const featureFlagsHandler = addEventListener.mock.calls.find(
+      const listeners = [...addEventListener.mock.calls]
+      onTestFinished(() => {
+        for (const [event, listener] of listeners)
+          api.removeEventListener(event, listener)
+      })
+      const featureFlagsHandler = listeners.find(
         ([event]) => event === 'feature_flags'
       )?.[1] as EventListener | undefined
 
-      await featureFlagsHandler?.(new CustomEvent('feature_flags'))
+      const handled = featureFlagsHandler?.(new CustomEvent('feature_flags'))
+      replacementStore.replacements = {
+        ImageBatch: [
+          {
+            new_node_id: 'BatchImagesNode',
+            old_node_id: 'ImageBatch',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        ]
+      }
+      finishLoading()
+      await handled
 
       expect(
         useDeprecatedNodesStore().nodeTypes.map((nodeType) =>
