@@ -15,9 +15,14 @@ import type {
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { unsafeStorageScope } from '@/platform/workflow/persistence/testUtils/storageScope'
-import { scopedOnboardingKey } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+
+const AGENT_ONBOARDING_KEY = 'Comfy.AgentPanel.onboarded'
+
+function scopedOnboardingKey(userId: string, workspaceId: string): string {
+  return `${AGENT_ONBOARDING_KEY}.${userId}.${workspaceId}`
+}
 
 export interface IdentityPersistenceSentinel {
   userId: string
@@ -126,8 +131,6 @@ export class IdentityPersistenceHelper {
         sentinel.userId,
         sentinel.workspaceId
       )
-      if (onboardingKey === null)
-        throw new Error('Identity scope is incomplete')
 
       const updatedAt = Date.now()
       const entries: Array<[string, string]> = [
