@@ -167,6 +167,7 @@ const inputAriaAttrs = computed(() => ({
     :widget
     :input-id="inputId"
     :activate-on-click="false"
+    has-leading-button
     label-class="cursor-ew-resize touch-pan-y"
     :root-class="
       cn(unifiedRows && 'cursor-ew-resize touch-pan-y', props.rootClass)

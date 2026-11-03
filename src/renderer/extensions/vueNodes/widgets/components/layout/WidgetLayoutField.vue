@@ -12,6 +12,7 @@ const {
   valueText,
   inputId,
   labelClass,
+  hasLeadingButton,
   fullWidthControl,
   activateOnClick = true
 } = defineProps<{
@@ -23,6 +24,7 @@ const {
   valueText?: string
   inputId?: string
   labelClass?: string
+  hasLeadingButton?: boolean
   fullWidthControl?: boolean
   noBorder?: boolean
   fillWidth?: boolean
@@ -32,6 +34,10 @@ const {
 const hideLayoutField = useHideLayoutField()
 const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 const fullWidthRow = computed(() => unifiedRows && fullWidthControl)
+const leadingPadding = computed(() => {
+  if (!unifiedRows) return undefined
+  return hasLeadingButton ? 'pl-8' : 'pl-3'
+})
 const labelElement = useTemplateRef<HTMLLabelElement>('labelElement')
 const rowElement = useTemplateRef<HTMLDivElement>('rowElement')
 defineExpose({ labelElement, rowElement })
@@ -76,9 +82,10 @@ function activateControl(event: MouseEvent) {
     :class="
       cn(
         unifiedRows
-          ? 'relative flex min-w-0 items-center rounded-md bg-input pl-8 focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none [&_[data-slot=number-field]:focus-within]:ring-0'
+          ? 'relative flex min-w-0 items-center rounded-md bg-input focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none [&_[data-slot=number-field]:focus-within]:ring-0'
           : 'grid min-w-0 grid-cols-subgrid justify-between gap-2',
-        fullWidthRow && 'py-2 pl-2',
+        leadingPadding,
+        fullWidthRow && 'py-2',
         unifiedRows && !noBorder && widget.borderStyle,
         rootClass
       )

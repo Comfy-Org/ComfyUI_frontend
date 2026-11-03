@@ -31,12 +31,23 @@
           minimumFractionDigits: precision,
           maximumFractionDigits: precision
         }"
-        class="h-auto w-16 shrink-0 bg-transparent hover:bg-transparent"
+        :class="
+          cn(
+            'h-auto shrink-0 bg-transparent hover:bg-transparent',
+            unifiedRows ? 'w-auto' : 'w-16'
+          )
+        "
       >
         <NumberFieldInput
           :id="inputId"
           :aria-label="widget.name"
-          :class="cn('text-xs', unifiedRows && 'text-right')"
+          :class="
+            cn(
+              'text-xs',
+              unifiedRows &&
+                'field-sizing-content w-auto max-w-16 flex-none text-right'
+            )
+          "
         />
       </NumberField>
     </div>

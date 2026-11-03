@@ -4,6 +4,7 @@
     :input-id="inputId"
     :value-text="selectedSummary"
     :root-class="rowCursor"
+    has-leading-button
   >
     <template #between><slot name="between" /></template>
     <ComboboxRoot

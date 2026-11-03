@@ -4,15 +4,17 @@
       v-model="localValue"
       :trigger-id="inputId"
       :alpha="format !== 'int'"
+      :class="unifiedRows ? 'bg-transparent' : undefined"
       @update:model-value="onUpdate"
     />
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
-import { ref, useId, watch } from 'vue'
+import { inject, ref, useId, watch } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { UnifiedWidgetRowsKey } from '@/types/widgetRowLayout'
 import {
   hexToInt,
   intToHex,
@@ -34,6 +36,7 @@ const { widget } = defineProps<{
 
 const modelValue = defineModel<ColorWidgetValue>({ required: true })
 const inputId = useId()
+const unifiedRows = inject(UnifiedWidgetRowsKey, false)
 
 const format =
   widget.options?.format === 'int' || isColorFormat(widget.options?.format)
