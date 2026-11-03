@@ -1188,30 +1188,32 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     schedule({ kind: 'add_node', graph: event.graph, node: event.node })
   }
 
+  function discardHeldWrite(event: GraphIntentEvent): void {
+    if (event.type === 'set_widget')
+      heldPromotedWrites.delete(heldWriteKey(event))
+  }
+
+  function noteUnboundLocalIntent(event: GraphIntentEvent): void {
+    const graph = deps.getGraph()
+    const boundRootGraphId = deps.boundRootGraphId()
+    const eventRootGraphId =
+      'graph' in event
+        ? event.graph.rootGraph.id
+        : graph !== null && reachableIntentGraph(graph, event.graphId) !== null
+          ? graph.id
+          : null
+    if (boundRootGraphId !== null && eventRootGraphId === boundRootGraphId)
+      deps.onUnboundLocalIntent?.()
+  }
+
   function onIntent(event: GraphIntentEvent): void {
     if (event.source !== 'local') return
-    if (!deps.isEnabled()) {
-      if (event.type === 'set_widget')
-        heldPromotedWrites.delete(heldWriteKey(event))
+    if (deps.isEnabled() && deps.isDocBound()) {
+      mintIntent(event)
       return
     }
-    if (!deps.isDocBound()) {
-      const graph = deps.getGraph()
-      const boundRootGraphId = deps.boundRootGraphId()
-      const eventRootGraphId =
-        'graph' in event
-          ? event.graph.rootGraph.id
-          : graph !== null &&
-              reachableIntentGraph(graph, event.graphId) !== null
-            ? graph.id
-            : null
-      if (boundRootGraphId !== null && eventRootGraphId === boundRootGraphId)
-        deps.onUnboundLocalIntent?.()
-      if (event.type === 'set_widget')
-        heldPromotedWrites.delete(heldWriteKey(event))
-      return
-    }
-    mintIntent(event)
+    if (deps.isEnabled()) noteUnboundLocalIntent(event)
+    discardHeldWrite(event)
   }
 
   function mintIntent(event: GraphIntentEvent): void {
