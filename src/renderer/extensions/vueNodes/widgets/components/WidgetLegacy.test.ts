@@ -1,9 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { defineComponent, KeepAlive, nextTick, ref } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
@@ -134,5 +135,61 @@ describe('WidgetLegacy canvas width', () => {
 
     expect(widget.width).toBe(layoutWidth)
     expect(canvases.at(-1)?.width).toBe(layoutWidth * 2)
+  })
+})
+
+describe('WidgetLegacy KeepAlive', () => {
+  it('redraws at the current quality after KeepAlive reactivation', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Legacy')
+    const widget = node.addWidget('text', 'legacy_widget', '', () => {})
+    graph.add(node)
+    widget.computedHeight = 20
+    const draw = vi.fn<NonNullable<IBaseWidget['draw']>>()
+    widget.draw = draw
+    let lowQuality = false
+    const canvas = fromPartial<LGraphCanvas>({
+      graph,
+      get low_quality() {
+        return lowQuality
+      }
+    })
+    useCanvasStore().canvas = canvas
+    await nextTick()
+
+    const context = fromPartial<CanvasRenderingContext2D>({ scale: vi.fn() })
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      fromAny(context)
+    )
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(100)
+
+    const active = ref(true)
+    const Parent = defineComponent({
+      components: { KeepAlive, WidgetLegacy },
+      setup: () => ({ active, nodeId: node.id }),
+      template: `
+        <KeepAlive>
+          <WidgetLegacy
+            v-if="active"
+            :node-id="nodeId"
+            :widget="{ name: 'legacy_widget' }"
+          />
+        </KeepAlive>
+      `
+    })
+
+    render(Parent)
+    await nextTick()
+    expect(draw).toHaveBeenCalledOnce()
+
+    active.value = false
+    lowQuality = true
+    await nextTick()
+    lowQuality = false
+    active.value = true
+    await nextTick()
+
+    expect(draw).toHaveBeenCalledTimes(2)
+    expect(draw).toHaveBeenLastCalledWith(context, node, 100, 1, 20, false)
   })
 })

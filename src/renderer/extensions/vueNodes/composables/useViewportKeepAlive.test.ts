@@ -16,7 +16,10 @@ import {
   getKeepAliveBounds,
   useViewportKeepAlive
 } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlive'
-import { registerNodeTypeCullingOptOut } from '@/services/vueNodeCullingService'
+import {
+  registerNodeCullingOptOut,
+  registerNodeTypeCullingOptOut
+} from '@/services/vueNodeCullingService'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const camera = reactive({ x: 0, y: 0, z: 1 })
@@ -149,41 +152,55 @@ describe('useViewportKeepAlive', () => {
     expect(activeNodeIds.value).toEqual(new Set(['node-2']))
   })
 
-  it('keeps a registered node type attached wherever it is', async () => {
-    const bounds = Object.fromEntries(
-      Array.from({ length: 150 }, (_, index) => [
-        `node-${index}`,
-        { x: index === 0 ? 0 : 50_000, y: 0, width: 100, height: 100 }
+  it.for([
+    {
+      name: 'type',
+      register: ({ type }: Pick<NodeState, 'id' | 'type'>) =>
+        registerNodeTypeCullingOptOut(type)
+    },
+    {
+      name: 'instance',
+      register: ({ id }: Pick<NodeState, 'id' | 'type'>) =>
+        registerNodeCullingOptOut(id)
+    }
+  ])(
+    'keeps a registered node $name attached wherever it is',
+    async ({ register }) => {
+      const bounds = Object.fromEntries(
+        Array.from({ length: 150 }, (_, index) => [
+          `node-${index}`,
+          { x: index === 0 ? 0 : 50_000, y: 0, width: 100, height: 100 }
+        ])
+      )
+      const { activeNodeIds, nodes } = setup(bounds)
+      const nodeTypes = new Map([
+        [toNodeId('node-1'), 'canvas-widget'],
+        [toNodeId('node-2'), 'editor-widget']
       ])
-    )
-    const { activeNodeIds, nodes } = setup(bounds)
-    const nodeTypes = new Map([
-      [toNodeId('node-1'), 'canvas-widget'],
-      [toNodeId('node-2'), 'editor-widget']
-    ])
-    nodes.value = nodes.value.map((node) => ({
-      ...node,
-      type: nodeTypes.get(node.id) ?? node.type
-    }))
+      nodes.value = nodes.value.map((node) => ({
+        ...node,
+        type: nodeTypes.get(node.id) ?? node.type
+      }))
 
-    await vi.advanceTimersByTimeAsync(150)
-    expect(activeNodeIds.value).toEqual(new Set(['node-0']))
+      await vi.advanceTimersByTimeAsync(150)
+      expect(activeNodeIds.value).toEqual(new Set(['node-0']))
 
-    const release = registerNodeTypeCullingOptOut('canvas-widget')
-    onTestFinished(release)
-    await vi.advanceTimersByTimeAsync(150)
-    expect(activeNodeIds.value).toEqual(new Set(['node-0', 'node-1']))
+      const release = register(nodeData('node-1', 'canvas-widget'))
+      onTestFinished(release)
+      await vi.advanceTimersByTimeAsync(150)
+      expect(activeNodeIds.value).toEqual(new Set(['node-0', 'node-1']))
 
-    release()
-    const releaseEditor = registerNodeTypeCullingOptOut('editor-widget')
-    onTestFinished(releaseEditor)
-    await vi.advanceTimersByTimeAsync(150)
-    expect(activeNodeIds.value).toEqual(new Set(['node-0', 'node-2']))
+      release()
+      const releaseEditor = register(nodeData('node-2', 'editor-widget'))
+      onTestFinished(releaseEditor)
+      await vi.advanceTimersByTimeAsync(150)
+      expect(activeNodeIds.value).toEqual(new Set(['node-0', 'node-2']))
 
-    releaseEditor()
-    await vi.advanceTimersByTimeAsync(150)
-    expect(activeNodeIds.value).toEqual(new Set(['node-0']))
-  })
+      releaseEditor()
+      await vi.advanceTimersByTimeAsync(150)
+      expect(activeNodeIds.value).toEqual(new Set(['node-0']))
+    }
+  )
 
   it('attaches every node while disabled, and recomputes when re-enabled', async () => {
     const bounds = Object.fromEntries(

@@ -15,6 +15,14 @@
         ]
       },
       {
+        "name": "canvas-renderer/public",
+        "patterns": ["src/renderer/core/canvas/litegraph/slotCalculations.ts"]
+      },
+      {
+        "name": "color-palettes/public",
+        "patterns": ["src/stores/workspace/colorPaletteStore.ts"]
+      },
+      {
         "name": "comfyui-api/public",
         "patterns": ["packages/api-client/src/executionTypes.ts"]
       },
@@ -69,10 +77,18 @@
         ]
       },
       {
+        "name": "settings/public",
+        "patterns": ["src/platform/settings/settingStore.ts"]
+      },
+      {
         "name": "vue-node-renderer/public",
         "patterns": [
           "src/renderer/extensions/vueNodes/composables/useViewportKeepAlive.ts",
-          "src/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins.ts"
+          "src/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins.ts",
+          "src/renderer/extensions/vueNodes/components/NodeBoxOverlay.vue",
+          "src/renderer/extensions/vueNodes/composables/useLowQualityRendering.ts",
+          "src/renderer/extensions/vueNodes/utils/createNodeBox.ts",
+          "src/renderer/extensions/vueNodes/utils/nodeStyleUtils.ts"
         ]
       },
       {
@@ -2010,6 +2026,8 @@
         "from": "account/public",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2018,6 +2036,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "account",
@@ -2028,9 +2047,11 @@
         ]
       },
       {
-        "from": "comfyui-api/public",
+        "from": "canvas-renderer/public",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2039,6 +2060,53 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
+          "vue-node-renderer/public",
+          "webcam-capture/public",
+          "_inventory",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "color-palettes/public",
+        "allow": [
+          "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
+          "comfyui-api/public",
+          "graph-layout/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "link-connection/public",
+          "litegraph-api/public",
+          "remote-config/public",
+          "server-facts/public",
+          "settings/public",
+          "vue-node-renderer/public",
+          "webcam-capture/public",
+          "_inventory",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "comfyui-api/public",
+        "allow": [
+          "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
+          "comfyui-api/public",
+          "graph-layout/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "link-connection/public",
+          "litegraph-api/public",
+          "remote-config/public",
+          "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2051,6 +2119,8 @@
         "from": "graph-layout/public",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2059,6 +2129,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2071,6 +2142,8 @@
         "from": "ingest-api/public",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2079,6 +2152,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2092,6 +2166,8 @@
         "from": "keybindings/public",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2100,6 +2176,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2112,6 +2189,8 @@
         "from": "link-connection/public",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2120,6 +2199,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2132,6 +2212,8 @@
         "from": "litegraph-api/public",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2140,6 +2222,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2152,6 +2235,8 @@
         "from": "remote-config/public",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2160,6 +2245,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2172,6 +2258,8 @@
         "from": "server-facts/public",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2180,6 +2268,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2190,9 +2279,11 @@
         ]
       },
       {
-        "from": "vue-node-renderer/public",
+        "from": "settings/public",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2201,6 +2292,30 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
+          "vue-node-renderer/public",
+          "webcam-capture/public",
+          "_inventory",
+          "_inventory/outer-1",
+          "_inventory/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "vue-node-renderer/public",
+        "allow": [
+          "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
+          "comfyui-api/public",
+          "graph-layout/public",
+          "ingest-api/public",
+          "keybindings/public",
+          "link-connection/public",
+          "litegraph-api/public",
+          "remote-config/public",
+          "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2213,6 +2328,8 @@
         "from": "webcam-capture/public",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2221,6 +2338,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2234,6 +2352,8 @@
         "from": "account",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2242,6 +2362,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "account",
@@ -2255,6 +2376,8 @@
         "from": "_inventory",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2263,6 +2386,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2275,6 +2399,8 @@
         "from": "image-compare",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2283,6 +2409,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2296,6 +2423,8 @@
         "from": "image-compositor",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2304,6 +2433,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2317,6 +2447,8 @@
         "from": "image-crop",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2325,6 +2457,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2338,6 +2471,8 @@
         "from": "ingest-api",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2346,6 +2481,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2359,6 +2495,8 @@
         "from": "mask-editor",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2367,6 +2505,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2380,6 +2519,8 @@
         "from": "painter",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2388,6 +2529,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2401,6 +2543,8 @@
         "from": "server-facts",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2409,6 +2553,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2422,6 +2567,8 @@
         "from": "webcam-capture",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2430,6 +2577,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2443,6 +2591,8 @@
         "from": "_inventory/outer-1",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2451,6 +2601,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2463,6 +2614,8 @@
         "from": "_inventory/outer-2",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2471,6 +2624,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
@@ -2483,6 +2637,8 @@
         "from": "unclassified",
         "allow": [
           "account/public",
+          "canvas-renderer/public",
+          "color-palettes/public",
           "comfyui-api/public",
           "graph-layout/public",
           "ingest-api/public",
@@ -2491,6 +2647,7 @@
           "litegraph-api/public",
           "remote-config/public",
           "server-facts/public",
+          "settings/public",
           "vue-node-renderer/public",
           "webcam-capture/public",
           "_inventory",
