@@ -292,40 +292,36 @@ function storedCallIdOf(
   }
 }
 
-function preserveCanvasConfirmation(
+/**
+ * A stored row carries no canvas observation, so a settled turn keeps the
+ * verdict its live tool calls reached in this page session, confirmed or not.
+ */
+function preserveCanvasVerdicts(
   liveParts: AssistantMessage['parts'],
   persistedParts: AssistantMessage['parts'],
-  storedCallId: (callId: string) => string
+  offset = liveToolOffset(liveParts, persistedParts)
 ): AssistantMessage['parts'] {
-  const confirmedCallIds = new Set(
-    liveParts.flatMap((part) =>
-      part.type === 'tool' && part.canvasConfirmed === true
-        ? [storedCallId(part.callId)]
-        : []
-    )
-  )
-  return persistedParts.map((part) =>
-    part.type === 'tool' &&
-    part.ok === true &&
-    confirmedCallIds.has(part.callId)
-      ? { ...part, canvasConfirmed: true }
-      : part
-  )
+  const storedCallId = storedCallIdOf(liveParts, persistedParts, offset)
+  const verdicts = new Map<string, boolean>()
+  for (const part of liveParts) {
+    if (part.type === 'tool' && part.canvasConfirmed !== undefined)
+      verdicts.set(storedCallId(part.callId), part.canvasConfirmed)
+  }
+  return persistedParts.map((part) => {
+    if (part.type !== 'tool' || part.ok !== true) return part
+    const canvasConfirmed = verdicts.get(part.callId)
+    return canvasConfirmed === undefined ? part : { ...part, canvasConfirmed }
+  })
 }
 
 function finishSnapshotTurn(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts']
 ): void {
-  const liveParts = message.parts
-  const offset = liveToolOffset(liveParts, persistedParts)
+  const offset = liveToolOffset(message.parts, persistedParts)
   finishWithPersistedParts(
     message,
-    preserveCanvasConfirmation(
-      liveParts,
-      persistedParts,
-      storedCallIdOf(liveParts, persistedParts, offset)
-    ),
+    preserveCanvasVerdicts(message.parts, persistedParts, offset),
     offset
   )
 }
@@ -1355,7 +1351,11 @@ export const useAgentConversationStore = defineStore(
         turn.messageId === slot.turnId
       if (isActive) {
         clearSettledAskState(turn.threadId)
-        finishWithPersistedParts(slot.message, persistedParts)
+        finishWithPersistedParts(
+          slot.message,
+          persistedParts &&
+            preserveCanvasVerdicts(slot.message.parts, persistedParts)
+        )
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
         slot.transport.dispose()
@@ -1366,7 +1366,11 @@ export const useAgentConversationStore = defineStore(
       const entry = backgroundTurns.get(turn.messageId)
       if (!entry || entry.messageId !== turn.messageId || entry.settled) return
       clearSettledAskState(turn.threadId)
-      finishWithPersistedParts(entry.message, persistedParts)
+      finishWithPersistedParts(
+        entry.message,
+        persistedParts &&
+          preserveCanvasVerdicts(entry.message.parts, persistedParts)
+      )
       entry.transport.settle()
       updateBackgroundTurn(entry.messageId, { settled: true })
       if (ending === 'completed') announceCompletion(entry.tab)

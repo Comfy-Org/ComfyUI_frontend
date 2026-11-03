@@ -2346,6 +2346,41 @@ describe('useAgentConversationStore', () => {
       expect(reconciledParts(store)).toEqual(storedParts())
     })
 
+    it.for([
+      { gate: 'awaiting', canvasConfirmed: true, through: 'socket' },
+      { gate: 'unavailable', canvasConfirmed: false, through: 'socket' },
+      { gate: 'awaiting', canvasConfirmed: true, through: 'recovery read' },
+      { gate: 'unavailable', canvasConfirmed: false, through: 'recovery read' }
+    ] as const)(
+      'keeps the live canvas verdict $canvasConfirmed when the $through settles the turn',
+      ({ gate, canvasConfirmed, through }) => {
+        const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+        const turn = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
+        const store = useAgentConversationStore()
+        store.setCanvasSyncGate(() => gate)
+        store.setThreadId('th')
+        store.hydrate(liveSnapshot())
+        store.ingest(
+          toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+            workflow_id: workflowId,
+            op_ids: ['op-add']
+          })
+        )
+        store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+
+        if (through === 'socket') {
+          store.ingest(done(SNAPSHOT_ROW_ID))
+          store.reconcileSettledTurn(turn, storedParts())
+        } else {
+          store.settleTurn(turn, storedParts())
+        }
+
+        expect(
+          reconciledParts(store)?.find((part) => part.type === 'tool')
+        ).toMatchObject({ callId: 'call-add_node', canvasConfirmed })
+      }
+    )
+
     it('waits for a held tool call to clear before announcing the turn', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
       const store = useAgentConversationStore()
@@ -2441,7 +2476,12 @@ describe('useAgentConversationStore', () => {
 
       store.retireAsk('turn-7:call-1', { status: 'retired' })
 
-      expect(reconciledParts(store)).toEqual(storedParts())
+      // The held call timed out unobserved, so its live denial carries over.
+      expect(reconciledParts(store)).toEqual(
+        storedParts().map((part) =>
+          part.type === 'tool' ? { ...part, canvasConfirmed: false } : part
+        )
+      )
     })
 
     it('keeps a re-registered held turn for its own read when an earlier read lands late', () => {

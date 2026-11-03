@@ -22,7 +22,6 @@ import {
   isOpenAskPart,
   toAskOrNoticePart
 } from './agentMessageParts'
-import { toolCanMutateCanvas } from './agentToolClassification'
 
 type AttachmentKind = 'image' | 'video' | 'audio'
 
@@ -312,10 +311,9 @@ function parseToolCallEntry(
       callId: toolCallId || id,
       name: toolName,
       state,
-      ...toolPartOptionalFields(ok, skill, durationMs),
-      ...(ok === true && toolCanMutateCanvas(toolName)
-        ? { canvasConfirmed: false }
-        : {})
+      // No `canvasConfirmed`: a stored row carries no browser observation of
+      // the canvas, so it makes no claim either way (FRONT-3803).
+      ...toolPartOptionalFields(ok, skill, durationMs)
     }
   }
 }
