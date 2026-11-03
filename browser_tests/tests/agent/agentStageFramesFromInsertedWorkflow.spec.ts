@@ -1,7 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
 import type { WebSocketRoute } from '@playwright/test'
 
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 import {
   agentTest,
