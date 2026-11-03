@@ -70,6 +70,10 @@
   "publicEntryPoints": [],
   "characterizationScenarios": [
     {
+      "name": "Graph canvas restores detached Vue node elements and retains focus and link-drag sources while panning",
+      "checks": ["browser_tests/tests/vueNodes/viewportKeepAlive.spec.ts"]
+    },
+    {
       "name": "Bootstrap loads i18n, waits for cloud auth with a bounded retry, and loads settings and workflows once",
       "checks": ["src/stores/bootstrapStore.test.ts"]
     },

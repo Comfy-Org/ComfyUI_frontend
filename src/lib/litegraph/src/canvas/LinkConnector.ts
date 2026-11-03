@@ -1141,6 +1141,7 @@ export class LinkConnector {
       } satisfies ConnectingLink
     })
     this._setConnectingLinks(links)
+    this.events.dispatch('drag-started', undefined)
   }
 
   /**
