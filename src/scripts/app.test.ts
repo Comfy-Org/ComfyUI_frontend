@@ -312,9 +312,11 @@ describe('ComfyApp', () => {
     vi.mocked(useWorkflowService).mockReturnValue(
       fromPartial<WorkflowService>(mockWorkflowService)
     )
+    mockWorkflowService.beforeLoadNewGraph.mockReturnValue(vi.fn())
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas
+    ChangeTracker.resetCanvasTrackerForTest()
     useWorkflowStore().activeWorkflow = null
     const temporaryWorkflow = new ComfyWorkflow({
       path: 'workflows/temporary.json',
@@ -532,6 +534,51 @@ describe('ComfyApp', () => {
       const [migrated] = reload.mock.calls[0]
       expect(migrated?.nodes.map((node) => node.type)).not.toContain('Reroute')
       expect(useToast().toasts).toEqual([])
+    })
+
+    it('replaces canvas ownership after preparing the outgoing workflow', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+      const replaceCanvas = vi.fn()
+      mockWorkflowService.beforeLoadNewGraph.mockReturnValue(replaceCanvas)
+
+      await app.loadGraphData(createWorkflowGraphData())
+
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+      expect(replaceCanvas).toHaveBeenCalledOnce()
+      expect(
+        mockWorkflowService.beforeLoadNewGraph.mock.invocationCallOrder[0]
+      ).toBeLessThan(replaceCanvas.mock.invocationCallOrder[0])
+    })
+
+    it('waits for the beforeLoadGraph hook before replacing canvas ownership', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+      const replaceCanvas = vi.fn()
+      mockWorkflowService.beforeLoadNewGraph.mockReturnValue(replaceCanvas)
+      let finishHook = () => {}
+      const hook = new Promise<void>((resolve) => {
+        finishHook = resolve
+      })
+      mockExtensionService.invokeExtensionsAsync.mockImplementationOnce(
+        async () => hook
+      )
+
+      const load = app.loadGraphData(createWorkflowGraphData())
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeLoadGraph'
+        )
+      )
+
+      expect(replaceCanvas).not.toHaveBeenCalled()
+
+      finishHook()
+      await load
+
+      expect(replaceCanvas).toHaveBeenCalledOnce()
     })
 
     it('forwards clean and navigation intent to workflow navigation', async () => {
