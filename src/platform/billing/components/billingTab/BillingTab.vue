@@ -76,7 +76,7 @@
         @retry="retryBalance"
         @add-credits="addCredits('credits_panel')"
       />
-      <template v-if="flags.autoTopUpEnabled">
+      <template v-if="capabilities.autoTopUpEnabled.value">
         <template v-if="capabilities.canManageAutoTopUp.value">
           <BillingAutoTopUpCard v-if="capabilities.canTopUp.value" />
         </template>
@@ -160,7 +160,6 @@ import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTelemetry } from '@/platform/telemetry'
@@ -203,7 +202,6 @@ const suppressCreditBanner = computed(
     planCheckout.banner.value != null ||
     topupCheckout.banner.value != null
 )
-const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const planCreditNote = useTopUpPlanCreditCopy()
