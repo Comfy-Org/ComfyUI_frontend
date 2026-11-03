@@ -1390,47 +1390,69 @@ export class LiveGraphApplier {
     }
     const { documentWidgets = widgets, reportMissing = true } = options
     const controllers = new Set(node.widgets?.filter(isDynamicGroupController))
-    let pending = ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry)
+    let unresolved = this.applyPendingWidgets(
+      node,
+      ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry),
+      documentWidgets
+    )
+    if (!Array.isArray(documentWidgets))
+      unresolved = this.applyMountedGroups(
+        node,
+        controllers,
+        { widgets, documentWidgets },
+        unresolved
+      )
+    this.reportMissingWidgets(node, unresolved, reportMissing)
+    this.unappliedRegrownRows.delete(node)
+  }
+
+  private applyPendingWidgets(
+    node: LGraphNode,
+    pending: [string, WidgetValue][],
+    documentWidgets: DocNode['widgets']
+  ): [string, WidgetValue][] {
     while (pending.length > 0) {
       const { resolved, unresolved } = this.applyWidgetRound(
         node,
         pending,
         documentWidgets
       )
-      if (!resolved) {
-        this.reportMissingWidgets(node, unresolved, reportMissing)
-        break
-      }
+      if (!resolved) return unresolved
       pending = unresolved
     }
-    if (!Array.isArray(documentWidgets))
-      this.applyMountedGroups(node, controllers, widgets, documentWidgets)
-    this.unappliedRegrownRows.delete(node)
+    return []
   }
 
   private applyMountedGroups(
     node: LGraphNode,
     before: ReadonlySet<IBaseWidget>,
-    widgets: Record<string, unknown>,
-    documentWidgets: Record<string, unknown>
-  ): void {
-    const mounted = (node.widgets ?? []).filter(
-      (widget) => isDynamicGroupController(widget) && !before.has(widget)
-    )
-    const counts = mounted
-      .filter((widget) => !Object.hasOwn(widgets, widget.name))
-      .map((widget): [string, unknown] => [
-        widget.name,
-        documentWidgets[widget.name]
-      ])
-      .filter(isWidgetEntry)
-    this.applyWidgetRound(node, counts, documentWidgets)
-    const fields = Object.entries(documentWidgets)
-      .filter(([name]) =>
-        mounted.some((widget) => name.startsWith(`${widget.name}.`))
+    frame: {
+      widgets: Record<string, unknown>
+      documentWidgets: Record<string, unknown>
+    },
+    unresolved: [string, WidgetValue][]
+  ): [string, WidgetValue][] {
+    const groups = (node.widgets ?? [])
+      .filter(
+        (widget) => isDynamicGroupController(widget) && !before.has(widget)
       )
-      .filter(isWidgetEntry)
-    this.applyWidgetRound(node, fields, documentWidgets)
+      .map((widget) => widget.name)
+    const retry = new Set(unresolved.map(([name]) => name))
+    const entries = Object.fromEntries(
+      Object.entries(frame.documentWidgets).filter(
+        ([name]) =>
+          (retry.has(name) || !Object.hasOwn(frame.widgets, name)) &&
+          groups.some((group) => name === group || name.startsWith(`${group}.`))
+      )
+    )
+    return [
+      ...unresolved.filter(([name]) => !Object.hasOwn(entries, name)),
+      ...this.applyPendingWidgets(
+        node,
+        ordinaryWidgetEntries(node, entries).filter(isWidgetEntry),
+        frame.documentWidgets
+      )
+    ]
   }
 
   private applyPositionalWidgets(node: LGraphNode, widgets: unknown[]): void {
