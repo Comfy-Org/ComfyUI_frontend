@@ -90,6 +90,7 @@ const FUNDED_BILLING_STATUS = {
   scoped_effective_has_funds: { agent: true },
   scoped_has_funds: { agent: true },
   scheduled_change: null,
+  next_charge: null,
   subscription_duration: 'MONTHLY',
   subscription_status: 'active',
   subscription_tier: 'STANDARD',

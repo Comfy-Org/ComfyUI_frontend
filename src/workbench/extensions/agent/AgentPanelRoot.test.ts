@@ -18,7 +18,16 @@ import type {
 import type { User } from 'firebase/auth'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mocked } from 'vitest'
 import {
   computed,
@@ -272,7 +281,7 @@ const paywallCapabilities = reactive({
 })
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null,
-  type: 'workspace' as 'workspace' | 'legacy',
+  type: 'workspace' as 'workspace' | 'unknown',
   status: 'paid' as BillingStatus | null,
   isActive: true,
   fetchStatus: vi.fn<() => Promise<void>>()
@@ -516,6 +525,7 @@ beforeEach(() => {
   socketSend.mockReset()
   vi.mocked(reportError).mockClear()
   paywallWorkspace.role = 'owner'
+  vi.spyOn(useTeamWorkspaceStore(), 'initialize').mockResolvedValue()
   vi.spyOn(
     useTeamWorkspaceStore(),
     'activeWorkspace',
@@ -691,6 +701,7 @@ function addTab(
     suffix,
     isTemporary: false,
     isModified: false,
+    isLoaded: true,
     activeState: null,
     ...overrides
   })
@@ -2288,9 +2299,9 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
-  it('stays hidden on the legacy rail whose unloaded balance reads as false', async () => {
+  it('stays hidden while the billing type is unknown and the balance reads as false', async () => {
     paywallHasFunds.value = false
-    paywallBilling.type = 'legacy'
+    paywallBilling.type = 'unknown'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     activateThread()
     await screen.findByRole('textbox')
@@ -2586,13 +2597,13 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     )
   })
 
-  it('does not refresh workspace status for a legacy billing turn', async () => {
+  it('does not refresh workspace status while the billing type is unknown', async () => {
     paywallHasFunds.value = true
-    paywallBilling.type = 'legacy'
+    paywallBilling.type = 'unknown'
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     activateThread()
     const conversation = useAgentConversationStore()
-    const turnId = toTurnId('legacy-billing-refresh')
+    const turnId = toTurnId('unknown-billing-refresh')
 
     conversation.startTurn(turnId)
     paywallBilling.fetchStatus.mockClear()
@@ -2868,6 +2879,7 @@ function setupOwnedSelectionCanvas() {
   const canvas = new LGraphCanvas(canvasElement, rootGraph, {
     skip_render: true
   })
+  onTestFinished(() => canvas.unbindEvents())
   canvas.onSelectionChange = () => syncFakeSelection()
 
   appMock.graph.nodes = rootGraph.nodes
@@ -8773,7 +8785,7 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  it.for(['workspace', 'legacy'] as const)(
+  it.for(['workspace', 'unknown'] as const)(
     'leaves the $ post-consent billing refresh to the dock host on first send',
     async (billingType) => {
       makeTab('wf-42')
@@ -10896,6 +10908,90 @@ describe('AgentPanelRoot workflow binding', () => {
     } finally {
       recordUnsyncedHumanOps('previous-panel', [])
     }
+  })
+
+  it('leaves a workflow unbound after a local edit made before its follower subscribe confirms', async () => {
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({ status: 'pending' }),
+      reset: vi.fn(),
+      stop: () => {}
+    })
+    makeTab('wf-42')
+    const target = addTab('workflows/target.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-target' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-target', target.path)
+    const messagesFor = (threadId: string, text: string): AgentMessages => [
+      {
+        id: `row-${threadId}`,
+        thread_id: threadId,
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: 'wf-target',
+        content: { text }
+      }
+    ]
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/th-first/messages'))
+        return json(200, messagesFor('th-first', 'First request'))
+      if (url.includes('/th-second/messages'))
+        return json(200, messagesFor('th-second', 'Second request'))
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [{ id: 'wf-target', name: 'target' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      return json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-first',
+            title: 'First chat',
+            last_message_at: '2026-09-01T00:00:00Z'
+          }),
+          agentThread({
+            id: 'th-second',
+            title: 'Second chat',
+            last_message_at: '2026-08-01T00:00:00Z'
+          })
+        ])
+      )
+    })
+    renderWithSelectedTarget()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('First chat'))
+    await screen.findAllByText('First request')
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-first')
+    )
+    await vi.waitFor(() =>
+      expect(docOpMinterDeps.current?.boundRootGraphId()).not.toBeNull()
+    )
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+    docOpMinterDeps.current?.onUnboundLocalIntent?.()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Second chat'))
+    await screen.findAllByText('Second request')
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-second')
+    )
+    expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
+    expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
   })
 
   it('binds the session to the workflow a history thread restored, not only a reload', async () => {
