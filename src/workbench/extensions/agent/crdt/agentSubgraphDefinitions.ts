@@ -3,6 +3,7 @@ import {
   WIDGET_FORM_KEY,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
+import { fromAny } from '@total-typescript/shoehorn'
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
@@ -239,36 +240,9 @@ function hasSafeNestedDefinitions(value: unknown): boolean {
   )
 }
 
-function isSafeDefinitionState(value: unknown): boolean {
+function isSafeDefinition(value: unknown): boolean {
   return (
     isRecord(value) &&
-    typeof value.lastGroupId === 'number' &&
-    typeof value.lastNodeId === 'number' &&
-    typeof value.lastLinkId === 'number' &&
-    typeof value.lastRerouteId === 'number'
-  )
-}
-
-function isSafeIoNode(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    (typeof value.id === 'string' || typeof value.id === 'number') &&
-    Array.isArray(value.bounding) &&
-    value.bounding.length === 4 &&
-    value.bounding.every((coordinate) => typeof coordinate === 'number')
-  )
-}
-
-function isSafeDefinition(value: unknown): value is ExportedSubgraph {
-  return (
-    isRecord(value) &&
-    typeof value.id === 'string' &&
-    typeof value.revision === 'number' &&
-    (value.version === 0 || value.version === 1) &&
-    isSafeDefinitionState(value.state) &&
-    typeof value.name === 'string' &&
-    isSafeIoNode(value.inputNode) &&
-    isSafeIoNode(value.outputNode) &&
     hasSafeInputs(value.inputs) &&
     hasSafeNodes(value.nodes) &&
     hasSafeLinks(value.links) &&
@@ -321,7 +295,9 @@ function readDefinition(
   excludedDefinitionIds: ReadonlySet<string>
 ): ExportedSubgraph | null {
   const definition = projectSubgraphDefinition(source, excludedDefinitionIds)
-  return isSafeDefinition(definition) ? definition : null
+  return isSafeDefinition(definition)
+    ? fromAny<ExportedSubgraph, unknown>(definition)
+    : null
 }
 
 function readField(source: unknown, key: string): unknown {
