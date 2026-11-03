@@ -23,8 +23,6 @@ import {
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { UUID } from '@/utils/uuid'
 import type { MissingNodeType, NodeReplacement } from './types'
 
@@ -1392,10 +1390,10 @@ describe('useNodeReplacement', () => {
         LGraphNode['last_serialization'],
         unknown
       >(undefined)
+      installedNode.constructor = Object.assign({}, installedNode.constructor, {
+        nodeData: { deprecated: true }
+      })
       Object.assign(app, { rootGraph: createMockGraph([installedNode]) })
-      useNodeDefStore().nodeDefsByName = {
-        OldNode: fromPartial<ComfyNodeDefImpl>({ deprecated: true })
-      }
       vi.mocked(collectAllNodes).mockReturnValue([])
 
       useNodeReplacement().replaceNodesInPlace([

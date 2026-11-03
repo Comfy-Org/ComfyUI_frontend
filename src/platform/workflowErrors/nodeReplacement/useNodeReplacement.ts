@@ -30,7 +30,6 @@ import {
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
@@ -495,9 +494,8 @@ export function useNodeReplacement() {
     ])
 
     try {
-      const { nodeDefsByName } = useNodeDefStore()
       const placeholders = collectAllNodes(graph, (n) => {
-        if (!n.last_serialization && !nodeDefsByName[n.type]?.deprecated)
+        if (!n.last_serialization && !n.constructor.nodeData?.deprecated)
           return false
         const originalType = n.last_serialization?.type || n.type
         return !!originalType && targetTypes.has(originalType)

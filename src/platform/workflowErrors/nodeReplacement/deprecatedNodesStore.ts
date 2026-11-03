@@ -10,7 +10,6 @@ import {
 } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   getExecutionIdByNode,
   isExecutionPathActive,
@@ -25,8 +24,7 @@ export const useDeprecatedNodesStore = defineStore('deprecatedNodes', () => {
     node: LGraphNode,
     nodeId: string
   ): MissingNodeType | undefined {
-    if (!node.type || !useNodeDefStore().nodeDefsByName[node.type]?.deprecated)
-      return undefined
+    if (!node.constructor.nodeData?.deprecated) return undefined
     const replacement = useNodeReplacementStore().getReplacementFor(node.type)
     if (!replacement) return undefined
     if (!(replacement.new_node_id in LiteGraph.registered_node_types))

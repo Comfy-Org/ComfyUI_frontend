@@ -11,23 +11,23 @@ import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplaceme
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/workflowErrors/nodeReplacement/types'
 import { app } from '@/scripts/app'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-function nodeDef(name: string, deprecated: boolean): ComfyNodeDefV1 {
-  return {
-    name,
-    display_name: name,
-    category: 'test',
-    description: '',
-    input: {},
-    output: [],
-    output_node: false,
-    python_module: 'test.module',
-    deprecated
+const deprecatedTypes = new Set([
+  'ImageBatch',
+  'NoReplacement',
+  'UninstalledTarget'
+])
+
+function createNode(type: string): LGraphNode {
+  class ComfyNode extends LGraphNode {
+    static override nodeData = {
+      name: type,
+      deprecated: deprecatedTypes.has(type)
+    }
   }
+  return new ComfyNode(type, type)
 }
 
 function replacementTo(oldId: string, newId: string): NodeReplacement[] {
@@ -71,12 +71,6 @@ beforeEach(() => {
     KSampler: replacementTo('KSampler', 'BatchImagesNode'),
     UninstalledTarget: replacementTo('UninstalledTarget', 'NotInstalled')
   }
-  useNodeDefStore().updateNodeDefs([
-    nodeDef('ImageBatch', true),
-    nodeDef('KSampler', false),
-    nodeDef('NoReplacement', true),
-    nodeDef('UninstalledTarget', true)
-  ])
   LiteGraph.registerNodeType(
     'BatchImagesNode',
     class BatchImagesNode extends LGraphNode {}
@@ -123,7 +117,7 @@ describe('useDeprecatedNodesStore rescan', () => {
     }
   ])('lists $expected for $name', ({ type, mode, expected }) => {
     const graph = new LGraph()
-    const node = new LGraphNode(type, type)
+    const node = createNode(type)
     node.id = toNodeId(1)
     node.mode = mode
     graph.add(node)
@@ -136,7 +130,7 @@ describe('useDeprecatedNodesStore rescan', () => {
   it('lists a node inside a subgraph used twice once', () => {
     const rootGraph = new LGraph()
     const subgraph = createTestSubgraph({ rootGraph })
-    const inner = new LGraphNode('ImageBatch', 'ImageBatch')
+    const inner = createNode('ImageBatch')
     subgraph.add(inner)
     rootGraph.add(createTestSubgraphNode(subgraph, { id: 7 }))
     rootGraph.add(createTestSubgraphNode(subgraph, { id: 8 }))
@@ -149,7 +143,7 @@ describe('useDeprecatedNodesStore rescan', () => {
   it('skips a node inside a bypassed subgraph', () => {
     const rootGraph = new LGraph()
     const subgraph = createTestSubgraph({ rootGraph })
-    subgraph.add(new LGraphNode('ImageBatch', 'ImageBatch'))
+    subgraph.add(createNode('ImageBatch'))
     const host = createTestSubgraphNode(subgraph, { id: 7 })
     host.mode = LGraphEventMode.BYPASS
     rootGraph.add(host)
@@ -170,7 +164,7 @@ describe('deprecated nodes follow graph edits', () => {
 
   it('lists a deprecated node again after it is bypassed and restored', () => {
     const graph = installHooks()
-    const node = new LGraphNode('ImageBatch', 'ImageBatch')
+    const node = createNode('ImageBatch')
     graph.add(node)
     useDeprecatedNodesStore().rescan(graph)
 
@@ -185,7 +179,7 @@ describe('deprecated nodes follow graph edits', () => {
     const graph = installHooks()
     useDeprecatedNodesStore().rescan(graph)
 
-    const node = new LGraphNode('ImageBatch', 'ImageBatch')
+    const node = createNode('ImageBatch')
     graph.add(node)
 
     await vi.waitFor(() => expect(listedNodeIds()).toEqual([String(node.id)]))
