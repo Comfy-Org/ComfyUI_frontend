@@ -1,13 +1,14 @@
 import type {
   BillingCapabilitiesResponse,
+  BillingStatus,
+  BillingStatusResponse,
+  SubscriptionDuration,
   SubscriptionState
 } from '@comfyorg/ingest-types'
 
-import type {
-  BillingStatus,
-  BillingSubscriptionStatus,
-  SubscriptionDuration
-} from '@comfyorg/billing-core'
+type BillingSubscriptionStatus = NonNullable<
+  BillingStatusResponse['subscription_status']
+>
 
 type BillingCadence = 'monthly' | 'yearly'
 
@@ -184,6 +185,7 @@ export function planRowAction(
 }
 
 interface BillingTabLoadFacts {
+  workspaceLoadFailed: boolean
   billingError: string | null
   billingInitialized: boolean
   capabilitiesReady: boolean
@@ -194,6 +196,7 @@ export function deriveBillingTabLoad(
   facts: BillingTabLoadFacts
 ): BillingTabLoad {
   if (
+    facts.workspaceLoadFailed ||
     facts.billingError !== null ||
     (facts.capabilitiesReady && !facts.capabilitiesResolved)
   ) {

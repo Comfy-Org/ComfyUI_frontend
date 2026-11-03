@@ -5,11 +5,8 @@ import {
   derivePlanRow,
   formatPlanDate,
   planRowAction
-} from '@/platform/billing/components/billingTab/planRow'
-import type {
-  PlanRowFacts,
-  PlanRowState
-} from '@/platform/billing/components/billingTab/planRow'
+} from './planRow'
+import type { PlanRowFacts, PlanRowState } from './planRow'
 
 const baseFacts: PlanRowFacts = {
   subscriptionStatus: 'active',
@@ -391,6 +388,11 @@ describe('deriveBillingTabLoad', () => {
       expected: 'error'
     },
     {
+      case: 'the workspace failed to load',
+      facts: { workspaceLoadFailed: true },
+      expected: 'error'
+    },
+    {
       case: 'capabilities settled without a snapshot',
       facts: {
         billingInitialized: true,
@@ -402,6 +404,7 @@ describe('deriveBillingTabLoad', () => {
   ])('is $expected when $case', ({ facts, expected }) => {
     expect(
       deriveBillingTabLoad({
+        workspaceLoadFailed: false,
         billingError: null,
         billingInitialized: false,
         capabilitiesReady: false,
