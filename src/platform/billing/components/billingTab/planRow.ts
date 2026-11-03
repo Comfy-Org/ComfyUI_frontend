@@ -184,6 +184,7 @@ export function planRowAction(
 }
 
 interface BillingTabLoadFacts {
+  workspaceLoadFailed: boolean
   billingError: string | null
   billingInitialized: boolean
   capabilitiesReady: boolean
@@ -194,6 +195,7 @@ export function deriveBillingTabLoad(
   facts: BillingTabLoadFacts
 ): BillingTabLoad {
   if (
+    facts.workspaceLoadFailed ||
     facts.billingError !== null ||
     (facts.capabilitiesReady && !facts.capabilitiesResolved)
   ) {
