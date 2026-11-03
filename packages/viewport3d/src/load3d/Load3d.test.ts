@@ -270,6 +270,15 @@ describe('Load3d', () => {
       expect(ctx.forceRender).toHaveBeenCalledOnce()
     })
 
+    it('clearModel announces that the model is gone', () => {
+      ctx.load3d.clearModel()
+
+      expect(ctx.eventManager.emitEvent).toHaveBeenCalledWith(
+        'modelCleared',
+        null
+      )
+    })
+
     it('clearModel nulls adapterRef.current so capability queries fall back to defaults', () => {
       Object.assign(ctx.load3d, {
         adapterRef: { current: { kind: 'splat' } }
@@ -779,6 +788,47 @@ describe('Load3d', () => {
       expect(ctx.load3d.isPlyModel()).toBe(true)
       makeWithAdapter('mesh')
       expect(ctx.load3d.isPlyModel()).toBe(false)
+    })
+
+    it('getModelStats counts the current model for meshes and skips splats', async () => {
+      const geometry = new THREE.BufferGeometry()
+      geometry.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3)
+      )
+      Object.assign(ctx.modelManager, {
+        currentModel: new THREE.Mesh(geometry)
+      })
+
+      makeWithAdapter('mesh')
+      await expect(ctx.load3d.getModelStats()).resolves.toEqual({
+        vertices: 3,
+        edges: 3,
+        triangles: 1
+      })
+
+      makeWithAdapter('splat')
+      await expect(ctx.load3d.getModelStats()).resolves.toBeNull()
+
+      Object.assign(ctx.modelManager, { currentModel: null })
+      makeWithAdapter('mesh')
+      await expect(ctx.load3d.getModelStats()).resolves.toBeNull()
+    })
+
+    it('getModelStats forwards the abort signal to the computation', async () => {
+      const geometry = new THREE.BufferGeometry()
+      geometry.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3)
+      )
+      Object.assign(ctx.modelManager, {
+        currentModel: new THREE.Mesh(geometry)
+      })
+      makeWithAdapter('mesh')
+
+      await expect(
+        ctx.load3d.getModelStats(AbortSignal.abort())
+      ).rejects.toThrow(/abort/i)
     })
   })
 

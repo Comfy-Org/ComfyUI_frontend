@@ -62,12 +62,6 @@ jobs:
             echo "::error::PR #${{ inputs.pr_number }} is not merged. Only merged PRs can be backported."
             exit 1
           fi
-
-          # Validate PR has needs-backport label
-          if ! gh pr view "${{ inputs.pr_number }}" --json labels --jq '.labels[].name' | grep -q "needs-backport"; then
-            echo "::error::PR #${{ inputs.pr_number }} does not have 'needs-backport' label."
-            exit 1
-          fi
         env:
           GH_REPO: ${{ github.repository }}
 
@@ -295,6 +289,7 @@ jobs:
         run: |
           FAILED=""
           SUCCESS=""
+          ALREADY_APPLIED=""
 
           # Get PR data for manual triggers
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -367,12 +362,22 @@ jobs:
               # Return to main (keep the branch, we need it for PR)
               git checkout main || git checkout -f main
             else
-              # Get conflict info
               CONFLICTS=$(git diff --name-only --diff-filter=U | tr '\n' ',')
+              CHANGES_ALREADY_ON_TARGET=false
+              if [ -z "${CONFLICTS}" ] &&
+                git rev-parse -q --verify CHERRY_PICK_HEAD >/dev/null &&
+                git diff --cached --quiet HEAD; then
+                CHANGES_ALREADY_ON_TARGET=true
+              fi
               git cherry-pick --abort || true
 
-              echo "::error::Cherry-pick failed due to conflicts"
-              FAILED="${FAILED}${TARGET_BRANCH}:conflicts:${CONFLICTS} "
+              if [ "$CHANGES_ALREADY_ON_TARGET" = true ]; then
+                echo "::notice::${TARGET_BRANCH} already has the changes from ${MERGE_COMMIT}, skipping backport"
+                ALREADY_APPLIED="${ALREADY_APPLIED}${TARGET_BRANCH} "
+              else
+                echo "::error::Cherry-pick failed due to conflicts"
+                FAILED="${FAILED}${TARGET_BRANCH}:conflicts:${CONFLICTS} "
+              fi
 
               # Clean up the failed branch
               git checkout main || git checkout -f main
@@ -384,6 +389,7 @@ jobs:
 
           echo "success=${SUCCESS}" >> $GITHUB_OUTPUT
           echo "failed=${FAILED}" >> $GITHUB_OUTPUT
+          echo "already-applied=${ALREADY_APPLIED}" >> $GITHUB_OUTPUT
 
           # Do not exit non-zero when only some targets failed: the clean
           # backports must still get their PRs (next step) and the conflicts
@@ -463,8 +469,11 @@ jobs:
         if: >-
           !cancelled() &&
           steps.filter-targets.outputs.skip != 'true' &&
-          steps.backport.outputs.failed != ''
+          (steps.backport.outputs.failed != '' ||
+           steps.backport.outputs.already-applied != '')
         env:
+          FAILED_TARGETS: ${{ steps.backport.outputs.failed }}
+          ALREADY_APPLIED_TARGETS: ${{ steps.backport.outputs.already-applied }}
           FORCE_RERUN: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.force_rerun
             || 'false' }}
@@ -535,11 +544,11 @@ jobs:
           notify() {
             local body="$1"
             local context="$2"
+            local title="${3:-Backport of #${PR_NUMBER} to ${target} failed}"
             if gh pr comment "${PR_NUMBER}" --body "${body}"; then
               return
             fi
             echo "::warning::Could not comment on PR #${PR_NUMBER} (${context}); opening a tracking issue instead."
-            local title="Backport of #${PR_NUMBER} to ${target} failed"
             gh issue create --title "${title}" --body "${body}" --label backport \
               || gh issue create --title "${title}" --body "${body}" \
               || echo "::warning::Also failed to open a tracking issue for #${PR_NUMBER} (${context})."
@@ -568,7 +577,11 @@ jobs:
               )' <<<"${comments}${issues}" >/dev/null
           }
 
-          for failure in ${{ steps.backport.outputs.failed }}; do
+          for target in ${ALREADY_APPLIED_TARGETS}; do
+            notify "@${PR_AUTHOR} \`${target}\` already has the changes from \`${MERGE_COMMIT}\`, so no backport PR was opened." "changes already on ${target}" "Backport of #${PR_NUMBER} to ${target} not needed"
+          done
+
+          for failure in ${FAILED_TARGETS}; do
             IFS=':' read -r target reason conflicts <<< "${failure}"
 
             SAFE_TARGET=$(echo "$target" | tr '/' '-')
@@ -696,7 +709,11 @@ jobs:
     steps:
       - name: Comment when release labels lack needs-backport
         env:
-          GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
+          # Reads use the job token so a busy hour on the shared token cannot
+          # fail the merge. Only the comment needs the shared token: the job
+          # token is refused with HTTP 403 when posting on this repo.
+          GH_TOKEN: ${{ github.token }}
+          POST_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
@@ -720,7 +737,7 @@ jobs:
 
           WARNED=$(gh api --paginate \
             "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" --jq '.[]
-              | select(.user.login == "github-actions[bot]")
+              | select(.user.login == "comfy-pr-bot" or .user.login == "github-actions[bot]")
               | (.body // "")
               | capture("^<!-- pr-backport:missing-needs-backport (?<labels>[^>]*) -->").labels
               | split(" ")[]')
@@ -751,7 +768,7 @@ jobs:
 
           To backport, add the \`needs-backport\` label. If the backport is intentionally on hold, ignore this comment."
 
-          if ! gh api --silent --method POST \
+          if ! GH_TOKEN="${POST_TOKEN}" gh api --silent --method POST \
             "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" -f "body=${BODY}"; then
-            echo "::warning::Could not comment on PR #${PR_NUMBER} (it may be locked). Backport did not run for ${PENDING[*]}: add the needs-backport label to start it."
+            echo "::warning::Could not comment on PR #${PR_NUMBER} (it may be locked, or the token may be out of quota). Backport did not run for ${PENDING[*]}: add the needs-backport label to start it."
           fi

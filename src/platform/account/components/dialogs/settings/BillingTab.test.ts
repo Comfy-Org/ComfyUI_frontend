@@ -22,7 +22,7 @@ import type {
 } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import type { Plan } from '@comfyorg/billing-core'
+import type { BillingTopUpDenial, Plan } from '@comfyorg/billing-core'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -94,11 +94,13 @@ interface Scenario {
   balance?: BalanceInfo | null
   autoTopUpEnabled?: boolean
   canManageAutoTopUp?: boolean
+  manageAutoTopUpDenial?: string
   canTopUp?: boolean
-  topUpDenial?: string
+  topUpDenial?: BillingTopUpDenial
   isPaused?: boolean
   billingStatus?: 'paid' | 'paused'
   hasParkedBillingOperation?: boolean
+  renewalDate?: string | null
 }
 
 function correlationIdOf(link: HTMLElement) {
@@ -148,8 +150,9 @@ function arrange(scenario: Scenario = {}) {
         fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' })
       ]),
       balance: computed(() => scenario.balance ?? null),
-      renewalDate: computed(() => null),
+      renewalDate: computed(() => scenario.renewalDate ?? null),
       currentTeamCreditStop: computed(() => null),
+      periodCreditGrant: computed(() => null),
       initialize,
       fetchStatus,
       resubscribe
@@ -206,6 +209,12 @@ function arrange(scenario: Scenario = {}) {
         receiveServerFact(
           'auto_top_up_enabled',
           scenario.autoTopUpEnabled ?? true
+        )
+      ),
+      manageAutoTopUpDenial: computed(() =>
+        receiveServerFact(
+          'denied_reasons.can_manage_auto_top_up',
+          scenario.manageAutoTopUpDenial
         )
       ),
       autoTopUpSetup: computed(() => null),
@@ -1071,6 +1080,42 @@ describe('BillingTab', () => {
     )
   })
 
+  it.for([
+    {
+      case: 'a served end date',
+      endDate: '2026-09-01T00:00:00Z',
+      line: 'Ended September 1.'
+    },
+    { case: 'no end date', endDate: null, line: 'This plan has ended.' }
+  ])('reads an ended plan with $case as "$line"', ({ endDate, line }) => {
+    arrange({
+      subscriptionStatus: 'ended',
+      subscription: { ...activeSubscription, isActive: false, endDate }
+    })
+
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      line
+    )
+    expect(
+      screen.getByRole('link', { name: 'Choose a plan' })
+    ).toBeInTheDocument()
+  })
+
+  it('titles an ended plan with no served plan name as Your plan', () => {
+    arrange({
+      subscriptionStatus: null,
+      subscriptionState: 'ended',
+      subscription: { ...activeSubscription, isActive: false, tier: null }
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'Your plan' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      'This plan has ended.'
+    )
+  })
+
   it('renders an unrecognised plan as Your plan', () => {
     arrange({ subscription: { ...activeSubscription, tier: null } })
 
@@ -1079,6 +1124,36 @@ describe('BillingTab', () => {
     ).toBeInTheDocument()
     expect(screen.queryByTestId('billing-plan-line')).not.toBeInTheDocument()
   })
+
+  it.for([
+    { planKind: 'self_serve', date: 'Refills November 15, 2026' },
+    { planKind: 'sales_managed', date: null },
+    { planKind: 'none', date: null },
+    { planKind: null, date: null }
+  ] as const)(
+    'shows a $planKind paused-plan refill date only when self-serve',
+    ({ planKind, date }) => {
+      arrange({
+        planKind,
+        billingStatus: 'paused',
+        subscription: { ...activeSubscription, tier: 'ENTERPRISE' },
+        renewalDate: '2026-11-15T00:00:00Z',
+        balance: {
+          amountMicros: 1000,
+          currency: 'usd',
+          effectiveBalanceMicros: 1000,
+          effectiveBalanceAuthoritative: true,
+          prepaidBalanceMicros: 0,
+          cloudCreditBalanceMicros: 1000
+        }
+      })
+
+      expect(
+        screen.queryByTestId('billing-credits-plan-date')?.textContent.trim() ??
+          null
+      ).toBe(date)
+    }
+  )
 
   it('shows the served balance under the plan and opens top-up from Add credits', async () => {
     arrange({
@@ -1247,6 +1322,45 @@ describe('BillingTab', () => {
       expect(addCreditsVariants()).toEqual(['inverted', 'inverted'])
     })
 
+    it.for([
+      { signal: 'subscription_status', subscriptionStatus: 'ended' as const },
+      { signal: 'subscription_state', subscriptionState: 'ended' as const }
+    ])(
+      'keeps the Credits card the one white Add credits on local ComfyUI when $signal is ended and out of credits',
+      async (scenario) => {
+        vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+        arrange({
+          ...scenario,
+          balance: zeroBalance,
+          subscription: {
+            ...activeSubscription,
+            isActive: false,
+            hasFunds: false
+          }
+        })
+
+        await screen.findByTestId('billing-auto-top-up-status')
+        expect(
+          within(screen.getByTestId('billing-local-credit-banner')).getByRole(
+            'button',
+            { name: 'Add credits' }
+          )
+        ).toHaveAttribute('data-variant', 'secondary')
+        expect(
+          within(screen.getByTestId('billing-credits-card')).getByRole(
+            'button',
+            { name: 'Add credits' }
+          )
+        ).toHaveAttribute('data-variant', 'inverted')
+        expect(
+          [
+            ...screen.queryAllByRole('button'),
+            ...screen.queryAllByRole('link')
+          ].filter((el) => el.dataset.variant === 'inverted')
+        ).toHaveLength(1)
+      }
+    )
+
     it('turns Add credits white at 0 while a top-up payment is processing and auto top-up is off', async () => {
       servedCheckouts(checkout('payment_processing'))
       arrange({ balance: zeroBalance })
@@ -1291,6 +1405,51 @@ describe('BillingTab', () => {
       )
       expect(addCreditsVariants()).toEqual(['secondary'])
     })
+
+    it.for([
+      {
+        surface: 'Cloud',
+        isCloud: true,
+        choosePlan: 'inverted',
+        addCredits: 'secondary',
+        planEndedBanners: 1
+      },
+      {
+        surface: 'local ComfyUI',
+        isCloud: false,
+        choosePlan: 'secondary',
+        addCredits: 'inverted',
+        planEndedBanners: 0
+      }
+    ])(
+      'keeps one white button on $surface when an ended plan is out of credits',
+      async ({ isCloud, choosePlan, addCredits, planEndedBanners }) => {
+        distribution.isCloud = isCloud
+        onTestFinished(() => {
+          distribution.isCloud = false
+        })
+        arrange({
+          balance: zeroBalance,
+          subscriptionStatus: 'ended',
+          subscription: { ...activeSubscription, isActive: false }
+        })
+
+        await screen.findByTestId('billing-auto-top-up-status')
+        expect(
+          screen.getByRole('link', { name: 'Choose a plan' })
+        ).toHaveAttribute('data-variant', choosePlan)
+        expect(addCreditsVariants()).toEqual([addCredits])
+        expect(screen.queryAllByText(/^Your .*plan has ended$/)).toHaveLength(
+          planEndedBanners
+        )
+        expect(
+          [
+            ...screen.queryAllByRole('button'),
+            ...screen.queryAllByRole('link')
+          ].filter((el) => el.dataset.variant === 'inverted')
+        ).toHaveLength(1)
+      }
+    )
 
     it('offers no Add credits on a failed top-up when the server withholds can_top_up', async () => {
       servedCheckouts(checkout('failed'))
@@ -1698,6 +1857,60 @@ describe('BillingTab', () => {
         screen.queryByTestId('billing-auto-top-up-card')
       ).not.toBeInTheDocument()
       expect(billingApi.getBillingAutoReload).toHaveBeenCalledTimes(reads)
+    })
+
+    describe('member block', () => {
+      const member: Scenario = {
+        canManageAutoTopUp: false,
+        manageAutoTopUpDenial: 'not_workspace_owner',
+        canTopUp: false
+      }
+
+      it('tells a member who manages auto top-up, without status, action or a settings read', () => {
+        arrange(member)
+
+        const block = screen.getByTestId('billing-auto-top-up-member-card')
+        expect(
+          within(block).getByRole('heading', { name: 'Auto top-up' })
+        ).toBeInTheDocument()
+        expect(block).toHaveTextContent(
+          'Credits can top up automatically when they run low. Contact a workspace owner to manage this.'
+        )
+        expect(within(block).queryByRole('button')).not.toBeInTheDocument()
+        expect(within(block).queryByRole('link')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('billing-auto-top-up-status')
+        ).not.toBeInTheDocument()
+        expect(
+          within(screen.getByTestId('billing-credits-section')).queryByRole(
+            'button',
+            { name: 'Add credits' }
+          )
+        ).not.toBeInTheDocument()
+        expect(billingApi.getBillingAutoReload).not.toHaveBeenCalled()
+      })
+
+      it.for<{ case: string; scenario: Scenario }>([
+        {
+          case: 'the flag is off',
+          scenario: { ...member, autoTopUpEnabled: false }
+        },
+        {
+          case: 'the denial is not not_workspace_owner',
+          scenario: { ...member, manageAutoTopUpDenial: 'not_a_member' }
+        },
+        {
+          case: 'the server sends no denial',
+          scenario: { ...member, manageAutoTopUpDenial: undefined }
+        },
+        { case: 'the actor is an owner', scenario: {} }
+      ])('hides the member block when $case', ({ scenario }) => {
+        arrange(scenario)
+
+        expect(
+          screen.queryByTestId('billing-auto-top-up-member-card')
+        ).not.toBeInTheDocument()
+      })
     })
 
     it('reads the auto top-up settings once for the card and the banner', async () => {

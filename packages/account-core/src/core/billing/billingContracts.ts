@@ -88,6 +88,8 @@ export type BillingFailure = {
    * client shows the same string.
    */
   readonly serverMessage?: string
+  /** The response's `Retry-After`, when it was a whole number of seconds. */
+  readonly retryAfterSeconds?: number
 }
 
 /** Whether a failure carries the server code a command names. */

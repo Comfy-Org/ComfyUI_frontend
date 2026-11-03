@@ -63,6 +63,10 @@ export interface DocOpMinterDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /** Records a local edit that cannot yet enter the semantic document. */
+  onUnboundLocalIntent?(): void
+  /** Records a local edit to the visible workflow while another one, or none, is bound. */
+  onUnboundVisibleIntent?(): void
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
   /** The live root graph, or null when no workflow is open. */
@@ -803,14 +807,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     graphId: string,
     event: IntentOf<'set_widget'>
   ): void {
-    const key = `owner:${nodeKey(graphId, event.nodeId)}`
+    const key = `owner:${nodeKey(graphId, event.nodeId)}:${event.name}`
     if (reportedRefusals.has(key)) return
     reportedRefusals.add(key)
     reportLostEdit('mint_divergence', [{ op: 'set_widget' }], {
       code: 'unresolvable_widget_owner',
       errorType: 'agent_crdt_widget_owner_unresolved',
       graphId,
-      nodeId: event.nodeId
+      nodeId: event.nodeId,
+      widget: event.name
     })
   }
 
@@ -1185,14 +1190,38 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     schedule({ kind: 'add_node', graph: event.graph, node: event.node })
   }
 
+  function discardHeldWrite(event: GraphIntentEvent): void {
+    if (event.type === 'set_widget')
+      heldPromotedWrites.delete(heldWriteKey(event))
+  }
+
+  function intentRootGraphId(
+    event: GraphIntentEvent,
+    graph: LGraph | null
+  ): string | null {
+    if ('graph' in event) return event.graph.rootGraph.id
+    return graph !== null && reachableIntentGraph(graph, event.graphId) !== null
+      ? graph.id
+      : null
+  }
+
+  function noteUnboundLocalIntent(event: GraphIntentEvent): void {
+    const graph = deps.getGraph()
+    const eventRootGraphId = intentRootGraphId(event, graph)
+    if (eventRootGraphId === null) return
+    if (eventRootGraphId === deps.boundRootGraphId())
+      deps.onUnboundLocalIntent?.()
+    else if (eventRootGraphId === graph?.id) deps.onUnboundVisibleIntent?.()
+  }
+
   function onIntent(event: GraphIntentEvent): void {
     if (event.source !== 'local') return
-    if (!deps.isEnabled() || !deps.isDocBound()) {
-      if (event.type === 'set_widget')
-        heldPromotedWrites.delete(heldWriteKey(event))
+    if (deps.isEnabled() && deps.isDocBound()) {
+      mintIntent(event)
       return
     }
-    mintIntent(event)
+    if (deps.isEnabled()) noteUnboundLocalIntent(event)
+    discardHeldWrite(event)
   }
 
   function mintIntent(event: GraphIntentEvent): void {

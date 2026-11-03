@@ -557,7 +557,13 @@ describe('AgentMessage thinking narration', () => {
   it('keeps resumed thinking in the open trace alongside the earlier call', () => {
     const message = thinkingMessage('Planning the next step')
     message.parts = [
-      { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'tool_0',
+        name: 'set_widget',
+        state: 'done',
+        ok: true
+      },
       { type: 'text', text: 'The first edit is complete.', state: 'done' },
       {
         type: 'thinking',
@@ -586,9 +592,21 @@ describe('AgentMessage thinking narration', () => {
     message.thinking = false
     message.streaming = false
     message.parts = [
-      { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'tool_0',
+        name: 'set_widget',
+        state: 'done',
+        ok: true
+      },
       { type: 'text', text: 'Between calls', state: 'done' },
-      { type: 'tool', callId: 'tool_1', name: 'add_node', state: 'done' }
+      {
+        type: 'tool',
+        callId: 'tool_1',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      }
     ]
     render(AgentMessage, {
       props: { message },
@@ -626,6 +644,7 @@ describe('AgentMessage thinking narration', () => {
         callId: 'tool_0',
         name: 'list_slots',
         state: 'done',
+        ok: true,
         durationMs: 500
       },
       {
@@ -633,6 +652,7 @@ describe('AgentMessage thinking narration', () => {
         callId: 'tool_1',
         name: 'set_widget',
         state: 'done',
+        ok: true,
         durationMs: 800
       },
       {
