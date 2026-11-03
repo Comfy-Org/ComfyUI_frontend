@@ -70,7 +70,10 @@ const bridgeState = (() => {
       updatesApplied: 0,
       doc: {
         share: new Map(),
-        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
+        getMap: () => ({
+          toJSON: () => ({}),
+          get: (_key: string): unknown => undefined
+        })
       }
     }
   }
