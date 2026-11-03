@@ -71,9 +71,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * The plan pool of the Credits card: remaining of total, refill date, usage.
- */
 import { computed } from 'vue'
 
 import type { PlanCreditsState } from '@comfyorg/account-core/billing'

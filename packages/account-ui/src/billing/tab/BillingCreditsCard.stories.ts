@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { fn } from 'storybook/test'
 
 import type { PlanCreditsState } from '@comfyorg/account-core/billing'
 
@@ -25,7 +26,13 @@ const meta: Meta<typeof BillingCreditsCard> = {
     locale: 'en',
     addCredits: { kind: 'enabled' },
     planCreditNote: null,
-    state: PLAN
+    state: PLAN,
+    addCreditsVariant: 'secondary',
+    onRetry: fn(),
+    onAddCredits: fn()
+  },
+  argTypes: {
+    addCreditsVariant: { control: 'select', options: ['secondary', 'inverted'] }
   },
   decorators: [
     (story) => ({

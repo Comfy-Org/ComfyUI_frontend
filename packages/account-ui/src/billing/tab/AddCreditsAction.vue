@@ -21,9 +21,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * Add credits for a served availability; the reason arrives translated.
- */
 import { useId } from 'vue'
 
 import type { AddCreditsAvailability } from '@comfyorg/account-core/billing'
