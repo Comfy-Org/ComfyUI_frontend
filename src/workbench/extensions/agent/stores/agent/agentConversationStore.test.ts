@@ -2346,60 +2346,73 @@ describe('useAgentConversationStore', () => {
       expect(reconciledParts(store)).toEqual(storedParts())
     })
 
+    const verdictWorkflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const verdictTurn = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
+    const settleBySocket = (store: ConversationStore) => {
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      store.reconcileSettledTurn(verdictTurn, storedParts())
+    }
+    const settleByRecoveryRead = (store: ConversationStore) =>
+      store.settleTurn(verdictTurn, storedParts())
+    const liveCanvasEdit = (gate: 'awaiting' | 'unavailable') => {
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => gate)
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: verdictWorkflowId,
+          op_ids: ['op-add']
+        })
+      )
+      return store
+    }
+    const settledTool = (store: ConversationStore) =>
+      reconciledParts(store)?.find((part) => part.type === 'tool')
+
     it.for([
-      { gate: 'awaiting', observed: true, verdict: true, through: 'socket' },
+      { through: 'socket', settle: settleBySocket },
+      { through: 'recovery read', settle: settleByRecoveryRead }
+    ])(
+      'keeps an observed canvas edit confirmed when the $through settles the turn',
+      ({ settle }) => {
+        const store = liveCanvasEdit('awaiting')
+        store.notifyCanvasCaughtUp(
+          liveCanvasEvidence(verdictWorkflowId, ['op-add'])
+        )
+
+        settle(store)
+
+        expect(settledTool(store)).toMatchObject({
+          callId: 'call-add_node',
+          canvasConfirmed: true
+        })
+      }
+    )
+
+    it.for([
+      { gate: 'unavailable', through: 'socket', settle: settleBySocket },
       {
         gate: 'unavailable',
-        observed: false,
-        verdict: false,
-        through: 'socket'
+        through: 'recovery read',
+        settle: settleByRecoveryRead
       },
       {
         gate: 'awaiting',
-        observed: true,
-        verdict: true,
-        through: 'recovery read'
-      },
-      {
-        gate: 'unavailable',
-        observed: false,
-        verdict: false,
-        through: 'recovery read'
-      },
-      {
-        gate: 'awaiting',
-        observed: false,
-        verdict: false,
-        through: 'recovery read'
+        through: 'recovery read',
+        settle: settleByRecoveryRead
       }
     ] as const)(
-      'keeps the live canvas verdict $verdict ($gate, observed: $observed) when the $through settles the turn',
-      ({ gate, observed, verdict, through }) => {
-        const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
-        const turn = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
-        const store = useAgentConversationStore()
-        store.setCanvasSyncGate(() => gate)
-        store.setThreadId('th')
-        store.hydrate(liveSnapshot())
-        store.ingest(
-          toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
-            workflow_id: workflowId,
-            op_ids: ['op-add']
-          })
-        )
-        if (observed)
-          store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      'keeps an unobserved canvas edit unconfirmed ($gate) when the $through settles the turn',
+      ({ gate, settle }) => {
+        const store = liveCanvasEdit(gate)
 
-        if (through === 'socket') {
-          store.ingest(done(SNAPSHOT_ROW_ID))
-          store.reconcileSettledTurn(turn, storedParts())
-        } else {
-          store.settleTurn(turn, storedParts())
-        }
+        settle(store)
 
-        expect(
-          reconciledParts(store)?.find((part) => part.type === 'tool')
-        ).toMatchObject({ callId: 'call-add_node', canvasConfirmed: verdict })
+        expect(settledTool(store)).toMatchObject({
+          callId: 'call-add_node',
+          canvasConfirmed: false
+        })
       }
     )
 
