@@ -7,7 +7,6 @@ import type { PopupSignInOptions } from '@comfyorg/account-core/firebase'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account-core/customerRecovery'
 import {
   isSsoRequiredRefusal,
   ssoRequiredOrganizationId
@@ -53,26 +52,13 @@ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { provideAuthStore } from '@/platform/auth/authStoreAccess'
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
-const BILLING_PORTAL_REQUEST_TIMEOUT_MS = 30_000
-
-type CreditPurchaseResponse =
-  operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
-type CreditPurchasePayload =
-  operations['InitiateCreditPurchase']['requestBody']['content']['application/json']
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
 type CreateCustomerPayload = NonNullable<
   operations['createCustomer']['requestBody']
 >['content']['application/json']
-type GetCustomerBalanceResponse =
-  operations['GetCustomerBalance']['responses']['200']['content']['application/json']
-type AccessBillingPortalResponse =
-  operations['AccessBillingPortal']['responses']['200']['content']['application/json']
-type AccessBillingPortalReqBody =
-  operations['AccessBillingPortal']['requestBody']
 export interface SocialSignInOptions {
   readonly isNewUser?: boolean
   /** How a closed popup's late result is finished or discarded. */
@@ -80,12 +66,6 @@ export interface SocialSignInOptions {
   /** A closed popup's late credential to finish instead of opening a popup. */
   readonly resumed?: Promise<UserCredential>
 }
-
-export type BillingPortalTargetTier = NonNullable<
-  NonNullable<
-    NonNullable<AccessBillingPortalReqBody>['content']
-  >['application/json']
->['target_tier']
 
 /** `AuthStoreError.code` for a `/customers/*` call skipped because the account has no personal workspace. */
 export const NO_PERSONAL_WORKSPACE = 'no_personal_workspace'
@@ -144,16 +124,6 @@ export const useAuthStore = defineStore('auth', () => {
   const loading = ref(false)
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
-  const customerProvisionedIdentity = ref<string | null>(null)
-  /**
-   * Memoizes the in-flight or successful customer provisioning attempt for
-   * the current account (see recoverMissingCustomer). Declared here so the
-   * auth-state listener below can reset it before its initializer would
-   * otherwise run.
-   */
-  let customerRecovery: Promise<void> | null = null
-  let customerRecoveryIdentity: string | null = null
-  const isFetchingBalance = ref(false)
   const mintUnifiedToken = useMemoize((uid: string) =>
     useWorkspaceAuthStore()
       .mintAtLogin()
@@ -162,10 +132,6 @@ export const useAuthStore = defineStore('auth', () => {
         return success
       })
   )
-
-  // Balance state
-  const balance = ref<GetCustomerBalanceResponse | null>(null)
-  const lastBalanceUpdateTime = ref<Date | null>(null)
 
   // Token refresh trigger - increments when token is refreshed
   const tokenRefreshTrigger = ref(0)
@@ -260,17 +226,6 @@ export const useAuthStore = defineStore('auth', () => {
     if (isCloud && identityChanged) {
       void api.resetSocket()
     }
-
-    // Reset balance when auth state changes
-    balance.value = null
-    lastBalanceUpdateTime.value = null
-
-    // Customer provisioning state is per-account: without this reset, a
-    // second account in the same browser session would be short-circuited by
-    // the previous account's memoized recovery and stay stuck on 409s.
-    customerProvisionedIdentity.value = null
-    customerRecovery = null
-    customerRecoveryIdentity = null
   }
 
   firebaseIdentity.onUserChanged((user) => {
@@ -494,17 +449,6 @@ export const useAuthStore = defineStore('auth', () => {
         currentUser.value?.uid ??
         useApiKeyAuthStore().getApiKey())
 
-  const currentUserCredentialIdentity = (): string | null =>
-    currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
-
-  /**
-   * Response data from a user-scoped endpoint belongs to the identity that
-   * asked for it. A 200 bypasses the recovery guards in
-   * fetchWithCustomerRecovery, which only fence the missing-customer retry, so
-   * a credential swap while the request was in flight would hand the previous
-   * account's data to the current session — a Stripe portal or checkout URL
-   * minted for A opening inside B.
-   */
   const assertIdentityUnchanged = (requestOwner: string | null): void => {
     if (currentUserIdentity() !== requestOwner) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -698,63 +642,6 @@ export const useAuthStore = defineStore('auth', () => {
     return token
   }
 
-  const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
-    if (!hasPersonalWorkspace.value) return null
-    isFetchingBalance.value = true
-    const requestOwner = currentUserIdentity()
-    const requestCredential = currentUserCredentialIdentity()
-    const requestIsCurrent = () =>
-      currentUserIdentity() === requestOwner &&
-      currentUserCredentialIdentity() === requestCredential
-    try {
-      const authHeader = await getCustomerAuthHeader()
-      if (!authHeader) {
-        throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-      }
-
-      const response = await fetchWithCustomerRecovery(
-        buildApiUrl('/customers/balance'),
-        {
-          headers: {
-            ...authHeader,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          // Customer not found is expected for new users
-          return null
-        }
-        const { message, code } = await parseErrorResponse(response)
-        if (!requestIsCurrent()) {
-          return null
-        }
-        throw new AuthStoreError(
-          t('toastMessages.failedToFetchBalance', {
-            error: message
-          }),
-          response.status,
-          code
-        )
-      }
-
-      const balanceData = await response.json()
-      // Session identity and request credentials can change independently;
-      // a late response must still match both.
-      if (!requestIsCurrent()) {
-        return null
-      }
-      // Update the last balance update time
-      lastBalanceUpdateTime.value = new Date()
-      balance.value = balanceData
-      return balanceData
-    } finally {
-      isFetchingBalance.value = false
-    }
-  }
-
   const createCustomer = async (
     payload?: Omit<CreateCustomerPayload, 'signup_source'>,
     completedCredential?: UserCredential
@@ -816,57 +703,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (!completedUser) assertIdentityUnchanged(sessionIdentity)
-    if (sessionIdentity !== null) {
-      customerProvisionedIdentity.value = sessionIdentity
-    }
     return createCustomerResJson
-  }
-
-  /**
-   * Memoizes the customer provisioning attempt so concurrent or repeated 409
-   * responses from /customers/* endpoints trigger at most one successful
-   * POST /customers per account. A failed attempt is cleared so a later
-   * request can retry, e.g. after a transient network failure.
-   */
-  const recoverMissingCustomer = (): Promise<void> => {
-    const sessionIdentity = currentUserIdentity()
-    if (
-      customerRecovery === null ||
-      customerRecoveryIdentity !== sessionIdentity
-    ) {
-      const thisRecovery: Promise<void> = createCustomer()
-        .then(() => undefined)
-        .catch((error: unknown) => {
-          if (customerRecovery === thisRecovery) {
-            customerRecovery = null
-            customerRecoveryIdentity = null
-          }
-          throw error
-        })
-      customerRecovery = thisRecovery
-      customerRecoveryIdentity = sessionIdentity
-    }
-    return customerRecovery
-  }
-
-  /** /customers/* fetch that self-heals a never-provisioned account (rule in @comfyorg/account-core). */
-  const fetchWithCustomerRecovery = async (
-    input: string,
-    init?: RequestInit
-  ): Promise<Response> => {
-    assertHasPersonalWorkspace()
-    const requestOwner = currentUserIdentity()
-    return fetchHealingMissingCustomer(input, {
-      request: () =>
-        fetchWithUnifiedRemint(
-          input,
-          init ?? {},
-          isCloud && flags.unifiedCloudAuthEnabled
-        ),
-      recoverMissingCustomer,
-      identityUnchanged: () => currentUserIdentity() === requestOwner,
-      base: window.location.href
-    })
   }
 
   const executeAuthAction = async <T>(
@@ -1061,117 +898,11 @@ export const useAuthStore = defineStore('auth', () => {
     await firebaseIdentity.updatePassword(newPassword)
   }
 
-  const addCredits = async (
-    requestBodyContent: CreditPurchasePayload
-  ): Promise<CreditPurchaseResponse> => {
-    const requestOwner = currentUserIdentity()
-    const authHeader = await getCustomerAuthHeader()
-    if (!authHeader) {
-      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
-
-    // Ensure customer was created during login/registration. Routed through
-    // recoverMissingCustomer so a concurrent 409-triggered recovery and this
-    // pre-flight share one POST /customers instead of racing.
-    if (customerProvisionedIdentity.value !== requestOwner) {
-      await recoverMissingCustomer()
-      if (currentUserIdentity() !== requestOwner) {
-        throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-      }
-    }
-
-    const response = await fetchWithCustomerRecovery(
-      buildApiUrl('/customers/credit'),
-      {
-        method: 'POST',
-        headers: {
-          ...authHeader,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBodyContent)
-      }
-    )
-
-    if (!response.ok) {
-      const { message, code } = await parseErrorResponse(response)
-      assertIdentityUnchanged(requestOwner)
-      throw new AuthStoreError(
-        t('toastMessages.failedToInitiateCreditPurchase', {
-          error: message
-        }),
-        response.status,
-        code
-      )
-    }
-
-    const creditPurchase: CreditPurchaseResponse = await response.json()
-    assertIdentityUnchanged(requestOwner)
-    return creditPurchase
-  }
-
-  const initiateCreditPurchase = async (
-    requestBodyContent: CreditPurchasePayload
-  ): Promise<CreditPurchaseResponse> =>
-    executeAuthAction(() => addCredits(requestBodyContent))
-
-  const accessBillingPortal = async (
-    targetTier?: BillingPortalTargetTier,
-    options?: { cancelSubscription?: boolean }
-  ): Promise<AccessBillingPortalResponse> => {
-    if (targetTier && options?.cancelSubscription) {
-      throw new AuthStoreError(
-        'cancelSubscription cannot be combined with a target tier'
-      )
-    }
-    const requestOwner = currentUserIdentity()
-    const authHeader = await getCustomerAuthHeader()
-    if (!authHeader) {
-      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
-
-    const response = await fetchWithCustomerRecovery(
-      buildApiUrl('/customers/billing'),
-      {
-        method: 'POST',
-        signal: AbortSignal.timeout(BILLING_PORTAL_REQUEST_TIMEOUT_MS),
-        headers: {
-          ...authHeader,
-          'Content-Type': 'application/json'
-        },
-        ...(targetTier && {
-          body: JSON.stringify({ target_tier: targetTier })
-        }),
-        ...(options?.cancelSubscription === true && {
-          body: JSON.stringify({ cancel_subscription: true })
-        })
-      }
-    )
-
-    if (!response.ok) {
-      const { message, code } = await parseErrorResponse(response)
-      assertIdentityUnchanged(requestOwner)
-      throw new AuthStoreError(
-        t('toastMessages.failedToAccessBillingPortal', {
-          error: message
-        }),
-        response.status,
-        code
-      )
-    }
-
-    const billingPortal: AccessBillingPortalResponse = await response.json()
-    assertIdentityUnchanged(requestOwner)
-    return billingPortal
-  }
-
   return {
     // State
     loading,
     currentUser,
     isInitialized,
-    balance,
-    lastBalanceUpdateTime,
-    isFetchingBalance,
     tokenRefreshTrigger,
 
     // Getters
@@ -1188,13 +919,9 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     createCustomer,
-    fetchWithCustomerRecovery,
     getIdToken,
     loginWithGoogle,
     loginWithGithub,
-    initiateCreditPurchase,
-    fetchBalance,
-    accessBillingPortal,
     sendPasswordReset,
     updatePassword: _updatePassword,
     getAuthHeader,

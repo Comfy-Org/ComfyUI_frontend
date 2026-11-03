@@ -1,8 +1,8 @@
 # Frontend domain catalog
 
 This directory records which `src` and workspace package paths belong to
-which domain, the role each path plays, and which domains may depend on each
-other. Fallow enforces the boundaries; `tools/architecture` generates its
+which domain, the role each path plays, and which parts of each domain other
+domains may import. Fallow enforces the boundaries; `tools/architecture` generates its
 config from the records and tracks architecture suppressions.
 
 ## Commands
@@ -10,7 +10,7 @@ config from the records and tracks architecture suppressions.
 ```sh
 pnpm architecture:check    # validate records, ledger, and boundaries.json
 pnpm architecture:update   # regenerate boundaries.json from the records
-pnpm architecture:catalog  # print records, owners, exceptions, and coverage as JSON
+pnpm architecture:catalog  # print records, owners, dependencies, exceptions, and coverage as JSON
 pnpm test:unit tools/architecture
 ```
 
@@ -54,9 +54,11 @@ package `src` code file belongs to a domain.
 ## Boundaries
 
 Each record role becomes a Fallow zone (`<domain>/<role>`), and each public
-entry point becomes a `<domain>/<role>/public` zone. Fallow puts a file in the
-first zone that matches it, so a path that contains another domain's or role's
-path moves to a later `<domain>/<role>/outer-<n>` zone with the same rules.
+entry point becomes a `<domain>/<role>/public` zone. Inventory domains share
+one `_inventory/<role>` zone per role, because any domain may import them and
+Fallow rules must name every zone they allow. Fallow puts a file in the first
+zone that matches it, so a path that contains another domain's or role's path
+moves to a later `outer-<n>` zone with the same rules.
 Every other `src` or package `src` file falls into the `unclassified` zone.
 The generated rules allow:
 
@@ -66,15 +68,17 @@ The generated rules allow:
     `domain`
   - `presentation`: `presentation`, `application`, `domain`
   - `integration`: every role
-- imports from a domain into another domain's public entry points, when the
-  consumer lists the producer in `allowedDependencies`, the producer lists the
-  consumer in `allowedConsumers`, and role direction allows it;
-- imports from unclassified code into any public entry point;
+- imports from another domain into a public entry point, or into any zone of
+  a domain whose `deepImports` is `"inventory"`, when role direction allows
+  it;
+- the same imports from unclassified code, in any role direction;
 - imports from any zone into unclassified code.
 
-`deepImports: "inventory"` opens a domain's internal zones to unclassified code
-and approved consumers. `deepImports: "enforced"` limits outside callers to
-public entry points.
+`deepImports: "enforced"` limits outside callers to public entry points.
+Records do not declare which domains they depend on or who may import them.
+`architecture:catalog` reports each domain's observed `dependencies`: every
+other domain it imports, with the number of file-to-file imports, read from
+Fallow's module graph.
 
 The pre-push hook and the `CI: Fallow` job run `fallow audit` with the
 `new-only` gate, so only newly introduced violations fail. Existing violations

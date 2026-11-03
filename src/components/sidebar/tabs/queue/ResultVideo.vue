@@ -5,7 +5,11 @@
     :autoplay="autoplay"
     class="max-h-[90vh] max-w-[90vw]"
   >
-    <source :src="url" :type="htmlVideoType" />
+    <source
+      data-testid="result-video-source"
+      :src="url"
+      :type="htmlVideoType"
+    />
     {{ $t('g.videoFailedToLoad') }}
   </video>
 </template>
@@ -13,6 +17,7 @@
 <script setup lang="ts">
 import { computed, onActivated, useTemplateRef } from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -40,8 +45,11 @@ onActivated(() => {
 const settingStore = useSettingStore()
 const { isExtensionInstalled, isExtensionEnabled } = useExtensionStore()
 
+const playsCloudAssetUrl = computed(() => isCloud && !!props.result.url)
+
 const vhsAdvancedPreviews = computed(() => {
   return (
+    !playsCloudAssetUrl.value &&
     isExtensionInstalled('VideoHelperSuite.Core') &&
     isExtensionEnabled('VideoHelperSuite.Core') &&
     settingStore.get('VHS.AdvancedPreviews') &&

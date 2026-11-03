@@ -185,8 +185,6 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["extension-manager", "keybindings", "telemetry"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Node library tabs browse node definitions, essentials, and bookmarks",

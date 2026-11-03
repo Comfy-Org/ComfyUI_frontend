@@ -419,8 +419,13 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_ONBOARDING_STEP,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentOnboardingStep({ step: 4, action: 'finish' }),
-      properties: { step: 4, action: 'finish' }
+        sink.trackAgentOnboardingStep({
+          step: 3,
+          card: 'history',
+          total: 3,
+          action: 'finish'
+        }),
+      properties: { step: 3, card: 'history', total: 3, action: 'finish' }
     },
     {
       name: TelemetryEvents.AGENT_NODE_TAGGED,
@@ -550,6 +555,28 @@ describe('HostTelemetrySink', () => {
           step: 2
         }),
       properties: { reason: 'target_missing', step: 2 }
+    },
+    {
+      name: TelemetryEvents.AGENT_SEND_GATED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentSendGated({
+          gate: 'consent',
+          outcome: 'dropped',
+          reason: 'dismissed',
+          client_message_id: 'client-message-1',
+          held_ms: 1200,
+          thread_id: null,
+          client_session_id: 'client-session-1'
+        }),
+      properties: {
+        gate: 'consent',
+        outcome: 'dropped',
+        reason: 'dismissed',
+        client_message_id: 'client-message-1',
+        held_ms: 1200,
+        thread_id: null,
+        client_session_id: 'client-session-1'
+      }
     }
   ])('forwards $name to the host bridge', ({ name, track, properties }) => {
     track(new HostTelemetrySink())

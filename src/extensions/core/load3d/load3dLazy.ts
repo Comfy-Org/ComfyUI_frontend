@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
@@ -61,6 +61,7 @@ async function importLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
       cameraAngle.cameraAngleExtension,
       lightInfo.lightInfoExtension
     ]
+    useExtensionStore().markCoreExtensions(extensions)
     const { registerExtension } = useExtensionService()
     for (const extension of extensions)
       disposers.push(registerExtension(extension))

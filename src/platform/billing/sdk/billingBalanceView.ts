@@ -4,33 +4,38 @@ import type { BillingBalanceResponse } from '@comfyorg/billing-core'
 
 import { asSafeNumber } from './safeInt64'
 
-type TopupCap = Pick<
-  BillingBalanceResponse,
-  'max_topup_cents' | 'max_topup_credits'
->
-
-function projectTopupCap(
-  rawCents: bigint | undefined,
-  rawCredits: bigint | undefined
-): TopupCap {
-  if (rawCents === undefined) return {}
-  const max_topup_cents = asSafeNumber(rawCents)
-  if (max_topup_cents === undefined) return {}
-  if (rawCredits === undefined) return { max_topup_cents }
-  const max_topup_credits = asSafeNumber(rawCredits)
-  return max_topup_credits === undefined
-    ? {}
-    : { max_topup_cents, max_topup_credits }
+interface TopupBound {
+  cents?: number
+  credits?: number
 }
 
-/** The SDK's decoded balance in the host's shape, dropping a top-up cap a number cannot hold exactly. */
+function projectTopupBound(
+  rawCents: bigint | undefined,
+  rawCredits: bigint | undefined
+): TopupBound {
+  if (rawCents === undefined) return {}
+  const cents = asSafeNumber(rawCents)
+  if (cents === undefined) return {}
+  if (rawCredits === undefined) return { cents }
+  const credits = asSafeNumber(rawCredits)
+  return credits === undefined ? {} : { cents, credits }
+}
+
+/** The SDK's decoded balance in the host's shape, dropping a top-up bound a number cannot hold exactly. */
 export function projectBillingBalance({
   max_topup_cents,
   max_topup_credits,
+  min_topup_cents,
+  min_topup_credits,
   ...balance
 }: BillingBalance): BillingBalanceResponse {
+  const max = projectTopupBound(max_topup_cents, max_topup_credits)
+  const min = projectTopupBound(min_topup_cents, min_topup_credits)
   return {
     ...balance,
-    ...projectTopupCap(max_topup_cents, max_topup_credits)
+    ...(max.cents !== undefined && { max_topup_cents: max.cents }),
+    ...(max.credits !== undefined && { max_topup_credits: max.credits }),
+    ...(min.cents !== undefined && { min_topup_cents: min.cents }),
+    ...(min.credits !== undefined && { min_topup_credits: min.credits })
   }
 }
