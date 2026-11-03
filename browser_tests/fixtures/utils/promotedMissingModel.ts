@@ -139,7 +139,9 @@ export async function selectVueAssetPromotedModel(
   modelName: string
 ) {
   await selectModelFromFormDropdown(
-    comfyPage.vueNodes.getNodeByTitle(workflow.hostNodeTitle),
+    comfyPage.vueNodes
+      .getNodeByTitle(workflow.hostNodeTitle)
+      .getByRole('button', { name: PROMOTED_MODEL_WIDGET_NAME, exact: true }),
     currentModelName,
     modelName
   )
@@ -169,7 +171,10 @@ export async function selectSectionAssetPromotedModel(
 ) {
   const panel = await openHostNodeParametersPanel(comfyPage, workflow)
   await selectModelFromFormDropdown(
-    panel.contentArea,
+    panel.contentArea.getByRole('button', {
+      name: currentModelName,
+      exact: true
+    }),
     currentModelName,
     modelName
   )
@@ -300,13 +305,10 @@ function setRootHostWidgetValue(
 }
 
 async function selectModelFromFormDropdown(
-  root: Locator,
+  trigger: Locator,
   currentModelName: string,
   nextModelName: string
 ) {
-  const trigger = root
-    .getByRole('button', { name: PROMOTED_MODEL_WIDGET_NAME, exact: true })
-    .first()
   await expect(trigger).toBeVisible()
   await expect(trigger).toContainText(currentModelName)
   await WidgetSelectDropdownFixture.fromTrigger(trigger).selectOption(
