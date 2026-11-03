@@ -110,10 +110,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * The Billing tab auto top-up card for served settings. Actions are emitted;
- * the host opens the billing site or rereads the settings.
- */
 import { computed } from 'vue'
 
 import type {

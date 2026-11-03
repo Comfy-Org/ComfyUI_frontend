@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { fn } from 'storybook/test'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 
@@ -19,7 +20,9 @@ const meta: Meta<typeof BillingAutoTopUpCard> = {
     locale: 'en',
     offView: 'off',
     setup: null,
-    state: loaded()
+    state: loaded(),
+    onAction: fn(),
+    onRetry: fn()
   },
   decorators: [
     (story) => ({

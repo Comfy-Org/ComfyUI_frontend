@@ -156,62 +156,79 @@ export function autoTopUpCardView(
   return { key, ...KEYS[key], lines: linesFor(key, settings, copy, locale) }
 }
 
+interface LineContext {
+  settings: AutoReloadSettings
+  copy: AutoTopUpCardCopy
+  locale: string
+  rule: AutoTopUpLine[]
+  tooltip: string
+  budgetLine: (
+    dated: (date: string) => string,
+    undated: string
+  ) => AutoTopUpLine
+}
+
+const statusOnly =
+  (key: 'failed' | 'turnedOff' | AutoTopUpOffView) =>
+  ({ copy }: LineContext): AutoTopUpLine[] => [{ text: copy[key] }]
+
+const LINES: Record<
+  AutoTopUpViewKey,
+  (context: LineContext) => AutoTopUpLine[]
+> = {
+  failed: statusOnly('failed'),
+  turnedOff: statusOnly('turnedOff'),
+  off: statusOnly('off'),
+  noPaymentMethod: statusOnly('noPaymentMethod'),
+  noDefaultPaymentMethod: statusOnly('noDefaultPaymentMethod'),
+  on_hold: ({ rule, copy }) => [...rule, { text: copy.onHold }],
+  paused_by_budget: ({ rule, copy, settings, budgetLine }) => [
+    ...rule,
+    settings.paused_by_budget_remainder
+      ? budgetLine(copy.pausedByRemainder, copy.pausedByRemainderNoDate)
+      : budgetLine(copy.paused, copy.pausedNoDate)
+  ],
+  maximumReached: ({ rule, copy, budgetLine }) => [
+    ...rule,
+    budgetLine(copy.maximumReached, copy.maximumReachedNoDate)
+  ],
+  on: ({ rule, copy, settings, locale, tooltip }) =>
+    settings.monthly_budget_cents === null
+      ? rule
+      : [
+          ...rule,
+          {
+            text: copy.limit(
+              usd(settings.spent_this_cycle_cents, locale),
+              usd(settings.monthly_budget_cents, locale)
+            ),
+            tooltip
+          }
+        ]
+}
+
 function linesFor(
   key: AutoTopUpViewKey,
   settings: AutoReloadSettings,
   copy: AutoTopUpCardCopy,
   locale: string
 ): AutoTopUpLine[] {
-  const day = (iso: string) => formatPlanDate(iso, locale, 'monthly')
   const resetsAt = settings.cycle_resets_at
+  const resetDay =
+    resetsAt === null ? null : formatPlanDate(resetsAt, locale, 'monthly')
   const tooltip =
-    resetsAt === null
-      ? copy.limitTooltipNoDate
-      : copy.limitTooltip(day(resetsAt))
-  const budgetLine = (
-    dated: (date: string) => string,
-    undated: string
-  ): AutoTopUpLine => ({
-    text: resetsAt === null ? undated : dated(day(resetsAt)),
-    tooltip
+    resetDay === null ? copy.limitTooltipNoDate : copy.limitTooltip(resetDay)
+  return LINES[key]({
+    settings,
+    copy,
+    locale,
+    rule: ruleLines(settings, copy, locale),
+    tooltip,
+    budgetLine: (dated, undated) => ({
+      text: resetDay === null ? undated : dated(resetDay),
+      tooltip
+    })
   })
-  const rule = ruleLines(settings, copy, locale)
-
-  switch (key) {
-    case 'failed':
-    case 'turnedOff':
-    case 'off':
-    case 'noPaymentMethod':
-    case 'noDefaultPaymentMethod':
-      return [{ text: copy[key] }]
-    case 'on_hold':
-      return [...rule, { text: copy.onHold }]
-    case 'paused_by_budget':
-      return [
-        ...rule,
-        settings.paused_by_budget_remainder
-          ? budgetLine(copy.pausedByRemainder, copy.pausedByRemainderNoDate)
-          : budgetLine(copy.paused, copy.pausedNoDate)
-      ]
-    case 'maximumReached':
-      return [
-        ...rule,
-        budgetLine(copy.maximumReached, copy.maximumReachedNoDate)
-      ]
-    case 'on':
-      return settings.monthly_budget_cents === null
-        ? rule
-        : [
-            ...rule,
-            {
-              text: copy.limit(
-                usd(settings.spent_this_cycle_cents, locale),
-                usd(settings.monthly_budget_cents, locale)
-              ),
-              tooltip
-            }
-          ]
-  }
 }
 
 function ruleLines(

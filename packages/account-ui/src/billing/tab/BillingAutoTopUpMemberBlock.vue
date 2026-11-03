@@ -18,10 +18,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * The Billing tab auto top-up block for a member the server denies
- * management to; the host shows it for a `memberBlock` section.
- */
 import { cn } from '@comfyorg/tailwind-utils'
 
 /** Host-translated strings for the auto top-up member block. */
