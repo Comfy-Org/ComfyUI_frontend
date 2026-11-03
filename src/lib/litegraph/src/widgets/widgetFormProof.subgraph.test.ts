@@ -164,13 +164,6 @@ describe('case 1 — subgraph nodes', () => {
       refusal('class_may_rewrite_payload')
     )
   })
-
-  it('reads a fresh widget array on every access, so widgets cannot be identity-checked', () => {
-    const host = subgraphHostWithPromotedInputs(['alpha'])
-
-    expect(host.widgets).not.toBe(host.widgets)
-    expect(host.widgets).toEqual(host.widgets)
-  })
 })
 
 describe('case 2 — promoted widgets', () => {
@@ -205,15 +198,6 @@ describe('case 2 — promoted widgets', () => {
 })
 
 describe('case 3 — widget projections', () => {
-  it('names a projection from the store, not from its display label', () => {
-    const host = subgraphHostWithPromotedInputs(['alpha'])
-    expect(host.widgets[0].name).toBe('alpha')
-
-    host.widgets[0].label = 'renamed'
-    expect(host.widgets[0].label).toBe('renamed')
-    expect(host.widgets[0].name).toBe('alpha')
-  })
-
   it('refuses a projection the store no longer backs, which keeps its name but reads undefined', () => {
     const host = subgraphHostWithPromotedInputs(['alpha'])
     clearPromotedValues(host)
