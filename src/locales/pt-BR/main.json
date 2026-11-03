@@ -6002,6 +6002,7 @@
         "limitTooltipNoDate": "Conta apenas cobranças de recarga automática.",
         "maximumReached": "Máximo mensal atingido. Será redefinido em {date}.",
         "maximumReachedNoDate": "Máximo mensal atingido.",
+        "member": "Os créditos podem ser recarregados automaticamente quando estiverem acabando. Fale com um proprietário do espaço de trabalho para gerenciar isso.",
         "off": "Recarrega créditos quando seu saldo está baixo",
         "onHold": "Nenhuma forma de pagamento padrão. Defina uma para retomar a recarga automática.",
         "paused": "Limite mensal atingido. Retoma em {date}.",

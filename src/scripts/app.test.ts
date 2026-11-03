@@ -312,9 +312,11 @@ describe('ComfyApp', () => {
     vi.mocked(useWorkflowService).mockReturnValue(
       fromPartial<WorkflowService>(mockWorkflowService)
     )
+    mockWorkflowService.beforeLoadNewGraph.mockReturnValue(vi.fn())
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas
+    ChangeTracker.resetCanvasTrackerForTest()
     useWorkflowStore().activeWorkflow = null
     const temporaryWorkflow = new ComfyWorkflow({
       path: 'workflows/temporary.json',
@@ -532,6 +534,51 @@ describe('ComfyApp', () => {
       const [migrated] = reload.mock.calls[0]
       expect(migrated?.nodes.map((node) => node.type)).not.toContain('Reroute')
       expect(useToast().toasts).toEqual([])
+    })
+
+    it('replaces canvas ownership after preparing the outgoing workflow', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+      const replaceCanvas = vi.fn()
+      mockWorkflowService.beforeLoadNewGraph.mockReturnValue(replaceCanvas)
+
+      await app.loadGraphData(createWorkflowGraphData())
+
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+      expect(replaceCanvas).toHaveBeenCalledOnce()
+      expect(
+        mockWorkflowService.beforeLoadNewGraph.mock.invocationCallOrder[0]
+      ).toBeLessThan(replaceCanvas.mock.invocationCallOrder[0])
+    })
+
+    it('waits for the beforeLoadGraph hook before replacing canvas ownership', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
+      const replaceCanvas = vi.fn()
+      mockWorkflowService.beforeLoadNewGraph.mockReturnValue(replaceCanvas)
+      let finishHook = () => {}
+      const hook = new Promise<void>((resolve) => {
+        finishHook = resolve
+      })
+      mockExtensionService.invokeExtensionsAsync.mockImplementationOnce(
+        async () => hook
+      )
+
+      const load = app.loadGraphData(createWorkflowGraphData())
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeLoadGraph'
+        )
+      )
+
+      expect(replaceCanvas).not.toHaveBeenCalled()
+
+      finishHook()
+      await load
+
+      expect(replaceCanvas).toHaveBeenCalledOnce()
     })
 
     it('forwards clean and navigation intent to workflow navigation', async () => {
@@ -1308,6 +1355,66 @@ describe('ComfyApp', () => {
         expect(ChangeTracker.isLoadingGraph).toBe(false)
       }
     )
+
+    it('repaints a cancelled activated document without capturing its cleared canvas', async () => {
+      const graph = new LGraph()
+      const previousGraph = singletonApp.rootGraphOrUndefined
+      const previousCanvas = singletonApp.canvas
+      onTestFinished(() => {
+        Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        singletonApp.canvas = previousCanvas
+      })
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      singletonApp.canvas = mockCanvas
+      Reflect.set(mockCanvas, 'ds', { scale: 1, offset: [0, 0] })
+      onTestFinished(attachLegacyUI(singletonApp))
+      const service = await useRealWorkflowService()
+      const workflowStore = useWorkflowStore()
+      vi.mocked(workflowStore.openWorkflow).mockRestore()
+      vi.mocked(workflowStore.isActive).mockRestore()
+      const saved = createWorkflowGraphData()
+      saved.extra = { marker: 'saved document' }
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/cancelled-activation.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const tracker = markRaw(new ChangeTracker(workflow, saved))
+      workflow.changeTracker = tracker
+      let current = true
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook) => {
+          if (hook === 'afterLoadGraph') current = false
+        }
+      )
+
+      await expect(
+        app.loadGraphData(saved, true, true, workflow, {
+          skipAssetScans: true,
+          isCurrent: () => current
+        })
+      ).resolves.toBe(false)
+      expect(workflowStore.activeWorkflow).toBeNull()
+      expect(graph.extra).not.toHaveProperty('marker')
+      await workflowStore.openWorkflow(workflow)
+      tracker.prepareForSave()
+      expect(tracker.activeState.extra).toMatchObject({
+        marker: 'saved document'
+      })
+      mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
+      vi.spyOn(singletonApp, 'loadGraphData').mockImplementation((...args) =>
+        app.loadGraphData(...args)
+      )
+
+      await expect(service.openWorkflow(workflow)).resolves.toBe(true)
+      expect(graph.extra).toMatchObject({ marker: 'saved document' })
+      expect(tracker.initialState.extra).toMatchObject({
+        marker: 'saved document'
+      })
+    })
 
     it('does not assign a cleared canvas to Undo while the newer workflow is still preparing', async () => {
       app.canvasElRef.value = document.createElement('canvas')

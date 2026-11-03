@@ -17,6 +17,7 @@ import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { invalidateCanvasTracker } from '@/platform/workflow/core/canvasTrackerOwnership'
 import { registerApp } from '@/scripts/appRegistry'
 import {
   clipspace,
@@ -1226,6 +1227,7 @@ export class ComfyApp implements IComfyApp {
         toRaw(graphOwner.workflow) !== toRaw(workflowStore.activeWorkflow)
       )
         return
+      invalidateCanvasTracker()
       workflowStore.activeWorkflow = null
       this.canvas.setGraph(this.rootGraph)
       withGraphIntentSource('load', () => this.clean())
@@ -1271,7 +1273,8 @@ export class ComfyApp implements IComfyApp {
     const missingNodeTypes: MissingNodeType[] = []
     try {
       if (!isCurrent) {
-        useWorkflowService().beforeLoadNewGraph(clean)
+        const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
+        replaceCanvas()
         resetCurrentGraph()
       }
       if (
@@ -1332,7 +1335,8 @@ export class ComfyApp implements IComfyApp {
       await nodeReplacementStore.load()
       if (isCurrent?.() === false) return cancelLoad()
       if (isCurrent) {
-        useWorkflowService().beforeLoadNewGraph(clean)
+        const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
+        replaceCanvas()
         resetCurrentGraph()
         useSubgraphService().loadSubgraphs(graphData)
       }
@@ -2278,7 +2282,9 @@ export class ComfyApp implements IComfyApp {
                   'beforeLoadGraph'
                 )
                 lifecycle.started = true
-                useWorkflowService().beforeLoadNewGraph(false)
+                const replaceCanvas =
+                  useWorkflowService().beforeLoadNewGraph(false)
+                replaceCanvas()
               } finally {
                 useMissingNodesErrorStore().setMissingNodeTypes([])
               }
@@ -2474,7 +2480,8 @@ export class ComfyApp implements IComfyApp {
     try {
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
       lifecycleStarted = true
-      useWorkflowService().beforeLoadNewGraph(false)
+      const replaceCanvas = useWorkflowService().beforeLoadNewGraph(false)
+      replaceCanvas()
       releaseCaptureSuppression = beginChangeCaptureSuppression()
       this.canvas.setGraph(this.rootGraph)
       withGraphIntentSource('load', () => this.clean())

@@ -6002,6 +6002,7 @@
         "limitTooltipNoDate": "Yalnızca otomatik kredi yükleme ücretlendirmeleri sayılır.",
         "maximumReached": "Aylık maksimuma ulaşıldı. {date} tarihinde sıfırlanır.",
         "maximumReachedNoDate": "Aylık maksimuma ulaşıldı.",
+        "member": "Krediler azaldığında otomatik olarak yüklenebilir. Bunu yönetmek için bir çalışma alanı sahibiyle iletişime geçin.",
         "off": "Bakiyeniz azaldığında kredileri yeniden yükler",
         "onHold": "Varsayılan ödeme yöntemi yok. Otomatik kredi yüklemeyi sürdürmek için bir tane ayarlayın.",
         "paused": "Aylık sınıra ulaşıldı. {date} tarihinde devam eder.",

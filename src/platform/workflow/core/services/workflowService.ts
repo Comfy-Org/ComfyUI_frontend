@@ -28,6 +28,11 @@ import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useApp } from '@/scripts/appInstance'
+import {
+  bindCanvasTracker,
+  invalidateCanvasTracker,
+  isCanvasOwner
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph } from '@/scripts/defaultGraph'
@@ -666,6 +671,8 @@ export const useWorkflowService = () => {
     if (
       pendingWorkflowLoads === 0 &&
       workflowStore.isActive(workflow) &&
+      workflow.changeTracker !== null &&
+      isCanvasOwner(workflow.changeTracker) &&
       !options.force
     ) {
       return Promise.resolve(true)
@@ -987,6 +994,7 @@ export const useWorkflowService = () => {
       // Save subgraph viewport before the canvas gets overwritten
       useSubgraphNavigationStore().saveCurrentViewport(suppressWorkflowReset)
     }
+    return invalidateCanvasTracker
   }
 
   const afterLoadNewGraph = async (
@@ -1081,7 +1089,12 @@ export const useWorkflowService = () => {
     mode: 'fresh' | 'loaded'
   ) {
     const loaded = await openActivationWorkflow(workflow, context.options)
-    if (context.graphState !== useApp().rootGraphOrUndefined?.state) return
+    if (
+      context.graphState !== useApp().rootGraphOrUndefined?.state ||
+      context.options.isCurrent?.() === false
+    )
+      return
+    bindCanvasTracker(loaded.changeTracker)
     useExecutionErrorStore().setActiveGraph(context.rootGraphId, loaded.path)
     if (mode === 'fresh') {
       if (context.options.shareId) loaded.shareId = context.options.shareId
@@ -1115,7 +1128,12 @@ export const useWorkflowService = () => {
     if (context.options.shareId) temp.shareId = context.options.shareId
     trackAppEntry(temp, context.wasAppMode)
     const loaded = await openActivationWorkflow(temp, context.options)
-    if (context.graphState !== useApp().rootGraphOrUndefined?.state) return
+    if (
+      context.graphState !== useApp().rootGraphOrUndefined?.state ||
+      context.options.isCurrent?.() === false
+    )
+      return
+    bindCanvasTracker(loaded.changeTracker)
     useExecutionErrorStore().setActiveGraph(context.rootGraphId, loaded.path)
   }
 

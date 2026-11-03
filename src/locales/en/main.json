@@ -2992,6 +2992,11 @@
   },
   "credits": {
     "activity": "Activity",
+    "addCreditsRefusal": {
+      "topupPurchasesPaused": "Buying credits isn't available right now. Try again later, or message support.",
+      "paymentPastDue": "Update your payment method to add credits.",
+      "unavailable": "Adding credits isn't available for this workspace right now."
+    },
     "workspaceCredits": "Workspace credits",
     "insufficient": {
       "memberTitle": "This workspace is out of credits",
@@ -3662,6 +3667,7 @@
         "pausedByRemainderNoDate": "Next top-up would go over your monthly limit.",
         "maximumReached": "Monthly maximum reached. Resets {date}.",
         "maximumReachedNoDate": "Monthly maximum reached.",
+        "member": "Credits can top up automatically when they run low. Contact a workspace owner to manage this.",
         "rule": "Tops up to {target} credits when below {threshold} credits.",
         "status": {
           "failed": "Failed",
@@ -3783,6 +3789,8 @@
         "pastDuePersonalBody": "You've used all your credits. Update your payment method to add more.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
+        "refusedBody": "Your team has used all its credits.",
+        "refusedPersonalBody": "You've used all your credits.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
@@ -6070,6 +6078,12 @@
       "answerSuperseded": "This was already answered somewhere else, so that answer was used instead of yours."
     },
     "askUnavailable": "The agent is waiting on a step this panel can't show.",
+    "extensionChange": {
+      "disabled": "Turned off the node pack {pack}",
+      "enabled": "Turned on the node pack {pack}",
+      "removed": "Removed the node pack {pack}",
+      "restartHint": "This takes effect after ComfyUI restarts. Reload this page after the restart."
+    },
     "askUser": {
       "card": "Question from the agent",
       "chooseUpTo": "Choose up to {max}",
@@ -6234,6 +6248,8 @@
     "worked": "Worked",
     "workedNotConfirmedOnCanvas": "Changes not confirmed on your canvas",
     "toolNotConfirmedOnCanvas": "{tool} — not confirmed on your canvas",
+    "toolOutcomeUnknown": "{tool} — outcome unknown",
+    "toolFailed": "{tool} failed",
     "workedForSeconds": "Worked for {seconds} seconds",
     "workedForMinutes": "Worked for {minutes}m {seconds}s",
     "copy": "Copy",
@@ -6274,11 +6290,16 @@
     "toolSavingPreference": "Saving a preference",
     "toolForgotPreference": "Forgot a preference",
     "toolForgettingPreference": "Forgetting a preference",
+    "toolRemovedNodePack": "Removed a node pack",
+    "toolRemovingNodePack": "Removing a node pack",
+    "toolSwitchedNodePack": "Switched a node pack",
+    "toolSwitchingNodePack": "Switching a node pack",
     "openWorkflowTab": "Open {name}",
     "unavailableWorkflowReference": "{name} (unavailable)",
     "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",
     "removeWorkflowReference": "Remove {name} reference",
     "targetNavigationUnavailable": "This workflow target is no longer available.",
+    "canvasNotReadyForSend": "This tab's canvas isn't ready yet, so your message wasn't sent. Try again in a moment.",
     "workflowSyncFailedTitle": "This workflow can't sync",
     "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
     "workflowSyncFailedDetailCatalogMismatch": "A node in this workflow has changed since the agent last saw it. Your canvas has been left unchanged. Your next message sends your canvas so the agent can rebuild its copy of the workflow.",

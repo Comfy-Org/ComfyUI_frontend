@@ -19,13 +19,25 @@
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/extensions/core/imageCompare.ts",
+    "src/lib/litegraph/src/widgets/ImageCompareWidget.ts",
+    "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue",
+    "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget.ts"
+  ],
   "characterizationScenarios": [
     {
       "name": "Image selection and compare-widget presentation remain stable",
       "checks": [
         "src/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.test.ts",
         "src/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages.test.ts"
+      ]
+    },
+    {
+      "name": "Core extensions register image compare, and the compare widget renders on node bodies only",
+      "checks": [
+        "src/extensions/core/index.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/richWidgetPanelVisibility.test.ts"
       ]
     }
   ],

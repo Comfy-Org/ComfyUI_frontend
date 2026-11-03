@@ -112,6 +112,7 @@ describe('saved workflow handoff persistence', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
+    ChangeTracker.resetCanvasTrackerForTest()
     resetWorkflowLoadQueueForTests()
     resetStorageAvailable()
     app = new ComfyApp()
