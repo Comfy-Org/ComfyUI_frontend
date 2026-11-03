@@ -181,11 +181,7 @@ describe('case 2 — promoted widgets', () => {
 
   it('refuses a host whose added widget core serializes but the subgraph rebuild then drops', () => {
     const host = subgraphHostWithPromotedInputs(['alpha'])
-    host.addCustomWidget({
-      name: 'extra',
-      type: 'text',
-      value: 'hello'
-    } as IBaseWidget)
+    host.addWidget('text', 'extra', 'hello', () => {})
 
     const captured = serializeWithCapture(host)
 
@@ -213,11 +209,7 @@ describe('case 3 — widget projections', () => {
 describe('the last writer', () => {
   it('refuses a subgraph host at core own post-hook payload, before the subclass rewrites it', () => {
     const host = subgraphHostWithPromotedInputs(['alpha'])
-    host.addCustomWidget({
-      name: 'extra',
-      type: 'text',
-      value: 'hello'
-    } as IBaseWidget)
+    host.addWidget('text', 'extra', 'hello', () => {})
 
     const captured = serializeWithCapture(host)
 
