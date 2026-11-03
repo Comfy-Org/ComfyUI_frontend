@@ -2444,6 +2444,37 @@ describe('useAgentConversationStore', () => {
       expect(reconciledParts(store)).toEqual(storedParts())
     })
 
+    it('keeps a re-registered held turn for its own read when an earlier read lands late', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const { store, settled } = restoredAndSettled()
+      const earlierRead = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      expect(settled).toEqual([SNAPSHOT_ROW_ID])
+
+      store.reconcileSettledTurn(earlierRead, undefined)
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      expect(settled).toEqual([SNAPSHOT_ROW_ID, SNAPSHOT_ROW_ID])
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(reconciledParts(store)?.map((part) => part.type)).toEqual([
+        'thinking',
+        'tool',
+        'thinking',
+        'text'
+      ])
+    })
+
     it('announces a held turn only once when the canvas reports twice', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
       const store = useAgentConversationStore()
@@ -2526,6 +2557,52 @@ describe('useAgentConversationStore', () => {
       'tabLink',
       'tool',
       'text'
+    ])
+  })
+
+  it('keeps each live tool start time when recovery reorders persisted parts', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    vi.setSystemTime(1_234)
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+    vi.setSystemTime(5_678)
+    store.ingest(toolCall('t1', 'run_workflow', 'running'))
+
+    store.settleTurn({ threadId: 'th', messageId: T1 }, [
+      {
+        type: 'tool',
+        callId: 'call-run_workflow',
+        name: 'run_workflow',
+        state: 'done',
+        ok: true
+      },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      }
+    ])
+
+    expect(store.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-run_workflow',
+        name: 'run_workflow',
+        state: 'done',
+        ok: true,
+        startedAtMs: 5_678
+      },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true,
+        startedAtMs: 1_234
+      }
     ])
   })
 

@@ -1,6 +1,7 @@
+import type { BillingTopUpDenial } from '@comfyorg/billing-core'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -59,7 +60,7 @@ function arrange(options: {
   balance?: BalanceInfo | null
   renewalDate?: string | null
   canTopUp?: boolean
-  topUpDenial?: string
+  topUpDenial?: BillingTopUpDenial
   canManageBilling?: boolean
   canManageSubscription?: boolean
   autoTopUp?: 'autoTopUpFailed' | 'autoTopUpOff'
@@ -188,24 +189,70 @@ describe('BillingLocalCreditBanner', () => {
     {
       name: 'a team member',
       isTeamPlan: true,
-      canManageSubscription: false,
+      canTopUp: false,
+      topUpDenial: 'not_workspace_owner',
       renewalDate: '2026-10-01T00:00:00Z',
       body: 'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on October 1, 2026.',
       buttons: ['Dismiss']
+    },
+    {
+      name: 'a caller outside the workspace',
+      isTeamPlan: true,
+      canTopUp: false,
+      topUpDenial: 'not_a_member',
+      renewalDate: null,
+      body: 'Your team has used all its credits. Ask your workspace owner to add more credits.',
+      buttons: ['Dismiss']
+    },
+    {
+      name: 'an owner whose top-up purchases are paused',
+      isTeamPlan: true,
+      canTopUp: false,
+      topUpDenial: 'topup_purchases_paused',
+      renewalDate: '2026-10-01T00:00:00Z',
+      body: "Buying credits isn't available right now. Try again later, or message support.",
+      buttons: ['Dismiss']
+    },
+    {
+      name: 'an owner refused for another reason',
+      isTeamPlan: true,
+      canTopUp: false,
+      topUpDenial: 'creator_only_provisioning',
+      renewalDate: '2026-10-01T00:00:00Z',
+      body: 'Your team has used all its credits.',
+      buttons: ['Dismiss']
+    },
+    {
+      name: 'a personal owner refused without a recognized reason',
+      isTeamPlan: false,
+      canTopUp: false,
+      topUpDenial: undefined,
+      renewalDate: '2026-10-01T00:00:00Z',
+      body: "You've used all your credits.",
+      buttons: ['Dismiss']
     }
-  ])(
+  ] satisfies {
+    name: string
+    isTeamPlan: boolean
+    canTopUp?: boolean
+    topUpDenial?: BillingTopUpDenial
+    renewalDate: string | null
+    body: string
+    buttons: string[]
+  }[])(
     'shows out of credits to $name',
-    ({ isTeamPlan, renewalDate, canManageSubscription, body, buttons }) => {
+    ({ isTeamPlan, renewalDate, canTopUp, topUpDenial, body, buttons }) => {
       arrange({
         isTeamPlan,
         renewalDate,
-        canManageSubscription,
+        canTopUp,
+        topUpDenial,
         subscription: { ...personalSubscription, hasFunds: false }
       })
 
       const banner = screen.getByTestId('billing-local-credit-banner')
       expect(banner).toHaveTextContent('Out of credits')
-      expect(banner).toHaveTextContent(body)
+      expect(within(banner).getByText(body)).toBeInTheDocument()
       expect(
         screen.getAllByRole('button').map((button) => button.textContent.trim())
       ).toEqual(buttons)

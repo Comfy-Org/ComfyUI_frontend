@@ -46,7 +46,7 @@ const rectangles: Record<string, DOMRect> = {
   history: new DOMRect(970, 104, 24, 24)
 }
 const tooltipRect = new DOMRect(998, 105, 84, 22)
-const ARROW_SIZE = 12
+const ARROW_SIZE = 16
 
 function cardPlacement(card: HTMLElement, target: DOMRect) {
   const left = parseFloat(card.style.left)

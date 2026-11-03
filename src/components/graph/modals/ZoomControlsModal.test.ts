@@ -11,13 +11,12 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 beforeEach(() => {
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
-  vi.mocked(useCommandStore().formatKeySequence).mockImplementation(
-    (command) =>
-      command.id === 'Comfy.Canvas.ZoomIn'
-        ? 'Ctrl+'
-        : command.id === 'Comfy.Canvas.ZoomOut'
-          ? 'Ctrl-'
-          : 'Ctrl+0'
+  vi.mocked(useCommandStore().formatKeySequence).mockImplementation((command) =>
+    command.id === 'Comfy.Canvas.ZoomIn'
+      ? 'Ctrl+'
+      : command.id === 'Comfy.Canvas.ZoomOut'
+        ? 'Ctrl-'
+        : 'Ctrl+0'
   )
   for (const [commandId, key] of [
     ['Comfy.Canvas.ZoomIn', '+'],

@@ -132,6 +132,7 @@ import type {
   TurnOrigin,
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
+import { useAgentTabSignals } from './composables/agent/useAgentTabSignals'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
@@ -151,7 +152,6 @@ import {
   describeAgentRequestFailure
 } from './services/agent/agentRequestFailure'
 import { createAgentRestClient } from './services/agent/agentRestClient'
-import { setAgentTabTitlePrefix } from './services/agent/agentTabTitlePrefix'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import {
@@ -841,6 +841,33 @@ const {
   }
 })
 
+watch(
+  selectionTags,
+  (tags, previousTags) => {
+    const stagedKeys = new Set(tags.map(selectedNodeKey))
+    const nextKeys = new Set(
+      [...composerStore.selectionModeNodeKeys].filter((key) =>
+        stagedKeys.has(key)
+      )
+    )
+    if (canvasStore.isPickingNodes) {
+      const previousKeys = new Set(previousTags.map(selectedNodeKey))
+      const selectedKeys = new Set(selectedNodes.value.map(selectedNodeKey))
+      for (const tag of tags) {
+        const key = selectedNodeKey(tag)
+        if (!previousKeys.has(key) && selectedKeys.has(key)) nextKeys.add(key)
+      }
+    }
+    composerStore.setSelectionModeNodeKeys(nextKeys)
+  },
+  { deep: true, flush: 'sync' }
+)
+const hasNodeSelectionModeAddition = computed(() =>
+  selectionTags.value.some((tag) =>
+    composerStore.selectionModeNodeKeys.has(selectedNodeKey(tag))
+  )
+)
+
 let nodeReferenceWorkflow = selectionTags.value.length
   ? selectedTarget.value
   : null
@@ -1156,6 +1183,7 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations,
+  noteUnboundLocalIntent,
   retrySubscription,
   docInputNames,
   docWidgetValue,
@@ -1231,6 +1259,7 @@ function followerCanDeliver(): boolean {
 const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
+  onUnboundLocalIntent: noteUnboundLocalIntent,
   enqueue: enqueueHumanOperations,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId,
@@ -1333,18 +1362,7 @@ async function restoreThreadWorkflow(
 }
 
 conversationStore.setTurnTabResolver(turnTab)
-conversationStore.onTurnCompleted((path) => tabActivity.markModified(path))
-watch(
-  () => conversationStore.turnTabs,
-  (tabs) => tabActivity.setAgentTurnTabs(tabs),
-  { immediate: true, flush: 'sync' }
-)
-watch(
-  () =>
-    conversationStore.awaitingApproval ? t('g.agentInputNeededShort') : null,
-  setAgentTabTitlePrefix,
-  { immediate: true, flush: 'sync' }
-)
+const { clearTurnSignals } = useAgentTabSignals()
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
@@ -1741,8 +1759,7 @@ onBeforeUnmount(() => {
       ++activeTabGeneration
     },
     clearAgentTurnTabs: () => {
-      tabActivity.setAgentTurnTabs([])
-      setAgentTabTitlePrefix(null)
+      clearTurnSignals()
     },
     resetTurnTabResolver: () => {
       conversationStore.setTurnTabResolver(() => ({ status: 'unknown' }))
@@ -2519,6 +2536,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         provisionalTitle
       "
       :selection-tags="selectionTags"
+      :has-node-selection-mode-addition="hasNodeSelectionModeAddition"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
       :select-workflow-reference="onSelectWorkflowReference"
       :saving-reference="savingReference"

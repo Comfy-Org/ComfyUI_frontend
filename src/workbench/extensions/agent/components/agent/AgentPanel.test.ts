@@ -291,7 +291,7 @@ describe('AgentPanel', () => {
   })
 
   it('locks immediately but only shows the conversation veil for a slow opening', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const { rerender } = render(AgentPanel, {
       props: {
         entries: [],
