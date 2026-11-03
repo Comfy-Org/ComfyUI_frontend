@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest'
 
-import { createInputSpecInterpreter } from '@/schemas/nodeDef/inputSpecInterpreter'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { createInputSpecInterpreter } from '#/inputSpecInterpreter'
+import { transformInputSpecV1ToV2 } from '#/migration'
 
 it('delivers every malformed option to its own sink without app dedupe or caps', () => {
   const sink = vi.fn()
