@@ -15,6 +15,12 @@ const meta: Meta<typeof BillingAutoTopUpCard> = {
   title: 'Account UI/Billing/BillingAutoTopUpCard',
   component: BillingAutoTopUpCard,
   tags: ['autodocs'],
+  argTypes: {
+    offView: {
+      control: 'select',
+      options: ['off', 'noPaymentMethod', 'noDefaultPaymentMethod']
+    }
+  },
   args: {
     copy: autoTopUpCardCopy,
     locale: 'en',
