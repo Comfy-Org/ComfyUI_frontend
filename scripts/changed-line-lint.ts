@@ -30,6 +30,12 @@ function diffArgs(argv: string[]): string[] {
   return [git(['merge-base', base, 'HEAD']).trim()]
 }
 
+/**
+ * Lints selected paths on changed lines using `--staged` or `--base <ref>`.
+ * `includeDeletions` also checks findings touching deletion boundaries.
+ * Exits with 1 for findings or 2 for usage or lint failures. Git errors during
+ * merge detection are ignored; other Git and filesystem errors propagate.
+ */
 export function runChangedLineLint({
   name,
   config,

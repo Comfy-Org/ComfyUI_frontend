@@ -37,7 +37,11 @@ function lintFiles(
       }
 }
 
-/** Lints file contents at their repo-relative paths without touching the checkout. */
+/**
+ * Lints file contents at their repo-relative paths without touching the checkout.
+ * Returns failure for paths outside the snapshot or invalid oxlint reports;
+ * filesystem errors propagate.
+ */
 export function lintSnapshot(
   contents: ReadonlyMap<string, string>,
   config: string = SERVER_FACT_CONFIG
