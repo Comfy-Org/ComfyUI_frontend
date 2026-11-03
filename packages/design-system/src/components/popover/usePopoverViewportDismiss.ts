@@ -27,10 +27,21 @@ function readViewportSize(): ViewportSize {
   return { width: window.innerWidth, height: window.innerHeight }
 }
 
-function isScrolledToEnd(target: EventTarget | null): boolean {
+function readAncestorScrollTops(
+  element: Element | null | undefined
+): Map<Element, number> {
+  const scrollTops = new Map<Element, number>()
+  for (let node = element?.parentElement; node; node = node.parentElement)
+    scrollTops.set(node, node.scrollTop)
+  return scrollTops
+}
+
+function wasClampedFrom(previousTop: number | undefined, scroller: Element) {
+  const maxTop = scroller.scrollHeight - scroller.clientHeight
   return (
-    target instanceof Element &&
-    Math.ceil(target.scrollTop + target.clientHeight) >= target.scrollHeight
+    previousTop !== undefined &&
+    previousTop > maxTop &&
+    Math.abs(scroller.scrollTop - maxTop) <= 1
   )
 }
 
@@ -52,12 +63,16 @@ export function usePopoverViewportDismiss(
 ) {
   let viewportSize: ViewportSize | undefined
   let mayClampScroll = false
+  let clampedScrollers = new WeakSet<Element>()
+  let ancestorScrollTops = new Map<Element, number>()
   watch(
     open,
     (isOpen) => {
       if (!isOpen) return
       viewportSize = readViewportSize()
       mayClampScroll = false
+      clampedScrollers = new WeakSet()
+      ancestorScrollTops = readAncestorScrollTops(toValue(anchor))
     },
     { immediate: true }
   )
@@ -71,7 +86,10 @@ export function usePopoverViewportDismiss(
         open.value = false
         return
       }
-      mayClampScroll = next.height > viewportSize.height
+      if (next.height > viewportSize.height) {
+        mayClampScroll = true
+        clampedScrollers = new WeakSet()
+      }
       viewportSize = next
     }
   )
@@ -79,16 +97,23 @@ export function usePopoverViewportDismiss(
     () => (open.value ? window : undefined),
     'scroll',
     (event) => {
-      const isClampAfterGrowth = mayClampScroll && isScrolledToEnd(event.target)
-      mayClampScroll = false
-      if (isClampAfterGrowth) return
-      if (
-        event.target === document ||
-        event.target instanceof Window ||
-        (event.target instanceof Element &&
-          event.target.contains(toValue(anchor) ?? null))
-      )
+      const target = event.target
+      const movesAnchor =
+        target === document ||
+        target instanceof Window ||
+        (target instanceof Element && target.contains(toValue(anchor) ?? null))
+      if (!movesAnchor) return
+      const isClampAfterGrowth =
+        mayClampScroll &&
+        target instanceof Element &&
+        !clampedScrollers.has(target) &&
+        wasClampedFrom(ancestorScrollTops.get(target), target)
+      if (!isClampAfterGrowth) {
         open.value = false
+        return
+      }
+      clampedScrollers.add(target)
+      ancestorScrollTops.set(target, target.scrollTop)
     },
     { capture: true }
   )

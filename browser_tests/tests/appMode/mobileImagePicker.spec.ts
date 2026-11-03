@@ -32,11 +32,11 @@ const test = comfyPageFixture.extend({
 
 test.describe('App mode mobile image picker', { tag: ['@mobile'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
+    await (await comfyPage.nodeOps.getNodeRefById('4')).delete()
     const loadImage = await comfyPage.nodeOps.addNode('LoadImage')
     await comfyPage.appMode.enterAppModeWithInputs([
       ['6', 'text'],
       ['7', 'text'],
-      ['4', 'ckpt_name'],
       ['5', 'width'],
       ['5', 'height'],
       ['3', 'seed'],
@@ -91,18 +91,24 @@ test.describe('App mode mobile image picker', { tag: ['@mobile'] }, () => {
       width,
       height: Math.round(height * 0.5)
     })
-    await comfyPage.appMode.linearWidgets.evaluate((list) =>
-      list.scrollTo({ top: list.scrollHeight, behavior: 'instant' })
+    const widgetList = comfyPage.appMode.linearWidgets
+    const imageTrigger =
+      comfyPage.appMode.widgets.getSelectDropdown('image').trigger
+    await comfyPage.appMode.widgets.scrollWidgetToListTop('image')
+    await expect(imageTrigger).toBeInViewport()
+    const shortenedScrollTop = await widgetList.evaluate(
+      (list) => list.scrollTop
     )
     const picker = comfyPage.appMode.imagePickerPopover
-    await comfyPage.appMode.mobile.tap(
-      comfyPage.appMode.widgets.getSelectDropdown('image').trigger
-    )
+    await comfyPage.appMode.mobile.tap(imageTrigger)
     await expect(picker).toBeVisible()
 
     await comfyPage.appMode.mobile.resizeViewport({ width, height })
     await comfyPage.idleFrames(3)
 
+    await expect
+      .poll(() => widgetList.evaluate((list) => list.scrollTop))
+      .toBeLessThan(shortenedScrollTop)
     await expect(picker).toBeVisible()
   })
 

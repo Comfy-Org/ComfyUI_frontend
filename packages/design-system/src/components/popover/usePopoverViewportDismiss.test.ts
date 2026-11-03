@@ -7,6 +7,7 @@ import { usePopoverViewportDismiss } from './usePopoverViewportDismiss'
 const PORTRAIT = { width: 393, height: 851 }
 const KEYBOARD_SHOWN = { width: PORTRAIT.width, height: 450 }
 const LANDSCAPE = { width: PORTRAIT.height, height: PORTRAIT.width }
+const TALLER = { width: PORTRAIT.width, height: 900 }
 const KEYBOARD_HIDING = { width: PORTRAIT.width, height: 600 }
 
 function happyDOM(): DetachedWindowAPI {
@@ -60,17 +61,68 @@ function moveFocusToButton() {
   button.focus()
 }
 
-function scrollerAround(anchor: Element) {
-  const scroller = document.createElement('section')
+function popupScroller() {
+  const scroller = document.createElement('div')
   Object.defineProperty(scroller, 'scrollHeight', { value: 1000 })
   Object.defineProperty(scroller, 'clientHeight', { value: 400 })
-  anchor.replaceWith(scroller)
-  scroller.append(anchor)
+  document.body.append(scroller)
   return {
-    scrollTo(position: 'end' | 'middle') {
-      scroller.scrollTop = position === 'end' ? 600 : 300
+    scrollToEnd() {
+      scroller.scrollTop = 600
       scroller.dispatchEvent(new Event('scroll'))
     }
+  }
+}
+
+function viewportScroller(contentHeight: number, chromeHeight: number) {
+  let height = contentHeight
+  const element = document.createElement('section')
+  Object.defineProperty(element, 'scrollHeight', { get: () => height })
+  Object.defineProperty(element, 'clientHeight', {
+    get: () => window.innerHeight - chromeHeight
+  })
+  function scrollTo(top: number) {
+    element.scrollTop = top
+    element.dispatchEvent(new Event('scroll'))
+  }
+  return {
+    element,
+    scrollTo,
+    scrollToEnd: () => scrollTo(height - element.clientHeight),
+    addContent(extra: number) {
+      height += extra
+    }
+  }
+}
+
+async function mountOpenPopoverInWidgetList(
+  listScrollTop: number,
+  { listContentHeight = 1000 } = {}
+) {
+  happyDOM().settings.navigator.maxTouchPoints = 5
+  happyDOM().setViewport(KEYBOARD_SHOWN)
+  const panel = viewportScroller(1500, 10)
+  const list = viewportScroller(listContentHeight, 50)
+  const anchor = document.createElement('button')
+  list.element.append(anchor)
+  panel.element.append(list.element)
+  document.body.append(panel.element)
+  panel.element.scrollTop = 1000
+  list.element.scrollTop = listScrollTop
+
+  const open = ref(false)
+  const scope = effectScope()
+  scope.run(() => usePopoverViewportDismiss(open, anchor))
+  open.value = true
+  await nextTick()
+
+  return {
+    open,
+    stop: () => scope.stop(),
+    scrollListTo: list.scrollTo,
+    scrollListToEnd: list.scrollToEnd,
+    addListContent: list.addContent,
+    scrollPanelToEnd: panel.scrollToEnd
   }
 }
 
@@ -204,62 +256,151 @@ describe(usePopoverViewportDismiss, () => {
   })
 
   it('stays open when the widget list clamps its scroll as the keyboard hides', async () => {
-    const popover = await mountOpenPopover('touch', 'nothing', KEYBOARD_SHOWN)
+    const popover = await mountOpenPopoverInWidgetList(600)
     stop = popover.stop
-    const widgetList = scrollerAround(popover.anchor)
 
     resize(PORTRAIT)
-    widgetList.scrollTo('end')
+    popover.scrollListToEnd()
 
     expect(popover.open.value).toBe(true)
   })
 
-  it('closes on a scroll short of the end after the keyboard hides', async () => {
-    const popover = await mountOpenPopover('touch', 'nothing', KEYBOARD_SHOWN)
+  it('closes on a scroll to the end after a growth that clamped nothing', async () => {
+    const popover = await mountOpenPopoverInWidgetList(0)
     stop = popover.stop
-    const widgetList = scrollerAround(popover.anchor)
 
     resize(PORTRAIT)
-    widgetList.scrollTo('middle')
+    popover.scrollListToEnd()
+
+    expect(popover.open.value).toBe(false)
+  })
+
+  it('closes on a scroll short of the end after the keyboard hides', async () => {
+    const popover = await mountOpenPopoverInWidgetList(600)
+    stop = popover.stop
+
+    resize(PORTRAIT)
+    popover.scrollListTo(100)
 
     expect(popover.open.value).toBe(false)
   })
 
   it('closes on the next scroll after the clamp', async () => {
-    const popover = await mountOpenPopover('touch', 'nothing', KEYBOARD_SHOWN)
+    const popover = await mountOpenPopoverInWidgetList(600)
     stop = popover.stop
-    const widgetList = scrollerAround(popover.anchor)
 
     resize(PORTRAIT)
-    widgetList.scrollTo('end')
-    widgetList.scrollTo('end')
+    popover.scrollListToEnd()
+    popover.scrollListToEnd()
 
     expect(popover.open.value).toBe(false)
   })
 
-  it('closes on a scroll at the end when the viewport did not grow', async () => {
-    const popover = await mountOpenPopover('touch', 'nothing')
+  it('closes on a clamp the viewport did not cause', async () => {
+    const popover = await mountOpenPopoverInWidgetList(600)
     stop = popover.stop
-    const widgetList = scrollerAround(popover.anchor)
 
     resize('same-size resize event')
-    widgetList.scrollTo('end')
+    popover.addListContent(-500)
+    popover.scrollListToEnd()
+
+    expect(popover.open.value).toBe(false)
+  })
+
+  it('closes on a later clamp the viewport did not cause', async () => {
+    const popover = await mountOpenPopoverInWidgetList(600)
+    stop = popover.stop
+    resize(PORTRAIT)
+    popover.scrollListToEnd()
+
+    popover.addListContent(-100)
+    popover.scrollListToEnd()
 
     expect(popover.open.value).toBe(false)
   })
 
   it('forgets a pending clamp when the popover reopens', async () => {
-    const popover = await mountOpenPopover('touch', 'nothing', KEYBOARD_SHOWN)
+    const popover = await mountOpenPopoverInWidgetList(600)
     stop = popover.stop
-    const widgetList = scrollerAround(popover.anchor)
     resize(PORTRAIT)
     popover.open.value = false
     await nextTick()
 
     popover.open.value = true
     await nextTick()
-    widgetList.scrollTo('end')
+    popover.scrollListToEnd()
 
     expect(popover.open.value).toBe(false)
+  })
+
+  it('measures the next clamp from where the last clamp left the list', async () => {
+    const popover = await mountOpenPopoverInWidgetList(600)
+    stop = popover.stop
+    resize(PORTRAIT)
+    popover.scrollListToEnd()
+    popover.addListContent(152)
+
+    resize(TALLER)
+    popover.scrollListToEnd()
+
+    expect(popover.open.value).toBe(false)
+  })
+
+  it('stays open when the panel and the widget list both clamp as the keyboard hides', async () => {
+    const popover = await mountOpenPopoverInWidgetList(600)
+    stop = popover.stop
+
+    resize(PORTRAIT)
+    popover.scrollPanelToEnd()
+    popover.scrollListToEnd()
+
+    expect(popover.open.value).toBe(true)
+  })
+
+  it('stays open when the widget list clamps at each step of the keyboard hiding', async () => {
+    const popover = await mountOpenPopoverInWidgetList(600)
+    stop = popover.stop
+
+    resize(KEYBOARD_HIDING)
+    popover.scrollListToEnd()
+    resize(PORTRAIT)
+    popover.scrollListToEnd()
+
+    expect(popover.open.value).toBe(true)
+  })
+
+  it('stays open when a repeated resize arrives before the clamp', async () => {
+    const popover = await mountOpenPopoverInWidgetList(600)
+    stop = popover.stop
+
+    resize(PORTRAIT)
+    resize('same-size resize event')
+    popover.scrollListToEnd()
+
+    expect(popover.open.value).toBe(true)
+  })
+
+  it('stays open when the clamp lands 1px short of the computed maximum', async () => {
+    const popover = await mountOpenPopoverInWidgetList(600, {
+      listContentHeight: 1001
+    })
+    stop = popover.stop
+
+    resize(PORTRAIT)
+    popover.scrollListTo(199)
+
+    expect(popover.open.value).toBe(true)
+  })
+
+  it('stays open when the popup content clamps before the widget list as the keyboard hides', async () => {
+    const popover = await mountOpenPopoverInWidgetList(600)
+    stop = popover.stop
+    const popupContent = popupScroller()
+
+    resize(PORTRAIT)
+    popupContent.scrollToEnd()
+    popover.scrollListToEnd()
+
+    expect(popover.open.value).toBe(true)
   })
 })
