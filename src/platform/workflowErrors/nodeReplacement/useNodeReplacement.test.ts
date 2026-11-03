@@ -775,6 +775,37 @@ describe('useNodeReplacement', () => {
       ])
     })
 
+    it('carries a widget value from an installed deprecated node, which has no last_serialization', () => {
+      const installedNode = createPlaceholderNode(1, 'OldScaler')
+      installedNode.last_serialization = fromAny<
+        LGraphNode['last_serialization'],
+        unknown
+      >(undefined)
+      vi.mocked(installedNode.serialize).mockReturnValue({
+        ...installedNode.serialize(),
+        widgets_values: [1.5]
+      })
+      const graph = createMockGraph([installedNode])
+      installedNode.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([installedNode])
+
+      const newNode = createNewNode([], [], [{ name: 'scale', value: 1 }])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldScaler', {
+          new_node_id: 'NewScaler',
+          old_node_id: 'OldScaler',
+          old_widget_ids: ['scale_by'],
+          input_mapping: [{ new_id: 'scale', old_id: 'scale_by' }],
+          output_mapping: null
+        })
+      ])
+
+      expect(newNode.widgets!.map((widget) => widget.value)).toEqual([1.5])
+    })
+
     it('lets the later mapping win when two mappings target one widget', () => {
       const placeholder = createPlaceholderNode(1, 'OldScaler')
       placeholder.last_serialization!.widgets_values = ['saved']
