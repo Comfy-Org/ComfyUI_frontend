@@ -388,6 +388,11 @@ describe('deriveBillingTabLoad', () => {
       expected: 'error'
     },
     {
+      case: 'the workspace failed to load',
+      facts: { workspaceLoadFailed: true },
+      expected: 'error'
+    },
+    {
       case: 'capabilities settled without a snapshot',
       facts: {
         billingInitialized: true,
@@ -399,6 +404,7 @@ describe('deriveBillingTabLoad', () => {
   ])('is $expected when $case', ({ facts, expected }) => {
     expect(
       deriveBillingTabLoad({
+        workspaceLoadFailed: false,
         billingError: null,
         billingInitialized: false,
         capabilitiesReady: false,

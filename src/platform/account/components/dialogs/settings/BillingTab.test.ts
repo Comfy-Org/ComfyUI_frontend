@@ -32,6 +32,7 @@ import { activateBillingScope } from '@/platform/billing/__tests__/activateBilli
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
 
@@ -417,6 +418,29 @@ describe('BillingTab', () => {
     arrange({ capabilitiesResolved: false })
 
     expect(screen.getByRole('alert')).toBeInTheDocument()
+  })
+
+  it('shows the error instead of loading forever when the workspace failed to load', async () => {
+    const workspaceStore = useTeamWorkspaceStore()
+    const reloadWorkspace = vi
+      .spyOn(workspaceStore, 'initialize')
+      .mockResolvedValue(undefined)
+    const { initialize, refresh } = arrange({ capabilitiesReady: false })
+    workspaceStore.initState = 'error'
+    await nextTick()
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      "We couldn't load your plan."
+    )
+    expect(
+      screen.queryByTestId('billing-plan-skeleton')
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(reloadWorkspace).toHaveBeenCalled()
+    expect(initialize).toHaveBeenCalled()
+    expect(refresh).toHaveBeenCalled()
   })
 
   it('reads Activating while subscription_state is activating', () => {
