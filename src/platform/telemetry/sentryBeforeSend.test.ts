@@ -186,6 +186,29 @@ describe('sentryBeforeSend', () => {
     })
   })
 
+  it('tags a third-party script below an unidentifiable top frame', () => {
+    const event = {
+      type: undefined,
+      exception: {
+        values: [
+          {
+            value: '_etmc is not defined',
+            stacktrace: {
+              frames: [
+                { abs_path: 'https://www.googletagmanager.com/gtm.js' },
+                { filename: '<anonymous>' }
+              ]
+            }
+          }
+        ]
+      }
+    } satisfies ErrorEvent
+
+    expect(sentryBeforeSend(event, {})).toMatchObject({
+      tags: { error_origin: 'third_party' }
+    })
+  })
+
   it('keeps a first-party top frame actionable when an extension appears below it', () => {
     const event = {
       type: undefined,
@@ -196,7 +219,8 @@ describe('sentryBeforeSend', () => {
             stacktrace: {
               frames: [
                 { filename: '/extensions/comfyui-foo/main.js' },
-                { filename: 'https://cloud.comfy.org/assets/app.js' }
+                { filename: 'https://cloud.comfy.org/assets/app.js' },
+                { filename: '<anonymous>' }
               ]
             }
           }
