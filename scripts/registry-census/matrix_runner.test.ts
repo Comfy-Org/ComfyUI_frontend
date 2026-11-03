@@ -43,6 +43,7 @@ describe('matrix runner', () => {
       vi.stubEnv('MATRIX_OUT', outputDir)
       vi.stubEnv('MATRIX_VUE', matrixVue)
       vi.stubEnv('MATRIX_OBJECT_INFO', FIXTURE)
+      vi.stubEnv('MATRIX_REGISTRY_FORMS', '')
       LiteGraph.vueNodesMode = !selectedMode
       let modeDuringLoad: boolean | undefined
 
@@ -60,11 +61,16 @@ describe('matrix runner', () => {
 
       const row = JSON.parse(
         fs.readFileSync(path.join(outputDir, 'renderer-mutator.json'), 'utf8')
-      ) as { loadedOk?: unknown; vueNodesMode?: unknown }
+      ) as {
+        loadedOk?: unknown
+        vueNodesMode?: unknown
+        registryForms?: unknown
+      }
 
       expect(modeDuringLoad).toBe(selectedMode)
       expect(row.loadedOk).toBe(1)
       expect(row.vueNodesMode).toBe(!selectedMode)
+      expect(row.registryForms).toBeUndefined()
     }
   )
 
@@ -476,6 +482,7 @@ async function rowFor(
   outputDirs.push(dir)
   vi.stubEnv('MATRIX_OUT', dir)
   vi.stubEnv('MATRIX_OBJECT_INFO', FIXTURE)
+  vi.stubEnv('MATRIX_REGISTRY_FORMS', '1')
 
   await runPack(name, { entry: async () => install?.() }, ['entry'], name)
 

@@ -135,7 +135,7 @@ function captureSerialization(node: LGraphNode): Capture | null {
 
 function verdictOf(
   widgets: readonly IBaseWidget[] | undefined,
-  serialised: { widgets_values?: unknown; has_errors?: boolean },
+  serialised: { widgets_values?: unknown },
   producedValues: unknown,
   options: {
     serializeWidgets?: boolean
@@ -1236,13 +1236,15 @@ export async function runPack(
     (t) => LiteGraph.createNode(t),
     lg.LGraphNode
   )
-  row.registryForms = await censusRegistryForms({
-    lg,
-    createNode: (t) => LiteGraph.createNode(t),
-    seedRootGraph: (g) => Reflect.set(app, 'rootGraphInternal', g),
-    pristine,
-    drainHookErrors: () => hookErrors.splice(0, hookErrors.length)
-  })
+  if (process.env.MATRIX_REGISTRY_FORMS === '1') {
+    row.registryForms = await censusRegistryForms({
+      lg,
+      createNode: (t) => LiteGraph.createNode(t),
+      seedRootGraph: (g) => Reflect.set(app, 'rootGraphInternal', g),
+      pristine,
+      drainHookErrors: () => hookErrors.splice(0, hookErrors.length)
+    })
+  }
 
   fs.writeFileSync(rowPath, JSON.stringify(row))
 }
