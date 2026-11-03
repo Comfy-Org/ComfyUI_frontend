@@ -18,7 +18,7 @@ export type LintOutcome =
   | { ok: true; diagnostics: OxlintDiagnostic[] }
   | { ok: false; detail: string }
 
-export function lintFiles(
+function lintFiles(
   files: readonly string[],
   { cwd, config }: { cwd: string; config: string }
 ): LintOutcome {

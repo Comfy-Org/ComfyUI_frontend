@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
 import { changedRanges, findingsInFiles } from './server-fact-gate-core'
-import { lintFiles, lintSnapshot } from './server-fact-oxlint'
+import { lintSnapshot } from './server-fact-oxlint'
 
 function git(args: string[]): string {
   return execFileSync('git', args, {
@@ -63,9 +63,10 @@ export function runChangedLineLint({
   const textOf = (file: string) =>
     staged ? git(['show', `:${file}`]) : readFileSync(file, 'utf8')
   const files = [...rangesByFile.keys()]
-  const lint = staged
-    ? lintSnapshot(new Map(files.map((file) => [file, textOf(file)])), config)
-    : lintFiles(files, { cwd: process.cwd(), config })
+  const lint = lintSnapshot(
+    new Map(files.map((file) => [file, textOf(file)])),
+    config
+  )
   if (!lint.ok) {
     console.error(`${name}: ${lint.detail}`)
     process.exit(2)
