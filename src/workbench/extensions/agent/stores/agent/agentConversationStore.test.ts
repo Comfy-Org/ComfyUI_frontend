@@ -2173,6 +2173,146 @@ describe('useAgentConversationStore', () => {
       expect(reconciledParts(store)).toEqual(storedParts())
     })
 
+    const verdictWorkflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const verdictTurn = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
+    function settleBySocket(store: ConversationStore) {
+      store.ingest(done(SNAPSHOT_ROW_ID))
+      store.reconcileSettledTurn(verdictTurn, storedParts())
+    }
+    function settleByRecoveryRead(store: ConversationStore) {
+      store.settleTurn(verdictTurn, storedParts())
+    }
+    function liveCanvasEdit(gate: 'awaiting' | 'unavailable') {
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => gate)
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: verdictWorkflowId,
+          op_ids: ['op-add']
+        })
+      )
+      return store
+    }
+    function settledTool(store: ConversationStore) {
+      return reconciledParts(store)?.find((part) => part.type === 'tool')
+    }
+
+    it.for([
+      { through: 'socket', settle: settleBySocket },
+      { through: 'recovery read', settle: settleByRecoveryRead }
+    ])(
+      'keeps an observed canvas edit confirmed when the $through settles the turn',
+      ({ settle }) => {
+        const store = liveCanvasEdit('awaiting')
+        store.notifyCanvasCaughtUp(
+          liveCanvasEvidence(verdictWorkflowId, ['op-add'])
+        )
+
+        settle(store)
+
+        expect(settledTool(store)).toMatchObject({
+          callId: 'call-add_node',
+          canvasConfirmed: true
+        })
+      }
+    )
+
+    it.for([
+      { gate: 'unavailable', through: 'socket', settle: settleBySocket },
+      {
+        gate: 'unavailable',
+        through: 'recovery read',
+        settle: settleByRecoveryRead
+      },
+      {
+        gate: 'awaiting',
+        through: 'recovery read',
+        settle: settleByRecoveryRead
+      }
+    ] as const)(
+      'keeps an unobserved canvas edit unconfirmed ($gate) when the $through settles the turn',
+      ({ gate, settle }) => {
+        const store = liveCanvasEdit(gate)
+
+        settle(store)
+
+        expect(settledTool(store)).toMatchObject({
+          callId: 'call-add_node',
+          canvasConfirmed: false
+        })
+      }
+    )
+
+    it('does not move a live canvas verdict onto a different stored tool', () => {
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'unavailable')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success'))
+
+      store.settleTurn({ threadId: 'th', messageId: SNAPSHOT_ROW_ID }, [
+        {
+          type: 'tool',
+          callId: 'row-fallback-id',
+          name: 'search_nodes',
+          state: 'done',
+          ok: true
+        }
+      ])
+
+      expect(
+        reconciledParts(store)?.find((part) => part.type === 'tool')
+      ).not.toHaveProperty('canvasConfirmed')
+    })
+
+    it('does not move a live canvas verdict onto a stored tool when the row omits a call', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      function liveAddNode(n: number): AgentChatEvent {
+        return chat({
+          type: 'agent_tool_call',
+          data: {
+            tool_call_id: `live-${n}`,
+            tool_name: 'add_node',
+            status: 'success',
+            workflow_id: workflowId,
+            op_ids: [`op-${n}`],
+            message_id: SNAPSHOT_ROW_ID,
+            thread_id: 'th'
+          }
+        })
+      }
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(liveAddNode(1))
+      store.ingest(liveAddNode(2))
+      store.ingest(liveAddNode(3))
+      store.notifyCanvasCaughtUp(
+        liveCanvasEvidence(workflowId, ['op-1', 'op-3'])
+      )
+      function stored(callId: string): AssistantMessage['parts'][number] {
+        return {
+          type: 'tool',
+          callId,
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        }
+      }
+
+      store.settleTurn({ threadId: 'th', messageId: SNAPSHOT_ROW_ID }, [
+        stored('row-1'),
+        stored('row-3')
+      ])
+
+      expect(
+        reconciledParts(store)?.filter((part) => part.type === 'tool')
+      ).toEqual([stored('row-1'), stored('row-3')])
+    })
+
     it('waits for a held tool call to clear before announcing the turn', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
       const store = useAgentConversationStore()
@@ -2268,7 +2408,11 @@ describe('useAgentConversationStore', () => {
 
       store.retireAsk('turn-7:call-1', { status: 'retired' })
 
-      expect(reconciledParts(store)).toEqual(storedParts())
+      expect(reconciledParts(store)).toEqual(
+        storedParts().map((part) =>
+          part.type === 'tool' ? { ...part, canvasConfirmed: false } : part
+        )
+      )
     })
 
     it('keeps a re-registered held turn for its own read when an earlier read lands late', () => {
