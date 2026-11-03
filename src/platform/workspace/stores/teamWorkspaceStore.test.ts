@@ -634,19 +634,21 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBe(mockMemberWorkspace.id)
     })
 
-    it('clears cached billing rails when identity state is reset', async () => {
+    it('clears cached billing summaries when identity state is reset', async () => {
       const store = useTeamWorkspaceStore()
       const billing = useWorkspaceBillingStateStore()
       await store.initialize()
-      billing.setWorkspaceBillingRail(mockPersonalWorkspace.id, 'legacy_stripe')
-      expect(billing.activeWorkspaceBillingRail).toBe('legacy_stripe')
+      billing.updateSummary(mockPersonalWorkspace.id, {
+        subscriptionPlan: 'monthly'
+      })
+      expect(billing.activeSummary?.subscriptionPlan).toBe('monthly')
       expect(store.identityGeneration).toBe(0)
 
       store.resetForIdentityChange()
       await store.initialize()
 
       expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
-      expect(billing.activeWorkspaceBillingRail).toBeNull()
+      expect(billing.activeSummary?.subscriptionPlan).toBeNull()
       expect(store.identityGeneration).toBe(1)
     })
 
@@ -864,10 +866,7 @@ describe('useTeamWorkspaceStore', () => {
         }
       )
       const store = useTeamWorkspaceStore()
-      const billing = useWorkspaceBillingStateStore()
       await store.initialize()
-      billing.setWorkspaceBillingRail(mockPersonalWorkspace.id, 'legacy_stripe')
-      expect(billing.activeWorkspaceBillingRail).toBe('legacy_stripe')
 
       await store.switchWorkspace(mockTeamWorkspace.id)
 
@@ -881,12 +880,8 @@ describe('useTeamWorkspaceStore', () => {
       ).not.toHaveBeenCalled()
       expect(mockReload).not.toHaveBeenCalled()
       expect(store.isSwitching).toBe(false)
-      expect(billing.activeWorkspaceBillingRail).toBeNull()
       expect(store.workspaceTransitionGeneration).toBe(1)
       expect(store.identityGeneration).toBe(0)
-
-      billing.setWorkspaceBillingRail(mockTeamWorkspace.id, 'metronome')
-      expect(billing.activeWorkspaceBillingRail).toBe('metronome')
     })
 
     it('ignores an overlapping local switch', async () => {
