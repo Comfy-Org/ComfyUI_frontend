@@ -549,6 +549,29 @@ function startAgentCrdtFollower(
       ])
   }
 
+  const reconcileOverwrittenOps = (
+    outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
+  ) => {
+    if (!outcome.result.lwwDropped?.length) return
+    const dropped = new Set(outcome.result.lwwDropped)
+    const overwritten = outcome.ops.filter((op) => dropped.has(op.op_id))
+    const workflowId = outcome.result.workflowId ?? bridge.subscribedWorkflowId
+    if (workflowId === null) return
+    rejectedOpNotifier.notifyOverwritten(outcome.ops, outcome.result)
+    if (!isTargetActive.value) {
+      pendingRejected.set(workflowId, [
+        ...(pendingRejected.get(workflowId) ?? []),
+        ...overwritten
+      ])
+    } else if (!applyRejectedOps(workflowId, overwritten, outcome.result.seq)) {
+      pendingRejected.set(workflowId, [
+        ...(pendingRejected.get(workflowId) ?? []),
+        ...overwritten
+      ])
+    }
+    bridge.resubscribe()
+  }
+
   const workflowsWithUnsyncedOps = new Set<string>()
   const recordUnsynced = (): void => {
     const unsynced = new Set(workflowsWithUnsyncedOps)
@@ -570,6 +593,7 @@ function startAgentCrdtFollower(
       recordDevEvent('human_ops_settled', outcome)
     }
     projection.settleLocalWrites(outcome.ops)
+    if (outcome.state === 'acknowledged') reconcileOverwrittenOps(outcome)
     if (outcome.state === 'acknowledged' && !outcome.result.ok)
       revertRejectedOps(outcome)
     noteSettledHumanOps(outcome, workflowId)

@@ -237,12 +237,13 @@ node of a different type is removed and recreated with its links, so the
 document wins either way. The one related report is for a created node whose
 live id differs from the document's.
 
-Collisions are mostly avoided rather than detected. A graph bound to a
-document mints node ids from a range disjoint from the ids the agent mints
-(`idAllocation.ts`, the `crdt-disjoint` mode), so ids minted while bound
-cannot collide. Ids that were minted sequentially before binding are the
-residue. `agentNodeIdCollision.spec.ts` pins the remaining failure as an
-expected failure.
+Collisions are avoided first and recovered second. A graph bound to a document
+mints node ids from a range disjoint from the ids the agent mints
+(`idAllocation.ts`, the `crdt-disjoint` mode), so ids minted while bound cannot
+collide. If a replayed or pre-binding id still loses a last-writer-wins race,
+the host names the losing op in `lww_dropped`. The frontend reports the lost
+edit, reverts its optimistic projection, and resubscribes so the canvas shows
+the canonical winner instead of retaining a silent disagreement.
 
 ### Widget in-flight hold
 

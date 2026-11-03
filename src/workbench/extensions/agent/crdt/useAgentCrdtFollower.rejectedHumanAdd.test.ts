@@ -114,3 +114,77 @@ it('surfaces a human add_node the doc host rejected instead of swallowing the re
     })
   )
 })
+
+it('surfaces an overwritten human add and resubscribes to the canonical document', async () => {
+  const agentSocket = createFakeAgentSocket()
+  const { send } = agentSocket
+  const store = useAgentPanelStore()
+  store.enabled = true
+  onTestFinished(() => {
+    store.enabled = false
+  })
+  let follower!: ReturnType<typeof useAgentCrdtFollower>
+  const { unmount } = render(
+    defineComponent({
+      setup() {
+        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID), {
+          transport: agentSocket.transport
+        })
+        return () => null
+      }
+    })
+  )
+  onTestFinished(unmount)
+  agentSocket.receive('doc_subscribed', {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    ok: true,
+    seq: 0
+  })
+
+  follower.enqueueHumanOperations([
+    {
+      op: 'add_node',
+      node_id: 7,
+      class_type: 'Note',
+      pos: [400, 400],
+      node: {
+        id: 7,
+        type: 'Note',
+        pos: [400, 400],
+        size: [300, 200],
+        inputs: [],
+        outputs: [],
+        widgets_values: { text: 'keep me' }
+      }
+    }
+  ])
+  await vi.waitFor(() => expect(send.mock.calls.length).toBeGreaterThan(1))
+  const { op_id } = sentOp(send.mock.calls[1][0])
+
+  agentSocket.receive('doc_ops_result', {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    ok: true,
+    seq: 2,
+    applied: [],
+    skipped: [op_id],
+    lww_dropped: [op_id]
+  })
+
+  expect(reportError).toHaveBeenCalledWith(
+    expect.any(Error),
+    expect.objectContaining({
+      context: expect.objectContaining({
+        workflowId: WORKFLOW_ID,
+        opId: op_id,
+        code: 'lww_dropped'
+      })
+    })
+  )
+  expect(send.mock.calls.map(([raw]) => JSON.parse(raw).type)).toEqual([
+    'doc_subscribe',
+    'doc_ops',
+    'doc_subscribe'
+  ])
+})

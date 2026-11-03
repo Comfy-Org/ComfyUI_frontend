@@ -9,11 +9,9 @@
  * op order on the wire matches mint order. `base_version` is read at mint
  * time from the follower's last observed sequence.
  *
- * Outcome handling is deliberately the TODAY contract: `doc_ops_result` is a
- * binary applied/skipped split. The prefix-abort reconcile and per-op
- * outcome-union surfacing (lww-dropped, op_rejected, ...) land when the host
- * frame upgrade ships (a required backend dependency, recorded on the plan);
- * `onResult` is the seam they will replace.
+ * Outcome handling distinguishes a harmless replay from an edit that lost a
+ * last-writer-wins race. `onResult` is the seam that carries both outcomes to
+ * the projection and user-notification boundary.
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
@@ -66,7 +64,7 @@ function createReportBudget(): () => boolean {
  */
 export type OpsResultView = Pick<
   DocOpsResult,
-  'ok' | 'seq' | 'applied' | 'skipped' | 'code' | 'failed'
+  'ok' | 'seq' | 'applied' | 'skipped' | 'lwwDropped' | 'code' | 'failed'
 > &
   Partial<Pick<DocOpsResult, 'workflowId'>>
 

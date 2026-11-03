@@ -30,6 +30,7 @@ interface DocSubscribedWireData extends CommonWireData {
 interface DocOpsResultWireData extends DocSubscribedWireData {
   applied?: unknown
   skipped?: unknown
+  lww_dropped?: unknown
   failed?: unknown
 }
 

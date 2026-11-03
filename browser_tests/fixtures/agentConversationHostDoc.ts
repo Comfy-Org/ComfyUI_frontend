@@ -323,10 +323,15 @@ export class HostDoc {
     const { outcomes } = applyOps(this.doc, ops as Op[], this.catalog)
     const applied: string[] = []
     const skipped: string[] = []
+    const lwwDropped: string[] = []
     for (const outcome of outcomes) {
       if (outcome.outcome === 'rejected') continue
       if (seen.has(outcome.op_id)) {
         skipped.push(outcome.op_id)
+      } else if (outcome.outcome === 'lww-dropped') {
+        skipped.push(outcome.op_id)
+        lwwDropped.push(outcome.op_id)
+        seen.add(outcome.op_id)
       } else {
         applied.push(outcome.op_id)
         seen.add(outcome.op_id)
@@ -344,6 +349,7 @@ export class HostDoc {
         lineage_seq: this.lineageSeq,
         applied,
         skipped,
+        ...(lwwDropped.length > 0 && { lww_dropped: lwwDropped }),
         ...(rejected && {
           failed: {
             index: outcomes.indexOf(rejected),

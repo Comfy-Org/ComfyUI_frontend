@@ -198,11 +198,26 @@ export function createRejectedOpNotifier() {
     showToast(kind, withReason(notice, target, code))
   }
 
+  function notifyOverwritten(ops: readonly Op[], result: OpsResultView): void {
+    const dropped = new Set(result.lwwDropped ?? [])
+    const overwritten = ops.filter((op) => dropped.has(op.op_id))
+    reportLostEdit('host_rejected', overwritten, {
+      code: 'lww_dropped',
+      workflowId: result.workflowId,
+      errorType: 'error_applying_agent_graph_edit'
+    })
+    showToast(
+      'agent.editRejected.overwritten',
+      i18n.global.t('agent.editRejected.overwritten')
+    )
+  }
+
   return {
     notify(ops: readonly Op[], result: OpsResultView) {
       if (result.ok) return
       notifyRejected(ops, result)
     },
+    notifyOverwritten,
     notifyWidgetWriteRefused(nodeId: string | number, widgetName: string) {
       const notice = i18n.global.t('agent.editRejected.widgetWrite')
       showToast(
