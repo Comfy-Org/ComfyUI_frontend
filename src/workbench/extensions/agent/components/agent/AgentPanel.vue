@@ -314,6 +314,10 @@ function onClose(): void {
 const visibleGreeting = computed(() =>
   !entries.length && !openingChat.value ? greeting : undefined
 )
+const greetingReplacesIntro = computed(
+  () =>
+    visibleGreeting.value !== undefined && visibleGreeting.value.variant !== 'A'
+)
 
 const composerRef = ref<InstanceType<typeof Composer>>()
 const runNoticeReady = ref(false)
@@ -621,9 +625,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
           />
           <RunNoticeBanner
-            :hide-intro="
-              visibleGreeting !== undefined && visibleGreeting.variant !== 'A'
-            "
+            :hide-intro="greetingReplacesIntro"
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
             :context="targetNotice"
