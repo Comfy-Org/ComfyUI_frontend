@@ -177,15 +177,16 @@ it was built to decline, so a floor would fail the run for correct behaviour.
 | channel                                 | population                                                                            | where                                |
 | --------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------ |
 | `registryForms` on `_registry-baseline` | every class in `object_info.shape.json`, no pack code                                 | `vitest.census.config.mts`, run once |
-| `registryForms` on a pack row           | the same sweep inside that pack's process; read as a **delta** against the baseline   | every pack row                       |
+| `registryForms` on a pack row           | the same sweep inside that pack's process; read as a **delta** against the baseline   | opt-in pack row                      |
 | `formProof` on a pack row               | the battery's standard-workflow nodes, and the pack's own `registerCustomNodes` types | every pack row                       |
 
 ```bash
 # 1. the baseline: every registry class, no pack code (~8s)
 CENSUS_FORMS_OUT=.census/results/rows/_registry-baseline.json \
   pnpm exec vitest run --config vitest.census.config.mts
-# 2. the pack rows (the ordinary matrix run writes both pack channels)
-MATRIX_OUT=.census/results/rows pnpm exec vitest run --config vitest.matrix.config.mts
+# 2. the pack rows (opt in because the 3,857-class sweep is expensive)
+MATRIX_REGISTRY_FORMS=1 MATRIX_OUT=.census/results/rows \
+  pnpm exec vitest run --config vitest.matrix.config.mts
 # 3. the report
 python3 scripts/registry-census/census_forms.py .census/results/rows
 ```
@@ -218,7 +219,8 @@ that does not exist.
 
 ### Why the census runs last, after every gated channel
 
-Registering 3,857 defs runs each pack's `beforeRegisterNodeDef` 3,857 times
+When `MATRIX_REGISTRY_FORMS=1`, registering 3,857 defs runs each pack's
+`beforeRegisterNodeDef` 3,857 times
 instead of six. **`packs free of contained hook errors` is a gated criterion
 with a measured baseline**, so folding those firings into it would move a
 required gate for a reason no pull request caused. So:
@@ -244,17 +246,19 @@ further.
 Registering 3,857 classes and instantiating each one costs **~5.3s of CPU per
 pack** on top of the battery's ~1.5s — measured over the detection-proof corpus
 at four workers: 16.03s user CPU for 11 packs with the 7-class fixture, 74.44s
-with the full projection. At ~485 packs that is ~43 CPU-minutes added per shard,
-which is why `ecosystem-matrix`'s `timeout-minutes` went from 20 to 40.
+with the full projection. At ~485 packs that is ~43 CPU-minutes added per shard.
 
-**If that becomes tight again, raise the shard count rather than the timeout.**
-The work parallelises across shards and the per-pack cost does not shrink.
+The ordinary required matrix does not pay that cost. Per-pack registry forms run
+only when a manual workflow dispatch sets `registry_forms`, or when a local run
+sets `MATRIX_REGISTRY_FORMS=1`. The manual run asserts that every pack row wrote
+the channel and receives the 40-minute shard budget; ordinary required runs keep
+their prior 20-minute budget. A manual timeout cannot block a push or merge.
 
 Note also where the matrix actually executes packs: `should-run` restricts that
 on pull requests to branches named `version-bump-*`, so an ordinary PR does not
-execute packs and the aggregate check passes without them. The census therefore
-produces its numbers on a push to `main`, on a `version-bump-*` PR, on a
-`workflow_dispatch` — or locally.
+execute packs and the aggregate check passes without them. The per-pack census
+therefore produces its numbers only on an opted-in `workflow_dispatch` or
+local run.
 
 ### The seam, and why it is faithful in both directions
 
@@ -363,19 +367,21 @@ array-concatenation would otherwise smuggle in.
 
 ### Environment
 
-| var                    | used by            | meaning                                                        |
-| ---------------------- | ------------------ | -------------------------------------------------------------- |
-| `CENSUS_ROOT`          | all                | state root, default `.census/`                                 |
-| `MATRIX_OUT`           | runner, summarizer | directory of per-pack row JSON                                 |
-| `MATRIX_PREV`          | summarizer         | baseline metrics to compare against                            |
-| `MATRIX_METRICS_OUT`   | summarizer         | where to write metrics on PASS                                 |
-| `MATRIX_RUN_ID`        | summarizer         | skips the delta when the baseline is this same run             |
-| `MATRIX_EXPECT_SHARDS` | summarizer         | required manifest count; unset disables the check              |
-| `MATRIX_STALE_MARKER`  | summarizer         | path to `registry-stale.json`, if present                      |
-| `MATRIX_RENDERER`      | summarizer         | expected `legacy` or `vue` renderer arm                        |
-| `MATRIX_VUE`           | runner             | enables Nodes 2.0 when set to `1`                              |
-| `MATRIX_OBJECT_INFO`   | runner             | node defs for the census; defaults to the committed projection |
-| `CENSUS_FORMS_OUT`     | baseline census    | where the `_registry-baseline` row is written                  |
+| var                            | used by            | meaning                                                        |
+| ------------------------------ | ------------------ | -------------------------------------------------------------- |
+| `CENSUS_ROOT`                  | all                | state root, default `.census/`                                 |
+| `MATRIX_OUT`                   | runner, summarizer | directory of per-pack row JSON                                 |
+| `MATRIX_PREV`                  | summarizer         | baseline metrics to compare against                            |
+| `MATRIX_METRICS_OUT`           | summarizer         | where to write metrics on PASS                                 |
+| `MATRIX_RUN_ID`                | summarizer         | skips the delta when the baseline is this same run             |
+| `MATRIX_EXPECT_SHARDS`         | summarizer         | required manifest count; unset disables the check              |
+| `MATRIX_STALE_MARKER`          | summarizer         | path to `registry-stale.json`, if present                      |
+| `MATRIX_RENDERER`              | summarizer         | expected `legacy` or `vue` renderer arm                        |
+| `MATRIX_VUE`                   | runner             | enables Nodes 2.0 when set to `1`                              |
+| `MATRIX_REGISTRY_FORMS`        | runner             | enables the expensive per-pack registry-form sweep             |
+| `MATRIX_EXPECT_REGISTRY_FORMS` | summarizer         | requires the opt-in sweep on every completed pack row          |
+| `MATRIX_OBJECT_INFO`           | runner             | node defs for the census; defaults to the committed projection |
+| `CENSUS_FORMS_OUT`             | baseline census    | where the `_registry-baseline` row is written                  |
 
 ## Widget form/values agreement — a measurement, not a gate
 

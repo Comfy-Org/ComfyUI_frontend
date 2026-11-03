@@ -83,7 +83,6 @@ EXPECTED_ROW_KEYS = (
     'driveTypes',
     'formAgreement',
     'formProof',
-    'registryForms',
 )
 
 TELEMETRY = (
@@ -122,6 +121,7 @@ def evaluate(
     expect_shards: int | None = None,
     stale: dict | None = None,
     renderer: str = '',
+    expect_registry_forms: bool = False,
 ) -> Verdict:
     if not rows:
         return Verdict(2, ['no matrix rows to summarize'])
@@ -149,9 +149,12 @@ def evaluate(
         )
         return Verdict(2, lines)
 
+    expected_row_keys = EXPECTED_ROW_KEYS + (
+        ('registryForms',) if expect_registry_forms else ()
+    )
     missing_by_key = {
         key: [str(row.get('pack', '?')) for row in done if key not in row]
-        for key in EXPECTED_ROW_KEYS
+        for key in expected_row_keys
     }
     missing_by_key = {
         key: packs for key, packs in missing_by_key.items() if packs
@@ -572,6 +575,7 @@ def main() -> int:
         int(expect_raw) if expect_raw else None,
         stale,
         renderer,
+        os.environ.get('MATRIX_EXPECT_REGISTRY_FORMS') == '1',
     )
 
     report = '\n'.join(verdict.lines)
