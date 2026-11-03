@@ -297,7 +297,10 @@ import {
   shouldHideLinkedCoreLoadAudioPlayer,
   shouldHideLinkedCoreMediaInputPreview
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
-import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import {
+  isAdvancedSocketInput,
+  nonWidgetedInputs
+} from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { getNodeErrorSeverity } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import {
@@ -652,13 +655,14 @@ const renderedWidgetIds = computed(() => {
   })
 })
 
-const hasRenderableWidgets = computed(() => renderedWidgetIds.value.length > 0)
-const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
-  () => nodeData,
-  () => renderedWidgetIds.value
-)
+const { canSelectInputs, gridRows, nodeType, processedWidgets } =
+  useProcessedWidgets(
+    () => nodeData,
+    () => renderedWidgetIds.value
+  )
+const hasRenderableWidgets = computed(() => gridRows.value.length > 0)
 const processedWidgetModel = computed(() => ({
-  processedWidgets: processedWidgets.value,
+  processedWidgets: gridRows.value,
   nodeType: nodeType.value,
   canSelectInputs: canSelectInputs.value
 }))
@@ -676,11 +680,12 @@ const showAdvancedInputsButton = computed(() => {
     return hasUnpromotedWidgets(node)
   }
 
-  const hasAdvancedWidgets = widgetIds.value.some((id) => {
-    const visibility = widgetValueStore.getWidgetVisibility(id)
-    if (visibility) return visibility.surfaces.vueNode === 'advanced'
-    return widgetValueStore.getWidget(id)?.options?.advanced
-  })
+  const hasAdvancedWidgets =
+    widgetIds.value.some((id) => {
+      const visibility = widgetValueStore.getWidgetVisibility(id)
+      if (visibility) return visibility.surfaces.vueNode === 'advanced'
+      return widgetValueStore.getWidget(id)?.options?.advanced
+    }) || nodeData.inputs.some((input) => isAdvancedSocketInput(node, input))
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
   )

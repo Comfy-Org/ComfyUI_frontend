@@ -23,7 +23,6 @@ import {
   zMatchTypeOptions
 } from '@comfyorg/object-info-parser'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
-import { addShimWidget } from '@/core/graph/widgets/inputWidgetShim'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import {
@@ -86,31 +85,6 @@ function syncNodeWidgetOrder(node: LGraphNode) {
     node.id,
     getWidgetIds(node.widgets)
   )
-}
-
-function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
-  const name = input.widget?.name ?? input.name
-  const existing = node.widgets?.find((w) => w.name === name)
-  if (existing) {
-    input.widget ??= { name }
-    if (existing.type === 'shim') input.alwaysVisible = true
-    return
-  }
-  addShimWidget(node, input)
-
-  const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const widgets = node.widgets
-  const shim = widgets?.pop()
-  if (!widgets || !shim) return
-  const lastGroupWidget = widgets.findLastIndex(
-    (w) => w.name === groupName || w.name.startsWith(`${groupName}.`)
-  )
-  widgets.splice(
-    lastGroupWidget === -1 ? widgets.length : lastGroupWidget + 1,
-    0,
-    shim
-  )
-  syncNodeWidgetOrder(node)
 }
 
 function dynamicComboWidget(
@@ -556,9 +530,7 @@ function addAutogrowGroup(
   )
   const newInputs = namedSpecs.map((namedSpec) => {
     addNodeInput(node, namedSpec)
-    const input = node.inputs.splice(node.inputs.length - 1, 1)[0]
-    ensureWidgetForInput(node, input)
-    return input
+    return node.inputs.splice(node.inputs.length - 1, 1)[0]
   })
   for (const newInput of newInputs) {
     for (const existingInput of remove(
@@ -589,7 +561,6 @@ function addAutogrowGroup(
   node.inputs.splice(insertionIndex, 0, ...newInputs)
   const result = commitMutatedInputs(node, previous, inputLinks)
   if (!result.ok) return
-  syncNodeWidgetOrder(node)
   node.graph?.setDirtyCanvas(true, true)
 }
 
@@ -635,6 +606,15 @@ export function liveAutogrowGroupOf(
     }
   }
   return undefined
+}
+
+export function autogrowInputRole(
+  node: LGraphNode,
+  input: INodeInputSlot
+): 'group' | 'child' | undefined {
+  if (!hasAutogrowGroups(node) || input.widget) return undefined
+  if (Object.hasOwn(node.comfyDynamic.autogrow, input.name)) return 'group'
+  return liveAutogrowGroupOf(node, input.name) ? 'child' : undefined
 }
 
 /**
@@ -766,13 +746,10 @@ function isAutogrowGroupConnected(node: LGraphNode, groupName: string) {
 }
 
 function syncAutogrowGroup(node: AutogrowNode, groupName: string) {
-  const children = node.inputs.filter((input) =>
-    input.name.startsWith(`${groupName}.`)
-  )
   if (isAutogrowGroupConnected(node, groupName))
     removeGroupChildren(node, groupName)
-  else if (!children.length) growAutogrowToMin(node, groupName)
-  else for (const input of children) ensureWidgetForInput(node, input)
+  else if (!node.inputs.some((input) => input.name.startsWith(`${groupName}.`)))
+    growAutogrowToMin(node, groupName)
 }
 
 function growAutogrowToMin(node: AutogrowNode, groupName: string) {
@@ -870,12 +847,9 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
         if (!useApp().configuringGraph) syncAutogrowGroup(this, input.name)
         return
       }
+      if (useApp().configuringGraph) return
       const groupName = liveAutogrowGroupOf(this, input.name)
       if (groupName === undefined) return
-      if (useApp().configuringGraph) {
-        if (input.widget) ensureWidgetForInput(node, input)
-        return
-      }
       if (iscon) return reconcileAutogrowGroup(groupName, this)
       const { min } = this.comfyDynamic.autogrow[groupName]
       const ordinal = resolveAutogrowOrdinal(input.name, groupName, this)
@@ -888,13 +862,10 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
 }
 function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
   const groupName = inputSpecV2.name
-  const groupInput =
-    node.inputs.find((input) => input.name === groupName) ??
+  if (!node.inputs.some((input) => input.name === groupName))
     node.addInput(groupName, inputSpecV2.type, {
       localized_name: inputSpecV2.display_name
     })
-  if (!node.widgets?.some((w) => w.name === groupName))
-    addShimWidget(node, groupInput, { autogrowGroup: true })
   withComfyAutogrow(node)
 
   const parseResult = zAutogrowOptions.safeParse(inputSpecV2)

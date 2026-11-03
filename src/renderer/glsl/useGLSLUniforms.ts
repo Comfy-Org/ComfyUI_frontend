@@ -165,7 +165,7 @@ export function useGLSLUniforms(
     for (let i = 0; i < maxCount; i++) {
       const inputName = `${groupName}.${uniformPrefix}${i}`
       const widget = widgetValueStore.getWidget(widgetId(gId, nId, inputName))
-      if (widget?.value !== undefined) {
+      if (widget !== undefined) {
         values.push(coerce(widget.value))
         continue
       }

@@ -126,16 +126,12 @@ export class SubgraphInput extends SubgraphSlot {
       anchorRerouteChain(subgraph, link)
       subgraph.incrementVersion()
 
-      if (inputWidget) {
-        this._widget = inputWidget
-        this.events.dispatch('input-connected', {
-          input: slot,
-          widget: inputWidget,
-          node
-        })
-      } else {
-        this.events.dispatch('input-connected', { input: slot })
-      }
+      if (inputWidget) this._widget = inputWidget
+      this.events.dispatch('input-connected', {
+        input: slot,
+        widget: inputWidget,
+        node
+      })
       if (subgraph.getLink(link.id) !== link) return
 
       node.onConnectionsChange?.(
