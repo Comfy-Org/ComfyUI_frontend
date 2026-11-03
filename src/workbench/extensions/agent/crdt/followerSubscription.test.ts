@@ -1381,6 +1381,34 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     )
   })
 
+  it('reports once per unreadable schema episode and reports again after recovery', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    const host = mint({ nodes: [], links: [] }, { types: {} })
+    onTestFinished(() => host.destroy())
+    host.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
+    const unreadable = Y.encodeStateAsUpdate(host)
+
+    transport.deliver('doc_update', docUpdateFrame(unreadable))
+    transport.deliver('doc_update', docUpdateFrame(unreadable, WORKFLOW_ID, 2))
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+
+    host.getMap('meta').set('schema_version', SCHEMA_VERSION)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(Y.encodeStateAsUpdate(host), WORKFLOW_ID, 3)
+    )
+    host.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(Y.encodeStateAsUpdate(host), WORKFLOW_ID, 4)
+    )
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+  })
+
   it('un-latches when a later same-lineage frame restores a readable schema_version', () => {
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true

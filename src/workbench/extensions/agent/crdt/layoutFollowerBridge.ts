@@ -423,11 +423,12 @@ export class LayoutFollowerBridge extends EventTarget {
       return true
     } catch (error) {
       if (!(error instanceof SchemaVersionError)) throw error
+      if (this.schemaError === null)
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'failure_reading_agent_doc_schema'
+        })
       this.schemaError = error
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'failure_reading_agent_doc_schema'
-      })
       this.dispatchEvent(
         new CustomEvent('schema_error', {
           detail: {
