@@ -198,7 +198,7 @@ describe('lintSnapshot', () => {
   })
 })
 
-describe('server-fact gate on a real diff', () => {
+describe('changed-line lint gates on a real diff', () => {
   const repoRoot = path.resolve(import.meta.dirname, '..')
   const gatedFile = 'src/useInvite.ts'
   let workDir: string | undefined
@@ -213,8 +213,10 @@ describe('server-fact gate on a real diff', () => {
     workDir = dir
     const git = (...args: string[]) =>
       execFileSync('git', args, { cwd: dir, stdio: 'ignore' })
-    const write = (file: string, lines: string[]) =>
+    const write = (file: string, lines: string[]) => {
+      mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
       writeFileSync(path.join(dir, file), lines.join('\n'))
+    }
     git('init', '-q', '-b', 'main')
     git('config', 'user.email', 'gate@test.invalid')
     git('config', 'user.name', 'gate')
@@ -256,6 +258,92 @@ describe('server-fact gate on a real diff', () => {
     ''
   ]
   const clean = ['export const ready = true', '']
+
+  it.for([
+    {
+      name: 'rejects a new nullable alias',
+      file: 'src/nullable.ts',
+      before: [''],
+      after: ['type Value = string | null', ''],
+      args: ['--base', 'HEAD'],
+      status: 1
+    },
+    {
+      name: 'rejects a staged nullable parameter',
+      file: 'packages/example/src/nullable.ts',
+      before: [''],
+      after: ['function read(value: string | null) {}', ''],
+      args: ['--staged'],
+      status: 1
+    },
+    {
+      name: 'rejects a nullable Vue prop',
+      file: 'src/Nullable.vue',
+      before: [''],
+      after: [
+        '<script setup lang="ts">',
+        'defineProps<{ value: string | null }>()',
+        '</script>',
+        ''
+      ],
+      args: ['--base', 'HEAD'],
+      status: 1
+    },
+    {
+      name: 'allows an unchanged legacy alias',
+      file: 'src/nullable.ts',
+      before: ['type Legacy = string | null', '', 'const ready = false', ''],
+      after: ['type Legacy = string | null', '', 'const ready = true', ''],
+      args: ['--base', 'HEAD'],
+      status: 0
+    },
+    {
+      name: 'allows deleting a line adjacent to a legacy alias',
+      file: 'src/nullable.ts',
+      before: ['const unused = true', 'type Legacy = string | null', ''],
+      after: ['type Legacy = string | null', ''],
+      args: ['--base', 'HEAD'],
+      status: 0
+    },
+    {
+      name: 'allows null values and derived contracts',
+      file: 'src/nullable.ts',
+      before: [''],
+      after: [
+        'type Value = Legacy["value"]',
+        'new ContextMenu(["A", null, "B"])',
+        'const missing = value == null',
+        ''
+      ],
+      args: ['--base', 'HEAD'],
+      status: 0
+    },
+    {
+      name: 'does not lint generated API contracts',
+      file: 'packages/ingest-types/src/types.gen.ts',
+      before: [''],
+      after: ['type Value = string | null', ''],
+      args: ['--base', 'HEAD'],
+      status: 0
+    }
+  ])('$name', ({ file, before, after, args, status }) => {
+    const { dir, git, write } = createRepo({ [file]: before })
+    write(file, after)
+    git('add', file)
+
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        path.join(repoRoot, 'scripts/null-type-gate.ts'),
+        ...args
+      ],
+      { cwd: dir, encoding: 'utf8' }
+    )
+
+    expect(result.status).toBe(status)
+  })
 
   it.for([
     {

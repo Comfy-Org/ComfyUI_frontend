@@ -44,7 +44,10 @@ export default function lintStaged(stagedFiles: string[]) {
     ),
     ...lintCommands(codeFiles, styleFiles),
     ...(codeFiles.length > 0
-      ? repoWide('pnpm lint:server-facts --staged')
+      ? [
+          ...repoWide('pnpm lint:server-facts --staged'),
+          ...repoWide('pnpm lint:null-types --staged')
+        ]
       : []),
     ...typecheckCommands(typecheckFiles)
   ]

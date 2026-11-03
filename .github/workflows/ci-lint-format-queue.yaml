@@ -74,6 +74,12 @@ jobs:
           BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
         run: pnpm lint:server-facts --base "$BASE_SHA"
 
+      - name: Check null types on changed lines
+        if: ${{ (github.event.merge_group.base_sha || github.event.before) != '0000000000000000000000000000000000000000' }}
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
+        run: pnpm lint:null-types --base "$BASE_SHA"
+
       - name: Save lint caches
         if: always()
         uses: ./.github/actions/tool-cache-save

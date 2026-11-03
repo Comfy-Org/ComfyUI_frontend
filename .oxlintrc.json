@@ -140,7 +140,6 @@
       }
     ],
     "unicorn/no-new-array": "error",
-    "unicorn/no-null": "error",
     "unicorn/no-single-promise-in-promise-methods": "error",
     "unicorn/no-useless-fallback-in-spread": "error",
     "unicorn/no-useless-spread": "error",

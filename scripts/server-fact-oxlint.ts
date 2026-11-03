@@ -18,7 +18,7 @@ export type LintOutcome =
   | { ok: true; diagnostics: OxlintDiagnostic[] }
   | { ok: false; detail: string }
 
-export function lintServerFacts(
+export function lintFiles(
   files: readonly string[],
   { cwd, config }: { cwd: string; config: string }
 ): LintOutcome {
@@ -55,7 +55,7 @@ export function lintSnapshot(
       mkdirSync(path.dirname(target), { recursive: true })
       writeFileSync(target, text)
     }
-    return lintServerFacts([...contents.keys()], { cwd: mirror, config })
+    return lintFiles([...contents.keys()], { cwd: mirror, config })
   } finally {
     rmSync(mirror, { recursive: true, force: true })
   }

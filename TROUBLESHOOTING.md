@@ -218,6 +218,29 @@ Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-p
 
 ---
 
+#### Q: lint rejects a new nullable type signature
+
+The changed-line null-type check rejects explicit `null` types on added or
+modified lines. Prefer `undefined` for new contracts. When an existing API
+requires null, derive its type with indexed access, `Parameters`, or
+`ReturnType` instead of declaring the nullable signature again.
+
+Null checks and null values passed to legacy APIs remain allowed. Unchanged
+legacy declarations remain allowed, without a suppression budget. The check
+is syntactic, so inferred types and `typeof` derivations remain allowed too.
+Generated contracts follow the existing oxlint exclusions.
+
+Run the same check as CI against your base branch:
+
+```bash
+pnpm lint:null-types --base origin/main
+```
+
+Pre-commit also checks staged changes. Plain `pnpm oxlint` does not run this
+diff-aware policy.
+
+---
+
 #### Q: oxlint reports "There are suppressions that do not occur anymore"
 
 **Symptoms:**
@@ -231,14 +254,6 @@ Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-p
 
 ```bash
 pnpm oxlint --prune-suppressions
-```
-
-The account packages also have package-local suppression files. If you fixed a
-violation there, prune that package's file as well:
-
-```bash
-pnpm --dir packages/account-core exec oxlint src --type-aware --prune-suppressions
-pnpm --dir packages/account-ui exec oxlint src --type-aware --prune-suppressions
 ```
 
 Never run `--suppress-all` to silence new violations in your own code.

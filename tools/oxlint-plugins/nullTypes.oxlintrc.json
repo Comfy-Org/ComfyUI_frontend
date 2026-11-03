@@ -1,0 +1,7 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "plugins": [],
+  "categories": { "correctness": "off" },
+  "jsPlugins": ["./comfy.ts"],
+  "rules": { "comfy/no-null-type": "error" }
+}
