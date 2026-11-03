@@ -70,15 +70,17 @@
             {{ planCreditNote }}
           </p>
         </div>
-        <Button
-          v-if="state.kind === 'noPlan' && canTopUp"
+        <AddCreditsAction
+          v-if="state.kind === 'noPlan'"
+          :availability="addCredits"
           :variant="addCreditsVariant"
           size="md"
-          class="shrink-0"
+          class="flex max-w-56 shrink-0 flex-col items-end gap-1"
+          reason-class="text-right text-xs"
           @click="emit('addCredits')"
         >
           {{ $t('workspacePanel.billingTab.credits.addCredits') }}
-        </Button>
+        </AddCreditsAction>
       </div>
 
       <div v-if="state.kind === 'plan'" class="flex border-t border-card">
@@ -108,15 +110,16 @@
               {{ $t('workspacePanel.billingTab.credits.inUse') }}
             </span>
           </div>
-          <Button
-            v-if="canTopUp"
+          <AddCreditsAction
+            :availability="addCredits"
             :variant="addCreditsVariant"
             size="md"
-            class="shrink-0"
+            class="flex max-w-56 shrink-0 flex-col items-end gap-1"
+            reason-class="text-right text-xs"
             @click="emit('addCredits')"
           >
             {{ $t('workspacePanel.billingTab.credits.addCredits') }}
-          </Button>
+          </AddCreditsAction>
         </div>
       </div>
     </div>
@@ -134,17 +137,21 @@ import {
   formatCreditsFromCents
 } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
+import AddCreditsAction from '@/platform/billing/components/AddCreditsAction.vue'
 import BillingCreditsPlanCell from '@/platform/billing/components/billingTab/BillingCreditsPlanCell.vue'
-import type { CreditsCardState } from '@comfyorg/account-core/billing'
+import type {
+  AddCreditsAvailability,
+  CreditsCardState
+} from '@comfyorg/account-core/billing'
 
 const {
   state,
-  canTopUp,
+  addCredits,
   planCreditNote,
   addCreditsVariant = 'secondary'
 } = defineProps<{
   state: CreditsCardState
-  canTopUp: boolean
+  addCredits: AddCreditsAvailability
   planCreditNote: string | null
   addCreditsVariant?: 'secondary' | 'inverted'
 }>()
