@@ -143,13 +143,20 @@ export function useAgentWorkflowSelection({
       if (isCurrent()) warnWorkflowSelectionFailed(detail)
       return undefined
     }
+    const needsSave = () => tab.isTemporary && cloudIdFor(tab) === undefined
     try {
-      if (tab.isTemporary && cloudIdFor(tab) === undefined) {
+      if (needsSave()) {
         if (!(await refreshCloudWorkflowIds())) return fail()
         if (!isCurrent()) return
-        const filename = nextSaveFilename(tab)
-        if (!(await workflowService.saveWorkflowAs(tab, { filename })))
-          return fail()
+        if (!tab.isLoaded) {
+          await workflowService.loadWorkflowInBackground(tab)
+          if (!isCurrent()) return
+        }
+        if (needsSave()) {
+          const filename = nextSaveFilename(tab)
+          if (!(await workflowService.saveWorkflowAs(tab, { filename })))
+            return fail()
+        }
       }
       if (!isCurrent()) return
       let workflowId = cloudIdFor(tab)
