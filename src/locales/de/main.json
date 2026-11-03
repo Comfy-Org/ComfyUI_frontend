@@ -1195,6 +1195,7 @@
     "apiPricing": "API-Preise",
     "charge": "Abbuchung",
     "credits": "Credits",
+    "creditUnit": "Credits",
     "creditsAvailable": "Verfügbare Credits",
     "details": "Details",
     "eventType": "Ereignistyp",
