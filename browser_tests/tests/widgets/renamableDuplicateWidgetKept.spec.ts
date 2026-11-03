@@ -6,43 +6,6 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
-/**
- * The unique-name invariant removes a widget it cannot name uniquely
- * (ADR-ECS-0008). This pins the boundary of "cannot": a widget whose `name` is
- * perfectly writable must never be the price of enforcing it.
- *
- * `BaseWidget.set name` delegates to `widgetValueStore.renameWidget()` and
- * returns without changing the name whenever the store declines — which it does
- * when the node has no entries, the state a node is in after it has been
- * removed from the graph. So a rename that *failed* does not prove the widget
- * is unaddressable, and removing on that signal destroys an ordinary widget.
- *
- * Reproduced through the graph API the way an undo of a node deletion or a
- * paste of a cut node reaches it: the node leaves the graph, the duplicate name
- * appears while it is detached, and it rejoins.
- *
- * Asserted on what the app saves, because that is where the loss is permanent.
- * Measured on the parent commit the node comes back one widget short and saves
- * **one** `widgets_values` entry for a two-widget node; the arity of that array
- * is what positional widget addressing reads, so a dropped slot shifts every
- * later widget. With the invariant's criterion corrected it saves both.
- *
- * The two *values* are asserted too, and that is the stronger half. Arity alone
- * went green over a save this change set used to corrupt: re-registering an
- * ambiguous pair routed the second widget's `name` setter through
- * `renameWidget` on an id the *first* widget had registered, which handed it
- * that widget's store entry — so the two widgets shared one `WidgetState`, both
- * read the first value, and the second value was gone from a two-slot save. A
- * widget's own entry is now the only entry its rename may move
- * (`BaseWidget.set name`), so both values survive and this asserts it.
- *
- * What the node *draws* is asserted too, because the save cannot show it:
- * serialization reads `node.widgets`, while a Vue node renders from the
- * registered widget order. Registration was gated on a whole-node verdict, so
- * one unresolvable pair left the node with an empty order and it drew no
- * widgets at all — a save-only assertion goes green over that.
- */
-
 const NODE_TYPE = 'DevToolsNodeWithOutputList'
 const KEPT_NAME = 'alpha'
 const RENAMED_NAME = 'beta'
@@ -68,17 +31,11 @@ async function installTwoOrdinaryWidgets(comfyPage: ComfyPage): Promise<void> {
   )
 }
 
-/**
- * Takes the node out of the graph, collides the second widget's name with the
- * first while it is detached, and puts it back. Detached is what makes the
- * write land: on a node that is still in the graph the store declines the
- * rename and the collision never forms.
- */
 async function collideNameWhileDetached(
   comfyPage: ComfyPage,
   nodeId: string
-): Promise<void> {
-  await comfyPage.page.evaluate(
+): Promise<string[]> {
+  return comfyPage.page.evaluate(
     ({ id, duplicateName, renamedName }) => {
       const graph = window.app!.graph
       const node = graph.nodes.find((candidate) => String(candidate.id) === id)
@@ -88,7 +45,13 @@ async function collideNameWhileDetached(
       const target = node.widgets?.find(({ name }) => name === renamedName)
       if (!target) throw new Error(`widget ${renamedName} not found`)
       target.name = duplicateName
+      Object.defineProperty(target, 'name', {
+        get: () => duplicateName,
+        set: () => undefined,
+        configurable: true
+      })
       graph.add(node)
+      return (node.widgets ?? []).map(({ name }) => name)
     },
     { id: nodeId, duplicateName: KEPT_NAME, renamedName: RENAMED_NAME }
   )
@@ -124,20 +87,13 @@ test.describe(
         await expect(node.getByTestId(TestIds.widgets.widget)).toHaveCount(2)
       })
 
-      await collideNameWhileDetached(comfyPage, nodeId)
+      const namesAfterRejoin = await collideNameWhileDetached(comfyPage, nodeId)
+
+      await test.step('the duplicate name is still unresolved after rejoining', async () => {
+        expect(namesAfterRejoin).toEqual([KEPT_NAME, KEPT_NAME])
+      })
 
       await test.step('the node still draws the widget that kept the name', async () => {
-        // A Vue node draws from the registered widget order, and registration
-        // was gated on a whole-node "is this node unambiguous?" verdict — so
-        // one pair that could not be renamed apart withheld an identity from
-        // every widget on the node and it drew **none**. That is a worse loss
-        // than the removal this criterion replaced, which cost one widget and
-        // kept drawing the rest; it is invisible to the save assertion below,
-        // because serialization reads `node.widgets` rather than the store.
-        //
-        // One widget drawn, not two: the duplicate genuinely has no identity
-        // of its own while it shares the name, which is what stops it being
-        // handed the other widget's store entry.
         await expect(node.getByTestId(TestIds.widgets.widget)).toHaveCount(1)
       })
 
@@ -155,14 +111,7 @@ test.describe(
         )
         const savedNode = saved.nodes.find(({ type }) => type === NODE_TYPE)
 
-        // One entry here is a widget the user lost. Two is the invariant being
-        // enforced without charging them for it.
         expect(savedNode?.widgets_values).toHaveLength(2)
-
-        // And two *distinct* values, because arity alone cannot tell a
-        // preserved widget from one welded onto its duplicate's store entry.
-        // `['first default', 'first default']` is the second value destroyed
-        // while the slot count still looks right.
         expect(savedNode?.widgets_values).toEqual([
           'first default',
           'second default'
