@@ -7619,7 +7619,11 @@ describe('AgentPanelRoot history', () => {
         previousThreadId: null,
         selection: { status: 'idle' }
       }
-      expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
+      await nextTick()
+      expect(
+        screen.queryByTestId('agent-panel-chat-controls')
+      ).not.toBeInTheDocument()
+      expect(screen.getByRole('alert')).toHaveTextContent(refusal.error)
 
       useAgentPanelStore().view = { screen: 'chat' }
       respondToFetch(threadListRoute, () => json(200, agentThreadList([])))
@@ -7632,6 +7636,41 @@ describe('AgentPanelRoot history', () => {
       expect(
         screen.getByTestId('agent-panel-chat-controls')
       ).not.toHaveAttribute('inert')
+    })
+
+    it('clears the refusal in the same panel when a workflow-follow refresh succeeds', async () => {
+      const first = addTab('workflows/first.json')
+      workflowStore.activeWorkflow = addTab('workflows/second.json')
+      respondToFetch(/\/api\/workflows/, () =>
+        json(200, {
+          data: [{ id: 'wf-first', name: 'first' }],
+          pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+        })
+      )
+      respondToFetch(threadListRoute, (input) =>
+        String(input).includes('workflow_id=wf-first')
+          ? json(200, agentThreadList([]))
+          : json(403, refusal)
+      )
+
+      renderWithSelectedTarget()
+      expect(await screen.findByRole('alert')).toHaveTextContent(refusal.error)
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+
+      await activateTabAsUser(first)
+
+      await vi.waitFor(() =>
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      )
+      expect(
+        fetchRequests(/\/api\/agent\/threads\?.*workflow_id=wf-first/)
+      ).toHaveLength(1)
+      expect(
+        screen.getByTestId('agent-panel-chat-controls')
+      ).not.toHaveAttribute('inert')
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
     })
 
     it('keeps a newer refusal when an older listing succeeds after it', async () => {
