@@ -7,7 +7,10 @@
       role="status"
       :class="
         cn(
-          'flex flex-col gap-3 border border-border/60 bg-background @2xl:flex-row @2xl:items-center @2xl:gap-2',
+          'flex flex-col gap-3 border border-border/60 bg-background',
+          look.windowBreakpoint
+            ? 'sm:flex-row sm:items-center sm:gap-2'
+            : '@2xl:flex-row @2xl:items-center @2xl:gap-2',
           look.roomy ? 'rounded-2xl p-4' : 'rounded-xl p-3',
           classes?.panel
         )
@@ -47,7 +50,8 @@
         v-if="look.dismissKey !== null || look.action"
         :class="
           cn(
-            'flex shrink-0 flex-wrap items-center gap-2 pl-6 @2xl:pl-0',
+            'flex shrink-0 flex-wrap items-center gap-2 pl-6',
+            look.windowBreakpoint ? 'sm:pl-0' : '@2xl:pl-0',
             classes?.actions
           )
         "

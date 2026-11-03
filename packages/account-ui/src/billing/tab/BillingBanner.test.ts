@@ -184,6 +184,50 @@ describe('BillingBanner', () => {
     }
   )
 
+  it.for<{ view: BillingBannerView; row: string }>([
+    {
+      view: { kind: 'paused', ...text, muted: false, action: null },
+      row: 'sm:flex-row'
+    },
+    {
+      view: {
+        kind: 'planCheckout',
+        ...text,
+        muted: true,
+        action: null,
+        href: null,
+        dismissKey: null
+      },
+      row: 'sm:flex-row'
+    },
+    {
+      view: {
+        kind: 'parked',
+        ...text,
+        action: 'contactSupport',
+        href: 'https://support.test'
+      },
+      row: 'sm:flex-row'
+    },
+    { view: { kind: 'planStatus', ...text }, row: '@2xl:flex-row' },
+    {
+      view: {
+        kind: 'topupCheckout',
+        ...text,
+        action: null,
+        dismissKey: 'cs_1:processing'
+      },
+      row: '@2xl:flex-row'
+    }
+  ])(
+    'lays out $view.kind in a row from the app breakpoint',
+    ({ view, row }) => {
+      renderBanner(view)
+
+      expect(screen.getByRole('status').className).toContain(row)
+    }
+  )
+
   it('links the action to the served url', () => {
     renderBanner({
       kind: 'autoTopUp',

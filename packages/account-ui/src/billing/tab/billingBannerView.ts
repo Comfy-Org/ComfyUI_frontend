@@ -70,9 +70,10 @@ export interface BillingBannerCopy {
   }
 }
 
-export interface BillingBannerLook {
+interface BillingBannerLook {
   muted: boolean
   roomy: boolean
+  windowBreakpoint: boolean
   action: BillingBannerAction | null
   href: string | null
   dismissKey: string | null
@@ -135,13 +136,19 @@ export function topupCheckoutBannerView(
 export function billingBannerLook(view: BillingBannerView): BillingBannerLook {
   switch (view.kind) {
     case 'paused':
-      return look(view.muted, false, view.action)
+      return { ...look(view.muted, false, view.action), windowBreakpoint: true }
     case 'planCheckout':
-      return look(view.muted, false, view.action, view.href, view.dismissKey)
+      return {
+        ...look(view.muted, false, view.action, view.href, view.dismissKey),
+        windowBreakpoint: true
+      }
     case 'topupCheckout':
       return look(true, true, view.action, null, view.dismissKey)
     case 'parked':
-      return look(false, true, view.action, view.href)
+      return {
+        ...look(false, true, view.action, view.href),
+        windowBreakpoint: true
+      }
     case 'planStatus':
       return look(true, true, null)
     case 'autoTopUp':
@@ -158,7 +165,7 @@ function look(
   href: string | null = null,
   dismissKey: string | null = null
 ): BillingBannerLook {
-  return { muted, roomy, action, href, dismissKey }
+  return { muted, roomy, windowBreakpoint: false, action, href, dismissKey }
 }
 
 const STACK_ORDER: readonly BillingBannerKind[] = [
