@@ -114,4 +114,17 @@ describe('isModalOpen', () => {
 
     expect(isModalOpen(0)).toBe(true)
   })
+
+  it('detects a dialog inside open details content', () => {
+    document.body.innerHTML = `
+      <details open>
+        <summary>Advanced</summary>
+        <div role="dialog" aria-modal="true"></div>
+      </details>
+    `
+    const dialog = document.querySelector('[role="dialog"]')!
+    disableCheckVisibility(dialog)
+
+    expect(isModalOpen(0)).toBe(true)
+  })
 })
