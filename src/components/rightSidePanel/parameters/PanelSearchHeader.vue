@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 
 type AsyncSearchInputProps = ComponentProps<typeof AsyncSearchInput>
 

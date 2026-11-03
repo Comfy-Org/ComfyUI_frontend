@@ -63,7 +63,7 @@
           :aria-label="$t('lightInfo.addLight')"
           @click="addLight('directional')"
         >
-          <i class="icon-[lucide--plus] size-4" />
+          <i class="icon-[lucide--plus]" />
         </Button>
         <Button
           v-if="selectedLight"
@@ -73,7 +73,7 @@
           :aria-label="$t('lightInfo.removeLight')"
           @click="removeSelectedLight"
         >
-          <i class="icon-[lucide--trash-2] size-4" />
+          <i class="icon-[lucide--trash-2]" />
         </Button>
         <WidgetHistoryButtons
           class="ml-auto"
@@ -100,24 +100,24 @@
 
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { chipClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import { LIGHT_TYPE_LABEL_KEYS } from '@comfyorg/viewport3d/lightInfo/types'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 import LightInfoLightEditor from './LightInfoLightEditor.vue'
 import LightInfoViewportToolbar from './LightInfoViewportToolbar.vue'
 import { useLightInfo } from '@/extensions/core/load3d/composables/useLightInfo'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 
 const COMPACT_WIDTH_THRESHOLD = 480
 const PANEL_BUDGET_WIDE = 208
@@ -142,7 +142,7 @@ const { nodeId, widget } = defineProps<{
   widget?: SimplifiedWidget
 }>()
 
-const node = shallowRef<LGraphNode | null>(null)
+const node = useLiveGraphNode(() => resolveNode(nodeId))
 const container = ref<HTMLElement | null>(null)
 const viewportArea = ref<HTMLElement | null>(null)
 const { width: viewportWidth } = useElementSize(viewportArea)
@@ -185,9 +185,23 @@ watch(gizmosOn, (on) => setGizmosVisible(on))
 watch(transformGizmoMode, (mode) => setTransformGizmoMode(mode))
 watch(cameraLocked, (locked) => setCameraLocked(locked))
 
+function initializeViewport(viewportContainer: HTMLElement) {
+  initialize(viewportContainer)
+  setGizmosVisible(gizmosOn.value)
+  setTransformGizmoMode(transformGizmoMode.value)
+  setCameraLocked(cameraLocked.value)
+}
+
 onMounted(() => {
-  node.value = resolveNode(nodeId) ?? null
-  if (container.value) initialize(container.value)
+  watch(
+    node,
+    (current) => {
+      if (!container.value) return
+      if (current) initializeViewport(container.value)
+      else cleanup()
+    },
+    { immediate: true }
+  )
 })
 
 onUnmounted(() => {

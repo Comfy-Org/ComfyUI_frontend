@@ -35,7 +35,7 @@ async function expectExactEndpointRoundTrip(comfyPage: ComfyPage) {
   const checkpoint = await comfyPage.nodeOps.getNodeRefById(4)
   const prompt = await comfyPage.nodeOps.getNodeRefById(6)
   const output = await checkpoint.getOutput(1)
-  const input = await prompt.getInput(0)
+  const input = await prompt.getInputByName('clip')
 
   await test.step('disconnect the prompt input', async () => {
     await comfyPage.canvasOps.dragAndDrop(await input.getPosition(), {
@@ -67,7 +67,7 @@ async function expectExactEndpointRoundTrip(comfyPage: ComfyPage) {
         origin_id: '4',
         origin_slot: 1,
         target_id: '6',
-        target_slot: 0
+        target_slot: input.index
       })
     await output.expectLinkCount(2)
   })

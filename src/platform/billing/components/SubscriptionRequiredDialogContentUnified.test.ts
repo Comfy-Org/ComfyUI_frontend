@@ -1,3 +1,4 @@
+import type { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -10,6 +11,9 @@ import SubscriptionRequiredDialogContentUnified from './SubscriptionRequiredDial
 const mockHandleSubscribeTeamClick = vi.fn()
 const mockHandleBackToPricing = vi.fn()
 const mockHandleSubscribeClick = vi.fn()
+const mockHandleTeamSubscribe = vi.fn()
+const mockHandleAddCreditCard = vi.fn()
+const mockHandleConfirmTransition = vi.fn()
 
 const mockCheckoutStep = ref('pricing')
 const mockPreviewVariant = ref<string | null>(null)
@@ -17,6 +21,26 @@ const mockPreviewData = ref<Record<string, unknown> | null>(null)
 const mockSelectedTeamStop = ref<Record<string, unknown> | null>(null)
 
 const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
+const mockPaymentRecoveryLock = ref<'owner' | 'member' | null>(null)
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
+
+vi.mock(
+  import('@/platform/billing/composables/usePaymentRecoveryDialog'),
+  () => ({
+    isTopUpDeniedPastDue: vi.fn(),
+    usePaymentRecoveryDialog: (): ReturnType<
+      typeof usePaymentRecoveryDialog
+    > => ({
+      showPaymentRecoveryDialog: vi.fn(),
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => mockPaymentRecoveryLock.value),
+      refreshCapabilities: vi.fn()
+    })
+  })
+)
 
 vi.mock<unknown>(
   import('@/platform/billing/composables/useSubscriptionCheckout'),
@@ -42,9 +66,9 @@ vi.mock<unknown>(
         handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
         handleBackToPricing: mockHandleBackToPricing,
         handleSuccessClose: vi.fn(),
-        handleAddCreditCard: vi.fn(),
-        handleConfirmTransition: vi.fn(),
-        handleTeamSubscribe: vi.fn(),
+        handleAddCreditCard: mockHandleAddCreditCard,
+        handleConfirmTransition: mockHandleConfirmTransition,
+        handleTeamSubscribe: mockHandleTeamSubscribe,
         handleResubscribe: vi.fn()
       }
     }
@@ -88,17 +112,23 @@ function renderComponent(props: Record<string, unknown> = {}) {
     global: {
       plugins: [i18n],
       stubs: {
+        CreditsLockedNotice: {
+          template: '<div data-testid="credits-locked-notice" />'
+        },
         UnifiedPricingTable: UnifiedPricingTableStub,
         SubscriptionAddPaymentPreviewWorkspace: {
           name: 'SubscriptionAddPaymentPreviewWorkspace',
           props: ['previewData', 'teamPlan'],
           template: `<div data-testid="add-payment-preview">
             {{ previewData?.amount_due_cents ?? "no-quote" }}
+            <button @click="$emit('addCreditCard')">Add card</button>
             <button aria-label="Back" @click="$emit('back')">Back</button>
           </div>`
         },
         SubscriptionTransitionPreviewWorkspace: {
-          template: '<div data-testid="transition-preview" />'
+          template: `<div data-testid="transition-preview">
+            <button @click="$emit('confirm')">Confirm</button>
+          </div>`
         },
         SubscriptionSuccessWorkspace: { template: '<div />' }
       }
@@ -113,6 +143,8 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     mockPreviewVariant.value = null
     mockPreviewData.value = null
     mockSelectedTeamStop.value = null
+    mockPaymentRecoveryLock.value = null
+    mockDistributionTypes.isCloud = true
   })
 
   it('hands the team checkout its preview', () => {
@@ -127,6 +159,42 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
       '129500'
     )
   })
+
+  it.for([
+    {
+      variant: 'team-new',
+      button: 'Add card',
+      command: mockHandleTeamSubscribe
+    },
+    {
+      variant: 'team-change',
+      button: 'Confirm',
+      command: mockHandleTeamSubscribe
+    },
+    {
+      variant: 'personal-new',
+      button: 'Add card',
+      command: mockHandleAddCreditCard
+    },
+    {
+      variant: 'personal-change',
+      button: 'Confirm',
+      command: mockHandleConfirmTransition
+    }
+  ])(
+    'submits the selected checkout for $variant',
+    async ({ variant, button, command }) => {
+      mockCheckoutStep.value = 'preview'
+      mockPreviewVariant.value = variant
+      mockSelectedTeamStop.value = TEAM_PAYLOAD.stop
+      mockPreviewData.value = { amount_due_cents: 129_500, currency: 'usd' }
+      renderComponent()
+
+      await userEvent.click(screen.getByRole('button', { name: button }))
+
+      expect(command).toHaveBeenCalledOnce()
+    }
+  )
 
   it('advances to team checkout from a team workspace', async () => {
     const user = userEvent.setup()
@@ -234,6 +302,20 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     expect(mockHandleBackToPricing).toHaveBeenCalledOnce()
   })
 
+  it('explains locked credits only on the pricing step', async () => {
+    renderComponent({ creditsLocked: true })
+    expect(screen.getByTestId('credits-locked-notice')).toBeInTheDocument()
+
+    mockCheckoutStep.value = 'preview'
+    await nextTick()
+    expect(screen.queryByTestId('credits-locked-notice')).toBeNull()
+  })
+
+  it('shows no locked-credits line by default', () => {
+    renderComponent()
+    expect(screen.queryByTestId('credits-locked-notice')).toBeNull()
+  })
+
   it('gives checkout the surface, not the copy reason', () => {
     renderComponent({
       reason: 'out_of_credits',
@@ -241,5 +323,19 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     })
 
     expect(mockUseSubscriptionCheckout.mock.calls[0][1]).toBe('agent_paywall')
+  })
+
+  it('only lets checkout suppress toasts for an owner on Cloud', () => {
+    renderComponent()
+    const { rendersPastDueNotice } =
+      mockUseSubscriptionCheckout.mock.calls[0][2]
+
+    expect(rendersPastDueNotice()).toBe(false)
+    mockPaymentRecoveryLock.value = 'member'
+    expect(rendersPastDueNotice()).toBe(false)
+    mockPaymentRecoveryLock.value = 'owner'
+    expect(rendersPastDueNotice()).toBe(true)
+    mockDistributionTypes.isCloud = false
+    expect(rendersPastDueNotice()).toBe(false)
   })
 })

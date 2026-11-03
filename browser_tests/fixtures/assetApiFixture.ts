@@ -9,7 +9,7 @@ import type {
 } from '@e2e/fixtures/helpers/AssetHelper'
 import { createAssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
 import { ModelLibraryHelper } from '@e2e/fixtures/helpers/ModelLibraryHelper'
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
+import type { ModelFolderInfo } from '@comfyorg/api-client/types'
 
 const ASSETS_ROUTE_PATTERN = /\/api\/assets(?:\?.*)?$/
 const cloudAssetRequestsByPage = new WeakMap<Page, string[]>()
@@ -63,8 +63,6 @@ export const assetApiFixture = base.extend<{
     if (folders) await new ModelLibraryHelper(page).mockModelFolders(folders)
 
     await use(assetApi)
-
-    await assetApi.clearMocks()
   }
 })
 

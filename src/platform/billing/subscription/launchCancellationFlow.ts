@@ -3,15 +3,14 @@ import type {
   RetentionFlowResponse
 } from '@comfyorg/ingest-types'
 
-import { supportsInAppCancellation } from '@/platform/billing/composables/billingRail'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 export interface CancellationFlowDialogOptions {
   cancelAt?: string
@@ -36,7 +35,7 @@ function offersUnavailable(error: unknown): boolean {
 
 async function prepareRetentionFlow(): Promise<RetentionFlowResponse | null> {
   try {
-    return await workspaceApi.prepareRetentionFlow()
+    return await billingApi.prepareRetentionFlow()
   } catch (error) {
     if (!offersUnavailable(error)) {
       reportError(error, {
@@ -56,7 +55,7 @@ export async function recordRetentionFlowEvent(
   event: RetentionFlowEventRequest['event']
 ): Promise<RetentionFlowEventOutcome> {
   try {
-    await workspaceApi.recordRetentionFlowEvent({
+    await billingApi.recordRetentionFlowEvent({
       session_id: sessionId,
       event
     })
@@ -84,7 +83,7 @@ export function launchCancellationFlow(
 ): Promise<void> {
   const launchWorkspaceId =
     options.launchWorkspaceId === undefined
-      ? useTeamWorkspaceStore().activeWorkspaceId
+      ? useWorkspaceIdentity().activeWorkspaceId
       : options.launchWorkspaceId
   const pending = pendingLaunches.get(launchWorkspaceId)
   if (pending) return pending
@@ -99,12 +98,11 @@ export function launchCancellationFlow(
 }
 
 function canOfferRetention(launchWorkspaceId: string | null): boolean {
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   return (
     useBillingContext().type.value === 'workspace' &&
     !!launchWorkspaceId &&
-    workspaceStore.isInPersonalWorkspace &&
-    supportsInAppCancellation(workspaceStore.activeWorkspaceBillingRail)
+    workspaceStore.isInPersonalWorkspace
   )
 }
 
@@ -126,7 +124,7 @@ async function showCancellationFlow(
   launchWorkspaceId: string | null,
   showFlow: LaunchCancellationFlowOptions['showFlow']
 ): Promise<void> {
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const isScopeCurrent = launchWorkspaceId
     ? () => workspaceStore.activeWorkspaceId === launchWorkspaceId
     : () => true

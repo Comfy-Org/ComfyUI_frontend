@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/design-system",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Shared design system for ComfyUI Frontend",
   "homepage": "https://comfy.org",
   "license": "MIT",
@@ -14,6 +14,7 @@
     "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git"
   },
   "files": [
+    "dist",
     "src/css",
     "src/icons",
     "src/button.variants.ts",
@@ -24,51 +25,249 @@
   ],
   "type": "module",
   "exports": {
+    "./*": "./src/components/*.vue",
+    "./lib/color-picker/types": "./src/components/color-picker/types.ts",
+    "./lib/composables/useAttrsClass": "./src/components/composables/useAttrsClass.ts",
+    "./lib/composables/usePopoverSizing": "./src/components/composables/usePopoverSizing.ts",
+    "./lib/dialog/dialog.variants": "./src/components/dialog/dialog.variants.ts",
+    "./lib/dialog/types": "./src/components/dialog/types.ts",
+    "./lib/input-group/inputGroup.variants": "./src/components/input-group/inputGroup.variants.ts",
+    "./lib/menu/menuAnchor": "./src/components/menu/menuAnchor.ts",
+    "./lib/menu/menuStyles": "./src/components/menu/menuStyles.ts",
+    "./lib/menu/usePointMenu": "./src/components/menu/usePointMenu.ts",
+    "./lib/menu/types": "./src/components/menu/types.ts",
+    "./lib/message/message.variants": "./src/components/message/message.variants.ts",
+    "./lib/multi-select/types": "./src/components/multi-select/types.ts",
+    "./lib/navigation/types": "./src/components/navigation/types.ts",
+    "./lib/popover/usePopoverViewportDismiss": "./src/components/popover/usePopoverViewportDismiss.ts",
+    "./lib/select/types": "./src/components/select/types.ts",
+    "./lib/select/useSelectSearch": "./src/components/select/useSelectSearch.ts",
+    "./lib/single-select/types": "./src/components/single-select/types.ts",
+    "./lib/table/tableUtils": "./src/components/table/tableUtils.ts",
+    "./lib/tooltip/tooltipConfig": "./src/components/tooltip/tooltipConfig.ts",
+    "./lib/tree/treeStyles": "./src/components/tree/treeStyles.ts",
+    "./components.css": "./dist/components.css",
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
     "./button.variants": {
+      "@comfyorg/design-system": "./src/button.variants.ts",
       "types": "./dist-types/button.variants.d.ts",
       "default": "./src/button.variants.ts"
     },
     "./select.variants": {
+      "@comfyorg/design-system": "./src/select.variants.ts",
       "types": "./dist-types/select.variants.d.ts",
       "default": "./src/select.variants.ts"
     },
     "./tag.variants": {
+      "@comfyorg/design-system": "./src/tag.variants.ts",
       "types": "./dist-types/tag.variants.d.ts",
       "default": "./src/tag.variants.ts"
     },
     "./workspaceAvatar": {
+      "@comfyorg/design-system": "./src/workspaceAvatar.ts",
       "types": "./dist-types/workspaceAvatar.d.ts",
       "default": "./src/workspaceAvatar.ts"
     }
   },
   "publishConfig": {
+    "exports": {
+      "./*": {
+        "types": "./dist/*.vue.d.ts",
+        "import": "./dist/*.vue.js",
+        "default": "./dist/*.vue.js"
+      },
+      "./lib/color-picker/types": {
+        "types": "./dist/color-picker/types.d.ts",
+        "import": "./dist/color-picker/types.js",
+        "default": "./dist/color-picker/types.js"
+      },
+      "./lib/composables/useAttrsClass": {
+        "types": "./dist/composables/useAttrsClass.d.ts",
+        "import": "./dist/composables/useAttrsClass.js",
+        "default": "./dist/composables/useAttrsClass.js"
+      },
+      "./lib/composables/usePopoverSizing": {
+        "types": "./dist/composables/usePopoverSizing.d.ts",
+        "import": "./dist/composables/usePopoverSizing.js",
+        "default": "./dist/composables/usePopoverSizing.js"
+      },
+      "./lib/dialog/dialog.variants": {
+        "types": "./dist/dialog/dialog.variants.d.ts",
+        "import": "./dist/dialog/dialog.variants.js",
+        "default": "./dist/dialog/dialog.variants.js"
+      },
+      "./lib/dialog/types": {
+        "types": "./dist/dialog/types.d.ts",
+        "import": "./dist/dialog/types.js",
+        "default": "./dist/dialog/types.js"
+      },
+      "./lib/input-group/inputGroup.variants": {
+        "types": "./dist/input-group/inputGroup.variants.d.ts",
+        "import": "./dist/input-group/inputGroup.variants.js",
+        "default": "./dist/input-group/inputGroup.variants.js"
+      },
+      "./lib/menu/menuAnchor": {
+        "types": "./dist/menu/menuAnchor.d.ts",
+        "import": "./dist/menu/menuAnchor.js",
+        "default": "./dist/menu/menuAnchor.js"
+      },
+      "./lib/menu/menuStyles": {
+        "types": "./dist/menu/menuStyles.d.ts",
+        "import": "./dist/menu/menuStyles.js",
+        "default": "./dist/menu/menuStyles.js"
+      },
+      "./lib/menu/usePointMenu": {
+        "types": "./dist/menu/usePointMenu.d.ts",
+        "import": "./dist/menu/usePointMenu.js",
+        "default": "./dist/menu/usePointMenu.js"
+      },
+      "./lib/menu/types": {
+        "types": "./dist/menu/types.d.ts",
+        "import": "./dist/menu/types.js",
+        "default": "./dist/menu/types.js"
+      },
+      "./lib/message/message.variants": {
+        "types": "./dist/message/message.variants.d.ts",
+        "import": "./dist/message/message.variants.js",
+        "default": "./dist/message/message.variants.js"
+      },
+      "./lib/multi-select/types": {
+        "types": "./dist/multi-select/types.d.ts",
+        "import": "./dist/multi-select/types.js",
+        "default": "./dist/multi-select/types.js"
+      },
+      "./lib/navigation/types": {
+        "types": "./dist/navigation/types.d.ts",
+        "import": "./dist/navigation/types.js",
+        "default": "./dist/navigation/types.js"
+      },
+      "./lib/popover/usePopoverViewportDismiss": {
+        "types": "./dist/popover/usePopoverViewportDismiss.d.ts",
+        "import": "./dist/popover/usePopoverViewportDismiss.js",
+        "default": "./dist/popover/usePopoverViewportDismiss.js"
+      },
+      "./lib/select/types": {
+        "types": "./dist/select/types.d.ts",
+        "import": "./dist/select/types.js",
+        "default": "./dist/select/types.js"
+      },
+      "./lib/select/useSelectSearch": {
+        "types": "./dist/select/useSelectSearch.d.ts",
+        "import": "./dist/select/useSelectSearch.js",
+        "default": "./dist/select/useSelectSearch.js"
+      },
+      "./lib/single-select/types": {
+        "types": "./dist/single-select/types.d.ts",
+        "import": "./dist/single-select/types.js",
+        "default": "./dist/single-select/types.js"
+      },
+      "./lib/table/tableUtils": {
+        "types": "./dist/table/tableUtils.d.ts",
+        "import": "./dist/table/tableUtils.js",
+        "default": "./dist/table/tableUtils.js"
+      },
+      "./lib/tooltip/tooltipConfig": {
+        "types": "./dist/tooltip/tooltipConfig.d.ts",
+        "import": "./dist/tooltip/tooltipConfig.js",
+        "default": "./dist/tooltip/tooltipConfig.js"
+      },
+      "./lib/tree/treeStyles": {
+        "types": "./dist/tree/treeStyles.d.ts",
+        "import": "./dist/tree/treeStyles.js",
+        "default": "./dist/tree/treeStyles.js"
+      },
+      "./components.css": "./dist/components.css",
+      "./css/style.css": "./src/css/published.css",
+      "./css/*": "./src/css/*",
+      "./icons/*": "./src/icons/*",
+      "./button.variants": {
+        "types": "./dist-types/button.variants.d.ts",
+        "default": "./src/button.variants.ts"
+      },
+      "./select.variants": {
+        "types": "./dist-types/select.variants.d.ts",
+        "default": "./src/select.variants.ts"
+      },
+      "./tag.variants": {
+        "types": "./dist-types/tag.variants.d.ts",
+        "default": "./src/tag.variants.ts"
+      },
+      "./workspaceAvatar": {
+        "types": "./dist-types/workspaceAvatar.d.ts",
+        "default": "./src/workspaceAvatar.ts"
+      }
+    },
     "access": "public"
   },
   "scripts": {
+    "build": "vite build && tsc -b tsconfig.declarations.json",
+    "prepack": "pnpm build",
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
     "test": "vitest run",
-    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit",
-    "build": "tsc -b tsconfig.declarations.json",
-    "prepack": "pnpm build"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
   "dependencies": {
     "@iconify-json/lucide": "catalog:",
     "@iconify/tailwind4": "catalog:",
     "@iconify/tools": "catalog:",
     "@iconify/utils": "catalog:",
+    "chart.js": "^4.5.0",
+    "clsx": "^2.1.1",
     "cva": "catalog:",
+    "dompurify": "catalog:",
+    "es-toolkit": "catalog:",
+    "fuse.js": "^7.0.0",
+    "tailwind-merge": "^2.2.0",
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {
+    "@comfyorg/shared-frontend-utils": "workspace:^",
+    "@comfyorg/tailwind-utils": "workspace:^",
+    "@storybook/vue3-vite": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@testing-library/vue": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "@vueuse/core": "catalog:",
+    "@vueuse/integrations": "catalog:",
+    "happy-dom": "catalog:",
+    "reka-ui": "catalog:",
+    "storybook": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:",
+    "vue": "catalog:",
+    "vue-component-type-helpers": "catalog:"
   },
   "peerDependencies": {
-    "tailwindcss": "^4.1.0"
+    "@vueuse/core": "^14.4.0",
+    "@vueuse/integrations": "^14.4.0",
+    "reka-ui": "^2.10.5",
+    "tailwindcss": "^4.1.0",
+    "vue": "^3.5.40",
+    "vue-component-type-helpers": "^3.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@vueuse/core": {
+      "optional": true
+    },
+    "@vueuse/integrations": {
+      "optional": true
+    },
+    "reka-ui": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    },
+    "vue-component-type-helpers": {
+      "optional": true
+    }
   }
 }

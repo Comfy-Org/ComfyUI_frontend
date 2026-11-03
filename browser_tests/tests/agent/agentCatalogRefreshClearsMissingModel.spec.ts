@@ -1,6 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
 
-import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import type { ObjectInfoResponse } from '@comfyorg/object-info-parser'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -20,6 +20,11 @@ test.describe(
   () => {
     test.use({
       connectWebSocketToServer: false,
+      initialLocalStorage: {
+        'Comfy.AgentConsent.IntroductionResponded.signed-out': 'true',
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true'
+      },
       initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true },
       objectInfo: 'server'
     })

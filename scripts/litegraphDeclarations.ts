@@ -19,7 +19,10 @@ function registryAugmentation(node: ts.Node): node is ts.ModuleDeclaration & {
   )
 }
 
-export function createLitegraphDeclarationTransform(root: string) {
+export function createLitegraphDeclarationTransform(
+  root: string,
+  registryRoot = resolve(root, 'types')
+) {
   const registrations: Registration[] = readdirSync(root, {
     recursive: true,
     encoding: 'utf8'
@@ -68,11 +71,11 @@ export function createLitegraphDeclarationTransform(root: string) {
     content: string
   ): { content: string } | undefined => {
     const outputPath = filePath.replaceAll('\\', '/')
-    if (outputPath.endsWith('/types/entityRegistry.d.ts')) {
+    if (outputPath.endsWith('/entityRegistry.d.ts')) {
       return {
         content: registrations
           .map(({ file, names }) => {
-            const owner = relative('types', file)
+            const owner = relative(registryRoot, resolve(root, file))
               .replaceAll('\\', '/')
               .replace(/\.ts$/, '')
             return `export type { ${names.map(({ name, alias }) => `${alias} as ${name}`).join(', ')} } from '${owner.startsWith('.') ? owner : './' + owner}'`

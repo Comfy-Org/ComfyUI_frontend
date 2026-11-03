@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 import {
   bezierHead,
   bezierTail,

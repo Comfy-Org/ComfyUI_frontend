@@ -30,8 +30,8 @@ import {
   restoreSurveyReplayRequest
 } from '@/platform/onboarding/onboardingReplay'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAuthStore } from '@/stores/authStore'
 
 import DynamicSurveyForm from './survey/DynamicSurveyForm.vue'

@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-import type { Point } from './types'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useMaskEditorStore } from './maskEditorStore'
 import { useCoordinateTransform } from './useCoordinateTransform'
 

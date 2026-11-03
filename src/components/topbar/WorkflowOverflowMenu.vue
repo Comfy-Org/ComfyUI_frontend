@@ -25,8 +25,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
@@ -44,7 +44,9 @@ const menuItems = computed(() =>
     label: workflow.filename,
     key: workflow.path,
     icon:
-      props.activeWorkflow?.key === workflow.key ? 'pi pi-check' : undefined,
+      props.activeWorkflow?.key === workflow.key
+        ? 'icon-[lucide--check]'
+        : undefined,
     command: () => {
       void workflowService.openWorkflow(workflow, { initiator: 'user' })
     }

@@ -34,6 +34,9 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      - name: Build design-system consumer prerequisites
+        run: pnpm --filter @comfyorg/design-system build
+
       - name: Audit new findings
         id: audit
         uses: fallow-rs/fallow@c2da9fcae5388226a87e986b1812f9c872d288c6 # v3.24.1

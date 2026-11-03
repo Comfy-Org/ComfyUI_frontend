@@ -1,12 +1,11 @@
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
-import { useAuthStore } from '@/stores/authStore'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   BillingOpStatusResponse,
   SavedPaymentMethod
-} from './workspaceApi'
+} from '@comfyorg/billing-core'
 
 const { mockAxiosInstance } = vi.hoisted(() => ({
   mockAxiosInstance: {
@@ -15,7 +14,7 @@ const { mockAxiosInstance } = vi.hoisted(() => ({
     put: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
-    interceptors: { response: { use: vi.fn() } }
+    interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } }
   }
 }))
 
@@ -35,22 +34,24 @@ vi.mock<unknown>(import('axios'), () => ({
 
 vi.mock(import('@/i18n'))
 
-vi.mock(import('./workspaceApiUrl'), () => ({
-  workspaceApiUrl: (path: string) => `/api${path}`
+vi.mock(import('@/platform/remote/ingest/ingestApiUrl'), () => ({
+  ingestApiUrl: (path: string) => `/api${path}`
 }))
 
-vi.mock(import('firebase/auth'), { spy: true })
+import { workspaceApi } from './workspaceApi'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { setIngestApiAuth } from '@/platform/remote/ingest/ingestApi'
+import type { IngestApiAuth } from '@/platform/remote/ingest/ingestApi'
+import { NoWorkspaceAccessError } from '@/platform/remote/ingest/ingestApiError'
+const auth = {
+  getWorkspaceAuthHeader: vi.fn<IngestApiAuth['getWorkspaceAuthHeader']>(),
+  getFirebaseAuthHeader: vi.fn<IngestApiAuth['getFirebaseAuthHeader']>(),
+  attachRetryInterceptor: vi.fn()
+}
 
 beforeEach(() => {
-  stubFirebaseAuthHarness()
+  setIngestApiAuth(auth)
 })
-
-import { workspaceApi } from './workspaceApi'
-import { installWorkspaceApiAuth } from './workspaceApiAuth'
-import { NoWorkspaceAccessError } from './workspaceApiError'
-import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
-
-installWorkspaceApiAuth()
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 
@@ -67,12 +68,8 @@ function axiosRejection(status: number, data: unknown) {
 
 describe('workspaceApi', () => {
   beforeEach(() => {
-    vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockResolvedValue(
-      AUTH_HEADER
-    )
-    vi.mocked(useAuthStore().getFirebaseAuthHeaderOrThrow).mockResolvedValue(
-      AUTH_HEADER
-    )
+    vi.mocked(auth.getWorkspaceAuthHeader).mockResolvedValue(AUTH_HEADER)
+    vi.mocked(auth.getFirebaseAuthHeader).mockResolvedValue(AUTH_HEADER)
   })
 
   describe('billing request dispatch telemetry', () => {
@@ -90,9 +87,9 @@ describe('workspaceApi', () => {
       async (status) => {
         const response = { billing_op_id: 'op-subscription', status }
         mockAxiosInstance.post.mockResolvedValueOnce({ data: response })
-        await expect(
-          workspaceApi.subscribe('standard-monthly')
-        ).resolves.toEqual(response)
+        await expect(billingApi.subscribe('standard-monthly')).resolves.toEqual(
+          response
+        )
         expect(record).toHaveBeenLastCalledWith({
           operation: 'subscription_checkout',
           stage: 'checkout_received',
@@ -114,7 +111,7 @@ describe('workspaceApi', () => {
           amount_cents: 5000
         }
         mockAxiosInstance.post.mockResolvedValueOnce({ data: response })
-        await expect(workspaceApi.createTopup(5000)).resolves.toEqual(response)
+        await expect(billingApi.createTopup(5000)).resolves.toEqual(response)
         expect(record).toHaveBeenLastCalledWith({
           operation: 'topup',
           stage: 'checkout_received',
@@ -131,8 +128,8 @@ describe('workspaceApi', () => {
       async (operation) => {
         const send = () =>
           operation === 'topup'
-            ? workspaceApi.createTopup(5000)
-            : workspaceApi.subscribe('standard-monthly')
+            ? billingApi.createTopup(5000)
+            : billingApi.subscribe('standard-monthly')
         const error = new Error('request rejected')
         mockAxiosInstance.post.mockImplementationOnce(() => {
           expect(record).toHaveBeenCalledExactlyOnceWith({
@@ -146,9 +143,7 @@ describe('workspaceApi', () => {
 
         record.mockClear()
         mockAxiosInstance.post.mockClear()
-        vi.mocked(
-          useAuthStore().getWorkspaceAuthHeaderOrThrow
-        ).mockRejectedValueOnce(error)
+        vi.mocked(auth.getWorkspaceAuthHeader).mockRejectedValueOnce(error)
         await expect(send()).rejects.toBe(error)
         expect(record).not.toHaveBeenCalled()
         expect(mockAxiosInstance.post).not.toHaveBeenCalled()
@@ -159,18 +154,14 @@ describe('workspaceApi', () => {
   describe('authentication', () => {
     it('propagates error when workspace authentication rejects', async () => {
       const authError = new Error('toastMessages.userNotAuthenticated')
-      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockRejectedValue(
-        authError
-      )
+      vi.mocked(auth.getWorkspaceAuthHeader).mockRejectedValue(authError)
 
       await expect(workspaceApi.list()).rejects.toBe(authError)
     })
 
     it('propagates error when getFirebaseAuthHeaderOrThrow rejects', async () => {
       const authError = new Error('toastMessages.userNotAuthenticated')
-      vi.mocked(useAuthStore().getFirebaseAuthHeaderOrThrow).mockRejectedValue(
-        authError
-      )
+      vi.mocked(auth.getFirebaseAuthHeader).mockRejectedValue(authError)
 
       await expect(workspaceApi.acceptInvite('token')).rejects.toBe(authError)
     })
@@ -195,7 +186,7 @@ describe('workspaceApi', () => {
     it.for([
       {
         operation: 'getBillingOpStatus',
-        call: () => workspaceApi.getBillingOpStatus('op-1'),
+        call: () => billingApi.getBillingOpStatus('op-1'),
         code: undefined
       },
       {
@@ -364,15 +355,19 @@ describe('workspaceApi', () => {
   })
 
   describe('deployment picking', () => {
-    it('listDeployments() sends GET /workspaces/:id/deployments with a 30 second timeout', async () => {
+    it('listDeployments() sends GET /workspaces/:id/deployments with a 30 second timeout and no status retry', async () => {
       const data = { items: [], builds_visible: true }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.listDeployments('ws-1')
+      const result = await workspaceApi.listDeployments('ws-1', [])
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/workspaces/ws-1/deployments',
-        { headers: AUTH_HEADER, timeout: 30_000 }
+        expect.objectContaining({
+          headers: AUTH_HEADER,
+          timeout: 30_000,
+          __skipStatusRetry: true
+        })
       )
       expect(result).toEqual(data)
     })
@@ -422,6 +417,79 @@ describe('workspaceApi', () => {
       }
     )
 
+    it('getReleaseUnsupportedPacks() sends GET /release/unsupported-packs and reads the packs and their release', async () => {
+      const data = {
+        release_id: 'release-2',
+        packs: [
+          {
+            folder: 'ComfyUI-NVIDIA-VFX',
+            registry_id: 'comfyui-nvidia-vfx',
+            repository: 'https://github.com/NVIDIA/ComfyUI-NVIDIA-VFX',
+            cause: 'needs a GPU'
+          }
+        ]
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getReleaseUnsupportedPacks()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/release/unsupported-packs',
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getReleaseUnsupportedPacks() reads a pack not installed from the registry, with its cause', async () => {
+      const data = {
+        release_id: 'rel-picked',
+        packs: [
+          {
+            folder: 'ComfyUI_Nvidia_RTX_Nodes',
+            registry_id: '',
+            repository: '',
+            cause: 'needs a GPU'
+          }
+        ]
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getReleaseUnsupportedPacks()
+
+      expect(result.packs).toEqual([
+        {
+          folder: 'ComfyUI_Nvidia_RTX_Nodes',
+          registry_id: '',
+          repository: '',
+          cause: 'needs a GPU'
+        }
+      ])
+    })
+
+    it('getReleaseUnsupportedPacks() rejects a pack whose registry id is in camelCase', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: {
+          release_id: 'rel-picked',
+          packs: [
+            {
+              folder: 'ComfyUI_Nvidia_RTX_Nodes',
+              registryId: '',
+              repository: '',
+              cause: 'needs a GPU'
+            }
+          ]
+        }
+      })
+
+      await expect(workspaceApi.getReleaseUnsupportedPacks()).rejects.toThrow()
+    })
+
+    it('getReleaseUnsupportedPacks() rejects a body without packs', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ data: { items: [] } })
+
+      await expect(workspaceApi.getReleaseUnsupportedPacks()).rejects.toThrow()
+    })
+
     it('pickDeployment() sends PUT /workspaces/:id/deployment with the deployment', async () => {
       mockAxiosInstance.put.mockResolvedValue({})
 
@@ -434,14 +502,55 @@ describe('workspaceApi', () => {
       )
     })
 
+    it('startDeployment() sends POST /workspaces/:id/deployments/:deployment/start with no body and a 30 second timeout', async () => {
+      const data = { deployment_id: 'dep-1/x', status: 'queued' }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      const result = await workspaceApi.startDeployment('ws-1', 'dep-1/x')
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments/dep-1%2Fx/start',
+        undefined,
+        { headers: AUTH_HEADER, timeout: 30_000 }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('startDeployment() rejects an answer that does not say the status', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { deployment_id: 'dep-1' }
+      })
+
+      await expect(
+        workspaceApi.startDeployment('ws-1', 'dep-1')
+      ).rejects.toThrow()
+    })
+
+    it('startDeployment() turns a refusal into a WorkspaceApiError with its code and message', async () => {
+      mockAxiosInstance.post.mockRejectedValue(
+        axiosRejection(429, {
+          code: 'CONCURRENCY_LIMIT',
+          message: 'Three deployments are already running.'
+        })
+      )
+
+      await expect(
+        workspaceApi.startDeployment('ws-1', 'dep-1')
+      ).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 429,
+        code: 'CONCURRENCY_LIMIT',
+        message: 'Three deployments are already running.',
+        operation: 'startDeployment'
+      })
+    })
+
     it('does not dispatch a canceled deployment selection when authorization finishes late', async () => {
       let finishAuth!: (headers: typeof AUTH_HEADER) => void
-      const auth = new Promise<typeof AUTH_HEADER>((resolve) => {
+      const pendingAuth = new Promise<typeof AUTH_HEADER>((resolve) => {
         finishAuth = resolve
       })
-      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockReturnValue(
-        auth
-      )
+      vi.mocked(auth.getWorkspaceAuthHeader).mockReturnValue(pendingAuth)
       const controller = new AbortController()
       const selected = workspaceApi.pickDeployment(
         'ws-1',
@@ -456,14 +565,12 @@ describe('workspaceApi', () => {
 
     it('does not mint a canceled top-up checkout when authorization finishes late', async () => {
       let finishAuth!: (headers: typeof AUTH_HEADER) => void
-      const auth = new Promise<typeof AUTH_HEADER>((resolve) => {
+      const pendingAuth = new Promise<typeof AUTH_HEADER>((resolve) => {
         finishAuth = resolve
       })
-      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockReturnValue(
-        auth
-      )
+      vi.mocked(auth.getWorkspaceAuthHeader).mockReturnValue(pendingAuth)
       const controller = new AbortController()
-      const checkout = workspaceApi.createTopupCheckout(
+      const checkout = billingApi.createTopupCheckout(
         1000,
         'https://cloud.comfy.org/topup-return',
         controller.signal
@@ -705,10 +812,8 @@ describe('workspaceApi', () => {
 
       const result = await workspaceApi.acceptInvite('abc-token')
 
-      expect(useAuthStore().getFirebaseAuthHeaderOrThrow).toHaveBeenCalled()
-      expect(
-        useAuthStore().getWorkspaceAuthHeaderOrThrow
-      ).not.toHaveBeenCalled()
+      expect(auth.getFirebaseAuthHeader).toHaveBeenCalled()
+      expect(auth.getWorkspaceAuthHeader).not.toHaveBeenCalled()
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/invites/abc-token/accept',
         null,
@@ -723,7 +828,7 @@ describe('workspaceApi', () => {
       const data = { is_active: true, has_funds: true }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingStatus()
+      const result = await billingApi.getBillingStatus()
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/status',
@@ -738,7 +843,7 @@ describe('workspaceApi', () => {
       const data = { amount_micros: 5000000, currency: 'USD' }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingBalance()
+      const result = await billingApi.getBillingBalance()
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/balance',
@@ -772,9 +877,7 @@ describe('workspaceApi', () => {
       }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingCapabilities(
-        controller.signal
-      )
+      const result = await billingApi.getBillingCapabilities(controller.signal)
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/capabilities',
@@ -787,7 +890,7 @@ describe('workspaceApi', () => {
       const data = { status: 'off' }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingAutoReload()
+      const result = await billingApi.getBillingAutoReload()
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/auto-reload',
@@ -800,7 +903,7 @@ describe('workspaceApi', () => {
       const data = { plans: [] }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingPlans()
+      const result = await billingApi.getBillingPlans()
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/billing/plans', {
         headers: AUTH_HEADER
@@ -836,7 +939,7 @@ describe('workspaceApi', () => {
     ])('prepareRetentionFlow() returns a session $name', async ({ data }) => {
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      await expect(workspaceApi.prepareRetentionFlow()).resolves.toEqual(data)
+      await expect(billingApi.prepareRetentionFlow()).resolves.toEqual(data)
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/retention/prepare',
         {},
@@ -849,7 +952,7 @@ describe('workspaceApi', () => {
         data: { ...retentionFlow, session_id: 'not-a-session' }
       })
 
-      await expect(workspaceApi.prepareRetentionFlow()).rejects.toMatchObject({
+      await expect(billingApi.prepareRetentionFlow()).rejects.toMatchObject({
         name: 'ZodError'
       })
     })
@@ -859,7 +962,7 @@ describe('workspaceApi', () => {
       mockAxiosInstance.post.mockResolvedValue({ data })
 
       await expect(
-        workspaceApi.acceptRetentionOffer(retentionFlow.session_id)
+        billingApi.acceptRetentionOffer(retentionFlow.session_id)
       ).resolves.toEqual(data)
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/retention/accept',
@@ -875,7 +978,7 @@ describe('workspaceApi', () => {
         event: 'offer_shown'
       } as const
 
-      await workspaceApi.recordRetentionFlowEvent(event)
+      await billingApi.recordRetentionFlowEvent(event)
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/retention/events',
@@ -898,7 +1001,7 @@ describe('workspaceApi', () => {
         config: { headers: AUTH_HEADER }
       })
 
-      await expect(workspaceApi.prepareRetentionFlow()).rejects.toMatchObject({
+      await expect(billingApi.prepareRetentionFlow()).rejects.toMatchObject({
         name: 'WorkspaceApiError',
         status: 503,
         code: 'RETENTION_UNAVAILABLE',
@@ -920,7 +1023,7 @@ describe('workspaceApi', () => {
       ]
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.listSavedPaymentMethods()
+      const result = await billingApi.listSavedPaymentMethods()
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/payment-methods',
@@ -932,7 +1035,7 @@ describe('workspaceApi', () => {
     it('previewSubscribe() sends the promotion code only when applied', async () => {
       mockAxiosInstance.post.mockResolvedValue({ data: { allowed: true } })
 
-      await workspaceApi.previewSubscribe('pro-monthly', {
+      await billingApi.previewSubscribe('pro-monthly', {
         promotionCode: 'SAVE20'
       })
 
@@ -948,7 +1051,7 @@ describe('workspaceApi', () => {
         data: { billing_op_id: 'op-quote', status: 'subscribed' }
       })
 
-      await workspaceApi.subscribe('pro-monthly', {
+      await billingApi.subscribe('pro-monthly', {
         promotionCode: 'SAVE20',
         quoteId: 'quote_123',
         quoteVersion: 2,
@@ -972,7 +1075,7 @@ describe('workspaceApi', () => {
         data: { billing_op_id: 'op-no-promo', status: 'subscribed' }
       })
 
-      await workspaceApi.subscribe('pro-monthly')
+      await billingApi.subscribe('pro-monthly')
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/subscribe',
@@ -981,54 +1084,11 @@ describe('workspaceApi', () => {
       )
     })
 
-    it('subscribe() rejects mutually exclusive payment credentials', async () => {
-      await expect(
-        workspaceApi.subscribe('pro-monthly', {
-          confirmationToken: 'ctoken_1',
-          savedPaymentMethodId: 'pm_saved'
-        })
-      ).rejects.toThrow(
-        'confirmationToken and savedPaymentMethodId are mutually exclusive'
-      )
-
-      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
-    })
-
-    it('subscribe() omits an empty credential from the request', async () => {
-      mockAxiosInstance.post.mockResolvedValueOnce({ data: {} })
-
-      await workspaceApi.subscribe('pro-monthly', { confirmationToken: '' })
-
-      const body = mockAxiosInstance.post.mock.calls[0][1]
-      expect(body).not.toHaveProperty('confirmation_token', '')
-      expect(body.confirmation_token).toBeUndefined()
-
-      mockAxiosInstance.post.mockResolvedValueOnce({ data: {} })
-      await workspaceApi.subscribe('pro-monthly', { savedPaymentMethodId: '' })
-
-      const savedBody = mockAxiosInstance.post.mock.calls[1][1]
-      expect(savedBody).not.toHaveProperty('saved_payment_method_id', '')
-      expect(savedBody.saved_payment_method_id).toBeUndefined()
-    })
-
-    it('subscribe() rejects an empty credential alongside a saved one', async () => {
-      await expect(
-        workspaceApi.subscribe('pro-monthly', {
-          confirmationToken: '',
-          savedPaymentMethodId: 'pm_saved'
-        })
-      ).rejects.toThrow(
-        'confirmationToken and savedPaymentMethodId are mutually exclusive'
-      )
-
-      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
-    })
-
     it('previewSubscribe() sends fields defined by the ingest contract', async () => {
       const data = { allowed: true, transition_type: 'new_subscription' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.previewSubscribe(
+      const result = await billingApi.previewSubscribe(
         'team_per_credit_annual',
         {
           teamCreditStopId: 'team_700'
@@ -1050,7 +1110,7 @@ describe('workspaceApi', () => {
       const data = { billing_op_id: 'op-1', status: 'subscribed' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.subscribe('pro-monthly', {
+      const result = await billingApi.subscribe('pro-monthly', {
         confirmationToken: 'ctoken_1',
         returnUrl: 'https://return.url',
         cancelUrl: 'https://cancel.url'
@@ -1075,7 +1135,7 @@ describe('workspaceApi', () => {
       const data = { billing_op_id: 'op-1b', status: 'needs_payment_method' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.subscribe('team_per_credit_annual', {
+      const result = await billingApi.subscribe('team_per_credit_annual', {
         teamCreditStopId: 'team_700',
         billingCycle: 'yearly'
       })
@@ -1099,7 +1159,7 @@ describe('workspaceApi', () => {
       const data = { billing_op_id: 'op-1c', status: 'subscribed' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.subscribe('pro-monthly', {
+      const result = await billingApi.subscribe('pro-monthly', {
         confirmReactivation: true,
         prorationAt: '2026-07-29T12:00:00Z'
       })
@@ -1120,7 +1180,7 @@ describe('workspaceApi', () => {
       const data = { billing_op_id: 'op-2', cancel_at: '2026-05-01' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.cancelSubscription('key-1')
+      const result = await billingApi.cancelSubscription('key-1')
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/subscription/cancel',
@@ -1134,7 +1194,7 @@ describe('workspaceApi', () => {
       const data = { billing_op_id: 'op-3', status: 'active' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.resubscribe('key-2')
+      const result = await billingApi.resubscribe('key-2')
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/subscription/resubscribe',
@@ -1150,7 +1210,7 @@ describe('workspaceApi', () => {
       const data = { url: 'https://stripe.com/portal' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getPaymentPortalUrl(
+      const result = await billingApi.getPaymentPortalUrl(
         'https://app.com/settings'
       )
 
@@ -1167,7 +1227,7 @@ describe('workspaceApi', () => {
         data: { url: 'https://stripe.com/portal' }
       })
 
-      await workspaceApi.getPaymentPortalUrl(
+      await billingApi.getPaymentPortalUrl(
         'https://app.com/settings',
         'payment_method_update'
       )
@@ -1191,7 +1251,7 @@ describe('workspaceApi', () => {
       }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.createTopup(1000, 'key-3')
+      const result = await billingApi.createTopup(1000, 'key-3')
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/topup',
@@ -1207,7 +1267,7 @@ describe('workspaceApi', () => {
       const data = { total: 0, events: [], page: 1, limit: 10, totalPages: 0 }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingEvents({
+      const result = await billingApi.getBillingEvents({
         page: 1,
         limit: 10
       })
@@ -1233,7 +1293,7 @@ describe('workspaceApi', () => {
       } satisfies BillingOpStatusResponse
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingOpStatus('op-1')
+      const result = await billingApi.getBillingOpStatus('op-1')
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/ops/op-1',

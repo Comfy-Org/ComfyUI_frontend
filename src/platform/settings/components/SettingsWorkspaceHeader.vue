@@ -28,7 +28,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
+import type { SubscriptionTier } from '@comfyorg/billing-core'
 
 const {
   workspaceName,

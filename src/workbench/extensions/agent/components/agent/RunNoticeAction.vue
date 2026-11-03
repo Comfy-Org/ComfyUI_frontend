@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 defineProps<{
   label: string
@@ -20,6 +20,6 @@ defineEmits<{ run: [] }>()
     @click="$emit('run')"
   >
     {{ $t(label) }}
-    <span v-if="icon" :class="icon" />
+    <i v-if="icon" aria-hidden="true" :class="icon" />
   </Button>
 </template>

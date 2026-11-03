@@ -2,7 +2,7 @@ import type {
   LGraphNode,
   SubgraphInput,
   SubgraphOutputNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
 import {
@@ -10,14 +10,17 @@ import {
   mintLinkId
 } from '@/lib/litegraph/src/idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
-import type { RerouteId } from '@/types/rerouteId'
-import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type {
+  PointTuple as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 
 import { SubgraphSlot } from './SubgraphSlotBase'
 import { isNodeSlot, isSubgraphInput } from './subgraphTypeGuards'
@@ -165,6 +168,6 @@ export class SubgraphOutput extends SubgraphSlot {
 
 type RegisteredSubgraphOutput = SubgraphOutput
 
-declare module '../types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface SubgraphOutput extends RegisteredSubgraphOutput {}
 }

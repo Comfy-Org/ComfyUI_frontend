@@ -1,16 +1,17 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+
 import { load3dWidgets } from '@/extensions/core/load3d/load3dWidgets'
 import {
   audioWidgetExtension,
   recordAudioExtension
 } from '@/extensions/core/uploadAudio'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { proveWidgetForm } from '@/lib/litegraph/src/node/widgetFormProof'
-import type { WidgetFormRefusal } from '@/lib/litegraph/src/node/widgetFormProof'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { proveWidgetForm } from '@/lib/litegraph/src/widgets/widgetFormProof'
+import type { WidgetFormProof } from '@/lib/litegraph/src/widgets/widgetFormProof'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 // Installs LGraphNode.prototype.addDOMWidget, which the audio widget constructors call.
 import '@/scripts/domWidget'
@@ -29,7 +30,7 @@ import '@/scripts/domWidget'
  *
  * The invariant is one-directional — either no form, or a form that agrees; never a form that
  * disagrees — so a `provable: false` here is a pass, not a limitation. Subgraph hosts are the
- * other three cases and live in `src/lib/litegraph/src/node/widgetFormProof.subgraph.test.ts`.
+ * other three cases and live in `src/lib/litegraph/src/widgets/widgetFormProof.subgraph.test.ts`.
  */
 
 interface CapturedSerialization {
@@ -63,7 +64,14 @@ function proveSerialization(node: LGraphNode) {
       captured.widgetsAtCoreSite,
       captured.final,
       captured.atCoreSite,
-      { serializeWidgets: node.serialize_widgets }
+      {
+        serializeWidgets: node.serialize_widgets,
+        replayed: false,
+        coreIsLastWriter:
+          node.serialize === LGraphNode.prototype.serialize &&
+          node.serializeFromStoreState ===
+            LGraphNode.prototype.serializeFromStoreState
+      }
     )
   }
 }
@@ -72,7 +80,7 @@ function proveSerialization(node: LGraphNode) {
  * The exact shape a refusal must have. Typing the reason as `WidgetFormRefusal` means a renamed
  * or deleted refusal fails typecheck here instead of silently becoming an unasserted string.
  */
-function refusal(reason: WidgetFormRefusal) {
+function refusal(reason: NonNullable<WidgetFormProof['refusal']>) {
   return { provable: false, refusal: reason, order: null }
 }
 

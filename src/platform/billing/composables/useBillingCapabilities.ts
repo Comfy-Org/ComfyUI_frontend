@@ -6,18 +6,17 @@ import {
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
-import { onCapabilityRevision } from '@/platform/billing/api/capabilityRevision'
-import type { BillingCapabilitiesRead } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { onCapabilityRevision } from '@/platform/remote/ingest/capabilityRevision'
+import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
+import { parseBillingTopUpDenial } from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { reportWorkspaceScopeMismatch } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { reportWorkspaceScopeMismatch } from '@/platform/billing/telemetry/workspaceTelemetryContext'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -73,7 +72,7 @@ function readCapabilitiesResponse(
   revalidating: boolean
 ): Promise<BillingCapabilitiesRead | undefined> {
   const rail = useBillingReadRail()
-  if (rail === null) return workspaceApi.getBillingCapabilities(signal)
+  if (rail === null) return billingApi.getBillingCapabilities(signal)
   return readOnRail(
     () => rail.readCapabilities({ signal, forceRefresh: revalidating }),
     'getBillingCapabilities'
@@ -83,7 +82,7 @@ function readCapabilitiesResponse(
 function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
   const apiKeyAuthStore = useApiKeyAuthStore()
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const actorId = computed(
     () => authStore.userId ?? apiKeyAuthStore.currentUser?.id
   )
@@ -117,8 +116,8 @@ function useBillingCapabilitiesInternal() {
   )
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
   const canTopUp = computed(() => capabilities.value?.can_top_up ?? false)
-  const topUpDenial = computed<string | undefined>(
-    () => resolvedResponse.value?.denied_reasons?.can_top_up
+  const topUpDenial = computed(() =>
+    parseBillingTopUpDenial(resolvedResponse.value?.denied_reasons?.can_top_up)
   )
   const canManageBilling = computed(() =>
     receiveServerFact(
@@ -197,6 +196,18 @@ function useBillingCapabilitiesInternal() {
     receiveServerFact(
       'can_manage_auto_top_up',
       capabilities.value?.can_manage_auto_top_up ?? false
+    )
+  )
+  const manageAutoTopUpDenial = computed(() =>
+    receiveServerFact(
+      'denied_reasons.can_manage_auto_top_up',
+      resolvedResponse.value?.denied_reasons?.can_manage_auto_top_up
+    )
+  )
+  const autoTopUpEnabled = computed(() =>
+    receiveServerFact(
+      'auto_top_up_enabled',
+      resolvedResponse.value?.auto_top_up_enabled ?? false
     )
   )
   const autoTopUpSetup = computed(
@@ -572,6 +583,8 @@ function useBillingCapabilitiesInternal() {
     canManageSubscription,
     canDowngradeToPersonal,
     canManageAutoTopUp,
+    manageAutoTopUpDenial,
+    autoTopUpEnabled,
     autoTopUpSetup,
     canRunWorkflows,
     planKind,

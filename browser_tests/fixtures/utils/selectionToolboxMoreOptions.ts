@@ -16,7 +16,10 @@ export async function openMoreOptionsMenu(
 
   await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
 
-  const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
+  const moreOptionsBtn = comfyPage.selectionToolbox.getByRole('button', {
+    name: 'More Options',
+    exact: true
+  })
   await expect(moreOptionsBtn).toBeVisible()
   await moreOptionsBtn.click()
   await comfyPage.nextFrame()

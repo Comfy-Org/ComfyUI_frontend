@@ -7,7 +7,7 @@ import {
   pendingSubscription
 } from '@/platform/billing/sdk/billingSdkTestUtils'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
+import type { BillingSdk } from '@comfyorg/billing-core/sdk'
 import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import { useSubscriptionOperationView } from '@/platform/billing/composables/useSubscriptionRail'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
@@ -17,10 +17,10 @@ import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPo
 vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
-vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
+vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 

@@ -1837,12 +1837,18 @@
         "count": 1
       }
     },
-    "src/platform/settings/settingStore.ts": {
-      "complexity_high": {
+    "packages/settings-core/src/settingStore.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
         "count": 1
       },
       "crap_high": {
         "count": 1
+      },
+      "crap_moderate": {
+        "count": 2
       }
     },
     "src/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider.ts": {
@@ -2609,15 +2615,21 @@
         "count": 1
       }
     },
-    "src/scripts/api.ts": {
+    "packages/api-client/src/ComfyApi.ts": {
       "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
         "count": 1
       },
       "crap_critical": {
         "count": 1
       },
+      "crap_high": {
+        "count": 2
+      },
       "crap_moderate": {
-        "count": 1
+        "count": 2
       }
     },
     "src/scripts/app.ts": {
@@ -2947,7 +2959,7 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/components/ManagerProgressToast.vue": {
+    "src/platform/customNodes/manager/components/ManagerProgressToast.vue": {
       "complexity_high": {
         "count": 1
       },
@@ -2955,12 +2967,12 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/components/manager/ManagerDialog.vue": {
+    "src/platform/customNodes/manager/components/manager/ManagerDialog.vue": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue": {
+    "src/platform/customNodes/manager/components/manager/NodeConflictDialogContent.vue": {
       "complexity_high": {
         "count": 1
       },
@@ -2968,7 +2980,7 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/components/manager/infoPanel/InfoPanel.vue": {
+    "src/platform/customNodes/manager/components/manager/infoPanel/InfoPanel.vue": {
       "complexity_high": {
         "count": 1
       },
@@ -2976,22 +2988,22 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/components/manager/infoPanel/MarkdownText.vue": {
+    "src/platform/customNodes/manager/components/manager/infoPanel/MarkdownText.vue": {
       "complexity_moderate": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/components/manager/infoPanel/tabs/DescriptionTabPanel.vue": {
+    "src/platform/customNodes/manager/components/manager/infoPanel/tabs/DescriptionTabPanel.vue": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/nodePack/useMissingNodes.test.ts": {
+    "src/platform/customNodes/manager/composables/nodePack/useMissingNodes.test.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/useConflictDetection.ts": {
+    "src/platform/customNodes/manager/composables/useConflictDetection.ts": {
       "crap_high": {
         "count": 1
       },
@@ -2999,22 +3011,22 @@
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/useManagerDialog.ts": {
+    "src/platform/customNodes/manager/composables/useManagerDialog.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts": {
+    "src/platform/customNodes/manager/composables/useManagerDisplayPacks.ts": {
       "crap_high": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/composables/useManagerState.ts": {
+    "src/platform/customNodes/manager/composables/useManagerState.ts": {
       "crap_moderate": {
         "count": 1
       }
     },
-    "src/workbench/extensions/manager/services/comfyManagerService.ts": {
+    "src/platform/customNodes/manager/services/comfyManagerService.ts": {
       "crap_moderate": {
         "count": 1
       }
@@ -3060,7 +3072,7 @@
     "src/services/litegraphService.ts:circular dependency",
     "src/lib/litegraph/src/subgraph/SubgraphNode.ts:circular dependency",
     "src/components/rightSidePanel/errors/MissingPackGroupRow.vue:complexity",
-    "src/workbench/extensions/manager/composables/nodePack/useMissingNodes.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/nodePack/useMissingNodes.ts:circular dependency",
     "browser_tests/fixtures/ComfyPage.ts:circular dependency",
     "src/platform/billing/subscription/composables/useSubscriptionDialog.ts:circular dependency",
     "src/components/error/useErrorOverlayState.ts:high impact",
@@ -3086,7 +3098,7 @@
     "src/services/dialogService.ts:circular dependency",
     "src/scripts/ui/utils.ts:complexity",
     "src/composables/usePaste.ts:circular dependency",
-    "src/workbench/extensions/manager/composables/useConflictDetection.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/useConflictDetection.ts:circular dependency",
     "src/renderer/core/canvas/canvasStore.ts:circular dependency",
     "src/base/webviewDetection.ts:high impact",
     "src/components/builder/useResolvedSelectedInputs.ts:high impact",
@@ -3095,7 +3107,7 @@
     "src/platform/workspace/components/CurrentUserPopoverWorkspace.vue:complexity",
     "src/composables/useCanvasDrop.ts:complexity",
     "src/renderer/extensions/linearMode/LinearControls.vue:complexity",
-    "src/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/button/PackEnableToggle.vue:circular dependency",
     "src/composables/graph/useMoreOptionsMenu.ts:circular dependency",
     "src/platform/workflowErrors/missingMedia/missingMediaStore.ts:circular dependency",
     "src/stores/assetsStore.ts:complexity",
@@ -3105,12 +3117,12 @@
     "src/extensions/core/widgetInputs.ts:high impact",
     "src/extensions/core/groupNode.ts:complexity",
     "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts:circular dependency",
-    "src/workbench/extensions/manager/components/manager/button/PackInstallButton.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/button/PackInstallButton.vue:circular dependency",
     "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue:complexity",
     "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.ts:complexity",
-    "src/workbench/extensions/manager/composables/nodePack/usePackInstall.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/nodePack/usePackInstall.ts:circular dependency",
     "src/lib/litegraph/src/LGraphGroup.ts:circular dependency",
-    "src/workbench/extensions/manager/stores/comfyManagerStore.ts:circular dependency",
+    "src/platform/customNodes/manager/stores/comfyManagerStore.ts:circular dependency",
     "src/lib/litegraph/src/DragAndScale.ts:circular dependency",
     "src/components/videoEdit/VideoEditPanel.vue:complexity",
     "src/utils/eventUtils.ts:high impact",
@@ -3122,23 +3134,22 @@
     "src/components/rightSidePanel/errors/ErrorNodeCard.vue:complexity",
     "src/platform/settings/settingStore.ts:circular dependency",
     "src/platform/billing/components/SubscriptionPanelContentWorkspace.vue:complexity",
-    "src/workbench/extensions/manager/services/comfyManagerService.ts:circular dependency",
-    "src/workbench/extensions/manager/composables/useManagerState.ts:circular dependency",
+    "src/platform/customNodes/manager/services/comfyManagerService.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/useManagerState.ts:circular dependency",
     "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.ts:complexity",
     "src/lib/litegraph/src/node/NodeSlot.ts:complexity",
     "src/lib/litegraph/src/subgraph/subgraphUtils.ts:circular dependency",
-    "src/composables/useNewMenuItemIndicator.ts:high impact",
     "src/utils/hdrFormatUtil.ts:high impact",
     "src/lib/litegraph/src/canvas/LinkConnector.ts:complexity",
     "src/lib/litegraph/src/widgets/NumberWidget.ts:high impact",
-    "src/workbench/extensions/manager/components/manager/infoPanel/InfoPanel.vue:circular dependency",
-    "src/workbench/extensions/manager/components/manager/infoPanel/InfoPanelMultiItem.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/infoPanel/InfoPanel.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/infoPanel/InfoPanelMultiItem.vue:circular dependency",
     "src/extensions/core/load3d/services/load3dService.ts:circular dependency",
     "src/platform/workspace/components/dialogs/settings/MembersPanelContent.vue:complexity",
     "src/lib/litegraph/src/node/NodeOutputSlot.ts:circular dependency",
     "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.ts:complexity",
     "src/components/dialog/GlobalDialog.vue:complexity",
-    "src/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/PackVersionSelectorPopover.vue:circular dependency",
     "src/components/graph/GraphCanvas.vue:complexity",
     "src/renderer/glsl/useGLSLPreview.ts:complexity",
     "src/core/graph/widgets/dynamicWidgets.ts:untested risk",
@@ -3153,14 +3164,14 @@
     "src/composables/node/useNodePricing.ts:complexity",
     "src/platform/workflowErrors/missingModel/components/MissingModelRow.vue:complexity",
     "src/utils/linkFixer.ts:complexity",
-    "src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/useManagerDisplayPacks.ts:circular dependency",
     "src/extensions/core/load3d/Load3dUtils.ts:circular dependency",
-    "src/workbench/extensions/manager/components/manager/packCard/PackCard.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/packCard/PackCard.vue:circular dependency",
     "src/components/dialog/content/SignInContent.vue:complexity",
     "src/lib/litegraph/src/ContextMenu.ts:complexity",
-    "src/workbench/extensions/manager/components/manager/PackVersionBadge.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/PackVersionBadge.vue:circular dependency",
     "src/platform/workflow/sharing/components/publish/ComfyHubThumbnailStep.vue:complexity",
-    "src/workbench/extensions/manager/components/manager/packCard/PackCardFooter.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/packCard/PackCardFooter.vue:circular dependency",
     "src/lib/litegraph/src/LiteGraphGlobal.ts:circular dependency",
     "src/platform/cloud/onboarding/survey/DynamicSurveyField.vue:complexity",
     "src/platform/keybindings/composables/useEditKeybindingDialog.ts:circular dependency",
@@ -3174,19 +3185,19 @@
     "src/scripts/metadata/avif.ts:complexity",
     "src/components/rightSidePanel/errors/ErrorGroupList.vue:complexity",
     "src/renderer/extensions/linearMode/DropZone.vue:complexity",
-    "src/workbench/extensions/manager/components/manager/ManagerDialog.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/ManagerDialog.vue:circular dependency",
     "packages/mask-editor/src/useCanvasHistory.ts:circular dependency",
-    "src/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue:circular dependency",
+    "src/platform/customNodes/manager/components/manager/button/PackUpdateButton.vue:circular dependency",
     "src/platform/billing/subscription/components/PricingTable.vue:complexity",
     "src/composables/sidebarTabs/useJobHistorySidebarTab.ts:circular dependency",
-    "src/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/nodePack/useUpdateAvailableNodes.ts:circular dependency",
     "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue:complexity",
     "src/components/helpcenter/HelpCenterMenuContent.vue:complexity",
     "src/scripts/pnginfo.ts:complexity",
     "src/scripts/metadata/png.ts:complexity",
     "src/composables/graph/useSelectionMenuOptions.ts:circular dependency",
     "src/lib/litegraph/src/widgets/LegacyWidget.ts:circular dependency",
-    "src/workbench/extensions/manager/composables/useManagerDialog.ts:circular dependency",
+    "src/platform/customNodes/manager/composables/useManagerDialog.ts:circular dependency",
     "browser_tests/fixtures/components/SubgraphEditor.ts:circular dependency",
     "scripts/cicd/extract-playwright-counts.ts:complexity",
     "browser_tests/fixtures/components/QueuePanel.ts:circular dependency",

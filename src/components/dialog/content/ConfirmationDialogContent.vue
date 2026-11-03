@@ -14,7 +14,7 @@
         role="status"
         class="mt-2 flex items-start gap-2 text-sm text-muted-foreground"
       >
-        <i class="pi pi-info-circle mt-0.5" aria-hidden="true" />
+        <i class="mt-0.5 icon-[lucide--info]" aria-hidden="true" />
         <span>{{ hint }}</span>
       </div>
     </div>
@@ -55,45 +55,49 @@
         autofocus
         @click="onCancel"
       >
-        <i class="pi pi-undo" />
+        <i class="icon-[lucide--undo-2]" />
         {{ $t('g.cancel') }}
       </Button>
-      <Button v-if="type === 'default'" variant="primary" @click="onConfirm">
-        <i class="pi pi-check" />
+      <Button
+        v-if="type === 'default'"
+        variant="primary"
+        @click="handleConfirm"
+      >
+        <i class="icon-[lucide--check]" />
         {{ $t('g.confirm') }}
       </Button>
       <Button
         v-else-if="type === 'delete'"
         variant="destructive"
-        @click="onConfirm"
+        @click="handleConfirm"
       >
-        <i class="pi pi-trash" />
+        <i class="icon-[lucide--trash-2]" />
         {{ $t('g.delete') }}
       </Button>
       <Button
         v-else-if="type === 'overwrite' || type === 'overwriteBlueprint'"
         variant="destructive"
-        @click="onConfirm"
+        @click="handleConfirm"
       >
-        <i class="pi pi-save" />
+        <i class="icon-[lucide--save]" />
         {{ $t('g.overwrite') }}
       </Button>
       <template v-else-if="type === 'dirtyClose'">
         <Button variant="secondary" @click="onDeny">
-          <i class="pi pi-times" />
+          <i class="icon-[lucide--x]" />
           {{ denyLabel ?? $t('g.no') }}
         </Button>
-        <Button autofocus @click="onConfirm">
-          <i class="pi pi-save" />
+        <Button autofocus @click="handleConfirm">
+          <i class="icon-[lucide--save]" />
           {{ confirmLabel ?? $t('g.save') }}
         </Button>
       </template>
       <Button
         v-else-if="type === 'reinstall'"
         variant="destructive"
-        @click="onConfirm"
+        @click="handleConfirm"
       >
-        <i class="pi pi-eraser" />
+        <i class="icon-[lucide--eraser]" />
         {{ $t('desktopMenu.reinstall') }}
       </Button>
       <!-- Info - just show an OK button -->
@@ -102,7 +106,7 @@
       </Button>
       <!-- Invalid - just show a close button. -->
       <Button v-else variant="primary" @click="onCancel">
-        <i class="pi pi-times" />
+        <i class="icon-[lucide--x]" />
         {{ $t('g.close') }}
       </Button>
     </div>
@@ -113,7 +117,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { ConfirmationDialogType } from '@/components/dialog/content/confirmationDialogTypes'
@@ -145,7 +149,7 @@ const onDeny = () => {
   useDialogStore().closeDialog()
 }
 
-const onConfirm = () => {
+const handleConfirm = () => {
   if (props.type === 'overwriteBlueprint' && doNotAskAgain.value)
     void useSettingStore().set('Comfy.Workflow.WarnBlueprintOverwrite', false)
   props.onConfirm(true)

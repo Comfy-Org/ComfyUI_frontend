@@ -1,23 +1,10 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReplacementResponse } from '@/platform/workflowErrors/nodeReplacement/types'
 
-/**
- * Mock `/api/node_replacements` and enable the node replacement feature.
- *
- * Unlike features that only consult settings (e.g. shareWorkflowDialog,
- * managerDialog), node replacement gates on `api.serverFeatureFlags`. The
- * server sends a `feature_flags` WS message that wholesale replaces
- * `serverFeatureFlags`, racing with any test-side override done via
- * `page.evaluate`. To make the flow deterministic across CI shards, this
- * helper patches `WebSocket.prototype` so every incoming `feature_flags`
- * message has `node_replacements: true` injected before the api's WS
- * handler sees it. Reload the page so the patched WebSocket and persisted
- * settings apply to a fresh app boot, then wait for the resulting
- * `/api/node_replacements` fetch before returning.
- */
 export async function setupNodeReplacement(
   comfyPage: ComfyPage,
   replacements: NodeReplacementResponse
@@ -56,7 +43,7 @@ export async function setupNodeReplacement(
                 return listener.call(this, patched)
               }
             } catch {
-              // not JSON or not a feature_flags message - pass through
+              return listener.call(this, event)
             }
           }
           return listener.call(this, event)
@@ -72,14 +59,14 @@ export async function setupNodeReplacement(
     }
   })
 
-  const fetchPromise = comfyPage.page.waitForResponse(
-    (response) =>
-      response.url().includes('/api/node_replacements') && response.ok(),
-    { timeout: 10000 }
-  )
-
   await comfyPage.workflow.reloadAndWaitForApp()
-  await fetchPromise
+  await expect
+    .poll(() =>
+      comfyPage.page.evaluate(() =>
+        window.app!.api.getServerFeature('node_replacements', false)
+      )
+    )
+    .toBe(true)
 }
 
 export function getSwapNodesGroup(page: Page): Locator {

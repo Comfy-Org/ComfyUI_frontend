@@ -18,12 +18,13 @@ import {
 import { effectScope } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { WorkspaceApiError as mockWorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import type {
   BillingStatusResponse,
   SubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 import {
   CancellationScopeChangedError,
   useWorkspaceBilling
@@ -50,26 +51,8 @@ const mockBillingPlans = vi.hoisted(() => ({
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
-// Hoisted so the vi.mock factory below can reference it: a plain top-level
-// const is in its temporal dead zone when the hoisted factory runs under
-// coverage instrumentation, which collects the file to zero tests.
-const mockWorkspaceApiError = vi.hoisted(
-  () =>
-    class WorkspaceApiError extends Error {
-      constructor(
-        message: string,
-        public readonly status?: number,
-        public readonly code?: string
-      ) {
-        super(message)
-        this.name = 'WorkspaceApiError'
-      }
-    }
-)
-
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: mockWorkspaceApi,
-  WorkspaceApiError: mockWorkspaceApiError
+vi.mock<unknown>(import('@/platform/billing/api/billingApi'), () => ({
+  billingApi: mockWorkspaceApi
 }))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
@@ -81,7 +64,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -99,7 +82,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useFeatureFlags'), { spy: true })
@@ -132,6 +115,7 @@ function createDeferred<T>() {
 }
 
 const activeStatus = {
+  ended_at: null,
   is_active: true,
   max_seats: 73,
   occupied_seats: 72,
@@ -196,9 +180,6 @@ beforeEach(() => {
   Object.assign(useTeamWorkspaceStore(), {
     activeWorkspace: { id: 'workspace-1' }
   })
-  vi.mocked(useTeamWorkspaceStore().setWorkspaceBillingRail).mockImplementation(
-    () => {}
-  )
 })
 
 describe('useWorkspaceBilling', () => {
@@ -303,6 +284,23 @@ describe('useWorkspaceBilling', () => {
       }
     )
 
+    it.for([
+      { case: 'a recorded end', endedAt: '2026-05-20T00:00:00Z' },
+      { case: 'an unrecorded end', endedAt: null }
+    ])('passes the served ended_at through for $case', async ({ endedAt }) => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        subscription_status: 'ended',
+        subscription_state: 'ended',
+        ended_at: endedAt
+      })
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.subscription.value?.endedAt).toBe(endedAt)
+    })
+
     it('maps status response into subscription info', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,
@@ -330,9 +328,6 @@ describe('useWorkspaceBilling', () => {
       })
       expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isFreeTier.value).toBe(false)
-      expect(
-        useTeamWorkspaceStore().setWorkspaceBillingRail
-      ).toHaveBeenCalledWith('workspace-1', 'stripe')
     })
 
     it.for([
@@ -622,9 +617,6 @@ describe('useWorkspaceBilling', () => {
       await billing.fetchStatus()
 
       expect(billing.isFreeTier.value).toBe(true)
-      expect(
-        useTeamWorkspaceStore().setWorkspaceBillingRail
-      ).not.toHaveBeenCalled()
     })
 
     it('sets error and rethrows when fetchStatus fails', async () => {
@@ -665,6 +657,30 @@ describe('useWorkspaceBilling', () => {
       await expect(billing.fetchStatus()).rejects.toThrow('refresh failed')
       expect(billing.maxSeats.value).toBe(80)
       expect(billing.occupiedSeats.value).toBe(75)
+    })
+
+    it('stops treating a cached Agent grant as authoritative after the current read fails', async () => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValueOnce({
+        ...activeStatus,
+        billing_rail: 'stripe',
+        scoped_has_funds: { agent: true }
+      })
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      const statusRead = createDeferred<BillingStatusResponse>()
+      mockWorkspaceApi.getBillingStatus.mockReturnValueOnce(statusRead.promise)
+      const refresh = billing.fetchStatus()
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        true
+      )
+
+      statusRead.reject(new Error('status unavailable'))
+      await expect(refresh).rejects.toThrow('status unavailable')
+      expect(billing.subscription.value?.agentScopedHasFundsAuthoritative).toBe(
+        false
+      )
+      expect(billing.subscription.value?.agentScopedHasFunds).toBe(true)
     })
 
     it('accepts missing seat capacity and clears the last known value', async () => {
@@ -811,6 +827,56 @@ describe('useWorkspaceBilling', () => {
       await olderRequest
 
       expect(billing.balance.value?.amountMicros).toBe(5_000_000)
+    })
+
+    it('settles an older failed balance read quietly once a newer read replaced it', async () => {
+      const olderBalance = createDeferred<typeof zeroBalance>()
+      mockWorkspaceApi.getBillingBalance
+        .mockReturnValueOnce(olderBalance.promise)
+        .mockResolvedValueOnce(positiveBalance)
+      const billing = setupBilling()
+
+      const olderRequest = billing.fetchBalance()
+      await billing.fetchBalance()
+      olderBalance.reject(new Error('stale balance failed'))
+
+      await expect(olderRequest).resolves.toBeUndefined()
+      expect(billing.error.value).toBeNull()
+      expect(billing.balance.value?.amountMicros).toBe(5_000_000)
+    })
+
+    it('settles a failed balance read quietly once the workspace changed', async () => {
+      const balanceRead = createDeferred<typeof zeroBalance>()
+      mockWorkspaceApi.getBillingBalance.mockReturnValueOnce(
+        balanceRead.promise
+      )
+      const billing = setupBilling()
+
+      const read = billing.fetchBalance()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { id: 'workspace-2' }
+      })
+      balanceRead.reject(new Error('stale workspace balance failed'))
+
+      await expect(read).resolves.toBeUndefined()
+      expect(billing.error.value).toBeNull()
+    })
+
+    it('does not keep a balance from a stale workspace response', async () => {
+      const balanceRead = createDeferred<typeof zeroBalance>()
+      mockWorkspaceApi.getBillingBalance.mockReturnValueOnce(
+        balanceRead.promise
+      )
+      const billing = setupBilling()
+
+      const read = billing.fetchBalance()
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { id: 'workspace-2' }
+      })
+      balanceRead.resolve(zeroBalance)
+      await read
+
+      expect(billing.balance.value).toBeNull()
     })
   })
 

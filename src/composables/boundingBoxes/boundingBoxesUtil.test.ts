@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BoundingBox } from '@/types/boundingBoxes'
+import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 
 import type { HitMode, Region } from './boundingBoxesUtil'
 import {

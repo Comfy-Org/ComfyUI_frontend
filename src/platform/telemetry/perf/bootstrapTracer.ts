@@ -57,10 +57,10 @@
  *
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
-import { useTelemetry } from '@/platform/telemetry'
-import { getDatadogRum } from '@/platform/telemetry/rumContext'
-import { TelemetryEvents } from '@/platform/telemetry/types'
-import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { getDatadogRum } from '@comfyorg/telemetry/rumContext'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
+import type { BootstrapCompleteMetadata } from '@comfyorg/telemetry/types'
 
 import { perfMark, perfMeasureSinceOrigin, perfPoint } from './perfMark'
 import type { PerfSpan } from './perfMark'
@@ -113,7 +113,9 @@ type BootstrapSubphase<Namespace extends BootstrapPhaseNamespace> =
   (typeof BOOTSTRAP_PHASES)[Namespace][number]
 
 export type BootstrapPhase = {
-  [Namespace in BootstrapPhaseNamespace]: `${Namespace}/${BootstrapSubphase<Namespace>}`
+  [
+    Namespace in BootstrapPhaseNamespace
+  ]: `${Namespace}/${BootstrapSubphase<Namespace>}`
 }[BootstrapPhaseNamespace]
 
 function untracedMs(rows: BootstrapPhaseTiming[], totalMs: number): number {
@@ -125,6 +127,47 @@ function untracedMs(rows: BootstrapPhaseTiming[], totalMs: number): number {
     coveredUntil = Math.max(coveredUntil, endMs)
   }
   return totalMs - tracedMs
+}
+
+class HiddenTimeMeter {
+  private _hiddenMs = 0
+  private _hiddenSince: number | undefined
+  private _listening = new AbortController()
+
+  constructor() {
+    if (typeof document === 'undefined') return
+    const buffered = performance.getEntriesByType('visibility-state')
+    if (buffered.length > 0) {
+      for (const entry of buffered)
+        this._record(entry.name === 'hidden', entry.startTime)
+    } else if (document.visibilityState === 'hidden') {
+      this._hiddenSince = 0
+    }
+    document.addEventListener(
+      'visibilitychange',
+      () =>
+        this._record(document.visibilityState === 'hidden', performance.now()),
+      { signal: this._listening.signal }
+    )
+  }
+
+  private _record(hidden: boolean, atMs: number): void {
+    if (hidden) {
+      this._hiddenSince ??= atMs
+    } else if (this._hiddenSince !== undefined) {
+      this._hiddenMs += atMs - this._hiddenSince
+      this._hiddenSince = undefined
+    }
+  }
+
+  stop(): void {
+    this._listening.abort()
+  }
+
+  hiddenMsUntil(nowMs: number): number {
+    const open = this._hiddenSince === undefined ? 0 : nowMs - this._hiddenSince
+    return Math.round(this._hiddenMs + Math.max(0, open))
+  }
 }
 
 export interface BootstrapPhaseTiming {
@@ -140,6 +183,7 @@ export class BootstrapTracer {
   private _outcome: 'completed' | 'failed' | undefined
   private _timeoutReported = false
   private _watchdog: ReturnType<typeof setTimeout> | undefined
+  private _hidden = new HiddenTimeMeter()
 
   /**
    * Start timing a phase. Returns a handle; call `.stop()` when complete.
@@ -224,8 +268,12 @@ export class BootstrapTracer {
     return [...this._timings].sort((a, b) => a.startMs - b.startMs)
   }
 
-  get outcome(): 'completed' | 'failed' | 'pending' {
-    return this._outcome ?? 'pending'
+  /**
+   * `timed_out` is not terminal: startup can still finish after the watchdog
+   * fires, and the outcome then becomes `completed` or `failed`.
+   */
+  get outcome(): 'completed' | 'failed' | 'timed_out' | 'pending' {
+    return this._outcome ?? (this._timeoutReported ? 'timed_out' : 'pending')
   }
 
   /**
@@ -240,6 +288,7 @@ export class BootstrapTracer {
     clearTimeout(this._watchdog)
     for (const phase of Array.from(this._spans.keys())) this._stopPhase(phase)
     this._report(outcome)
+    this._hidden.stop()
   }
 
   /**
@@ -281,6 +330,7 @@ export class BootstrapTracer {
         outcome,
         phase_count: rows.length,
         untraced_ms: untracedMs(rows, totalMs),
+        hidden_ms: this._hidden.hiddenMsUntil(totalMs),
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
         ...(pending?.length ? { pending } : {})
       }

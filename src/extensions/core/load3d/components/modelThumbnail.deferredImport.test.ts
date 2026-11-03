@@ -35,8 +35,6 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   persistThumbnail: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 import { generateModelThumbnail } from './modelThumbnail'
 
 describe('generateModelThumbnail deferred createLoad3d import', () => {
