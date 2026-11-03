@@ -686,9 +686,9 @@ describe('BillingAutoTopUpCard', () => {
         name: 'keeps the off card when not frozen',
         setup: null,
         methods: Promise.resolve({ status: 'ok', value: [] }),
-        line: 'Refills credits when your balance runs low',
+        line: 'Refills credits when your balance runs low.',
         action: 'Turn on',
-        icon: 'icon-[lucide--external-link]',
+        icon: 'icon-[lucide--arrow-up-right]',
         reads: 0,
         reports: 0
       }
