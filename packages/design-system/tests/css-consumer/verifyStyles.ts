@@ -36,6 +36,8 @@ assert.match(voidCss, /--color-background:\s*oklch\(/)
 assert.match(voidCss, /\.bg-secondary\s*\{/)
 assert.match(voidCss, /\.icon-\\\[lucide--check\\\]\s*\{/)
 assert.match(voidCss, /\.z-overlay\s*\{/)
+assert.doesNotMatch(voidCss, /body\s*\{[^}]*overflow:\s*hidden/)
+assert.doesNotMatch(voidCss, /#vue-app\s*\{/)
 process.stdout.write(
   'Packed CSS and the Void theme compile without Vue, Reka, or VueUse installed.\n'
 )
