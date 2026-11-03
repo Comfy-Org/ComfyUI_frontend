@@ -2334,7 +2334,8 @@ export class ComfyApp implements IComfyApp {
                 'beforeLoadGraph'
               )
               lifecycle.started = true
-              const replaceCanvas = useWorkflowService().beforeLoadNewGraph(false)
+              const replaceCanvas =
+                useWorkflowService().beforeLoadNewGraph(false)
               replaceCanvas()
             } finally {
               useMissingNodesErrorStore().setMissingNodeTypes([])
