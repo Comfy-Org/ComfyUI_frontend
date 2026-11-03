@@ -34,6 +34,7 @@ function zoomAt(zoomDelta: number, clientX: number, clientY: number) {
 }
 
 function handleWheel(e: WheelEvent) {
+  pinchStart = undefined
   zoomAt(-e.deltaY, e.clientX, e.clientY)
 }
 

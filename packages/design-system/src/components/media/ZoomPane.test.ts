@@ -195,6 +195,19 @@ describe(ZoomPane, () => {
     })
   })
 
+  it('keeps a wheel zoom made during an active pinch', async () => {
+    const image = renderPane()
+    await touch(image, 'pointerDown', 1, -50)
+    await touch(image, 'pointerDown', 2, 50)
+    await touch(image, 'pointerMove', 1, -50)
+    await fireEvent.wheel(image, { deltaY: -100 })
+    const afterWheel = readTransform(image)
+
+    await touch(image, 'pointerMove', 2, 50)
+
+    expect(readTransform(image).scale).toBeCloseTo(afterWheel.scale)
+  })
+
   it('zooms in on wheel scroll up', async () => {
     const image = renderPane()
     const before = readTransform(image)
