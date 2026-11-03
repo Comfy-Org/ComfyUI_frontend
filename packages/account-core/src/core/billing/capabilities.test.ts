@@ -9,6 +9,7 @@ import {
   createCapabilitiesReader,
   readCapabilityRevision
 } from './capabilities'
+import { decodeCapabilityDenials } from './capabilityDenials'
 import { createSessionBillingTransport } from './transport'
 import {
   authenticated,
@@ -758,5 +759,13 @@ describe('readCapabilityRevision', () => {
     ['a value beyond the safe integer range', '9007199254740993']
   ] as const)('reports nothing for %s', ([, value]) => {
     expect(readCapabilityRevision(() => value)).toBeUndefined()
+  })
+})
+
+describe('decodeCapabilityDenials', () => {
+  it('keeps topup_purchases_paused as a known reason', () => {
+    expect(
+      decodeCapabilityDenials({ can_top_up: 'topup_purchases_paused' })
+    ).toEqual({ can_top_up: 'topup_purchases_paused' })
   })
 })

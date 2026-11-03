@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import type {
   HostedTopupCheckoutResult,
@@ -58,13 +58,14 @@ describe('addCreditsClientPorts', () => {
       code: 'TOPUP_RATE_LIMITED',
       message: 'limit'
     })
+    assert.exists(serverCode)
     const topup = topupAnswering(
       { status: 'error', code: 'REQUEST_FAILED' },
       {
         status: 'error',
         code: 'REQUEST_FAILED',
         httpStatus: 429,
-        ...(serverCode === undefined ? {} : { serverCode }),
+        serverCode,
         retryAfterSeconds: 2400
       }
     )
