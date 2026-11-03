@@ -9,15 +9,7 @@
   >
     <span class="flex items-center gap-1 text-sm text-muted-foreground">
       {{ copy.plan }}
-      <TextTooltip :text="copy.planTooltip">
-        <CheckoutButton
-          :aria-label="copy.planTooltip"
-          variant="muted-textonly"
-          size="icon-sm"
-        >
-          <i class="icon-[lucide--info] size-3.5" aria-hidden="true" />
-        </CheckoutButton>
-      </TextTooltip>
+      <BillingInfoTip :text="copy.planTooltip" />
     </span>
     <span
       v-if="planOfPool"
@@ -74,10 +66,7 @@
 import { computed } from 'vue'
 
 import type { PlanCreditsState } from '@comfyorg/account-core/billing'
-import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { cn } from '@comfyorg/tailwind-utils'
-
-import CheckoutButton from '#/billing/checkout/CheckoutButton.vue'
 
 import {
   centsToCredits,
@@ -86,6 +75,7 @@ import {
   planUsedPercent,
   splitPlanOfPool
 } from './creditsCardCopy'
+import BillingInfoTip from './BillingInfoTip.vue'
 import type { CreditsCardCopy } from './creditsCardCopy'
 
 const { plan, copy, locale, classes } = defineProps<{

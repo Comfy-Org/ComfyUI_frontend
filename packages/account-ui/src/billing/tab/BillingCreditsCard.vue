@@ -39,15 +39,7 @@
         "
       >
         {{ copy.title }}
-        <TextTooltip :text="copy.rateTooltip">
-          <CheckoutButton
-            :aria-label="copy.rateInfo"
-            variant="muted-textonly"
-            size="icon-sm"
-          >
-            <i class="icon-[lucide--info] size-3.5" aria-hidden="true" />
-          </CheckoutButton>
-        </TextTooltip>
+        <BillingInfoTip :text="copy.rateTooltip" :label="copy.rateInfo" />
       </h3>
 
       <div
@@ -109,12 +101,10 @@ import type {
   AddCreditsAvailability,
   CreditsCardState
 } from '@comfyorg/account-core/billing'
-import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import CheckoutButton from '#/billing/checkout/CheckoutButton.vue'
-
+import BillingInfoTip from './BillingInfoTip.vue'
 import AddCreditsAction from './AddCreditsAction.vue'
 import BillingCreditsBalance from './BillingCreditsBalance.vue'
 import BillingCreditsPlanCell from './BillingCreditsPlanCell.vue'
