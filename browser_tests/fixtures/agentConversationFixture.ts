@@ -73,7 +73,7 @@ import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowP
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
-const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
+export const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
 const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
@@ -934,6 +934,22 @@ export class AgentConversationHarness {
         removed_links: removedLinkIds
       }
     ])
+  }
+
+  // Host edits made while this client follows another workflow: the host
+  // fans them out only to subscribers, so they reach this client only in the
+  // catch-up that answers its next subscribe.
+  applyOpsOnHostUnsent(operations: RecordedGraphOperation[]): void {
+    this.host.apply(operations)
+    for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
+  }
+
+  /** Serves a second workflow's document beside the recorded one. */
+  serveWorkflow(workflowId: string, seed: WorkflowJSON): void {
+    this.hostSocket.addWorkflow(
+      workflowId,
+      new HostDoc(workflowId, seed, this.conversation.workflow.catalog)
+    )
   }
 
   // Rises once per follower subscribe; a tab return re-subscribes and the

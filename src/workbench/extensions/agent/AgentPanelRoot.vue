@@ -1026,10 +1026,27 @@ async function onWorkflowRestoredAndBound(
     isCurrent
   )
   if (committedWorkflowId === null || !isCurrent()) return ready
-  if (hasUnsyncedHumanOps(committedWorkflowId)) return ready
-  if (boundWorkflowId.value !== committedWorkflowId)
-    bindWorkflow(committedWorkflowId)
+  bindRestoredWorkflow(committedWorkflowId)
   return ready
+}
+
+// Loading a chat clears the session binding, which is the CRDT follower's
+// subscribe target. A chat restored onto its workflow's tab binds it again;
+// without that the follower stays detached and the agent's edits to that
+// workflow never reach its canvas.
+function bindRestoredWorkflow(workflowId: string): void {
+  if (hasUnsyncedHumanOps(workflowId)) return
+  if (boundWorkflowId.value !== workflowId) bindWorkflow(workflowId)
+}
+
+// A followed chat adopts the tab it followed instead of restoring one, so it
+// binds here rather than in `onWorkflowRestoredAndBound`.
+function adoptFollowedWorkflow(
+  workflow: ComfyWorkflow,
+  workflowId: string
+): void {
+  adoptWorkflowTarget(workflow, workflowId)
+  bindRestoredWorkflow(workflowId)
 }
 
 function warnWorkflowUnavailable(): void {
@@ -1901,7 +1918,7 @@ const workflowChatFollow = useAgentWorkflowChatFollow({
   trackThreadStarted: () =>
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' }),
   restoreThreadWorkflow,
-  adoptWorkflowTarget,
+  adoptWorkflowTarget: adoptFollowedWorkflow,
   adoptRestoredWorkflowTab
 })
 
