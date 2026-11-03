@@ -36,9 +36,14 @@ const textChunks = [
 ]
 
 describe('copyPngTextMetadata', () => {
-  it.for(textChunks)(
-    'retains text chunks without restoring the original pixels',
-    async (textChunk) => {
+  it.for(
+    textChunks.map((textChunk) => ({
+      type: String.fromCharCode(...textChunk.subarray(4, 8)),
+      textChunk
+    }))
+  )(
+    '$type retains text chunks without restoring the original pixels',
+    async ({ textChunk }) => {
       const original = await pixelImage(100)
       const source = await new Blob([
         original.slice(0, 33),
@@ -75,7 +80,9 @@ describe('copyPngTextMetadata', () => {
       ...textChunks,
       edited.slice(33)
     ])
-    expect(await result!.arrayBuffer()).toEqual(await expected.arrayBuffer())
+    expect(new Uint8Array(await result!.arrayBuffer())).toEqual(
+      new Uint8Array(await expected.arrayBuffer())
+    )
   })
 
   it('keeps images with no PNG text metadata unchanged', async () => {

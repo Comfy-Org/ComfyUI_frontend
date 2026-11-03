@@ -23,6 +23,7 @@ let mockDataStore: ReturnType<typeof useMaskEditorDataStore>
 
 const CANVAS_SIZE = 4
 const CANVAS_BYTES = CANVAS_SIZE * CANVAS_SIZE * 4
+
 // Pixel model: each mock canvas owns an RGBA buffer, and drawImage /
 // getImageData / putImageData move real data so the saver's compositing and
 // encoding can be asserted on pixel values. drawImage implements source-over
@@ -168,6 +169,8 @@ describe('useMaskEditorSaver', () => {
         return originalCreateElement(tagName, options)
       }
     )
+
+    // Mock Image constructor so loadImageFromUrl resolves
     vi.stubGlobal(
       'Image',
       class MockImage {
@@ -214,17 +217,20 @@ describe('useMaskEditorSaver', () => {
     }
     mockNode.previewMediaType = 'image'
     const append = FormData.prototype.append
-    vi.spyOn(FormData.prototype, 'append').mockImplementation(
-      function (this: FormData, name, value, filename) {
-        append.call(
-          this,
-          name,
-          value instanceof Blob
-            ? new File([value], filename ?? 'blob', { type: value.type })
-            : value
-        )
-      }
-    )
+    vi.spyOn(FormData.prototype, 'append').mockImplementation(function (
+      this: FormData,
+      name,
+      value,
+      filename
+    ) {
+      append.call(
+        this,
+        name,
+        value instanceof Blob
+          ? new File([value], filename ?? 'blob', { type: value.type })
+          : value
+      )
+    })
     const uploaded = new Map<string, Blob>([
       ['with metadata #1.png', originalBlob]
     ])
@@ -425,10 +431,17 @@ describe('useMaskEditorSaver', () => {
   it('registers node outputs in store after save for node without prior execution outputs', async () => {
     const store = useNodeOutputStore()
     const locatorId = String(mockNode.id)
+
+    // Precondition: node has never been executed, no outputs exist
     expect(app.nodeOutputs[locatorId]).toBeUndefined()
 
     const { save } = useMaskEditorSaver()
     await save()
+
+    // After mask editor save, the node must have outputs in the store
+    // so the image preview displays correctly (not blank).
+    // Bug: the old code used updateNodeImages which silently no-ops
+    // when there are no pre-existing outputs for the node.
     expect(store.nodeOutputs[locatorId]).toBeDefined()
     expect(store.nodeOutputs[locatorId]?.images?.length).toBeGreaterThan(0)
     expect(
@@ -477,6 +490,10 @@ describe('useMaskEditorSaver', () => {
   it('omits subfolder from the upload FormData under the unified contract', async () => {
     const { save } = useMaskEditorSaver()
     await save()
+
+    // The unified contract uploads to /upload/image with only image + type;
+    // subfolder is intentionally omitted (the server assigns it). Assert it
+    // here so the next reader knows the omission is deliberate, not accidental.
     expect(api.fetchApi).toHaveBeenCalledWith(
       '/upload/image',
       expect.objectContaining({ method: 'POST' })
@@ -491,6 +508,10 @@ describe('useMaskEditorSaver', () => {
   })
 
   it('uploads masked layers with inverted mask alpha and preserved RGB', async () => {
+    // Seed a distinct opaque color per pixel, mask the first half of the
+    // canvas, then decode the uploaded blobs and verify both the applied
+    // alpha and that the RGB survives where the alpha is 0 (the pixels a
+    // canvas-derived blob would serialize as black).
     const imgPixels = new Uint8ClampedArray(CANVAS_BYTES)
     for (let p = 0; p < CANVAS_BYTES / 4; p++) {
       imgPixels[p * 4] = (p * 7) % 256
@@ -519,6 +540,7 @@ describe('useMaskEditorSaver', () => {
       try {
         decodedUploads.push(decodePng(new Uint8Array(await file.arrayBuffer())))
       } catch {
+        // not an encoder-produced PNG (canvas-derived layer)
         continue
       }
     }
