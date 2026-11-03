@@ -85,7 +85,7 @@ export function useBillingPlans() {
   function adopt(
     response: BillingPlansResponse,
     scopeKey: string
-  ): TypeError | null {
+  ): TypeError | undefined {
     if (!Array.isArray(response.plans)) {
       return new TypeError('Billing plans response did not contain a plan list')
     }
@@ -101,7 +101,6 @@ export function useBillingPlans() {
     currentPlanSlug.value = response.current_plan_slug ?? null
     teamCreditStops.value = response.team_credit_stops ?? null
     adoptedScopeKey = scopeKey
-    return null
   }
 
   function fetchPlans(reissueCount = 0): Promise<void> {

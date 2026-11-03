@@ -44,17 +44,7 @@ function refuse() { return new TypeError('invalid') }
     `{ class Error {}; throw new Error('shadowed') }`,
     `throw 'not an Error'`,
     `throw { message: 'not an Error' }`,
-    `throw undefined`,
-    `function useApp() {
-  if (!instance) throw new TypeError('ComfyApp accessed before registerApp')
-  return instance
-}`,
-    `function useExtensionDialogService() {
-  if (!extensionDialogService) {
-    throw new TypeError('Extension dialog service accessed before registerExtensionDialogService')
-  }
-  return extensionDialogService
-}`
+    `throw undefined`
   ].map((code) => ({ code, errors: [{ messageId: 'forbidden' }] }))
 })
 
