@@ -1,5 +1,10 @@
 <template>
-  <WidgetLayoutField :widget :input-id="inputId" :value-text="selectedSummary">
+  <WidgetLayoutField
+    :widget
+    :input-id="inputId"
+    :value-text="selectedSummary"
+    :root-class="rowCursor"
+  >
     <template #between><slot name="between" /></template>
     <ComboboxRoot
       :open="isOpen"
@@ -309,6 +314,9 @@ const widgetOptions = computed(
 )
 
 const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
+const rowCursor = computed(() =>
+  unifiedRows && !disabled.value ? 'cursor-pointer' : undefined
+)
 const placeholder = computed(() => widgetOptions.value?.placeholder ?? '')
 const filterPlaceholder = computed(
   () => widgetOptions.value?.filterPlaceholder ?? placeholder.value

@@ -99,7 +99,8 @@ function activateControl(event: MouseEvent) {
       :class="
         cn(
           'content-center-safe truncate select-none',
-          unifiedRows && 'max-w-fit min-w-0 flex-1 text-node-foreground',
+          unifiedRows &&
+            'max-w-fit min-w-0 flex-1 cursor-[inherit] text-node-foreground',
           fullWidthRow && 'z-10',
           labelClass
         )
@@ -136,9 +137,11 @@ function activateControl(event: MouseEvent) {
       <div
         :class="
           cn(
-            'min-w-0 cursor-default rounded-md transition-all',
+            'min-w-0 rounded-md transition-all',
             !noBorder && !unifiedRows && borderStyle,
-            unifiedRows && 'col-start-1 row-start-1',
+            unifiedRows
+              ? 'col-start-1 row-start-1 cursor-[inherit]'
+              : 'cursor-default',
             fullWidthRow && 'absolute inset-0'
           )
         "
