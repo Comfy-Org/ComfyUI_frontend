@@ -6,6 +6,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { generateSameHashWorkflowNames } from '@e2e/fixtures/utils/sameHashWorkflowNames'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -1012,6 +1013,99 @@ test.describe('Workflow Persistence', () => {
     )
     expect(await restoredNode.isCollapsed()).toBe(true)
     await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+  })
+
+  test('Keeps unsaved edits separate for two workflows whose draft keys collide', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        "Two workflow names can share a 32-bit draft key, and the second draft took over the first one's storage slot — so reopening the first workflow restored the second one's graph and lost its unsaved edits"
+    })
+    test.setTimeout(45_000)
+
+    const [workflowA, workflowB] = generateSameHashWorkflowNames()
+
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+
+    await test.step('Save A with a one-node graph and collapse its node', async () => {
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+      await fitToViewInstant(comfyPage)
+      await comfyPage.menu.topbar.saveWorkflow(workflowA)
+
+      const nodeA = await getRequiredFirstNodeRef(
+        comfyPage,
+        'First node should be available after loading single_ksampler'
+      )
+      await nodeA.centerOnNode()
+      const draftASaveStartedAt = Date.now()
+      await nodeA.toggleCollapse()
+      expect(await nodeA.isCollapsed()).toBe(true)
+      await comfyPage.workflow.waitForDraftIndexUpdatedSince(
+        draftASaveStartedAt
+      )
+    })
+
+    const nodeCountB =
+      await test.step('Save B with a larger graph and collapse its node', async () => {
+        await comfyPage.workflow.loadWorkflow('nodes/load_image_with_ksampler')
+        await comfyPage.menu.topbar.saveWorkflow(workflowB)
+        await comfyPage.expectNodeCountMinimum(2)
+        const count = await comfyPage.nodeOps.getNodeCount()
+
+        const nodeB = await getRequiredFirstNodeRef(
+          comfyPage,
+          'First node should be available after loading load_image_with_ksampler'
+        )
+        await nodeB.centerOnNode()
+        const draftBSaveStartedAt = Date.now()
+        await nodeB.toggleCollapse()
+        await expect.poll(() => nodeB.isCollapsed()).toBe(true)
+        await comfyPage.workflow.waitForDraftIndexUpdatedSince(
+          draftBSaveStartedAt
+        )
+        return count
+      })
+
+    await test.step('Reload and restore B as the active tab', async () => {
+      await waitForWorkflowTabState(comfyPage)
+      await makeActivePathStale(comfyPage, workflowA, workflowB)
+
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await expect
+        .poll(() => comfyPage.menu.topbar.getActiveTabName())
+        .toBe(workflowB)
+      await comfyPage.expectNodeCount(nodeCountB)
+
+      const restoredNodeB = await getRequiredFirstNodeRef(
+        comfyPage,
+        'Restored node should be available in workflow B'
+      )
+      await expect.poll(() => restoredNodeB.isCollapsed()).toBe(true)
+
+      const tabs = await comfyPage.menu.topbar.getTabNames()
+      expect(tabs).toEqual(expect.arrayContaining([workflowA, workflowB]))
+      expect(tabs.indexOf(workflowA)).toBeLessThan(tabs.indexOf(workflowB))
+    })
+
+    await test.step('Switch to A and find A’s own restored edits', async () => {
+      await comfyPage.menu.topbar.getWorkflowTab(workflowA).click()
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await comfyPage.expectNodeCount(1)
+
+      const restoredNodeA = await getRequiredFirstNodeRef(
+        comfyPage,
+        'Restored node should be available after switching back to workflow A'
+      )
+      expect(await restoredNodeA.isCollapsed()).toBe(true)
+      await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+    })
   })
 
   test('Unedited saved workflows reopen as saved after a reload', async ({

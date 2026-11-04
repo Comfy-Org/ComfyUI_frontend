@@ -29,6 +29,9 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 }))
 
 const WORKSPACE = 'personal'
+// These two paths share the same 32-bit `hashPath` value.
+const COLLIDING_PATH_A = 'workflows/ewip.json'
+const COLLIDING_PATH_B = 'workflows/4hbab.json'
 const INDEX_KEY = StorageKeys.draftIndex(WORKSPACE)
 const PAYLOAD_PREFIX = `${StorageKeys.prefixes.draftPayload}${WORKSPACE}:`
 
@@ -139,6 +142,110 @@ describe('workflowDraftStoreV2', () => {
       expect(store.getDraft(path)?.lineage).toEqual({
         workflowId: 'wf-1',
         lineageSeq: 12
+      })
+    })
+
+    it('keeps each colliding path on its own draft', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":["b"]}', {
+        name: 'b',
+        isTemporary: false
+      })
+
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_A)).toMatchObject({
+        data: '{"nodes":["a"]}',
+        name: 'a'
+      })
+      expect(store.getDraft(COLLIDING_PATH_B)).toMatchObject({
+        data: '{"nodes":["b"]}',
+        name: 'b'
+      })
+    })
+
+    it('removes only the named draft of a colliding pair', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":["b"]}', {
+        name: 'b',
+        isTemporary: false
+      })
+
+      store.removeDraft(COLLIDING_PATH_A)
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_A)).toBeNull()
+      expect(store.getDraft(COLLIDING_PATH_B)).toMatchObject({
+        data: '{"nodes":["b"]}',
+        name: 'b'
+      })
+    })
+
+    it('writes CRDT lineage to the colliding path it names', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":["b"]}', {
+        name: 'b',
+        isTemporary: false
+      })
+
+      store.setLineage(COLLIDING_PATH_B, {
+        workflowId: 'wf-b',
+        lineageSeq: 7
+      })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":["b","b2"]}', {
+        name: 'b',
+        isTemporary: false
+      })
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_B)).toMatchObject({
+        data: '{"nodes":["b","b2"]}',
+        lineage: { workflowId: 'wf-b', lineageSeq: 7 }
+      })
+      expect(store.getDraft(COLLIDING_PATH_A)).toMatchObject({
+        data: '{"nodes":["a"]}'
+      })
+      expect(store.getDraft(COLLIDING_PATH_A)?.lineage).toBeUndefined()
+    })
+
+    it('renames a colliding draft without disturbing its neighbour', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":["b"]}', {
+        name: 'b',
+        isTemporary: false
+      })
+
+      store.moveDraft(COLLIDING_PATH_B, 'workflows/renamed.json', 'renamed')
+      store.reset()
+
+      expect(store.getDraft('workflows/renamed.json')).toMatchObject({
+        data: '{"nodes":["b"]}',
+        name: 'renamed'
+      })
+      expect(store.getDraft(COLLIDING_PATH_B)).toBeNull()
+      expect(store.getDraft(COLLIDING_PATH_A)).toMatchObject({
+        data: '{"nodes":["a"]}',
+        name: 'a'
       })
     })
 

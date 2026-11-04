@@ -24,10 +24,10 @@ import {
   moveEntry,
   removeEntry,
   removeOrphanedEntries,
+  resolveDraftKey,
   touchOrder,
   upsertEntry
 } from '@/platform/workflow/persistence/base/draftCacheV2'
-import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import {
   deleteOrphanPayloads,
@@ -145,10 +145,10 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     if (!isStorageAvailable()) return false
 
     const workspaceId = currentWorkspaceId()
-    const draftKey = hashPath(path)
     const now = Date.now()
 
     const index = loadIndex()
+    const draftKey = resolveDraftKey(index, path)
 
     const payloadWritten = writePayload(
       workspaceId,
@@ -163,7 +163,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       index,
       path,
       { ...meta, updatedAt: now },
-      MAX_DRAFTS
+      MAX_DRAFTS,
+      draftKey
     )
 
     if (!persistIndex(newIndex)) {
@@ -196,9 +197,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     meta: DraftMeta
   ): boolean {
     const workspaceId = currentWorkspaceId()
-    const draftKey = hashPath(path)
-
     let currentIndex = loadIndex()
+    const draftKey = resolveDraftKey(currentIndex, path)
     let evictedCount = 0
 
     while (currentIndex.order.length > 0) {
@@ -231,7 +231,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
           currentIndex,
           path,
           { ...meta, updatedAt: now },
-          MAX_DRAFTS
+          MAX_DRAFTS,
+          draftKey
         )
         if (!persistIndex(finalIndex)) {
           deletePayload(workspaceId, draftKey)
@@ -360,7 +361,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const entry = getEntryByPath(index, path)
     if (!entry) return null
 
-    const draftKey = hashPath(path)
+    const draftKey = resolveDraftKey(index, path)
     const payload = readPayload(workspaceId, draftKey)
     if (!payload) {
       removeDraft(path)
@@ -380,7 +381,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   function setLineage(path: string, lineage: DraftLineage): void {
     const workspaceId = currentWorkspaceId()
-    const draftKey = hashPath(path)
+    const draftKey = resolveDraftKey(loadIndex(), path)
     lineageByDraft.set(lineageKey(workspaceId, draftKey), lineage)
     const payload = readPayload(workspaceId, draftKey)
     if (
@@ -399,7 +400,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const entry = getEntryByPath(index, path)
     if (!entry) return
 
-    const draftKey = hashPath(path)
+    const draftKey = resolveDraftKey(index, path)
     persistIndex({
       ...index,
       updatedAt: Date.now(),

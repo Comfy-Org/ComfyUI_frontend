@@ -10,6 +10,36 @@ import { MAX_DRAFTS } from './draftTypes'
 import { hashPath } from './hashUtil'
 
 /**
+ * Finds the key a path's draft is stored under, or allocates a free one.
+ *
+ * `hashPath` is 32-bit, so two paths can prefer the same slot; returning an
+ * occupied slot would alias one path's draft onto the other's.
+ *
+ * @returns the existing entry's key when `path` already has a draft, otherwise
+ * a key that is guaranteed absent from `index.entries`.
+ */
+export function resolveDraftKey(index: DraftIndexV2, path: string): string {
+  const existing = Object.entries(
+    index.entries as Record<string, unknown>
+  ).find(
+    ([, entry]) =>
+      typeof entry === 'object' &&
+      entry !== null &&
+      'path' in entry &&
+      entry.path === path
+  )?.[0]
+  if (existing !== undefined) return existing
+
+  const hash = hashPath(path)
+  const taken = (key: string) => Object.hasOwn(index.entries, key)
+  if (!taken(hash)) return hash
+  // Terminates: each iteration rules out one entry, and the index is bounded.
+  let key = `${hash}:${path}`
+  for (let suffix = 2; taken(key); suffix++) key = `${hash}:${path}:${suffix}`
+  return key
+}
+
+/**
  * Creates an empty draft index.
  */
 export function createEmptyIndex(): DraftIndexV2 {
@@ -39,9 +69,9 @@ export function upsertEntry(
   index: DraftIndexV2,
   path: string,
   meta: Omit<DraftEntryMeta, 'path'>,
-  limit: number = MAX_DRAFTS
+  limit: number = MAX_DRAFTS,
+  draftKey: string = resolveDraftKey(index, path)
 ): { index: DraftIndexV2; evicted: string[] } {
-  const draftKey = hashPath(path)
   const effectiveLimit = Math.max(1, limit)
 
   const entries = {
@@ -84,7 +114,7 @@ export function removeEntry(
   index: DraftIndexV2,
   path: string
 ): { index: DraftIndexV2; removedKey: string | null } {
-  const draftKey = hashPath(path)
+  const draftKey = resolveDraftKey(index, path)
 
   if (!(draftKey in index.entries)) {
     return { index, removedKey: null }
@@ -116,12 +146,15 @@ export function moveEntry(
   newPath: string,
   newName: string
 ): { index: DraftIndexV2; oldKey: string; newKey: string } | null {
-  const oldKey = hashPath(oldPath)
-  const newKey = hashPath(newPath)
-
   const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
+  const oldKey = resolveDraftKey(index, oldPath)
   const oldEntry = entriesByKey[oldKey]
   if (!oldEntry) return null
+
+  // Allocating through `resolveDraftKey` is what keeps a rename off another
+  // path's slot: the destination's preferred hash may already be held by an
+  // unrelated draft, and moving onto it would alias the two.
+  const newKey = resolveDraftKey(index, newPath)
   if (oldKey !== newKey && entriesByKey[newKey]) return null
 
   const entries = { ...index.entries }
@@ -164,7 +197,7 @@ export function getEntryByPath(
   index: DraftIndexV2,
   path: string
 ): DraftEntryMeta | null {
-  const draftKey = hashPath(path)
+  const draftKey = resolveDraftKey(index, path)
   return index.entries[draftKey] ?? null
 }
 
