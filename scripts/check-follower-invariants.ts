@@ -402,6 +402,14 @@ function calledFactory(node: ts.Node): string | undefined {
 
 function pageSessionOwnsTransport(file: string, source: string): Violation[] {
   if (!isAgentSurfaceFile(file) || file === PAGE_SESSION_OWNER) return []
+  // Cheap gate before an expensive one. This rule's scope is the whole agent
+  // surface — around 200 files — and parsing every one of them with the
+  // TypeScript compiler to look for two identifiers cost about 20 seconds on a
+  // CI runner, enough to blow the repo-tree test's timeout. A call expression
+  // cannot exist without the callee's text appearing in the source, so a
+  // substring miss is a sound skip rather than a heuristic.
+  if (![...PAGE_SESSION_FACTORIES].some((name) => source.includes(name)))
+    return []
   const parsed = parse(
     file.endsWith('.vue') ? `${file}.ts` : file,
     scriptOf(file, source)

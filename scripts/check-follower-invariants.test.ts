@@ -18,6 +18,7 @@ import {
 const FOLLOWER_FILE = 'src/workbench/extensions/agent/crdt/follower.ts'
 const PANEL_FILE = 'src/workbench/extensions/agent/AgentPanelRoot.vue'
 const REPOSITORY_ROOT = join(import.meta.dirname, '..')
+const REPOSITORY_SCAN_TIMEOUT = 60_000
 
 describe('checkNoOutboundUpdateB64', () => {
   test('fails a forbidden mutation fixture: constructing an outbound update_b64 frame', () => {
@@ -283,13 +284,23 @@ describe('agent surface enforcement against this repository', () => {
   // `pnpm follower-invariants:check`, so this test is the enforcement: a
   // component that reintroduces panel-owned transport fails `test`, which is a
   // required check.
-  test('the agent surface holds the transport-ownership invariant', () => {
-    expect(checkAgentSurfaceFiles(REPOSITORY_ROOT)).toEqual([])
-  })
+  test(
+    'the agent surface holds the transport-ownership invariant',
+    () => {
+      expect(checkAgentSurfaceFiles(REPOSITORY_ROOT)).toEqual([])
+    },
+    // Reads and scans the whole agent surface off disk, so it is bounded by IO
+    // and by however loaded the runner is, not by the default 5s.
+    REPOSITORY_SCAN_TIMEOUT
+  )
 
-  test('the follower seam holds its invariants', () => {
-    expect(checkFollowerFiles(REPOSITORY_ROOT)).toEqual([])
-  })
+  test(
+    'the follower seam holds its invariants',
+    () => {
+      expect(checkFollowerFiles(REPOSITORY_ROOT)).toEqual([])
+    },
+    REPOSITORY_SCAN_TIMEOUT
+  )
 })
 
 describe('checkFile', () => {
