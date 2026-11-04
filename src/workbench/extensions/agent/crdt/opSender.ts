@@ -422,14 +422,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
   }
 
-  // Set only for the duration of an `abortIfUnbound(reason)` call. `settle`
-  // on the in-flight batch below cascades through `pump()` -> `transmit()`
-  // for every queued batch still addressed to the same dead workflow
-  // (synchronously, mint order) before this clears; each hits the ordinary
-  // unbound check in `transmit()` with no caller of its own to attribute a
-  // reason to, so that check reads this instead. PM-1320 measured every
-  // queued op dropping on one retarget, not just the first, so attributing
-  // only the in-flight batch would miss most of what this is for.
   let pendingAbortReason: {
     workflowId: string
     reason: UnboundAbortReason | undefined
