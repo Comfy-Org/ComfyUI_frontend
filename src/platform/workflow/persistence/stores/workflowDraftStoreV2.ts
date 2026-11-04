@@ -313,36 +313,79 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   /**
    * Moves a draft from one path to another (rename).
+   *
+   * A survivor of a resolved hash collision is stored under a path-qualified
+   * key. Moving it onto a since-freed plain hash key still changes the
+   * storage key (there is no in-place localStorage rename), so it needs the
+   * same quota-eviction retry as `saveDraft`/`handleQuotaExceeded` rather
+   * than failing outright and leaving the rename only half-applied.
    */
   function moveDraft(oldPath: string, newPath: string, name: string): void {
     const workspaceId = currentWorkspaceId()
-    const index = loadIndex()
-    const result = moveEntry(index, oldPath, newPath, name)
+    let index = loadIndex()
+    let result = moveEntry(index, oldPath, newPath, name)
+    if (!result) return
 
-    if (result) {
-      const isRenameOntoSelf = result.oldKey === result.newKey
-      if (isRenameOntoSelf) {
-        persistIndex(result.index)
-        return
-      }
-      const oldPayload = readPayload(workspaceId, result.oldKey)
-      if (oldPayload) {
-        const written = writePayload(workspaceId, result.newKey, oldPayload)
-        if (!written) return
+    const isRenameOntoSelf = result.oldKey === result.newKey
+    if (isRenameOntoSelf) {
+      persistIndex(result.index)
+      return
+    }
 
-        if (!persistIndex(result.index)) {
-          deletePayload(workspaceId, result.newKey)
-          return
-        }
-        deletePayload(workspaceId, result.oldKey)
-        const lineage = lineageByDraft.get(
-          lineageKey(workspaceId, result.oldKey)
-        )
-        if (lineage) {
-          lineageByDraft.set(lineageKey(workspaceId, result.newKey), lineage)
-          lineageByDraft.delete(lineageKey(workspaceId, result.oldKey))
-        }
+    const oldPayload = readPayload(workspaceId, result.oldKey)
+    if (!oldPayload) return
+
+    let written = writePayload(workspaceId, result.newKey, oldPayload)
+    let evictedCount = 0
+
+    while (!written) {
+      const oldestKey = index.order.find(
+        (key) => key !== result!.oldKey && key !== result!.newKey
+      )
+      if (!oldestKey) break
+
+      const oldestEntry = getIndexEntry(index, oldestKey)
+      if (!oldestEntry) {
+        index = stripOrderKey(index, oldestKey)
+        continue
       }
+
+      const evicted = removeEntry(index, oldestEntry.path)
+      index = evicted.index
+      if (evicted.removedKey) {
+        deletePayload(workspaceId, evicted.removedKey)
+        deleteLineages(workspaceId, [evicted.removedKey])
+        evictedCount++
+      }
+
+      const retried = moveEntry(index, oldPath, newPath, name)
+      if (!retried) return
+      result = retried
+      written = writePayload(workspaceId, result.newKey, oldPayload)
+    }
+
+    if (!written) {
+      // Eviction exhausted the index without freeing enough space. Leave the
+      // source draft exactly as it was (never written, never persisted) so
+      // it stays recoverable at `oldPath` rather than being half-moved.
+      persistIndex(index)
+      reportQuotaExhausted(
+        index,
+        evictedCount,
+        payloadByteSize(oldPayload.data)
+      )
+      return
+    }
+
+    if (!persistIndex(result.index)) {
+      deletePayload(workspaceId, result.newKey)
+      return
+    }
+    deletePayload(workspaceId, result.oldKey)
+    const lineage = lineageByDraft.get(lineageKey(workspaceId, result.oldKey))
+    if (lineage) {
+      lineageByDraft.set(lineageKey(workspaceId, result.newKey), lineage)
+      lineageByDraft.delete(lineageKey(workspaceId, result.oldKey))
     }
   }
 
