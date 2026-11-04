@@ -18,6 +18,7 @@ import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabi
 import { attachCapabilityRevisionInterceptor } from '@/platform/remote/ingest/capabilityRevision'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
 import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
@@ -1171,7 +1172,10 @@ describe('useBillingCapabilities', () => {
       await vi.advanceTimersByTimeAsync(0)
     }
 
-    afterEach(() => localStorage.removeItem(LAPSE_RECOVERY_FLAG))
+    afterEach(() => {
+      localStorage.removeItem(LAPSE_RECOVERY_FLAG)
+      remoteConfig.value = {}
+    })
 
     it('stays denied after the session is restored with the flag off', async () => {
       await denyThenRestoreSession()
@@ -1184,6 +1188,20 @@ describe('useBillingCapabilities', () => {
       localStorage.setItem(LAPSE_RECOVERY_FLAG, 'true')
 
       await denyThenRestoreSession()
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+
+    it('reads again when the flag arrives after the session is restored', async () => {
+      await denyThenRestoreSession()
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+
+      remoteConfig.value = {
+        ...remoteConfig.value,
+        web_session_lapse_recovery_enabled: true
+      }
+      await vi.advanceTimersByTimeAsync(0)
 
       expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
       expect(billingCapabilities.canTopUp.value).toBe(true)

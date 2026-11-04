@@ -561,12 +561,12 @@ function useBillingCapabilitiesInternal() {
   )
 
   watch(
-    () => webSession.state,
-    (state) => {
+    [() => webSession.state, () => flags.webSessionLapseRecoveryEnabled],
+    ([state, recoveryEnabled]) => {
       if (
         state.phase === 'signed_in' &&
         readState.value.status === 'denied' &&
-        flags.webSessionLapseRecoveryEnabled
+        recoveryEnabled
       ) {
         void fetchCapabilities()
       }
