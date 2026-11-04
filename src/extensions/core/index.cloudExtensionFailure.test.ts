@@ -39,11 +39,11 @@ describe('cloud core extensions when a chunk import resolves without its export'
     expect(names).toContain('Comfy.AgentPanel')
 
     expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
-      surface: 'agent',
+      surface: 'platform',
       errorType: 'error_loading_cloud_remote_config_extension'
     })
     expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
-      surface: 'agent',
+      surface: 'workspace',
       errorType: 'error_loading_feedback_button_extension'
     })
   })

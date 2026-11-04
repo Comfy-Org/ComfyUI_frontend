@@ -1,6 +1,7 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import type { ComfyExtension } from '@/types/comfy'
+import type { Surface } from '@comfyorg/telemetry/reportError'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { clipspaceExtension } from './clipspace'
@@ -75,31 +76,48 @@ function register(extension: ComfyExtension) {
   disposers.push(useExtensionService().registerExtension(extension))
 }
 
-/**
- * Loads a cloud-only extension module and returns its named export, or
- * `undefined` if a suppressed `vite:preloadError` resolved the import to
- * something without that export. Outside cloud this throws instead, so a
- * malformed module still fails fast in desktop/localhost/dev builds.
- */
-async function loadGuardedCoreExtension(
-  importExtension: () => Promise<unknown>,
-  exportName: string,
-  errorType: string
-): Promise<ComfyExtension | undefined> {
-  const module: unknown = await importExtension()
-  const extension =
-    typeof module === 'object' && module !== null && exportName in module
-      ? (module as Record<string, unknown>)[exportName]
-      : undefined
+function isNamedComfyExtension(value: unknown): value is ComfyExtension {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { name?: unknown }).name === 'string'
+  )
+}
 
-  if (extension === undefined) {
-    const error = new TypeError(`${exportName} did not load from its module`)
+async function loadGuardedCoreExtension<
+  Name extends string,
+  Extension extends ComfyExtension
+>(
+  importExtension: () => Promise<Partial<Record<Name, Extension>> | undefined>,
+  exportName: Name,
+  errorType: string,
+  surface: Surface
+): Promise<Extension | undefined> {
+  let module: Partial<Record<Name, Extension>> | undefined
+  try {
+    module = await importExtension()
+  } catch (cause) {
+    const error = new Error(`Failed to load module for ${exportName}`, {
+      cause
+    })
     if (__DISTRIBUTION__ !== 'cloud') throw error
-    reportError(error, { surface: 'agent', errorType })
+    reportError(error, { surface, errorType })
     return undefined
   }
 
-  return extension as ComfyExtension
+  const extension =
+    module !== undefined && Object.hasOwn(module, exportName)
+      ? module[exportName]
+      : undefined
+
+  if (!isNamedComfyExtension(extension)) {
+    const error = new TypeError(`${exportName} did not load from its module`)
+    if (__DISTRIBUTION__ !== 'cloud') throw error
+    reportError(error, { surface, errorType })
+    return undefined
+  }
+
+  return extension as Extension
 }
 
 async function loadAgentPanelExtension() {
@@ -139,21 +157,24 @@ async function registerInOrder() {
     const cloudRemoteConfig = await loadGuardedCoreExtension(
       () => import('./cloudRemoteConfig'),
       'cloudRemoteConfigExtension',
-      'error_loading_cloud_remote_config_extension'
+      'error_loading_cloud_remote_config_extension',
+      'platform'
     )
     if (cloudRemoteConfig) register(cloudRemoteConfig)
 
     const cloudBadges = await loadGuardedCoreExtension(
       () => import('./cloudBadges'),
       'cloudBadgesExtension',
-      'error_loading_cloud_badges_extension'
+      'error_loading_cloud_badges_extension',
+      'platform'
     )
     if (cloudBadges) register(cloudBadges)
 
     const cloudSessionCookie = await loadGuardedCoreExtension(
       () => import('./cloudSessionCookie'),
       'cloudSessionCookieExtension',
-      'error_loading_cloud_session_cookie_extension'
+      'error_loading_cloud_session_cookie_extension',
+      'auth'
     )
     if (cloudSessionCookie) register(cloudSessionCookie)
   }
@@ -164,7 +185,8 @@ async function registerInOrder() {
     const feedbackButton = await loadGuardedCoreExtension(
       () => import('./cloudFeedbackTopbarButton'),
       'feedbackButtonExtension',
-      'error_loading_feedback_button_extension'
+      'error_loading_feedback_button_extension',
+      'workspace'
     )
     if (feedbackButton) register(feedbackButton)
   }
