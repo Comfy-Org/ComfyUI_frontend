@@ -624,14 +624,35 @@ export function collectIoItems(
   )
 }
 
-function collectIo(state: SuperComfyState, nodeId: NodeId): SuperComfyState {
+function collectIo(
+  state: SuperComfyState,
+  nodeId: NodeId,
+  sessionId: SessionId
+): SuperComfyState {
   const items = collectIoItems(state.doc, nodeId)
-  const doc = mapNode(
-    state.doc,
-    nodeId,
-    onIo((node) => ({ ...node, items }))
+  const collected = withDoc(
+    state,
+    mapNode(
+      state.doc,
+      nodeId,
+      onIo((node) => ({ ...node, items }))
+    )
   )
-  return setActivity(withDoc(state, doc), nodeId, { phase: 'idle' })
+  return owns(state, nodeId, sessionId)
+    ? setActivity(collected, nodeId, { phase: 'idle' })
+    : collected
+}
+
+function sessionLists(
+  state: SuperComfyState,
+  nodeId: NodeId,
+  sessionId: SessionId
+): boolean {
+  const { sessions } = state.runtime
+  return (
+    Object.hasOwn(sessions, sessionId) &&
+    sessions[sessionId].nodeIds.includes(nodeId)
+  )
 }
 
 function reduceOwnedRun(
@@ -675,7 +696,7 @@ function reduceOwnedRun(
     case 'nodeCommitted':
       return commitNode(state, nodeId, event.at)
     case 'ioCollected':
-      return collectIo(state, nodeId)
+      return collectIo(state, nodeId, sessionId)
   }
 }
 
@@ -684,7 +705,11 @@ function reduceSessionRun(
   event: SessionRunEvent
 ): SuperComfyState {
   if (event.type === 'runSucceeded') return recordSuccess(state, event)
-  if (!owns(state, event.nodeId, event.sessionId)) return state
+  const { nodeId, sessionId } = event
+  const applies =
+    owns(state, nodeId, sessionId) ||
+    (event.type === 'ioCollected' && sessionLists(state, nodeId, sessionId))
+  if (!applies) return state
   return reduceOwnedRun(state, event)
 }
 

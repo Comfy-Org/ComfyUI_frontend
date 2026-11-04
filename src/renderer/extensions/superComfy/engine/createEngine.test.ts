@@ -500,6 +500,42 @@ describe(createEngine, () => {
       expect(app.calls).toHaveLength(0)
     })
 
+    it('[R5e] two overlapping node runs that feed one I/O node both land in it', async () => {
+      const generate = deferredExecutor()
+      const harness = testHost(
+        docWith(
+          [
+            generateNode('first', 'image'),
+            generateNode('second', 'image'),
+            ioNode('results', 'image')
+          ],
+          [
+            edge('first', 'out', 'results', 'in'),
+            edge('second', 'out', 'results', 'in')
+          ]
+        ),
+        { app: deferredExecutor(), generate }
+      )
+      const engine = createEngine(harness.host)
+
+      const firstRun = engine.runNode('first')
+      const secondRun = engine.runNode('second')
+      await generate.untilCalls(2)
+      generate.calls[1].resolve(succeeded(fileItem('second-new')))
+      await secondRun
+      generate.calls[0].resolve(succeeded(fileItem('first-new')))
+      const firstSummary = await firstRun
+
+      expect(findNode(harness.state().doc, 'results')).toMatchObject({
+        items: [fileItem('first-new'), fileItem('second-new')]
+      })
+      expect(firstSummary).toMatchObject({
+        ok: true,
+        outcomes: { results: 'collected' }
+      })
+      expect(activityOf(harness.state(), 'results')).toEqual({ phase: 'idle' })
+    })
+
     it("[R6e] a node's own Run regenerates every run", async () => {
       const generate = deferredExecutor({ answer: freshOutputs() })
       const harness = testHost(
