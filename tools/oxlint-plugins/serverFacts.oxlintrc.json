@@ -5,6 +5,7 @@
   "jsPlugins": ["./serverFacts.ts"],
   "rules": {
     "comfy/no-capability-recombination": "error",
-    "comfy/no-server-fact-literals": "error"
+    "comfy/no-server-fact-literals": "error",
+    "comfy/no-stray-server-fact-constructor": "error"
   }
 }
