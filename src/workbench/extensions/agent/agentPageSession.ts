@@ -96,18 +96,29 @@ function create(): PageSessionInternals {
     session === null,
     'minted a second agent event source while one already exists for this page — the page session owns exactly one event source and one doc-frame transport for the page lifetime, see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Decision 2'
   )
-  const events = createAgentEventSource({
-    endpoint: api.apiURL('/agent/events'),
-    getAuthParams: agentSocketAuthParams
-  })
-  const docTransport = createAgentDocFrameTransport(events)
   const listeners = new Set<() => void>()
 
-  // Detached: this scope belongs to the page, so it must not be adopted by
-  // whichever component happens to resolve the session first — that is the
-  // panel, and being torn down with the panel is the bug.
+  // Detached, and **everything** is built inside it. This scope belongs to the
+  // page, so it must not be adopted by whichever component happens to resolve
+  // the session first — that is the panel, and being torn down with the panel
+  // is the bug.
+  //
+  // Constructing the event source outside this scope would be a quiet version
+  // of the same defect: a module-level singleton does not change the active Vue
+  // scope, and the first `useAgentPageSession()` runs synchronously inside
+  // `AgentPanelRoot.setup()`, so `createAgentEventSource`'s `useTimeoutFn`
+  // reconnect timer would register `tryOnScopeDispose` on the panel. Closing
+  // the panel during a pending backoff would then cancel the retry while the
+  // transport and its doc tap survive — a connection that can never come back,
+  // which is worse than the cold seed this change removes.
   const scope = effectScope(true)
-  scope.run(() => {
+  const built = scope.run(() => {
+    const events = createAgentEventSource({
+      endpoint: api.apiURL('/agent/events'),
+      getAuthParams: agentSocketAuthParams
+    })
+    const docTransport = createAgentDocFrameTransport(events)
+
     const authStore = useAuthStore()
     const apiKeyAuthStore = useApiKeyAuthStore()
     const teamWorkspaceStore = useTeamWorkspaceStore()
@@ -121,7 +132,13 @@ function create(): PageSessionInternals {
       events.reconnect()
       listeners.forEach((listener) => listener())
     })
+    return { events, docTransport }
   })
+  assert(
+    built !== undefined,
+    'the agent page session scope was already stopped before it built the transport — see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 1a'
+  )
+  const { events, docTransport } = built
 
   return {
     events,

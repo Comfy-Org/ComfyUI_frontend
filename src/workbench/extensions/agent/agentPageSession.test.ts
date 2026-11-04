@@ -1,3 +1,4 @@
+import { effectScope, getCurrentScope } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
@@ -63,6 +64,47 @@ describe('useAgentPageSession', () => {
     // unsubscribes, so one surviving tap is exactly what keeps a panel close
     // from disconnecting. One tap for the page, not one per consumer.
     expect(tap).toHaveBeenCalledTimes(1)
+  })
+
+  // The quiet half of the same ownership bug. A module-level singleton does
+  // not change the active Vue scope, and the first resolution happens inside
+  // `AgentPanelRoot.setup()`, so building the event source outside the page's
+  // own scope would register `createAgentEventSource`'s `useTimeoutFn`
+  // reconnect timer (`tryOnScopeDispose(stop)` in @vueuse/shared) on the
+  // panel. Closing the panel during a pending backoff would then cancel the
+  // retry while the transport and its doc tap survive — a connection that can
+  // never come back, which is worse than the cold seed this change removes.
+  it('builds the transport outside the resolving component scope', () => {
+    let builtIn: ReturnType<typeof getCurrentScope>
+    vi.mocked(createAgentEventSource).mockImplementation(() => {
+      builtIn = getCurrentScope()
+      return agentSocket.socket
+    })
+
+    // Stand in for the panel's setup scope, which is what resolves first.
+    const panelScope = effectScope()
+    panelScope.run(() => useAgentPageSession())
+
+    expect(builtIn).toBeDefined()
+    expect(builtIn).not.toBe(panelScope)
+
+    // Closing the panel must not take the transport's timers with it.
+    panelScope.stop()
+
+    expect(builtIn!.active).toBe(true)
+  })
+
+  it('stops the transport scope only on an explicit page teardown', () => {
+    let builtIn: ReturnType<typeof getCurrentScope>
+    vi.mocked(createAgentEventSource).mockImplementation(() => {
+      builtIn = getCurrentScope()
+      return agentSocket.socket
+    })
+    useAgentPageSession()
+
+    destroyAgentPageSession()
+
+    expect(builtIn!.active).toBe(false)
   })
 
   it('mints a fresh transport after an explicit page teardown', () => {
