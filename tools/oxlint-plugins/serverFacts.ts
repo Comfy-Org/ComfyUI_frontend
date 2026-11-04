@@ -441,6 +441,28 @@ function memberPath(node: AstNode): string | undefined {
     : `${object}.${expression.property.name}`
 }
 
+function capabilityMemberOwner(node: AstNode): string | undefined {
+  const inner = negated(node)
+  if (inner) return capabilityMemberOwner(inner)
+  const expression = unwrap(node)
+  if (expression.type !== 'MemberExpression' || expression.computed) {
+    return undefined
+  }
+  if (expression.property.name === 'value') {
+    return capabilityMemberOwner(expression.object)
+  }
+  return CAPABILITY_BINDING.test(expression.property.name)
+    ? memberPath(expression.object)
+    : undefined
+}
+
+function combinesSiblingCapabilities(operands: AstNode[]): boolean {
+  const owners = operands.flatMap(
+    (operand) => capabilityMemberOwner(operand) ?? []
+  )
+  return new Set(owners).size < owners.length
+}
+
 interface LiteralDefault {
   truthy: boolean
   other: AstNode
@@ -613,7 +635,10 @@ export const noCapabilityRecombination: Rule = {
         const factOperands = operands.filter((operand) => !isLiteral(operand))
         if (
           factOperands.length < 2 ||
-          !operands.some(containsCapability) ||
+          !(
+            operands.some(containsCapability) ||
+            combinesSiblingCapabilities(operands)
+          ) ||
           onlyNarrowedByLocalState(node) ||
           isInsidePendingFact(node)
         ) {
