@@ -3648,7 +3648,6 @@ describe('useWorkflowService', () => {
         modified: Date.now(),
         size: 100
       })
-      expect(destination.originalContent).toBeNull()
 
       vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(destination)
       vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
@@ -4183,7 +4182,6 @@ describe('useWorkflowService', () => {
         modified: Date.now(),
         size: 100
       })
-      expect(destination.originalContent).toBeNull()
 
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(destination)
       vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
@@ -4225,45 +4223,43 @@ describe('useWorkflowService', () => {
 
       expect(storeUserData).not.toHaveBeenCalled()
       expect(workflowStore.syncWorkflows).not.toHaveBeenCalled()
-      it('keeps the committed suffix rename when moving its bookmark fails afterwards', async () => {
-        vi.mocked(workflowStore.renameWorkflow).mockRestore()
-        const workflow = createSaveableWorkflow('workflows/test.json')
-        workflow.initialMode = 'app'
-
-        const destination = createSaveableWorkflow('workflows/test.app.json')
-        destination.originalContent = '{"destination":true}'
-
-        vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(
-          destination
-        )
-        vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
-        vi.spyOn(workflowStore, 'syncWorkflows').mockResolvedValue(undefined)
-        vi.mocked(useDialogService().confirm).mockResolvedValue(true)
-        vi.spyOn(api, 'moveUserData').mockResolvedValue(
-          Response.json('workflows/test.app.json')
-        )
-        const storeUserData = vi
-          .spyOn(api, 'storeUserData')
-          .mockResolvedValue(new Response(null, { status: 200 }))
-        await useWorkflowBookmarkStore().setBookmarked(
-          'workflows/test.json',
-          true
-        )
-        storeUserData.mockRejectedValue(new Error('bookmark index unavailable'))
-
-        const result = await service.saveWorkflow(workflow)
-
-        expect(result).toBe(true)
-        expect(workflow.path).toBe('workflows/test.app.json')
-        expect(storeUserData).not.toHaveBeenCalledWith(
-          'workflows/test.app.json',
-          expect.anything(),
-          expect.anything()
-        )
-        expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
-      })
     })
 
+    it('keeps the committed suffix rename when moving its bookmark fails afterwards', async () => {
+      vi.mocked(workflowStore.renameWorkflow).mockRestore()
+      const workflow = createSaveableWorkflow('workflows/test.json')
+      workflow.initialMode = 'app'
+
+      const destination = createSaveableWorkflow('workflows/test.app.json')
+      destination.originalContent = '{"destination":true}'
+
+      vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(destination)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'syncWorkflows').mockResolvedValue(undefined)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      vi.spyOn(api, 'moveUserData').mockResolvedValue(
+        Response.json('workflows/test.app.json')
+      )
+      const storeUserData = vi
+        .spyOn(api, 'storeUserData')
+        .mockResolvedValue(new Response(null, { status: 200 }))
+      await useWorkflowBookmarkStore().setBookmarked(
+        'workflows/test.json',
+        true
+      )
+      storeUserData.mockRejectedValue(new Error('bookmark index unavailable'))
+
+      const result = await service.saveWorkflow(workflow)
+
+      expect(result).toBe(true)
+      expect(workflow.path).toBe('workflows/test.app.json')
+      expect(storeUserData).not.toHaveBeenCalledWith(
+        'workflows/test.app.json',
+        expect.anything(),
+        expect.anything()
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
     it('saves without renaming when user declines overwrite', async () => {
       const workflow = createSaveableWorkflow('workflows/test.json')
       workflow.initialMode = 'app'
