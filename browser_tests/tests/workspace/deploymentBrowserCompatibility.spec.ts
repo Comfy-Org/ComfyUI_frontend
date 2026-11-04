@@ -16,8 +16,6 @@ test.describe(
       comfyPage
     }) => {
       const page = comfyPage.page
-      await page.getByTestId('getting-started-blank').click()
-
       const trigger = page.getByTestId('deployment-switcher-trigger')
       await expect(trigger).toBeVisible()
 

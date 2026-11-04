@@ -21,7 +21,9 @@ export const deploymentCompatibilityTest = webSessionTest.extend({
     await page.route('**/api/workspaces/*/deployments', (route) =>
       route.fulfill(jsonRoute(DEPLOYMENT_LISTING))
     )
-    await page.route('**/api/settings', (route) => route.fulfill(jsonRoute({})))
+    await page.route('**/api/settings', (route) =>
+      route.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
+    )
     await page.route('**/api/userdata**', (route) =>
       route.fulfill(jsonRoute([]))
     )
