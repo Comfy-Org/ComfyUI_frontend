@@ -14,6 +14,9 @@ export function projectBillingCapabilities(
     ...(snapshot.autoTopUpEnabled === undefined
       ? {}
       : { auto_top_up_enabled: snapshot.autoTopUpEnabled }),
+    ...(snapshot.autoTopUpSetup === undefined
+      ? {}
+      : { auto_top_up_setup: snapshot.autoTopUpSetup }),
     capabilities: snapshot.capabilities,
     denied_reasons: snapshot.denials,
     expires_at: new Date(snapshot.freshUntil).toISOString(),
