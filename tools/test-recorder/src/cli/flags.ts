@@ -5,7 +5,8 @@ export interface ParsedArgs {
 
 /**
  * Only the named flags take a value, so a positional argument following a
- * flag that takes none is never swallowed.
+ * flag that takes none is never swallowed. A separated `true` or `false` is
+ * the exception: it is read as that flag's value.
  */
 export function parseFlags(
   args: string[],
@@ -30,7 +31,11 @@ export function parseFlags(
     }
 
     const next = args.at(i + 1)
-    if (takesValue.has(body) && next !== undefined && !next.startsWith('--')) {
+    if (
+      (takesValue.has(body) && next !== undefined && !next.startsWith('--')) ||
+      next === 'true' ||
+      next === 'false'
+    ) {
       flags[body] = next
       i++
     } else {

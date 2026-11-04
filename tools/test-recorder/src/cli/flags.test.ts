@@ -27,6 +27,12 @@ describe('parseFlags', () => {
     expect(positional).toEqual(['a.ts'])
   })
 
+  it('reads a separated true or false as the value of a flag that takes none', () => {
+    const { positional, flags } = parseFlags(['a.ts', '--force', 'false'])
+    expect(flags.force).toBe('false')
+    expect(positional).toEqual(['a.ts'])
+  })
+
   it('keeps a value that contains an equals sign intact', () => {
     expect(parseFlags(['--output=a=b.ts']).flags.output).toBe('a=b.ts')
   })

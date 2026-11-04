@@ -22,6 +22,7 @@ describe('comfy-test transform --force', () => {
   it.for([
     { flags: ['--force'], replaced: true },
     { flags: ['--force=false'], replaced: false },
+    { flags: ['--force', 'false'], replaced: false },
     { flags: [], replaced: false }
   ])('$flags replaced the spec: $replaced', async ({ flags, replaced }) => {
     const dir = mkdtempSync(join(tmpdir(), 'comfy-cli-'))
