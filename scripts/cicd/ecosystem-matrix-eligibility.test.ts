@@ -11,6 +11,7 @@ const workflowSchema = z.object({
   jobs: z.record(
     z.string(),
     z.object({
+      'timeout-minutes': z.union([z.number(), z.string()]).optional(),
       outputs: z.record(z.string(), z.string()).optional(),
       steps: z
         .array(
@@ -50,17 +51,19 @@ const bumpBranch = z
   .min(1)
   .parse(createPullRequestStep().with?.['branch'])
 
-function evaluate(expression: string, context: object) {
+function run(expression: string, context: object): unknown {
   const javascript = expression
     .slice(3, -2)
     .replace(/\.([a-zA-Z_][\w-]*)/g, '?.["$1"]')
-  return z.boolean().parse(
-    runInNewContext(javascript, {
-      ...context,
-      startsWith: (haystack: unknown, needle: unknown) =>
-        String(haystack ?? '').startsWith(String(needle ?? ''))
-    })
-  )
+  return runInNewContext(javascript, {
+    ...context,
+    startsWith: (haystack: unknown, needle: unknown) =>
+      String(haystack ?? '').startsWith(String(needle ?? ''))
+  })
+}
+
+function evaluate(expression: string, context: object) {
+  return z.boolean().parse(run(expression, context))
 }
 
 interface Candidate {
@@ -138,6 +141,22 @@ describe('ecosystem matrix candidate eligibility', () => {
       evaluate(withoutClause, context({ headRef: 'version-bump-1.42.0' }))
     ).toBe(true)
   })
+})
+
+describe('ecosystem matrix shard budget', () => {
+  it.for([
+    ['an ordinary run', {}, 20],
+    ['a manual dispatch without the census', { registry_forms: false }, 20],
+    ['a manual registry-forms census', { registry_forms: true }, 40]
+  ] satisfies [string, object, number][])(
+    'budgets the pack shards for %s',
+    ([, inputs, minutes]) => {
+      const budget = z
+        .string()
+        .parse(matrix.jobs['ecosystem-matrix']['timeout-minutes'])
+      expect(run(budget, { inputs })).toBe(minutes)
+    }
+  )
 })
 
 describe('corpus pin bump PR creation', () => {
