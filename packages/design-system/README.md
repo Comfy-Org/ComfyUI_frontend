@@ -34,22 +34,29 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 @import '@comfyorg/design-system/css/base.css';
 ```
 
-## Void theme
+## Baseline for other apps
 
-Void is the near-black look used by Comfy Desktop. An app with its own Tailwind
-build and global styles imports it instead of `style.css`, which carries
-ComfyUI's colors and app-wide rules:
+An app with its own Tailwind build and global styles, such as Comfy Desktop,
+imports the baseline instead of `style.css`, which adds ComfyUI's app-wide rules:
 
 ```css
 @import 'tailwindcss';
-@import '@comfyorg/design-system/css/themes/void.css';
+@import '@comfyorg/design-system/css/baseline.css';
+
+:root {
+  --background: oklch(0.19 0.003 285);
+  --primary: var(--foreground);
+}
 ```
 
-The theme gives the components their colors, registers the compiled component
-sources for Tailwind, and adds Void's type, radius, shadow and motion tokens.
-ComfyUI does not import it, so changing Void cannot change ComfyUI. It does not
-declare fonts: the host provides `Inter` and `PP Formula`. Published consumers
-still import `components.css`, as described under [Vue components](#vue-components).
+The baseline holds the palette, the semantic colors components use, their icon
+plugins, stacking layers, text sizes, shadows and scrollbar utilities, and
+registers the compiled component sources for Tailwind. Override only the
+variables that differ: `--background`, `--foreground`, `--card`, `--popover`,
+`--primary`, `--secondary`, `--muted`, `--muted-foreground`, `--accent`,
+`--destructive`, `--border`, `--input`, `--ring`, `--warning` and
+`--shadow-color`. The host provides fonts. Published consumers still import
+`components.css`, as described under [Vue components](#vue-components).
 
 ## Exports
 
@@ -58,8 +65,7 @@ still import `components.css`, as described under [Vue components](#vue-componen
 | `./css/style.css`               | Full theme — palette, fonts, Tailwind layers, icon plugins                       |
 | `./css/theme.css`               | Full theme without automatic component source registration                       |
 | `./css/base.css`                | Palette and fonts only                                                           |
-| `./css/component-support.css`   | Palette, icon plugins, animations, layers and utilities the components need      |
-| `./css/themes/void.css`         | Void theme for apps other than ComfyUI, including component support              |
+| `./css/baseline.css`            | Component colors, plugins, tokens and utilities for apps other than ComfyUI      |
 | `./css/_palette.css`            | Color variables                                                                  |
 | `./css/fonts.css`               | Font faces                                                                       |
 | `./css/_deprecated-aliases.css` | Deprecated variable names kept for extensions; scheduled for removal             |

@@ -20,24 +20,24 @@ const css = readdirSync('dist/assets')
 assert.match(css, /\.bg-secondary\s*\{/)
 assert.match(css, /--background:/)
 
-const voidBuild = await build({
+const baselineBuild = await build({
   configFile: false,
   plugins: [tailwindcss()],
   logLevel: 'error',
-  build: { write: false, rolldownOptions: { input: 'void-theme.css' } }
+  build: { write: false, rolldownOptions: { input: 'baseline-theme.css' } }
 })
-assert(!Array.isArray(voidBuild) && 'output' in voidBuild)
-const voidCss = voidBuild.output
+assert(!Array.isArray(baselineBuild) && 'output' in baselineBuild)
+const baselineCss = baselineBuild.output
   .filter((file) => file.type === 'asset' && file.fileName.endsWith('.css'))
   .map((file) => (file.type === 'asset' ? file.source.toString() : ''))
   .join('\n')
 
-assert.match(voidCss, /--color-background:\s*oklch\(/)
-assert.match(voidCss, /\.bg-secondary\s*\{/)
-assert.match(voidCss, /\.icon-\\\[lucide--check\\\]\s*\{/)
-assert.match(voidCss, /\.z-overlay\s*\{/)
-assert.doesNotMatch(voidCss, /body\s*\{[^}]*overflow:\s*hidden/)
-assert.doesNotMatch(voidCss, /#vue-app\s*\{/)
+assert.match(baselineCss, /--background:\s*oklch\(/)
+assert.match(baselineCss, /\.bg-secondary\s*\{[^}]*var\(--secondary\)/)
+assert.match(baselineCss, /\.icon-\\\[lucide--check\\\]\s*\{/)
+assert.match(baselineCss, /\.z-overlay\s*\{/)
+assert.doesNotMatch(baselineCss, /body\s*\{[^}]*overflow:\s*hidden/)
+assert.doesNotMatch(baselineCss, /#vue-app\s*\{/)
 process.stdout.write(
-  'Packed CSS and the Void theme compile without Vue, Reka, or VueUse installed.\n'
+  'Packed CSS and the baseline compile without Vue, Reka, or VueUse installed.\n'
 )

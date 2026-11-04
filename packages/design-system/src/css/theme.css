@@ -1,33 +1,11 @@
 @layer theme, base, components, utilities;
 
 @import './fonts.css';
-@import './component-support.css';
+@import './_baseline.css';
 @import './_deprecated-aliases.css';
 @import './_legacy-palette.css';
 @import 'tailwindcss/theme' layer(theme);
 @import 'tailwindcss/utilities' layer(utilities);
-
-@layer base {
-  *,
-  ::before,
-  ::after {
-    box-sizing: border-box;
-    border-color: var(--border);
-  }
-
-  button,
-  input,
-  select,
-  optgroup,
-  textarea,
-  ::file-selector-button {
-    font: inherit;
-    font-feature-settings: inherit;
-    font-variation-settings: inherit;
-    letter-spacing: inherit;
-    color: inherit;
-  }
-}
 
 /* Safelist dynamic comfy icons for node library folders */
 @source inline("icon-[comfy--{ai-model,anthropic,bfl,bria,bytedance,claude,comfy-cloud,comfy-logo,credits,elevenlabs,extensions-blocks,file-output,gemini,grok,hitpaw,ideogram,image-ai-edit,kling,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,openai,pin,pixverse,play,recraft,reve,rodin,runway,sora,stability-ai,template,tencent,topaz,tripo,veo,vidu,wan,wavespeed,workflow,quiver}]");
@@ -36,74 +14,28 @@
 @source inline("icon-mask-[comfy--{3d-decomp,ai-model,anthropic,batch-images-node,bfl,bria,brightness-contrast,bytedance,canny,canny-to-image,canny-to-video,channels,chromatic-aberration,claude,comfy-c,comfy-logo,credits,depth-to-image,depth-to-video,dial,elevenlabs,extensions-blocks,file-output,frames-to-video,gemini,get-video-components,glow,grain,grok,hitpaw,ideogram,image-ai-edit,image-batch,image-blur,image-canny,image-captioning,image-collage,image-compare,image-depth,image-edit,image-inpaint,image-invert,image-outpaint,image-outpainting,image-remove-background,image-rotate,image-select-object-segmentation,image-shader,image-sharpen,image-to-3d,image-to-image,image-to-layers,image-to-video,image-upscale,image-vectorize,kling,load-3d,load-audio,load-video,lora-loader,ltxv,luma,magnific,mask,meshy,minimax,moonvalley-marey,node,open-ai-chat-node,openai,pin,pixverse,play,pose-to-image,pose-to-video,quiver,recraft,reve,rodin,runway,save-3d,save-audio,save-video,send,sora,stability-ai,template,tencent,text-prompt-enhance,text-to-3d,text-to-audio,text-to-image,text-to-video,topaz,tripo,veo,video-captioning,video-edit,video-enhance,video-extract-frame,video-inpaint,video-interpolation,video-select-object-segmentation,video-slice,video-split-screen,video-trim,video-upscale,vidu,voice-clone,wan,wavespeed,workflow}]");
 
 @theme {
-  --shadow-2xs: 0 1px 1px var(--shadow-color);
-  --shadow-xs: 0 1px 2px var(--shadow-color);
-  --shadow-sm: 0 1px 4px var(--shadow-color);
-  --shadow-md: 1px 1px 8px 0 var(--shadow-color);
-  --shadow-lg: 0 2px 16px 0 var(--shadow-color);
-  --shadow-xl: 0 8px 24px var(--shadow-color);
-  --shadow-2xl: 0 24px 80px var(--shadow-color);
-  --drop-shadow-xs: 0 1px 1px var(--shadow-color);
-  --drop-shadow-sm: 1px 1px 4px var(--shadow-color);
-  --drop-shadow-md: 1px 1px 8px var(--shadow-color);
-  --drop-shadow-lg: 0 9px 7px var(--shadow-color);
   --shadow-inset-highlight: inset 0 1px 0 0 rgb(from white r g b / 0.1);
 
   --color-bypass: #6a246a;
-  --color-success: var(--color-jade-600);
 }
 
 :root {
-  color-scheme: dark;
-
-  --background: var(--color-charcoal-800);
-  --foreground: var(--color-white);
-  --card: var(--color-charcoal-600);
   --node-foreground: var(--color-smoke-700);
   --node-header: var(--color-charcoal-700);
   --node-border: var(--color-charcoal-100);
-  --primary: var(--color-azure-600);
-  --secondary: var(--color-charcoal-600);
-  --muted: var(--color-charcoal-300);
-  --muted-foreground: var(--color-smoke-800);
-  --accent: var(--color-charcoal-400);
-  --destructive: var(--color-coral-700);
-  --border: var(--color-charcoal-200);
-  --ring: var(--muted-foreground);
-  --popover: var(--background);
-  --input: var(--accent);
   --node: var(--card);
 
   --default-transition-duration: 0.1s;
   --comfy-topbar-height: 2.5rem;
   --workflow-tabs-height: 2.375rem;
   --comfy-textarea-font-size: 10px;
-
-  --warning: var(--color-gold-600);
-  --shadow-color: rgb(0 0 0 / 0.4);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
   --color-node: var(--node);
   --color-node-foreground: var(--node-foreground);
   --color-node-header: var(--node-header);
   --color-node-border: var(--node-border);
-  --color-popover: var(--popover);
-  --color-primary: var(--primary);
-  --color-secondary: var(--secondary);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-
-  /* Semantic tokens */
-  --color-warning: var(--warning);
 }
 
 @utility floating-panel {
