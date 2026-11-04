@@ -62,6 +62,7 @@ import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { ensureNonZeroUuid } from '@/utils/uuid'
+import { insertPngTextChunk } from '@/utils/pngEncodeUtil'
 
 export function readWorkflowDraftLineage(path: string) {
   return useWorkflowDraftStoreV2().getDraft(path)?.lineage ?? null
@@ -280,7 +281,10 @@ export const useWorkflowService = () => {
     })
   }
 
-  async function getFilename(defaultName: string): Promise<string | null> {
+  async function getFilename(
+    defaultName: string,
+    extension = '.json'
+  ): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
       let filename = await dialogService.prompt({
         title: t('workflowService.exportWorkflow'),
@@ -288,8 +292,8 @@ export const useWorkflowService = () => {
         defaultValue: defaultName
       })
       if (!filename) return null
-      if (!filename.toLowerCase().endsWith('.json')) {
-        filename += '.json'
+      if (!filename.toLowerCase().endsWith(extension)) {
+        filename += extension
       }
       return filename
     }
@@ -331,6 +335,38 @@ export const useWorkflowService = () => {
     const file = await getFilename(filename)
     if (!file) return
     downloadBlob(file, blob)
+  }
+
+  const exportWorkflowImage = async (
+    filename: string,
+    renderImage: () => Promise<
+      { ok: true; image: Blob } | { ok: false; cause?: unknown }
+    >
+  ): Promise<void> => {
+    const workflow = workflowStore.activeWorkflow
+    if (workflow?.path) {
+      filename = workflow.filename
+    }
+    const p = await useApp().graphToPrompt()
+
+    addViewRestore(p.workflow)
+    const json = JSON.stringify(p.workflow)
+    const file = await getFilename(`${filename}.png`, '.png')
+    if (!file) return
+
+    const render = await renderImage()
+    if (!render.ok) {
+      if (render.cause !== undefined)
+        reportError(render.cause, {
+          surface: 'graph',
+          errorType: 'error_rendering_workflow_image'
+        })
+      toast.error(t('g.error'), {
+        description: t('toastMessages.failedToExportWorkflowImage')
+      })
+      return
+    }
+    downloadBlob(file, await insertPngTextChunk(render.image, 'workflow', json))
   }
   /**
    * Save a workflow as a new file
@@ -1126,6 +1162,7 @@ export const useWorkflowService = () => {
 
   return {
     exportWorkflow,
+    exportWorkflowImage,
     saveWorkflowAs,
     saveWorkflow,
     loadDefaultWorkflow,
