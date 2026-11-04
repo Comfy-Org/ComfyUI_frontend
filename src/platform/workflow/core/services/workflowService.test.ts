@@ -4259,6 +4259,12 @@ describe('useWorkflowService', () => {
         expect.anything()
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+      expect(reportErrorMock).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'error_saving_renamed_workflow_bookmark'
+        })
+      )
     })
     it('saves without renaming when user declines overwrite', async () => {
       const workflow = createSaveableWorkflow('workflows/test.json')
