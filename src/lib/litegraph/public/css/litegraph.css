@@ -8,10 +8,6 @@
   outline: none;
 }
 
-.lgraphcanvas * {
-  box-sizing: border-box;
-}
-
 .litegraph.litecontextmenu {
   position: fixed;
   top: 100px;

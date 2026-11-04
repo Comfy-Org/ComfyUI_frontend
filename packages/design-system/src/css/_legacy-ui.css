@@ -124,8 +124,6 @@ button.comfy-close-menu-btn {
   background-color: var(--input);
   border-width: initial;
   border-radius: 8px;
-  border-color: var(--border);
-  border-style: solid;
   margin-top: 2px;
 }
 
@@ -175,8 +173,6 @@ span.drag-handle::after {
   background-color: var(--background);
   margin-bottom: 10px;
   border-width: medium;
-  border-color: var(--border);
-  border-style: solid;
 }
 
 .comfy-list-items {
@@ -190,7 +186,6 @@ span.drag-handle::after {
 .comfy-list h4 {
   min-width: 160px;
   padding: 3px;
-  font-weight: 400;
 }
 
 .comfy-list-items button {
@@ -224,8 +219,6 @@ button.comfy-queue-btn {
   background-color: var(--input);
   border-radius: 8px;
   border-width: revert;
-  border-color: var(--border);
-  border-style: solid;
 }
 
 @media only screen and (max-height: 850px) {
@@ -295,15 +288,12 @@ dialog::backdrop {
 }
 
 .comfy-dialog.comfyui-dialog.comfy-modal {
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
+  margin: auto;
   transform: none;
 }
 
 .comfy-dialog.comfy-modal {
-  border-color: var(--background);
   box-shadow: none;
   border: 2px solid var(--border);
 }

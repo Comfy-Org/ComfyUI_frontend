@@ -8,7 +8,7 @@ export function readPanelStyle(locator: Locator) {
       borderRadius: style.borderRadius,
       boxShadow: style.boxShadow,
       padding: style.padding,
-      borderStyle: style.borderStyle
+      borderWidth: style.borderWidth
     }
   })
 }

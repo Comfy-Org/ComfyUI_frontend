@@ -203,7 +203,6 @@ body {
   border: none;
   font-family: var(--font-mono);
   font-size: var(--comfy-textarea-font-size);
-  line-height: normal;
 }
 
 @import './_markdown.css';
