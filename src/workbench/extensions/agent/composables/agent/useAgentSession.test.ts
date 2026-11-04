@@ -7796,6 +7796,40 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(disowned).toHaveBeenCalledWith('wf-dead')
   })
 
+  // PM-1975: the server can admit a turn (ack received) after the user
+  // already switched chats/started a new chat, bumping the send generation.
+  // acceptTurn() never runs for it, so it previously vanished from local
+  // bookkeeping with no trace -- exactly the gap agentSendGateStore's own
+  // comment names as the unclosed half of PM-1660 ("stashActiveTurn() has no
+  // slot to stash before the ack and performSend's generation check drops
+  // the late one"). This asserts the drop is now reported instead of silent.
+  it('(k5) reports a discarded accepted turn when the send generation moved on before the ack', async () => {
+    let abandon: () => void = () => {}
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => {
+      abandon()
+      return { thread_id: 'th-1', message_id: 'msg-1' }
+    })
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+    abandon = () => session.newChat()
+
+    expect(await session.sendMessage('run it')).toBe(false)
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_turn_accepted_discarded_on_generation_change',
+      context: {
+        threadAtSend: 'new',
+        ackThreadId: 'th-1',
+        turnId: toTurnId('msg-1')
+      }
+    })
+    expect(session.entries.value).toEqual([])
+  })
+
   it('(k) a failed POST records the user text plus a settled error reply and returns false', async () => {
     const postMessage = vi
       .fn<

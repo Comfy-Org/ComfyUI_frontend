@@ -1637,7 +1637,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       const ack = await postTurn(threadAtSend, input, wfContext)
       accepted = true
-      if (!observeAcceptedTurn(generation, onAccepted)) return false
+      if (!observeAcceptedTurn(generation, ack, threadAtSend, onAccepted))
+        return false
       acceptTurn(
         ack,
         text,
@@ -1663,13 +1664,38 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function observeAcceptedTurn(
     generation: number,
+    ack: AgentTurnAccepted,
+    threadAtSend: string,
     onAccepted?: () => void
   ): boolean {
     runAcceptedTurnSideEffect(
       () => onAccepted?.(),
       'agent_turn_accepted_callback_failed'
     )
-    return generation === loadGeneration
+    const isCurrent = generation === loadGeneration
+    if (!isCurrent) {
+      // PM-1975: the server admitted this turn (ack received), but the user
+      // switched chats/started a new chat before the ack landed, bumping
+      // loadGeneration. acceptTurn() below never runs, so the turn gets no
+      // local bookkeeping (no activeTurnId, nothing to stash) even though the
+      // server keeps running it -- it was previously dropped with no visible
+      // trace. agentSendGateStore documents this as the known-but-unclosed
+      // half of PM-1660: "stashActiveTurn() has no slot to stash before the
+      // ack and performSend's generation check drops the late one."
+      reportError(
+        new Error('agent turn accepted after the send generation moved on'),
+        {
+          surface: 'agent',
+          errorType: 'agent_turn_accepted_discarded_on_generation_change',
+          context: {
+            threadAtSend,
+            ackThreadId: ack.thread_id,
+            turnId: toTurnId(ack.message_id)
+          }
+        }
+      )
+    }
+    return isCurrent
   }
 
   function workflowTargetChanged(
