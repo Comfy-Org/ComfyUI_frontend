@@ -2,7 +2,6 @@ import { onTestFinished, vi } from 'vitest'
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { useBillingCapabilities as realUseBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
@@ -44,11 +43,12 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   canManageAutoTopUp: computed(() =>
     receiveServerFact('can_manage_auto_top_up', false)
   ),
-  canViewAutoTopUpCard: computed(() => pendingServerFact('BE-25243', false)),
+  canViewAutoTopUpCard: computed(() =>
+    receiveServerFact('can_view_auto_top_up', false)
+  ),
   canViewAutoTopUpMemberNotice: computed(() =>
     receiveServerFact('can_view_auto_top_up_member_notice', false)
   ),
-  manageAutoTopUpDenial: manageAutoTopUpDenialFact(undefined),
   autoTopUpEnabled: computed(() =>
     receiveServerFact('auto_top_up_enabled', false)
   ),
@@ -97,12 +97,6 @@ export function runWorkflowsDenialFact(
 ) {
   return computed(() =>
     receiveServerFact('denied_reasons.can_run_workflows', toValue(denial))
-  )
-}
-
-export function manageAutoTopUpDenialFact(denial: string | undefined) {
-  return computed(() =>
-    receiveServerFact('denied_reasons.can_manage_auto_top_up', denial)
   )
 }
 

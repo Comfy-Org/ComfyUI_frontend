@@ -5,7 +5,6 @@ import {
 } from '@vueuse/core'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -200,18 +199,15 @@ function useBillingCapabilitiesInternal() {
     )
   )
   const canViewAutoTopUpCard = computed(() =>
-    pendingServerFact('BE-25243', canManageAutoTopUp.value && canTopUp.value)
+    receiveServerFact(
+      'can_view_auto_top_up',
+      capabilities.value?.can_view_auto_top_up ?? false
+    )
   )
   const canViewAutoTopUpMemberNotice = computed(() =>
     receiveServerFact(
       'can_view_auto_top_up_member_notice',
       capabilities.value?.can_view_auto_top_up_member_notice ?? false
-    )
-  )
-  const manageAutoTopUpDenial = computed(() =>
-    receiveServerFact(
-      'denied_reasons.can_manage_auto_top_up',
-      resolvedResponse.value?.denied_reasons?.can_manage_auto_top_up
     )
   )
   const autoTopUpEnabled = computed(() =>
@@ -595,7 +591,6 @@ function useBillingCapabilitiesInternal() {
     canManageAutoTopUp,
     canViewAutoTopUpCard,
     canViewAutoTopUpMemberNotice,
-    manageAutoTopUpDenial,
     autoTopUpEnabled,
     autoTopUpSetup,
     canRunWorkflows,
