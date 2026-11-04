@@ -18,11 +18,9 @@ describe('runTransform overwrite guard', () => {
       writeFileSync(input, "await page.getByText('Queue').click();\n")
       writeFileSync(output, '// existing committed spec\n')
 
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(((
-        code?: number
-      ) => {
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
         throw new Error(`exit:${code}`)
-      }) as never)
+      })
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       const { runTransform } = await import('./transform')
