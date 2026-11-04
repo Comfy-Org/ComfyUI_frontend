@@ -507,7 +507,7 @@ export async function runRecord(
       throw new Error(failure, { cause: error })
     }
     await preparePrCheckout(prefill.pr, root, {
-      allowExplicitFallback: Boolean(process.stdin.isTTY)
+      allowExplicitFallback: process.stdin.isTTY
     })
   }
 
