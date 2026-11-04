@@ -24,6 +24,7 @@ interface Subscription {
   hasFunds: boolean
   isCancelled: boolean
   endDate: string | null
+  endedAt?: string | null
   tier?: SubscriptionInfo['tier']
   scheduledChange?: SubscriptionInfo['scheduledChange']
 }
@@ -1041,6 +1042,27 @@ describe('BillingStatusBanner', () => {
           'Your Team plan ended on September 12, 2026'
         )
         expectChoosePlanLink()
+      }
+    )
+
+    it.for([
+      {
+        endedAt: '2026-11-04T12:00:00Z',
+        title: 'Your Team plan ended on November 4, 2026'
+      },
+      { endedAt: null, title: 'Your Team plan has ended' }
+    ])(
+      'titles the ended plan from the served ended_at ($endedAt)',
+      ({ endedAt, title }) => {
+        endedPlan()
+        state.subscription = {
+          ...state.subscription!,
+          endDate: endedAt ? null : '2026-09-12T12:00:00Z',
+          endedAt
+        }
+        renderBanner('billing')
+
+        expect(screen.getByRole('status')).toHaveTextContent(title)
       }
     )
 
