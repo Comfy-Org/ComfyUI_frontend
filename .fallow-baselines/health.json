@@ -1433,6 +1433,9 @@
       }
     },
     "src/lib/litegraph/src/subgraph/SubgraphInput.ts": {
+      "crap_high": {
+        "count": 1
+      },
       "crap_moderate": {
         "count": 1
       }

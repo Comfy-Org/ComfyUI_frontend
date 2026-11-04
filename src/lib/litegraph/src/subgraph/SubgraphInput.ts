@@ -71,29 +71,14 @@ export class SubgraphInput extends SubgraphSlot {
     )
       return
 
-    // if (slot instanceof SubgraphOutput) {
-    //   // Subgraph IO nodes have no special handling at present.
-    //   return new LLink(
-    //     ++subgraph.state.lastLinkId,
-    //     this.type,
-    //     this.parent.id,
-    //     this.parent.slots.indexOf(this),
-    //     node.id,
-    //     inputIndex,
-    //     afterRerouteId,
-    //   )
-    // }
-
     const inputWidget = node.getWidgetFromSlot(slot)
     if (inputWidget && !this.matchesWidget(inputWidget)) {
       console.warn('Target input has invalid widget.', slot, node)
       return
     }
 
-    const existingLink = inputLink(subgraph, node.id, node.inputs.indexOf(slot))
-    if (existingLink) {
-      subgraph.beforeChange()
-    }
+    const existingLink = inputLink(subgraph, node.id, inputIndex)
+    if (existingLink) subgraph.beforeChange()
 
     const linkId = mintLinkId(
       subgraph.state,

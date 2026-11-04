@@ -216,17 +216,11 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     type?: ISlotType
   ): ResolvedInput | undefined {
     const uniqueId = `${this.subgraphNode?.subgraph.id}:${this.node.id}[I]${slot}`
-    if (visited.has(uniqueId)) {
-      const nodeInfo = `${this.node.id}${this.node.title ? ` (${this.node.title})` : ''}`
-      const pathInfo =
-        this.subgraphNodePath.length > 0
-          ? ` at path ${this.subgraphNodePath.join(':')}`
-          : ''
+    if (visited.has(uniqueId))
       throw new RecursionError(
-        `Circular reference detected while resolving input ${slot} of node ${nodeInfo}${pathInfo}. ` +
+        `Circular reference detected while resolving input ${slot} of node [${this.id}]. ` +
           `This creates an infinite loop in link resolution. UniqueID: [${uniqueId}]`
       )
-    }
     visited.add(uniqueId)
 
     const input = this.inputs.at(slot)
@@ -234,18 +228,13 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       throw new SlotIndexError(
         `No input found for flattened id [${this.id}] slot [${slot}]`
       )
-
-    if (input.ownerSlot !== undefined) {
-      const resolved = this._subgraphNodeDto()?.resolveInput(
-        input.ownerSlot,
+    const { subgraphNode } = this
+    if (input.ownerSlot !== undefined)
+      return this._resolveHostInput(
+        subgraphNode?.inputs[input.ownerSlot],
         visited,
         type
       )
-      const ownerInput = this.subgraphNode?.inputs[input.ownerSlot]
-      if (resolved || !this.subgraphNode || !ownerInput) return resolved
-      return this._hostWidgetInput(this.subgraphNode, ownerInput)
-    }
-
     if (input.linkId == null) return
 
     const link = this.graph.getLink(input.linkId)
@@ -253,71 +242,48 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       throw new InvalidLinkError(
         `No link found in parent graph for id [${this.id}] slot [${slot}] ${input.name}`
       )
-
-    const { subgraphNode } = this
-
     if (subgraphNode && link.originIsIoNode) {
-      const subgraphNodeInput = hostInputOf(
-        subgraphNode,
-        subgraphNode.subgraph.inputs.at(link.origin_slot)
+      const subgraphInput = subgraphNode.subgraph.inputs.at(link.origin_slot)
+      return this._resolveHostInput(
+        hostInputOf(subgraphNode, subgraphInput),
+        visited,
+        type
       )
-      if (!subgraphNodeInput)
-        throw new SlotIndexError(
-          `No input found for slot [${link.origin_slot}] ${input.name}`
-        )
-
-      if (!subgraphNode.graph)
-        throw new NullGraphError(
-          `SubgraphNode ${subgraphNode.id} has no graph during input resolution`
-        )
-      const linkId = inputLinkId(
-        subgraphNode.graph,
-        subgraphNode.id,
-        subgraphNode.inputs.indexOf(subgraphNodeInput)
-      )
-      if (linkId === undefined)
-        return this._hostWidgetInput(subgraphNode, subgraphNodeInput)
-
-      const outerLink = subgraphNode.graph.getLink(linkId)
-      if (!outerLink)
-        throw new InvalidLinkError(
-          `No outer link found for slot [${link.origin_slot}] ${input.name}`
-        )
-
-      const subgraphNodeExecutionId: ExecutionId =
-        this.subgraphNodePath.join(':')
-      const subgraphNodeDto = this.nodesByExecutionId.get(
-        subgraphNodeExecutionId
-      )
-      if (!subgraphNodeDto)
-        throw new Error(
-          `No subgraph node DTO found for id [${subgraphNodeExecutionId}]`
-        )
-
-      return subgraphNodeDto.resolveInput(outerLink.target_slot, visited)
     }
-
-    const outputNode = this.graph.getNodeById(link.origin_id)
-    if (!outputNode)
-      throw new InvalidLinkError(
-        `No input node found for id [${this.id}] slot [${slot}] ${input.name}`
-      )
 
     const outputNodeExecutionId: ExecutionId = [
       ...this.subgraphNodePath,
-      outputNode.id
+      link.origin_id
     ].join(':')
     const outputNodeDto = this.nodesByExecutionId.get(outputNodeExecutionId)
     if (!outputNodeDto)
       throw new Error(
         `No output node DTO found for id [${outputNodeExecutionId}]`
       )
-
     return outputNodeDto.resolveOutput(
       link.origin_slot,
       type ?? input.type,
       visited
     )
+  }
+
+  /** Resolves the subgraph node's `hostInput`: its link, else its widget value. */
+  private _resolveHostInput(
+    hostInput: INodeInputSlot | undefined,
+    visited: Set<string>,
+    type?: ISlotType
+  ): ResolvedInput | undefined {
+    const { subgraphNode } = this
+    if (!subgraphNode || !hostInput) return
+    const slot = subgraphNode.inputs.indexOf(hostInput)
+    if (!subgraphNode.isInputConnected(slot))
+      return this._hostWidgetInput(subgraphNode, hostInput)
+    const subgraphNodeDto = this._subgraphNodeDto()
+    if (!subgraphNodeDto)
+      throw new Error(
+        `No subgraph node DTO found for id [${this.subgraphNodePath.join(':')}]`
+      )
+    return subgraphNodeDto.resolveInput(slot, visited, type)
   }
 
   /**

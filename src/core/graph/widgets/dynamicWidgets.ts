@@ -75,6 +75,31 @@ function commitMutatedInputs(
   return replaceNodeInputs(node, previous, finalInputs, assignments)
 }
 
+/** `onConnectionsChange` at each input's live slot: a callback can grow a group and shift later inputs. */
+function notifyRelinked(
+  node: LGraphNode,
+  relinked: readonly { input: INodeInputSlot; link: LLink }[]
+) {
+  for (const { input, link } of relinked) {
+    const slot = node.inputs.indexOf(input)
+    if (slot !== -1)
+      node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
+  }
+}
+
+/** Moves each removed input's link onto the input that replaced it by name. */
+function carryLinks(
+  node: LGraphNode,
+  removedInputs: INodeInputSlot[],
+  inputLinks: Map<INodeInputSlot, LLink>
+) {
+  for (const input of removedInputs) {
+    const replacement = node.inputs.find((item) => item.name === input.name)
+    const link = inputLinks.get(input)
+    if (replacement && link) inputLinks.set(replacement, link)
+  }
+}
+
 function syncNodeWidgetOrder(node: LGraphNode) {
   const graphId = resolveNodeRootGraphId(node)
   if (!graphId || !node.widgets) return
@@ -151,99 +176,70 @@ function dynamicComboWidget(
         addedWidget.value = removed.value
     }
   }
+  function addOptionInputs(spec: (typeof options)[string] | undefined) {
+    const inputTypes: [Record<string, InputSpec> | undefined, boolean][] = [
+      [spec?.required, false],
+      [spec?.optional, true]
+    ]
+    for (const [inputs, isOptional] of inputTypes)
+      for (const [key, inputSpec] of Object.entries(inputs ?? {})) {
+        const name = `${widget.name}.${key}`
+        const specToAdd = transformInputSpecV1ToV2(inputSpec, {
+          name,
+          isOptional
+        })
+        specToAdd.display_name = key
+        addNodeInput(node, specToAdd)
+      }
+  }
+  /** Moves inputs added past `start` to after the combo's socket, reusing same-named existing inputs. */
+  function placeAddedInputs(start: number, hasAddedWidgets: boolean) {
+    const socket = node.inputs.findIndex((i) => i.name === widget.name)
+    if (socket === -1 && node.inputs.length > start && !hasAddedWidgets)
+      throw new Error('Failed to find input socket for ' + widget.name)
+    const added = node.inputs.splice(start).map((input) => {
+      const existing = node.inputs.findIndex((i) => i.name === input.name)
+      return existing === -1 ? input : node.inputs.splice(existing, 1)[0]
+    })
+    node.inputs.splice(socket + 1 || node.inputs.length, 0, ...added)
+  }
   const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
     const newSpec =
       value && !widget.connectionSuppressed ? options[value] : undefined
-    const removedOption = activeOption
+    const optionValues = removedWidgetValues.get(activeOption) ?? new Map()
+    removedWidgetValues.set(activeOption, optionValues)
     activeOption = value
 
     const previous = captureInputLayout(node)
     const inputLinks = new Map(previous.links)
     const removedInputs = remove(node.inputs, isInGroup)
-    for (const widget of node.widgets.filter(isInGroup)) {
-      const optionValues = removedWidgetValues.get(removedOption) ?? new Map()
-      optionValues.set(widget.name, {
-        type: widget.type,
-        value: widget.value
-      })
-      removedWidgetValues.set(removedOption, optionValues)
-      node.removeWidget(widget)
+    for (const child of node.widgets.filter(isInGroup)) {
+      optionValues.set(child.name, { type: child.type, value: child.value })
+      node.removeWidget(child)
     }
     forgetDynamicChildren(node, inputName)
 
-    if (!newSpec) {
-      const result = commitMutatedInputs(node, previous, inputLinks)
-      if (!result.ok) return
-      syncNodeWidgetOrder(node)
-      return
-    }
-
-    const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
-    const startingWidgets = new Set(node.widgets)
-    const startingInputLength = node.inputs.length
-
+    const insertionPoint = node.widgets.indexOf(widget) + 1
     if (insertionPoint === 0)
       throw new Error("Dynamic widget doesn't exist on node")
-    const inputTypes: (Record<string, InputSpec> | undefined)[] = [
-      newSpec.required,
-      newSpec.optional
-    ]
-    inputTypes.forEach((inputType, idx) => {
-      for (const key in inputType ?? {}) {
-        const name = `${widget.name}.${key}`
-        const specToAdd = transformInputSpecV1ToV2(inputType![key], {
-          name,
-          isOptional: idx !== 0
-        })
-        specToAdd.display_name = key
-        addNodeInput(node, specToAdd)
-      }
-    })
+    const startingWidgets = new Set(node.widgets)
+    const startingInputLength = node.inputs.length
+    addOptionInputs(newSpec)
 
-    const inputInsertionPoint =
-      node.inputs.findIndex((i) => i.name === widget.name) + 1
     const addedWidgets = remove(node.widgets, (w) => !startingWidgets.has(w))
-    const addedWidgetNames = addedWidgets.map(({ name }) => name)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     syncNodeWidgetOrder(node)
-    if (inputInsertionPoint === 0) {
-      if (
-        addedWidgets.length === 0 &&
-        node.inputs.length !== startingInputLength
-      )
-        throw new Error('Failed to find input socket for ' + widget.name)
-      const result = commitMutatedInputs(node, previous, inputLinks)
-      if (!result.ok) return
-      restoreRemovedValues(value, addedWidgetNames)
-      return
-    }
-    const addedInputs = node.inputs
-      .splice(startingInputLength)
-      .map((addedInput) => {
-        const existingInput = node.inputs.findIndex(
-          (existingInput) => addedInput.name === existingInput.name
-        )
-        return existingInput === -1
-          ? addedInput
-          : node.inputs.splice(existingInput, 1)[0]
-      })
-    node.inputs.splice(inputInsertionPoint, 0, ...addedInputs)
+    placeAddedInputs(startingInputLength, addedWidgets.length > 0)
+    carryLinks(node, removedInputs, inputLinks)
 
-    for (const input of removedInputs) {
-      const replacement = node.inputs.find((item) => item.name === input.name)
-      const link = inputLinks.get(input)
-      if (replacement && link) inputLinks.set(replacement, link)
-    }
     const result = commitMutatedInputs(node, previous, inputLinks)
     if (!result.ok) return
-    for (const { input, link } of result.replacements) {
-      const slot = node.inputs.indexOf(input)
-      if (slot === -1) continue
-      node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
-    }
-    restoreRemovedValues(value, addedWidgetNames)
-
+    notifyRelinked(node, result.replacements)
+    restoreRemovedValues(
+      value,
+      addedWidgets.map(({ name }) => name)
+    )
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
@@ -667,15 +663,11 @@ export function growAutogrowInput(
 
 function autogrowInputDisconnected(input: INodeInputSlot, node: AutogrowNode) {
   const index = node.inputs.indexOf(input)
-  if (index === -1) return
-  if (node.isInputConnected(index)) return
+  if (index === -1 || node.isInputConnected(index)) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const autogrowGroup = Object.hasOwn(node.comfyDynamic.autogrow, groupName)
-    ? node.comfyDynamic.autogrow[groupName]
-    : undefined
-  if (!autogrowGroup) return
+  if (!Object.hasOwn(node.comfyDynamic.autogrow, groupName)) return
 
-  const { min, inputSpecs } = autogrowGroup
+  const { min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 
@@ -690,54 +682,34 @@ function autogrowInputDisconnected(input: INodeInputSlot, node: AutogrowNode) {
     console.error('Failed to group multi-input autogrow inputs')
     return
   }
-  node.graph?.setDirtyCanvas(true, true)
   const previous = captureInputLayout(node)
   const inputLinks = new Map(previous.links)
   const transplants: { input: INodeInputSlot; link: LLink }[] = []
-
-  for (let column = 0; column < stride; column++) {
-    for (
-      let bubbleOrdinal = ordinal * stride + column;
-      bubbleOrdinal + stride < groupInputs.length;
-      bubbleOrdinal += stride
-    ) {
-      const input = groupInputs[bubbleOrdinal]
-      const donor = groupInputs[bubbleOrdinal + stride]
-      const link = inputLinks.get(donor)
-      inputLinks.delete(input)
-      inputLinks.delete(donor)
-      if (link) {
-        inputLinks.set(input, link)
-        transplants.push({ input, link })
-      }
-    }
+  //Shift each later group's links down one group, over the emptied ordinal.
+  for (let i = ordinal * stride; i + stride < groupInputs.length; i++) {
+    const link = inputLinks.get(groupInputs[i + stride])
+    inputLinks.delete(groupInputs[i + stride])
+    inputLinks.delete(groupInputs[i])
+    if (!link) continue
+    inputLinks.set(groupInputs[i], link)
+    transplants.push({ input: groupInputs[i], link })
   }
 
+  //Keep groups up to the last linked one, plus one empty group to grow into.
   const removalChecks = groupInputs.slice(min * stride)
-  let i
-  for (i = removalChecks.length - stride; i >= 0; i -= stride) {
-    if (
-      removalChecks.slice(i, i + stride).some((input) => inputLinks.has(input))
-    )
-      break
-  }
-  const toRemove = removalChecks.slice(i + stride * 2)
-  const finalInputs = node.inputs.filter((input) => !toRemove.includes(input))
+  const lastLinked = removalChecks.findLastIndex((inp) => inputLinks.has(inp))
+  const toRemove = removalChecks.slice(
+    (Math.floor(lastLinked / stride) + 2) * stride
+  )
+  const finalInputs = node.inputs.filter((inp) => !toRemove.includes(inp))
   const result = replaceNodeInputs(node, previous, finalInputs, inputLinks)
   if (!result.ok) return
 
-  for (const { input, link } of transplants) {
-    const slot = node.inputs.indexOf(input)
-    if (slot === -1) continue
-    node.onConnectionsChange(LiteGraph.INPUT, slot, true, link, input)
-  }
-  for (const input of toRemove) {
-    const widgetName = input.widget?.name
-    if (!widgetName) continue
-    for (const widget of node.widgets.filter((w) => w.name === widgetName))
-      node.removeWidget(widget)
-    syncNodeWidgetOrder(node)
-  }
+  notifyRelinked(node, transplants)
+  const removedNames = new Set(toRemove.map((inp) => inp.widget?.name))
+  for (const widget of node.widgets.filter((w) => removedNames.has(w.name)))
+    node.removeWidget(widget)
+  syncNodeWidgetOrder(node)
   refitHeight(node)
 }
 
