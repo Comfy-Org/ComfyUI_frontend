@@ -144,23 +144,31 @@ describe('workflowDraftStoreV2', () => {
       expect(store.getDraft(COLLIDING_PATH_B)).toBeNull()
     })
 
-    it('retains CRDT lineage when draft content changes', () => {
+    it('retains CRDT lineage on the qualified collision member when its content changes', () => {
       const store = useWorkflowDraftStoreV2()
-      const path = 'workflows/test.json'
 
-      store.saveDraft(path, '{"nodes":[]}', {
-        name: 'test',
+      store.saveDraft(COLLIDING_PATH_A, '{"id":"a"}', {
+        name: 'a',
         isTemporary: true
       })
-      store.setLineage(path, { workflowId: 'wf-1', lineageSeq: 12 })
-      store.saveDraft(path, '{"nodes":[1]}', {
-        name: 'test',
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":[]}', {
+        name: 'b',
         isTemporary: true
       })
+      store.setLineage(COLLIDING_PATH_B, { workflowId: 'wf-b', lineageSeq: 12 })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":[1]}', {
+        name: 'b',
+        isTemporary: true
+      })
+      store.reset()
 
-      expect(store.getDraft(path)?.lineage).toEqual({
-        workflowId: 'wf-1',
-        lineageSeq: 12
+      expect(store.getDraft(COLLIDING_PATH_B)).toMatchObject({
+        data: '{"nodes":[1]}',
+        lineage: { workflowId: 'wf-b', lineageSeq: 12 }
+      })
+      expect(store.getDraft(COLLIDING_PATH_A)).toMatchObject({
+        data: '{"id":"a"}',
+        lineage: undefined
       })
     })
 
@@ -235,12 +243,6 @@ describe('workflowDraftStoreV2', () => {
         name: 'a',
         isTemporary: true
       })
-      for (let i = 1; i < MAX_DRAFTS - 1; i++) {
-        store.saveDraft(`workflows/draft${i}.json`, `{"id":${i}}`, {
-          name: `draft${i}`,
-          isTemporary: true
-        })
-      }
 
       let quotaFailureInjected = false
       withQuotaMock((key, value) => {
@@ -694,6 +696,7 @@ describe('workflowDraftStoreV2', () => {
         'workflows/same.json',
         'renamed'
       )
+      expect(store.getDraft('workflows/same.json')?.name).toBe('same')
       store.reset()
 
       expect(moved).toBe(false)
