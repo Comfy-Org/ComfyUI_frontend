@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const zModality = z.enum(['image', 'video', 'audio', 'text', '3d'])
+export const zModality = z.enum(['image', 'video', 'audio', 'text', '3d'])
 const zFileModality = z.enum(['image', 'video', 'audio', '3d'])
 const zSettingValue = z.union([z.string(), z.number(), z.boolean()])
 

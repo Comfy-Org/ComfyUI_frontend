@@ -5,6 +5,7 @@ import type { ComputedRef, Ref } from 'vue'
 import { z } from 'zod'
 
 import { t } from '@/i18n'
+import { zModality } from '@/renderer/extensions/superComfy/engine/documentSchema'
 import type {
   GenerateContract,
   Modality
@@ -113,7 +114,7 @@ const zListPage = z.looseObject({
 const zSummary = z.object({
   id: z.string(),
   etag: z.string().nullable(),
-  primary: z.enum(['image', 'video', 'audio', 'text', '3d']).nullable(),
+  primary: zModality.nullable(),
   status: z.enum(['supported', 'unsupported', 'hidden'])
 })
 
