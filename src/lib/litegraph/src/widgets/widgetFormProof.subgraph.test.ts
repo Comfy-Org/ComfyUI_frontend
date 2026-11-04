@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-
 import { LegacyWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -10,38 +7,13 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { CapturedSerialization } from '@/lib/litegraph/src/widgets/__fixtures__/widgetFormProofHarness'
+import {
+  coreIsLastWriter,
+  serializeWithCapture
+} from '@/lib/litegraph/src/widgets/__fixtures__/widgetFormProofHarness'
 import { proveWidgetForm } from '@/lib/litegraph/src/widgets/widgetFormProof'
 import type { WidgetFormProof } from '@/lib/litegraph/src/widgets/widgetFormProof'
-
-interface CapturedSerialization {
-  final: ISerialisedNode
-  atCoreSite: unknown
-  widgetsAtCoreSite: readonly IBaseWidget[] | undefined
-}
-
-function serializeWithCapture(node: LGraphNode): CapturedSerialization {
-  let atCoreSite: unknown
-  let widgetsAtCoreSite: readonly IBaseWidget[] | undefined
-  const previous = node.onSerialize
-  node.onSerialize = function (data: ISerialisedNode) {
-    atCoreSite = data.widgets_values
-    widgetsAtCoreSite = this.widgets
-    previous?.call(this, data)
-  }
-  try {
-    return { final: node.serialize(), atCoreSite, widgetsAtCoreSite }
-  } finally {
-    node.onSerialize = previous
-  }
-}
-
-function coreIsLastWriter(node: LGraphNode): boolean {
-  return (
-    node.serialize === LGraphNode.prototype.serialize &&
-    node.serializeFromStoreState ===
-      LGraphNode.prototype.serializeFromStoreState
-  )
-}
 
 function proveAgainstFinalPayload(
   node: LGraphNode,

@@ -1,8 +1,5 @@
-import { fromAny } from '@total-typescript/shoehorn'
-import { assert, describe, expect, it } from 'vitest'
-
-import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { load3dWidgets } from '@/extensions/core/load3d/load3dWidgets'
 import {
@@ -10,32 +7,18 @@ import {
   recordAudioExtension
 } from '@/extensions/core/uploadAudio'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
+import {
+  coreIsLastWriter,
+  serializeWithCapture
+} from '@/lib/litegraph/src/widgets/__fixtures__/widgetFormProofHarness'
 import { proveWidgetForm } from '@/lib/litegraph/src/widgets/widgetFormProof'
 import type { WidgetFormProof } from '@/lib/litegraph/src/widgets/widgetFormProof'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
+import type { ComfyApp } from '@/scripts/app'
 import '@/scripts/domWidget'
 
-interface CapturedSerialization {
-  final: ISerialisedNode
-  atCoreSite: unknown
-  widgetsAtCoreSite: readonly IBaseWidget[] | undefined
-}
-
-function serializeWithCapture(node: LGraphNode): CapturedSerialization {
-  let atCoreSite: unknown
-  let widgetsAtCoreSite: readonly IBaseWidget[] | undefined
-  const previous = node.onSerialize
-  node.onSerialize = function (data: ISerialisedNode) {
-    atCoreSite = data.widgets_values
-    widgetsAtCoreSite = this.widgets
-    previous?.call(this, data)
-  }
-  try {
-    return { final: node.serialize(), atCoreSite, widgetsAtCoreSite }
-  } finally {
-    node.onSerialize = previous
-  }
-}
+const noApp = () => fromPartial<ComfyApp>({})
 
 function proveSerialization(node: LGraphNode) {
   const captured = serializeWithCapture(node)
@@ -48,10 +31,7 @@ function proveSerialization(node: LGraphNode) {
       {
         serializeWidgets: node.serialize_widgets,
         replayed: false,
-        coreIsLastWriter:
-          node.serialize === LGraphNode.prototype.serialize &&
-          node.serializeFromStoreState ===
-            LGraphNode.prototype.serializeFromStoreState
+        coreIsLastWriter: coreIsLastWriter(node)
       }
     )
   }
@@ -70,7 +50,7 @@ function registeredNode(title: string): LGraphNode {
 describe('case 4 — DOM widgets', () => {
   it('proves PREVIEW_3D, whose viewport widget occupies a slot', () => {
     const node = registeredNode('Preview3D')
-    load3dWidgets.PREVIEW_3D(node, 'image', ['PREVIEW_3D', {}], fromAny({}))
+    load3dWidgets.PREVIEW_3D(node, 'image', ['PREVIEW_3D', {}], noApp())
 
     expect(proveSerialization(node)).toEqual({
       values: [''],
@@ -83,7 +63,7 @@ describe('case 4 — DOM widgets', () => {
     node.addWidget('combo', 'model_file', 'a.glb', () => {}, {
       values: ['a.glb']
     })
-    load3dWidgets.LOAD_3D(node, 'image', ['LOAD_3D', {}], fromAny({}))
+    load3dWidgets.LOAD_3D(node, 'image', ['LOAD_3D', {}], noApp())
 
     expect(proveSerialization(node)).toEqual({
       values: ['a.glb', 'upload3dmodel', 'uploadExtraResources', 'clear', ''],
@@ -104,11 +84,12 @@ describe('case 4 — DOM widgets', () => {
   it('proves IMAGEUPLOAD at two slots, because the upload button is options-bag-flagged', () => {
     const node = registeredNode('LoadImage')
     node.addWidget('combo', 'image', 'x.png', () => {}, { values: ['x.png'] })
+    vi.stubGlobal('requestAnimationFrame', vi.fn())
     useImageUploadWidget()(
       node,
       'upload',
       ['IMAGEUPLOAD', { imageInputName: 'image' }],
-      fromAny({})
+      noApp()
     )
 
     const uploadWidget = node.widgets?.at(-1)
@@ -124,15 +105,15 @@ describe('case 4 — DOM widgets', () => {
   it('excludes the AUDIO_UI player, which is flagged on the widget itself', async () => {
     const node = registeredNode('LoadAudio')
     Object.defineProperty(node, 'constructor', {
-      value: fromAny({ nodeData: { output_node: false } }),
+      value: fromPartial<LGraphNodeConstructor>({
+        nodeData: { output_node: false }
+      }),
       configurable: true
     })
     node.addWidget('combo', 'audio', 'a.mp3', () => {}, { values: ['a.mp3'] })
-    const audioWidgets = await audioWidgetExtension.getCustomWidgets?.(
-      fromAny({})
-    )
+    const audioWidgets = await audioWidgetExtension.getCustomWidgets?.(noApp())
     assert.exists(audioWidgets)
-    audioWidgets.AUDIO_UI(node, 'audioUI', ['AUDIO_UI', {}], fromAny({}))
+    audioWidgets.AUDIO_UI(node, 'audioUI', ['AUDIO_UI', {}], noApp())
     node.addWidget('button', 'upload', '', () => {}, { serialize: false })
 
     expect(
@@ -155,11 +136,9 @@ describe('case 4 — DOM widgets', () => {
 
   it('refuses AUDIO_RECORD, whose player and button share one name', async () => {
     const node = registeredNode('RecordAudio')
-    const recordWidgets = await recordAudioExtension.getCustomWidgets?.(
-      fromAny({})
-    )
+    const recordWidgets = await recordAudioExtension.getCustomWidgets?.(noApp())
     assert.exists(recordWidgets)
-    recordWidgets.AUDIO_RECORD(node, 'audio', ['AUDIO_RECORD', {}], fromAny({}))
+    recordWidgets.AUDIO_RECORD(node, 'audio', ['AUDIO_RECORD', {}], noApp())
 
     expect(node.widgets?.map((widget) => widget.name)).toEqual([
       'audio',
