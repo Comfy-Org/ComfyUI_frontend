@@ -43,7 +43,11 @@ describe('useBillingBanner', () => {
       isTeamPlan: ref(true),
       billingStatus: ref<BillingStatus | null>('paid'),
       tier: ref<SubscriptionInfo['tier']>(null),
-      subscription: ref<Pick<SubscriptionInfo, 'hasFunds'> | null>({
+      subscription: ref<
+        | (Pick<SubscriptionInfo, 'hasFunds'> &
+            Partial<Pick<SubscriptionInfo, 'isCancelled' | 'endDate'>>)
+        | null
+      >({
         hasFunds: true
       })
     }
@@ -177,5 +181,56 @@ describe('useBillingBanner', () => {
     await nextTick()
 
     expect(kind.value).toBe('outOfCredits')
+  })
+  it.for([
+    { tier: 'PRO', isTeamPlan: false, audience: 'personal' },
+    { tier: 'FOUNDERS_EDITION', isTeamPlan: false, audience: 'personal' },
+    { tier: null, isTeamPlan: true, audience: 'team' },
+    { tier: 'ENTERPRISE', isTeamPlan: false, audience: null },
+    { tier: 'ENTERPRISE', isTeamPlan: true, audience: null },
+    { tier: null, isTeamPlan: false, audience: null }
+  ] as const)(
+    'reads the $tier tier with team plan $isTeamPlan as the $audience audience',
+    async ({ tier, isTeamPlan, audience }) => {
+      const billing = setupBilling()
+      const banner = useBillingBanner()
+
+      billing.tier.value = tier
+      billing.isTeamPlan.value = isTeamPlan
+      await nextTick()
+
+      expect(banner.audience.value).toBe(audience)
+    }
+  )
+
+  describe('the Enterprise ending notice', () => {
+    const NOW = new Date('2026-09-03T12:00:00Z').getTime()
+
+    beforeEach(() => {
+      vi.useFakeTimers({ now: NOW })
+    })
+
+    it.for([
+      { days: 30, kind: null },
+      { days: 14, kind: 'ending' },
+      { days: 10, kind: 'ending' }
+    ])(
+      'shows $kind for a cancellation $days days out',
+      async ({ days, kind: expected }) => {
+        const billing = setupBilling()
+        const { kind } = useBillingBanner()
+
+        billing.tier.value = 'ENTERPRISE'
+        billing.isTeamPlan.value = false
+        billing.subscription.value = {
+          hasFunds: true,
+          isCancelled: true,
+          endDate: new Date(NOW + days * 24 * 60 * 60 * 1000).toISOString()
+        }
+        await nextTick()
+
+        expect(kind.value).toBe(expected)
+      }
+    )
   })
 })
