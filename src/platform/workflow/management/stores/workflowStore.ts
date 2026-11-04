@@ -530,7 +530,22 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
       if (!draftStore.moveDraft(oldPath, newPath, newKey)) return false
 
-      await workflow.rename(newPath)
+      try {
+        await workflow.rename(newPath)
+      } catch (error) {
+        if (!draftStore.moveDraft(newPath, oldPath, oldKey)) {
+          reportError(
+            new Error('draft rollback failed after a rejected workflow rename'),
+            {
+              surface: 'graph',
+              errorType: 'rename_draft_rollback_failed',
+              level: 'warning',
+              context: { oldPath, newPath }
+            }
+          )
+        }
+        throw error
+      }
       void workflowRenamed.trigger(workflow)
 
       delete workflowLookup.value[oldPath]

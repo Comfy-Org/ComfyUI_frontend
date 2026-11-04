@@ -367,7 +367,7 @@ export const useWorkflowService = () => {
     } else {
       let target: ComfyWorkflow
       if (workflow.isTemporary) {
-        await renameWorkflow(workflow, newPath)
+        if (!(await renameWorkflow(workflow, newPath))) return false
         target = workflow
       } else {
         target = workflowStore.saveAs(workflow, newPath)
@@ -408,7 +408,7 @@ export const useWorkflowService = () => {
         }
         await deleteWorkflow(existing, true)
       }
-      await renameWorkflow(workflow, expectedPath)
+      if (!(await renameWorkflow(workflow, expectedPath))) return false
       toast.info(
         t(
           isApp
@@ -715,13 +715,17 @@ export const useWorkflowService = () => {
       return loaded
     }, workflow.path)
 
-  const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
+  const renameWorkflow = async (
+    workflow: ComfyWorkflow,
+    newPath: string
+  ): Promise<boolean> => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
-    await workflowStore.renameWorkflow(workflow, newPath)
-    if (graphId) {
+    const renamed = await workflowStore.renameWorkflow(workflow, newPath)
+    if (renamed && graphId) {
       useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
     }
+    return renamed
   }
 
   /**

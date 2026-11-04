@@ -3518,6 +3518,20 @@ describe('useWorkflowService', () => {
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
 
+    it('should report failure and not save when the temporary workflow rename is refused', async () => {
+      const workflow = createTemporaryWorkflow()
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      vi.mocked(workflowStore.renameWorkflow).mockResolvedValue(false)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
+    })
+
     it('should return false when no filename is provided', async () => {
       const workflow = createModeTestWorkflow({
         path: 'workflows/test.json'

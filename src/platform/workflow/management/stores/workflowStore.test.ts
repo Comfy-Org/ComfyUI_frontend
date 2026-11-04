@@ -798,6 +798,29 @@ describe('useWorkflowStore', () => {
       expect(draftStore.getDraft(newPath)).toBeNull()
     })
 
+    it('should roll the draft back to the original path when the file rename rejects', async () => {
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      const draftStore = saveV2Draft(oldPath, { name: workflow.key })
+
+      const renameError = new Error('server rejected the move')
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockRejectedValue(
+        renameError
+      )
+
+      await expect(store.renameWorkflow(workflow, newPath)).rejects.toBe(
+        renameError
+      )
+
+      expect(workflow.path).toBe(oldPath)
+      expect(store.getWorkflowByPath(oldPath)?.path).toBe(oldPath)
+
+      draftStore.reset()
+      expect(draftStore.getDraft(oldPath)?.name).toBe(workflow.key)
+      expect(draftStore.getDraft(newPath)).toBeNull()
+    })
+
     it('should rename workflow without affecting bookmarks if not bookmarked', async () => {
       const workflow = store.createTemporary('test.json')
 

@@ -608,6 +608,57 @@ describe('workflowDraftStoreV2', () => {
         })
       )
     })
+
+    it('returns false without moving the draft when the destination path already has its own draft', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/foo.json', '{"data":"foo"}', {
+        name: 'foo',
+        isTemporary: true
+      })
+      store.saveDraft('workflows/bar.json', '{"data":"bar"}', {
+        name: 'bar',
+        isTemporary: true
+      })
+
+      const moved = store.moveDraft(
+        'workflows/foo.json',
+        'workflows/bar.json',
+        'renamed'
+      )
+      store.reset()
+
+      expect(moved).toBe(false)
+      const stillAtSource = store.getDraft('workflows/foo.json')
+      expect(stillAtSource).not.toBeNull()
+      expect(stillAtSource!.data).toBe('{"data":"foo"}')
+      const destination = store.getDraft('workflows/bar.json')
+      expect(destination).not.toBeNull()
+      expect(destination!.data).toBe('{"data":"bar"}')
+    })
+
+    it('returns false and restores the cached index when a same-path move fails to persist', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft('workflows/same.json', '{"data":"test"}', {
+        name: 'same',
+        isTemporary: true
+      })
+
+      withQuotaMock((key) => key === INDEX_KEY)
+      const moved = store.moveDraft(
+        'workflows/same.json',
+        'workflows/same.json',
+        'renamed'
+      )
+      store.reset()
+
+      expect(moved).toBe(false)
+      const draft = store.getDraft('workflows/same.json')
+      expect(draft).not.toBeNull()
+      expect(draft!.name).toBe('same')
+      expect(draft!.data).toBe('{"data":"test"}')
+    })
   })
 
   describe('getMostRecentPath', () => {

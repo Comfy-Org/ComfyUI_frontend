@@ -312,33 +312,33 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   }
 
   /**
-   * Moves a draft from one path to another (rename).
-   *
-   * @returns false when the source draft could not be relocated (left
-   * recoverable at `oldPath`); true otherwise, including when there was
-   * nothing to move.
+   * Writes the relocated payload for a move, evicting unrelated drafts to
+   * free quota and retrying the move against the resulting index.
+   * Returns null if a retry finds the destination has since become
+   * occupied; otherwise the (possibly evicted) index, the latest move
+   * result, whether the write ultimately succeeded, and how many drafts
+   * were evicted along the way.
    */
-  function moveDraft(oldPath: string, newPath: string, name: string): boolean {
-    const workspaceId = currentWorkspaceId()
-    let index = loadIndex()
-    let result = moveEntry(index, oldPath, newPath, name)
-    if (!result) return true
-
-    const isRenameOntoSelf = result.oldKey === result.newKey
-    if (isRenameOntoSelf) {
-      persistIndex(result.index)
-      return true
-    }
-
-    const oldPayload = readPayload(workspaceId, result.oldKey)
-    if (!oldPayload) return true
-
+  function writeRelocatedPayload(
+    workspaceId: string,
+    oldPath: string,
+    newPath: string,
+    name: string,
+    index: DraftIndexV2,
+    result: NonNullable<ReturnType<typeof moveEntry>>,
+    oldPayload: DraftPayloadV2
+  ): {
+    index: DraftIndexV2
+    result: NonNullable<ReturnType<typeof moveEntry>>
+    written: boolean
+    evictedCount: number
+  } | null {
     let written = writePayload(workspaceId, result.newKey, oldPayload)
     let evictedCount = 0
 
     while (!written) {
       const oldestKey = index.order.find(
-        (key) => key !== result!.oldKey && key !== result!.newKey
+        (key) => key !== result.oldKey && key !== result.newKey
       )
       if (!oldestKey) break
 
@@ -357,16 +357,57 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       }
 
       const retried = moveEntry(index, oldPath, newPath, name)
-      if (!retried) return false
+      if (!retried) return null
       result = retried
       written = writePayload(workspaceId, result.newKey, oldPayload)
     }
 
-    if (!written) {
+    return { index, result, written, evictedCount }
+  }
+
+  /**
+   * Moves a draft from one path to another (rename).
+   *
+   * @returns false when the source draft could not be relocated (left
+   * recoverable at `oldPath`); true otherwise, including when there was
+   * nothing to move.
+   */
+  function moveDraft(oldPath: string, newPath: string, name: string): boolean {
+    const workspaceId = currentWorkspaceId()
+    let index = loadIndex()
+    if (!getEntryByPath(index, oldPath)) return true
+
+    let result = moveEntry(index, oldPath, newPath, name)
+    if (!result) return false
+
+    const isRenameOntoSelf = result.oldKey === result.newKey
+    if (isRenameOntoSelf) {
+      if (persistIndex(result.index)) return true
+      persistIndex(index)
+      return false
+    }
+
+    const oldPayload = readPayload(workspaceId, result.oldKey)
+    if (!oldPayload) return true
+
+    const relocated = writeRelocatedPayload(
+      workspaceId,
+      oldPath,
+      newPath,
+      name,
+      index,
+      result,
+      oldPayload
+    )
+    if (!relocated) return false
+    index = relocated.index
+    result = relocated.result
+
+    if (!relocated.written) {
       persistIndex(index)
       reportQuotaExhausted(
         index,
-        evictedCount,
+        relocated.evictedCount,
         payloadByteSize(oldPayload.data)
       )
       return false
