@@ -333,7 +333,7 @@ document id.
 _Guards:_ an `assert` in the registry's create path naming the one-replica-per-
 document rule and linking this ADR; a release-idempotency guard — each lease
 handle tracks whether it has already released, and a second release of the
-*same* handle is a no-op that asserts loudly, since a holder-count floor of
+_same_ handle is a no-op that asserts loudly, since a holder-count floor of
 zero cannot catch it: two distinct holders releasing the same handle twice
 reads 2 → 1 → 0 and never goes negative, so a below-zero assert alone would
 silently let a leased session dispose while another tab still holds it; and a
