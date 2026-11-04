@@ -21,6 +21,9 @@ const WORKSPACE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKSPACE
 const DEPLOYMENT_NAMESPACE = PRESERVED_QUERY_NAMESPACES.DEPLOYMENT
 const SWITCH_KEY = WORKSPACE_STORAGE_KEYS.DEPLOYMENT_LINK_SWITCH
 
+/** The `deployment` value that picks Comfy Cloud itself, not a deployment. */
+const COMFY_CLOUD_LINK_VALUE = 'standard'
+
 /**
  * One usable value: a non-empty string. Null for absent, empty, a bare
  * `?deployment` (null), and a repeated value (an array, or the stash's `,`
@@ -71,8 +74,10 @@ function setSwitchTarget(workspaceId: string | null): boolean {
 
 /**
  * Opens the editor on the deployment a link names (BE-20294):
- * `/?workspace=<workspace id>&deployment=<deployment id>`. Runs before the
- * `?workspace=` loader and owns both params when `deployment` is present.
+ * `/?workspace=<workspace id>&deployment=<deployment id>`, or on Comfy Cloud
+ * itself for `deployment=standard`, the switcher's "Comfy Cloud" row. Runs
+ * before the `?workspace=` loader and owns both params when `deployment` is
+ * present.
  *
  * In another workspace it switches there first, keeping both params so the
  * boot after the switch's reload picks; a switch that fails, or that did not
@@ -151,14 +156,17 @@ export function useDeploymentUrlLoader() {
 
   /**
    * In the named workspace: strip the link, then pick. Returns `true` when
-   * the pick took and the page is reloading onto the deployment.
+   * the pick took and the page is reloading onto the deployment, or onto
+   * Comfy Cloud for `standard`.
    */
   async function pickDeployment(
     query: LocationQueryRaw,
-    deploymentId: string
+    linkValue: string
   ): Promise<boolean> {
     await stripParams(query, ['workspace', 'deployment'])
-    const outcome = await pickStore.pickFromLink(deploymentId)
+    const outcome = await pickStore.pickFromLink(
+      linkValue === COMFY_CLOUD_LINK_VALUE ? null : linkValue
+    )
     if (outcome.kind === 'timedOut') {
       toast.error(t('deploymentSwitcher.linkTimedOut'), { duration: 8000 })
     }
