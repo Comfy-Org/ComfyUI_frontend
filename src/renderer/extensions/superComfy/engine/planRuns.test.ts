@@ -11,8 +11,13 @@ import {
 } from './engineFixtures'
 import { textItem } from './items'
 import { planRuns } from './planRuns'
+import type { Block, RunPlan } from './types'
 
 const limits = { runLimit: 50 }
+
+function planOutcome(plan: RunPlan): Block | { plannedRuns: number } {
+  return plan.ok ? { plannedRuns: plan.runs.length } : plan.block
+}
 
 describe(planRuns, () => {
   it('[R1a] fans a 3-item batch from one node into a single-item input as 3 runs, one item each, in order', () => {
@@ -195,6 +200,37 @@ describe(planRuns, () => {
       prompt: [textItem('p1')]
     })
   })
+
+  it.for([
+    {
+      name: 'refuses 3 items × 17 = 51 runs',
+      images: [fileItem('a1'), fileItem('a2'), fileItem('a3')],
+      runCount: 17,
+      expected: { reason: 'tooManyRuns', runs: 51, limit: 50 }
+    },
+    {
+      name: 'allows 2 items × 25 = 50 runs',
+      images: [fileItem('a1'), fileItem('a2')],
+      runCount: 25,
+      expected: { plannedRuns: 50 }
+    }
+  ])(
+    '[R1f] caps batch × run count at the run limit: $name',
+    ({ images, runCount, expected }) => {
+      const doc = docWith(
+        [
+          ioNode('images', 'image', images),
+          generateNode('gen', 'image', {
+            inputs: [port('image', 'image', { required: true })],
+            runCount
+          })
+        ],
+        [edge('images', 'out', 'gen', 'image')]
+      )
+
+      expect(planOutcome(planRuns(doc, 'gen', limits))).toEqual(expected)
+    }
+  )
 
   it('gives the same text entered twice in a batch two distinct runs', () => {
     const doc = docWith(
