@@ -1610,7 +1610,7 @@ describe('BillingTab', () => {
         within(card).getByRole('button', { name: 'Add credits' })
       ).toBeDisabled()
       expect(card).toHaveTextContent(
-        "Buying credits isn't available right now. Try again later, or message support."
+        "Buying credits isn't available right now. Try again later."
       )
     })
 
