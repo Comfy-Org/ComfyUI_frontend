@@ -49,7 +49,7 @@ const i18n = createI18n({
           unverifiedNoticeNoHost:
             'This name was provided by whoever registered this app and has not been verified by Comfy.',
           verifiedNotice:
-            "Verified destination: {platform} · you'll return to {host}",
+            "Name not verified · Verified destination: {platform} · you'll return to {host}",
           errorExpired:
             'This consent request has expired or has already been used.',
           errorScopeBroadening: SCOPE_BROADENING,
@@ -220,7 +220,7 @@ describe('OAuthConsentView', () => {
       ).toBeVisible()
       expect(screen.getByTestId('client-icon')).toHaveClass(icon)
       expect(screen.getByTestId('client-verified')).toHaveTextContent(
-        `Verified destination: ${displayName} · you'll return to ${host}`
+        `Name not verified · Verified destination: ${displayName} · you'll return to ${host}`
       )
       expect(screen.queryByTestId('client-unverified')).not.toBeInTheDocument()
       expect(
