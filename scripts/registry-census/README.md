@@ -363,7 +363,11 @@ than reading as zero omissions.
 Packs execute under real timers: the matrix config assigns `setupFiles`
 explicitly, keeping `vitest.setup.ts` (environment globals) and dropping
 the unit suite's `vitest.timer.setup.ts` fake timers that `mergeConfig`
-array-concatenation would otherwise smuggle in.
+array-concatenation would otherwise smuggle in. `vitest.census.config.mts`
+assigns `include`, `exclude` and `setupFiles` after the merge for the same
+reason. It collects only `scripts/registry-census/*.census.test.ts`, the glob
+`vite.config.mts` excludes from the `tooling` project, so a census spec runs
+under exactly one of the two configs.
 
 ### Environment
 
