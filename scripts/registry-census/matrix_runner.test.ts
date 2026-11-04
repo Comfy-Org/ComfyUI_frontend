@@ -598,10 +598,10 @@ describe('registry form census', () => {
     >
     const projection = loadShapeDefs()
     expect(Object.keys(projection).length).toBeGreaterThan(3000)
-    for (const [name, def] of Object.entries(fixture)) {
-      expect(projection[name], `${name} is not in the projection`).toBeDefined()
-      expect(JSON.stringify(def)).toBe(JSON.stringify(projection[name]))
-    }
+    const projected = Object.fromEntries(
+      Object.keys(fixture).map((name) => [name, projection[name]])
+    )
+    expect(JSON.stringify(projected)).toBe(JSON.stringify(fixture))
   })
 
   it('fails loudly rather than falling back to six defs', () => {
