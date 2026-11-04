@@ -138,6 +138,10 @@ describe('workflowDraftStoreV2', () => {
 
       expect(store.getDraft(COLLIDING_PATH_A)).toBeNull()
       expect(store.getDraft(COLLIDING_PATH_B)?.data).toBe('{"nodes":[4]}')
+
+      store.removeDraft(COLLIDING_PATH_B)
+      store.reset()
+      expect(store.getDraft(COLLIDING_PATH_B)).toBeNull()
     })
 
     it('retains CRDT lineage when draft content changes', () => {
@@ -540,39 +544,34 @@ describe('workflowDraftStoreV2', () => {
     it('evicts an unrelated draft and retries when moving a qualified collision survivor onto a freed plain hash key hits quota', () => {
       const store = useWorkflowDraftStoreV2()
 
-      // An unrelated, older draft that is a legitimate eviction candidate.
       store.saveDraft('workflows/oldest.json', '{"data":"evict-me"}', {
         name: 'oldest',
         isTemporary: true
       })
-      // A takes the plain hash key for the collision domain.
       store.saveDraft(COLLIDING_PATH_A, '{"data":"a"}', {
         name: 'draft-a',
         isTemporary: true
       })
-      // B collides with A, so it is stored under a path-qualified key.
       store.saveDraft(COLLIDING_PATH_B, '{"data":"b"}', {
         name: 'draft-b',
         isTemporary: true
       })
-      // A is removed elsewhere, freeing the plain hash key while B is still
-      // stored under its qualified key.
       store.removeDraft(COLLIDING_PATH_A)
 
-      // Renaming the surviving qualified draft onto the freed path still
-      // changes the storage key, so it needs a real payload write. Fail
-      // exactly once so the first attempt hits quota and must recover via
-      // eviction rather than abandoning the rename.
       failPayloadWrites(1)
-      store.moveDraft(COLLIDING_PATH_B, COLLIDING_PATH_A, 'renamed')
+      const moved = store.moveDraft(
+        COLLIDING_PATH_B,
+        COLLIDING_PATH_A,
+        'renamed'
+      )
       store.reset()
 
+      expect(moved).toBe(true)
       expect(store.getDraft(COLLIDING_PATH_B)).toBeNull()
-      const moved = store.getDraft(COLLIDING_PATH_A)
-      expect(moved).not.toBeNull()
-      expect(moved!.name).toBe('renamed')
-      expect(moved!.data).toBe('{"data":"b"}')
-      // The unrelated oldest draft was evicted to make room for the move.
+      const movedDraft = store.getDraft(COLLIDING_PATH_A)
+      expect(movedDraft).not.toBeNull()
+      expect(movedDraft!.name).toBe('renamed')
+      expect(movedDraft!.data).toBe('{"data":"b"}')
       expect(store.getDraft('workflows/oldest.json')).toBeNull()
     })
 
@@ -589,11 +588,15 @@ describe('workflowDraftStoreV2', () => {
       })
       store.removeDraft(COLLIDING_PATH_A)
 
-      // Every payload write fails: eviction has nothing else to evict.
       failPayloadWrites()
-      store.moveDraft(COLLIDING_PATH_B, COLLIDING_PATH_A, 'renamed')
+      const moved = store.moveDraft(
+        COLLIDING_PATH_B,
+        COLLIDING_PATH_A,
+        'renamed'
+      )
       store.reset()
 
+      expect(moved).toBe(false)
       const stillAtSource = store.getDraft(COLLIDING_PATH_B)
       expect(stillAtSource).not.toBeNull()
       expect(stillAtSource!.name).toBe('draft-b')

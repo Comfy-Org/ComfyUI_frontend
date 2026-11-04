@@ -314,26 +314,24 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   /**
    * Moves a draft from one path to another (rename).
    *
-   * A survivor of a resolved hash collision is stored under a path-qualified
-   * key. Moving it onto a since-freed plain hash key still changes the
-   * storage key (there is no in-place localStorage rename), so it needs the
-   * same quota-eviction retry as `saveDraft`/`handleQuotaExceeded` rather
-   * than failing outright and leaving the rename only half-applied.
+   * @returns false when the source draft could not be relocated (left
+   * recoverable at `oldPath`); true otherwise, including when there was
+   * nothing to move.
    */
-  function moveDraft(oldPath: string, newPath: string, name: string): void {
+  function moveDraft(oldPath: string, newPath: string, name: string): boolean {
     const workspaceId = currentWorkspaceId()
     let index = loadIndex()
     let result = moveEntry(index, oldPath, newPath, name)
-    if (!result) return
+    if (!result) return true
 
     const isRenameOntoSelf = result.oldKey === result.newKey
     if (isRenameOntoSelf) {
       persistIndex(result.index)
-      return
+      return true
     }
 
     const oldPayload = readPayload(workspaceId, result.oldKey)
-    if (!oldPayload) return
+    if (!oldPayload) return true
 
     let written = writePayload(workspaceId, result.newKey, oldPayload)
     let evictedCount = 0
@@ -359,27 +357,25 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       }
 
       const retried = moveEntry(index, oldPath, newPath, name)
-      if (!retried) return
+      if (!retried) return false
       result = retried
       written = writePayload(workspaceId, result.newKey, oldPayload)
     }
 
     if (!written) {
-      // Eviction exhausted the index without freeing enough space. Leave the
-      // source draft exactly as it was (never written, never persisted) so
-      // it stays recoverable at `oldPath` rather than being half-moved.
       persistIndex(index)
       reportQuotaExhausted(
         index,
         evictedCount,
         payloadByteSize(oldPayload.data)
       )
-      return
+      return false
     }
 
     if (!persistIndex(result.index)) {
       deletePayload(workspaceId, result.newKey)
-      return
+      persistIndex(index)
+      return false
     }
     deletePayload(workspaceId, result.oldKey)
     const lineage = lineageByDraft.get(lineageKey(workspaceId, result.oldKey))
@@ -387,6 +383,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       lineageByDraft.set(lineageKey(workspaceId, result.newKey), lineage)
       lineageByDraft.delete(lineageKey(workspaceId, result.oldKey))
     }
+    return true
   }
 
   /**

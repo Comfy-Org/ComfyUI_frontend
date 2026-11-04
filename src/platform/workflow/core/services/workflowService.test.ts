@@ -3457,6 +3457,7 @@ describe('useWorkflowService', () => {
       vi.spyOn(workflowStore, 'renameWorkflow').mockImplementation(
         async (renamedWorkflow, path) => {
           renamedWorkflow.updatePath(path)
+          return true
         }
       )
       executionErrorStore.setActiveGraph(graphId, oldPath)
@@ -3482,7 +3483,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
       app.rootGraph.extra = {}
     })
 
@@ -3855,7 +3856,7 @@ describe('useWorkflowService', () => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(workflowStore, 'saveWorkflow').mockResolvedValue()
-      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue()
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(true)
     })
 
     function createSaveableWorkflow(path: string): LoadedComfyWorkflow {

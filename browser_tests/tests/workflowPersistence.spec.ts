@@ -1013,7 +1013,7 @@ test.describe('Workflow Persistence', () => {
       await nodeB.centerOnNode()
       const draftBSaveStartedAt = Date.now()
       await nodeB.toggleCollapse()
-      expect(await nodeB.isCollapsed()).toBe(true)
+      await expect.poll(() => nodeB.isCollapsed()).toBe(true)
       await comfyPage.workflow.waitForDraftIndexUpdatedSince(
         draftBSaveStartedAt
       )
@@ -1029,7 +1029,7 @@ test.describe('Workflow Persistence', () => {
         comfyPage,
         'Restored node should be available in workflow B'
       )
-      expect(await restoredNodeB.isCollapsed()).toBe(true)
+      await expect.poll(() => restoredNodeB.isCollapsed()).toBe(true)
 
       const tabs = await comfyPage.menu.topbar.getTabNames()
       expect(tabs).toEqual(expect.arrayContaining([workflowA, workflowB]))

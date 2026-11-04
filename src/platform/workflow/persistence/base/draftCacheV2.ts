@@ -45,13 +45,7 @@ export function touchOrder(order: string[], draftKey: string): string[] {
 }
 
 /**
- * Adds or updates a draft entry in the index.
- * Handles LRU eviction if over the limit.
- *
- * Pass `draftKey` when the payload was already written under a key resolved
- * against an earlier index, so the entry stays on that key.
- *
- * @returns Object with updated index and list of evicted draft keys
+ * Inserts draft metadata at the selected key and evicts least-recently-used entries.
  */
 export function upsertEntry(
   index: DraftIndexV2,

@@ -768,6 +768,36 @@ describe('useWorkflowStore', () => {
       expect(draftStore.getDraft(newPath)?.name).toBe('renamed.json')
     })
 
+    it('should abort the rename and keep the workflow and draft at the original path when the draft cannot be moved', async () => {
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      const draftStore = saveV2Draft(oldPath, { name: workflow.key })
+
+      const renameSpy = vi.spyOn(Object.getPrototypeOf(workflow), 'rename')
+      const realSetItem = localStorage.setItem.bind(localStorage)
+      const setItemSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key, value) => {
+          if (key.startsWith('Comfy.Workflow.Draft.v2:')) {
+            throw new DOMException('Quota exceeded', 'QuotaExceededError')
+          }
+          return realSetItem(key, value)
+        })
+
+      await expect(store.renameWorkflow(workflow, newPath)).resolves.toBe(false)
+
+      expect(renameSpy).not.toHaveBeenCalled()
+      expect(workflow.path).toBe(oldPath)
+      expect(store.getWorkflowByPath(oldPath)?.path).toBe(oldPath)
+      expect(store.getWorkflowByPath(newPath)).toBeNull()
+
+      setItemSpy.mockRestore()
+      draftStore.reset()
+      expect(draftStore.getDraft(oldPath)?.name).toBe(workflow.key)
+      expect(draftStore.getDraft(newPath)).toBeNull()
+    })
+
     it('should rename workflow without affecting bookmarks if not bookmarked', async () => {
       const workflow = store.createTemporary('test.json')
 

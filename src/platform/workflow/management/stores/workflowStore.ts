@@ -516,20 +516,23 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
-  const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
+  const renameWorkflow = async (
+    workflow: ComfyWorkflow,
+    newPath: string
+  ): Promise<boolean> => {
     isBusy.value = true
     try {
-      // Capture all needed values upfront
       const oldPath = workflow.path
       const oldKey = workflow.key
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
       const draftStore = useWorkflowDraftStoreV2()
+      const newKey = newPath.substring(ComfyWorkflow.basePath.length)
+
+      if (!draftStore.moveDraft(oldPath, newPath, newKey)) return false
 
       await workflow.rename(newPath)
       void workflowRenamed.trigger(workflow)
 
-      // Synchronously swap old path for new path in lookup and open paths
-      // to avoid a tab flicker caused by an async gap between detach/attach.
       delete workflowLookup.value[oldPath]
       workflowLookup.value[workflow.path] = workflow
       const openIndex = openWorkflowPaths.value.indexOf(oldPath)
@@ -537,16 +540,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
         openWorkflowPaths.value.splice(openIndex, 1, workflow.path)
       }
 
-      draftStore.moveDraft(oldPath, newPath, workflow.key)
-
-      // Move thumbnail from old key to new key (using workflow keys, not full paths)
-      const newKey = workflow.key
       moveWorkflowThumbnail(oldKey, newKey)
-      // Update bookmarks
       if (wasBookmarked) {
         await bookmarkStore.setBookmarked(oldPath, false)
         await bookmarkStore.setBookmarked(newPath, true)
       }
+      return true
     } finally {
       isBusy.value = false
     }
