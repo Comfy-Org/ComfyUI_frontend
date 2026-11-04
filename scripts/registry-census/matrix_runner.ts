@@ -20,7 +20,7 @@ import {
   needsFormButHasNone,
   proveWidgetForm
 } from '@/lib/litegraph/src/widgets/widgetFormProof'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type * as WidgetValuesForm from '@/workbench/extensions/agent/crdt/widgetValuesForm'
 

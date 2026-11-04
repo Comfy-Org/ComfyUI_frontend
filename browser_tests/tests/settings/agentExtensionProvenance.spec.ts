@@ -1,3 +1,5 @@
+import type { GetExtensionsResponse } from '@comfyorg/ingest-types'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -258,6 +260,53 @@ test.describe(
         await expect(tab).toBeVisible()
         await expect(
           comfyPage.toast.withText("Couldn't disable the extension. Try again.")
+        ).toBeVisible()
+      })
+    })
+
+    test.describe('tab registered through the imported app', () => {
+      const PACK_SCRIPT = '/extensions/agent-cushions-sidebar/main.js'
+
+      test.beforeEach(async ({ page }) => {
+        await page.route('**/extensions', (route) =>
+          route.fulfill({ json: [PACK_SCRIPT] satisfies GetExtensionsResponse })
+        )
+        await page.route(`**${PACK_SCRIPT}*`, (route) =>
+          route.fulfill({
+            contentType: 'text/javascript',
+            body: `
+import { app } from '../../scripts/app.js'
+app.registerExtension({
+  name: 'agent.cushions.importedSidebar',
+  provenance: { createdBy: 'comfy-agent' },
+  setup() {
+    app.extensionManager.registerSidebarTab({
+      id: 'agent-cushions-imported',
+      icon: 'icon-[lucide--star]',
+      title: 'Imported cushions',
+      type: 'custom',
+      render: (el) => { el.textContent = 'Imported cushions' }
+    })
+  }
+})`
+          })
+        )
+      })
+
+      test('badges the tab and offers the agent extension menu', async ({
+        comfyPage,
+        page
+      }) => {
+        const tab = page.getByTestId('agent-cushions-imported-tab-button')
+
+        await expect(tab).toHaveAccessibleName(
+          'Imported cushions (Agent-created)'
+        )
+        await expect(tab.getByText('AI')).toBeVisible()
+
+        await comfyPage.contextMenu.openFor(tab)
+        await expect(
+          comfyPage.contextMenu.menuItem('Manage extensions')
         ).toBeVisible()
       })
     })

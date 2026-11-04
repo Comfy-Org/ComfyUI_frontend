@@ -12,6 +12,7 @@ import AgentPausedCard from './AgentPausedCard.vue'
 import AgentPaywallCard from './AgentPaywallCard.vue'
 import AskUserCard from './AskUserCard.vue'
 import DeleteApprovalCard from './DeleteApprovalCard.vue'
+import ExtensionChangeCard from './ExtensionChangeCard.vue'
 import MarkdownStream from './MarkdownStream.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
@@ -56,6 +57,10 @@ const emit = defineEmits<{
       :name="link.name"
     />
   </div>
+  <ExtensionChangeCard
+    v-else-if="group.kind === 'extensionChange'"
+    :part="group.part"
+  />
   <RunApprovalCard
     v-else-if="group.kind === 'runApproval'"
     :part="group.part"
