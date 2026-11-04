@@ -119,6 +119,24 @@ describe('runRecord', () => {
     expect(exit).not.toHaveBeenCalled()
   })
 
+  it('stops before the file picker when a prefilled PR cannot be verified', async () => {
+    Object.defineProperty(process.stdin, 'isTTY', {
+      configurable: true,
+      value: true
+    })
+    runCommand.mockReset()
+    runCommand.mockReturnValueOnce(
+      commandResult({ error: new Error('gh is unavailable'), status: 1 })
+    )
+    confirm.mockResolvedValueOnce(false)
+
+    await expect(runRecord({ pr: '123', warnings: [] })).rejects.toThrow(
+      'PR #123 checkout was not verified'
+    )
+
+    expect(path).not.toHaveBeenCalled()
+  })
+
   it('fails closed when a prefilled PR cannot be verified', async () => {
     runCommand.mockReset()
     runCommand.mockReturnValueOnce(
@@ -129,6 +147,19 @@ describe('runRecord', () => {
     await expect(preparePrCheckout('123', '/project')).rejects.toThrow(
       'PR #123 checkout was not verified'
     )
+    expect(confirm).not.toHaveBeenCalled()
+  })
+
+  it('fails closed when an interactive fallback is declined', async () => {
+    runCommand.mockReset()
+    runCommand.mockReturnValueOnce(
+      commandResult({ error: new Error('gh is unavailable'), status: 1 })
+    )
+    confirm.mockResolvedValueOnce(false)
+
+    await expect(
+      preparePrCheckout('123', '/project', { allowExplicitFallback: true })
+    ).rejects.toThrow('PR #123 checkout was not verified')
   })
 
   it('fails closed without prompting when explicit fallback is disabled', async () => {
