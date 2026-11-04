@@ -24,7 +24,6 @@ function billingStatus({
 }): BillingStatusResponse {
   return {
     ...DEFAULT_BILLING_STATUS,
-    billing_rail: 'metronome',
     scoped_effective_has_funds: { agent: true },
     scoped_has_funds: { agent: grantHeld }
   }

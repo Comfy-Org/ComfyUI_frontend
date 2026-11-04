@@ -78,9 +78,8 @@ const LEGACY_ACTIVE_STANDARD_STATUS = {
   scheduled_change: null,
   next_charge: null,
   max_seats: 1,
-  occupied_seats: 1,
-  billing_rail: 'legacy_stripe'
-} satisfies BillingStatusResponse & { billing_rail: 'legacy_stripe' }
+  occupied_seats: 1
+} satisfies BillingStatusResponse
 
 const NEW_CREATOR_SUBSCRIPTION = {
   allowed: true,
