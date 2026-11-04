@@ -4,7 +4,6 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  CreateTopupResponse,
   Plan,
   PreviewSubscribeResponse,
   SavedPaymentMethod,
@@ -19,7 +18,6 @@ import {
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
-import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -172,7 +170,6 @@ interface ToastSetup {
   status?: BillingStatusResponse
   operation?: BillingOpStatusResponse
   subscribeResponse?: SubscribeResponse
-  topupResponse?: CreateTopupResponse
 }
 
 async function setupToastParity(
@@ -184,20 +181,12 @@ async function setupToastParity(
     subscribeResponse = {
       billing_op_id: OPERATION_ID,
       status: 'pending_payment'
-    },
-    topupResponse = {
-      billing_op_id: OPERATION_ID,
-      topup_id: OPERATION_ID,
-      status: 'pending',
-      amount_cents: 5_000
     }
   }: ToastSetup
 ): Promise<BillingServer> {
   const ws = workspace('personal', 'owner')
   const server: BillingServer = { status, operation }
 
-  // A hosted page is an external origin; the truthy return keeps the
-  // popup-blocked warning out of rows that are about the progress toast.
   await page.addInitScript(() => {
     window.open = () => window
   })
@@ -245,10 +234,6 @@ async function setupToastParity(
   await page.route('**/api/billing/subscription/cancel', (route) =>
     route.fulfill(jsonRoute({ billing_op_id: OPERATION_ID, status: 'pending' }))
   )
-  await page.route('**/api/billing/topup', (route) => {
-    if (route.request().method() !== 'POST') return route.fallback()
-    return route.fulfill(jsonRoute(topupResponse))
-  })
   await page.route(`**/api/billing/ops/${OPERATION_ID}`, (route) =>
     route.fulfill(jsonRoute(server.operation))
   )
@@ -410,26 +395,28 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         await expect(actionRequired).toBeVisible()
       })
 
-      test('announces a processing top-up and clears it once it settles', async ({
+      test('announces a processing top-up found at boot and clears it once it settles', async ({
         page,
         toast
       }) => {
-        const server = await setupToastParity(page, { rails })
+        const server = await setupToastParity(page, {
+          rails,
+          status: {
+            ...ACTIVE_STANDARD,
+            pending_billing_op_id: OPERATION_ID,
+            pending_billing_op_type: 'topup'
+          }
+        })
         await page.goto(APP_URL)
         await waitForCloudApp(page)
 
-        const dialog = new TopUpCreditsDialog(page)
-        await dialog.open()
-        await dialog.root
-          .getByRole('button', { name: 'Add credits', exact: true })
-          .click()
-        await dialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
         const processingToast = toast.toastLoadings.filter({
           hasText: TOPUP_PROCESSING
         })
         await expect(processingToast).toBeVisible()
 
         server.operation = SETTLED_OPERATION
+        server.status = ACTIVE_STANDARD
         await returnToTab(page)
 
         await expect(processingToast).toBeHidden()

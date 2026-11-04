@@ -622,6 +622,52 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
   })
 
+  function dispatchComposerEnter(init: KeyboardEventInit) {
+    const pageKeydown = vi.fn()
+    window.addEventListener('keydown', pageKeydown)
+    onTestFinished(() => window.removeEventListener('keydown', pageKeydown))
+    const box = screen.getByRole('textbox')
+    box.focus()
+    const notCanceled = box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+        ...init
+      })
+    )
+    return { pageKeydown, notCanceled }
+  }
+
+  it.for([
+    { chord: 'Ctrl+Enter', init: { ctrlKey: true }, props: {} },
+    { chord: 'Meta+Enter', init: { metaKey: true }, props: {} },
+    {
+      chord: 'Ctrl+Shift+Enter',
+      init: { ctrlKey: true, shiftKey: true },
+      props: {}
+    },
+    {
+      chord: 'Ctrl+Enter while a chat is opening',
+      init: { ctrlKey: true },
+      props: { openingChat: true }
+    }
+  ])('keeps $chord away from page keybindings', ({ init, props }) => {
+    mount(props)
+    const { pageKeydown } = dispatchComposerEnter(init)
+    expect(pageKeydown).not.toHaveBeenCalled()
+  })
+
+  it('keeps Ctrl+Enter during IME composition away from page keybindings without canceling it', () => {
+    mount()
+    const { pageKeydown, notCanceled } = dispatchComposerEnter({
+      ctrlKey: true,
+      isComposing: true
+    })
+    expect(pageKeydown).not.toHaveBeenCalled()
+    expect(notCanceled).toBe(true)
+  })
+
   it('lets Escape close the mention list before it stops a run', async () => {
     const { emitted } = mount({
       streaming: true,

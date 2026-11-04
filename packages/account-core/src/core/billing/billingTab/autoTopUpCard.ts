@@ -1,4 +1,4 @@
-import type { AutoReloadSettings } from '@comfyorg/ingest-types'
+import type { AutoReloadSettings, AutoTopUpSetup } from '@comfyorg/ingest-types'
 
 export type AutoTopUpCardState =
   | { kind: 'loading' }
@@ -25,18 +25,40 @@ export type AutoTopUpSection =
 
 export interface AutoTopUpSectionFacts {
   autoTopUpEnabled: boolean
-  canManageAutoTopUp: boolean
-  canTopUp: boolean
+  canViewAutoTopUpCard: boolean
   manageAutoTopUpDenial: string | undefined
 }
 
-/** The card for an owner who can top up; the member block only for a served `not_workspace_owner` denial. */
+/** The card when the provider grants it; the member block only for a served `not_workspace_owner` denial. */
 export function deriveAutoTopUpSection(
   facts: AutoTopUpSectionFacts
 ): AutoTopUpSection {
   if (!facts.autoTopUpEnabled) return { kind: 'hidden' }
-  if (facts.canManageAutoTopUp && facts.canTopUp) return { kind: 'card' }
+  if (facts.canViewAutoTopUpCard) return { kind: 'card' }
   return facts.manageAutoTopUpDenial === 'not_workspace_owner'
     ? { kind: 'memberBlock' }
     : { kind: 'hidden' }
+}
+
+export type AutoTopUpOffView =
+  | 'off'
+  | 'noPaymentMethod'
+  | 'noDefaultPaymentMethod'
+
+export interface AutoTopUpOffViewFacts {
+  setup: AutoTopUpSetup | null
+  savedPaymentMethodCount: number | null
+}
+
+/** An off card frozen for a missing default asks for a card when none is saved, else for a default. */
+export function autoTopUpOffView(
+  facts: AutoTopUpOffViewFacts
+): AutoTopUpOffView {
+  const needsDefault =
+    facts.setup?.state === 'frozen' &&
+    facts.setup.reason === 'default_payment_method_missing'
+  if (!needsDefault) return 'off'
+  return facts.savedPaymentMethodCount === 0
+    ? 'noPaymentMethod'
+    : 'noDefaultPaymentMethod'
 }

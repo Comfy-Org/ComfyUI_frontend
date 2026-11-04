@@ -330,6 +330,7 @@ function stopRunOnEscape(event: KeyboardEvent): void {
 
 function onComposerKeydown(event: KeyboardEvent): void {
   prefillFadeMs.value = null
+  if (event.key === 'Enter') event.stopPropagation()
   if (openingChat) {
     event.preventDefault()
     return

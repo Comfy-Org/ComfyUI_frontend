@@ -3239,6 +3239,27 @@ export const zOAuthConsentChallengeWorkspace = z.object({
 })
 
 /**
+ * The platform this authorization code will be delivered to, when the
+ * request's validated redirect_uri is one of a known platform's own OAuth
+ * callbacks (ChatGPT, Claude). Derived server-side ONLY from the
+ * redirect_uri this request was byte-matched against at GET time —
+ * never from the registrant-supplied client_name — against a
+ * version-controlled registry of exact callbacks and anchored callback
+ * patterns (no host-only or prefix matching). Present only on `dynamic`
+ * clients; omitted for first-party clients and for any redirect that is
+ * not a registered platform callback. It verifies the destination
+ * platform, NOT that the registrant is that platform's own app (any
+ * connector on the platform can hold such a callback), so consumers
+ * should label it by `display_name` and still show the redirect host.
+ * `client_display_name` is unchanged and remains registrant-supplied.
+ *
+ */
+export const zOAuthConsentVerifiedClient = z.object({
+  display_name: z.string(),
+  platform: z.enum(['chatgpt', 'claude'])
+})
+
+/**
  * Server-side state describing the OAuth consent decision the user is being asked to make. Returned by GET /oauth/authorize when a valid Cloud session exists; the frontend renders the consent UI from this payload and POSTs the decision back. Browser never sees the original OAuth params on resume.
  *
  */
@@ -3250,6 +3271,7 @@ export const zOAuthConsentChallenge = z.object({
   redirect_uri: z.url(),
   resource_display_name: z.string(),
   scopes: z.array(z.string()),
+  verified_client: zOAuthConsentVerifiedClient.optional(),
   workspaces: z.array(zOAuthConsentChallengeWorkspace)
 })
 
@@ -3708,7 +3730,7 @@ export const zReleaseUnsupportedPacks = z.object({
 })
 
 /**
- * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, or on the legacy_stripe billing rail while billing_status is payment_failed and its legacy subscription is past_due or unpaid, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
+ * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
  */
 export const zRenewalInvoice = z.object({
   amount_due: z.coerce
@@ -4503,7 +4525,7 @@ export const zScheduledPlanChange = z.object({
  */
 export const zBillingStatusResponse = z.object({
   action_url: z.string().optional(),
-  billing_rail: z.enum(['legacy_stripe', 'metronome', 'stripe']).optional(),
+  billing_rail: z.enum(['stripe']).optional(),
   billing_status: zBillingStatus.optional(),
   cancel_at: z.iso.datetime().optional(),
   current_period_start: z.iso.datetime().optional(),
@@ -7346,7 +7368,7 @@ export const zGetCccPublicMediaBytesPath = z.object({
 })
 
 /**
- * Exact current LIVE bytes; authority checked before byte access; no-store
+ * Exact current LIVE bytes; authority checked before byte access; public, max-age=120, must-revalidate with a strong ETag
  */
 export const zGetCccPublicMediaBytesResponse = z.string()
 

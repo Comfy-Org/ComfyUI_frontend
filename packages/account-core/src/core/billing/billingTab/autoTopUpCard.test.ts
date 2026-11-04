@@ -1,7 +1,11 @@
 import type { AutoReloadSettings } from '@comfyorg/ingest-types'
 import { describe, expect, it } from 'vitest'
 
-import { deriveAutoTopUpCard, deriveAutoTopUpSection } from './autoTopUpCard'
+import {
+  autoTopUpOffView,
+  deriveAutoTopUpCard,
+  deriveAutoTopUpSection
+} from './autoTopUpCard'
 import type { AutoTopUpSectionFacts } from './autoTopUpCard'
 
 const settings: AutoReloadSettings = {
@@ -53,23 +57,26 @@ describe('deriveAutoTopUpCard', () => {
 describe('deriveAutoTopUpSection', () => {
   const owner: AutoTopUpSectionFacts = {
     autoTopUpEnabled: true,
-    canManageAutoTopUp: true,
-    canTopUp: true,
+    canViewAutoTopUpCard: true,
     manageAutoTopUpDenial: undefined
   }
   const member: AutoTopUpSectionFacts = {
     autoTopUpEnabled: true,
-    canManageAutoTopUp: false,
-    canTopUp: false,
+    canViewAutoTopUpCard: false,
     manageAutoTopUpDenial: 'not_workspace_owner'
   }
 
   it.for<{ case: string; facts: AutoTopUpSectionFacts; kind: string }>([
-    { case: 'an owner who can top up', facts: owner, kind: 'card' },
+    { case: 'a granted card', facts: owner, kind: 'card' },
     {
-      case: 'an owner who cannot top up',
-      facts: { ...owner, canTopUp: false },
+      case: 'a withheld card with no denial',
+      facts: { ...owner, canViewAutoTopUpCard: false },
       kind: 'hidden'
+    },
+    {
+      case: 'a granted card beside a stale denial',
+      facts: { ...owner, manageAutoTopUpDenial: 'not_workspace_owner' },
+      kind: 'card'
     },
     { case: 'a member', facts: member, kind: 'memberBlock' },
     {
@@ -90,4 +97,31 @@ describe('deriveAutoTopUpSection', () => {
   ])('shows $kind for $case', ({ facts, kind }) => {
     expect(deriveAutoTopUpSection(facts).kind).toBe(kind)
   })
+})
+
+describe('autoTopUpOffView', () => {
+  const missingDefault = {
+    state: 'frozen',
+    reason: 'default_payment_method_missing'
+  } as const
+
+  it.for([
+    { setup: null, count: null, view: 'off' },
+    { setup: { state: 'ready' }, count: 0, view: 'off' },
+    {
+      setup: { state: 'frozen', reason: 'billing_paused' },
+      count: 0,
+      view: 'off'
+    },
+    { setup: missingDefault, count: 0, view: 'noPaymentMethod' },
+    { setup: missingDefault, count: 2, view: 'noDefaultPaymentMethod' },
+    { setup: missingDefault, count: null, view: 'noDefaultPaymentMethod' }
+  ] as const)(
+    'reads setup $setup with $count saved methods as $view',
+    ({ setup, count, view }) => {
+      expect(autoTopUpOffView({ setup, savedPaymentMethodCount: count })).toBe(
+        view
+      )
+    }
+  )
 })
