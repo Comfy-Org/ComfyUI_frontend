@@ -144,6 +144,8 @@
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useCanvasManager } from '@comfyorg/mask-editor/useCanvasManager'
@@ -232,7 +234,14 @@ function onMaskOpacityChange(percent: number) {
 
 async function onBlendModeSelect(mode: MaskBlendMode) {
   store.maskBlendMode = mode
-  await canvasManager.updateMaskColor()
+  try {
+    await canvasManager.updateMaskColor()
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_updating_mask_color',
+      surface: 'graph'
+    })
+  }
   applyMaskCanvasOpacity()
 }
 

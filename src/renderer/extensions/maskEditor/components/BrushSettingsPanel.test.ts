@@ -196,13 +196,12 @@ describe('BrushSettingsPanel', () => {
   })
 
   describe('thickness slider (logarithmic)', () => {
-    it('should call setBrushSize with Math.round(Math.pow(250, value))', async () => {
+    it('should map the slider midpoint to a 16px brush', async () => {
       const user = userEvent.setup()
       renderPanel()
 
       await user.click(screen.getAllByRole('button', { name: 'Thickness' })[0])
 
-      // value = 0.5 → Math.round(Math.pow(250, 0.5)) = 16
       expect(mockStore.setBrushSize).toHaveBeenCalledWith(16)
     })
 

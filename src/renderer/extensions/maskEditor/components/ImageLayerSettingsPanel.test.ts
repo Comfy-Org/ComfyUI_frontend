@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import ImageLayerSettingsPanel from '@/renderer/extensions/maskEditor/components/ImageLayerSettingsPanel.vue'
 import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
 import { MaskBlendMode } from '@comfyorg/mask-editor/types'
@@ -16,10 +17,15 @@ function rowButton(testId: string) {
 
 let mockStore: ReturnType<typeof useMaskEditorStore>
 const mockUpdateMaskColor = vi.fn().mockResolvedValue(undefined)
+const mockReportError = vi.hoisted(() => vi.fn())
 const mockSetActiveLayer = vi.fn()
 
 vi.mock<unknown>(import('@comfyorg/mask-editor/useCanvasManager'), () => ({
   useCanvasManager: () => ({ updateMaskColor: mockUpdateMaskColor })
+}))
+
+vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
 }))
 
 vi.mock<unknown>(import('@comfyorg/design-system/slider/Slider'), () => ({
@@ -141,6 +147,29 @@ describe('ImageLayerSettingsPanel', () => {
 
       expect(mockStore.maskBlendMode).toBe(expected)
       expect(mockUpdateMaskColor).toHaveBeenCalled()
+    })
+
+    it('should report a failed mask color update and still sync opacity', async () => {
+      const user = userEvent.setup()
+      const canvas = makeCanvas()
+      mockStore.maskCanvas = canvas
+      mockStore.maskOpacity = 0.5
+      mockStore.maskBlendMode = MaskBlendMode.White
+      mockUpdateMaskColor.mockRejectedValueOnce(new Error('update failed'))
+      renderPanel()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Mask blending White' })
+      )
+      await user.click(
+        screen.getByRole('menuitemcheckbox', { name: 'Negative' })
+      )
+
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'error_updating_mask_color',
+        surface: 'graph'
+      })
+      expect(canvas.style.opacity).toBe('1')
     })
   })
 
