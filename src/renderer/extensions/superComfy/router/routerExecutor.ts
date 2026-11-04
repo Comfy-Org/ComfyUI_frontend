@@ -46,6 +46,7 @@ import type {
   RouterContract,
   RouterPortSpec
 } from '@/renderer/extensions/superComfy/router/routerTypes'
+import { formatSize } from '@/utils/formatUtil'
 
 interface RunContext {
   contract: RouterContract
@@ -93,7 +94,6 @@ const POLL_STEP_MS = 500
 const POLL_MAX_MS = 8000
 const POLL_ERROR_LIMIT = 10
 const POLL_DEADLINE_MS = 90 * 60 * 1000
-const BYTES_PER_MB = 1024 * 1024
 const TRANSIENT_STATUSES: ReadonlySet<number> = new Set([408, 425])
 
 const zSubmitted = z.looseObject({
@@ -476,7 +476,8 @@ async function executeRun(
     return {
       ok: false,
       message: t('superComfy.media.tooLarge', {
-        size: (size / BYTES_PER_MB).toFixed(1)
+        size: formatSize(size),
+        limit: formatSize(MAX_BODY_BYTES)
       })
     }
   }

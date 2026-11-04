@@ -333,7 +333,10 @@ describe('createRouterExecutor', () => {
 
     expect(await settle(outcome)).toEqual({
       ok: false,
-      message: t('superComfy.media.tooLarge', { size: '20.0' })
+      message: t('superComfy.media.tooLarge', {
+        size: '20 MB',
+        limit: '19.5 MB'
+      })
     })
     expect(callsTo(`POST ${FLUX}/requests`)).toHaveLength(0)
   })

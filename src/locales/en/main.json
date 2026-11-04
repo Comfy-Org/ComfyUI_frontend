@@ -6580,7 +6580,7 @@
     },
     "media": {
       "unreadable": "Couldn't read an input file",
-      "tooLarge": "Inputs are {size} MB. This model takes up to 20 MB.",
+      "tooLarge": "Inputs are {size}. This model takes up to {limit}.",
       "expired": "An input link expired. Run its source again.",
       "uploadFailed": "Upload failed: {reason}",
       "wrongType": "This file type doesn't fit this node"
