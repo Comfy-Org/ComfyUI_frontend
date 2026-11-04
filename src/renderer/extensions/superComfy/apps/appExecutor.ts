@@ -30,17 +30,13 @@ import {
   runQueueHooks
 } from '@/renderer/extensions/superComfy/apps/appPrompt'
 import {
+  appFailureMessage,
   errorDetail,
-  findAppWorkflow,
-  isRegisteredNodeType,
-  readSavedApp
+  loadAppSource
 } from '@/renderer/extensions/superComfy/apps/appSource'
 import { watchCloudJob } from '@/renderer/extensions/superComfy/apps/cloudJobWatcher'
 import type { DetachedAppGraph } from '@/renderer/extensions/superComfy/apps/detachedAppGraph'
-import {
-  findMissingNodeTypes,
-  openDetachedAppGraph
-} from '@/renderer/extensions/superComfy/apps/detachedAppGraph'
+import { openDetachedAppGraph } from '@/renderer/extensions/superComfy/apps/detachedAppGraph'
 import type {
   AppContract,
   AppNode,
@@ -102,19 +98,11 @@ function reportPrepareError(cause: unknown) {
 }
 
 async function prepareApp(node: AppNode): Promise<Preparation> {
-  const workflow = findAppWorkflow(node.workflowPath)
-  if (!workflow) return failure(t('superComfy.app.notFound'))
-  const saved = await readSavedApp(workflow)
-  if (!saved.ok) return failure(t('superComfy.app.prepareFailed'))
-  const missing = findMissingNodeTypes(saved.json, isRegisteredNodeType)
-  if (missing.length > 0) {
-    return failure(
-      t('superComfy.app.missingNodes', { nodes: missing.join(', ') })
-    )
-  }
+  const source = await loadAppSource(node.workflowPath)
+  if (!source.ok) return failure(appFailureMessage(source))
   const credentials = await resolvePartnerCredentials()
   if (!credentials.ok) return credentialsFailure(credentials)
-  const opening = openDetachedAppGraph(saved.json)
+  const opening = openDetachedAppGraph(source.json)
   if (!opening.ok) {
     reportPrepareError(opening.cause)
     return failure(t('superComfy.app.prepareFailed'))
@@ -123,8 +111,8 @@ async function prepareApp(node: AppNode): Promise<Preparation> {
     ok: true,
     app: {
       detached: opening.detached,
-      workflow,
-      rootId: saved.json.id,
+      workflow: source.workflow,
+      rootId: source.json.id,
       credentials: credentials.credentials
     }
   }

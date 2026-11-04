@@ -9,6 +9,7 @@ import { useAppCatalog } from '@/renderer/extensions/superComfy/apps/appCatalog'
 import type { AppCatalogEntry } from '@/renderer/extensions/superComfy/apps/appCatalog'
 import { resolveAppContract } from '@/renderer/extensions/superComfy/apps/appContract'
 import { createAppExecutor } from '@/renderer/extensions/superComfy/apps/appExecutor'
+import { appFailureMessage } from '@/renderer/extensions/superComfy/apps/appSource'
 import {
   NODE_WIDTH,
   placeNode
@@ -51,24 +52,6 @@ export const RUN_LIMIT = 50
 const NODES_IN_PARALLEL = 2
 const AUTOSAVE_DELAY_MS = 1000
 const AUTOSAVE_MAX_WAIT_MS = 5000
-
-type AppFailure = Extract<
-  Awaited<ReturnType<typeof resolveAppContract>>,
-  { ok: false }
->
-
-function appFailureMessage({ reason, detail }: AppFailure): string {
-  switch (reason) {
-    case 'notFound':
-      return t('superComfy.app.notFound')
-    case 'noOutputs':
-      return t('superComfy.app.noOutputs')
-    case 'missingNodes':
-      return t('superComfy.app.missingNodes', { nodes: detail ?? '' })
-    case 'prepareFailed':
-      return t('superComfy.app.prepareFailed')
-  }
-}
 
 function executableFields() {
   return {

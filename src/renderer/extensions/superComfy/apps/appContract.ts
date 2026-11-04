@@ -27,17 +27,13 @@ import type {
   ResolvedAppOutput,
   ResolvedAppWidget
 } from '@/renderer/extensions/superComfy/apps/appWidgetResolver'
+import type { AppFailure } from '@/renderer/extensions/superComfy/apps/appSource'
 import {
   errorDetail,
-  findAppWorkflow,
-  isRegisteredNodeType,
   linearDataOf,
-  readSavedApp
+  loadAppSource
 } from '@/renderer/extensions/superComfy/apps/appSource'
-import {
-  findMissingNodeTypes,
-  withDetachedAppGraph
-} from '@/renderer/extensions/superComfy/apps/detachedAppGraph'
+import { withDetachedAppGraph } from '@/renderer/extensions/superComfy/apps/detachedAppGraph'
 import type {
   AppContract,
   FileModality,
@@ -68,11 +64,7 @@ type AppContractOutcome =
 
 type AppContractResolution =
   | { ok: true; contract: AppContract; title: string }
-  | {
-      ok: false
-      reason: 'notFound' | 'noOutputs' | 'missingNodes' | 'prepareFailed'
-      detail?: string
-    }
+  | AppFailure
 
 type AppInputPort = AppContract['inputs'][number]
 type AppOutputPort = AppContract['outputs'][number]
@@ -329,21 +321,15 @@ const resolutions = new Map<string, AppContractResolution>()
 export async function resolveAppContract(
   path: string
 ): Promise<AppContractResolution> {
-  const workflow = findAppWorkflow(path)
-  if (!workflow) return { ok: false, reason: 'notFound' }
+  const source = await loadAppSource(path)
+  if (!source.ok) return source
+  const { workflow, json } = source
   const cacheKey = `${path}@${workflow.lastModified}`
   const cached = resolutions.get(cacheKey)
   if (cached) return cached
-  const saved = await readSavedApp(workflow)
-  if (!saved.ok)
-    return { ok: false, reason: 'prepareFailed', detail: saved.detail }
-  const missing = findMissingNodeTypes(saved.json, isRegisteredNodeType)
-  if (missing.length > 0) {
-    return { ok: false, reason: 'missingNodes', detail: missing.join(', ') }
-  }
-  const derived = await withDetachedAppGraph(saved.json, (graph) =>
+  const derived = await withDetachedAppGraph(json, (graph) =>
     deriveAppContract(
-      linearDataOf(saved.json),
+      linearDataOf(json),
       createGraphResolver(graph),
       workflow.lastModified
     )
