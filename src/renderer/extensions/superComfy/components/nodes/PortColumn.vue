@@ -54,7 +54,7 @@ function rowStyle(index: number) {
 function labelClass(port: PortSpec): string {
   const visible = showLabels || isMissing(port)
   return cn(
-    'pointer-events-none absolute top-1/2 -translate-y-1/2 px-1 text-2xs whitespace-nowrap text-muted-foreground transition-opacity',
+    'pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-sm bg-background px-1 text-2xs whitespace-nowrap text-muted-foreground transition-opacity',
     side === 'in' ? 'right-full' : 'left-full',
     visible ? 'opacity-100' : 'opacity-0 group-hover/node:opacity-100',
     isMissing(port) && 'text-destructive'
