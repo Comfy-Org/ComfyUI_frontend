@@ -8,13 +8,7 @@ test.describe(
   'Agent starter prompt personalization off-state',
   { tag: ['@cloud', '@flag-off', '@ui'] },
   () => {
-    test.use({
-      initialFeatureFlags: {
-        // Feature flag explicitly off or absent; either way the control (static baseline) renders
-      }
-    })
-
-    test('[HARNESS-V2-OFF-01] shows static baseline prompts and collects no feature exposure when flag is off', async ({
+    test('[HARNESS-V2-OFF-01] shows static baseline prompts when flag is off', async ({
       agentPanel,
       agentBilling,
       page
@@ -25,14 +19,9 @@ test.describe(
       await agentPanel.selectWorkflow()
 
       await test.step('Agent panel renders with static baseline prompts', async () => {
-        // Verify the panel is open and shows suggested prompts
         const suggestedPrompts = agentPanel.root.getByTestId('suggested-prompt')
-        await expect(suggestedPrompts).toBeTruthy()
-
-        // When the flag is off, telemetry should fire but without feature signal
-        // The panel should render the exact same prompts as the control baseline
-        const promptTexts = await suggestedPrompts.allTextContents()
-        expect(promptTexts.length).toBeGreaterThan(0)
+        const count = await suggestedPrompts.count()
+        expect(count).toBeGreaterThan(0)
       })
 
       await test.step('user can select and send a starter prompt', async () => {
@@ -41,34 +30,35 @@ test.describe(
           .first()
         await firstPrompt.click()
 
-        // Verify the message was sent
         const userMessages = agentPanel.root.getByTestId('user-message-bubble')
-        await expect(userMessages).toHaveCount(1)
-
-        // Verify the telemetry fired (checked via the Agent debug panel in QA)
-        // The event should carry no $feature/ properties while inactive
+        const messageCount = await userMessages.count()
+        expect(messageCount).toBe(1)
       })
 
       await test.step('subsequent messages work normally', async () => {
         await agentPanel.sendMessage('Show me another example')
         const userMessages = agentPanel.root.getByTestId('user-message-bubble')
-        await expect(userMessages).toHaveCount(2)
+        const messageCount = await userMessages.count()
+        expect(messageCount).toBe(2)
       })
 
       await test.step('new chat resets the prompt panel', async () => {
-        await agentPanel.root
-          .getByRole('button', { name: enMessages.agent.newChat })
-          .click()
-        const userMessages = agentPanel.root.getByTestId('user-message-bubble')
-        await expect(userMessages).toHaveCount(0)
+        const newChatBtn = agentPanel.root.getByRole('button', {
+          name: enMessages.agent.newChat
+        })
+        await newChatBtn.click()
 
-        // Prompts are shown again in the new empty thread
+        const userMessages = agentPanel.root.getByTestId('user-message-bubble')
+        const messageCount = await userMessages.count()
+        expect(messageCount).toBe(0)
+
         const suggestedPrompts = agentPanel.root.getByTestId('suggested-prompt')
-        await expect(suggestedPrompts).toBeTruthy()
+        const promptCount = await suggestedPrompts.count()
+        expect(promptCount).toBeGreaterThan(0)
       })
     })
 
-    test('[HARNESS-V2-OFF-02] falls back to static baseline when profile or canvas signals are unavailable', async ({
+    test('[HARNESS-V2-OFF-02] falls back to static baseline with unavailable signals', async ({
       agentPanel,
       agentBilling,
       page
@@ -78,23 +68,17 @@ test.describe(
       await agentPanel.open()
       await agentPanel.selectWorkflow()
 
-      await test.step('starter prompts still render with no workflow attached', async () => {
-        // Canvas is empty; profile may be unavailable
-        // Should degrade to static baseline without error
+      await test.step('starter prompts render with no workflow attached', async () => {
         const suggestedPrompts = agentPanel.root.getByTestId('suggested-prompt')
-        await expect(suggestedPrompts).toBeTruthy()
-
-        const promptTexts = await suggestedPrompts.allTextContents()
-        expect(promptTexts.length).toBeGreaterThan(0)
+        const count = await suggestedPrompts.count()
+        expect(count).toBeGreaterThan(0)
       })
 
-      await test.step('attaching a workflow does not change prompt set when flag is off', async () => {
+      await test.step('prompt set remains stable when flag is off', async () => {
         const beforeAttach = await agentPanel.root
           .getByTestId('suggested-prompt')
           .allTextContents()
 
-        // In production, attaching a workflow would normally trigger canvas signal update
-        // But with the feature flag off, personalization is disabled, so prompts remain static
         const afterAttach = await agentPanel.root
           .getByTestId('suggested-prompt')
           .allTextContents()
