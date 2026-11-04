@@ -202,6 +202,12 @@ function useBillingCapabilitiesInternal() {
   const canViewAutoTopUpCard = computed(() =>
     pendingServerFact('BE-25243', canManageAutoTopUp.value && canTopUp.value)
   )
+  const canViewAutoTopUpMemberNotice = computed(() =>
+    receiveServerFact(
+      'can_view_auto_top_up_member_notice',
+      capabilities.value?.can_view_auto_top_up_member_notice ?? false
+    )
+  )
   const manageAutoTopUpDenial = computed(() =>
     receiveServerFact(
       'denied_reasons.can_manage_auto_top_up',
@@ -588,6 +594,7 @@ function useBillingCapabilitiesInternal() {
     canDowngradeToPersonal,
     canManageAutoTopUp,
     canViewAutoTopUpCard,
+    canViewAutoTopUpMemberNotice,
     manageAutoTopUpDenial,
     autoTopUpEnabled,
     autoTopUpSetup,

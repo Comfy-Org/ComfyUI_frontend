@@ -45,6 +45,9 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('can_manage_auto_top_up', false)
   ),
   canViewAutoTopUpCard: computed(() => pendingServerFact('BE-25243', false)),
+  canViewAutoTopUpMemberNotice: computed(() =>
+    receiveServerFact('can_view_auto_top_up_member_notice', false)
+  ),
   manageAutoTopUpDenial: manageAutoTopUpDenialFact(undefined),
   autoTopUpEnabled: computed(() =>
     receiveServerFact('auto_top_up_enabled', false)

@@ -26,7 +26,8 @@ export type AutoTopUpSection =
 export interface AutoTopUpSectionFacts {
   autoTopUpEnabled: boolean
   canViewAutoTopUpCard: boolean
-  manageAutoTopUpDenial: string | undefined
+  canViewAutoTopUpMemberNotice: boolean
+  manageAutoTopUpDenial?: string
 }
 
 /** The card when the provider grants it; the member block only for a served `not_workspace_owner` denial. */
