@@ -123,9 +123,8 @@ const ACTIVE_CREATOR_STATUS = {
 } satisfies BillingStatusResponse
 
 const LEGACY_ACTIVE_STANDARD_STATUS = {
-  ...ACTIVE_STANDARD_STATUS,
-  billing_rail: 'legacy_stripe'
-} satisfies BillingStatusResponse & { billing_rail: 'legacy_stripe' }
+  ...ACTIVE_STANDARD_STATUS
+} satisfies BillingStatusResponse
 
 const BILLING_BALANCE = {
   amount_micros: 0,

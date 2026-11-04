@@ -39,7 +39,8 @@ function capabilities(): Capabilities {
     can_run_workflows: true,
     can_subscribe_self_serve: true,
     can_top_up: true,
-    can_upgrade: true
+    can_upgrade: true,
+    can_view_auto_top_up: true
   }
 }
 
@@ -64,9 +65,11 @@ function capabilitiesBody(
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
   | 'auto_top_up_enabled'
   | 'auto_top_up_setup'
+  | 'billing_notice_audience'
   | 'capabilities'
   | 'denied_reason_params'
   | 'denied_reasons'
+  | 'ending_notice_starts_at'
   | 'expires_at'
   | 'has_parked_billing_operation'
   | 'payment_recovery_available'
@@ -97,6 +100,7 @@ expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_subscribe_self_serve: boolean
   can_top_up: boolean
   can_upgrade: boolean
+  can_view_auto_top_up: boolean
   can_view_own_usage?: boolean | undefined
   can_view_pending_invites: boolean
   can_view_team_usage: boolean

@@ -16,11 +16,7 @@ describe('selectBillingPresentation', () => {
         billingRail: 'stripe'
       })
     ).toBe('hosted')
-    for (const billingRail of [
-      'legacy_stripe',
-      'metronome',
-      undefined
-    ] as const) {
+    for (const billingRail of [undefined] as const) {
       expect(
         selectBillingPresentation({
           embeddedCheckoutAvailable: true,

@@ -251,6 +251,7 @@ export function createFakeBillingClient(
       can_subscribe_self_serve: false,
       can_top_up: false,
       can_upgrade: false,
+      can_view_auto_top_up: false,
       ...granted
     },
     denials,

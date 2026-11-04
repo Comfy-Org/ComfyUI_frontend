@@ -58,6 +58,7 @@ export function capabilitiesWith(
       can_subscribe_self_serve: true,
       can_top_up: true,
       can_upgrade: true,
+      can_view_auto_top_up: false,
       ...overrides
     },
     expires_at: inAnHour(),

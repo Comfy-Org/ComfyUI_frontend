@@ -20,11 +20,9 @@ function statusBody(overrides: Partial<StatusBody> = {}): StatusBody {
 }
 
 /** Every rail presentation routing distinguishes; only 'stripe' reaches the embedded challenge. */
-const BILLING_RAILS = [
-  'legacy_stripe',
-  'metronome',
-  'stripe'
-] as const satisfies readonly NonNullable<Status['billing_rail']>[]
+const BILLING_RAILS = ['stripe'] as const satisfies readonly NonNullable<
+  Status['billing_rail']
+>[]
 
 /** Every kind the lifecycle adopts from a server-reported pending operation. */
 const PENDING_OP_TYPES = [
