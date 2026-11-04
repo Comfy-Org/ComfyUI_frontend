@@ -147,6 +147,41 @@ test.describe(
         expect(afterDelivery.live).toContain(nodeId)
         expect(afterDelivery.serialized).toContain(nodeId)
       })
+
+      test('keeps a queued node visible when the tab-return subscription is refused', async ({
+        agentConversation
+      }) => {
+        test.setTimeout(90_000)
+
+        await agentConversation.runTurns()
+
+        const prompt = agentConversation.vueNodes
+          .getNodeLocator(PROMPT_NODE_ID)
+          .getByLabel(PROMPT_WIDGET, { exact: true })
+        await prompt.press('End')
+        await prompt.press('!')
+        await expect.poll(() => agentConversation.heldHumanOpCount()).toBe(1)
+
+        const nodeId = await agentConversation.addNoteThroughSearchBox({
+          x: ADD_POSITION[0],
+          y: ADD_POSITION[1]
+        })
+        const node = agentConversation.vueNodes.getNodeLocator(nodeId)
+        await expect(node).toBeVisible()
+
+        agentConversation.refuseHostSubscribes('unsupported')
+        const tabs = agentConversation.topbar.tabs
+        await agentConversation.topbar.newWorkflowButton.click()
+        await expect(tabs).toHaveCount(2)
+        await agentConversation.topbar.getTab(0).click()
+
+        await expect(
+          agentConversation.topbar
+            .getTab(0)
+            .and(agentConversation.topbar.getActiveTab())
+        ).toBeVisible()
+        await expect(node).toBeVisible()
+      })
     })
 
     // Both halves of the mechanism: the host takes the page's add_node op
