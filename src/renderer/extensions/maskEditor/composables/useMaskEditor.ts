@@ -36,7 +36,6 @@ export function useMaskEditor() {
         size: 'full',
         maximizable: true,
         closable: true,
-        // A stray click on the canvas used to dismiss the whole editor.
         dismissOnPointerDownOutside: false
       }
     })

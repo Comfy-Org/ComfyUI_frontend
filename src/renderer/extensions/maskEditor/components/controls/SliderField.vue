@@ -56,7 +56,6 @@ const {
   disabled = false,
   max,
   min,
-  modelValue,
   step = 1,
   suffix,
   helpText,
@@ -64,7 +63,6 @@ const {
   testId
 } = defineProps<{
   label: string
-  modelValue: number
   min: number
   max: number
   step?: number
@@ -80,8 +78,9 @@ const {
   }
 }>()
 
+const modelValue = defineModel<number>({ required: true })
+
 const emit = defineEmits<{
-  'update:modelValue': [value: number]
   sliderUpdate: [position: number]
 }>()
 
@@ -94,7 +93,7 @@ function clamp(value: number): number {
 
 function commit(value: number) {
   if (!Number.isFinite(value)) return
-  emit('update:modelValue', clamp(value))
+  modelValue.value = clamp(value)
 }
 
 function onInput(event: Event) {
@@ -108,7 +107,7 @@ async function onCommit(event: Event) {
     commit(parsed)
   }
   await nextTick()
-  input.value = String(modelValue)
+  input.value = String(modelValue.value)
 }
 
 function onSliderChange(value: number[] | undefined) {

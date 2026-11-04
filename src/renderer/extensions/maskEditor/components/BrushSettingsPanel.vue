@@ -15,14 +15,14 @@
 
     <div class="flex flex-col gap-2">
       <span
-        id="brush-shape-label"
+        :id="brushShapeLabelId"
         class="text-left font-sans text-xs text-muted-foreground"
       >
         {{ t('maskEditor.brushShape') }}
       </span>
       <div
         role="radiogroup"
-        aria-labelledby="brush-shape-label"
+        :aria-labelledby="brushShapeLabelId"
         class="flex h-12 w-full items-center gap-2 rounded-lg bg-secondary px-2"
         @keydown="onShapeKeydown"
       >
@@ -109,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -127,6 +127,7 @@ const SHAPE_ORDER: BrushShape[] = [BrushShape.Arc, BrushShape.Rect]
 
 const arcButton = useTemplateRef<HTMLButtonElement>('arcButton')
 const rectButton = useTemplateRef<HTMLButtonElement>('rectButton')
+const brushShapeLabelId = useId()
 
 function onShapeKeydown(event: KeyboardEvent) {
   const deltas: Record<string, number> = {
