@@ -345,7 +345,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return
     }
     if (deps.workflowId() !== batch.workflowId) {
-      settleUnbound(batch, 'unbound')
+      settleUnbound(
+        batch,
+        'unbound',
+        pendingAbortReason?.workflowId === batch.workflowId
+          ? pendingAbortReason.reason
+          : undefined
+      )
       return
     }
     if (!trySend(batch)) {
@@ -415,6 +421,19 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return false
     }
   }
+
+  // Set only for the duration of an `abortIfUnbound(reason)` call. `settle`
+  // on the in-flight batch below cascades through `pump()` -> `transmit()`
+  // for every queued batch still addressed to the same dead workflow
+  // (synchronously, mint order) before this clears; each hits the ordinary
+  // unbound check in `transmit()` with no caller of its own to attribute a
+  // reason to, so that check reads this instead. PM-1320 measured every
+  // queued op dropping on one retarget, not just the first, so attributing
+  // only the in-flight batch would miss most of what this is for.
+  let pendingAbortReason: {
+    workflowId: string
+    reason: UnboundAbortReason | undefined
+  } | null = null
 
   function settleUnbound(
     batch: InFlight,
@@ -775,7 +794,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     },
     abortIfUnbound(reason) {
       if (inFlight && deps.workflowId() !== inFlight.workflowId) {
-        settleUnbound(inFlight, 'unbound', reason)
+        pendingAbortReason = { workflowId: inFlight.workflowId, reason }
+        try {
+          settleUnbound(inFlight, 'unbound', reason)
+        } finally {
+          pendingAbortReason = null
+        }
       }
     },
     abortAll() {

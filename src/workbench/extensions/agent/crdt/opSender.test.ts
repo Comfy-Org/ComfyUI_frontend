@@ -634,6 +634,26 @@ describe('createOpSender', () => {
     expect(sender.pending()).toBe(1)
   })
 
+  it('abortIfUnbound attributes its reason to every cascaded queued batch for the dead workflow, not just the first', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(4)])
+
+    sender.abortIfUnbound('retarget')
+
+    const unboundReports = vi
+      .mocked(reportError)
+      .mock.calls.filter(([, options]) => options.tags?.code === 'unbound')
+    expect(unboundReports).toHaveLength(3)
+    expect(
+      unboundReports.every(([, options]) => options.tags?.reason === 'retarget')
+    ).toBe(true)
+    // The live wf-2 batch is unaffected: sent normally, no report.
+    expect(sent[1].workflowId).toBe('wf-2')
+  })
+
   it('abortIfUnbound clears a pending send retry so no timer outlives the batch', () => {
     transportUp = false
     sender.enqueue([addNode(1)])
