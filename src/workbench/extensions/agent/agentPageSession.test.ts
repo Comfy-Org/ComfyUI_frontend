@@ -10,6 +10,9 @@ import { createAgentEventSource } from './services/agent/agentEventSource'
 vi.mock(import('@/scripts/api'))
 vi.mock(import('./services/agent/agentAuth'))
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
+// The page session watches the signed-in identity, so it reaches the auth
+// store and through it Firebase, which cannot initialize under vitest.
+vi.mock(import('firebase/auth'))
 
 let agentSocket: ReturnType<typeof createFakeAgentSocket>
 

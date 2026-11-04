@@ -16768,6 +16768,34 @@ describe('AgentPanelRoot agent socket', () => {
     expect(reset).toHaveBeenCalledOnce()
   })
 
+  // The socket outlives the panel now (CRDT-FOLLOWER-0052 stage 1a), so it
+  // also outlives the panel's watchers. If the account/workspace watcher had
+  // stayed in the component, switching accounts while the panel was closed
+  // would have left the surviving connection authenticated for the previous
+  // account — and the panel would have resolved that same socket on reopen.
+  it('reconnects on an account switch made while the panel is closed', async () => {
+    vi.mocked(resolveAgentIdentity).mockReturnValue({
+      state: ref<AgentIdentityState>({
+        status: 'resolved',
+        userId: 'account-a'
+      }),
+      reset: vi.fn(),
+      stop: () => {}
+    })
+    signInAs({ firebase: 'account-a', apiKeyUser: null })
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    // Closing the panel is exactly this unmount.
+    panel.unmount()
+    await nextTick()
+    agentSocket.reconnect.mockClear()
+
+    signInAs({ firebase: 'account-b', apiKeyUser: null })
+    await nextTick()
+
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+  })
+
   it('handshakes once for a workspace switch that passes through null', async () => {
     const reset = vi.fn()
     vi.mocked(resolveAgentIdentity).mockReturnValue({

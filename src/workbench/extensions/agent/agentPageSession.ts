@@ -1,5 +1,11 @@
+import { computed, effectScope, watch } from 'vue'
+
 import { api } from '@/scripts/api'
 import { assert } from '@/base/assert'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import type { AgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
@@ -21,17 +27,68 @@ import { createAgentEventSource } from './services/agent/agentEventSource'
  * A follower session that outlives the panel (Decision 1) is useless while the
  * panel still owns the transport — it could neither receive an update nor
  * resubscribe — so ownership moves here first. The panel now consumes these.
+ *
+ * **The socket's authentication lifetime moves with the socket.** That is not a
+ * detail: a connection that outlives the panel outlives the panel's watchers
+ * too, so leaving the account/workspace watcher behind in the component would
+ * let a sign-out or a workspace switch made while the panel is closed leave a
+ * live socket authenticated for the previous context, and the panel would
+ * resolve that same socket on reopen. The watcher therefore lives here, beside
+ * the connection whose credentials it governs.
  */
 export interface AgentPageSession {
   /** The shared agent websocket. Reference-counts its own connection. */
   readonly events: AgentEventSocket
   /** The doc-frame tap over {@link events}, for the CRDT follower seam. */
   readonly docTransport: AgentDocFrameTransport
+  /**
+   * Observe the signed-in identity changing, after the socket has been told to
+   * reconnect under the new credentials.
+   *
+   * @returns an unsubscribe function
+   */
+  onIdentityChange(listener: () => void): () => void
 }
 
-let session: AgentPageSession | null = null
+type SocketIdentity = readonly [
+  account: string | null,
+  workspace: string | null,
+  hostWorkspace: string | null
+]
 
-function create(): AgentPageSession {
+/**
+ * Whether an identity tuple change should re-authenticate the socket.
+ *
+ * Moved verbatim from `AgentPanelRoot.vue` so the rule did not change while its
+ * owner did. The second clause ignores the transient window in which a
+ * workspace reads as null for an unchanged signed-in account, which would
+ * otherwise reconnect the socket on an ordinary workspace refresh.
+ */
+function needsReauthentication(
+  [account, workspace, hostWorkspace]: SocketIdentity,
+  [wasAccount, wasWorkspace, wasHostWorkspace]: SocketIdentity
+): boolean {
+  if (
+    account === wasAccount &&
+    workspace === wasWorkspace &&
+    hostWorkspace === wasHostWorkspace
+  )
+    return false
+  return !(
+    workspace === null &&
+    account === wasAccount &&
+    account !== null &&
+    hostWorkspace === null
+  )
+}
+
+interface PageSessionInternals extends AgentPageSession {
+  readonly stop: () => void
+}
+
+let session: PageSessionInternals | null = null
+
+function create(): PageSessionInternals {
   // One transport per page, so a follower session cannot end up holding a
   // different socket than the one the agent session streams over, and a panel
   // remount cannot leave an orphaned connection behind.
@@ -43,7 +100,42 @@ function create(): AgentPageSession {
     endpoint: api.apiURL('/agent/events'),
     getAuthParams: agentSocketAuthParams
   })
-  return { events, docTransport: createAgentDocFrameTransport(events) }
+  const docTransport = createAgentDocFrameTransport(events)
+  const listeners = new Set<() => void>()
+
+  // Detached: this scope belongs to the page, so it must not be adopted by
+  // whichever component happens to resolve the session first — that is the
+  // panel, and being torn down with the panel is the bug.
+  const scope = effectScope(true)
+  scope.run(() => {
+    const authStore = useAuthStore()
+    const apiKeyAuthStore = useApiKeyAuthStore()
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    const identity = computed<SocketIdentity>(() => [
+      authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
+      teamWorkspaceStore.activeWorkspaceId ?? null,
+      desktopHostUser.value?.workspaceId ?? null
+    ])
+    watch(identity, (next, previous) => {
+      if (!needsReauthentication(next, previous)) return
+      events.reconnect()
+      listeners.forEach((listener) => listener())
+    })
+  })
+
+  return {
+    events,
+    docTransport,
+    onIdentityChange(listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    stop() {
+      scope.stop()
+      listeners.clear()
+      docTransport.destroy()
+    }
+  }
 }
 
 /**
@@ -66,6 +158,6 @@ export function useAgentPageSession(): AgentPageSession {
  * test can start from a clean page, and for a genuine page-level teardown.
  */
 export function destroyAgentPageSession(): void {
-  session?.docTransport.destroy()
+  session?.stop()
   session = null
 }

@@ -47,9 +47,6 @@ import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
-import { useAuthStore } from '@/stores/authStore'
 import {
   AGENT_ATTACH_ACCEPT,
   agentAttachRefVerdict,
@@ -260,7 +257,7 @@ const rest = createAgentRestClient()
 // able to resubscribe on reopen rather than cold-seed. See
 // docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md
 // Stage 1a. There is deliberately no `onBeforeUnmount` teardown here.
-const { events, docTransport } = useAgentPageSession()
+const { events, docTransport, onIdentityChange } = useAgentPageSession()
 
 const agentIdentity = resolveAgentIdentity({
   getIdentity: () => rest.getIdentity(),
@@ -275,37 +272,13 @@ const agentIdentity = resolveAgentIdentity({
 })
 onBeforeUnmount(() => agentIdentity.stop())
 
-const authStore = useAuthStore()
-const apiKeyAuthStore = useApiKeyAuthStore()
 const teamWorkspaceStore = useTeamWorkspaceStore()
-const agentSocketIdentity = computed(() => [
-  authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
-  teamWorkspaceStore.activeWorkspaceId ?? null,
-  desktopHostUser.value?.workspaceId ?? null
-])
-watch(
-  agentSocketIdentity,
-  (
-    [account, workspace, hostWorkspace],
-    [wasAccount, wasWorkspace, wasHostWorkspace]
-  ) => {
-    if (
-      account === wasAccount &&
-      workspace === wasWorkspace &&
-      hostWorkspace === wasHostWorkspace
-    )
-      return
-    if (
-      workspace === null &&
-      account === wasAccount &&
-      account !== null &&
-      hostWorkspace === null
-    )
-      return
-    events.reconnect()
-    agentIdentity.reset()
-  }
-)
+// Reconnecting the socket on an identity change is the page session's job now,
+// because the socket outlives this component: a workspace switch made while
+// the panel is closed must not leave a live connection authenticated for the
+// previous account. What stays here is the part that is genuinely panel-scoped
+// — re-resolving the agent identity this panel instance holds.
+onBeforeUnmount(onIdentityChange(() => agentIdentity.reset()))
 
 function onPaywallAction(
   action: AgentPaywallAction,
