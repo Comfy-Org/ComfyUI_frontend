@@ -32,6 +32,7 @@
     "src/scripts/clipspace.ts",
     "packages/mask-editor/src/brushUtils.ts",
     "packages/mask-editor/src/maskEditorStore.ts",
+    "packages/mask-editor/src/panZoomUtils.ts",
     "packages/mask-editor/src/StrokeProcessor.ts"
   ],
   "characterizationScenarios": [
@@ -64,6 +65,10 @@
     {
       "name": "Clipspace copies and pastes node images",
       "checks": ["src/scripts/clipspace.test.ts"]
+    },
+    {
+      "name": "Pan and zoom math keeps the point under the cursor and clamps the zoom",
+      "checks": ["packages/mask-editor/src/panZoomUtils.test.ts"]
     },
     {
       "name": "The stroke engine and editor store keep their contract for the painter and undo commands",

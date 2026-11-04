@@ -79,6 +79,7 @@
           "src/scripts/clipspace.ts",
           "packages/mask-editor/src/brushUtils.ts",
           "packages/mask-editor/src/maskEditorStore.ts",
+          "packages/mask-editor/src/panZoomUtils.ts",
           "packages/mask-editor/src/StrokeProcessor.ts"
         ]
       },
