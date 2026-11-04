@@ -23,7 +23,7 @@ import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorag
 import { app } from '@/scripts/app'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { createNode } from '@/utils/litegraphUtil'
+import { createNode } from '@/utils/createNode'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 import {
   cloneDataTransfer,
@@ -141,7 +141,7 @@ beforeEach(() => {
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+vi.mock(import('@/utils/createNode'), { spy: true })
 
 vi.mock(import('@/workbench/eventHelpers'), { spy: true })
 

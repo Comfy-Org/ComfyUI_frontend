@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { LGraph, LGraphNode, Reroute } from '@/lib/litegraph/src/litegraph'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId, UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
-import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { FloatingRenderLink } from './FloatingRenderLink'
 
 function inputFloatingLink(targetId: number, targetSlot: number): LLink {

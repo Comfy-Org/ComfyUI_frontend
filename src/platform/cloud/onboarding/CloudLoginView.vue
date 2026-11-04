@@ -99,8 +99,8 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { readSsoError } from '@comfyorg/account-core/sso'
 import { ssoFailureReason } from '@comfyorg/account-core/telemetry'
 
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { trackSsoSignInFailed } from '@/platform/auth/sso/ssoTelemetry'
@@ -160,7 +160,7 @@ if (flags.ssoEnabled && ssoError) {
 
 const signInWithEmail = async (values: SignInData) => {
   authError.value = ''
-  if (flags.ssoEnabled && (await trySso(values.email))) return
+  if (flags.ssoEnabled && (await trySso(values.email, 'email-sign-in'))) return
   if (await authActions.signInWithEmail(values.email, values.password)) {
     await onAuthSuccess()
   }

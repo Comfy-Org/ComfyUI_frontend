@@ -1,8 +1,10 @@
 import { assert, expect, it, onTestFinished, vi } from 'vitest'
 
-import { createAgentRestClient } from '../../services/agent/agentRestClient'
+import { createAgentRestClient } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import { useAttachment } from './useAttachment'
-import type { ComposerAttachment } from '../../types/composerAttachment'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+
+vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 
 it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', async () => {
   vi.useFakeTimers()
@@ -26,6 +28,7 @@ it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', asy
       const result = await client.uploadImage(file, file.name, uploadSignal)
       return { ref: result.name ?? file.name }
     },
+    staged: () => [...chips.values()],
     stage: (chip) => {
       chips.set(chip.id, chip)
       return true

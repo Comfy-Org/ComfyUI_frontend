@@ -1,5 +1,5 @@
-import type { SkillReference } from '../types/skillReference'
-import type { WorkflowReference } from '../types/workflowReference'
+import type { SkillReference } from '@/workbench/extensions/agent/types/skillReference'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 
 export function promptReferenceParts(
   text: string,

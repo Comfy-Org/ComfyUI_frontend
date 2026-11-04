@@ -10,11 +10,11 @@
           :disabled="interactionLocked"
           @click="emit('back')"
         >
-          <i class="pi pi-arrow-left text-base" />
+          <i class="icon-[lucide--arrow-left]" />
         </CheckoutButton>
-        <h2 :class="layout.title">
+        <CheckoutTitle :class="layout.title">
           {{ copy.confirmPayment }}
-        </h2>
+        </CheckoutTitle>
       </div>
       <slot v-if="summaryReplaced" name="summary" />
       <template v-else>
@@ -87,12 +87,13 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { StripePaymentPhase } from '../stripe/stripePaymentPhase'
+import type { StripePaymentPhase } from '#/billing/stripe/stripePaymentPhase'
 import CheckoutButton from './CheckoutButton.vue'
 import CheckoutPromotionCode from './CheckoutPromotionCode.vue'
 import CheckoutSavedMethods from './CheckoutSavedMethods.vue'
 import CheckoutSubscribeActions from './CheckoutSubscribeActions.vue'
 import CheckoutSubscribeSummary from './CheckoutSubscribeSummary.vue'
+import CheckoutTitle from './CheckoutTitle.vue'
 import type { CheckoutCopy } from './checkoutCopy'
 import type { CheckoutBillingCycle, CheckoutPlan } from './checkoutQuote'
 import type { CheckoutPayAction } from './checkoutRecovery'
@@ -183,15 +184,15 @@ const layout = computed(() => {
     ),
     summary: cn(
       split &&
-        'xl:w-[42%] xl:shrink-0 xl:border-r xl:border-border-subtle xl:bg-base-background xl:px-12 xl:py-10',
+        'xl:w-[42%] xl:shrink-0 xl:border-r xl:border-border/50 xl:bg-background xl:px-12 xl:py-10',
       // Below xl the same dual tone runs vertically: the summary bleeds
       // dark to the dialog edges, payment continues on the shell below.
       split &&
-        'max-xl:-mx-4 max-xl:-mt-6 max-xl:rounded-t-2xl max-xl:bg-base-background max-xl:p-6'
+        'max-xl:-mx-4 max-xl:-mt-6 max-xl:rounded-t-2xl max-xl:bg-background max-xl:p-6'
     ),
     header: cn('mb-8 flex items-center gap-3', split && 'xl:mb-10'),
     title: cn(
-      'm-0 flex-1 text-center text-xl font-semibold text-base-foreground lg:text-2xl',
+      'm-0 flex-1 text-center text-xl font-semibold text-foreground lg:text-2xl',
       // In the sidebar the title goes quiet and the money block leads.
       split &&
         'xl:text-left xl:text-base xl:font-medium xl:text-muted-foreground'

@@ -14,7 +14,7 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelStore } from '@/stores/modelStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelLibrarySidebarTab from './ModelLibrarySidebarTab.vue'
@@ -95,9 +95,12 @@ vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), async () => {
   }
 })
 
-vi.mock<unknown>(import('./SidebarTopArea.vue'), () => ({
-  default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
-}))
+vi.mock<unknown>(
+  import('@comfyorg/design-system/navigation/SidebarTopArea'),
+  () => ({
+    default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
+  })
+)
 
 vi.mock<unknown>(import('./SidebarTabTemplate.vue'), () => ({
   default: {
@@ -129,8 +132,7 @@ describe('ModelLibrarySidebarTab', () => {
     return render(ModelLibrarySidebarTab, {
       global: {
         plugins: [i18n],
-        stubs: { teleport: true },
-        directives: { tooltip: {} }
+        stubs: { teleport: true }
       }
     })
   }

@@ -16,12 +16,12 @@ function mount(isMaximized = false) {
 }
 
 describe('PanelHeader', () => {
-  it('exposes the heading id the dock landmark labels', () => {
+  it('exposes the test id and the heading id the dock landmark labels', () => {
     mount()
 
-    expect(
-      screen.getByRole('heading', { name: 'Comfy Agent' })
-    ).toHaveAttribute('id', 'agent-panel-title')
+    const heading = screen.getByRole('heading', { name: 'Comfy Agent' })
+    expect(heading).toHaveAttribute('data-testid', 'agent-panel-title')
+    expect(heading).toHaveAttribute('id', 'agent-panel-title')
   })
 
   it.for([
@@ -36,7 +36,9 @@ describe('PanelHeader', () => {
       mount(isMaximized)
 
       await userEvent.hover(screen.getByRole('button', { name: label }))
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(label)
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+        label
+      )
     }
   )
 

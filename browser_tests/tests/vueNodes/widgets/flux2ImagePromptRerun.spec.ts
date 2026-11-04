@@ -8,6 +8,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 /**
  * PM-1303 / PM-1310: Guard the Flux2ImageNode prompt and layout across
@@ -202,20 +203,20 @@ test.describe(
         const node = getNode(comfyPage)
         const promptBox = getPromptBox(comfyPage)
         await expect(promptBox).toBeVisible()
-        await expect(node).toHaveScreenshot('flux2-prompt-before-runs.png', {
+        await expectElementScreenshot(node, 'flux2-prompt-before-runs.png', {
           maxDiffPixels: 10
         })
 
         await runGeneration(comfyPage, exec, ws, nodeId)
         await expect(promptBox).toBeVisible()
-        await expect(node).toHaveScreenshot('flux2-prompt-after-run-1.png', {
+        await expectElementScreenshot(node, 'flux2-prompt-after-run-1.png', {
           maxDiffPixels: 10
         })
 
         await runGeneration(comfyPage, exec, ws, nodeId)
         await expect(promptBox).toBeVisible()
         await expect(promptBox).toHaveValue(PROMPT)
-        await expect(node).toHaveScreenshot('flux2-prompt-after-run-2.png', {
+        await expectElementScreenshot(node, 'flux2-prompt-after-run-2.png', {
           maxDiffPixels: 10
         })
       }

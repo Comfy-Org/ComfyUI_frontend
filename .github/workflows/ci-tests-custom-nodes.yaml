@@ -214,7 +214,7 @@ jobs:
       - name: Build frontend
         env:
           VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
-        run: pnpm build
+        run: pnpm build:dist
 
       - name: Verify Detection Proof witness shard
         if: matrix.proof_row != '0'

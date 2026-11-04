@@ -1,5 +1,7 @@
 import { computed, reactive, ref } from 'vue'
 
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+
 interface BillingCapabilitiesMockState {
   canSubscribeSelfServe: boolean
   canCancel: boolean
@@ -7,7 +9,10 @@ interface BillingCapabilitiesMockState {
   canChangeSeats: boolean
   canManageMembers: boolean
   canInviteMembers: boolean
+  canLeaveWorkspace: boolean
+  canManageSubscription: boolean
   canDowngradeToPersonal: boolean
+  canOpenPlans: boolean
 }
 
 const canTopUpState = ref(true)
@@ -18,7 +23,10 @@ const defaultCapabilityState: BillingCapabilitiesMockState = {
   canChangeSeats: true,
   canManageMembers: true,
   canInviteMembers: true,
-  canDowngradeToPersonal: true
+  canLeaveWorkspace: true,
+  canManageSubscription: true,
+  canDowngradeToPersonal: true,
+  canOpenPlans: true
 }
 const capabilityState = reactive<BillingCapabilitiesMockState>({
   ...defaultCapabilityState
@@ -47,11 +55,33 @@ export function useBillingCapabilities() {
     canCancel: computed(() => capabilityState.canCancel),
     canReactivate: computed(() => capabilityState.canReactivate),
     canChangeSeats: computed(() => capabilityState.canChangeSeats),
-    canManageMembers: computed(() => capabilityState.canManageMembers),
-    canInviteMembers: computed(() => capabilityState.canInviteMembers),
+    canManageMembers: computed(() =>
+      receiveServerFact('can_manage_members', capabilityState.canManageMembers)
+    ),
+    canInviteMembers: computed(() =>
+      receiveServerFact('can_invite_members', capabilityState.canInviteMembers)
+    ),
+    canLeaveWorkspace: computed(() =>
+      receiveServerFact(
+        'can_leave_workspace',
+        capabilityState.canLeaveWorkspace
+      )
+    ),
+    canManageSubscription: computed(() =>
+      receiveServerFact(
+        'can_manage_subscription',
+        capabilityState.canManageSubscription
+      )
+    ),
     canDowngradeToPersonal: computed(
       () => capabilityState.canDowngradeToPersonal
     ),
+    topUpDenial: computed<string | undefined>(() => undefined),
+    canManageBilling: computed(() => capabilityState.canManageSubscription),
+    canOpenPlans: computed(() =>
+      receiveServerFact('can_open_plans', capabilityState.canOpenPlans)
+    ),
+    runDeniedPaymentPastDue: computed(() => false),
     isReady: computed(() => true),
     snapshotAuthoritative: computed(() => true),
     initialize: () => undefined,

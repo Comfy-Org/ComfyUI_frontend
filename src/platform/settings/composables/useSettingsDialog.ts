@@ -1,20 +1,31 @@
 import type { Component } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import type {
   SettingDialogProps,
   SettingPanelType
-} from '@/platform/settings/types'
+} from '@comfyorg/settings-core/types'
 
 const DIALOG_KEY = 'global-settings'
 
-// The redesigned Settings dialog is 1280px wide (DES 3253-16079).
-const SETTINGS_CONTENT_CLASS =
-  'w-[90vw] max-w-[1280px] sm:max-w-[1280px] h-[80vh] max-h-none rounded-2xl overflow-hidden'
+let navigationRequestCount = 0
 
+function nextNavigationRequest(
+  panel: SettingPanelType | undefined,
+  settingId: string | undefined
+): Partial<SettingDialogProps> | undefined {
+  if (!panel && !settingId) return undefined
+  navigationRequestCount += 1
+  return {
+    navigationRequestId: navigationRequestCount,
+    ...(panel ? { defaultPanel: panel } : {}),
+    ...(settingId ? { scrollToSettingId: settingId } : {})
+  }
+}
+
+// The redesigned Settings dialog is 1280px wide (DES 3253-16079).
 let settingDialogComponent: Component<SettingDialogProps> | undefined
 
 /**
@@ -43,32 +54,23 @@ export function useSettingsDialog() {
       })
       return
     }
+    const destination = nextNavigationRequest(panel, settingId)
+    if (destination && dialogStore.isDialogOpen(DIALOG_KEY)) {
+      dialogStore.updateDialog({
+        key: DIALOG_KEY,
+        contentProps: destination
+      })
+    }
     dialogStore.showDialog({
       key: DIALOG_KEY,
       component: settingDialogComponent,
       props: {
         onClose: hide,
-        ...(panel ? { defaultPanel: panel } : {}),
-        ...(settingId ? { scrollToSettingId: settingId } : {})
+        ...destination
       },
       dialogComponentProps: {
-        renderer: 'reka',
         headless: true,
-        closable: true,
-        // Settings hosts nested PrimeVue dialogs (Edit Keybinding, Overwrite
-        // confirm, etc.) that teleport to body. Reka's modal mode traps focus
-        // inside the Settings content and disables body pointer-events, which
-        // breaks those nested dialogs' autofocus and click handling. Non-modal
-        // keeps the visual overlay without those traps.
-        modal: false,
-        // A nested dialog closing (e.g. confirming a Secrets delete) can move
-        // focus onto an app element once the row it focused is removed. As a
-        // non-modal dialog Settings would treat that as an outside focus and
-        // dismiss itself, so opt out — escape and outside clicks still close it.
-        dismissOnFocusOutside: false,
-        size: 'full',
-        contentClass: SETTINGS_CONTENT_CLASS,
-        overlayClass: isCloud ? 'p-8' : undefined
+        closable: true
       }
     })
   }

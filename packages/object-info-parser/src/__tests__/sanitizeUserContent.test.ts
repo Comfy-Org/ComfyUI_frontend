@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { sanitizeUserContent } from '../helpers/sanitizeUserContent'
-import type { ComfyNodeDef, InputSpec } from '../schemas/nodeDefSchema'
+import { sanitizeUserContent } from '#/helpers/sanitizeUserContent'
+import type { ComfyNodeDef, InputSpec } from '#/schemas/nodeDefSchema'
 
 function makeNodeDef(
   name: string,

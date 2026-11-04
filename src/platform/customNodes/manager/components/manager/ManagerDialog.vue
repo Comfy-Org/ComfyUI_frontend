@@ -1,0 +1,720 @@
+<template>
+  <!-- `manager-dialog` carries no styles; PackVersionBadge scopes its popover
+       to it via closest(). Removing it silently widens that boundary. -->
+  <BaseModalLayout
+    v-model:right-panel-open="isRightPanelOpen"
+    :labels="modalLayoutLabels"
+    :content-title="$t('manager.discoverCommunityContent')"
+    :right-panel-title="$t('manager.nodePackInfo')"
+    size="lg"
+    class="manager-dialog"
+    @close="onClose"
+  >
+    <template #leftPanelHeaderTitle>
+      <i class="icon-[comfy--extensions-blocks]" />
+      <h2 class="text-base text-foreground">{{ $t('manager.title') }}</h2>
+    </template>
+    <template #leftPanel>
+      <LeftSidePanel v-model="selectedNavId" :nav-items="navItems" />
+    </template>
+
+    <template #header>
+      <div class="flex w-full items-center justify-between gap-2">
+        <div class="flex w-full items-center gap-2">
+          <AppSingleSelect
+            v-model="searchMode"
+            class="min-w-34"
+            :options="filterOptions"
+          />
+          <SearchAutocomplete
+            v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="$t('g.search')"
+            :suggestions="suggestions"
+            :placeholder="$t('manager.searchPlaceholder')"
+            option-label="query"
+            autofocus
+            size="lg"
+            class="max-w-96 flex-1"
+            @select="onOptionSelect"
+          />
+        </div>
+        <PackInstallButton
+          v-if="isMissingTab && missingNodePacks.length > 0"
+          :disabled="isMissingLoading || !!missingError"
+          :node-packs="missingNodePacks"
+          size="lg"
+          :label="$t('manager.installAllMissingNodes')"
+        />
+        <PackUpdateButton
+          v-if="isUpdateAvailableTab && hasUpdateAvailable"
+          :node-packs="enabledUpdateAvailableNodePacks"
+          :has-disabled-update-packs="hasDisabledUpdatePacks"
+          size="lg"
+        />
+      </div>
+    </template>
+
+    <template #contentFilter>
+      <!-- Conflict Warning Banner -->
+      <div
+        v-if="shouldShowManagerBanner"
+        class="relative mx-6 mt-3 mb-4 flex items-center gap-6 rounded-lg bg-yellow-500/20 p-4"
+      >
+        <i class="icon-[lucide--triangle-alert] text-lg text-warning" />
+        <div class="flex flex-1 flex-col gap-2 text-sm">
+          <p class="m-0 font-bold">
+            {{ $t('manager.conflicts.warningBanner.title') }}
+          </p>
+          <p class="m-0 text-xs">
+            {{ $t('manager.conflicts.warningBanner.message') }}
+          </p>
+          <p class="m-0 cursor-pointer font-bold" @click="onClickWarningLink">
+            {{ $t('manager.conflicts.warningBanner.button') }}
+          </p>
+        </div>
+        <Button
+          class="absolute top-0 right-0"
+          variant="textonly"
+          size="icon"
+          @click="dismissWarningBanner"
+        >
+          <i class="icon-[lucide--x] size-3 text-foreground"></i>
+        </Button>
+      </div>
+
+      <Message
+        :visible="isUnmatchedLegacyManagerSearch"
+        severity="info"
+        class="mx-6 mb-4 w-auto"
+      >
+        <template #icon>
+          <i class="icon-[lucide--info]" />
+        </template>
+        {{ $t('manager.legacyManagerSearchTip') }}
+      </Message>
+
+      <!-- Sort Options -->
+      <div v-if="isSortable" class="flex justify-end px-6 pb-4">
+        <AppSingleSelect
+          v-model="sortField"
+          :label="$t('g.sort')"
+          :options="availableSortOptions"
+          class="w-48"
+        >
+          <template #icon>
+            <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
+          </template>
+        </AppSingleSelect>
+      </div>
+    </template>
+
+    <template #content>
+      <div v-if="isLoading" class="size-full scrollbar-hide overflow-auto">
+        <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
+      </div>
+      <UnresolvedNodesMessage
+        v-else-if="isUnresolvedTab"
+        :node-names="unresolvedNodeNames"
+      />
+      <NoResultsPlaceholder
+        v-else-if="displayPacks.length === 0 && !hasPendingPages"
+        :title="emptyStateTitle"
+        :message="emptyStateMessage"
+        :button-label="retryLabel"
+        @action="retrySearch"
+      />
+      <div v-else class="flex size-full flex-col">
+        <div class="min-h-0 flex-1" @click="handleGridContainerClick">
+          <VirtualGrid
+            id="results-grid"
+            :items="resultsWithKeys"
+            :buffer-rows="4"
+            :grid-style="GRID_STYLE"
+            :on-load-more="loadMorePacks"
+            :can-load-more="canLoadMorePacks"
+          >
+            <template #item="{ item }">
+              <PackCard
+                :node-pack="item"
+                :is-selected="
+                  selectedNodePacks.some((pack) => pack.id === item.id)
+                "
+                @click.stop="(event: MouseEvent) => selectNodePack(item, event)"
+              />
+            </template>
+          </VirtualGrid>
+        </div>
+        <Message
+          :visible="isNextPageFailed"
+          severity="warning"
+          class="mx-2 mt-2 w-auto items-center"
+        >
+          <div class="flex items-center justify-between gap-3">
+            {{ $t('manager.loadMoreFailed') }}
+            <Button
+              ref="retryButton"
+              variant="secondary"
+              @click="retryNextPage"
+            >
+              {{ $t('g.retry') }}
+            </Button>
+          </div>
+        </Message>
+      </div>
+    </template>
+
+    <template #rightPanel>
+      <InfoPanel
+        v-if="!hasMultipleSelections && selectedNodePack"
+        :node-pack="selectedNodePack"
+      />
+      <InfoPanelMultiItem v-else :node-packs="selectedNodePacks" />
+    </template>
+  </BaseModalLayout>
+</template>
+
+<script setup lang="ts">
+import { refDebounced, until, whenever } from '@vueuse/core'
+import { merge } from 'es-toolkit/compat'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  onUnmounted,
+  ref,
+  toValue,
+  useTemplateRef,
+  watch,
+  watchEffect
+} from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
+import SearchAutocomplete from '@comfyorg/design-system/search-input/SearchAutocomplete'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import LeftSidePanel from '@comfyorg/design-system/navigation/LeftSidePanel'
+import { useExternalLink } from '@/composables/useExternalLink'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import type { components } from '@/types/comfyRegistryTypes'
+import type {
+  NavGroupData,
+  NavItemData
+} from '@comfyorg/design-system/lib/navigation/types'
+import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
+import PackInstallButton from '@/platform/customNodes/manager/components/manager/button/PackInstallButton.vue'
+import PackUpdateButton from '@/platform/customNodes/manager/components/manager/button/PackUpdateButton.vue'
+import InfoPanel from '@/platform/customNodes/manager/components/manager/infoPanel/InfoPanel.vue'
+import InfoPanelMultiItem from '@/platform/customNodes/manager/components/manager/infoPanel/InfoPanelMultiItem.vue'
+import PackCard from '@/platform/customNodes/manager/components/manager/packCard/PackCard.vue'
+import GridSkeleton from '@/platform/customNodes/manager/components/manager/skeleton/GridSkeleton.vue'
+import UnresolvedNodesMessage from '@/platform/customNodes/manager/components/manager/UnresolvedNodesMessage.vue'
+import { useMissingNodes } from '@/platform/customNodes/manager/composables/nodePack/useMissingNodes'
+import { useUpdateAvailableNodes } from '@/platform/customNodes/manager/composables/nodePack/useUpdateAvailableNodes'
+import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
+import { useManagerDisplayPacks } from '@/platform/customNodes/manager/composables/useManagerDisplayPacks'
+import { useManagerStatePersistence } from '@/platform/customNodes/manager/composables/useManagerStatePersistence'
+import { useRegistrySearch } from '@/platform/customNodes/manager/composables/useRegistrySearch'
+import { useConflictDetectionStore } from '@/platform/customNodes/manager/stores/conflictDetectionStore'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
+import { isLegacyManagerQuery } from '@/platform/customNodes/manager/utils/legacyManagerQuery'
+import { PACK_SORTABLE_FIELDS } from '@/platform/customNodes/manager/utils/nodePackSort'
+
+const { initialTab, initialPackId, onClose } = defineProps<{
+  initialTab?: ManagerTab
+  initialPackId?: string
+  onClose: () => void
+}>()
+
+const modalLayoutLabels = useModalLayoutLabels()
+
+const { t } = useI18n()
+const { buildDocsUrl } = useExternalLink()
+const comfyManagerStore = useComfyManagerStore()
+const { getPackById } = useComfyRegistryStore()
+const conflictAcknowledgment = useConflictAcknowledgment()
+const conflictDetectionStore = useConflictDetectionStore()
+const { isNewManagerUI } = useManagerState()
+const workflowStore = useWorkflowStore()
+const persistedState = useManagerStatePersistence()
+const initialState = persistedState.loadStoredState()
+
+const GRID_STYLE = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(14rem, 1fr))',
+  gap: '1rem',
+  padding: '0.5rem'
+} as const
+
+const {
+  shouldShowManagerBanner,
+  dismissWarningBanner,
+  dismissRedDotNotification
+} = conflictAcknowledgment
+
+// Missing nodes composable
+const {
+  missingNodePacks,
+  unresolvedNodeNames,
+  isLoading: isMissingLoading,
+  error: missingError
+} = useMissingNodes()
+
+// Update available nodes composable
+const {
+  hasUpdateAvailable,
+  enabledUpdateAvailableNodePacks,
+  hasDisabledUpdatePacks
+} = useUpdateAvailableNodes()
+
+// Get the current workflow name for the nav item
+const workflowName = computed(
+  () => workflowStore.activeWorkflow?.filename ?? t('manager.inWorkflow')
+)
+
+// Navigation items for LeftSidePanel
+const navItems = computed<(NavItemData | NavGroupData)[]>(() => [
+  {
+    id: ManagerTab.All,
+    label: t('manager.nav.allExtensions'),
+    icon: 'icon-[lucide--list]'
+  },
+  {
+    id: ManagerTab.NotInstalled,
+    label: t('manager.nav.notInstalled'),
+    icon: 'icon-[lucide--globe]'
+  },
+  {
+    title: t('manager.nav.installedSection'),
+    items: [
+      {
+        id: ManagerTab.AllInstalled,
+        label: t('manager.nav.allInstalled'),
+        icon: 'icon-[lucide--download]'
+      },
+      {
+        id: ManagerTab.UpdateAvailable,
+        label: t('manager.nav.updatesAvailable'),
+        icon: 'icon-[lucide--refresh-cw]'
+      },
+      {
+        id: ManagerTab.Conflicting,
+        label: t('manager.nav.conflicting'),
+        icon: 'icon-[lucide--triangle-alert]',
+        badge: conflictDetectionStore.conflictedPackages.length || undefined
+      }
+    ]
+  },
+  {
+    title: t('manager.nav.inWorkflowSection'),
+    items: [
+      {
+        id: ManagerTab.Workflow,
+        label: t('manager.nav.allInWorkflow', {
+          workflowName: workflowName.value
+        }),
+        icon: 'icon-[lucide--share-2]'
+      },
+      {
+        id: ManagerTab.Missing,
+        label: t('manager.nav.missingNodes'),
+        icon: 'icon-[lucide--triangle-alert]'
+      },
+      ...(unresolvedNodeNames.value.length > 0
+        ? [
+            {
+              id: ManagerTab.Unresolved,
+              label: t('manager.nav.unresolvedNodes'),
+              icon: 'icon-[lucide--help-circle]',
+              badge: unresolvedNodeNames.value.length
+            }
+          ]
+        : [])
+    ]
+  }
+])
+
+const initialTabId = initialTab ?? initialState.selectedTabId ?? ManagerTab.All
+const selectedNavId = ref<string | null>(initialTabId)
+
+// Helper to find a nav item by id in the nested structure
+const findNavItemById = (
+  items: (NavItemData | NavGroupData)[],
+  id: string | null
+): NavItemData | undefined => {
+  for (const item of items) {
+    if ('items' in item) {
+      const found = item.items.find((subItem) => subItem.id === id)
+      if (found) return found
+    } else if (item.id === id) {
+      return item
+    }
+  }
+  return undefined
+}
+
+const selectedTab = computed(() =>
+  findNavItemById(navItems.value, selectedNavId.value)
+)
+
+watch(navItems, (items) => {
+  if (selectedNavId.value && !findNavItemById(items, selectedNavId.value)) {
+    selectedNavId.value = ManagerTab.Missing
+  }
+})
+
+const SEARCH_DEBOUNCE_MS = 320
+
+const searchQuery = ref(
+  initialTabId === ManagerTab.Missing
+    ? ''
+    : (initialPackId ?? initialState.searchQuery)
+)
+const searchMode = ref<SearchMode>(
+  initialPackId && initialTabId !== ManagerTab.Missing
+    ? 'packs'
+    : initialState.searchMode
+)
+const sortField = ref<string>(initialState.sortField)
+const trimmedSearchQuery = computed(() => searchQuery.value.trim())
+
+const isSearchBacked = computed(() => {
+  const tab = selectedTab.value?.id
+  return (
+    tab === ManagerTab.All ||
+    tab === ManagerTab.NotInstalled ||
+    (trimmedSearchQuery.value !== '' && tab !== ManagerTab.Unresolved)
+  )
+})
+const openingSearchQuery = searchQuery.value.trim()
+const debouncedSearchQuery = refDebounced(searchQuery, SEARCH_DEBOUNCE_MS)
+const packs = useRegistrySearch({
+  query: debouncedSearchQuery,
+  searchMode,
+  isTypedQuery: () => debouncedSearchQuery.value.trim() !== openingSearchQuery,
+  isVisible: isSearchBacked
+})
+const searchResults = computed(() => [...toValue(packs.items)])
+const isSearchLoading = computed(
+  () => isSearchBacked.value && toValue(packs.isLoading)
+)
+const hasMorePacks = computed(() => toValue(packs.hasMore))
+const suggestions = computed(() => toValue(packs.suggestions))
+const sortOptions = PACK_SORTABLE_FIELDS
+const filterOptions = computed(() => [
+  { name: t('manager.filter.nodePack'), value: 'packs' },
+  { name: t('g.nodes'), value: 'nodes' }
+])
+const availableSortOptions = computed(() =>
+  sortOptions.map((field) => ({
+    name: field.label,
+    value: field.id
+  }))
+)
+const onOptionSelect = (suggestion: QuerySuggestion) => {
+  searchQuery.value = suggestion.query
+}
+const loadMorePacks = () => packs.loadMore()
+const canLoadMorePacks = computed(
+  () => hasMorePacks.value && !isSearchLoading.value && isSearchBacked.value
+)
+const isFirstPageForInput = computed(() => {
+  const firstPage = packs.firstPage.value
+  return (
+    firstPage.status !== 'loading' &&
+    firstPage.query === trimmedSearchQuery.value
+  )
+})
+const isSearchFailed = computed(
+  () =>
+    isSearchBacked.value &&
+    isFirstPageForInput.value &&
+    packs.firstPage.value.status === 'failed'
+)
+const isNextPageFailed = computed(
+  () =>
+    isSearchBacked.value &&
+    isFirstPageForInput.value &&
+    packs.isNextPageFailed.value
+)
+const retryButton = useTemplateRef<InstanceType<typeof Button>>('retryButton')
+async function retryNextPage() {
+  await packs.retryNextPage()
+  if (!isNextPageFailed.value) return
+  await nextTick()
+  if (document.activeElement && document.activeElement !== document.body) return
+  const button: HTMLElement | undefined = retryButton.value?.$el
+  button?.focus()
+}
+const hasPendingPages = computed(
+  () =>
+    isSearchBacked.value && (hasMorePacks.value || packs.isNextPageFailed.value)
+)
+const isFirstPagePending = computed(
+  () =>
+    isSearchBacked.value &&
+    searchResults.value.length === 0 &&
+    !isFirstPageForInput.value
+)
+const {
+  displayPacks,
+  isSortable,
+  isLoading: isTabLoading,
+  workflowPacks
+} = useManagerDisplayPacks(
+  selectedNavId,
+  searchResults,
+  trimmedSearchQuery,
+  sortField
+)
+
+const isUpdateAvailableTab = computed(
+  () => selectedTab.value?.id === ManagerTab.UpdateAvailable
+)
+const isMissingTab = computed(
+  () => selectedTab.value?.id === ManagerTab.Missing
+)
+const isUnresolvedTab = computed(
+  () => selectedTab.value?.id === ManagerTab.Unresolved
+)
+
+const tabEmptyStateKeys: Record<string, string> = {
+  [ManagerTab.AllInstalled]: 'allInstalled',
+  [ManagerTab.UpdateAvailable]: 'updateAvailable',
+  [ManagerTab.Conflicting]: 'conflicting',
+  [ManagerTab.Workflow]: 'workflow',
+  [ManagerTab.Missing]: 'missing'
+}
+
+const managerApiDependentTabs = new Set<string>([
+  ManagerTab.AllInstalled,
+  ManagerTab.UpdateAvailable,
+  ManagerTab.Conflicting,
+  ManagerTab.NotInstalled,
+  ManagerTab.Missing
+])
+
+const isManagerErrorRelevant = computed(() => {
+  const tabId = selectedTab.value?.id
+  return (
+    !!comfyManagerStore.error && !!tabId && managerApiDependentTabs.has(tabId)
+  )
+})
+
+const emptyStateTitle = computed(() => {
+  if (isManagerErrorRelevant.value || isSearchFailed.value)
+    return t('manager.errorConnecting')
+  if (trimmedSearchQuery.value) return t('manager.noResultsFound')
+
+  const tabId = selectedTab.value?.id
+  const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
+
+  return emptyStateKey
+    ? t(`manager.emptyState.${emptyStateKey}.title`)
+    : t('manager.noResultsFound')
+})
+
+const emptyStateMessage = computed(() => {
+  if (isManagerErrorRelevant.value || isSearchFailed.value)
+    return t('manager.tryAgainLater')
+  if (trimmedSearchQuery.value) return t('manager.tryDifferentSearch')
+
+  const tabId = selectedTab.value?.id
+  const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
+
+  return emptyStateKey
+    ? t(`manager.emptyState.${emptyStateKey}.message`)
+    : t('manager.tryDifferentSearch')
+})
+
+const retryLabel = computed(() =>
+  isSearchFailed.value ? t('g.retry') : undefined
+)
+
+const retrySearch = () => void packs.loadNew()
+
+const onClickWarningLink = () => {
+  window.open(
+    buildDocsUrl('/troubleshooting/custom-node-issues', {
+      includeLocale: true
+    }),
+    '_blank'
+  )
+}
+
+const isLoading = computed(() => {
+  if (isSearchLoading.value) return searchResults.value.length === 0
+  if (isTabLoading.value) return true
+  return isFirstPagePending.value
+})
+
+const isSettledWithNoPacks = computed(
+  () =>
+    displayPacks.value.length === 0 &&
+    !isLoading.value &&
+    !isManagerErrorRelevant.value &&
+    !hasPendingPages.value
+)
+
+const isUnmatchedLegacyManagerSearch = computed(() => {
+  const firstPage = packs.firstPage.value
+  return (
+    isNewManagerUI.value &&
+    isSearchBacked.value &&
+    isFirstPageForInput.value &&
+    firstPage.status === 'loaded' &&
+    isLegacyManagerQuery(firstPage.query) &&
+    !displayPacks.value.some((pack) => isLegacyManagerQuery(pack.id ?? '')) &&
+    (firstPage.rawResultsEmpty || isSettledWithNoPacks.value)
+  )
+})
+
+const resultsWithKeys = computed(
+  () =>
+    displayPacks.value.map((item) => ({
+      ...item,
+      key: item.id || item.name
+    })) as (components['schemas']['Node'] & { key: string })[]
+)
+
+const selectedNodePacks = ref<components['schemas']['Node'][]>([])
+const selectedNodePack = computed<components['schemas']['Node'] | null>(() =>
+  selectedNodePacks.value.length === 1 ? selectedNodePacks.value[0] : null
+)
+const isRightPanelOpen = ref(false)
+
+watch(
+  () => selectedNodePacks.value.length,
+  (length, oldLength) => {
+    if (length > 0 && oldLength === 0) {
+      isRightPanelOpen.value = true
+    }
+  }
+)
+
+// Auto-select the pack matching initialPackId once
+if (initialPackId) {
+  until(resultsWithKeys)
+    .toMatch((packs) => packs.some((p) => p.id === initialPackId))
+    .then((packs) => {
+      const target = packs.find((p) => p.id === initialPackId)
+      if (target && selectedNodePacks.value.length === 0) {
+        selectedNodePacks.value = [target]
+        isRightPanelOpen.value = true
+      }
+    })
+}
+
+const getLoadingCount = () => {
+  switch (selectedTab.value?.id) {
+    case ManagerTab.AllInstalled:
+      return comfyManagerStore.installedPacksIds?.size
+    case ManagerTab.Workflow:
+      return workflowPacks.value?.length
+    case ManagerTab.Missing:
+      return workflowPacks.value?.filter?.(
+        (pack) => !comfyManagerStore.isPackInstalled(pack.id)
+      )?.length
+    default:
+      return searchResults.value.length
+  }
+}
+
+const skeletonCardCount = computed(() => {
+  const loadingCount = getLoadingCount()
+  if (loadingCount) return loadingCount
+  return 16
+})
+
+const selectNodePack = (
+  nodePack: components['schemas']['Node'],
+  event: MouseEvent
+) => {
+  if (event.shiftKey || event.ctrlKey || event.metaKey) {
+    const index = selectedNodePacks.value.findIndex(
+      (pack) => pack.id === nodePack.id
+    )
+
+    if (index === -1) {
+      selectedNodePacks.value = [...selectedNodePacks.value, nodePack]
+    } else {
+      selectedNodePacks.value = selectedNodePacks.value.filter(
+        (pack) => pack.id !== nodePack.id
+      )
+    }
+  } else {
+    selectedNodePacks.value = [nodePack]
+  }
+}
+
+const unSelectItems = () => {
+  selectedNodePacks.value = []
+}
+const handleGridContainerClick = (event: MouseEvent) => {
+  const targetElement = event.target as HTMLElement
+  if (targetElement && !targetElement.closest('[data-virtual-grid-item]')) {
+    unSelectItems()
+  }
+}
+
+const hasMultipleSelections = computed(() => selectedNodePacks.value.length > 1)
+
+const lastFetchedPackId = ref<string | null>(null)
+
+whenever(selectedNodePack, async () => {
+  getPackById.cancel()
+  const pack = selectedNodePack.value
+  if (!pack?.id) return
+  if (hasMultipleSelections.value) return
+  if (lastFetchedPackId.value === pack.id) return
+  const data = await getPackById.call(pack.id)
+  if (data?.id === pack.id) {
+    lastFetchedPackId.value = pack.id
+    const mergedPack = merge({}, pack, data)
+    const packIndex = selectedNodePacks.value.findIndex(
+      (p) => p.id === mergedPack.id
+    )
+    if (packIndex !== -1) {
+      selectedNodePacks.value.splice(packIndex, 1, mergedPack)
+    }
+  }
+})
+
+let gridContainer: HTMLElement | null = null
+onMounted(() => {
+  gridContainer = document.getElementById('results-grid')
+})
+watch([searchQuery, selectedNavId], () => {
+  gridContainer ??= document.getElementById('results-grid')
+  if (gridContainer) {
+    gridContainer.scrollTop = 0
+  }
+  unSelectItems()
+})
+
+watchEffect(() => {
+  dismissRedDotNotification()
+})
+
+onBeforeUnmount(() => {
+  persistedState.persistState({
+    selectedTabId: (selectedTab.value?.id as ManagerTab) ?? ManagerTab.All,
+    searchQuery: searchQuery.value,
+    searchMode: searchMode.value,
+    sortField: sortField.value
+  })
+})
+
+onUnmounted(() => {
+  getPackById.cancel()
+})
+</script>

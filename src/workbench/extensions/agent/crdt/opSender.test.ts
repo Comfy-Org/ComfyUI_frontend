@@ -1,15 +1,31 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { Mock } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { api } from '@/scripts/api'
 
 import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
+import { WIRE_MAX_BATCH_BYTES, WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
-vi.mock(import('@/platform/telemetry/reportError'))
+const devLogState = vi.hoisted(() => ({
+  recordDevEvent: vi.fn()
+}))
+
+vi.mock(import('./devPanelLog'), () => ({
+  recordDevEvent: devLogState.recordDevEvent
+}))
 
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
@@ -28,6 +44,12 @@ function summarizeSettlement(outcome: BatchOutcome): SettlementSummary {
     state: outcome.state,
     nodeIds: nodeIdsOf(outcome.ops)
   }
+}
+
+function reportsOfType(errorType: string) {
+  return vi
+    .mocked(reportError)
+    .mock.calls.filter(([, options]) => options.errorType === errorType)
 }
 
 const detachListenerFailureCases = [
@@ -93,6 +115,40 @@ function addNode(id: number): AddNodeOperation {
   }
 }
 
+const MINTED_COUNTER = 1000
+const LIFTED_COUNTER = 9_007_199_254_739_001
+const LIFT_GROWTH_PER_OP =
+  2 * (String(LIFTED_COUNTER).length - String(MINTED_COUNTER).length)
+const CAP_FILLING_OP_BYTES =
+  WIRE_MAX_BATCH_BYTES / WIRE_MAX_OPS_PER_BATCH - LIFT_GROWTH_PER_OP / 2
+
+function wireBytesOf(operation: GraphOperation, baseVersion: number): number {
+  return new TextEncoder().encode(
+    JSON.stringify({
+      ...operation,
+      op_id: 'f'.repeat(32),
+      actor: ACTOR,
+      base_version: baseVersion,
+      stamp: [baseVersion, ACTOR]
+    })
+  ).length
+}
+
+function paddedAddNode(id: number, bytes: number): AddNodeOperation {
+  const operation = addNode(id)
+  const padded = { ...operation.node, pad: '' }
+  operation.node = padded
+  padded.pad = 'x'.repeat(bytes - wireBytesOf(operation, MINTED_COUNTER))
+  return operation
+}
+
+function batchBytesOf(ops: readonly DocOp[]): number {
+  return ops.reduce(
+    (total, op) => total + new TextEncoder().encode(JSON.stringify(op)).length,
+    0
+  )
+}
+
 function circularAddNode(id: number): AddNodeOperation {
   const operation = addNode(id)
   const node: AddNodeOperation['node'] & Record<string, unknown> = {
@@ -142,6 +198,7 @@ describe('createOpSender', () => {
   let transportThrows: boolean
   let boundWorkflow: string | null
   let observedSequence: number
+  let observedCounter: number | undefined
   let sender: ReturnType<typeof createOpSender>
   const unsubscribe = vi.fn(() => {
     resultListener = null
@@ -156,6 +213,16 @@ describe('createOpSender', () => {
     })
   }
 
+  function acknowledgePending(maximumBatches: number): void {
+    for (
+      let remaining = maximumBatches;
+      remaining > 0 && sender.pending() > 0;
+      remaining--
+    ) {
+      ackInFlight()
+    }
+  }
+
   beforeEach(() => {
     vi.useFakeTimers()
     sent = []
@@ -165,6 +232,7 @@ describe('createOpSender', () => {
     transportThrows = false
     boundWorkflow = WORKFLOW
     observedSequence = 41
+    observedCounter = undefined
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (transportThrows) throw new Error('frame serialization failed')
@@ -180,6 +248,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => observedSequence,
+      observedCounter: () => observedCounter,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
   })
@@ -187,6 +256,47 @@ describe('createOpSender', () => {
   afterEach(() => {
     sender.detach()
   })
+
+  it.for([
+    ['undeliverable', false, WORKFLOW, 3_000, 'detached'],
+    ['undeliverable', true, null, 0, 'unbound'],
+    ['unconfirmed', true, WORKFLOW, 0, 'detached'],
+    ['unacknowledged', true, WORKFLOW, 20_000, 'result_timeout']
+  ] as const)(
+    'reports %s exactly once with transport=%s, workflow=%s, elapsed=%s',
+    ([state, available, workflow, elapsed, code]) => {
+      transportUp = available
+      boundWorkflow = workflow
+      const previousClientId = api.clientId
+      api.clientId = 'api-tab'
+      onTestFinished(() => {
+        api.clientId = previousClientId
+      })
+
+      sender.enqueue([addNode(7), addNode(12)])
+      vi.advanceTimersByTime(elapsed)
+      sender.detach()
+      sender.abortAll()
+      vi.advanceTimersByTime(60_000)
+
+      expect(settled).toHaveLength(1)
+      expect(settled[0].state).toBe(state)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: `failure_syncing_agent_edit_${state}`,
+        fingerprint: [`failure_syncing_agent_edit_${state}`],
+        level: 'error',
+        tags: { tab: 'api-tab', outcome: state, code },
+        context: {
+          code,
+          workflowId: workflow ?? undefined,
+          opId: settled[0].ops[0].op_id,
+          opIds: settled[0].ops.map((op) => op.op_id),
+          operations: ['add_node', 'add_node']
+        }
+      })
+    }
+  )
 
   it('mints once and sends a doc_ops batch with the wire envelope', () => {
     sender.enqueue([addNode(1), addNode(2)])
@@ -421,6 +531,15 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe('wf-2')
     expect(settled[0].state).toBe('unconfirmed')
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({
+          code: 'unbound',
+          workflowId: WORKFLOW
+        })
+      })
+    )
   })
 
   it('drains 20,000 queued batches after unbinding without overflowing the stack', () => {
@@ -521,11 +640,279 @@ describe('createOpSender', () => {
     expect(settled[0].state).toBe('unconfirmed')
   })
 
-  it('settles undeliverable after the transport retry budget', () => {
+  it('holds a batch the transport retry budget could not carry', () => {
     transportUp = false
     sender.enqueue([addNode(1)])
 
     vi.advanceTimersByTime(500 * 6)
+
+    expect(sent).toHaveLength(0)
+    expect(settled).toEqual([])
+    expect(sender.pending()).toBe(1)
+  })
+
+  it('resends the held batch unchanged when the transport returns', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(500 * 6)
+    sender.enqueue([addNode(2)])
+    vi.advanceTimersByTime(500 * 6)
+
+    transportUp = true
+    sender.retryTransport()
+    expect(sent.map((frame) => frame.ops.map((op) => op.op))).toEqual([
+      ['add_node']
+    ])
+    const [firstOpId] = sent[0].ops.map((op) => op.op_id)
+    resultListener?.({
+      ok: true,
+      seq: 42,
+      applied: [firstOpId],
+      skipped: [],
+      workflowId: WORKFLOW
+    })
+
+    expect(settled).toEqual([
+      {
+        state: 'acknowledged',
+        ops: expect.any(Array),
+        result: expect.any(Object)
+      }
+    ])
+    expect(sent).toHaveLength(2)
+    expect(sent[1].ops[0].op_id).not.toBe(firstOpId)
+  })
+
+  it('stamps a new op above the highest counter in the document', () => {
+    observedCounter = 90
+
+    sender.enqueue([addNode(1)])
+
+    expect(sent[0].ops[0]).toMatchObject({
+      base_version: 91,
+      stamp: [91, ACTOR]
+    })
+  })
+
+  it('stamps a held batch above what arrived while it waited, keeping its op_id', () => {
+    transportUp = false
+    sender.enqueue([addNode(1), addNode(2)])
+    vi.advanceTimersByTime(500 * 6)
+    const [held] = sender.pendingOps()
+    const heldIds = held.ops.map((op) => op.op_id)
+
+    observedCounter = 90
+    transportUp = true
+    sender.retryTransport()
+
+    expect(sent[0].ops.map((op) => op.op_id)).toEqual(heldIds)
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([91, 92])
+    expect(sent[0].ops.map((op) => op.stamp)).toEqual([
+      [91, ACTOR],
+      [92, ACTOR]
+    ])
+  })
+
+  it('keeps later held batches above the one sent before them', () => {
+    transportUp = false
+    sender.enqueue([addNode(1), addNode(2)])
+    vi.advanceTimersByTime(500 * 6)
+    sender.enqueue([addNode(3)])
+
+    observedCounter = 90
+    transportUp = true
+    sender.retryTransport()
+    ackInFlight()
+
+    expect(sent[1].ops[0].base_version).toBe(93)
+    sender.enqueue([addNode(4)])
+    ackInFlight()
+    expect(sent[2].ops[0].base_version).toBe(94)
+  })
+
+  it('keeps a cap-filling held batch inside the wire byte cap once lifted', () => {
+    observedSequence = MINTED_COUNTER
+    const operations = Array.from(
+      { length: WIRE_MAX_OPS_PER_BATCH },
+      (_, index) => paddedAddNode(index + 1, CAP_FILLING_OP_BYTES)
+    )
+    transportUp = false
+    sender.enqueue(operations)
+    vi.advanceTimersByTime(500 * 6)
+
+    observedCounter = LIFTED_COUNTER - 1
+    transportUp = true
+    sender.retryTransport()
+    acknowledgePending(operations.length)
+
+    expect(sender.pending()).toBe(0)
+    expect(sent[0].ops[0].base_version).toBe(LIFTED_COUNTER)
+    expect(sent.flatMap(({ ops }) => ops.map((op) => op.op_id))).toHaveLength(
+      WIRE_MAX_OPS_PER_BATCH
+    )
+    expect(
+      Math.max(...sent.map(({ ops }) => batchBytesOf(ops)))
+    ).toBeLessThanOrEqual(WIRE_MAX_BATCH_BYTES)
+  })
+
+  it('leaves a batch as minted when lifting it would leave the safe integers', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(500 * 6)
+
+    observedCounter = Number.MAX_SAFE_INTEGER
+    transportUp = true
+    sender.retryTransport()
+
+    expect(sent[0].ops[0].base_version).toBe(41)
+  })
+
+  it('leaves a held batch as minted when only its highest op would overflow', () => {
+    transportUp = false
+    sender.enqueue([addNode(1), addNode(2)])
+    vi.advanceTimersByTime(500 * 6)
+
+    observedCounter = Number.MAX_SAFE_INTEGER - 1
+    transportUp = true
+    sender.retryTransport()
+
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([41, 42])
+    expect(sent[0].ops.map((op) => op.stamp)).toEqual([
+      [41, ACTOR],
+      [42, ACTOR]
+    ])
+  })
+
+  it.for([{ nodeIds: [1, 2] }, { nodeIds: [1, 2, 3] }])(
+    'refuses an admission of $nodeIds.length whose counter range would leave the safe integers',
+    ({ nodeIds }) => {
+      observedCounter = Number.MAX_SAFE_INTEGER - 1
+
+      sender.enqueue(nodeIds.map((nodeId) => addNode(nodeId)))
+
+      expect(sent).toEqual([])
+      expect(settled.map(summarizeSettlement)).toEqual([
+        { state: 'undeliverable', nodeIds }
+      ])
+      expect(sender.pending()).toBe(0)
+      expect(reportsOfType('failure_minting_agent_op_counter')).toEqual([
+        [expect.any(RangeError), expect.objectContaining({ surface: 'agent' })]
+      ])
+      expect(reportsOfType('failure_syncing_agent_edit_undeliverable')).toEqual(
+        [
+          [
+            expect.any(Error),
+            expect.objectContaining({
+              context: expect.objectContaining({
+                code: 'counter_exhausted',
+                workflowId: WORKFLOW
+              })
+            })
+          ]
+        ]
+      )
+    }
+  )
+
+  it('refuses the next admission after a batch has minted the highest safe counter', () => {
+    observedCounter = Number.MAX_SAFE_INTEGER - 2
+    sender.enqueue([addNode(1), addNode(2)])
+
+    sender.enqueue([addNode(3)])
+
+    expect(sent).toHaveLength(1)
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [3] }
+    ])
+  })
+
+  it('reports an exhausted admission with no bound doc as unbound', () => {
+    boundWorkflow = null
+    observedCounter = Number.MAX_SAFE_INTEGER - 1
+
+    sender.enqueue([addNode(1), addNode(2), addNode(3)])
+
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1, 2, 3] }
+    ])
+    expect(reportsOfType('failure_minting_agent_op_counter')).toEqual([])
+    expect(
+      reportsOfType('failure_syncing_agent_edit_undeliverable')[0][1]
+    ).toMatchObject({ context: { code: 'unbound' } })
+  })
+
+  it('still mints safe counters after refusing an exhausted admission', () => {
+    observedCounter = Number.MAX_SAFE_INTEGER - 1
+    sender.enqueue([addNode(1), addNode(2), addNode(3)])
+
+    observedCounter = 90
+    sender.enqueue([addNode(4)])
+
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([91])
+  })
+
+  it('admits the widest range that still fits the safe integers', () => {
+    observedCounter = Number.MAX_SAFE_INTEGER - 2
+
+    sender.enqueue([addNode(1), addNode(2)])
+
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([
+      Number.MAX_SAFE_INTEGER - 1,
+      Number.MAX_SAFE_INTEGER
+    ])
+  })
+
+  it('never re-stamps a batch whose send threw', () => {
+    transportThrows = true
+    sender.enqueue([addNode(1)])
+    transportThrows = false
+    transportUp = false
+    observedCounter = 90
+    vi.advanceTimersByTime(500)
+    transportUp = true
+    vi.advanceTimersByTime(500)
+
+    expect(sent[0].ops[0].base_version).toBe(41)
+  })
+
+  it('keeps a later edit above a lifted batch whose send threw and was acknowledged', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(500 * 6)
+
+    observedCounter = 90
+    transportThrows = true
+    sender.retryTransport()
+    const lifted = sender.pendingOps()[0].ops[0]
+    expect(lifted.base_version).toBe(91)
+    expect(sent).toEqual([])
+
+    transportThrows = false
+    transportUp = true
+    resultListener?.({ ok: true, applied: [lifted.op_id], skipped: [] })
+    sender.enqueue([addNode(2)])
+
+    expect(sent[0].ops[0].base_version).toBeGreaterThan(lifted.base_version)
+  })
+
+  it('never re-stamps a batch the wire already carried', () => {
+    sender.enqueue([addNode(1)])
+    const stamped = sent[0].ops[0].base_version
+
+    observedCounter = 90
+    vi.advanceTimersByTime(10_000)
+
+    expect(sent).toHaveLength(2)
+    expect(sent[1].ops[0].base_version).toBe(stamped)
+  })
+
+  it('settles a held batch undeliverable when its doc is unbound', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(500 * 6)
+
+    boundWorkflow = null
+    sender.abortIfUnbound()
 
     expect(settled).toEqual([
       { state: 'undeliverable', ops: expect.any(Array) }
@@ -799,6 +1186,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled
     })
     localSender.enqueue([addNode(1)])
@@ -830,6 +1218,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -858,6 +1247,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -898,6 +1288,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: () => {
         if (shouldFail) throw new Error('listener boom')
       }
@@ -932,6 +1323,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -988,6 +1380,7 @@ describe('createOpSender', () => {
         tab: TAB,
         actor: () => ACTOR,
         baseVersion: () => 41,
+        observedCounter: () => undefined,
         onBatchSettled
       })
 
@@ -999,7 +1392,9 @@ describe('createOpSender', () => {
       localSender.detach()
 
       expect(localSettled.map(summarizeSettlement)).toEqual(expectedSurvivors)
-      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(
+        reportsOfType('failure_settling_agent_op_sender_detach')
+      ).toHaveLength(1)
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
@@ -1019,6 +1414,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -1029,7 +1425,9 @@ describe('createOpSender', () => {
 
     localSender.detach()
 
-    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(
+      reportsOfType('failure_settling_agent_op_sender_detach')
+    ).toHaveLength(1)
     expect(localUnsubscribe).toHaveBeenCalledOnce()
   })
 
@@ -1041,6 +1439,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: () => {
         throw new Error('listener boom')
       }
@@ -1050,7 +1449,9 @@ describe('createOpSender', () => {
     localSender.enqueue([addNode(1)])
     localSender.enqueue([addNode(2)])
 
-    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(
+      reportsOfType('failure_settling_agent_op_sender_detach')
+    ).toHaveLength(1)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
@@ -1066,12 +1467,20 @@ describe('createOpSender', () => {
       { state: 'undeliverable', nodeIds: [1] }
     ])
     expect(sender.pending()).toBe(0)
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(
-      expect.any(TypeError),
-      expect.objectContaining({
-        errorType: 'failure_serializing_agent_op_sender'
-      })
-    )
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toEqual([
+      [expect.any(TypeError), expect.objectContaining({ surface: 'agent' })]
+    ])
+    expect(reportsOfType('failure_syncing_agent_edit_undeliverable')).toEqual([
+      [
+        expect.any(Error),
+        expect.objectContaining({
+          context: expect.objectContaining({
+            code: 'serialization_failed',
+            workflowId: WORKFLOW
+          })
+        })
+      ]
+    ])
 
     sender.detach()
 
@@ -1143,7 +1552,7 @@ describe('createOpSender', () => {
     enqueueCircular(4)
     enqueueCircular(5)
 
-    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toHaveLength(3)
   })
 
   it('keeps serialization telemetry bounded across successful sends and re-arms by time', () => {
@@ -1153,17 +1562,17 @@ describe('createOpSender', () => {
     enqueueCircular(1)
     enqueueCircular(2)
     enqueueCircular(3)
-    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toHaveLength(3)
 
     sender.enqueue([addNode(4)])
     ackInFlight()
     enqueueCircular(5)
 
-    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toHaveLength(3)
 
     vi.advanceTimersByTime(60_000)
     enqueueCircular(6)
-    expect(reportError).toHaveBeenCalledTimes(4)
+    expect(reportsOfType('failure_serializing_agent_op_sender')).toHaveLength(4)
   })
 
   it('rejects an unserializable non-batchable op before transport', () => {
@@ -1192,6 +1601,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
@@ -1231,6 +1641,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1)) {
@@ -1269,6 +1680,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => {
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 1))
           localSender.admit([addNode(3)])
@@ -1316,6 +1728,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => localSettled.push(outcome)
     })
     const operation = addNode(1)
@@ -1371,6 +1784,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => {
         localSettled.push(outcome)
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2)) {
@@ -1399,6 +1813,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
     localSender.enqueue([addNode(1)])
@@ -1434,9 +1849,36 @@ describe('createOpSender', () => {
       )
     ).toEqual([[1], [2], [3]])
     expect(sender.pending()).toBe(0)
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options.context)
+    ).toEqual([
+      expect.objectContaining({ code: 'doc_reset', workflowId: WORKFLOW }),
+      expect.objectContaining({ code: 'doc_reset', workflowId: WORKFLOW }),
+      expect.objectContaining({ code: 'doc_reset', workflowId: WORKFLOW })
+    ])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options.tags?.code)
+    ).toEqual(['doc_reset', 'doc_reset', 'doc_reset'])
 
     sender.enqueue([addNode(4)])
     expect(sent).toHaveLength(2)
+  })
+
+  it('budgets platform lost-edit reports without skipping settlement events', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    sender.enqueue([addNode(4)])
+    sender.enqueue([addNode(5)])
+
+    sender.abortAll()
+
+    expect(reportError).toHaveBeenCalledTimes(3)
+    expect(
+      devLogState.recordDevEvent.mock.calls.filter(
+        ([event]) => event === 'human_ops_settled'
+      )
+    ).toHaveLength(5)
   })
 
   it('abortAll settles every other batch when one settlement listener throws', () => {
@@ -1448,6 +1890,7 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
+      observedCounter: () => undefined,
       onBatchSettled: (outcome) => {
         if (outcome.ops.some((op) => 'node_id' in op && op.node_id === 2))
           throw new Error('listener boom')

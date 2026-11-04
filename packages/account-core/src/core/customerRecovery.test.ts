@@ -5,7 +5,7 @@ import {
   fetchWithCustomerRecovery,
   isCustomerEndpoint,
   isMissingCustomerResponse
-} from './customerRecovery.js'
+} from './customerRecovery'
 
 const BALANCE_URL = 'https://api.test/customers/balance'
 

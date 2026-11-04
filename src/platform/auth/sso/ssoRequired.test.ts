@@ -9,11 +9,11 @@ import {
   presentSsoRequired
 } from '@/platform/auth/sso/ssoRequired'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const SSO_REFUSAL = {
   code: 'sso_required',
@@ -180,6 +180,27 @@ describe('the SSO-required screen', () => {
     expect(await response.json()).toEqual(SSO_REFUSAL)
     expect(await shownDialog()).toBeDefined()
   })
+
+  it.for<{ name: string; sso: boolean; shown: boolean }>([
+    { name: 'the flag on', sso: true, shown: true },
+    { name: 'the flag off', sso: false, shown: false }
+  ])(
+    'presents an account outside the organization with $name without the SSO action: $shown',
+    async ({ sso, shown }) => {
+      vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
+      const body = {
+        code: 'account_outside_organization',
+        message: "This workspace admits only its organization's accounts",
+        organization_id: 'org_meta'
+      }
+
+      expect(presentForRefusal(403, body)).toBe(shown)
+      await vi.dynamicImportSettled()
+      const keys = useDialogStore().dialogStack.map((dialog) => dialog.key)
+      expect(keys.includes('sso-account-outside-organization')).toBe(shown)
+      expect(keys).not.toContain(SSO_REQUIRED_DIALOG_KEY)
+    }
+  )
 
   it('leaves a response unread with the flag off', async () => {
     const response = Response.json(SSO_REFUSAL, { status: 403 })

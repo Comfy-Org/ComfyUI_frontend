@@ -5,15 +5,37 @@ import { createI18n } from 'vue-i18n'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
+import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { showMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
+import { mockDeploymentListing } from '@/platform/workspace/__fixtures__/deploymentListing'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
+import { api as apiMock } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 beforeEach(() => {
+  vi.mocked(apiMock.getHistory).mockResolvedValue([])
+  vi.mocked(apiMock.getSystemStats).mockResolvedValue({
+    system: {
+      os: 'Linux',
+      python_version: '3.11',
+      embedded_python: false,
+      comfyui_version: '1.0.0',
+      pytorch_version: '2.3.0',
+      argv: [],
+      ram_total: 16000000000,
+      ram_free: 8000000000
+    },
+    devices: []
+  })
   vi.mocked(useVersionCompatibilityStore().initialize).mockResolvedValue(
     undefined
   )
@@ -28,14 +50,6 @@ beforeEach(() => {
   )
 })
 
-const apiMock = vi.hoisted(() =>
-  Object.assign(new EventTarget(), {
-    getServerFeature: vi.fn((_name: string, fallback?: unknown) => fallback),
-    getSystemStats: vi.fn(async () => ({ system: {}, devices: [] })),
-    getQueue: vi.fn(async () => ({ Running: [], Pending: [] })),
-    getHistory: vi.fn(async () => [])
-  })
-)
 const distribution = vi.hoisted(
   (): {
     isCloud: typeof DistributionTypes.isCloud
@@ -65,7 +79,10 @@ const templateInputMock = vi.hoisted(() => ({
   updateProgress: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/workspace/noticeMissingNodes'), () => ({
+  noticeMissingNodes: vi.fn()
+}))
 vi.mock(import('firebase/auth'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -86,6 +103,16 @@ vi.mock(import('@/composables/sidebarTabs/registerCoreSidebarTabs'), () => ({
 vi.mock(
   import('@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'),
   () => ({ registerCoreBottomPanelTabs: vi.fn(async () => {}) })
+)
+
+vi.mock(
+  import('@/platform/customNodes/useReconnectNodeDefinitionRefresh'),
+  () => {
+    const refreshNodeDefinitionsOnReconnect = vi.fn(async () => {})
+    return {
+      useReconnectNodeDefinitionRefresh: () => refreshNodeDefinitionsOnReconnect
+    }
+  }
 )
 
 vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
@@ -117,14 +144,17 @@ vi.mock(import('@/composables/useProgressFavicon'), () => ({
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock<unknown>(
-  import('@/platform/missingMedia/missingMediaPipeline'),
+  import('@/platform/workflowErrors/missingMedia/missingMediaPipeline'),
   () => ({
     runMissingMediaPipeline: templateInputMock.runMissingMediaPipeline
   })
 )
-vi.mock<unknown>(import('@/platform/missingMedia/missingMediaScan'), () => ({
-  scanAllMediaCandidates: templateInputMock.scanCandidates
-}))
+vi.mock<unknown>(
+  import('@/platform/workflowErrors/missingMedia/missingMediaScan'),
+  () => ({
+    scanAllMediaCandidates: templateInputMock.scanCandidates
+  })
+)
 vi.mock<unknown>(
   import('@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'),
   () => ({
@@ -132,7 +162,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(
   import('@/platform/updates/common/useFrontendVersionMismatchWarning'),
   () => ({
@@ -188,13 +218,12 @@ vi.mock<unknown>(
   () => stubModule
 )
 vi.mock<unknown>(
-  import('@/workbench/extensions/manager/components/ManagerProgressToast.vue'),
+  import('@/platform/customNodes/manager/components/ManagerProgressToast.vue'),
 
   () => stubModule
 )
-vi.mock<unknown>(
-  import('@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'),
-  () => stubModule
+vi.mock(
+  import('@/platform/cloud/notification/composables/useDesktopCloudNotification')
 )
 vi.mock<unknown>(
   import('@/platform/assets/components/ModelImportProgressDialog.vue'),
@@ -240,16 +269,14 @@ describe('GraphView - reconnect wiring', () => {
     delete window.__comfyDesktop2
   })
 
-  it('wires the reconnected event to the toast and queue refresh', () => {
+  it('wires the reconnected event to the toast, queue refresh and node definition refresh', () => {
     render(GraphView, { global: { plugins: [i18n] } })
 
-    apiMock.dispatchEvent(new Event('reconnected'))
+    apiMock.dispatchCustomEvent('reconnected')
 
-    // `handleReconnected` calls both before its first `await`, so dispatching
-    // the event is enough — there is nothing to wait for, and waiting for it
-    // only hid how long the import above was taking.
     expect(useReconnectingNotification().onReconnected).toHaveBeenCalledTimes(1)
     expect(useReconnectQueueRefresh()).toHaveBeenCalledTimes(1)
+    expect(useReconnectNodeDefinitionRefresh()).toHaveBeenCalledTimes(1)
   })
 
   it('reconciles a completed template input without a page refresh', async () => {
@@ -322,7 +349,8 @@ describe('GraphView - output assets refresh', () => {
     useSidebarTabStore().activeSidebarTabId = null
     const loadNew = vi.spyOn(useAssetsStore().outputAssets, 'loadNew')
 
-    apiMock.dispatchEvent(new Event('execution_success'))
+    const apiEvents: EventTarget = apiMock
+    apiEvents.dispatchEvent(new Event('execution_success'))
 
     await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
   })
@@ -345,5 +373,68 @@ describe('GraphView - partner nodes education card', () => {
     render(GraphView, { global: { plugins: [i18n] } })
 
     expect(screen.queryByTestId('education-card-stub')).not.toBeInTheDocument()
+  })
+})
+
+describe('GraphView - deployment pick at startup', () => {
+  const pickGone = 'The deployment you picked no longer exists.'
+
+  beforeEach(() => {
+    mockDeploymentListing({
+      items: [],
+      builds_visible: true,
+      gone_picked_deployment_id: 'dep-gone'
+    })
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce')
+  })
+
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it("warns on Cloud that this browser's picked deployment is gone, without opening the account menu", async () => {
+    distribution.isCloud = true
+
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByText(pickGone)).toBeInTheDocument()
+  })
+
+  it('does not look up the deployment on a local build', () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(useDeploymentPickStore().loadOnce).not.toHaveBeenCalled()
+    expect(screen.queryByText(pickGone)).toBeNull()
+  })
+})
+
+describe('GraphView - missing nodes notice', () => {
+  const nodeTypes: MissingNodeType[] = [
+    { type: 'BiRefNet', cnrId: 'comfyui-birefnet', isReplaceable: false }
+  ]
+
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it('hands the missing nodes of a workflow just opened to the deployment offer on Cloud', () => {
+    distribution.isCloud = true
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    showMissingNodesNotice(nodeTypes)
+
+    expect(noticeMissingNodes).toHaveBeenCalledWith(
+      nodeTypes,
+      expect.any(Function)
+    )
+  })
+
+  it('shows only the error overlay on a local build', () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    showMissingNodesNotice(nodeTypes)
+
+    expect(noticeMissingNodes).not.toHaveBeenCalled()
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
   })
 })

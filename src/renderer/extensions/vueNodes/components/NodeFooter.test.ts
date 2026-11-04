@@ -131,10 +131,7 @@ describe('NodeFooter', () => {
       showErrorsTabEnabled: true
     })
     const button = screen.getByRole('button', { name: 'Issues' })
-    expect(button).toHaveClass(
-      'bg-warning-background',
-      'text-warning-on-background'
-    )
+    expect(button).toHaveClass('bg-warning', 'text-warning-foreground')
     expect(
       screen.queryByRole('button', { name: 'Error' })
     ).not.toBeInTheDocument()

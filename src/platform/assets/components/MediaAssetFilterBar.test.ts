@@ -51,8 +51,7 @@ function renderFilterBar({
   return {
     ...render(TestHost, {
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => {} }
+        plugins: [i18n]
       }
     }),
     user: userEvent.setup()

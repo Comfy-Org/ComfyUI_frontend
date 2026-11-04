@@ -4,23 +4,23 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
 import { render } from '@testing-library/vue'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
-import { api } from '@/scripts/api'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { encodeBase64 } from './docFrameClient'
 import { attachDocOpMinter } from './docOpMinter'
 import { mintWireOps } from './opEnvelope'
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 const WORKFLOW_ID = 'wf-human-add'
@@ -55,11 +55,10 @@ function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
   }
 }
 
+let agentSocket = createFakeAgentSocket()
+
 function deliver(type: string, data: unknown): void {
-  EventTarget.prototype.dispatchEvent.call(
-    api,
-    new CustomEvent(type, { detail: data })
-  )
+  agentSocket.receive(type, data)
 }
 
 function frames(sent: string[], type: string) {
@@ -95,16 +94,11 @@ describe('a human-added node across a tab switch', () => {
     useAgentPanelStore().enabled = true
     LiteGraph.registerNodeType('TestSource', TestSource)
     LiteGraph.registerNodeType('TestVirtual', TestVirtual)
-    api.socket = fromPartial<WebSocket>({
-      readyState: 1,
-      send: vi.fn((frame) => {
-        if (typeof frame === 'string') sent.push(frame)
-      })
+    agentSocket = createFakeAgentSocket()
+    agentSocket.send.mockImplementation((frame) => {
+      sent.push(frame)
+      return true
     })
-  })
-
-  afterEach(() => {
-    api.socket = null
   })
 
   function mountBoundFollower(graph: LGraph) {
@@ -114,12 +108,11 @@ describe('a human-added node across a tab switch', () => {
     const view = render(
       defineComponent({
         setup() {
-          followerApi = useAgentCrdtFollower(
-            ref(WORKFLOW_ID),
-            () => null,
+          followerApi = useAgentCrdtFollower(ref(WORKFLOW_ID), {
+            transport: agentSocket.transport,
             isTargetActive,
-            () => graph
-          )
+            getGraph: () => graph
+          })
           return () => null
         }
       }),
@@ -132,25 +125,36 @@ describe('a human-added node across a tab switch', () => {
       getGraph: () => graph,
       boundRootGraphId: () => null,
       docInputNames: followerApi.docInputNames,
-      docPromotedWidgets: followerApi.docPromotedWidgets
+      docWidgetValue: followerApi.docWidgetValue,
+      docPromotedWidgets: followerApi.docPromotedWidgets,
+      mayWritePromotedHost: followerApi.mayWritePromotedHost,
+      docHasSubgraphDefinition: followerApi.docHasSubgraphDefinition,
+      onWidgetWriteRefused: followerApi.notifyWidgetWriteRefused
     })
     const cleanup = () => {
       minter.detach()
       view.unmount()
       host.destroy()
     }
-    return { host, isTargetActive, cleanup }
+    return { host, isTargetActive, followerApi, cleanup }
   }
 
   function deliverCatchUp(host: Y.Doc, seq: number): void {
-    deliver('doc_subscribed', { v: 1, workflow_id: WORKFLOW_ID, ok: true, seq })
+    deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq,
+      lineage_seq: 1
+    } satisfies DocSubscribedData)
     deliver('doc_update', {
       v: 1,
       workflow_id: WORKFLOW_ID,
       seq,
+      lineage_seq: 1,
       actor: 'agent:comfy:host',
       update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-    })
+    } satisfies DocUpdateData)
   }
 
   function acknowledge(ops: Op[]): void {
@@ -168,10 +172,11 @@ describe('a human-added node across a tab switch', () => {
       v: 1,
       workflow_id: WORKFLOW_ID,
       seq,
+      lineage_seq: 1,
       actor: ops[0].actor,
       op_ids: ops.map((op) => op.op_id),
       update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
-    })
+    } satisfies DocUpdateData)
   }
 
   it.for([
@@ -288,4 +293,35 @@ describe('a human-added node across a tab switch', () => {
       }
     }
   )
+
+  it('lets a promoted host write through only once the document can vouch for it', async () => {
+    const graph = new LGraph()
+    const source = createRegisteredNode('TestSource')
+    graph.add(source)
+    const { host, followerApi, cleanup } = mountBoundFollower(graph)
+    try {
+      const added = createRegisteredNode('TestSource')
+      graph.add(added)
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect({
+        existing: followerApi.mayWritePromotedHost(source.id),
+        addedHere: followerApi.mayWritePromotedHost(added.id)
+      }).toEqual({ existing: false, addedHere: true })
+
+      deliverCatchUp(host, 1)
+      expect(followerApi.mayWritePromotedHost(source.id)).toBe(true)
+
+      deliver('doc_reset', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 2,
+        lineage_seq: 2
+      })
+      expect(followerApi.mayWritePromotedHost(added.id)).toBe(false)
+    } finally {
+      cleanup()
+    }
+  })
 })

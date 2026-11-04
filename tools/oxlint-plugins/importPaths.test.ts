@@ -5,6 +5,7 @@ import { RuleTester } from 'oxlint/plugins-dev'
 import { afterAll, describe, it } from 'vitest'
 
 import {
+  noJsExtensionImports,
   noRelativePackages,
   noRelativeParentPaths,
   noRestrictedPaths,
@@ -179,6 +180,54 @@ ruleTester.run('no-relative-packages', noRelativePackages, {
       filename: file('packages/shared/src/index.ts'),
       code: `import { util } from '../../../src/base/util'`,
       errors: [{ message: /Use `root\/src\/base\/util` instead/ }]
+    }
+  ]
+})
+
+ruleTester.run('no-js-extension-imports', noJsExtensionImports, {
+  valid: [
+    {
+      name: 'a package whose name ends in .js',
+      code: `import Fuse from 'fuse.js'`
+    },
+    {
+      name: 'a scoped package whose name ends in .js',
+      code: `import chart from '@scope/chart.js'`
+    },
+    {
+      name: 'an extensionless package subpath',
+      code: `import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'`
+    },
+    {
+      name: 'a non-JavaScript asset',
+      code: `import data from './data.json'`
+    }
+  ],
+  invalid: [
+    {
+      name: 'a relative import',
+      code: `import { a } from './a.js'`,
+      errors: [{ message: /Drop the "\.js" extension from "\.\/a\.js"/ }]
+    },
+    {
+      name: 'a package subpath',
+      code: `import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'`,
+      errors: [{ message: /OrbitControls\.js/ }]
+    },
+    {
+      name: 'a scoped package subpath',
+      code: `import { load } from '@iconify/tailwind4/lib/loader.js'`,
+      errors: [{ message: /loader\.js/ }]
+    },
+    {
+      name: 'a re-export',
+      code: `export { a } from '../a.js'`,
+      errors: [{ message: /\.\.\/a\.js/ }]
+    },
+    {
+      name: 'a dynamic import',
+      code: `vi.mock(import('three/addons/loaders/SVGLoader.js'))`,
+      errors: [{ message: /SVGLoader\.js/ }]
     }
   ]
 })

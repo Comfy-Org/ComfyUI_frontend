@@ -9,6 +9,7 @@ import {
   largeLoraComboTest as test,
   loraCombo
 } from '@e2e/fixtures/largeLoraComboFixture'
+import { holdAnimationFrames } from '@e2e/fixtures/utils/timing'
 
 test.describe(
   'Vue combo widget with 10k options',
@@ -118,6 +119,55 @@ test.describe(
         await comfyPage.page.keyboard.press('Enter')
         await expect.poll(() => widget.getValue()).toBe(LORA_NAMES[1])
       })
+    })
+
+    for (const { title, nodeId } of [
+      { title: 'LoRA first', nodeId: 2 },
+      { title: 'LoRA deep', nodeId: 1 }
+    ]) {
+      test(`arrow keys typed before a late frame still move the search highlight (${title})`, async ({
+        comfyPage
+      }) => {
+        const combo = loraCombo(comfyPage, title)
+        const widget = await (
+          await comfyPage.nodeOps.getNodeRefById(nodeId)
+        ).getWidgetByName('lora_name')
+        await combo.open()
+
+        const releaseFrames = await holdAnimationFrames(comfyPage.page)
+        await combo.searchInput.pressSequentially('miku')
+        await expect(combo.options).toHaveText(SEARCH_HITS)
+        await comfyPage.page.keyboard.press('ArrowDown')
+        await comfyPage.page.keyboard.press('ArrowDown')
+        await releaseFrames()
+        await expect(
+          combo.menu.getByRole('option', { name: SEARCH_HITS[2], exact: true })
+        ).toHaveAttribute('data-highlighted')
+
+        await comfyPage.page.keyboard.press('Enter')
+        await expect.poll(() => widget.getValue()).toBe(SEARCH_HITS[2])
+      })
+    }
+
+    test('arrow keys typed before a late frame move from the revealed selection', async ({
+      comfyPage
+    }) => {
+      const combo = loraCombo(comfyPage, 'LoRA deep')
+      const widget = await (
+        await comfyPage.nodeOps.getNodeRefById(1)
+      ).getWidgetByName('lora_name')
+
+      const releaseFrames = await holdAnimationFrames(comfyPage.page)
+      await combo.open()
+      await comfyPage.page.keyboard.press('ArrowDown')
+      const nextLora = LORA_NAMES[LORA_NAMES.indexOf(DEEP_LORA) + 1]
+      await releaseFrames()
+      await expect(
+        combo.menu.getByRole('option', { name: nextLora, exact: true })
+      ).toHaveAttribute('data-highlighted')
+
+      await comfyPage.page.keyboard.press('Enter')
+      await expect.poll(() => widget.getValue()).toBe(nextLora)
     })
 
     test('a very long name keeps the popup inside the viewport', async ({

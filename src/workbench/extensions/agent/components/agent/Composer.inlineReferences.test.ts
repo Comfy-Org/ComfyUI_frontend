@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, ref } from 'vue'
 
 import { i18n } from '@/i18n'
-import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
-import { useCanvasSelection } from '../../composables/agent/useCanvasSelection'
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import { useCanvasSelection } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
@@ -37,7 +37,7 @@ function renderComposer() {
     }
   })
   const view = render(Host, {
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...view, store, selected, send, editor: screen.getByRole('textbox') }
 }

@@ -8,12 +8,17 @@ import RunNoticeBanner from './RunNoticeBanner.vue'
 
 const STORAGE_KEY = 'Comfy.AgentPanel.runNoticeDismissed'
 
-function mount(
-  workflowName: string | undefined = '3d_hunyuan-v2.1',
-  expanded = false
-) {
+function mount({
+  workflowName = '3d_hunyuan-v2.1',
+  expanded = false,
+  genericNoticeReady = false
+}: {
+  workflowName?: string
+  expanded?: boolean
+  genericNoticeReady?: boolean
+} = {}) {
   return render(RunNoticeBanner, {
-    props: { expanded, workflowName },
+    props: { expanded, workflowName, genericNoticeReady },
     global: { plugins: [i18n] }
   })
 }
@@ -23,17 +28,32 @@ describe('RunNoticeBanner', () => {
     localStorage.clear()
   })
 
-  it('names the one workflow the agent can edit', () => {
-    mount()
+  it('keeps naming the workflow after the generic notice becomes ready', async () => {
+    const { rerender } = mount()
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time, and you can switch workflows during chat.'
+    )
+
+    await rerender({
+      workflowName: '3d_hunyuan-v2.1',
+      genericNoticeReady: true
+    })
     expect(screen.getByRole('note')).toHaveTextContent(
       'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time, and you can switch workflows during chat.'
     )
   })
 
   it.for([false, true])(
-    'shows the targetless notice for expanded=%s',
-    (expanded) => {
-      mount('', expanded)
+    'shows the targetless notice only when ready for expanded=%s',
+    async (expanded) => {
+      const { rerender } = mount({ workflowName: '', expanded })
+      expect(screen.queryByRole('note')).toBeNull()
+
+      await rerender({
+        expanded,
+        workflowName: '',
+        genericNoticeReady: true
+      })
       expect(screen.getByRole('note')).toHaveTextContent(
         i18n.global.t(expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice')
       )
@@ -50,6 +70,12 @@ describe('RunNoticeBanner', () => {
   it('stays hidden on a fresh mount once dismissed', () => {
     localStorage.setItem(STORAGE_KEY, 'true')
     mount()
+    expect(screen.queryByRole('note')).toBeNull()
+  })
+
+  it('keeps a dismissed targetless notice hidden when ready', () => {
+    localStorage.setItem(STORAGE_KEY, 'true')
+    mount({ workflowName: '', genericNoticeReady: true })
     expect(screen.queryByRole('note')).toBeNull()
   })
 
@@ -83,6 +109,26 @@ describe('RunNoticeBanner', () => {
       i18n.global.t('agent.targetWorkflowUnavailable')
     )
     expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('names the workflow whose chat failed to open, with a retry for it', async () => {
+    const { emitted } = render(RunNoticeBanner, {
+      props: { context: 'followFailed', workflowName: 'portrait' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.followedChatOpenFailed', {
+        workflowName: 'portrait'
+      })
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.retryFollowedChat', {
+          workflowName: 'portrait'
+        })
+      })
+    )
+    expect(emitted('retry')).toHaveLength(1)
   })
 
   it('explains all three ways to decide the target', () => {

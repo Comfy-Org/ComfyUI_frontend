@@ -29,7 +29,7 @@ and `cloud/1.41`, branched from the commit _before_ the bump. Nightly patch
 bumps on `main` are convenience snapshots — no branches created.
 
 The minor bump is scheduled automatically: `release-version-bump.yaml` runs a
-**minor** bump on `main` every Monday and Wednesday 20:00 UTC and enables
+**minor** bump on `main` every Monday 20:00 UTC (one release a week) and enables
 auto-merge on the resulting `version-bump-*` PR (marked with the
 `weekly-release-cut` label, which exempts it from the nightly stale-PR closer),
 so once its checks pass the merge
@@ -58,6 +58,18 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 1. Add `needs-backport` + version label to the merged PR
 2. `pr-backport.yaml` cherry-picks and creates a backport PR
 3. Conflicts produce a comment with details and an agent prompt
+
+Release labels alone do not start the backport. A merged PR with a
+`core/X.Y` or `cloud/X.Y` label but no `needs-backport` gets a comment saying
+the backport did not run. Each label is warned about once, and labels whose
+target already has an open or merged backport PR are left out.
+
+To re-check a finished PR, run `pr-backport.yaml` by hand with its PR number.
+The PR does not need `needs-backport` for this. Without `force_rerun`, targets
+with an open or merged backport PR the workflow can find are reported and
+skipped. Every other release label is cherry-picked: a backport that was on
+hold starts, and one whose backport PR was closed without merging is opened
+again. Remove the release label first if that target should stay skipped.
 
 ## Release Sheriff Assignment
 
@@ -156,8 +168,15 @@ breakage is announced within the hour rather than on the spot.
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,
-publishing to GitHub Releases (`dist.zip`), PyPI (`comfyui-frontend-package`),
-and npm (`@comfyorg/comfyui-frontend-types`).
+publishing to GitHub Releases (`dist.zip` and `dist-desktop.zip`) and npm
+(`@comfyorg/comfyui-frontend-types`).
+
+Stable PyPI versions of `comfyui-frontend-package` are published only by
+`release-weekly-comfyui.yaml`, for the version each run targets
+(`release-pypi-dev.yaml` publishes `.devN` builds from the ref it is
+dispatched on, normally `main`). A patch
+released through a `Release` PR on any other line is on GitHub Releases but not
+on PyPI until that workflow runs for it.
 
 ## Weekly ComfyUI Integration
 
@@ -165,14 +184,22 @@ and npm (`@comfyorg/comfyui-frontend-types`).
 branch has unreleased commits, it triggers a patch bump and drafts a PR to
 `Comfy-Org/ComfyUI` updating `requirements.txt`.
 
+Every run reuses one branch and PR (`automation/comfyui-frontend-bump`). If
+ComfyUI master, or that PR while it is still open, already pins a newer
+frontend than the run's target, the run leaves it unchanged rather than
+downgrading it, so a patch on an older line never replaces a pending bump to a
+newer minor. If master already pins the target and the open bump PR does not
+pin anything newer, the run closes that PR, since merging it could only
+downgrade or do nothing.
+
 ## Workflows
 
 | Workflow                         | Purpose                                          |
 | -------------------------------- | ------------------------------------------------ |
 | `release-version-bump.yaml`      | Bump version, create Release PR                  |
-| `release-draft-create.yaml`      | Build + publish to GitHub/PyPI/npm               |
+| `release-draft-create.yaml`      | Build + publish to GitHub Releases/npm           |
 | `release-branch-create.yaml`     | Create `core/` + `cloud/` branches (minor/major) |
-| `release-weekly-comfyui.yaml`    | Weekly auto-patch + ComfyUI requirements PR      |
+| `release-weekly-comfyui.yaml`    | Auto-patch, PyPI publish, ComfyUI pin PR         |
 | `pr-backport.yaml`               | Cherry-pick fixes to stable branches             |
 | `cloud-backport-tag.yaml`        | Tag cloud branch merges                          |
 | `pr-assign-release-sheriff.yaml` | Assign the sheriff to backport/release/bot PRs   |
