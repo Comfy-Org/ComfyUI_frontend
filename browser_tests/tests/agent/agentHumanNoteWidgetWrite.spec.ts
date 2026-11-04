@@ -26,14 +26,6 @@ const THREAD_ID = 'c7a21d40-0000-4000-8000-000000000052'
 
 const TYPED_NOTE = 'remember to swap the LoRA before the final render'
 
-/**
- * Deliberately EMPTY, and that is the point of this spec rather than a
- * shortcut. The pinned catalog is a projection of `object_info`, and `Note` is
- * rendered entirely by the frontend — it never appears in `object_info`, so no
- * catalog derived from one can ever describe it. There is no catalog fix
- * available for this class, which is why the node's own declared
- * `widgets_values_form` is the only thing that can keep it writable.
- */
 const catalog: WidgetCatalog = { types: {} }
 
 interface OpsFrame {
@@ -47,15 +39,6 @@ function docOpsFrames(frames: readonly string[]): OpsFrame[] {
     .filter((frame) => frame.type === 'doc_ops')
 }
 
-/**
- * Hands one outbound client batch to the real applier and sends back whatever
- * it actually answered.
- *
- * The verdict is never fabricated here: `HostDoc.applyWire` runs
- * `@comfyorg/comfy-multi-player`'s `applyOps` against a real document and the
- * `doc_ops_result` frame carries that run's own code. So a rejection in this
- * spec is the production rejection, not a stand-in for one.
- */
 function relayToHost(
   host: HostDoc,
   socket: WebSocketRoute,

@@ -727,12 +727,6 @@ describe('attachDocOpMinter', () => {
     ).not.toHaveProperty('ghost')
   })
 
-  // A frontend-only class (Note, MarkdownNote) can never hold a catalog entry,
-  // because the catalog is an `object_info` projection and these classes never
-  // appear in `object_info`. A24's declared form is the only thing that makes
-  // one name-addressable, so the add must carry it: storing the positional
-  // array opaquely instead makes every later widget write unsatisfiable
-  // (`opaque_widgets`), which is the whole-class edit loss PM-2371 reports.
   it('declares a frontend-only node own widget form, so the applier takes a later widget write', async () => {
     const note = new TestNote()
     graph.add(note)

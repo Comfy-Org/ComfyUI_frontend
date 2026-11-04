@@ -186,9 +186,6 @@ describe('a human-added node across a tab switch', () => {
       widgetsValues: { steps: 20 }
     },
     {
-      // Name-keyed, not positional: a frontend-only class can never hold a
-      // catalog entry, so its own declared form is the only thing that keeps
-      // it name-addressable and therefore editable at all (PM-2371).
       name: 'a frontend-only (virtual) node',
       type: 'TestVirtual',
       widgetsValues: { name: 'x' }
