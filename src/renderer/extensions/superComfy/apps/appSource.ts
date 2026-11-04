@@ -1,5 +1,6 @@
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { toRaw } from 'vue'
 
 import { t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -38,7 +39,7 @@ async function loadSavedState(workflow: ComfyWorkflow): Promise<SavedAppRead> {
   const saved = workflow.initialState
   if (!wasLoaded && !useWorkflowStore().isOpen(workflow)) workflow.unload()
   if (!saved) return { ok: false, detail: workflow.path }
-  return { ok: true, json: structuredClone(saved) }
+  return { ok: true, json: structuredClone(toRaw(saved)) }
 }
 
 /** The saved app file (never a draft), cached per path and modification time. */

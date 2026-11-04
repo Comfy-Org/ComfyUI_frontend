@@ -1,6 +1,7 @@
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { vi } from 'vitest'
+import { ref } from 'vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -145,7 +146,10 @@ export function serveUserData(files: Record<string, ComfyWorkflowJSON>) {
 /** Makes `json` the saved app at a fresh path in the workflow store. */
 export function storeSavedApp(json: ComfyWorkflowJSON): ComfyWorkflow {
   const path = `workflows/${crypto.randomUUID()}.app.json`
-  const workflow = new ComfyWorkflow({ path, modified: 1000, size: 1 })
+  const lookup = ref<Record<string, ComfyWorkflow>>({
+    [path]: new ComfyWorkflow({ path, modified: 1000, size: 1 })
+  })
+  const workflow = lookup.value[path]
   serveUserData({ [path]: json })
   vi.mocked(useWorkflowStore().getWorkflowByPath).mockImplementation(
     (requested) => (requested === path ? workflow : null)
