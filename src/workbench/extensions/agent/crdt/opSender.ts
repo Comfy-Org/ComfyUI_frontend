@@ -339,7 +339,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function shouldPark(batch: InFlight): boolean {
-    return suspended && pendingAbortReason?.workflowId !== batch.workflowId
+    return (
+      suspended &&
+      (pendingAbortReason?.workflowId !== batch.workflowId ||
+        deps.workflowId() === batch.workflowId)
+    )
   }
 
   function transmit(batch: InFlight, attempt: number): void {

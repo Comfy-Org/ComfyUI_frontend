@@ -409,8 +409,53 @@ export class AgentConversationHarness {
     this.hostSocket.refuseSubscribes(reason)
   }
 
-  refusedSubscribeCount(): number {
-    return this.hostSocket.refusedSubscribeCount()
+  async returnToRecordedWorkflowAfterRefusedSubscribe(): Promise<void> {
+    const receipt = crypto.randomUUID()
+    const attribute = 'data-agent-refused-subscribe-handled'
+    const cleanupType = `agent-refused-subscribe-cleanup-${receipt}`
+    await this.page.evaluate(
+      ({ receipt, attribute, cleanupType, handledEvent }) => {
+        function cleanup() {
+          document.removeEventListener(handledEvent, onHandled)
+          document.removeEventListener(cleanupType, cleanup)
+        }
+        function isRecord(value: unknown): value is Record<string, unknown> {
+          return typeof value === 'object' && value !== null
+        }
+        function onHandled(event: Event) {
+          if (!(event instanceof CustomEvent)) return
+          if (typeof event.detail !== 'string') return
+          const frame: unknown = JSON.parse(event.detail)
+          if (!isRecord(frame) || frame.type !== 'doc_subscribed') return
+          if (!isRecord(frame.data) || frame.data.ok !== false) return
+          document.documentElement.setAttribute(attribute, receipt)
+          cleanup()
+        }
+        document.addEventListener(handledEvent, onHandled)
+        document.addEventListener(cleanupType, cleanup, { once: true })
+      },
+      {
+        receipt,
+        attribute,
+        cleanupType,
+        handledEvent: AGENT_FRAME_HANDLED_EVENT
+      }
+    )
+    try {
+      await this.topbar.getTab(0).click()
+      await expect(this.page.locator('html')).toHaveAttribute(
+        attribute,
+        receipt
+      )
+    } finally {
+      await this.page.evaluate(
+        ({ attribute, cleanupType }) => {
+          document.dispatchEvent(new CustomEvent(cleanupType))
+          document.documentElement.removeAttribute(attribute)
+        },
+        { attribute, cleanupType }
+      )
+    }
   }
 
   async sendPrompt(turn = 0): Promise<void> {

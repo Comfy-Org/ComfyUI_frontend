@@ -173,16 +173,13 @@ test.describe(
         const tabs = agentConversation.topbar.tabs
         await agentConversation.topbar.newWorkflowButton.click()
         await expect(tabs).toHaveCount(2)
-        await agentConversation.topbar.getTab(0).click()
+        await agentConversation.returnToRecordedWorkflowAfterRefusedSubscribe()
 
         await expect(
           agentConversation.topbar
             .getTab(0)
             .and(agentConversation.topbar.getActiveTab())
         ).toBeVisible()
-        await expect
-          .poll(() => agentConversation.refusedSubscribeCount())
-          .toBeGreaterThan(0)
         await expect(node).toBeVisible()
       })
     })

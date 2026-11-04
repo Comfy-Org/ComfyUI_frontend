@@ -200,6 +200,7 @@ describe('createOpSender', () => {
   let observedSequence: number
   let observedCounter: number | undefined
   let sender: ReturnType<typeof createOpSender>
+  let settleBatch: (outcome: BatchOutcome) => void
   const unsubscribe = vi.fn(() => {
     resultListener = null
   })
@@ -233,6 +234,7 @@ describe('createOpSender', () => {
     boundWorkflow = WORKFLOW
     observedSequence = 41
     observedCounter = undefined
+    settleBatch = (outcome) => settled.push(outcome)
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (transportThrows) throw new Error('frame serialization failed')
@@ -249,7 +251,7 @@ describe('createOpSender', () => {
       actor: () => ACTOR,
       baseVersion: () => observedSequence,
       observedCounter: () => observedCounter,
-      onBatchSettled: (outcome) => settled.push(outcome)
+      onBatchSettled: (outcome) => settleBatch(outcome)
     })
   })
 
@@ -677,6 +679,25 @@ describe('createOpSender', () => {
 
     sender.resume()
     expect(sent[1].workflowId).toBe('wf-2')
+  })
+
+  it('keeps the next batch parked when settlement rebinds its workflow while suspended', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    boundWorkflow = 'wf-2'
+    sender.suspend()
+    settleBatch = (outcome) => {
+      settled.push(outcome)
+      boundWorkflow = WORKFLOW
+    }
+
+    sender.abortIfUnbound('retarget')
+
+    expect(sent).toHaveLength(1)
+    expect(sender.pending()).toBe(1)
+    sender.resume()
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe(WORKFLOW)
   })
 
   it('abortIfUnbound clears a pending send retry so no timer outlives the batch', () => {
