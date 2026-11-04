@@ -322,6 +322,7 @@ import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import { destroyAgentPageSession } from './agentPageSession'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { attachDocOpMinter } from './crdt/docOpMinter'
@@ -366,6 +367,12 @@ beforeEach(() => {
     return true
   })
   vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
+  // Each test is a fresh page load. The event source and the doc-frame
+  // transport are page-session owned rather than panel owned, so without this
+  // the first test's socket would outlive it and later tests would assert
+  // against a stale one. See agentPageSession.ts and
+  // docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md
+  destroyAgentPageSession()
   vi.mocked(resolveAgentIdentity).mockReturnValue({
     state: ref<AgentIdentityState>({ status: 'resolved', userId: 'account-a' }),
     reset: vi.fn(),

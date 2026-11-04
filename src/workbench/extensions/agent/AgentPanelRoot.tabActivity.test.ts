@@ -36,6 +36,7 @@ import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import type { AgentMessages } from './schemas/agentApiSchema'
 import { zAgentMessages } from './schemas/agentApiSchema'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import { destroyAgentPageSession } from './agentPageSession'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { registerWorkflowTabActivityTracker } from './services/agent/workflowTabActivityTracker'
@@ -282,6 +283,9 @@ beforeEach(() => {
   api.socket = fromPartial<WebSocket>({ readyState: 1, send: vi.fn() })
   agentSocket = createFakeAgentSocket()
   vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
+  // Each test is a fresh page load; the transport is page-session owned now.
+  // See agentPageSession.ts and CRDT-FOLLOWER-0052.
+  destroyAgentPageSession()
   vi.mocked(resolveAgentIdentity).mockReturnValue({
     state: ref<AgentIdentityState>({ status: 'resolved', userId: 'account-a' }),
     reset: vi.fn(),

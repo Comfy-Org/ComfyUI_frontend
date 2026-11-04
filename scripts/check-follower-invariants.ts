@@ -335,6 +335,94 @@ export function checkNoHardcodedEndpoint(
   return runAstCheck(file, source, noHardcodedEndpoint)
 }
 
+/**
+ * The agent extension tree, which is wider than the follower seam on purpose:
+ * the transport-ownership rule below has to see `AgentPanelRoot.vue`, because
+ * that component is the call site it exists to forbid.
+ */
+export const AGENT_SURFACE_PATTERNS = [
+  'src/workbench/extensions/agent/**/*.ts',
+  'src/workbench/extensions/agent/**/*.vue'
+] as const
+
+/** The one module allowed to construct the page's agent transport. */
+export const PAGE_SESSION_OWNER =
+  'src/workbench/extensions/agent/agentPageSession.ts'
+
+const PAGE_SESSION_FACTORIES = new Set([
+  'createAgentEventSource',
+  'createAgentDocFrameTransport'
+])
+
+const isAgentSurfaceFile = (file: string): boolean =>
+  file.startsWith('src/workbench/extensions/agent/') &&
+  (file.endsWith('.ts') || file.endsWith('.vue')) &&
+  !file.endsWith('.d.ts') &&
+  !isTestOrFixture(file)
+
+export function findAgentSurfaceFiles(repositoryRoot: string): string[] {
+  return globSync([...AGENT_SURFACE_PATTERNS], { cwd: repositoryRoot })
+    .map((file) => file.replaceAll('\\', '/'))
+    .filter(isAgentSurfaceFile)
+    .sort()
+}
+
+/**
+ * A Vue SFC is not TypeScript, so parse only its `<script>` blocks. Offsets are
+ * preserved by blanking everything outside them, which keeps reported line
+ * numbers pointing at the real line in the `.vue` file.
+ */
+const SCRIPT_BLOCK = /<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi
+
+function scriptOf(file: string, source: string): string {
+  if (!file.endsWith('.vue')) return source
+  const blank = (text: string): string => text.replaceAll(/[^\n]/g, ' ')
+  let result = ''
+  let cursor = 0
+  for (const match of source.matchAll(SCRIPT_BLOCK)) {
+    const start = match.index + match[0].indexOf(match[1], 1)
+    result += blank(source.slice(cursor, start)) + match[1]
+    cursor = start + match[1].length
+  }
+  return result + blank(source.slice(cursor))
+}
+
+function calledFactory(node: ts.Node): string | undefined {
+  if (!ts.isCallExpression(node)) return
+  const { expression } = node
+  const name = ts.isIdentifier(expression)
+    ? expression.text
+    : ts.isPropertyAccessExpression(expression)
+      ? expression.name.text
+      : undefined
+  return name !== undefined && PAGE_SESSION_FACTORIES.has(name)
+    ? name
+    : undefined
+}
+
+function pageSessionOwnsTransport(file: string, source: string): Violation[] {
+  if (!isAgentSurfaceFile(file) || file === PAGE_SESSION_OWNER) return []
+  const parsed = parse(
+    file.endsWith('.vue') ? `${file}.ts` : file,
+    scriptOf(file, source)
+  )
+  if (parsed.violations.length) return []
+  const violations: Violation[] = []
+  visit(parsed.sourceFile, (node) => {
+    const factory = calledFactory(node)
+    if (factory === undefined) return
+    violations.push({
+      file,
+      line: lineOf(parsed.sourceFile, node),
+      rule: 'page-session-owns-transport',
+      message: `calls ${factory}() outside ${PAGE_SESSION_OWNER} — the agent event source and the doc-frame transport are page-session resources, so a component that constructs one also destroys it on unmount and closes the socket the follower session needs to resubscribe over`
+    })
+  })
+  return violations
+}
+
+export { pageSessionOwnsTransport as checkPageSessionOwnsTransport }
+
 export function checkFile(file: string, source: string): Violation[] {
   if (!isFollowerSeamFile(file)) return []
   const parsed = parse(file, source)
@@ -380,13 +468,57 @@ export function checkFollowerFiles(
   return violations
 }
 
+/**
+ * Run the agent-surface rules, whose scope is wider than the follower seam.
+ * Kept separate from {@link checkFollowerFiles} so each scope fails closed on
+ * its own terms.
+ */
+export function checkAgentSurfaceFiles(
+  repositoryRoot: string,
+  files?: readonly string[]
+): Violation[] {
+  const violations: Violation[] = []
+  const selectedFiles = files ?? findAgentSurfaceFiles(repositoryRoot)
+  if (selectedFiles.length === 0) {
+    return [
+      {
+        file: AGENT_SURFACE_PATTERNS.join(', '),
+        line: 1,
+        rule: 'agent-surface-empty',
+        message: 'no production agent surface files matched the declared scope'
+      }
+    ]
+  }
+  for (const file of selectedFiles) {
+    let source: string
+    try {
+      source = readFileSync(resolve(repositoryRoot, file), 'utf8')
+    } catch (error) {
+      violations.push({
+        file,
+        line: 1,
+        rule: 'declared-file-unreadable',
+        message: `cannot read declared agent surface file: ${error instanceof Error ? error.message : String(error)}`
+      })
+      continue
+    }
+    violations.push(...pageSessionOwnsTransport(file, source))
+  }
+  return violations
+}
+
 function main(): void {
   const repositoryRoot = process.cwd()
   const files = findFollowerFiles(repositoryRoot)
-  const violations = checkFollowerFiles(repositoryRoot, files)
+  const surfaceFiles = findAgentSurfaceFiles(repositoryRoot)
+  const violations = [
+    ...checkFollowerFiles(repositoryRoot, files),
+    ...checkAgentSurfaceFiles(repositoryRoot, surfaceFiles)
+  ]
   if (violations.length === 0) {
     process.stdout.write(
-      `Follower invariant guard passed (${files.length} files scanned)\n`
+      `Follower invariant guard passed (${files.length} seam files, ` +
+        `${surfaceFiles.length} agent surface files scanned)\n`
     )
     return
   }

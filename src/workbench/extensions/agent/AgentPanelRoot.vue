@@ -158,11 +158,7 @@ import {
 } from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
-import {
-  agentSocketAuthParams,
-  ensureSignedIn,
-  hasAgentCredential
-} from './services/agent/agentAuth'
+import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -175,8 +171,8 @@ import { isCreditsStopPart } from './services/agent/agentMessageParts'
 import type { CanvasConfirmation } from './services/agent/agentEventTransport'
 import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
 import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
-import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import { useAgentPageSession } from './agentPageSession'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
 import { agentMessageText } from './utils/agentMessageText'
@@ -199,7 +195,6 @@ import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
-import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -260,13 +255,12 @@ onBeforeUnmount(startCrdtDebugGate())
 
 const rest = createAgentRestClient()
 
-const events = createAgentEventSource({
-  endpoint: api.apiURL('/agent/events'),
-  getAuthParams: agentSocketAuthParams
-})
-
-const docTransport = createAgentDocFrameTransport(events)
-onBeforeUnmount(() => docTransport.destroy())
+// Owned by the page, not by this component. Closing the panel must not close
+// the agent socket or drop the doc-frame tap: the follower session has to be
+// able to resubscribe on reopen rather than cold-seed. See
+// docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md
+// Stage 1a. There is deliberately no `onBeforeUnmount` teardown here.
+const { events, docTransport } = useAgentPageSession()
 
 const agentIdentity = resolveAgentIdentity({
   getIdentity: () => rest.getIdentity(),
