@@ -1057,7 +1057,6 @@ test.describe('Workflow Persistence', () => {
       description:
         'https://github.com/Comfy-Org/ComfyUI_frontend/pull/22857#discussion_r4467160842 — the draft now moves before the rename request resolves, so an edit plus a tab switch during that window was stranded under the pre-rename path'
     })
-    test.setTimeout(45_000)
 
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
@@ -1122,11 +1121,7 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
 
     releaseRename()
-    await comfyPage.page.waitForFunction(
-      () =>
-        !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          .isBusy
-    )
+    await comfyPage.workflow.waitForWorkflowIdle(30_000)
     await comfyPage.page.unroute('**/userdata/**/move/**')
 
     await comfyPage.workflow.reloadAndWaitForApp()
@@ -1150,7 +1145,6 @@ test.describe('Workflow Persistence', () => {
       description:
         'https://github.com/Comfy-Org/ComfyUI_frontend/pull/22857#discussion_r4470891508 — completing the relocation needed a second draft payload, so an edit made during the rename plus a full device left the newest draft indexed under the name the workflow no longer had'
     })
-    test.setTimeout(45_000)
 
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
@@ -1222,11 +1216,7 @@ test.describe('Workflow Persistence', () => {
     })
 
     releaseRename()
-    await comfyPage.page.waitForFunction(
-      () =>
-        !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          .isBusy
-    )
+    await comfyPage.workflow.waitForWorkflowIdle(30_000)
     await comfyPage.page.unroute('**/userdata/**/move/**')
     await comfyPage.page.evaluate(() =>
       Reflect.deleteProperty(localStorage, 'setItem')
@@ -1256,7 +1246,6 @@ test.describe('Workflow Persistence', () => {
       description:
         'https://github.com/Comfy-Org/ComfyUI_frontend/pull/22857#discussion_r4469103853 — the draft was relocated before the rename request resolved, so a rejection had to write it back, and with storage full that write was refused and the unsaved edits were stranded under the name the workflow never took'
     })
-    test.setTimeout(45_000)
 
     await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
@@ -1310,17 +1299,9 @@ test.describe('Workflow Persistence', () => {
       await route.fulfill({ status: 500, body: 'no space left on device' })
     })
 
-    const openedItem = workflowsTab.getOpenedItem(originalName)
-    await openedItem.click({ button: 'right' })
-    await comfyPage.page
-      .getByRole('menuitem', { name: 'Rename', exact: true })
-      .click()
-    await comfyPage.page.keyboard.type(renamedName)
-    await comfyPage.page.keyboard.press('Enter')
-    await comfyPage.page.waitForFunction(
-      () =>
-        !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          .isBusy
+    await workflowsTab.renameWorkflow(
+      workflowsTab.getOpenedItem(originalName),
+      renamedName
     )
     await comfyPage.page.unroute('**/userdata/**/move/**')
 
