@@ -305,6 +305,9 @@
   "Comfy_ToggleQPOV2": {
     "label": "Toggle Queue Panel V2"
   },
+  "Comfy_ToggleSuperComfy": {
+    "label": "Toggle SuperComfy"
+  },
   "Comfy_ToggleTheme": {
     "label": "Toggle Theme (Dark/Light)"
   },

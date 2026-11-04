@@ -6489,5 +6489,90 @@
       "body": "Your browser blocked the new tab. Open checkout to finish paying.",
       "action": "Open checkout"
     }
+  },
+  "superComfy": {
+    "title": "SuperComfy",
+    "open": "Open SuperComfy",
+    "backToGraph": "Back to graph",
+    "addNode": "Add node",
+    "runGraph": "Run graph",
+    "stop": "Stop",
+    "fitView": "Fit view",
+    "runSummary": "{ran} ran · {upToDate} up to date · {blocked} blocked",
+    "savedInBrowser": "Saved in this browser only",
+    "loadFailed": "Couldn't read the saved graph, so a new one was started",
+    "modality": {
+      "image": "Image",
+      "text": "Text",
+      "video": "Video",
+      "audio": "Audio",
+      "3d": "3D"
+    },
+    "menu": {
+      "search": "Search nodes and apps",
+      "clearSearch": "Clear search",
+      "io": "Inputs and outputs",
+      "generate": "Generate",
+      "apps": "Apps",
+      "noApps": "No apps in your account",
+      "generateNode": "Generate {modality}"
+    },
+    "port": {
+      "input": "Input {name}",
+      "output": "Output {name}"
+    },
+    "node": {
+      "run": "Run",
+      "runN": "Run {count}",
+      "runs": "Runs",
+      "settings": "Settings",
+      "more": "More",
+      "delete": "Delete",
+      "dropFiles": "Drop files or click to add",
+      "addText": "Add text",
+      "removeItem": "Remove item",
+      "clearItems": "Clear",
+      "items": "{count} item | {count} items",
+      "fromNode": "From {node}",
+      "needs": "Needs {port}",
+      "running": "Running {done} of {total}",
+      "queued": "Queued #{position}",
+      "done": "{count} run | {count} runs",
+      "failed": "{count} failed",
+      "allFailed": "All runs failed",
+      "upToDate": "Up to date",
+      "changed": "Changed",
+      "tooManyRuns": "{runs} runs is over the limit of {limit}",
+      "tooManyItems": "{port} takes at most {max}",
+      "noOutput": "Finished without output",
+      "temporary": "Temporary link, expires soon",
+      "credits": "{credits} credits",
+      "showOutput": "Show {name}"
+    },
+    "model": {
+      "pick": "Pick a model",
+      "search": "Search models",
+      "empty": "No models found",
+      "loading": "Loading models {done} of {total}",
+      "unsupported": "{count} more model is not supported yet | {count} more models are not supported yet",
+      "signInRefused": "Comfy Router didn't accept your sign-in",
+      "loadFailed": "Couldn't load models"
+    },
+    "app": {
+      "open": "Open app",
+      "reload": "Reload app",
+      "noOutputs": "This app has no outputs",
+      "missingNodes": "Missing nodes: {nodes}",
+      "notFound": "App not found",
+      "prepareFailed": "Couldn't prepare this app",
+      "workspaceChanged": "The workspace changed during the run",
+      "notSignedIn": "Sign in to run apps"
+    },
+    "media": {
+      "unreadable": "Couldn't read an input file",
+      "tooLarge": "Inputs are {size} MB. This model takes up to 20 MB.",
+      "expired": "An input link expired. Run its source again.",
+      "uploadFailed": "Upload failed: {reason}"
+    }
   }
 }
