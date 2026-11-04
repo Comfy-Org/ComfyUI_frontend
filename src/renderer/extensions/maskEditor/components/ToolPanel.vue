@@ -21,17 +21,19 @@
         </div>
         <div class="maskEditor_toolPanelIndicator"></div>
       </div>
-      <button
+      <Button
         v-for="tool in extensionTools?.tools.value"
         :key="tool.id"
         type="button"
+        variant="textonly"
+        size="unset"
         :aria-label="tool.label"
         :aria-pressed="extensionTools?.active.value?.tool.id === tool.id"
         :title="tool.label"
         :data-tool="tool.id"
         :class="
           cn(
-            'maskEditor_toolPanelContainer hover:bg-accent',
+            'maskEditor_toolPanelContainer rounded-none',
             extensionTools?.active.value?.tool.id === tool.id &&
               'maskEditor_toolPanelContainerSelected'
           )
@@ -43,7 +45,7 @@
           aria-hidden="true"
         />
         <span class="maskEditor_toolPanelIndicator" />
-      </button>
+      </Button>
     </div>
 
     <div
@@ -64,6 +66,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import Button from '@comfyorg/design-system/button/Button'
 
 import MaskEditorToolIcon from '@/renderer/extensions/maskEditor/components/MaskEditorToolIcon.vue'
 import type { useToolManager } from '@comfyorg/mask-editor/useToolManager'
