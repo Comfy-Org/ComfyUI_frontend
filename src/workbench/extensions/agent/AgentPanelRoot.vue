@@ -2040,28 +2040,44 @@ if (
 )
   void followTab(mountedOn)
 
+function warnWorkflowChanged(): void {
+  toast.warning(t('agent.errorContext.workflowChanged'), { duration: 5000 })
+}
+
+/**
+ * Puts the chat of the errored workflow in front before its diagnostics are
+ * attached, and reports whether that chat still belongs to `workflow` once the
+ * follow has settled. Returns false when the window closed while the follow was
+ * loading — a newer attachment started, this root was disposed, or the user
+ * moved to another tab — so the caller must not attach anything.
+ */
+async function openChatForErroredWorkflow(
+  workflow: ComfyWorkflow,
+  run: number
+): Promise<boolean> {
+  await followTab(workflow)
+  if (run !== errorAttachRun) return false
+  if (workflowStore.activeWorkflow?.path !== workflow.path) {
+    warnWorkflowChanged()
+    return false
+  }
+  if (selectedTarget.value?.path === workflow.path) return true
+  if (composerStore.hasDraft) {
+    toast.warning(t('agent.errorContext.draftBlocked'), { duration: 5000 })
+    return false
+  }
+  onNewChat('new_chat_button')
+  return true
+}
+
 async function attachErrorContext(context: AgentErrorContext): Promise<void> {
   const run = ++errorAttachRun
   const workflow = workflowStore.activeWorkflow
   if (context.workflowPath && workflow?.path !== context.workflowPath) {
-    toast.warning(t('agent.errorContext.workflowChanged'), { duration: 5000 })
+    warnWorkflowChanged()
     return
   }
-  if (workflow) {
-    await followTab(workflow)
-    if (run !== errorAttachRun) return
-    if (workflowStore.activeWorkflow?.path !== workflow.path) {
-      toast.warning(t('agent.errorContext.workflowChanged'), { duration: 5000 })
-      return
-    }
-    if (selectedTarget.value?.path !== workflow.path) {
-      if (composerStore.hasDraft) {
-        toast.warning(t('agent.errorContext.draftBlocked'), { duration: 5000 })
-        return
-      }
-      onNewChat('new_chat_button')
-    }
-  }
+  if (workflow && !(await openChatForErroredWorkflow(workflow, run))) return
   agentPanelStore.retainWorkflowTarget()
   composerStore.setErrorContext(context)
 }
