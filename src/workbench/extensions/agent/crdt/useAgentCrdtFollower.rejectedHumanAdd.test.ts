@@ -152,6 +152,11 @@ function mountBoundFollower() {
   return { agentSocket, follower, confirmSubscribe, sentFrames }
 }
 
+async function answerCatchUpProbe(confirmSubscribe: () => void) {
+  await vi.advanceTimersByTimeAsync(SUBSCRIBE_CATCHUP_GRACE_MS)
+  confirmSubscribe()
+}
+
 function addNote(nodeId: number) {
   return {
     op: 'add_node' as const,
@@ -252,10 +257,7 @@ it('refreshes and reports an edit whose resend is acknowledged only as a replay'
   follower.enqueueHumanOperations([addNote(7)])
   await vi.waitFor(() => expect(sentFrames('doc_ops')).toHaveLength(1))
   const { op_id } = sentOp(sentFrames('doc_ops')[0])
-  // The first confirmed subscribe arms a catch-up probe; answer it so the
-  // resend below is not held behind an unacknowledged subscribe.
-  await vi.advanceTimersByTimeAsync(SUBSCRIBE_CATCHUP_GRACE_MS)
-  confirmSubscribe()
+  await answerCatchUpProbe(confirmSubscribe)
 
   await vi.advanceTimersByTimeAsync(10_000 - SUBSCRIBE_CATCHUP_GRACE_MS)
   expect(sentFrames('doc_ops')).toHaveLength(2)

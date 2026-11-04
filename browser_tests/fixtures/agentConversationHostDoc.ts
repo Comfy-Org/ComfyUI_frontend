@@ -291,23 +291,6 @@ export class HostDoc {
     )
   }
 
-  // A batch the client minted itself (envelope included), answered the way
-  // the relay answers a human write: one `doc_ops_result`, then the delta as
-  // a `doc_update` whenever an op consumed its `op_id`. The applier stays the
-  // only judge. An op that lost a last-writer-wins race is acknowledged in
-  // `skipped` and named in `lww_dropped`, yet its consumed `op_id` still
-  // changes the document, so its delta and sequence advance are emitted too.
-  // An `op_id` the document already held before this call, or earlier in this
-  // batch, is a replay: `skipped` with no delta.
-  //
-  // `ops` is typed `WireOpEnvelope`, not `Op`: a deferred kind such as
-  // `reset_doc` must reach the real applier verbatim so its `op_deferred` +
-  // abort-remainder verdict runs, rather than being filtered out upstream
-  // (`parseWireOps`). `applyOps`'s declared parameter is `Op[]`, but its own
-  // `ApplyFailure.op` field is typed `WireOp` because a rejected `reset_doc`
-  // genuinely reaches it (`dist/types.d.ts` ~L437-440) — the cast below
-  // matches that documented runtime contract; `WireOpEnvelope` only claims
-  // the two fields `parseWireOps` actually validated upstream of this call.
   applyWire(ops: WireOpEnvelope[]): WireApplyResult {
     const before = Y.encodeStateVector(this.doc)
     const seen = new Set(

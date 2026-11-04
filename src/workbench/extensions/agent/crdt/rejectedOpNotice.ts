@@ -14,11 +14,7 @@ import { reportLostEdit } from './reportLostEdit'
 const NOTICE_LIFE_MS = 10_000
 const NOTICE_ID = createToastId()
 
-/**
- * Acknowledged ops the document does not show as written: `overwritten` lost
- * a last-writer-wins race; `unconfirmed` were skipped on a resend, so an
- * earlier send whose result was lost may have applied them or let them lose.
- */
+/** Acknowledged ops the document does not show as written. */
 export interface LostEdits {
   overwritten: readonly Op[]
   unconfirmed: readonly Op[]
@@ -211,10 +207,6 @@ export function createRejectedOpNotifier() {
 
   const mayReportLostEdit = createReportBudget()
 
-  /**
-   * A rejected result already showed the notice naming its failed op and
-   * reason, so only an accepted result replaces it with the lost-edit notice.
-   */
   function notifyLostEdits(
     result: OpsResultView,
     { overwritten, unconfirmed }: LostEdits

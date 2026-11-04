@@ -556,8 +556,6 @@ function startAgentCrdtFollower(
     }
   }
 
-  // Parks later edits until the re-read subscription is confirmed, so a
-  // subscribe that cannot leave the socket does not settle them unbound.
   const refreshCanonicalDocument = (workflowId: string): void => {
     if (!isTargetActive.value || workflowId !== subscribedWorkflowId.value)
       return
