@@ -404,6 +404,7 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
@@ -594,10 +595,8 @@ const isNonCatalogPlan = computed(() =>
   isSalesManagedTier(subscription.value?.tier)
 )
 
-// Strictly ENTERPRISE, not isSalesManagedTier: an unrecognized tier keeps the
-// stock cancelled treatment (isUnknownTier's contract — no borrowed claims).
-const isEnterprisePlan = computed(
-  () => subscription.value?.tier === 'ENTERPRISE'
+const isEnterprisePlan = computed(() =>
+  pendingServerFact('BE-25244', subscription.value?.tier === 'ENTERPRISE')
 )
 
 const isEndedEnterprise = computed(
@@ -623,7 +622,10 @@ const now = useTimestamp({ interval: 60_000 })
 const isQuietEnterpriseEnding = computed(
   () =>
     hasScheduledEnterpriseEnd.value &&
-    !isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
+    !pendingServerFact(
+      'BE-25244',
+      isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
+    )
 )
 
 const { kind: billingBannerKind } = useBillingBanner()
