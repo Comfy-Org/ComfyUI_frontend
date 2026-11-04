@@ -32,7 +32,15 @@ const baselineCss = baselineBuild.output
   .map((file) => (file.type === 'asset' ? file.source.toString() : ''))
   .join('\n')
 
-assert.match(baselineCss, /--background:\s*oklch\(/)
+const effectiveBackground = [
+  ...baselineCss.matchAll(/--background:\s*([^;}]+)/g)
+]
+  .at(-1)?.[1]
+  ?.trim()
+assert.match(
+  effectiveBackground ?? '',
+  /^oklch\((?:0?\.19|19%)\s+0?\.003\s+285\)$/
+)
 assert.match(baselineCss, /\.bg-secondary\s*\{[^}]*var\(--secondary\)/)
 assert.match(baselineCss, /\.icon-\\\[lucide--check\\\]\s*\{/)
 assert.match(baselineCss, /\.z-overlay\s*\{/)
