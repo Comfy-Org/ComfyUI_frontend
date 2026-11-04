@@ -218,13 +218,6 @@ class TestNestedGrowing extends LGraphNode {
   }
 }
 
-/**
- * A selector whose options declare DIFFERENT sub-widgets, which is the shape
- * `ByteDance2ReferenceNodeV2`, `ByteDanceSeedreamNodeV3`, `ResizeImageMaskNode`
- * and `TextGenerate` have in production. Only the selected option's sub-widget
- * is built, so a document that still carries the other option's retained value
- * addresses a widget this node does not have (PM-2356, PM-1932).
- */
 class TestSelectionCombo extends LGraphNode {
   constructor() {
     super('Test Selection Combo')
@@ -374,9 +367,6 @@ const CATALOG: WidgetCatalog = {
     // value under the positional alias `_extra_2`.
     TestTwoGrowing: { widget_order: ['mode', 'mode.a'] },
     TestNestedGrowing: { widget_order: ['mode', 'mode.inner', 'mode.inner.x'] },
-    // comfy-cli expands a dynamic combo at its FIRST option only, so the
-    // `reference` option's `model.task_type` is absent from the order by
-    // design — the value-blind catalog this class exists to exercise.
     TestSelectionCombo: { widget_order: ['model', 'model.size_preset'] },
     TestPlainDynamicGroup: { widget_order: ['before', 'rows'] },
     TestAliasNamedWidget: { widget_order: ['first', 'second', '_extra_1'] },
@@ -475,8 +465,6 @@ beforeEach(() => {
     nodeType.nodeData = dynamicNodeData
   }
 
-  // Unlike the classes above, this one declares real OPTIONS, so its widget
-  // layout genuinely depends on the selection.
   TestSelectionCombo.nodeData = fromPartial<
     NonNullable<LGraphNode['constructor']['nodeData']>
   >({
@@ -896,7 +884,6 @@ describe('LiveGraphApplier', () => {
       links: []
     })
 
-    /** The document name a retained non-selected option owns. */
     const setDocWidget = (doc: Y.Doc, name: string, value: unknown) => {
       const widgets = nodesMap(doc).get('1')?.get('widgets')
       assert(widgets instanceof Y.Map)
@@ -968,8 +955,6 @@ describe('LiveGraphApplier', () => {
         { name: 'model', value: 'reference' },
         { name: 'model.task_type', value: 'outpaint' }
       ])
-      // `model.size_preset` is now the retained non-selected value, so the
-      // suppression and the resolve-after-selection retry hold together.
       expect(reportError).not.toHaveBeenCalled()
     })
   })

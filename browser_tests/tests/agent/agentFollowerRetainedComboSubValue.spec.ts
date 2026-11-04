@@ -19,18 +19,18 @@ import {
   comboAddressWorkflowId,
   createDeliveryBarrierAdd,
   driftMarkerId,
-  driftSubWidget,
+  unownedSubWidget,
   laterPromptValue,
   overflowMarkerId,
   promptValue,
   promptWidget,
   retainedMarkerId,
   retainedSubValue,
-  retainedSubWidget,
+  unselectedOptionSubWidget,
   selectedSubValue,
-  selectedSubWidget,
+  selectedOptionSubWidget,
   selectorWidget,
-  shortenedOverflowAlias
+  overflowAliasPastSelection
 } from '@e2e/fixtures/data/agent/agentFollowerRetainedComboSubValue'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
@@ -112,7 +112,7 @@ test.describe(
         .getWidgetRowByLabel(node, promptWidget)
         .getByRole('textbox')
       const selectedSub = vueNodes
-        .getWidgetRowByLabel(node, selectedSubWidget)
+        .getWidgetRowByLabel(node, selectedOptionSubWidget)
         .getByRole('textbox')
 
       await test.step('the node starts on its selected option', async () => {
@@ -125,7 +125,7 @@ test.describe(
         hostSocket.send(
           host.setDocumentWidget(
             comboAddressNodeId,
-            `${selectorWidget}.${retainedSubWidget}`,
+            `${selectorWidget}.${unselectedOptionSubWidget}`,
             retainedSubValue
           )
         )
@@ -163,7 +163,7 @@ test.describe(
         hostSocket.send(
           host.setDocumentWidget(
             comboAddressNodeId,
-            shortenedOverflowAlias,
+            overflowAliasPastSelection,
             retainedSubValue
           )
         )
@@ -184,7 +184,7 @@ test.describe(
         hostSocket.send(
           host.setDocumentWidget(
             comboAddressNodeId,
-            `${selectorWidget}.${driftSubWidget}`,
+            `${selectorWidget}.${unownedSubWidget}`,
             retainedSubValue
           )
         )

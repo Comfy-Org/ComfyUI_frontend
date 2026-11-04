@@ -3,16 +3,6 @@ import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
-/**
- * A `COMFY_DYNAMICCOMBO_V3` partner node whose two options declare DIFFERENT
- * sub-widgets, which is the shape `ByteDance2ReferenceNodeV2`,
- * `ByteDanceSeedreamNodeV3`, `ResizeImageMaskNode` and `TextGenerate` have on
- * production. Only the selected option's sub-widget is built, while the shared
- * document keeps the other option's value for when it is selected again — so
- * the document legitimately addresses a widget the live node does not carry.
- *
- * PM-2356 / PM-1932.
- */
 const comboAddressNodeType = 'TestSelectionComboAddress'
 export const comboAddressNodeId = 821
 
@@ -23,14 +13,10 @@ export const driftMarkerId = 824
 
 export const promptWidget = 'prompt'
 export const selectorWidget = 'model'
-/** The sub-widget the SELECTED option builds. */
-export const selectedSubWidget = 'size_preset'
-/** Owned by the option the node has not selected, so it is absent by design. */
-export const retainedSubWidget = 'task_type'
-/** Owned by no option at all: catalog drift, which must stay loud. */
-export const driftSubWidget = 'retired_field'
-/** A legacy positional slot past the three widgets this selection builds. */
-export const shortenedOverflowAlias = '_extra_5'
+export const selectedOptionSubWidget = 'size_preset'
+export const unselectedOptionSubWidget = 'task_type'
+export const unownedSubWidget = 'retired_field'
+export const overflowAliasPastSelection = '_extra_5'
 
 export const promptValue = 'kept by the canvas'
 export const selectedSubValue = 'a4'
@@ -62,7 +48,7 @@ const nodeDef: ComfyNodeDef = {
               key: 'seedream',
               inputs: {
                 required: {
-                  [selectedSubWidget]: ['STRING', { default: '1k' }]
+                  [selectedOptionSubWidget]: ['STRING', { default: '1k' }]
                 }
               }
             },
@@ -70,7 +56,7 @@ const nodeDef: ComfyNodeDef = {
               key: 'reference',
               inputs: {
                 required: {
-                  [retainedSubWidget]: ['STRING', { default: 'edit' }]
+                  [unselectedOptionSubWidget]: ['STRING', { default: 'edit' }]
                 }
               }
             }
@@ -101,32 +87,29 @@ export const comboAddressObjectInfo = {
   [markerType]: markerDef
 }
 
-/**
- * A selection-aware catalog, deliberately: `widget_order` is value-blind
- * because comfy-cli expands a dynamic combo at its FIRST option only, and
- * `dynamic_combos` is what lets the shared package place the other options'
- * values by the node's current selection. The retained value below is
- * therefore correct document state under a correct catalog — not drift.
- */
 export const comboAddressCatalog: WidgetCatalog = {
   types: {
     [comboAddressNodeType]: {
       widget_order: [
         promptWidget,
         selectorWidget,
-        `${selectorWidget}.${selectedSubWidget}`
+        `${selectorWidget}.${selectedOptionSubWidget}`
       ],
       dynamic_combos: {
         [selectorWidget]: {
           default: 'seedream',
           options: {
             seedream: {
-              widgets: [`${selectorWidget}.${selectedSubWidget}`],
-              defaults: { [`${selectorWidget}.${selectedSubWidget}`]: '1k' }
+              widgets: [`${selectorWidget}.${selectedOptionSubWidget}`],
+              defaults: {
+                [`${selectorWidget}.${selectedOptionSubWidget}`]: '1k'
+              }
             },
             reference: {
-              widgets: [`${selectorWidget}.${retainedSubWidget}`],
-              defaults: { [`${selectorWidget}.${retainedSubWidget}`]: 'edit' }
+              widgets: [`${selectorWidget}.${unselectedOptionSubWidget}`],
+              defaults: {
+                [`${selectorWidget}.${unselectedOptionSubWidget}`]: 'edit'
+              }
             }
           }
         }

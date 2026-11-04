@@ -627,20 +627,6 @@ function supportsDynamicWidgetOverflow(node: LGraphNode): boolean {
   )
 }
 
-/**
- * Every widget name some `COMFY_DYNAMICCOMBO_V3` option of this node's class
- * declares, at any selection and any depth, spelled as `dynamicComboWidget`
- * builds it (`<selector>.<key>`, a nested selector's keys under its own name).
- *
- * The follower's authority for this is the node's own `nodeData.inputs`, which
- * is the same `object_info` the pinned catalog is derived from. It is the
- * counterpart of `optionOwnedWidgets` in `comfy-multi-player`'s
- * `dynamic-combos.ts`, which reads the catalog entry's `dynamic_combos`.
- *
- * Empty for a class that declares no option: a class with a dynamic-combo
- * input whose `options` are absent or unparseable owns no sub-widget name, and
- * its layout therefore does not depend on a selection.
- */
 function optionOwnedWidgetNames(node: LGraphNode): ReadonlySet<string> {
   const names = new Set<string>()
   for (const [input, spec] of Object.entries(
@@ -680,32 +666,6 @@ function overflowWidgetIndex(name: string): number | null {
   return match ? Number(match[1]) : null
 }
 
-/**
- * Whether the node's own input spec explains an unresolved document name as a
- * consequence of a dynamic-combo selection rather than as a defect.
- *
- * `dynamicComboWidget` builds one sub-widget per input of the SELECTED option,
- * so a name another option owns addresses nothing while that option is not
- * selected. The document keeps it anyway, deliberately: the shared package's
- * projection leg skips exactly these two shapes rather than dropping them —
- * "a sub-widget of an option the node does not select owns no slot; its value
- * is kept for when that option is selected again", and a legacy `_extra_N`
- * slot "whose position the CURRENT selection gives to a real name" is shadowed
- * "only [for] a selection-dependent order" (`comfy-multi-player`
- * `project.ts`, `widgetsToPositional`). A follower that reports them is
- * reporting that retention contract, not a fault — PM-2356 and PM-1932.
- *
- * Deliberately NOT narrowed to "an option other than the active one": asking
- * which option is active means re-deriving the package's selection-aware
- * layout here, which is the second applier implementation this seam may not
- * grow. Reaching the report already proves the live node lacks the widget, and
- * the package's own `inactive` set spans every option for the same reason.
- *
- * A class that declares no dynamic-combo option keeps both reports. There, an
- * unresolvable name and a stale overflow slot are catalog drift — which the
- * package throws on and this reports — and that is the signal BE-16625's
- * open positional-overflow arm rests on.
- */
 function selectionDependentAbsence(
   name: string,
   optionOwned: ReadonlySet<string>
