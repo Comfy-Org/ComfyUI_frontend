@@ -144,7 +144,7 @@ const i18n = createI18n({
       credits: {
         addCreditsRefusal: {
           topupPurchasesPaused:
-            "Buying credits isn't available right now. Try again later, or message support.",
+            "Buying credits isn't available right now. Try again later.",
           paymentPastDue: 'Update your payment method to add credits.',
           unavailable:
             "Adding credits isn't available for this workspace right now."
