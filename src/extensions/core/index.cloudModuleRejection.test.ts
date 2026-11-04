@@ -11,9 +11,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isDesktop: false,
   isNightly: true
 }))
-// A chunk fetch failure that is not a suppressed `vite:preloadError` (for
-// example a network error) rejects the dynamic import instead of resolving
-// it to something without the named export.
 vi.mock(import('./cloudSessionCookie'), () =>
   Promise.reject(new Error('chunk fetch failed'))
 )
