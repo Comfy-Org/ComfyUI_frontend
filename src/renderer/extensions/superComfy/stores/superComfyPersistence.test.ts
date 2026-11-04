@@ -19,9 +19,15 @@ function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status })
 }
 
-async function saveToBrowser(doc: SuperGraphDocument, at: number) {
+const userdataSession = { location: 'userdata', readFailed: false } as const
+
+async function saveToBrowser(
+  doc: SuperGraphDocument,
+  at: number,
+  readFailed = false
+) {
   vi.useFakeTimers({ now: at })
-  await createSuperGraphSaver('browser')(doc)
+  await createSuperGraphSaver({ location: 'browser', readFailed }).save(doc)
   vi.useRealTimers()
 }
 
@@ -51,6 +57,29 @@ describe('loadSuperGraph', () => {
     expect(loaded.location).toBe('userdata')
   })
 
+  it.for([
+    {
+      name: 'the userdata copy when it exists',
+      remote: jsonResponse(savedDoc('remote', 1000)),
+      expected: 'remote'
+    },
+    {
+      name: 'the browser copy when nothing is in userdata',
+      remote: new Response(null, { status: 404 }),
+      expected: 'draft'
+    }
+  ])(
+    'prefers $name over a newer browser copy made when userdata could not be read',
+    async ({ remote, expected }) => {
+      await saveToBrowser(savedDoc('draft', 0), 2000, true)
+      vi.mocked(api.getUserData).mockResolvedValue(remote)
+
+      const loaded = await loadSuperGraph()
+
+      expect(loaded.doc.nodes.map(({ id }) => id)).toEqual([expected])
+    }
+  )
+
   it('starts an empty graph when nothing was saved yet', async () => {
     vi.mocked(api.getUserData).mockResolvedValue(
       new Response(null, { status: 404 })
@@ -61,11 +90,12 @@ describe('loadSuperGraph', () => {
     expect(loaded).toEqual({
       doc: expect.objectContaining({ nodes: [], edges: [] }),
       location: 'userdata',
-      recovered: false
+      recovered: false,
+      readFailed: false
     })
   })
 
-  it('uses the browser copy when userdata cannot be read', async () => {
+  it('uses the browser copy and says so when userdata cannot be read', async () => {
     await saveToBrowser(savedDoc('draft', 0), 1000)
     vi.mocked(api.getUserData).mockResolvedValue(
       new Response(null, { status: 403 })
@@ -75,6 +105,7 @@ describe('loadSuperGraph', () => {
 
     expect(loaded.doc.nodes.map(({ id }) => id)).toEqual(['draft'])
     expect(loaded.location).toBe('browser')
+    expect(loaded.readFailed).toBe(true)
   })
 
   it('moves an invalid file aside and starts a new graph', async () => {
@@ -101,7 +132,7 @@ describe('loadSuperGraph', () => {
     )
 
     const loaded = await loadSuperGraph()
-    const saved = await createSuperGraphSaver(loaded.location)(savedDoc('a', 0))
+    const saved = await createSuperGraphSaver(loaded).save(savedDoc('a', 0))
 
     expect(saved).toBe('browser')
     expect(api.storeUserData).not.toHaveBeenCalled()
@@ -110,7 +141,7 @@ describe('loadSuperGraph', () => {
 
 describe('createSuperGraphSaver', () => {
   it('saves to userdata while userdata accepts the file', async () => {
-    const save = createSuperGraphSaver()
+    const { save } = createSuperGraphSaver(userdataSession)
 
     const location = await save(savedDoc('a', 0))
 
@@ -126,7 +157,7 @@ describe('createSuperGraphSaver', () => {
     vi.mocked(api.storeUserData).mockResolvedValue(
       new Response(null, { status: 403 })
     )
-    const save = createSuperGraphSaver()
+    const { save } = createSuperGraphSaver(userdataSession)
 
     const first = await save(savedDoc('first', 0))
     const second = await save(savedDoc('second', 0))

@@ -44,12 +44,8 @@ import { uploadMediaFiles } from '@/renderer/extensions/superComfy/media/superMe
 import { resolveModelContract } from '@/renderer/extensions/superComfy/router/routerCatalog'
 import { createRouterExecutor } from '@/renderer/extensions/superComfy/router/routerExecutor'
 
-import {
-  createSuperGraphSaver,
-  loadSuperGraph,
-  saveDraftNow
-} from './superComfyPersistence'
-import type { SaveLocation } from './superComfyPersistence'
+import { createSuperGraphSaver, loadSuperGraph } from './superComfyPersistence'
+import type { SaveLocation, SuperGraphSaver } from './superComfyPersistence'
 
 export const RUN_LIMIT = 50
 const NODES_IN_PARALLEL = 2
@@ -111,7 +107,7 @@ export const useSuperComfyGraphStore = defineStore('superComfyGraph', () => {
   const nodeErrors = ref<Record<NodeId, string>>({})
   const uploads = ref<Record<NodeId, number>>({})
   const appCatalog = useAppCatalog()
-  let save: ((doc: SuperGraphDocument) => Promise<SaveLocation>) | null = null
+  let saver: SuperGraphSaver | null = null
   let loading: Promise<void> | null = null
 
   const isBusy = computed(
@@ -147,24 +143,26 @@ export const useSuperComfyGraphStore = defineStore('superComfyGraph', () => {
   watchDebounced(
     () => state.value.doc,
     async (doc) => {
-      if (!save) return
-      saveLocation.value = await save(doc)
+      if (!saver || unsaved !== doc) return
+      saveLocation.value = await saver.save(doc)
       if (unsaved === doc) unsaved = null
     },
     { debounce: AUTOSAVE_DELAY_MS, maxWait: AUTOSAVE_MAX_WAIT_MS }
   )
 
   useEventListener(window, 'pagehide', () => {
-    if (save && unsaved) saveDraftNow(unsaved)
+    if (saver && unsaved) saver.keepInBrowser(unsaved)
   })
 
   async function load() {
     loadStatus.value = 'loading'
     const loaded = await loadSuperGraph()
-    save = createSuperGraphSaver(loaded.location)
+    saver = createSuperGraphSaver(loaded)
     saveLocation.value = loaded.location
     dispatch({ type: 'documentLoaded', doc: loaded.doc })
+    unsaved = null
     if (loaded.recovered) useToast().warning(t('superComfy.loadFailed'))
+    if (loaded.readFailed) useToast().warning(t('superComfy.loadUnavailable'))
     loadStatus.value = 'ready'
   }
 

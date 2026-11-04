@@ -6501,6 +6501,7 @@
     "runSummary": "{ran} ran · {upToDate} up to date · {blocked} blocked",
     "savedInBrowser": "Saved in this browser only",
     "loadFailed": "Couldn't read the saved graph, so a new one was started",
+    "loadUnavailable": "Couldn't load the saved graph. Reload to try again",
     "modality": {
       "image": "Image",
       "text": "Text",

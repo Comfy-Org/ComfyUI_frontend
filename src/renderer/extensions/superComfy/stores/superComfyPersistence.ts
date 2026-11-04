@@ -1,4 +1,5 @@
 import { Mutex } from 'es-toolkit'
+import { z } from 'zod'
 
 import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import {
@@ -14,6 +15,17 @@ export interface LoadedSuperGraph {
   doc: SuperGraphDocument
   location: SaveLocation
   recovered: boolean
+  readFailed: boolean
+}
+
+export interface SuperGraphSaver {
+  save: (doc: SuperGraphDocument) => Promise<SaveLocation>
+  keepInBrowser: (doc: SuperGraphDocument) => void
+}
+
+interface Draft {
+  doc: SuperGraphDocument
+  readFailed: boolean
 }
 
 type RemoteRead =
@@ -25,36 +37,40 @@ type RemoteRead =
 const DOCUMENT_PATH = 'supercomfy/default.json'
 const INVALID_PATH = 'supercomfy/default.invalid.json'
 
+const zDraft = z.object({ readFailed: z.boolean(), doc: z.unknown() })
+
 function draftKey(): string {
   return `Comfy.SuperComfy.draft:${getWorkspaceId()}`
 }
 
-function readDraft(): SuperGraphDocument | null {
+function readDraft(): Draft | null {
   try {
     const raw = localStorage.getItem(draftKey())
     if (raw === null) return null
-    const parsed = parseSuperGraphDocument(JSON.parse(raw))
-    return parsed.ok ? parsed.doc : null
+    const draft = zDraft.safeParse(JSON.parse(raw))
+    if (!draft.success) return null
+    const parsed = parseSuperGraphDocument(draft.data.doc)
+    return parsed.ok
+      ? { doc: parsed.doc, readFailed: draft.data.readFailed }
+      : null
   } catch {
     return null
   }
 }
 
-function writeDraft(body: string): boolean {
+function writeDraft(draft: Draft): void {
   try {
-    localStorage.setItem(draftKey(), body)
-    return true
+    localStorage.setItem(draftKey(), JSON.stringify(draft))
   } catch {
-    return false
+    return
   }
 }
 
-function clearDraft(): boolean {
+function clearDraft(): void {
   try {
     localStorage.removeItem(draftKey())
-    return true
   } catch {
-    return false
+    return
   }
 }
 
@@ -84,7 +100,7 @@ async function moveInvalidAside(): Promise<boolean> {
 }
 
 function newest(
-  candidates: readonly (SuperGraphDocument | null)[]
+  candidates: readonly (SuperGraphDocument | undefined)[]
 ): SuperGraphDocument {
   return candidates.reduce<SuperGraphDocument>(
     (best, candidate) =>
@@ -99,23 +115,26 @@ export async function loadSuperGraph(): Promise<LoadedSuperGraph> {
   const remote = await readRemote()
   if (remote.status === 'found') {
     return {
-      doc: newest([remote.doc, draft]),
+      doc: newest([remote.doc, draft?.readFailed ? undefined : draft?.doc]),
       location: 'userdata',
-      recovered: false
+      recovered: false,
+      readFailed: false
     }
   }
   if (remote.status === 'invalid') {
     const moved = await moveInvalidAside()
     return {
-      doc: newest([draft]),
+      doc: newest([draft?.doc]),
       location: moved ? 'userdata' : 'browser',
-      recovered: true
+      recovered: true,
+      readFailed: false
     }
   }
   return {
-    doc: newest([draft]),
+    doc: newest([draft?.doc]),
     location: remote.status === 'missing' ? 'userdata' : 'browser',
-    recovered: false
+    recovered: false,
+    readFailed: remote.status === 'unavailable'
   }
 }
 
@@ -132,31 +151,39 @@ async function storeRemote(body: string): Promise<boolean> {
   }
 }
 
-/** Keeps the document in the browser right away, for a page that is closing. */
-export function saveDraftNow(doc: SuperGraphDocument): void {
-  writeDraft(JSON.stringify({ ...doc, savedAt: Date.now() }))
+function stamped(doc: SuperGraphDocument): SuperGraphDocument {
+  return { ...doc, savedAt: Date.now() }
 }
 
 /** Returns a serialised saver that falls back to the browser for the session. */
-export function createSuperGraphSaver(
-  initial: SaveLocation = 'userdata'
-): (doc: SuperGraphDocument) => Promise<SaveLocation> {
+export function createSuperGraphSaver({
+  location: initial,
+  readFailed
+}: Pick<LoadedSuperGraph, 'location' | 'readFailed'>): SuperGraphSaver {
   const mutex = new Mutex()
   let location = initial
 
-  return async (doc) => {
+  async function save(doc: SuperGraphDocument): Promise<SaveLocation> {
     await mutex.acquire()
     try {
-      const body = JSON.stringify({ ...doc, savedAt: Date.now() })
-      if (location === 'userdata' && (await storeRemote(body))) {
+      const next = stamped(doc)
+      if (
+        location === 'userdata' &&
+        (await storeRemote(JSON.stringify(next)))
+      ) {
         clearDraft()
         return location
       }
       location = 'browser'
-      writeDraft(body)
+      writeDraft({ doc: next, readFailed })
       return location
     } finally {
       mutex.release()
     }
+  }
+
+  return {
+    save,
+    keepInBrowser: (doc) => writeDraft({ doc: stamped(doc), readFailed })
   }
 }
