@@ -280,37 +280,10 @@ export const useWorkflowService = () => {
     }
   }
 
-  /**
-   * Deletes a confirmed overwrite destination and hands back a restore
-   * function.
-   *
-   * The save flows below can still refuse after this point — a rejected draft
-   * relocation makes `renameWorkflow` return false — and a refusal must not
-   * leave the user with neither the destination they confirmed overwriting nor
-   * a replacement. The destination's content is read into memory before the
-   * delete so the restore does not depend on anything the delete removed.
-   *
-   * A readable snapshot is a precondition of the delete, not something the
-   * restore checks for: `originalContent` is null for a destination that was
-   * never loaded and `readStoredWorkflow` returns null on a transient GET
-   * failure, and deleting on either would leave a restore that can only report
-   * that it has nothing to write. Refusing instead keeps the destination the
-   * user confirmed overwriting intact, which is the weaker of the two outcomes
-   * to hand back from a save.
-   *
-   * @returns the restore function, or null when the destination was not
-   * deleted (nothing to restore, and the caller must not continue).
-   */
   const deleteOverwriteDestination = async (
     existing: ComfyWorkflow
   ): Promise<(() => Promise<void>) | null> => {
     const path = existing.path
-    // Snapshot the stored bytes directly rather than going through
-    // `existing.load()`/`existing.save()`: `ComfyWorkflow.load()` attaches a
-    // change tracker and touches the destination's own draft, and
-    // `ComfyWorkflow.save()` re-serializes from the live graph, which this
-    // inactive workflow does not have. `originalContent` is the last-saved
-    // content, so an already-loaded destination costs no extra request.
     const content = existing.originalContent ?? (await readStoredWorkflow(path))
 
     if (content === null) {
@@ -349,19 +322,6 @@ export const useWorkflowService = () => {
     }
   }
 
-  /**
-   * Runs the remainder of a save flow with a deleted overwrite destination's
-   * restore armed against both shapes of failure, not just a refusal.
-   *
-   * A refused draft relocation surfaces as `renameWorkflow` returning false,
-   * but every other step after the destructive delete reports by throwing:
-   * `UserFile.rename` raises on a non-200 `moveUserData` and `UserFile.save`
-   * passes `throwOnError`. Arming the restore on the false return alone leaves
-   * an ordinary server-side failure with the destination deleted and no
-   * replacement written — exactly the outcome the overwrite confirmation
-   * promised against. The original rejection still propagates; the restore is
-   * a side effect on the way out.
-   */
   const withOverwriteRestore = async (
     restore: (() => Promise<void>) | null,
     run: () => Promise<boolean>
@@ -471,7 +431,6 @@ export const useWorkflowService = () => {
     return await withOverwriteRestore(restoreDestination, async () => {
       if (isSelfOverwrite) {
         workflow.changeTracker?.prepareForSave()
-        // Call workflowStore.saveWorkflow directly: saveWorkflowAs emits its own is_new:true event below, so delegating to saveWorkflow() would also fire is_new:false and run prepareForSave a second time.
         await workflowStore.saveWorkflow(workflow)
       } else {
         let target: ComfyWorkflow
@@ -520,12 +479,6 @@ export const useWorkflowService = () => {
         restoreDestination = await deleteOverwriteDestination(existing)
         if (!restoreDestination) return false
       }
-      // The guard ends at a successful rename, not at the end of the save.
-      // Unlike `saveWorkflowAs`, this rename is a persisted `moveUserData`, so
-      // once it succeeds `expectedPath` holds the user's own workflow and
-      // writing the old destination back over it would destroy the file the
-      // rename just created. A save failure after that point is an ordinary
-      // save failure, not a lost overwrite destination.
       const renamed = await withOverwriteRestore(restoreDestination, () =>
         renameWorkflow(workflow, expectedPath)
       )
@@ -836,13 +789,6 @@ export const useWorkflowService = () => {
       return loaded
     }, workflow.path)
 
-  /**
-   * @returns `false` only when the rename did not happen, which is what the
-   * save flows above branch on. A rename that succeeded while its unsaved
-   * draft could not follow is reported to the user here and still returns
-   * `true`: the file moved, so reporting otherwise would arm an overwrite
-   * restore against a destination this rename has already written.
-   */
   const renameWorkflow = async (
     workflow: ComfyWorkflow,
     newPath: string

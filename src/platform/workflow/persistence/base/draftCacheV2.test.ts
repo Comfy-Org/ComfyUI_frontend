@@ -248,8 +248,6 @@ describe('draftCacheV2', () => {
         'c'
       )
 
-      // The payload never moves, so the key stays the one `a` was stored
-      // under; `c` is identified by the entry's `path`, not by its key.
       const keyA = hashPath('workflows/a.json')
       const keyB = hashPath('workflows/b.json')
       expect(result!.order).toEqual([keyB, keyA])

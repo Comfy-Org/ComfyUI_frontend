@@ -793,9 +793,6 @@ describe('useWorkflowStore', () => {
       const renaming = store.renameWorkflow(workflow, newPath)
       await Promise.resolve()
 
-      // The remote rename has not resolved, so `workflow.path` is still the
-      // old path and `persistActiveWorkflowDraft()` targets it: this is an
-      // edit followed by a tab switch while the request is in flight.
       expect(workflow.path).toBe(oldPath)
       draftStore.saveDraft(oldPath, '{"edits":"during"}', {
         name: workflow.key,
@@ -839,15 +836,10 @@ describe('useWorkflowStore', () => {
       const renaming = store.renameWorkflow(workflow, newPath)
       await Promise.resolve()
 
-      // The edit lands while the request is in flight, so it is persisted
-      // against the still-old path...
       draftStore.saveDraft(oldPath, '{"edits":"during"}', {
         name: workflow.key,
         isTemporary: true
       })
-      // ...and only then does the device run out of room for a draft payload.
-      // Completing the rename must not need one: the newest bytes are already
-      // in the slot the draft's index entry names.
       const realSetItem = localStorage.setItem.bind(localStorage)
       const setItemSpy = vi
         .spyOn(localStorage, 'setItem')
@@ -900,8 +892,6 @@ describe('useWorkflowStore', () => {
         draftRelocated: false
       })
 
-      // The file moved, so the tab and the lookup follow it even though the
-      // draft did not.
       expect(workflow.path).toBe(newPath)
       expect(store.getWorkflowByPath(newPath)?.path).toBe(newPath)
 
@@ -982,8 +972,6 @@ describe('useWorkflowStore', () => {
       const renameError = new Error('server rejected the move')
       vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
         async () => {
-          // Storage fills while the request is in flight, so any recovery that
-          // needs its own payload write is refused by the time it is needed.
           fillStorage()
           throw renameError
         }
@@ -1028,8 +1016,6 @@ describe('useWorkflowStore', () => {
       const renaming = store.renameWorkflow(workflow, newPath)
       await Promise.resolve()
 
-      // The account changes while the remote move is still in flight, and the
-      // newly selected one has its own draft under the same name.
       draftStore.setAuthSubject('account-b')
       draftStore.saveDraft(oldPath, '{"owner":"b"}', {
         name: workflow.key,
@@ -1042,12 +1028,10 @@ describe('useWorkflowStore', () => {
         draftRelocated: true
       })
 
-      // B's drafts and lineage are not a rename this account never made.
       draftStore.reset()
       expect(draftStore.getDraft(oldPath)?.data).toBe('{"owner":"b"}')
       expect(draftStore.getDraft(newPath)).toBeNull()
 
-      // A's draft still followed A's file.
       draftStore.setAuthSubject('account-a')
       draftStore.reset()
       expect(draftStore.getDraft(newPath)?.data).toBe('{"owner":"a"}')
@@ -1080,8 +1064,6 @@ describe('useWorkflowStore', () => {
       const renaming = store.renameWorkflow(workflow, newPath)
       await Promise.resolve()
 
-      // The account changes while the remote move is still in flight, and the
-      // newly selected one has its own draft at the rename destination.
       draftStore.setAuthSubject('account-b')
       draftStore.saveDraft(newPath, '{"owner":"b"}', {
         name: 'renamed.json',
@@ -1091,12 +1073,10 @@ describe('useWorkflowStore', () => {
       rejectRename()
       await expect(renaming).rejects.toBe(renameError)
 
-      // B's draft was not dragged back onto A's old path.
       draftStore.reset()
       expect(draftStore.getDraft(newPath)?.data).toBe('{"owner":"b"}')
       expect(draftStore.getDraft(oldPath)).toBeNull()
 
-      // A's draft is still recoverable where A's file still is.
       draftStore.setAuthSubject('account-a')
       draftStore.reset()
       expect(draftStore.getDraft(oldPath)?.data).toBe('{"owner":"a"}')

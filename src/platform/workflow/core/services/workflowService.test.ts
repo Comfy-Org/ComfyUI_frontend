@@ -3640,8 +3640,6 @@ describe('useWorkflowService', () => {
 
     it('should abandon the overwrite and leave the destination intact when its contents cannot be read', async () => {
       const workflow = createTemporaryWorkflow()
-      // Never loaded, so there is no in-memory snapshot to fall back on, and
-      // the stored copy cannot be read either.
       const destination = new ComfyWorkflowClass({
         path: 'workflows/my-workflow.json',
         modified: Date.now(),
@@ -3663,7 +3661,6 @@ describe('useWorkflowService', () => {
 
       expect(result).toBe(false)
       expect(getUserData).toHaveBeenCalledWith('workflows/my-workflow.json')
-      // Nothing destructive ran, so there is nothing to restore.
       expect(workflowStore.deleteWorkflow).not.toHaveBeenCalled()
       expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
       expect(storeUserData).not.toHaveBeenCalled()
@@ -4156,8 +4153,6 @@ describe('useWorkflowService', () => {
       vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
       vi.spyOn(workflowStore, 'syncWorkflows').mockResolvedValue(undefined)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
-      // `UserFile.rename` throws on a non-200 `moveUserData`, so a server-side
-      // rename failure reaches the caller as a rejection rather than `false`.
       vi.mocked(workflowStore.renameWorkflow).mockRejectedValue(
         new Error("Failed to rename file 'workflows/test.json': 500")
       )
@@ -4180,8 +4175,6 @@ describe('useWorkflowService', () => {
       const workflow = createSaveableWorkflow('workflows/test.json')
       workflow.initialMode = 'app'
 
-      // Never loaded, so there is no in-memory snapshot to fall back on, and
-      // the stored copy cannot be read either.
       const destination = new ComfyWorkflowClass({
         path: 'workflows/test.app.json',
         modified: Date.now(),
@@ -4201,7 +4194,6 @@ describe('useWorkflowService', () => {
 
       expect(result).toBe(false)
       expect(getUserData).toHaveBeenCalledWith('workflows/test.app.json')
-      // Nothing destructive ran, so there is nothing to restore.
       expect(workflowStore.deleteWorkflow).not.toHaveBeenCalled()
       expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
       expect(storeUserData).not.toHaveBeenCalled()
@@ -4219,8 +4211,6 @@ describe('useWorkflowService', () => {
       vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
       vi.spyOn(workflowStore, 'syncWorkflows').mockResolvedValue(undefined)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
-      // The rename succeeds, so `workflows/test.app.json` now holds the user's
-      // own workflow. Restoring the old destination here would destroy it.
       vi.mocked(workflowStore.saveWorkflow).mockRejectedValue(
         new Error("Failed to save file 'workflows/test.app.json': 500")
       )

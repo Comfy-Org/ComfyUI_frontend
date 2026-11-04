@@ -397,9 +397,6 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
       const name = workflowName.value.trim()
       if (!name) return
       const newPath = buildWorkflowPath(workflow.directory, name)
-      // A refused draft relocation leaves the workflow at its temporary path,
-      // so saving here would persist it under that path and this dialog would
-      // advance as though the named save succeeded.
       if (!(await workflowService.renameWorkflow(workflow, newPath))) {
         showSaveFailed()
         return

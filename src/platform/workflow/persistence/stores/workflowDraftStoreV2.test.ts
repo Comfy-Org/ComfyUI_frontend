@@ -558,8 +558,6 @@ describe('workflowDraftStoreV2', () => {
       })
       store.removeDraft(COLLIDING_PATH_A)
 
-      // A move writes no payload at all, so a device with no room left for one
-      // cannot refuse it and nothing has to be evicted to make space.
       failPayloadWrites()
       const moved = store.moveDraft(
         COLLIDING_PATH_B,
@@ -620,10 +618,6 @@ describe('workflowDraftStoreV2', () => {
         store.moveDraft('workflows/reused.json', 'workflows/one.json', 'one')
       ).toBe(true)
 
-      // A new workflow takes the name the first one was renamed away from. The
-      // first draft still occupies that path's preferred key, so the second
-      // lands on the collision key — and renaming it away leaves *both*
-      // preferred keys occupied by drafts that no longer answer to the path.
       store.saveDraft('workflows/reused.json', '{"data":"second"}', {
         name: 'second',
         isTemporary: true
@@ -641,8 +635,6 @@ describe('workflowDraftStoreV2', () => {
         '{"data":"second"}'
       )
 
-      // A third draft at the reused path must get a slot of its own rather
-      // than overwriting either renamed draft.
       store.saveDraft('workflows/reused.json', '{"data":"third"}', {
         name: 'third',
         isTemporary: true

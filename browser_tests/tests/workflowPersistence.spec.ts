@@ -1074,8 +1074,6 @@ test.describe('Workflow Persistence', () => {
     await fitToViewInstant(comfyPage)
     await comfyPage.menu.topbar.saveWorkflow(originalName)
 
-    // A second open workflow to switch to, which is what triggers the draft
-    // write.
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     await comfyPage.menu.topbar.saveWorkflow(otherName)
     await waitForWorkflowTabState(comfyPage)
@@ -1088,8 +1086,6 @@ test.describe('Workflow Persistence', () => {
     await workflowsTab.switchToWorkflow(originalName)
     await comfyPage.workflow.waitForWorkflowIdle()
 
-    // Hold the rename response open so the edit below lands while
-    // `workflow.path` is still the pre-rename path.
     let releaseRename = () => {}
     const renameHeld = new Promise<void>((resolve) => {
       releaseRename = resolve
@@ -1112,8 +1108,6 @@ test.describe('Workflow Persistence', () => {
           .isBusy
     )
 
-    // Edit, then switch workflows: `beforeLoadNewGraph()` persists the draft
-    // using the still-old path.
     await workflowsTab.close()
     const editedNode = await getRequiredFirstNodeRef(
       comfyPage,
@@ -1135,8 +1129,6 @@ test.describe('Workflow Persistence', () => {
     )
     await comfyPage.page.unroute('**/userdata/**/move/**')
 
-    // Read back at the final path: the collapse made during the window must
-    // have followed the workflow to its new name.
     await comfyPage.workflow.reloadAndWaitForApp()
     await workflowsTab.open()
     await workflowsTab.switchToWorkflow(renamedName)
@@ -1175,7 +1167,6 @@ test.describe('Workflow Persistence', () => {
     await fitToViewInstant(comfyPage)
     await comfyPage.menu.topbar.saveWorkflow(originalName)
 
-    // A second open workflow to switch to, which is what persists the draft.
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     await comfyPage.menu.topbar.saveWorkflow(otherName)
     await waitForWorkflowTabState(comfyPage)
@@ -1185,8 +1176,6 @@ test.describe('Workflow Persistence', () => {
     await workflowsTab.switchToWorkflow(originalName)
     await comfyPage.workflow.waitForWorkflowIdle()
 
-    // Hold the rename response open so the edit below lands while
-    // `workflow.path` is still the pre-rename path.
     let releaseRename = () => {}
     const renameHeld = new Promise<void>((resolve) => {
       releaseRename = resolve
@@ -1209,8 +1198,6 @@ test.describe('Workflow Persistence', () => {
           .isBusy
     )
 
-    // Edit, then switch workflows: `beforeLoadNewGraph()` persists the newer
-    // draft using the still-old path.
     await workflowsTab.close()
     const editedNode = await getRequiredFirstNodeRef(
       comfyPage,
@@ -1224,11 +1211,6 @@ test.describe('Workflow Persistence', () => {
     await workflowsTab.switchToWorkflow(otherName)
     await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
 
-    // Only now does the device run out of room for a draft payload, so the
-    // newer draft is already written and completing the rename is the step
-    // that has nowhere to write. Draft payload writes are refused
-    // specifically: every other storage key keeps working, so this is a
-    // full-device condition rather than a broken app.
     await comfyPage.page.evaluate(() => {
       const realSetItem = localStorage.setItem.bind(localStorage)
       localStorage.setItem = (key: string, value: string) => {
@@ -1246,13 +1228,10 @@ test.describe('Workflow Persistence', () => {
           .isBusy
     )
     await comfyPage.page.unroute('**/userdata/**/move/**')
-    // Removing the own property restores `Storage.prototype.setItem`.
     await comfyPage.page.evaluate(() =>
       Reflect.deleteProperty(localStorage, 'setItem')
     )
 
-    // Read back at the name the workflow now has: the rename succeeded, so
-    // the edit made during it must be recoverable there.
     await comfyPage.workflow.reloadAndWaitForApp()
     await workflowsTab.open()
     await workflowsTab.switchToWorkflow(renamedName)
@@ -1264,8 +1243,6 @@ test.describe('Workflow Persistence', () => {
       'Renamed workflow should restore its node after the reload'
     )
     await expect.poll(() => restoredNode.isCollapsed()).toBe(true)
-    // The leading marker is the unsaved-changes indicator, so the renamed file
-    // is the one the recovered edit now belongs to.
     await expect
       .poll(() => workflowsTab.getOpenedWorkflowNames())
       .toEqual(expect.arrayContaining([`*${renamedName}`]))
@@ -1296,7 +1273,6 @@ test.describe('Workflow Persistence', () => {
     await fitToViewInstant(comfyPage)
     await comfyPage.menu.topbar.saveWorkflow(originalName)
 
-    // A second open workflow to switch to, which is what persists the draft.
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     await comfyPage.menu.topbar.saveWorkflow(otherName)
     await waitForWorkflowTabState(comfyPage)
@@ -1306,8 +1282,6 @@ test.describe('Workflow Persistence', () => {
     await workflowsTab.switchToWorkflow(originalName)
     await comfyPage.workflow.waitForWorkflowIdle()
 
-    // Make an unsaved edit and leave it persisted as a draft under the
-    // original name.
     await workflowsTab.close()
     const editedNode = await getRequiredFirstNodeRef(
       comfyPage,
@@ -1323,12 +1297,6 @@ test.describe('Workflow Persistence', () => {
     await workflowsTab.switchToWorkflow(originalName)
     await comfyPage.workflow.waitForWorkflowIdle()
 
-    // The server rejects the move, and the device runs out of room for a draft
-    // payload *while the request is in flight* — which is the only ordering
-    // that matters here. Filling storage before the rename starts refuses the
-    // relocation up front instead, which is an already-covered path. Draft
-    // payload writes are refused specifically: every other storage key keeps
-    // working, so this is a full-device condition rather than a broken app.
     await comfyPage.page.route('**/userdata/**/move/**', async (route) => {
       await comfyPage.page.evaluate(() => {
         const realSetItem = localStorage.setItem.bind(localStorage)
@@ -1356,12 +1324,8 @@ test.describe('Workflow Persistence', () => {
     )
     await comfyPage.page.unroute('**/userdata/**/move/**')
 
-    // Read back at the name the workflow still has: the rename never happened,
-    // so the unsaved edit must still be there.
     await comfyPage.workflow.reloadAndWaitForApp()
     await workflowsTab.open()
-    // The leading marker is the unsaved-changes indicator, so the recovered
-    // draft is visible as such before the graph is even opened.
     await expect
       .poll(() => workflowsTab.getOpenedWorkflowNames())
       .toEqual(expect.arrayContaining([`*${originalName}`]))

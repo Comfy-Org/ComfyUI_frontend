@@ -47,18 +47,7 @@ interface DraftMeta {
   isTemporary: boolean
 }
 
-/**
- * A draft relocation that has been admitted but not performed. Pass to
- * `commitDraftRelocation` once the operation it accompanies has committed; a
- * handle that is never committed has nothing to clean up, because staging
- * writes nothing.
- */
 export interface StagedDraftRelocation {
-  /**
-   * The persistence scope the relocation was staged in. Carried on the handle
-   * so completion cannot drift onto another account's drafts when the
-   * authenticated subject changes mid-operation.
-   */
   readonly workspaceId: string
   readonly oldPath: string
   readonly newPath: string
@@ -348,25 +337,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     })
   }
 
-  /**
-   * Admits a draft relocation without performing it.
-   *
-   * Phase one of an ordering that needs no rollback, and it writes nothing at
-   * all. A relocation re-points one index entry and never copies a payload
-   * (`retargetEntry`), so there is no destination to reserve and no source to
-   * protect: a caller that stages and then abandons its rename leaves storage
-   * exactly as it found it. Staging exists only so a relocation that cannot be
-   * completed is refused *before* the remote step it accompanies happens,
-   * rather than after the file has already moved.
-   *
-   * The admission test is `retargetEntry` itself rather than a restatement of
-   * its preconditions, so staging and committing cannot disagree about what is
-   * relocatable.
-   *
-   * @returns `refused` when `newPath` already has its own draft — nothing was
-   * touched and the caller must not proceed with the operation this
-   * accompanies. Otherwise a handle for `commitDraftRelocation`.
-   */
   function stageDraftRelocation(
     oldPath: string,
     newPath: string,
@@ -379,8 +349,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       relocation: { workspaceId, oldPath, newPath, name }
     }
 
-    // Nothing to relocate up front. The caller still commits, because a draft
-    // can be written at `oldPath` while its rename is in flight.
     if (!getEntryByPath(index, oldPath)) return staged
 
     if (!retargetEntry(index, oldPath, newPath, name))
@@ -388,34 +356,10 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     return staged
   }
 
-  /**
-   * Completes a staged relocation, in the scope it was staged in.
-   *
-   * Runs only once the step this relocation accompanies has committed. The
-   * index is deliberately re-read rather than carried on the handle, because a
-   * draft persisted while a rename was in flight writes to `oldPath` —
-   * `workflow.path` is the old path until the request resolves — and that
-   * advances the index. Re-reading is also what carries that newer draft
-   * forward for free: the in-flight write landed on the very key this entry
-   * names, so re-pointing the entry associates `newPath` with the newest bytes
-   * by construction. There is no copy to refresh and so no refresh to refuse.
-   *
-   * Every read and write uses the handle's `workspaceId` rather than the
-   * current one: an account transition during the await must not let account
-   * A's relocation touch account B's drafts, and A's draft must still follow
-   * A's file.
-   *
-   * @returns false when the draft was not relocated, which leaves it readable
-   * at `oldPath` — either because `newPath` acquired its own draft during the
-   * window, or because the index could not be written at all. Nothing is
-   * destroyed in either case.
-   */
   function commitDraftRelocation(relocation: StagedDraftRelocation): boolean {
     const { workspaceId, oldPath, newPath, name } = relocation
     const index = loadIndex(workspaceId)
 
-    // The source was discarded during the window (workflow closed or deleted).
-    // There is nothing to revive: the user let the draft go.
     if (!getEntryByPath(index, oldPath)) return true
 
     const retargeted = retargetEntry(index, oldPath, newPath, name)
@@ -441,18 +385,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     return false
   }
 
-  /**
-   * Moves a draft from one path to another (rename).
-   *
-   * Stages and immediately commits, which is only safe because nothing can
-   * intervene between the two. Where a remote request sits between them, stage
-   * and commit explicitly so the relocation is admitted before the request and
-   * completed after it.
-   *
-   * @returns false when the source draft could not be relocated (left
-   * recoverable at `oldPath`); true otherwise, including when there was
-   * nothing to move.
-   */
   function moveDraft(oldPath: string, newPath: string, name: string): boolean {
     const staged = stageDraftRelocation(oldPath, newPath, name)
     if (staged.kind === 'refused') return false

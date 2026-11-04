@@ -517,23 +517,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
-  /**
-   * Renames a workflow, relocating its draft in step with the remote move.
-   *
-   * The draft relocation is admitted before the remote rename is awaited and
-   * completed only after it resolves. Admitting it writes nothing — relocating
-   * a draft re-points one index entry and never copies a payload — so the two
-   * failure shapes this ordering exists to rule out are both unrepresentable
-   * rather than guarded: a destination that is already taken is known before
-   * anything moves, and a rejected rename is abandoned with nothing to roll
-   * back, because nothing was reserved.
-   *
-   * Committing afterwards also closes the in-flight window on its own. While
-   * the request is pending `workflow.path` is still the old path, so an edit
-   * plus a tab switch runs `persistActiveWorkflowDraft()` against it; that
-   * write lands on the key the draft's index entry already names, so
-   * re-pointing the entry carries the newer draft forward by construction.
-   */
   const renameWorkflow = async (
     workflow: ComfyWorkflow,
     newPath: string
@@ -549,18 +532,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const staged = draftStore.stageDraftRelocation(oldPath, newPath, newKey)
       if (staged.kind === 'refused')
         return { renamed: false, draftRelocated: false }
-      // Name the handle's type rather than leaving it implicit at the call
-      // shape: it carries the persistence scope the relocation belongs to.
       const relocation: StagedDraftRelocation = staged.relocation
 
       await workflow.rename(newPath)
 
-      // The file has moved, so the lookup and the tab below must follow it
-      // whatever the draft does. A refused relocation is therefore reported
-      // alongside the successful rename rather than as a failed one: `renamed:
-      // false` means "nothing moved" to every caller, and the save flows act
-      // on it — `withOverwriteRestore` would rewrite a destination this rename
-      // has already replaced.
       const draftRelocated = draftStore.commitDraftRelocation(relocation)
       void workflowRenamed.trigger(workflow)
 

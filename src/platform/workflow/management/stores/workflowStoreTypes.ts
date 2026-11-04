@@ -8,15 +8,8 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { ComfyWorkflow, LoadedComfyWorkflow } from './comfyWorkflow'
 
-/**
- * Outcome of a rename. The two are independent: a workflow can be renamed
- * while its unsaved draft could not follow, and the caller must not report
- * that as a failed rename — the file really did move.
- */
 export interface RenameWorkflowResult {
-  /** The workflow was renamed. */
   renamed: boolean
-  /** Its unsaved draft followed the rename, and is readable at the new path. */
   draftRelocated: boolean
 }
 
