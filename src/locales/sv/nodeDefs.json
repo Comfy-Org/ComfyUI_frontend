@@ -13099,7 +13099,7 @@
   },
   "MinimaxHailuo03ReferenceNode": {
     "display_name": "MiniMax H3: referens till video",
-    "description": "Genererar video konditionerad på referensbilder, -videor och -ljud med MiniMax H3-modellen. Hänvisa till referenserna i prompten efter deras ordning: ”Image 1”, ”Image 2”, ”Video 1”, ”Audio 1” och så vidare.",
+    "description": "Genererar video konditionerad på referensbilder, -videor och -ljud med MiniMax H3-modellerna. Hänvisa till referenserna i prompten efter deras ordning: {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1 och så vidare.",
     "inputs": {
       "model": {
         "name": "modell",

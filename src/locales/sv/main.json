@@ -2476,7 +2476,8 @@
     "openFullscreen": "Öppna redigeraren i helskärmsläge",
     "editorTitle": "Avgränsningsrutor",
     "drawRegionHint": "Dra på arbetsytan för att lägga till ett område.",
-    "deleteRegion": "Ta bort området {tag}"
+    "deleteRegion": "Ta bort området {tag}",
+    "boxCount": "{current} av {max} ruta | {current} av {max} rutor"
   },
   "palette": {
     "addColor": "Lägg till en färg",
@@ -2657,6 +2658,9 @@
       "redirectNotice": "Du omdirigeras till",
       "appTypeNative": "Inbyggd app",
       "appTypeWeb": "Webbapp",
+      "signedInAs": "Inloggad som",
+      "notYou": "Inte du?",
+      "switchAccount": "Byt konto",
       "errorExpired": "Den här samtyckesbegäran har upphört eller redan använts. Starta om från klientappen.",
       "errorScopeBroadening": "De tidigare godkända behörigheterna täcker inte denna begäran. Du måste ge auktorisering på nytt med de nya behörigheterna.",
       "errorUnavailable": "Den här funktionen är inte tillgänglig just nu. Kontakta supporten om problemet kvarstår.",
@@ -2911,6 +2915,11 @@
   },
   "credits": {
     "activity": "Aktivitet",
+    "addCreditsRefusal": {
+      "topupPurchasesPaused": "Det går inte att köpa krediter just nu. Försök igen senare.",
+      "paymentPastDue": "Uppdatera betalningsmetoden för att lägga till krediter.",
+      "unavailable": "Det går inte att lägga till krediter för den här arbetsytan just nu."
+    },
     "workspaceCredits": "Arbetsytekrediter",
     "insufficient": {
       "memberTitle": "Denna arbetsyta har slut på krediter",
@@ -2918,6 +2927,7 @@
       "memberCta": "Okej, jag förstår"
     },
     "credits": "Krediter",
+    "creditUnit": "Kredit | Krediter",
     "yourCreditBalance": "Ditt kreditsaldo",
     "purchaseCredits": "Köp krediter",
     "invoiceHistory": "Fakturahistorik",
@@ -3608,7 +3618,13 @@
         "pastDueBody": "Ditt team har använt alla sina krediter. Uppdatera betalningsmetoden för att lägga till fler.",
         "pastDueMemberBody": "Ditt team har använt alla sina krediter. Be arbetsytans ägare att uppdatera betalningsmetoden.",
         "pastDuePersonalBody": "Du har använt alla dina krediter. Uppdatera betalningsmetoden för att lägga till fler.",
-        "memberBodyNoDate": "Ditt team har använt alla sina krediter. Be arbetsytans ägare att lägga till fler krediter."
+        "memberBodyNoDate": "Ditt team har använt alla sina krediter. Be arbetsytans ägare att lägga till fler krediter.",
+        "refusedBody": "Ditt team har använt alla sina krediter.",
+        "refusedPersonalBody": "Du har använt alla dina krediter.",
+        "pausedBody": "Ditt team har använt alla sina krediter. Det går inte att köpa krediter just nu. Krediterna fylls på {date}.",
+        "pausedBodyNoDate": "Ditt team har använt alla sina krediter. Det går inte att köpa krediter just nu. Försök igen senare eller kontakta supporten.",
+        "pausedPersonalBody": "Du har använt alla dina krediter. Det går inte att köpa krediter just nu. Krediterna fylls på {date}.",
+        "pausedPersonalBodyNoDate": "Du har använt alla dina krediter. Det går inte att köpa krediter just nu. Försök igen senare eller kontakta supporten."
       },
       "ending": {
         "title": "Din teamplan slutar {date}",
@@ -3632,7 +3648,8 @@
       },
       "lowCredits": {
         "title": "Krediterna är snart slut",
-        "localBody": "Du har {credits} krediter kvar. Lägg till krediter för att fortsätta köra partnernoder."
+        "localBody": "Du har {credits} krediter kvar. Lägg till krediter för att fortsätta köra partnernoder.",
+        "pausedBody": "Du har {credits} kredit kvar. Det går inte att köpa krediter just nu. | Du har {credits} krediter kvar. Det går inte att köpa krediter just nu."
       },
       "planCheckout": {
         "dismiss": "Stäng",
@@ -3897,6 +3914,7 @@
       "autoTopUp": {
         "actions": {
           "manage": "Hantera",
+          "addPaymentMethod": "Lägg till betalningsmetod",
           "turnOn": "Aktivera",
           "updatePayment": "Uppdatera betalning"
         },
@@ -3905,11 +3923,14 @@
         "limit": "Månadsgräns: {spent} av {limit} har använts",
         "limitTooltip": "Räknar bara automatiska påfyllningar. Återställs {date}.",
         "limitTooltipNoDate": "Räknar bara automatiska påfyllningar.",
-        "off": "Fyller på krediter när ditt saldo blir lågt",
+        "off": "Fyller på krediter när ditt saldo blir lågt.",
+        "noPaymentMethod": "Automatisk påfyllning behöver en betalningsmetod. Lägg till en för att aktivera den.",
+        "noDefaultPaymentMethod": "Automatisk påfyllning behöver en standardbetalningsmetod. Ange en för att aktivera den.",
+        "member": "Krediter kan fyllas på automatiskt när de håller på att ta slut. Kontakta arbetsytans ägare för att hantera detta.",
         "onHold": "Ingen standardbetalningsmetod. Ange en för att återuppta automatisk påfyllning.",
         "paused": "Månadsgränsen har nåtts. Återupptas {date}.",
         "pausedNoDate": "Månadsgränsen har nåtts.",
-        "rule": "Lägger till {amount} ({credits} krediter) när saldot understiger {threshold} krediter.",
+        "rule": "Fyller på till {target} krediter när saldot understiger {threshold} krediter.",
         "status": {
           "failed": "Misslyckades",
           "turnedOff": "Avstängd",
@@ -3928,12 +3949,14 @@
         "overdrawn": "Dina körningar använde {count} kredit mer än du hade. | Dina körningar använde {count} krediter mer än du hade.",
         "plan": "Abonnemang",
         "planOfPool": "{remaining} av {total}",
-        "planTooltip": "Krediter som ingår i abonnemanget. De fylls på varje faktureringsperiod.",
+        "planTooltip": "Abonnemangskrediter används före påfyllningskrediter.",
         "rateInfo": "Om krediter",
         "rateTooltip": "Krediter betalar för körningar. {credits} krediter = 1 USD.",
+        "tooltipLabel": "Om krediter",
+        "tooltip": "Krediter fungerar i Comfy Cloud, ComfyUI och Comfy API.",
         "title": "Krediter",
         "topUp": "Påfyllning",
-        "topUpTooltip": "Krediter som du har lagt till. De används när abonnemangets krediter är slut.",
+        "topUpTooltip": "Används när abonnemangskrediterna är slut.",
         "unavailable": "Det gick inte att läsa in ditt saldo."
       },
       "handoff": {
@@ -4028,7 +4051,7 @@
     "roleOwner": "Ägare",
     "roleMember": "Medlem",
     "createWorkspace": "Skapa en arbetsyta",
-    "maxWorkspacesReached": "Du kan bara äga 10 arbetsytor. Ta bort en för att skapa en ny.",
+    "maxWorkspacesReached": "Du kan bara äga {max} arbetsyta. Ta bort den för att skapa en ny. | Du kan bara äga {max} arbetsytor. Ta bort en för att skapa en ny.",
     "failedToSwitch": "Det gick inte att byta arbetsyta",
     "managedByOrganization": "Din organisation hanterar dina arbetsytor, så du kan inte skapa en."
   },
@@ -5784,6 +5807,19 @@
       "answerUncertain": "Det gick inte att bekräfta att ditt svar nådde agenten. Det kan ändå ha tillämpats. Läs in sidan igen för att se aktuell status.",
       "answerSuperseded": "Detta har redan besvarats någon annanstans, så det svaret användes i stället för ditt."
     },
+    "extensionChange": {
+      "disabled": "Stängde av nodpaketet {pack}",
+      "enabled": "Aktiverade nodpaketet {pack}",
+      "removed": "Tog bort nodpaketet {pack}",
+      "restartHint": "Ändringen börjar gälla när ComfyUI har startats om. Läs in sidan igen efter omstarten."
+    },
+    "toolOutcomeUnknown": "{tool} — resultatet är okänt",
+    "toolFailed": "{tool} misslyckades",
+    "toolRemovedNodePack": "Tog bort ett nodpaket",
+    "toolRemovingNodePack": "Tar bort ett nodpaket",
+    "toolSwitchedNodePack": "Bytte nodpaket",
+    "toolSwitchingNodePack": "Byter nodpaket",
+    "canvasNotReadyForSend": "Arbetsytan på den här fliken är inte klar ännu, så ditt meddelande skickades inte. Försök igen om en stund.",
     "dismiss": "Stäng",
     "latest": "Senaste",
     "copyUnavailable": "Endast den aktuella konversationen kan kopieras i denna version",
@@ -6039,6 +6075,8 @@
     "workflowSyncFailedDetailStaleClient": "Sidan är inaktuell, så agentens ändringar kan inte visas. Läs in sidan igen för att se dem.",
     "workflowSyncFailedDetailStaleHost": "Sidan ligger före agenttjänsten, så agentens ändringar kan inte visas här ännu. Läs in sidan igen när tjänsten har uppdaterats för att se dem.",
     "editRejected": {
+      "overwritten": "Din ändring stod i konflikt med en nyare ändring och sparades inte. Arbetsflödet har uppdaterats för att visa den sparade versionen.",
+      "unconfirmed": "Det gick inte att bekräfta att din ändring sparades. Arbetsflödet har uppdaterats för att visa den sparade versionen.",
       "widgetWrite": "Ändringen av widgeten nekades och sparades inte. Arbetsflödet behåller det tidigare värdet. Läs in arbetsflödet igen om arbetsytan fortfarande visar ditt inskrivna värde.",
       "generic": "Din ändring nekades och sparades inte. Läs in arbetsflödet igen om arbetsytan fortfarande visar den.",
       "widgetWritePartial": "Ändringen av widgeten nekades och sparades inte, men vissa tidigare ändringar sparades. Arbetsflödet behåller det tidigare värdet. Läs in arbetsflödet igen om arbetsytan fortfarande visar ditt inskrivna värde.",
@@ -6265,6 +6303,86 @@
       "descriptionSingleLine": "Utlösningsraden måste bestå av en rad utan styrtecken",
       "descriptionTooLong": "Utlösningsraden får vara högst {max} tecken lång",
       "bodyRequired": "Instruktioner krävs"
+    }
+  },
+  "addCreditsDialog": {
+    "title": "Lägg till krediter",
+    "customAmountLabel": "Eller ange ett belopp",
+    "amountError": {
+      "below_min": "Minimibeloppet är {amount}.",
+      "above_max": "Den största påfyllningen är {amount}. Lägg till mer med en annan påfyllning.",
+      "whole_dollars": "Endast hela dollar."
+    },
+    "negativeBalance": "Ditt saldo är −{credits} krediter. Den här påfyllningen täcker det först.",
+    "planLine": {
+      "no_plan": "Att köpa krediter startar inte ett Cloud-abonnemang. Prenumerera för att köra arbetsflöden i Cloud.",
+      "ended": "Att köpa krediter startar inte om ditt Cloud-abonnemang. Börja prenumerera igen för att köra arbetsflöden i Cloud.",
+      "free_runs": "Att köpa krediter startar inte ett Cloud-abonnemang. Prenumerera för att fortsätta köra arbetsflöden när dina kostnadsfria körningar är slut."
+    },
+    "credits": "{credits} krediter",
+    "creditsUnavailable": "— krediter",
+    "paidAtCheckout": "{amount}, betalas i kassan",
+    "continue": "Fortsätt",
+    "opening": "Öppnar…",
+    "processing": {
+      "title": "En betalning på {amount} behandlas fortfarande",
+      "titleNoAmount": "En betalning behandlas fortfarande",
+      "body": "Du behöver inte betala igen."
+    },
+    "needsVerification": {
+      "title": "Din betalning på {amount} behöver verifieras",
+      "titleNoAmount": "Din betalning behöver verifieras",
+      "body": "Din bank väntar på att du ska bekräfta den. Verifiera den för att slutföra påfyllningen.",
+      "footer": "{amount}, ej verifierad",
+      "action": "Verifiera betalningen"
+    },
+    "notVerified": {
+      "title": "Din betalning på {amount} verifierades inte",
+      "titleNoAmount": "Din betalning verifierades inte",
+      "body": "Din bank bekräftade den inte. Försök igen senare eller kontakta supporten.",
+      "footerTitle": "Påfyllning på {amount}",
+      "footer": "Inte verifierad",
+      "action": "Kontakta supporten"
+    },
+    "checkoutFailed": {
+      "title": "Det gick inte att öppna kassan",
+      "body": "Inget debiterades. Försök igen."
+    },
+    "notAllowed": {
+      "title": "Du kan inte lägga till krediter just nu",
+      "body": "Kontrollera faktureringsinställningarna för att se varför."
+    },
+    "rateLimited": {
+      "title": "Du har nått gränsen för påfyllningar just nu",
+      "body": "Försök igen om {wait} eller {support}.",
+      "bodyNoWait": "Försök igen senare eller {support}."
+    },
+    "purchasesPaused": {
+      "title": "Det går inte att köpa krediter just nu",
+      "body": "Försök igen senare eller {support}."
+    },
+    "messageSupport": "kontakta supporten",
+    "wait": {
+      "minute": "en minut",
+      "minutes": "{count} minuter",
+      "hour": "en timme",
+      "hours": "{count} timmar",
+      "day": "en dag",
+      "days": "{count} dagar"
+    },
+    "opened": {
+      "title": "Kassan öppnades i en ny flik",
+      "titleBrowser": "Kassan öppnades i din webbläsare",
+      "body": "Krediter läggs till i den här arbetsytan så snart betalningen har genomförts.",
+      "credits": "Krediter",
+      "amount": "Belopp",
+      "reopen": "Öppna kassan igen"
+    },
+    "close": "Stäng",
+    "blocked": {
+      "title": "Kassan öppnades inte",
+      "body": "Din webbläsare blockerade den nya fliken. Öppna kassan för att slutföra betalningen.",
+      "action": "Öppna kassan"
     }
   }
 }
