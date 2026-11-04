@@ -32,11 +32,10 @@ import {
 import { PERSIST_DEBOUNCE_MS } from '@/platform/workflow/persistence/base/draftTypes'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import {
-  clearAllWorkspaceStorage,
   clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
-  registerWorkflowPersistenceFlush
+  registerWorkflowPersistence
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
@@ -63,7 +62,7 @@ export function useWorkflowPersistenceV2() {
   draftStore.setAuthSubject(isCloud ? null : undefined)
   const tabState = useWorkflowTabState()
   const toast = useToast()
-  const { isAuthInitialized, onUserLogout, onUserResolved } = useCurrentUser()
+  const { isAuthInitialized, onUserResolved } = useCurrentUser()
   const teamWorkspaceStore = useTeamWorkspaceStore()
   let stopWorkspaceReadinessWatcher: (() => void) | undefined
   let resolvedAuthSubject: string | null = null
@@ -145,9 +144,16 @@ export function useWorkflowPersistenceV2() {
     debouncedPersist.flush()
   }
 
-  const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(
-    flushPendingPersistence
-  )
+  const unregisterPersistence = registerWorkflowPersistence({
+    flush: flushPendingPersistence,
+    cancel() {
+      authTransitionVersion++
+      resolvedAuthSubject = null
+      draftStore.setAuthSubject(null)
+      stopPendingWorkspaceReadinessWatcher()
+      debouncedPersist.cancel()
+    }
+  })
   window.addEventListener('pagehide', flushPendingPersistence)
 
   const isWorkspaceInitConcluded = () =>
@@ -184,16 +190,6 @@ export function useWorkflowPersistenceV2() {
     await until(isWorkspaceInitConcluded).toBe(true)
   }
 
-  onUserLogout(() => {
-    if (!isCloud) return
-    authTransitionVersion++
-    resolvedAuthSubject = null
-    draftStore.setAuthSubject(null)
-    stopPendingWorkspaceReadinessWatcher()
-    debouncedPersist.cancel()
-    prepareWorkflowLogoutTransition()
-    clearAllWorkspaceStorage()
-  })
   onUserResolved((user) => {
     if (!isCloud) return
     stopPendingWorkspaceReadinessWatcher()
@@ -376,7 +372,7 @@ export function useWorkflowPersistenceV2() {
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
     window.removeEventListener('pagehide', flushPendingPersistence)
-    unregisterPersistenceFlush()
+    unregisterPersistence()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()
   })
