@@ -233,8 +233,7 @@ describe('workflowDraftStoreV2', () => {
       const payloadWrites = () =>
         vi
           .mocked(localStorage.setItem)
-          .mock.calls.filter(([key]) => String(key).startsWith(PAYLOAD_PREFIX))
-          .length
+          .mock.calls.filter(([key]) => key.startsWith(PAYLOAD_PREFIX)).length
 
       const realSetItem = localStorage.setItem.bind(localStorage)
       activeSpy = vi
