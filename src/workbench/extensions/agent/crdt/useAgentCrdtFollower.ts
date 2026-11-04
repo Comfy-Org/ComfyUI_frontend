@@ -833,8 +833,8 @@ function startAgentCrdtFollower(
       lifecycle.refusalIsFinal()
     )
       terminal.value = 'refused'
+    sender.abortIfUnbound('subscribe_refused')
     releaseHeldOps()
-    sender.abortIfUnbound()
     if (refusal.shouldNotify)
       events.onSyncError?.(refusal.message, refusal.code)
   }
@@ -1177,8 +1177,8 @@ function startAgentCrdtFollower(
       resumeHeldOpsIfSubscribed()
       return
     }
+    sender.abortIfUnbound('retarget')
     releaseHeldOps()
-    sender.abortIfUnbound()
   }
 
   // A tab switch keeps the projection bound: whatever the doc collects while
