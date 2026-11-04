@@ -95,7 +95,8 @@ interface Scenario {
   balance?: BalanceInfo | null
   autoTopUpEnabled?: boolean
   canManageAutoTopUp?: boolean
-  manageAutoTopUpDenial?: string
+  canViewAutoTopUp?: boolean
+  canViewAutoTopUpMemberNotice?: boolean
   canTopUp?: boolean
   topUpDenial?: BillingTopUpDenial
   isPaused?: boolean
@@ -208,16 +209,22 @@ function arrange(scenario: Scenario = {}) {
           scenario.canManageAutoTopUp ?? true
         )
       ),
+      canViewAutoTopUpCard: computed(() =>
+        receiveServerFact(
+          'can_view_auto_top_up',
+          scenario.canViewAutoTopUp ?? true
+        )
+      ),
+      canViewAutoTopUpMemberNotice: computed(() =>
+        receiveServerFact(
+          'can_view_auto_top_up_member_notice',
+          scenario.canViewAutoTopUpMemberNotice ?? false
+        )
+      ),
       autoTopUpEnabled: computed(() =>
         receiveServerFact(
           'auto_top_up_enabled',
           scenario.autoTopUpEnabled ?? true
-        )
-      ),
-      manageAutoTopUpDenial: computed(() =>
-        receiveServerFact(
-          'denied_reasons.can_manage_auto_top_up',
-          scenario.manageAutoTopUpDenial
         )
       ),
       autoTopUpSetup: computed(() => null),
@@ -1994,13 +2001,18 @@ describe('BillingTab', () => {
         reads: 0
       },
       {
-        case: 'a member without can_manage_auto_top_up',
-        scenario: { canManageAutoTopUp: false },
+        case: 'a member without can_view_auto_top_up',
+        scenario: { canManageAutoTopUp: false, canViewAutoTopUp: false },
         reads: 0
       },
       {
-        case: 'top-up is paused (can_top_up false)',
-        scenario: { canTopUp: false },
+        case: 'top-up is paused (can_view_auto_top_up false)',
+        scenario: { canTopUp: false, canViewAutoTopUp: false },
+        reads: 1
+      },
+      {
+        case: 'the server withholds can_view_auto_top_up from an owner who can manage and top up',
+        scenario: { canViewAutoTopUp: false },
         reads: 1
       }
     ])('hides the card when $case', ({ scenario, reads }) => {
@@ -2015,7 +2027,8 @@ describe('BillingTab', () => {
     describe('member block', () => {
       const member: Scenario = {
         canManageAutoTopUp: false,
-        manageAutoTopUpDenial: 'not_workspace_owner',
+        canViewAutoTopUp: false,
+        canViewAutoTopUpMemberNotice: true,
         canTopUp: false
       }
 
@@ -2049,12 +2062,8 @@ describe('BillingTab', () => {
           scenario: { ...member, autoTopUpEnabled: false }
         },
         {
-          case: 'the denial is not not_workspace_owner',
-          scenario: { ...member, manageAutoTopUpDenial: 'not_a_member' }
-        },
-        {
-          case: 'the server sends no denial',
-          scenario: { ...member, manageAutoTopUpDenial: undefined }
+          case: 'the workspace is paused (can_view_auto_top_up_member_notice false)',
+          scenario: { ...member, canViewAutoTopUpMemberNotice: false }
         },
         { case: 'the actor is an owner', scenario: {} }
       ])('hides the member block when $case', ({ scenario }) => {

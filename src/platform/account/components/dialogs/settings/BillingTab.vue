@@ -84,10 +84,10 @@
         @add-credits="addCredits('credits_panel')"
       />
       <template v-if="capabilities.autoTopUpEnabled.value">
-        <template v-if="capabilities.canManageAutoTopUp.value">
-          <BillingAutoTopUpCard v-if="capabilities.canTopUp.value" />
-        </template>
-        <BillingAutoTopUpMemberCard />
+        <BillingAutoTopUpCard v-if="capabilities.canViewAutoTopUpCard.value" />
+        <BillingAutoTopUpMemberCard
+          v-else-if="capabilities.canViewAutoTopUpMemberNotice.value"
+        />
       </template>
     </section>
 
