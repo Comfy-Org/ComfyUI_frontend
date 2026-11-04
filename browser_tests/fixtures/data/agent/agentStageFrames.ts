@@ -1,4 +1,6 @@
-import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
+
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
 export const STAGE_FRAMES_WORKFLOW_ID = 'b3e7d9c1-0000-4000-8000-000000000947'
 export const STAGE_FRAMES_MESSAGE_ID = 'b3e7d9c1-0000-4000-8000-000000000948'
@@ -59,13 +61,6 @@ export const STAGE_FRAMES_CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
 }
 
-export const STAGE_FRAMES_INSERT_OPS = [
-  {
-    op_id: 'agent-stage-frames-insert-op-0'.padEnd(32, '0'),
-    actor: 'agent:e2e:turn-1',
-    base_version: 1,
-    stamp: [1, 'agent:e2e:turn-1'],
-    op: 'insert_workflow',
-    workflow: STAGE_FRAMES_TEMPLATE
-  }
-] satisfies Op[]
+export const STAGE_FRAMES_INSERT_OPS: RecordedGraphOperation[] = [
+  { op: 'insert_workflow', workflow: STAGE_FRAMES_TEMPLATE }
+]
