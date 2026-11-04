@@ -1,6 +1,5 @@
 <template>
   <div
-    v-if="manageAutoTopUpDenial === 'not_workspace_owner'"
     class="flex flex-col gap-1 rounded-xl border border-card px-5 py-4"
     data-testid="billing-auto-top-up-member-card"
   >
@@ -12,9 +11,3 @@
     </p>
   </div>
 </template>
-
-<script setup lang="ts">
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-
-const { manageAutoTopUpDenial } = useBillingCapabilities()
-</script>
