@@ -65,11 +65,17 @@ async function attemptRun(
 }
 
 function isUpToDate(node: ExecutableNode, runs: PlannedRun[]): boolean {
+  const result = node.result
   return (
-    node.result?.status === 'complete' &&
+    result?.status === 'complete' &&
     samePlanKeys(
-      node.result.planKeys,
+      result.planKeys,
       runs.map(({ key }) => key)
+    ) &&
+    result.planKeys.every(
+      (key) =>
+        !Object.hasOwn(node.runs, key) ||
+        node.runs[key].finishedAt <= result.finishedAt
     )
   )
 }

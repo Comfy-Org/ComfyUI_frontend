@@ -727,6 +727,44 @@ describe(createEngine, () => {
       })
     })
 
+    it('[O6] a graph run after a stopped node run passes on what the node shows, without running it again', async () => {
+      const generate = deferredExecutor()
+      const harness = testHost(
+        docWith(
+          [
+            ioNode('source', 'image', [fileItem('a'), fileItem('b')]),
+            generateNode('gen', 'image', { inputs: [imageIn] }),
+            ioNode('results', 'image')
+          ],
+          [
+            edge('source', 'out', 'gen', 'image'),
+            edge('gen', 'out', 'results', 'in')
+          ]
+        ),
+        { app: deferredExecutor(), generate }
+      )
+      const engine = createEngine(harness.host)
+      const graphRun = engine.runGraph()
+      await generate.untilCalls(2)
+      generate.calls[0].resolve(succeeded(fileItem('old-0')))
+      generate.calls[1].resolve(succeeded(fileItem('old-1')))
+      await graphRun
+      const nodeRun = engine.runNode('gen')
+      await generate.untilCalls(4)
+      generate.calls[2].resolve(succeeded(fileItem('new-0')))
+      await harness.until((_, events) => settledRuns(events) === 3)
+      engine.stop()
+      generate.calls[3].resolve({ ok: false, message: 'Cancelled' })
+      await nodeRun
+
+      await engine.runGraph()
+
+      expect(generate.calls).toHaveLength(4)
+      expect(findNode(harness.state().doc, 'results')).toMatchObject({
+        items: [fileItem('new-0'), fileItem('old-1')]
+      })
+    })
+
     it("[O6] a stopped run's late success is reused by the next graph run", async () => {
       const generate = deferredExecutor()
       const harness = testHost(
