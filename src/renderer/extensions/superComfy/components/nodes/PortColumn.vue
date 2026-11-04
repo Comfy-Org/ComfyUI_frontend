@@ -49,7 +49,8 @@ function rowStyle(index: number) {
 function labelClass(port: PortSpec): string {
   const visible = showLabels || isMissing(port)
   return cn(
-    'pointer-events-none px-1 text-2xs whitespace-nowrap text-muted-foreground transition-opacity',
+    'pointer-events-none absolute top-1/2 -translate-y-1/2 px-1 text-2xs whitespace-nowrap text-muted-foreground transition-opacity',
+    side === 'in' ? 'right-full' : 'left-full',
     visible ? 'opacity-100' : 'opacity-0 group-hover/node:opacity-100',
     isMissing(port) && 'text-destructive'
   )
@@ -70,12 +71,7 @@ function onPointerDown(event: PointerEvent, port: PortSpec) {
   <div
     v-for="(port, index) in ports"
     :key="port.name"
-    :class="
-      cn(
-        'absolute z-10 flex items-center',
-        side === 'in' ? '-left-3 flex-row-reverse' : '-right-3'
-      )
-    "
+    :class="cn('absolute z-10', side === 'in' ? '-left-3' : '-right-3')"
     :style="rowStyle(index)"
   >
     <SlotConnectionDot
