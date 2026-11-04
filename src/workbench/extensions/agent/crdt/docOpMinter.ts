@@ -191,7 +191,34 @@ interface PendingWidgetValue {
 
 type MissingSlotGrowth = NonNullable<ReturnType<typeof growForMissingSlot>>
 
-/** Returns the node's save-format snapshot for a semantic add operation. */
+/**
+ * Returns the node's save-format snapshot for a semantic add operation.
+ *
+ * A SUBGRAPH HOST is the one node whose widget values are positional by
+ * design, so it is the one node excluded from the name-keyed/declared-form
+ * path. The document stores its promoted values as a positional array and
+ * `applyHostWidgets` indexes that array against the live promoted inputs,
+ * checking cardinality as it goes; a name-keyed record would have no array to
+ * index and nothing to count.
+ *
+ * Every OTHER frontend-only class is included, and that is a change from the
+ * pre-A24 rule this replaced (`isVirtualNode`). That rule was written when a
+ * name-keyed record for an uncatalogued class was refused outright, so
+ * shipping the positional array and letting the host store it opaquely was
+ * the only thing that worked. A declared `widgets_values_form` now makes such
+ * a class name-addressable with no catalog at all (schema A24), and opaque
+ * storage is not a neutral fallback: it is the one storage strategy that can
+ * never be written by name, so every later widget edit on the node is
+ * refused `opaque_widgets` for the node's whole lifetime. `Note` is the clear
+ * case — a core class that can never hold a catalog entry, because the
+ * catalog is an `object_info` projection and `Note` never appears in
+ * `object_info` — and the symptom is that typing in a sticky note is rejected
+ * and rolled back. PM-2371.
+ *
+ * Nothing here relaxes KA-12. `provenWidgetValuesForm` still declares a form
+ * only where it can prove one, and a class with no proof keeps the positional
+ * array and the loud refusal it has today.
+ */
 export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
@@ -208,7 +235,7 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
     ...rest
   } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
-  if (!named || node.isVirtualNode) return snapshot
+  if (!named || node.isSubgraphNode()) return snapshot
   const values = valueWidgetsOnly(node, named)
   // The form is proven against the POST-HOOK serialization, not derived from
   // the live widget list alone: `serialize()` above already ran the extension
