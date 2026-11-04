@@ -208,6 +208,7 @@ function describe(facts: AddCreditsFacts) {
       code: `
 const capabilities = useBillingCapabilities()
 const detail = capabilities.canTopUpRefusal.value ?? capabilities.canTopUpReason.value
+const refusal = !capabilities.canTopUp.value && capabilities.canTopUpRefusal.value
 `
     },
     {
@@ -277,6 +278,18 @@ function deriveSection(capabilities: BillingCapabilities) {
 }
 `,
       errors: [{ messageId: 'combined', data: { operator: '&&' } }]
+    },
+    {
+      name: 'a capability combined with other state beside its served refusal',
+      code: `
+const capabilities = useBillingCapabilities()
+const a = !capabilities.canTopUp.value && capabilities.canTopUpRefusal.value && isCloud
+const b = capabilities.canTopUp.value && options.canTopUpReason
+`,
+      errors: [
+        { messageId: 'combined', data: { operator: '&&' } },
+        { messageId: 'combined', data: { operator: '&&' } }
+      ]
     },
     {
       name: '#15675 capability chosen by isCloud with a role fallback',

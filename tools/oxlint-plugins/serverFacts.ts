@@ -561,6 +561,21 @@ export const noCapabilityRecombination: Rule = {
       )
     }
 
+    const isServedDetail = (member: AstNode): boolean => {
+      if (member.type !== 'MemberExpression' || member.computed) return false
+      const holder = factName(member.object) ?? ''
+      return (
+        CAPABILITY_BINDING.test(member.property.name) &&
+        CAPABILITY_DETAIL.test(member.property.name) &&
+        (capabilityObjects.has(holder) || SERVER_FACT_OWNER.test(holder))
+      )
+    }
+
+    const isFactOperand = (operand: AstNode): boolean =>
+      !isLiteral(operand) &&
+      capabilityMember(negated(operand) ?? operand, isServedDetail) ===
+        undefined
+
     const isCapabilitySource = (init: AstNode | null): boolean =>
       isCapabilitySourceCall(init) ||
       (init !== null && capabilityObjects.has(factName(init) ?? ''))
@@ -645,7 +660,7 @@ export const noCapabilityRecombination: Rule = {
       LogicalExpression(node) {
         if (unwrap(node.parent).type === 'LogicalExpression') return
         const operands = logicalOperands(node)
-        const factOperands = operands.filter((operand) => !isLiteral(operand))
+        const factOperands = operands.filter(isFactOperand)
         if (
           factOperands.length < 2 ||
           !(
