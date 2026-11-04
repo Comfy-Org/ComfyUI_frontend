@@ -154,3 +154,13 @@ export const VerifiedClaude: Story = {
     }
   }
 }
+
+export const SessionAccount: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      user_email: 'grace@example.com',
+      user_display_name: 'Grace Hopper'
+    }
+  }
+}

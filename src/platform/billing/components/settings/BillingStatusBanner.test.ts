@@ -144,7 +144,7 @@ const i18n = createI18n({
       credits: {
         addCreditsRefusal: {
           topupPurchasesPaused:
-            "Buying credits isn't available right now. Try again later, or message support.",
+            "Buying credits isn't available right now. Try again later.",
           paymentPastDue: 'Update your payment method to add credits.',
           unavailable:
             "Adding credits isn't available for this workspace right now."
@@ -914,8 +914,6 @@ describe('BillingStatusBanner', () => {
   })
 
   it('keeps reactivation on the legacy rail where the capability does not apply', async () => {
-    // Cloud personal on legacy_stripe: handleResubscribe skips its capability
-    // guard, so the affordance must follow the client permission instead.
     state.shouldUseWorkspaceBilling = false
     useBillingCapabilities().canReactivate = computed(() => false)
     state.canManageSubscriptionLifecycle = true

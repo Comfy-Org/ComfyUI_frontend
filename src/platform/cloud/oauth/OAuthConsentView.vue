@@ -79,6 +79,43 @@
         </div>
       </header>
 
+      <section
+        v-if="signedInAccount"
+        class="flex items-center gap-3 rounded-lg bg-ink-400 p-3"
+        :aria-label="t('oauth.consent.signedInAs')"
+      >
+        <UserAvatar
+          :label="t('auth.login.userAvatar')"
+          :photo-url="signedInAccount.photoUrl"
+          class="shrink-0"
+        />
+        <div class="flex min-w-0 flex-1 flex-col">
+          <span
+            v-if="signedInAccount.displayName"
+            class="truncate text-sm text-foreground"
+          >
+            {{ signedInAccount.displayName }}
+          </span>
+          <span class="truncate text-xs text-muted-foreground">
+            {{ signedInAccount.email }}
+          </span>
+        </div>
+        <div class="flex shrink-0 flex-col items-end">
+          <span class="text-xs text-muted-foreground">
+            {{ t('oauth.consent.notYou') }}
+          </span>
+          <Button
+            variant="textonly"
+            size="sm"
+            :loading="switchingAccount"
+            :disabled="isSubmitting || switchingAccount"
+            @click="switchAccount"
+          >
+            {{ t('oauth.consent.switchAccount') }}
+          </Button>
+        </div>
+      </section>
+
       <section class="flex flex-col gap-2">
         <p class="m-0 text-sm font-medium">
           {{ t('oauth.consent.workspaceLabel') }}
@@ -185,7 +222,9 @@
           size="lg"
           class="w-full bg-ink-500 hover:bg-ink-400"
           :loading="submitting === 'allow'"
-          :disabled="isSubmitting || !selectedWorkspaceIsValid"
+          :disabled="
+            isSubmitting || switchingAccount || !selectedWorkspaceIsValid
+          "
           @click="submit('allow')"
         >
           {{ t('oauth.consent.allow') }}
@@ -195,7 +234,7 @@
           size="lg"
           class="w-full bg-ink-600 hover:bg-ink-400"
           :loading="submitting === 'deny'"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || switchingAccount"
           @click="submit('deny')"
         >
           {{ t('oauth.consent.deny') }}
@@ -225,6 +264,10 @@ import { useRoute } from 'vue-router'
 
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
+import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   OAuthApiError,
   fetchOAuthConsentChallenge,
@@ -240,7 +283,8 @@ import type {
 } from '@/platform/cloud/oauth/oauthApi'
 import {
   clearOAuthRequestId,
-  getOAuthRequestId
+  getOAuthRequestId,
+  isOAuthRequestId
 } from '@/platform/cloud/oauth/oauthState'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 
@@ -250,6 +294,8 @@ const { initialChallenge } = defineProps<{
 
 const { t, te } = useI18n()
 const route = useRoute()
+const { flags } = useFeatureFlags()
+const { userEmail, userPhotoUrl } = useCurrentUser()
 
 function getDefaultWorkspaceId(
   source: OAuthConsentChallenge | undefined
@@ -264,6 +310,21 @@ const selectedWorkspaceId = ref<string | undefined>(
 const errorMessage = ref('')
 const submitting = ref<'allow' | 'deny' | null>(null)
 const isSubmitting = computed(() => submitting.value !== null)
+const switchingAccount = ref(false)
+
+const signedInAccount = computed(() => {
+  if (!flags.oauthConsentSwitchAccountEnabled) return null
+  const sessionEmail = challenge.value?.user_email
+  if (!sessionEmail) return null
+  return {
+    email: sessionEmail,
+    displayName: challenge.value?.user_display_name,
+    photoUrl:
+      sessionEmail.toLowerCase() === userEmail.value?.toLowerCase()
+        ? userPhotoUrl.value
+        : null
+  }
+})
 
 const resourceName = computed(
   () =>
@@ -367,6 +428,24 @@ async function submit(decision: 'allow' | 'deny') {
   } finally {
     submitting.value = null
   }
+}
+
+function switchAccountSignInPath(oauthRequestId: string): string {
+  const query = new URLSearchParams({ switchAccount: 'true' })
+  if (isOAuthRequestId(oauthRequestId)) {
+    query.set('oauth_request_id', oauthRequestId)
+  }
+  return `/cloud/login?${query}`
+}
+
+async function switchAccount() {
+  if (!challenge.value) return
+  switchingAccount.value = true
+  const signedOut = await useAuthActions().logout({
+    signInPath: switchAccountSignInPath(challenge.value.oauth_request_id)
+  })
+  if (signedOut === false) switchingAccount.value = false
+  else if (signedOut === undefined) window.location.reload()
 }
 
 onMounted(() => {

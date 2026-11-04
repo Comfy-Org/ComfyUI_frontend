@@ -2,7 +2,7 @@ import type { CreditsCardCopy } from '#/billing/tab/creditsCardCopy'
 
 const ADD_CREDITS_REASONS: Record<string, string> = {
   'credits.addCreditsRefusal.topupPurchasesPaused':
-    "Buying credits isn't available right now. Try again later, or message support.",
+    "Buying credits isn't available right now. Try again later.",
   'credits.addCreditsRefusal.paymentPastDue':
     'Update your payment method to add credits.',
   'credits.addCreditsRefusal.unavailable':

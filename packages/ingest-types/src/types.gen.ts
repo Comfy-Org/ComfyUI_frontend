@@ -3103,9 +3103,9 @@ export type BillingStatusResponse = {
    */
   action_url?: string
   /**
-   * Durable workspace billing authority. Omitted by older servers and billing-disabled deployments.
+   * Durable workspace billing authority. Omitted by older servers, billing-disabled deployments and workspaces not on the stripe rail.
    */
-  billing_rail?: 'legacy_stripe' | 'metronome' | 'stripe'
+  billing_rail?: 'stripe'
   billing_status?: BillingStatus
   /**
    * When the subscription will become inactive (if canceled)
@@ -3140,7 +3140,7 @@ export type BillingStatusResponse = {
    */
   max_seats: number
   /**
-   * The next charge to the card on file, from Stripe's invoice preview, recorded when the subscription changes and refreshed at least daily. Always present; null when nothing is due or it is unknown: no active subscription, a pending cancellation, paused collection, an Enterprise or sales-invoiced plan, a zero invoice, a preview not yet recorded, or a recorded date that has passed. Also null on the legacy_stripe billing rail and for callers who are not workspace billing managers. Never a catalog price; hide the line on null rather than estimate.
+   * The next charge to the card on file, from Stripe's invoice preview, recorded when the subscription changes and refreshed at least daily. Always present; null when nothing is due or it is unknown: no active subscription, a pending cancellation, paused collection, an Enterprise or sales-invoiced plan, a zero invoice, a preview not yet recorded, or a recorded date that has passed. Also null for callers who are not workspace billing managers. Never a catalog price; hide the line on null rather than estimate.
    */
   next_charge: NextCharge | null
   /**
@@ -7074,7 +7074,7 @@ export type ReleaseUnsupportedPacks = {
 }
 
 /**
- * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, or on the legacy_stripe billing rail while billing_status is payment_failed and its legacy subscription is past_due or unpaid, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
+ * The newest open renewal invoice of the workspace's Stripe subscription (active, or canceled but not yet ended). Returned only to workspace owners on the stripe billing rail while billing_status is payment_failed or paused, and not while a payment for it is processing. hosted_invoice_url is a bearer payment link.
  */
 export type RenewalInvoice = {
   /**
