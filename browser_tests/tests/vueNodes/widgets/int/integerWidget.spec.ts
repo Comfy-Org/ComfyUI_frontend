@@ -43,8 +43,7 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
   })
 
   test('displays control widgets with default state', async ({ comfyPage }) => {
-    await comfyPage.menu.topbar.newWorkflowButton.click()
-    await comfyPage.nextFrame()
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.searchBoxV2.addNode('Int')
     const widget = comfyPage.vueNodes.getWidgetByName('Int', 'value')
     await expect(widget).toBeVisible()

@@ -20,7 +20,7 @@
   >
     <div
       role="status"
-      class="flex flex-col gap-3 rounded-xl border border-border/60 bg-background p-3 @2xl:flex-row @2xl:items-center @2xl:gap-2"
+      class="flex flex-col gap-3 rounded-xl border border-border bg-background p-3 @2xl:flex-row @2xl:items-center @2xl:gap-2"
     >
       <div class="flex min-w-0 flex-1 flex-col gap-2">
         <div class="flex items-center gap-2">
@@ -80,6 +80,7 @@ import { useBillingDialogs } from '@/platform/billing/composables/useBillingDial
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { isMemberTopUpDenial } from '@comfyorg/account-core/billing'
 import { deriveLocalCreditBanner } from '@/platform/billing/composables/deriveLocalCreditBanner'
 import {
   isTopUpDeniedPastDue,
@@ -106,8 +107,9 @@ const { suppressed = false, addCreditsVariant = 'secondary' } = defineProps<{
 
 const billing = useBillingContext()
 const { flags } = useFeatureFlags()
-const { permissions, workspaceType } = useBillingUI()
-const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
+const { workspaceType } = useBillingUI()
+const { canTopUp, topUpDenial, hasResolvedCapabilities, canManageBilling } =
+  useBillingCapabilities()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
 const { t, locale } = useI18n()
@@ -173,14 +175,12 @@ watch(availableCents, (cents, previous) => {
 
 const audience = computed(() => (isTeamPlan.value ? 'team' : 'personal'))
 
-const cycleResetDate = computed(() =>
-  longDate(billing.renewalDate?.value ?? null)
+const refillDate = computed(() =>
+  longDate(billing.nextCreditRefillAt?.value ?? null)
 )
 
 function datedBody(key: string, noDateKey: string): string {
-  return cycleResetDate.value
-    ? t(key, { date: cycleResetDate.value })
-    : t(noDateKey)
+  return refillDate.value ? t(key, { date: refillDate.value }) : t(noDateKey)
 }
 
 function pastDueBodyKey(): string {
@@ -201,32 +201,55 @@ function outOfCreditsView(): BannerView | null {
       dismissible: true
     }
   }
-  if (!permissions.value.canManageSubscription) {
+  if (canTopUp.value) {
+    const bodyKey =
+      audience.value === 'personal'
+        ? `${bs}.outOfCredits.personalBody`
+        : `${bs}.outOfCredits.body`
+    const noDateKey =
+      audience.value === 'personal'
+        ? `${bs}.outOfCredits.personalBodyNoDate`
+        : `${bs}.outOfCredits.bodyNoDate`
     return {
       title: t(`${bs}.outOfCredits.title`),
-      body: datedBody(
-        `${bs}.outOfCredits.memberBody`,
-        `${bs}.outOfCredits.memberBodyNoDate`
-      ),
-      action: null,
+      body: datedBody(bodyKey, noDateKey),
+      action: 'addCredits',
       dismissible: true
     }
   }
-  if (!canTopUp.value) return null
-  const bodyKey =
-    audience.value === 'personal'
-      ? `${bs}.outOfCredits.personalBody`
-      : `${bs}.outOfCredits.body`
-  const noDateKey =
-    audience.value === 'personal'
-      ? `${bs}.outOfCredits.personalBodyNoDate`
-      : `${bs}.outOfCredits.bodyNoDate`
+  if (!hasResolvedCapabilities.value) return null
   return {
     title: t(`${bs}.outOfCredits.title`),
-    body: datedBody(bodyKey, noDateKey),
-    action: 'addCredits',
+    body: refusedOutOfCreditsBody(),
+    action: null,
     dismissible: true
   }
+}
+
+function refusedOutOfCreditsBody(): string {
+  const denial = topUpDenial.value
+  if (isMemberTopUpDenial(denial)) {
+    return datedBody(
+      `${bs}.outOfCredits.memberBody`,
+      `${bs}.outOfCredits.memberBodyNoDate`
+    )
+  }
+  if (denial === 'topup_purchases_paused') {
+    return audience.value === 'personal'
+      ? datedBody(
+          `${bs}.outOfCredits.pausedPersonalBody`,
+          `${bs}.outOfCredits.pausedPersonalBodyNoDate`
+        )
+      : datedBody(
+          `${bs}.outOfCredits.pausedBody`,
+          `${bs}.outOfCredits.pausedBodyNoDate`
+        )
+  }
+  return t(
+    audience.value === 'personal'
+      ? `${bs}.outOfCredits.refusedPersonalBody`
+      : `${bs}.outOfCredits.refusedBody`
+  )
 }
 
 function creditsLeft(): string {
@@ -240,6 +263,8 @@ function creditsLeft(): string {
 }
 
 function lowCreditsBodyKey(): string {
+  if (topUpDenial.value === 'topup_purchases_paused')
+    return `${bs}.lowCredits.pausedBody`
   if (!isCloud) return `${bs}.lowCredits.localBody`
   if (workspaceType.value !== 'team') return `${bs}.lowCredits.personalBody`
   return canManageBilling.value

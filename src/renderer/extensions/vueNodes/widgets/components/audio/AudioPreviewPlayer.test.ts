@@ -162,11 +162,11 @@ describe('AudioPreviewPlayer', () => {
 
     it('does not reload the previous file when the source is replaced', async () => {
       const loadedSources: string[] = []
-      vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(
-        function (this: HTMLMediaElement) {
-          loadedSources.push(this.src)
-        }
-      )
+      vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(function (
+        this: HTMLMediaElement
+      ) {
+        loadedSources.push(this.src)
+      })
       vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
 
       const { rerender } = renderPlayer('http://example.com/a.mp3')
@@ -432,13 +432,13 @@ describe('AudioPreviewPlayer', () => {
     })
 
     it('reports once when the source fails while a play attempt is pending', async () => {
-      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(
-        function (this: HTMLMediaElement) {
-          const rejection = Promise.reject(notSupported())
-          this.dispatchEvent(new Event('error'))
-          return rejection
-        }
-      )
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function (
+        this: HTMLMediaElement
+      ) {
+        const rejection = Promise.reject(notSupported())
+        this.dispatchEvent(new Event('error'))
+        return rejection
+      })
       const user = userEvent.setup()
 
       renderPlayer('http://example.com/audio.ogg')
@@ -452,12 +452,12 @@ describe('AudioPreviewPlayer', () => {
 
     it('reports once when the source error follows a handled rejection', async () => {
       const elements: HTMLMediaElement[] = []
-      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(
-        function (this: HTMLMediaElement) {
-          elements.push(this)
-          return Promise.reject(notSupported())
-        }
-      )
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function (
+        this: HTMLMediaElement
+      ) {
+        elements.push(this)
+        return Promise.reject(notSupported())
+      })
       const user = userEvent.setup()
 
       renderPlayer('http://example.com/audio.ogg')

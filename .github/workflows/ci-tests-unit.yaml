@@ -33,6 +33,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -67,6 +68,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -111,6 +113,7 @@ jobs:
   test-report:
     needs: [test-shards, test-packages]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
 
