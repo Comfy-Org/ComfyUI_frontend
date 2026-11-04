@@ -312,6 +312,28 @@ Nothing else moves yet, so the follower seam still disposes with the panel and
 the user-visible behaviour is unchanged except that the agent socket and
 identity are no longer closed by a panel close.
 
+**The page-session owner is created lazily, on first use, not at page load**
+(`useAgentPageSession`, `agentPageSession.ts`) — the same edge-triggered rule
+Decision 1 applies to document sessions, and for the same reason the
+alternatives reject eager per-tab creation. This is worth stating rather than
+leaving implied, because the resolver being moved starts its initial
+`rest.getIdentity()` lookup during construction: tying that request to the
+page-session owner means it is made on first agent use and does not become a
+new request on the cold page-load path. A page with no agent use opens no
+socket and asks for no identity.
+
+**As landed, Stage 1a moved `events`, `docTransport` and the
+`agentSocketIdentity` watcher, and left `resolveAgentIdentity` itself
+panel-owned.** The split is deliberate, not an omission. The watcher is the
+half that governs the socket's credentials, so it had to move with the socket —
+leaving it behind would let a sign-out or workspace switch made while the panel
+is closed leave a live socket authenticated for the previous context. The
+resolver only feeds the follower's `userId`, and the follower seam is still
+panel-owned until Stage 1b, so moving the resolver alone would split one
+lifetime across two owners without closing anything. It moves in Stage 1b
+beside the seam it serves. The credential risk is already discharged in the
+meantime, because the socket re-authenticates on the identity change itself.
+
 _Stage 1b — the session registry._ Add the document-keyed registry with the
 lease semantics of Decision 1; `AgentPanelRoot.vue` resolves instead of
 constructing; panel mount and unmount stop creating and destroying the seam.
@@ -327,16 +349,40 @@ account or workspace change while the panel is closed must still reconnect
 the socket and reset identity exactly as it does today while the panel is
 open — Stage 1 acceptance covers that transition explicitly, not only the
 panel-open case.
+
+**The watched tuple is `[account, teamWorkspace, hostWorkspace]`**, so a
+host-workspace change is a trigger too, and the rule moved verbatim rather
+than being rewritten (`needsReauthentication`, `agentPageSession.ts`). It
+carries exactly one exception, and it is deliberate: when the account is
+unchanged and non-null and both the current `teamWorkspace` and
+`hostWorkspace` read as null, reconnect and reset are skipped. Read as a bare
+condition that looks like a missing trigger, so state the reason — it absorbs
+the transient null window of an ordinary workspace refresh, which would
+otherwise bounce a healthy connection. Stage 1 acceptance names the
+host-workspace trigger and this exception explicitly, so neither is mistaken
+for an oversight by the next reader: a change to any slot of the tuple
+reconnects and resets while the panel is closed, except inside that one
+window.
 _Invariants at risk:_ the replica is replaced only on a lineage break, and a
 reconnect recovers by state-vector delta rather than a wipe; one replica per
 document id.
 _Guards:_ an `assert` in the registry's create path naming the one-replica-per-
 document rule and linking this ADR; a release-idempotency guard — each lease
 handle tracks whether it has already released, and a second release of the
-_same_ handle is a no-op that asserts loudly, since a holder-count floor of
-zero cannot catch it: two distinct holders releasing the same handle twice
-reads 2 → 1 → 0 and never goes negative, so a below-zero assert alone would
-silently let a leased session dispose while another tab still holds it; and a
+_same_ handle is a no-op, since a holder-count floor of
+zero cannot catch it: with two distinct holders A and B outstanding (count 2),
+releasing A's handle twice reads 2 → 1 → 0 without ever going negative, so a
+below-zero assert alone would silently dispose the session while B still holds
+a lease. **Per-lease idempotency is the enforcing control here, not the
+floor**, and the distinction is load-bearing twice over: the floor cannot
+observe the case at all, and in production `src/base/assert.ts` only reports,
+so an invariant whose only guard is an `assert` is unenforced in the build
+users run. The repeat release must be a real no-op in the lease handle, with
+the assert as a diagnostic beside it rather than as the mechanism. Pin it
+distinguishably: acquire A and B, release A twice, and assert that B's session
+is still alive and is disposed only when B releases — a below-zero diagnostic
+passes that sequence either way, so a test that only watches the counter would
+certify the defect. And a
 new rule in
 `scripts/check-follower-invariants.ts` (run by `pnpm follower-invariants:check`
 and by CI) restricting `new FollowerDoc(`, `new LayoutFollowerBridge(` and
@@ -359,9 +405,24 @@ resolve on the stamp, not on client identity.
 _Guards:_ a unit pin that the `op_id`s observed before a panel unmount are the
 ones sent after remount; an `assert` that a replay carries an existing
 `op_id`; and a rule that neither `opSender.detach()` nor any op-producer
-`detach()` has a caller in a component teardown path. _Acceptance signal, not a test:_ the two `code=detached`
+`detach()` has a caller on a path a panel close can reach.
+**"A component teardown path" is too narrow to state that rule, and a guard
+built from those words would pass while the defect stands.** Today's detach is
+not in a component hook at all: it is one thunk in the `runFollowerTeardown`
+list inside `onScopeDispose` (`useAgentCrdtFollower.ts:1263-1289`, with
+`sender.detach()` at `:1279` and `coalescer.detach()` at `:1281`), and a panel
+close reaches it because unmount stops the follower's `effectScope`
+(`:347-350`). A guard that greps `onBeforeUnmount` and `onUnmounted` therefore
+finds no caller and reports the invariant held. The rule must name the
+scope-disposal routes explicitly — `onScopeDispose`, watcher cleanup, and any
+`scope.stop()` — and must follow the indirection through
+`runFollowerTeardown`, because the call is a thunk in an array rather than a
+statement in the disposer body.
+_Acceptance signal, not a test:_ the two `code=detached`
 settlement signatures recorded on FRONT-3582 should stop appearing for
-panel-close episodes.
+panel-close episodes. Stage 0 case (a) is the black-box form of the same
+check — closing the panel with one edit in flight and one queued must still
+deliver both — and is the backstop if the static rule is ever narrowed again.
 
 **Stage 3 — declare the cold seed.** Carry the "state vector was empty at
 subscribe" fact from the bridge to the projection, and surface divergence
