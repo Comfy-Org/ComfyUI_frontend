@@ -204,6 +204,13 @@ function describe(facts: AddCreditsFacts) {
 `
     },
     {
+      name: 'detail fields of a tracked capability source rendered together',
+      code: `
+const capabilities = useBillingCapabilities()
+const detail = capabilities.canTopUpRefusal.value ?? capabilities.canTopUpReason.value
+`
+    },
+    {
       name: 'capability-named members of an object nested inside a facts object',
       code: `
 function deriveSection(facts: SectionFacts) {

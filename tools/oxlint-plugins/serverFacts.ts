@@ -444,12 +444,14 @@ function memberPath(node: AstNode): string | undefined {
     : `${object}.${expression.property.name}`
 }
 
+function isCapabilityMemberName(property: string): boolean {
+  return CAPABILITY_BINDING.test(property) && !CAPABILITY_DETAIL.test(property)
+}
+
 function isFactObjectCapability(node: AstNode): boolean {
   if (node.type !== 'MemberExpression' || node.computed) return false
-  const property = node.property.name
   return (
-    CAPABILITY_BINDING.test(property) &&
-    !CAPABILITY_DETAIL.test(property) &&
+    isCapabilityMemberName(node.property.name) &&
     SERVER_FACT_OWNER.test(factName(node.object) ?? '')
   )
 }
@@ -554,7 +556,7 @@ export const noCapabilityRecombination: Rule = {
       const property = node.property.name
       return (
         CAPABILITY_FIELD.test(property) ||
-        (CAPABILITY_BINDING.test(property) &&
+        (isCapabilityMemberName(property) &&
           capabilityObjects.has(factName(node.object) ?? ''))
       )
     }
