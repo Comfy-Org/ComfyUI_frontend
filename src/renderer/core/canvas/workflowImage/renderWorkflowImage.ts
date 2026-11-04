@@ -2,15 +2,11 @@ import type {
   HasBoundingRect,
   ReadOnlyRect
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import type {
-  LGraph,
-  LGraphCanvas,
-  Subgraph
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { createBounds } from '@/lib/litegraph/src/litegraph'
 import { createElementRasterizer } from '@/renderer/core/canvas/workflowImage/rasterizeElement'
+import type { PositionedElement } from '@/renderer/core/canvas/workflowImage/rasterizeElement'
 
 const GRAPH_PADDING = 64
 const NODE_PADDING = 32
@@ -19,12 +15,12 @@ const MAX_CANVAS_AREA = 16_384 * 16_384
 
 type DrawableMedia = HTMLImageElement | HTMLVideoElement | HTMLCanvasElement
 
-function graphBounds(canvas: LGraphCanvas): ReadOnlyRect | null {
+function graphBounds(canvas: LGraphCanvas): ReadOnlyRect | undefined {
   const { graph, subgraph } = canvas
-  if (!graph) return null
+  if (!graph) return undefined
   const items: HasBoundingRect[] = [...graph.positionableItems()]
   if (subgraph) items.push(subgraph.inputNode, subgraph.outputNode)
-  return createBounds(items, GRAPH_PADDING)
+  return createBounds(items, GRAPH_PADDING) ?? undefined
 }
 
 function exportPixelRatio(width: number, height: number): number {
@@ -115,12 +111,6 @@ function drawNodeMedia(
   ctx.restore()
 }
 
-interface PositionedElement {
-  element: HTMLElement
-  x: number
-  y: number
-}
-
 function overlaps(a: PositionedElement, b: PositionedElement): boolean {
   return (
     a.x < b.x + b.element.offsetWidth &&
@@ -147,44 +137,42 @@ function batchBelowMedia(
   return batches
 }
 
-async function prepareWidgets(
-  graph: LGraph | Subgraph,
-  clone: HTMLElement,
-  source: HTMLElement
-) {
-  const { nodeId } = source.dataset
-  const node = nodeId ? graph.getNodeById(toNodeId(nodeId)) : null
-  if (!node?.widgets) return
+type Failure = { ok: false; cause?: unknown }
 
-  const cloneRows = clone.querySelectorAll<HTMLElement>('[data-widget-name]')
-  const sourceRows = source.querySelectorAll<HTMLElement>('[data-widget-name]')
-  for (const [index, sourceRow] of sourceRows.entries()) {
-    const cloneRow = cloneRows[index]
-    const name = sourceRow.dataset.widgetName
-    const widget = node.widgets.find((widget) => widget.name === name)
-    if (!widget?.prepareImageExport) continue
+type WorkflowImageRender = { ok: true; image: Blob } | Failure
 
-    try {
-      await widget.prepareImageExport(cloneRow, sourceRow)
-    } catch (error) {
-      console.error(
-        `Widget "${name}" failed to prepare for workflow image export`,
-        error
-      )
-    }
+function drawGraph(
+  canvas: LGraphCanvas,
+  ctx: CanvasRenderingContext2D,
+  bounds: ReadOnlyRect,
+  pixelRatio: number
+): { ok: true } | Failure {
+  try {
+    canvas.drawGraphImage(ctx, bounds, pixelRatio)
+    return { ok: true }
+  } catch (cause) {
+    return { ok: false, cause }
   }
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
-  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+async function encodePng(
+  canvas: HTMLCanvasElement
+): Promise<WorkflowImageRender> {
+  try {
+    const image = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/png')
+    )
+    return image ? { ok: true, image } : { ok: false }
+  } catch (cause) {
+    return { ok: false, cause }
+  }
 }
 
 export async function renderWorkflowImage(
   canvas: LGraphCanvas
-): Promise<Blob | null> {
-  const { graph } = canvas
+): Promise<WorkflowImageRender> {
   const bounds = graphBounds(canvas)
-  if (!graph || !bounds) return null
+  if (!bounds) return { ok: false }
 
   const [left, top, width, height] = bounds
   const pixelRatio = exportPixelRatio(width, height)
@@ -192,9 +180,16 @@ export async function renderWorkflowImage(
   output.width = Math.ceil(width * pixelRatio)
   output.height = Math.ceil(height * pixelRatio)
   const ctx = output.getContext('2d')
-  if (!ctx) return null
+  if (!ctx) return { ok: false }
 
-  canvas.drawGraphImage(ctx, bounds, pixelRatio)
+  const area: ReadOnlyRect = [
+    left,
+    top,
+    output.width / pixelRatio,
+    output.height / pixelRatio
+  ]
+  const drawn = drawGraph(canvas, ctx, area, pixelRatio)
+  if (!drawn.ok) return drawn
 
   const positioned = nodeElements(canvas).map((element) => {
     const [x, y] = graphPosition(element)
@@ -213,8 +208,7 @@ export async function renderWorkflowImage(
   for (const batch of batchBelowMedia(positioned)) {
     const rasterized = await rasterizer.rasterize(batch, {
       padding: NODE_PADDING,
-      pixelRatio,
-      prepareClone: (clone, source) => prepareWidgets(graph, clone, source)
+      pixelRatio
     })
     if (rasterized) {
       const { image, x, y, width, height } = rasterized
@@ -224,5 +218,5 @@ export async function renderWorkflowImage(
       drawNodeMedia(ctx, element, [x, y], viewScale)
   }
 
-  return canvasToBlob(output)
+  return encodePng(output)
 }

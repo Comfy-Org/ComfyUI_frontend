@@ -1,3 +1,5 @@
+import { parseUrl } from '@/utils/urlSafety'
+
 const XHTML_NS = 'http://www.w3.org/1999/xhtml'
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const REPLACED_ELEMENTS = 'img, video, canvas, iframe'
@@ -5,10 +7,9 @@ const REPLACED_ELEMENTS = 'img, video, canvas, iframe'
 interface RasterizeOptions {
   padding: number
   pixelRatio: number
-  prepareClone?: (clone: HTMLElement, source: HTMLElement) => Promise<void>
 }
 
-interface PositionedElement {
+export interface PositionedElement {
   element: HTMLElement
   x: number
   y: number
@@ -84,7 +85,8 @@ async function embedFontFace(
   let text = rule.cssText
   for (const [match, , url] of text.matchAll(/url\((["']?)([^"')]+)\1\)/g)) {
     if (url.startsWith('data:')) continue
-    const dataUrl = await toDataUrl(new URL(url, base).href)
+    const href = parseUrl(url, base)?.href
+    const dataUrl = href && (await toDataUrl(href))
     if (dataUrl) text = text.replace(match, `url("${dataUrl}")`)
   }
   return text
@@ -113,7 +115,7 @@ async function collectStyles(): Promise<string> {
   return (await embeddedFontFaces(sheets)) + css
 }
 
-function ancestorShells(element: Element) {
+function ancestorShells(inert: Document, element: Element) {
   const chain: Element[] = []
   for (
     let ancestor = element.parentElement;
@@ -123,7 +125,7 @@ function ancestorShells(element: Element) {
     chain.unshift(ancestor)
 
   const shells = chain.map((ancestor) => {
-    const shell = document.createElementNS(XHTML_NS, ancestor.localName)
+    const shell = inert.createElementNS(XHTML_NS, ancestor.localName)
     for (const { name, value } of ancestor.attributes)
       shell.setAttribute(name, value)
     shell.setAttribute(
@@ -189,16 +191,17 @@ function paddedBounds(elements: readonly PositionedElement[], padding: number) {
 }
 
 function toSvgMarkup(
+  inert: Document,
   content: Element,
   width: number,
   height: number,
   pixelRatio: number
 ): string {
-  const svg = document.createElementNS(SVG_NS, 'svg')
+  const svg = inert.createElementNS(SVG_NS, 'svg')
   svg.setAttribute('width', String(width * pixelRatio))
   svg.setAttribute('height', String(height * pixelRatio))
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`)
-  const foreignObject = document.createElementNS(SVG_NS, 'foreignObject')
+  const foreignObject = inert.createElementNS(SVG_NS, 'foreignObject')
   foreignObject.setAttribute('width', '100%')
   foreignObject.setAttribute('height', '100%')
   foreignObject.append(content)
@@ -207,19 +210,20 @@ function toSvgMarkup(
 }
 
 export function createElementRasterizer() {
+  const inert = document.implementation.createHTMLDocument()
   const styles = collectStyles()
 
   async function rasterize(
     elements: readonly PositionedElement[],
-    { padding, pixelRatio, prepareClone }: RasterizeOptions
+    { padding, pixelRatio }: RasterizeOptions
   ) {
     const bounds = paddedBounds(elements, padding)
     if (!bounds) return undefined
     const { left, top, width, height } = bounds
 
-    const shells = ancestorShells(elements[0].element)
+    const shells = ancestorShells(inert, elements[0].element)
     for (const { element, x, y } of elements) {
-      const clone = element.cloneNode(true)
+      const clone = inert.importNode(element, true)
       if (!(clone instanceof HTMLElement)) continue
       copyFormState(element, clone)
       hideReplacedElements(clone)
@@ -227,20 +231,19 @@ export function createElementRasterizer() {
         'transform',
         `translate(${x - left}px, ${y - top}px)`
       )
-      await prepareClone?.(clone, element)
       shells.innermost.append(clone)
     }
 
-    const container = document.createElementNS(XHTML_NS, 'div')
+    const container = inert.createElementNS(XHTML_NS, 'div')
     container.setAttribute(
       'style',
       `position:relative;width:${width}px;height:${height}px;overflow:hidden;`
     )
-    const style = document.createElementNS(XHTML_NS, 'style')
+    const style = inert.createElementNS(XHTML_NS, 'style')
     style.textContent = await styles
     container.append(style, shells.outermost)
 
-    const markup = toSvgMarkup(container, width, height, pixelRatio)
+    const markup = toSvgMarkup(inert, container, width, height, pixelRatio)
     const image = await loadImage(
       `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`
     )

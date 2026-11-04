@@ -378,7 +378,9 @@ export const useWorkflowService = () => {
 
   const exportWorkflowImage = async (
     filename: string,
-    renderImage: () => Promise<Blob | null>
+    renderImage: () => Promise<
+      { ok: true; image: Blob } | { ok: false; cause?: unknown }
+    >
   ): Promise<void> => {
     const workflow = workflowStore.activeWorkflow
     if (workflow?.path) {
@@ -388,17 +390,22 @@ export const useWorkflowService = () => {
 
     addViewRestore(p.workflow)
     const json = JSON.stringify(p.workflow)
-    const file = await getFilename(filename, '.png')
+    const file = await getFilename(`${filename}.png`, '.png')
     if (!file) return
 
-    const image = await renderImage()
-    if (!image) {
+    const render = await renderImage()
+    if (!render.ok) {
+      if (render.cause !== undefined)
+        reportError(render.cause, {
+          surface: 'graph',
+          errorType: 'error_rendering_workflow_image'
+        })
       toast.error(t('g.error'), {
         description: t('toastMessages.failedToExportWorkflowImage')
       })
       return
     }
-    downloadBlob(file, await insertPngTextChunk(image, 'workflow', json))
+    downloadBlob(file, await insertPngTextChunk(render.image, 'workflow', json))
   }
   /**
    * Save a workflow as a new file
