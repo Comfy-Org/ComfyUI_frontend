@@ -19,7 +19,8 @@ import {
   detachNodeFromStores
 } from '@/core/graph/nodeShell/nodeShellLifecycle'
 import type { UUID } from '@/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   attachGroupLayout,

@@ -4,14 +4,21 @@ import { join } from 'node:path'
 import { beforeEach, describe, expect, test } from 'vitest'
 
 import {
+  PAGE_SESSION_OWNER,
+  checkAgentSurfaceFiles,
   checkCatalogPinnedBySha,
   checkFile,
   checkFollowerFiles,
   checkNoHardcodedEndpoint,
-  checkNoOutboundUpdateB64
+  checkNoOutboundUpdateB64,
+  checkPageSessionOwnsTransport,
+  findAgentSurfaceFiles
 } from './check-follower-invariants'
 
 const FOLLOWER_FILE = 'src/workbench/extensions/agent/crdt/follower.ts'
+const PANEL_FILE = 'src/workbench/extensions/agent/AgentPanelRoot.vue'
+const REPOSITORY_ROOT = join(import.meta.dirname, '..')
+const REPOSITORY_SCAN_TIMEOUT = 60_000
 
 describe('checkNoOutboundUpdateB64', () => {
   test('fails a forbidden mutation fixture: constructing an outbound update_b64 frame', () => {
@@ -192,6 +199,110 @@ describe('checkNoHardcodedEndpoint', () => {
   ])('passes the shared event endpoint: %s', (fixture) => {
     expect(checkNoHardcodedEndpoint(FOLLOWER_FILE, fixture)).toEqual([])
   })
+})
+
+describe('checkPageSessionOwnsTransport', () => {
+  test('fails the regression it exists to catch: a component constructing the transport', () => {
+    const fixture = `<script setup lang="ts">
+const events = createAgentEventSource({ endpoint: api.apiURL('/agent/events') })
+const docTransport = createAgentDocFrameTransport(events)
+onBeforeUnmount(() => docTransport.destroy())
+</script>`
+    expect(
+      checkPageSessionOwnsTransport(PANEL_FILE, fixture).map(
+        ({ rule, line }) => ({ rule, line })
+      )
+    ).toEqual([
+      { rule: 'page-session-owns-transport', line: 2 },
+      { rule: 'page-session-owns-transport', line: 3 }
+    ])
+  })
+
+  test('reports the line in the .vue file, not in the extracted script', () => {
+    const fixture = `<template>\n  <div />\n</template>\n\n<script setup lang="ts">\nconst events = createAgentEventSource({})\n</script>`
+    expect(checkPageSessionOwnsTransport(PANEL_FILE, fixture)).toEqual([
+      expect.objectContaining({ line: 6 })
+    ])
+  })
+})
+
+describe('checkPageSessionOwnsTransport allowed shapes', () => {
+  test('passes the owner module itself', () => {
+    const fixture = `
+      const events = createAgentEventSource({ endpoint, getAuthParams })
+      return { events, docTransport: createAgentDocFrameTransport(events) }
+    `
+    expect(checkPageSessionOwnsTransport(PAGE_SESSION_OWNER, fixture)).toEqual(
+      []
+    )
+  })
+
+  test('passes a component that consumes the page session', () => {
+    const fixture = `<script setup lang="ts">
+const { events, docTransport } = useAgentPageSession()
+</script>`
+    expect(checkPageSessionOwnsTransport(PANEL_FILE, fixture)).toEqual([])
+  })
+
+  test('passes the factory definitions, which declare rather than call', () => {
+    const fixture = `
+      export function createAgentDocFrameTransport(source: AgentEventSocket) {
+        return { destroy() {} }
+      }
+    `
+    expect(
+      checkPageSessionOwnsTransport(
+        'src/workbench/extensions/agent/crdt/agentDocFrameTransport.ts',
+        fixture
+      )
+    ).toEqual([])
+  })
+
+  test('ignores a factory name that only appears in a comment or a string', () => {
+    const fixture = `
+      // createAgentEventSource() is resolved through the page session now.
+      const label = 'createAgentDocFrameTransport'
+    `
+    expect(checkPageSessionOwnsTransport(FOLLOWER_FILE, fixture)).toEqual([])
+  })
+
+  test('ignores files outside the agent surface', () => {
+    const fixture = 'const events = createAgentEventSource({})'
+    expect(
+      checkPageSessionOwnsTransport('src/scripts/app.ts', fixture)
+    ).toEqual([])
+  })
+})
+
+describe('agent surface enforcement against this repository', () => {
+  test('discovers the agent surface, including .vue components', () => {
+    const files = findAgentSurfaceFiles(REPOSITORY_ROOT)
+    expect(files).toContain(PANEL_FILE)
+    expect(files).toContain(PAGE_SESSION_OWNER)
+    expect(files.some((file) => file.endsWith('.test.ts'))).toBe(false)
+  })
+
+  // The guard is only worth having if something runs it. No workflow invokes
+  // `pnpm follower-invariants:check`, so this test is the enforcement: a
+  // component that reintroduces panel-owned transport fails `test`, which is a
+  // required check.
+  test(
+    'the agent surface holds the transport-ownership invariant',
+    () => {
+      expect(checkAgentSurfaceFiles(REPOSITORY_ROOT)).toEqual([])
+    },
+    // Reads and scans the whole agent surface off disk, so it is bounded by IO
+    // and by however loaded the runner is, not by the default 5s.
+    REPOSITORY_SCAN_TIMEOUT
+  )
+
+  test(
+    'the follower seam holds its invariants',
+    () => {
+      expect(checkFollowerFiles(REPOSITORY_ROOT)).toEqual([])
+    },
+    REPOSITORY_SCAN_TIMEOUT
+  )
 })
 
 describe('checkFile', () => {
