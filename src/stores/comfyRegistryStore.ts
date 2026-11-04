@@ -34,17 +34,11 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     maxSize: PACK_BY_ID_CACHE_SIZE
   })
 
-  /**
-   * Get a list of all node packs from the registry
-   */
   const listAllPacks = useCachedRequest<ListPacksParams, ListPacksResult>(
     registryService.listAllPacks,
     { maxSize: PACK_LIST_CACHE_SIZE }
   )
 
-  /**
-   * Get a pack by its ID from the registry
-   */
   const getPackById = useCachedRequest<GetPackByIdPath, NodePack>(
     async (params) => {
       if (!params) return null
@@ -53,9 +47,6 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     { maxSize: PACK_BY_ID_CACHE_SIZE }
   )
 
-  /**
-   * Get a list of packs by their IDs from the registry
-   */
   const getPacksByIds = async (ids: NodePack['id'][]): Promise<NodePack[]> => {
     const [cachedPacksIds, uncachedPacksIds] = partition(ids, (id) =>
       getPacksByIdCache.has(id)
@@ -88,47 +79,44 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
     return resolvedPacks
   }
 
-  /**
-   * Get the node definitions for a pack
-   */
+  const getActivePackVersions = useCachedRequest<
+    { id: string; advertisedVersion?: string; advertisedStatus?: string },
+    components['schemas']['NodeVersion'][]
+  >(
+    ({ id }, signal) =>
+      registryService.getPackVersions(
+        id,
+        { statuses: ['NodeVersionStatusActive'] },
+        signal
+      ),
+    { maxSize: PACK_BY_ID_CACHE_SIZE }
+  )
+
   const getNodeDefs = useCachedRequest<
     GetNodeDefsParams,
     operations['ListComfyNodes']['responses'][200]['content']['application/json']
   >(registryService.getNodeDefs, { maxSize: PACK_BY_ID_CACHE_SIZE })
 
-  /**
-   * Search for packs by pack name or node names
-   */
   const search = useCachedRequest<
     operations['searchNodes']['parameters']['query'],
     ListPacksResult
   >(registryService.search, { maxSize: PACK_LIST_CACHE_SIZE })
 
-  /**
-   * Get the node pack that contains a specific ComfyUI node by its name.
-   * Results are cached to avoid redundant API calls.
-   *
-   * @see {@link useComfyRegistryService.inferPackFromNodeName} for details on the ranking algorithm
-   */
   const inferPackFromNodeName = useCachedRequest<
     operations['getNodeByComfyNodeName']['parameters']['path']['comfyNodeName'],
     NodePack
   >(registryService.inferPackFromNodeName, { maxSize: PACK_BY_ID_CACHE_SIZE })
 
-  /**
-   * Clear all cached data
-   */
   const clearCache = () => {
+    getActivePackVersions.clear()
     getNodeDefs.clear()
     listAllPacks.clear()
     getPackById.clear()
     inferPackFromNodeName.clear()
   }
 
-  /**
-   * Cancel all any in-flight requests.
-   */
   const cancelRequests = () => {
+    getActivePackVersions.cancel()
     getNodeDefs.cancel()
     listAllPacks.cancel()
     getPackById.cancel()
@@ -143,6 +131,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
       call: getPacksByIds,
       cancel: () => getPacksByIdController?.abort()
     },
+    getActivePackVersions,
     getNodeDefs,
     search,
     inferPackFromNodeName,

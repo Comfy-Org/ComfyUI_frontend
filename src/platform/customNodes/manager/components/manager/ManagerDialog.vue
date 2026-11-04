@@ -469,6 +469,7 @@ const {
   displayPacks,
   isSortable,
   isLoading: isTabLoading,
+  hasUpdateError,
   workflowPacks
 } = useManagerDisplayPacks(
   selectedNavId,
@@ -511,7 +512,11 @@ const isManagerErrorRelevant = computed(() => {
 })
 
 const emptyStateTitle = computed(() => {
-  if (isManagerErrorRelevant.value || isSearchFailed.value)
+  if (
+    isManagerErrorRelevant.value ||
+    isSearchFailed.value ||
+    hasUpdateError.value
+  )
     return t('manager.errorConnecting')
   if (trimmedSearchQuery.value) return t('manager.noResultsFound')
 
@@ -524,7 +529,11 @@ const emptyStateTitle = computed(() => {
 })
 
 const emptyStateMessage = computed(() => {
-  if (isManagerErrorRelevant.value || isSearchFailed.value)
+  if (
+    isManagerErrorRelevant.value ||
+    isSearchFailed.value ||
+    hasUpdateError.value
+  )
     return t('manager.tryAgainLater')
   if (trimmedSearchQuery.value) return t('manager.tryDifferentSearch')
 
