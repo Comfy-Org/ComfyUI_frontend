@@ -315,35 +315,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Moves a draft from one path to another (rename).
    */
   function moveDraft(oldPath: string, newPath: string, name: string): void {
-    const workspaceId = currentWorkspaceId()
-    const index = loadIndex()
-    const result = moveEntry(index, oldPath, newPath, name)
-
-    if (result) {
-      const isRenameOntoSelf = result.oldKey === result.newKey
-      if (isRenameOntoSelf) {
-        persistIndex(result.index)
-        return
-      }
-      const oldPayload = readPayload(workspaceId, result.oldKey)
-      if (oldPayload) {
-        const written = writePayload(workspaceId, result.newKey, oldPayload)
-        if (!written) return
-
-        if (!persistIndex(result.index)) {
-          deletePayload(workspaceId, result.newKey)
-          return
-        }
-        deletePayload(workspaceId, result.oldKey)
-        const lineage = lineageByDraft.get(
-          lineageKey(workspaceId, result.oldKey)
-        )
-        if (lineage) {
-          lineageByDraft.set(lineageKey(workspaceId, result.newKey), lineage)
-          lineageByDraft.delete(lineageKey(workspaceId, result.oldKey))
-        }
-      }
-    }
+    const result = moveEntry(loadIndex(), oldPath, newPath, name)
+    if (result) persistIndex(result.index)
   }
 
   /**
